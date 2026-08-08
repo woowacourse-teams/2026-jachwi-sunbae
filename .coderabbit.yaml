@@ -1,0 +1,10 @@
+# CodeRabbit 설정
+# 참고: https://docs.coderabbit.ai/reference/yaml-template
+#
+# 이 파일은 조직(woowacourse-teams) 웹 UI 설정보다 우선 적용된다.
+
+reviews:
+  auto_review:
+    # 자동 코드 리뷰를 사용하지 않는다.
+    # 필요한 PR에서는 `@coderabbitai review` 댓글로 직접 요청할 수 있다.
+    enabled: false
