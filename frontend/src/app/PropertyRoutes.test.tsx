@@ -61,8 +61,7 @@ describe('FE-2 매물 목록', () => {
     renderAuthenticated('/properties');
 
     expect(await screen.findByText('아직 등록한 매물이 없어요.')).toBeInTheDocument();
-    await user.type(screen.getByRole('textbox', { name: '매물 이름 검색' }), '없는 매물');
-    await user.click(screen.getByRole('button', { name: '검색' }));
+    await user.type(screen.getByRole('textbox', { name: '매물 이름 검색' }), '없는 매물{Enter}');
     expect(await screen.findByText('검색 결과가 없어요.')).toBeInTheDocument();
   });
 
@@ -76,7 +75,11 @@ describe('FE-2 매물 목록', () => {
 
     expect(await screen.findByRole('link', { name: '신림역 원룸' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: '망원동 투룸' })).toBeInTheDocument();
-    expect(screen.getByText('방문 완료')).toBeInTheDocument();
+    expect(screen.queryByText('방문 완료')).not.toBeInTheDocument();
+    expect(screen.getByText('미완료')).toBeInTheDocument();
+    expect(screen.getByRole('list', { name: '최근 방문 결과 집계' })).toHaveTextContent('괜찮음 10');
+    expect(screen.getByRole('list', { name: '최근 방문 결과 집계' })).toHaveTextContent('주의 5');
+    expect(screen.getByRole('list', { name: '최근 방문 결과 집계' })).toHaveTextContent('미확인 7');
     expect(screen.getByText('아직 방문 확인 기록이 없어요.')).toBeInTheDocument();
   });
 
@@ -98,10 +101,10 @@ describe('FE-2 매물 목록', () => {
     const searchbox = await screen.findByRole('textbox', { name: '매물 이름 검색' });
 
     await user.type(searchbox, '느린 검색');
-    await user.click(screen.getByRole('button', { name: '검색' }));
+    await user.keyboard('{Enter}');
     await user.clear(searchbox);
     await user.type(searchbox, '  망원  ');
-    await user.click(screen.getByRole('button', { name: '검색' }));
+    await user.keyboard('{Enter}');
 
     expect(await screen.findByRole('link', { name: '망원동 투룸' })).toBeInTheDocument();
     await delay(150);

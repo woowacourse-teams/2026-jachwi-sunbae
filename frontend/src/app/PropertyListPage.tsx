@@ -1,9 +1,13 @@
-import { useState } from 'react';
-import type { FormEvent } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { useEffect, useRef, useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import { getPropertyErrorMessage } from '../apis/propertyErrorMessages';
-import PageHeading from '../components/PageHeading';
 import PropertyCard from '../components/PropertyCard';
+import { Button, ButtonLink } from '../components/ui/Button';
+import EmptyState from '../components/ui/EmptyState';
+import Icon from '../components/ui/Icon';
+import InlineNotice from '../components/ui/InlineNotice';
+import SearchField from '../components/ui/SearchField';
+import TopNavigation from '../components/ui/TopNavigation';
 import { usePropertyList } from '../hooks/query/useProperties';
 import type { PublicConfig } from '../types/PublicConfig';
 import styles from './PropertyListPage.module.css';
@@ -14,64 +18,102 @@ const PropertyListPage = ({ config }: PropertyListPageProps) => {
   const location = useLocation();
   const [draftQuery, setDraftQuery] = useState('');
   const [query, setQuery] = useState('');
+  const headingRef = useRef<HTMLHeadingElement>(null);
   const properties = usePropertyList(config, query);
   const items = properties.data?.pages.flatMap((page) => page.content) ?? [];
+  const shouldFocusHeading = (location.state as { focusHeading?: boolean } | null)?.focusHeading === true;
 
-  const search = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    setQuery(draftQuery.trim());
-  };
+  useEffect(() => {
+    if (shouldFocusHeading) headingRef.current?.focus();
+  }, [shouldFocusHeading]);
+
+  const search = () => setQuery(draftQuery.trim());
+  const propertySearch = (
+    <div className={styles.search}>
+      <SearchField
+        label="매물 이름 검색"
+        value={draftQuery}
+        maxLength={50}
+        placeholder="매물 이름으로 검색"
+        showSubmitButton={false}
+        onValueChange={setDraftQuery}
+        onSubmit={search}
+        onClear={() => setQuery('')}
+      />
+    </div>
+  );
 
   return (
-    <main className="property-page">
-      <div className="page-container">
-        <PageHeading
-          title="내 매물"
-          description="직접 본 매물과 다시 확인할 내용을 한곳에 모아요."
-          focusOnMount={(location.state as { focusHeading?: boolean } | null)?.focusHeading === true}
-        />
-        <div className="page-primary-action">
-          <Link className="primary-link" to="/properties/new">
-            + 새 매물 등록
-          </Link>
+    <main className={styles.page}>
+      <div className={styles.content}>
+        <TopNavigation title="기록한 매물" meta={properties.isSuccess ? `${items.length}개` : undefined} />
+        <h1 ref={headingRef} className="sr-only" tabIndex={-1}>
+          내 매물
+        </h1>
+
+        <div className={styles.searchRow}>
+          {propertySearch}
+          <ButtonLink className={styles.addButton} to="/properties/new" aria-label="새 매물 등록">
+            <Icon name="plus" size={15} /> 추가
+          </ButtonLink>
         </div>
-        <form className={styles.search} role="search" onSubmit={search}>
-          <label className="sr-only" htmlFor="property-search-input">
-            매물 이름 검색
-          </label>
-          <input
-            id="property-search-input"
-            value={draftQuery}
-            maxLength={50}
-            placeholder="매물 이름으로 검색"
-            onChange={(event) => setDraftQuery(event.target.value)}
-          />
-          <button type="submit">검색</button>
-        </form>
 
         {properties.isPending && (
-          <div className="content-state" role="status">
-            <span className="spinner" />
+          <div className={styles.loading} role="status">
+            <span className={styles.spinner} aria-hidden="true" />
             매물 목록을 불러오는 중이에요.
           </div>
         )}
+
         {properties.isError && !properties.isFetchNextPageError && (
-          <div className="content-state content-state--error" role="alert">
-            <strong>매물 목록을 불러오지 못했어요.</strong>
-            <span>{getPropertyErrorMessage(properties.error)}</span>
-            <button className="inline-button" type="button" onClick={() => void properties.refetch()}>
+          <div className={styles.errorState}>
+            <InlineNotice tone="error">
+              <strong>매물 목록을 불러오지 못했어요.</strong>
+              <span>{getPropertyErrorMessage(properties.error)}</span>
+            </InlineNotice>
+            <Button variant="secondary" fullWidth onClick={() => void properties.refetch()}>
               다시 시도
-            </button>
+            </Button>
           </div>
         )}
+
         {properties.isSuccess && items.length === 0 && (
-          <div className="content-state">
-            <strong>{query.length > 0 ? '검색 결과가 없어요.' : '아직 등록한 매물이 없어요.'}</strong>
-            <span>
-              {query.length > 0 ? '다른 이름으로 검색해 보세요.' : '첫 매물을 등록하고 방문 기록을 준비해 보세요.'}
-            </span>
-          </div>
+          <>
+            <EmptyState
+              title={query.length > 0 ? '검색 결과가 없어요.' : '아직 등록한 매물이 없어요.'}
+              description={
+                query.length > 0
+                  ? '다른 이름으로 검색해 보세요.'
+                  : '기본 정보부터 현장 체크까지 한 흐름으로 관리할 수 있어요.'
+              }
+              action={
+                query.length === 0 ? (
+                  <ButtonLink to="/properties/new">
+                    <Icon name="plus" size={15} />첫 매물 등록하기
+                  </ButtonLink>
+                ) : undefined
+              }
+            />
+            {query.length === 0 && (
+              <section className={styles.guide} aria-labelledby="property-guide-heading">
+                <div className={styles.sectionHeading}>
+                  <h2 id="property-guide-heading">이렇게 진행해요</h2>
+                  <span>4 STEPS</span>
+                </div>
+                <ol className={styles.steps}>
+                  {['매물 등록', '정보 입력', '체크 선택', '현장 체크'].map((label, index) => (
+                    <li key={label}>
+                      <strong>{String(index + 1).padStart(2, '0')}</strong>
+                      <span>{label}</span>
+                    </li>
+                  ))}
+                </ol>
+                <InlineNotice>입력 내용은 언제든 수정할 수 있으며 단계별로 이어서 진행할 수 있어요.</InlineNotice>
+              </section>
+            )}
+          </>
         )}
+
         {items.length > 0 && (
           <section className={styles.cardList} aria-label="매물 목록">
             {items.map((property) => (
@@ -81,22 +123,27 @@ const PropertyListPage = ({ config }: PropertyListPageProps) => {
         )}
 
         {properties.hasNextPage && (
-          <div className="load-more">
+          <div className={styles.loadMore}>
             {properties.isFetchNextPageError && (
-              <p role="alert">다음 매물을 불러오지 못했어요. 기존 목록은 그대로 유지됩니다.</p>
+              <InlineNotice tone="error">다음 매물을 불러오지 못했어요. 기존 목록은 그대로 유지됩니다.</InlineNotice>
             )}
-            <button
-              className="secondary-button"
-              type="button"
-              disabled={properties.isFetchingNextPage}
+            <Button
+              variant="secondary"
+              fullWidth
+              isLoading={properties.isFetchingNextPage}
+              loadingLabel="추가 매물 불러오는 중…"
               onClick={() => void properties.fetchNextPage()}
             >
-              {properties.isFetchingNextPage
-                ? '추가 매물 불러오는 중…'
-                : properties.isFetchNextPageError
-                  ? '다시 불러오기'
-                  : '매물 더 보기'}
-            </button>
+              {properties.isFetchNextPageError ? '다시 불러오기' : '매물 더 보기'}
+            </Button>
+          </div>
+        )}
+
+        {items.length > 0 && (
+          <div className={styles.bottomAdd}>
+            <ButtonLink to="/properties/new" variant="secondary" fullWidth>
+              <Icon name="plus" size={16} /> 매물 추가
+            </ButtonLink>
           </div>
         )}
       </div>

@@ -2,12 +2,13 @@ import { useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { ApiError } from '../apis/apiClient';
 import { getPropertyErrorMessage } from '../apis/propertyErrorMessages';
-import PageHeading from '../components/PageHeading';
 import PhotoUploadPanel from '../components/PhotoUploadPanel';
 import PropertyPhotoCard from '../components/PropertyPhotoCard';
+import AppBar from '../components/ui/AppBar';
 import { usePropertyDetail, usePropertyPhotos } from '../hooks/query/useProperties';
 import type { PublicConfig } from '../types/PublicConfig';
 import { parsePositiveId } from '../utils/propertyFormat';
+import styles from './PropertyPhotosPage.module.css';
 
 type PropertyPhotosPageProps = { config: PublicConfig };
 
@@ -74,46 +75,42 @@ const ResolvedPropertyPhotosPage = ({ config, propertyId }: { config: PublicConf
   const visiblePhotos = photos.data.photos.slice(0, visibleCount);
 
   return (
-    <main className="property-page property-photos-page">
-      <div className="page-container">
-        <PageHeading
-          title={`${property.data.name} 사진`}
-          description={`업로드 순으로 ${photos.data.totalCount}장을 보관하고 있어요.`}
-          backTo={`/properties/${propertyId}`}
-          backLabel="매물 상세"
-        />
-        <PhotoUploadPanel config={config} propertyId={propertyId} currentPhotoCount={photos.data.totalCount} />
-
-        <section className="detail-section" aria-labelledby="photo-gallery-heading">
-          <div className="section-heading-row">
-            <div>
-              <p className="section-eyebrow">사진 전체보기</p>
-              <h2 id="photo-gallery-heading" tabIndex={-1}>
-                등록한 사진 {photos.data.totalCount}장
-              </h2>
-            </div>
+    <main className={styles.page}>
+      <AppBar
+        title={`${property.data.name} · 사진 ${photos.data.totalCount}장`}
+        backTo={`/properties/${propertyId}`}
+        backLabel="매물 상세로 돌아가기"
+      />
+      <div className={styles.container}>
+        <h1 className="sr-only">{property.data.name} 사진 관리</h1>
+        <section aria-labelledby="photo-gallery-heading">
+          <h2 className="sr-only" id="photo-gallery-heading" tabIndex={-1}>
+            등록한 사진 {photos.data.totalCount}장
+          </h2>
+          <div className={styles.grid}>
+            <PhotoUploadPanel config={config} propertyId={propertyId} currentPhotoCount={photos.data.totalCount} />
+            {photos.data.photos.length === 0 ? (
+              <div className={styles.empty}>
+                <strong>등록한 사진이 없어요.</strong>
+                <span>왼쪽 위 추가 버튼으로 사진을 등록해 보세요.</span>
+              </div>
+            ) : (
+              <ul className={styles.photoList}>
+                {visiblePhotos.map((photo, index) => (
+                  <PropertyPhotoCard
+                    key={photo.photoId}
+                    config={config}
+                    propertyId={propertyId}
+                    photo={photo}
+                    position={index + 1}
+                  />
+                ))}
+              </ul>
+            )}
           </div>
-          {photos.data.photos.length === 0 ? (
-            <div className="photo-empty">
-              <strong>등록한 사진이 없어요.</strong>
-              <span>위에서 확인한 사진을 추가해 보세요.</span>
-            </div>
-          ) : (
-            <ul className="photo-grid">
-              {visiblePhotos.map((photo, index) => (
-                <PropertyPhotoCard
-                  key={photo.photoId}
-                  config={config}
-                  propertyId={propertyId}
-                  photo={photo}
-                  position={index + 1}
-                />
-              ))}
-            </ul>
-          )}
           {visibleCount < photos.data.photos.length && (
             <button
-              className="secondary-button"
+              className={styles.loadMore}
               type="button"
               onClick={() => setVisibleCount((current) => Math.min(current + 6, photos.data.photos.length))}
             >

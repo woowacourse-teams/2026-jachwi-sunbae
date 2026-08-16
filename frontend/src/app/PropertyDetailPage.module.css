@@ -1,0 +1,282 @@
+.page {
+  min-height: calc(100dvh - var(--bottom-navigation-height));
+  background: var(--color-surface);
+}
+
+.container {
+  padding: 0.5rem 1rem 2rem;
+}
+
+.detailHeader {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.detailHeader h1 {
+  margin: 0;
+  overflow-wrap: anywhere;
+  font-size: 1.25rem;
+  letter-spacing: -0.04em;
+  line-height: 1.3;
+}
+
+.detailHeader p {
+  margin: 0;
+  color: var(--color-ink-soft);
+  font-size: 0.78rem;
+}
+
+.pageMenu {
+  position: relative;
+}
+
+.pageMenu > summary {
+  display: grid;
+  width: 2.75rem;
+  height: 2.75rem;
+  cursor: pointer;
+  list-style: none;
+  place-items: center;
+}
+
+.pageMenu > summary::-webkit-details-marker {
+  display: none;
+}
+
+.pageMenuItems {
+  position: absolute;
+  z-index: 30;
+  top: 2.7rem;
+  right: 0.25rem;
+  min-width: 6.5rem;
+  padding: 0.3rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-soft);
+}
+
+.pageMenuItems a {
+  display: flex;
+  min-height: 2.5rem;
+  align-items: center;
+  padding: 0.5rem 0.7rem;
+  border-radius: 0.45rem;
+  color: var(--color-ink);
+  font-size: 0.78rem;
+  font-weight: 750;
+  text-decoration: none;
+}
+
+.basicSection {
+  margin-top: 1.25rem;
+}
+
+.basicSection h2 {
+  margin: 0;
+  overflow-wrap: anywhere;
+  font-size: 1.05rem;
+  letter-spacing: -0.035em;
+}
+
+.definitionList {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  margin: 1rem 0 0;
+  border-top: 1px solid var(--color-border);
+}
+
+.definitionItem {
+  display: grid;
+  grid-template-columns: 4.25rem minmax(0, 1fr);
+  gap: 0.75rem;
+  align-items: start;
+  min-width: 0;
+  padding: 0.8rem 0;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.definitionItem dt {
+  color: var(--color-muted);
+  font-size: 0.75rem;
+  line-height: 1.5;
+}
+
+.definitionItem dd {
+  min-width: 0;
+  margin: 0;
+  overflow-wrap: anywhere;
+  font-size: 0.82rem;
+  font-weight: 700;
+  line-height: 1.5;
+}
+
+.definitionItem a {
+  color: var(--color-primary-dark);
+}
+
+.photoSection {
+  margin-top: 1rem;
+}
+
+.photoHeading {
+  display: flex;
+  min-height: 2rem;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.photoHeading h3 {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin: 0;
+  font-size: 0.9rem;
+}
+
+.photoHeading h3 span {
+  padding: 0.2rem 0.45rem;
+  border-radius: 999px;
+  background: var(--color-surface-muted);
+  color: var(--color-primary-dark);
+  font-size: 0.68rem;
+}
+
+.photoHeading > a {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  color: var(--color-primary-dark);
+  font-size: 0.75rem;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.photoGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.45rem;
+  margin-top: 0.55rem;
+}
+
+.photoThumbnailLink,
+.photoEmpty {
+  position: relative;
+  display: grid;
+  min-width: 0;
+  aspect-ratio: 1;
+  overflow: hidden;
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-muted);
+  color: var(--color-primary-dark);
+  place-items: center;
+  text-decoration: none;
+}
+
+.photoThumbnail {
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  border-radius: 0;
+  object-fit: cover;
+}
+
+.photoEmpty {
+  min-height: 5rem;
+  aspect-ratio: auto;
+  align-content: center;
+  gap: 0.3rem;
+  margin-top: 0.5rem;
+  border: 1px dashed var(--color-border-strong);
+  font-size: 0.72rem;
+}
+
+.photoOverlay {
+  position: absolute;
+  inset: auto 0 0;
+  padding: 0.45rem 0.3rem;
+  background: rgb(31 36 25 / 76%);
+  color: #fff;
+  font-size: 0.68rem;
+  font-weight: 800;
+  text-align: center;
+}
+
+.checklistSection {
+  margin-top: 1.5rem;
+}
+
+.checklistSection h2 {
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+.checklistList {
+  display: grid;
+  gap: 0.55rem;
+  margin: 0.85rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.checklistList li {
+  overflow: hidden;
+  border-radius: var(--radius-sm);
+}
+
+.checklistList li > a {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.75rem;
+  align-items: center;
+  min-height: 4.5rem;
+  padding: 0.75rem 0.85rem;
+  color: var(--color-ink);
+  text-decoration: none;
+}
+
+.checklistList li > a > span {
+  display: grid;
+  min-width: 0;
+  gap: 0.2rem;
+}
+
+.checklistList small {
+  color: var(--color-primary-strong);
+  font-size: 0.76rem;
+  font-weight: 750;
+}
+
+.checklistList strong {
+  overflow: hidden;
+  color: var(--color-ink-soft);
+  font-size: 0.84rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.linkedChecklist {
+  background: #edf3e7;
+}
+
+.unlinkedChecklist {
+  background: #f2f2f0;
+}
+
+.unlinkedChecklist strong,
+.unlinkedChecklist svg {
+  color: var(--color-muted);
+}
+
+.page :global(.pre-visit-memo-editor__fields) {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.page :global(.pre-visit-memo-field--additional) {
+  grid-column: auto;
+}
+
+.page :global(.pre-visit-memo-editor__actions .primary-button) {
+  width: 100%;
+}

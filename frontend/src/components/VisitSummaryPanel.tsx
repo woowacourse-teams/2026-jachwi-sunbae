@@ -22,6 +22,12 @@ const VisitSummaryPanel = ({ recentVisit, compact = false }: VisitSummaryPanelPr
       <p>
         전체 {summary.totalCount}개 중 {summary.checkedCount}개 확인
       </p>
+      <progress
+        className={styles.progress}
+        aria-label="최근 방문 확인 진행률"
+        max={Math.max(summary.totalCount, 1)}
+        value={summary.checkedCount}
+      />
       <ul aria-label="최근 방문 결과 집계">
         <li>
           <span aria-hidden="true">●</span> 괜찮음 {summary.goodCount}

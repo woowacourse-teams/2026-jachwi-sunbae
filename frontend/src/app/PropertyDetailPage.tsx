@@ -4,10 +4,10 @@ import { ApiError } from '../apis/apiClient';
 import { getPropertyErrorMessage } from '../apis/propertyErrorMessages';
 import AuthenticatedPhoto from '../components/AuthenticatedPhoto';
 import ConfirmDialog from '../components/ConfirmDialog';
-import PageHeading from '../components/PageHeading';
 import PreVisitMemoEditor from '../components/PreVisitMemoEditor';
-import VisitSummaryPanel from '../components/VisitSummaryPanel';
 import StartVisitPanel from '../components/StartVisitPanel';
+import Icon from '../components/ui/Icon';
+import TopNavigation from '../components/ui/TopNavigation';
 import { usePropertyDetail } from '../hooks/query/useProperties';
 import { useRemoveProperty } from '../hooks/query/usePropertyMutations';
 import { CHECKLIST_STAGES } from '../types/Checklist';
@@ -19,6 +19,7 @@ import {
   getSafeHttpUrl,
   parsePositiveId,
 } from '../utils/propertyFormat';
+import styles from './PropertyDetailPage.module.css';
 
 type PropertyDetailPageProps = { config: PublicConfig };
 
@@ -86,7 +87,6 @@ const ResolvedPropertyDetailPage = ({ config, propertyId }: { config: PublicConf
 
   const detail = property.data;
   const safeSourceUrl = detail.discoverySource.type === 'URL' ? getSafeHttpUrl(detail.discoverySource.value) : null;
-  const preview = detail.photoPreview.photos[0];
 
   const deleteProperty = async () => {
     try {
@@ -99,37 +99,41 @@ const ResolvedPropertyDetailPage = ({ config, propertyId }: { config: PublicConf
   };
 
   return (
-    <main className="property-page property-detail-page">
-      <div className="page-container">
-        <PageHeading
-          title={detail.name}
-          description={`최근 활동 ${formatDateTime(detail.lastActivityAt)}`}
+    <main className={`${styles.page} property-detail-page`}>
+      <div className={styles.container}>
+        <TopNavigation
+          title="매물 정보"
           backTo="/properties"
-          backLabel="매물 목록"
+          backLabel="매물 목록으로 돌아가기"
+          endSlot={
+            <details className={styles.pageMenu}>
+              <summary aria-label="매물 메뉴 열기">
+                <Icon name="more-vertical" size={22} />
+              </summary>
+              <div className={styles.pageMenuItems}>
+                <Link to={`/properties/${propertyId}/edit`}>수정</Link>
+                <StartVisitPanel config={config} property={detail} compact />
+              </div>
+            </details>
+          }
         />
+        <header className={styles.detailHeader}>
+          <h1>{detail.name}</h1>
+          <p>최근 활동 {formatDateTime(detail.lastActivityAt)}</p>
+        </header>
 
-        <div className="detail-actions" aria-label="매물 관리">
-          <Link className="secondary-link" to={`/properties/${propertyId}/edit`}>
-            기본 정보 수정
-          </Link>
-          <Link className="secondary-link" to={`/properties/${propertyId}/photos`}>
-            사진 전체보기
-          </Link>
-        </div>
-
-        <section className="detail-section" aria-labelledby="basic-info-heading">
-          <p className="section-eyebrow">기본 정보</p>
+        <section className={styles.basicSection} aria-labelledby="basic-info-heading">
           <h2 id="basic-info-heading">계약 조건과 발견 경로</h2>
-          <dl className="detail-definition-list">
-            <div>
+          <dl className={styles.definitionList}>
+            <div className={styles.definitionItem}>
               <dt>보증금</dt>
               <dd>{formatWon(detail.depositAmount)}</dd>
             </div>
-            <div>
+            <div className={styles.definitionItem}>
               <dt>월세</dt>
               <dd>{formatWon(detail.monthlyRentAmount)}</dd>
             </div>
-            <div className="detail-definition-list__wide">
+            <div className={styles.definitionItem}>
               <dt>발견 경로</dt>
               <dd>
                 {safeSourceUrl === null ? (
@@ -142,67 +146,71 @@ const ResolvedPropertyDetailPage = ({ config, propertyId }: { config: PublicConf
               </dd>
             </div>
           </dl>
-        </section>
 
-        <section className="detail-section" aria-labelledby="photos-preview-heading">
-          <div className="section-heading-row">
-            <div>
-              <p className="section-eyebrow">사진</p>
-              <h2 id="photos-preview-heading">등록한 사진 {detail.photoPreview.totalCount}장</h2>
+          <section className={styles.photoSection} aria-labelledby="property-photos-heading">
+            <div className={styles.photoHeading}>
+              <h3 id="property-photos-heading">
+                사진 <span>{detail.photoPreview.totalCount}장</span>
+              </h3>
+              {detail.photoPreview.totalCount === 0 && (
+                <Link to={`/properties/${propertyId}/photos`}>
+                  <Icon name="plus" size={16} /> 사진 추가
+                </Link>
+              )}
             </div>
-            <Link className="inline-link" to={`/properties/${propertyId}/photos`}>
-              {detail.photoPreview.totalCount === 0 ? '사진 추가' : '전체보기'}
-            </Link>
-          </div>
-          {preview === undefined ? (
-            <div className="photo-empty">
-              <strong>등록한 사진이 없어요.</strong>
-              <span>직접 확인한 사진을 안전하게 보관해 보세요.</span>
-            </div>
-          ) : (
-            <AuthenticatedPhoto
-              config={config}
-              propertyId={propertyId}
-              photoId={preview.photoId}
-              contentUrl={preview.contentUrl}
-              alt="등록한 매물 사진 미리보기"
-              className="detail-photo-preview"
-            />
-          )}
+
+            {detail.photoPreview.photos.length === 0 ? (
+              <Link className={styles.photoEmpty} to={`/properties/${propertyId}/photos`}>
+                <Icon name="image" size={24} />
+                <span>사진을 추가해 보세요.</span>
+              </Link>
+            ) : (
+              <div className={styles.photoGrid}>
+                {detail.photoPreview.photos.slice(0, 3).map((photo, index, visiblePhotos) => {
+                  const isLastPreview = index === visiblePhotos.length - 1;
+                  const hasMorePhotos = detail.photoPreview.totalCount > visiblePhotos.length;
+
+                  return (
+                    <Link
+                      className={styles.photoThumbnailLink}
+                      key={photo.photoId}
+                      to={`/properties/${propertyId}/photos`}
+                      aria-label={`${detail.name} 사진 ${index + 1} 크게 보기`}
+                    >
+                      <AuthenticatedPhoto
+                        config={config}
+                        propertyId={propertyId}
+                        photoId={photo.photoId}
+                        contentUrl={photo.contentUrl}
+                        alt=""
+                        className={styles.photoThumbnail}
+                      />
+                      {isLastPreview && hasMorePhotos && (
+                        <span className={styles.photoOverlay}>전체 {detail.photoPreview.totalCount}장</span>
+                      )}
+                    </Link>
+                  );
+                })}
+              </div>
+            )}
+          </section>
         </section>
 
         <PreVisitMemoEditor key={propertyId} config={config} propertyId={propertyId} initialMemo={detail.memo} />
 
-        <section className="detail-section" aria-labelledby="visit-heading">
-          <p className="section-eyebrow">최근 방문</p>
-          <h2 id="visit-heading">가장 최근 확인 결과</h2>
-          <VisitSummaryPanel recentVisit={detail.recentVisit} />
-          <div className="visit-detail-actions">
-            {detail.recentVisit !== null && (
-              <Link className="secondary-link" to={`/visits/${detail.recentVisit.visitId}`}>
-                최근 방문 이어보기
-              </Link>
-            )}
-            <Link className="secondary-link" to={`/properties/${propertyId}/visits`}>
-              전체 방문 기록
-            </Link>
-          </div>
-          <StartVisitPanel config={config} property={detail} />
-        </section>
-
-        <section className="detail-section" aria-labelledby="checklist-heading">
-          <p className="section-eyebrow">활성 체크리스트</p>
+        <section className={styles.checklistSection} aria-labelledby="checklist-heading">
           <h2 id="checklist-heading">현재 연결된 확인 단계</h2>
-          <ul className="checklist-summary-list">
+          <ul className={styles.checklistList}>
             {CHECKLIST_STAGES.map((stage) => {
               const checklist = detail.activeChecklists.find((item) => item.stage === stage);
               return (
-                <li key={stage}>
-                  <span>{getChecklistStageLabel(stage)}</span>
-                  <strong>{checklist?.name ?? '연결된 체크리스트 없음'}</strong>
-                  <small>{checklist === undefined ? '선택하기' : `${checklist.itemCount}개 항목`}</small>
-                  <Link className="inline-link" to={`/properties/${propertyId}/active-checklists/${stage}`}>
-                    {checklist === undefined ? '연결' : '변경'}
+                <li className={checklist === undefined ? styles.unlinkedChecklist : styles.linkedChecklist} key={stage}>
+                  <Link to={`/properties/${propertyId}/active-checklists/${stage}`}>
+                    <span>
+                      <small>{getChecklistStageLabel(stage)}</small>
+                      <strong>{checklist?.name ?? '연결된 체크리스트 없음'}</strong>
+                    </span>
+                    <Icon name="arrow-right" size={18} />
                   </Link>
                 </li>
               );
@@ -212,7 +220,6 @@ const ResolvedPropertyDetailPage = ({ config, propertyId }: { config: PublicConf
         </section>
 
         <section className="detail-section danger-section" aria-labelledby="delete-heading">
-          <p className="section-eyebrow">삭제 영향</p>
           <h2 id="delete-heading">이 매물을 삭제하면</h2>
           <ul>
             <li>사진 {detail.deletionImpact.photoCount}장</li>

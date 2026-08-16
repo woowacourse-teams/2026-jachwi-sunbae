@@ -9,7 +9,15 @@ import type { PropertyDetail } from '../types/Property';
 import ConfirmDialog from './ConfirmDialog';
 import styles from './StartVisitPanel.module.css';
 
-const StartVisitPanel = ({ config, property }: { config: PublicConfig; property: PropertyDetail }) => {
+const StartVisitPanel = ({
+  config,
+  property,
+  compact = false,
+}: {
+  config: PublicConfig;
+  property: PropertyDetail;
+  compact?: boolean;
+}) => {
   const navigate = useNavigate();
   const buttonRef = useRef<HTMLButtonElement>(null);
   const [isOpen, setIsOpen] = useState(false);
@@ -26,6 +34,14 @@ const StartVisitPanel = ({ config, property }: { config: PublicConfig; property:
   };
 
   if (property.activeChecklists.length === 0) {
+    if (compact) {
+      return (
+        <Link className={styles.compactLink} to={`/properties/${property.propertyId}/active-checklists/ONLINE_PHONE`}>
+          체크리스트 연결
+        </Link>
+      );
+    }
+
     return (
       <div className={styles.empty}>
         <strong>활성 체크리스트를 먼저 연결해 주세요.</strong>
@@ -44,11 +60,16 @@ const StartVisitPanel = ({ config, property }: { config: PublicConfig; property:
   }
 
   return (
-    <div className={styles.panel}>
-      <button ref={buttonRef} className="primary-button" type="button" onClick={() => setIsOpen(true)}>
+    <div className={compact ? styles.compact : styles.panel}>
+      <button
+        ref={buttonRef}
+        className={compact ? styles.compactButton : 'primary-button'}
+        type="button"
+        onClick={() => setIsOpen(true)}
+      >
         새 방문 시작
       </button>
-      <p>시작할 때의 체크리스트를 복사하므로 이후 원본을 바꿔도 이 방문은 유지됩니다.</p>
+      {!compact && <p>시작할 때의 체크리스트를 복사하므로 이후 원본을 바꿔도 이 방문은 유지됩니다.</p>}
       <ConfirmDialog
         isOpen={isOpen}
         title={`${property.name} 방문을 시작할까요?`}

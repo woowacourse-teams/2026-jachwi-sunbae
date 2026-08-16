@@ -26,3 +26,35 @@
   color: var(--color-primary-dark);
   font-weight: 750;
 }
+
+.compact {
+  display: contents;
+}
+
+.compactButton {
+  display: flex;
+  width: 100%;
+  min-height: 2.5rem;
+  align-items: center;
+  padding: 0.5rem 0.7rem;
+  border: 0;
+  border-radius: 0.45rem;
+  background: transparent;
+  color: var(--color-ink);
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 750;
+  cursor: pointer;
+}
+
+.compactLink {
+  display: flex;
+  min-height: 2.5rem;
+  align-items: center;
+  padding: 0.5rem 0.7rem;
+  border-radius: 0.45rem;
+  color: var(--color-ink);
+  font-size: 0.78rem;
+  font-weight: 750;
+  text-decoration: none;
+}

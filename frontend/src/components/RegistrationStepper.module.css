@@ -1,0 +1,55 @@
+.stepper {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin: 0;
+  padding: 0.9rem 0 1.1rem;
+  list-style: none;
+}
+
+.stepper::before {
+  position: absolute;
+  top: 1.65rem;
+  right: 16.66%;
+  left: 16.66%;
+  height: 1px;
+  background: var(--color-border);
+  content: '';
+}
+
+.stepper li {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  justify-items: center;
+  gap: 0.4rem;
+  color: var(--color-muted);
+}
+
+.number {
+  display: grid;
+  width: 1.6rem;
+  height: 1.6rem;
+  border: 1px solid var(--color-border);
+  border-radius: 50%;
+  background: var(--color-surface);
+  font-size: 0.7rem;
+  font-weight: 850;
+  place-items: center;
+}
+
+.label {
+  font-size: 0.68rem;
+  font-weight: 750;
+}
+
+.stepper li[data-state='current'] {
+  color: var(--color-ink);
+}
+
+.stepper li[data-state='current'] .number,
+.stepper li[data-state='complete'] .number {
+  border-color: var(--color-primary-dark);
+  background: var(--color-primary-dark);
+  color: #fff;
+}
