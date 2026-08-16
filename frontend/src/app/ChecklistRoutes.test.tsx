@@ -63,7 +63,7 @@ const useCatalogHandlers = () => {
 };
 
 describe('FE-3 체크리스트 탐색과 편집', () => {
-  it('체크리스트 홈은 세 단계를 표시하고 카탈로그를 미리 조회하지 않는다', async () => {
+  it('체크리스트 진입 시 첫 단계 목록과 세 단계 탭을 표시하고 카탈로그를 미리 조회하지 않는다', async () => {
     let catalogCalls = 0;
     server.use(
       http.get(`${config.apiBaseUrl}/api/check-items`, () => {
@@ -76,10 +76,10 @@ describe('FE-3 체크리스트 탐색과 편집', () => {
       }),
     );
     renderAuthenticated('/checklists');
-    expect(await screen.findByRole('heading', { name: '체크리스트', level: 1 })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /온라인·전화/ })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /집에서 확인/ })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /계약 전/ })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: '내 체크리스트', level: 1 })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: '온라인·전화' })).toHaveAttribute('aria-current', 'page');
+    expect(screen.getByRole('link', { name: '집에서 확인' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: '계약 전' })).toBeInTheDocument();
     expect(catalogCalls).toBe(0);
     expect(screen.getByRole('link', { name: '체크리스트' })).toHaveAttribute('aria-current', 'page');
   });

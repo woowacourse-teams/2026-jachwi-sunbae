@@ -26,7 +26,7 @@ const InvalidChecklist = () => (
     <div className="page-container">
       <div className="content-state">
         <strong>올바른 체크리스트 주소가 아니에요.</strong>
-        <Link to="/checklists">체크리스트 홈으로 돌아가기</Link>
+        <Link to="/checklists">내 체크리스트로 돌아가기</Link>
       </div>
     </div>
   </main>
@@ -74,7 +74,7 @@ const ResolvedChecklistDetail = ({ config, checklistId }: { config: PublicConfig
                 다시 시도
               </button>
             )}
-            <Link to="/checklists">체크리스트 홈으로 돌아가기</Link>
+            <Link to="/checklists">내 체크리스트로 돌아가기</Link>
           </div>
         </div>
       </main>
