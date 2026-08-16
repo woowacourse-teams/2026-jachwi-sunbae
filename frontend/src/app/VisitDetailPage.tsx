@@ -203,7 +203,6 @@ const VisitDetailContent = ({ config, detail }: { config: PublicConfig; detail: 
           >
             <div className="visit-stage-panel__heading">
               <div>
-                <p className="section-eyebrow">스냅샷 체크리스트</p>
                 <h2>{stage.checklistName}</h2>
               </div>
               <VisitAggregateSummary summary={stage.summary} label={`${checklistStageMeta[stage.stage].label} 집계`} />

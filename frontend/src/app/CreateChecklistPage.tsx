@@ -64,7 +64,6 @@ const ResolvedCreateChecklistPage = ({
 
         {startMode === null ? (
           <section className="preset-section" aria-labelledby="preset-heading">
-            <p className="section-eyebrow">시작 방식</p>
             <h2 id="preset-heading">항목 구성 선택</h2>
             <p>빈 목록이나 원룸 제공 항목으로 시작한 뒤 직접 질문을 섞고 순서를 바꿀 수 있어요.</p>
             <div className="preset-options">

@@ -8,7 +8,6 @@ const MyPage = () => {
   return (
     <main className={`property-page ${styles.page}`}>
       <div className="page-container page-container--form">
-        <p className="section-eyebrow">내 정보</p>
         <h1>마이페이지</h1>
         <section className="detail-section" aria-labelledby="member-heading">
           <h2 id="member-heading">회원 정보</h2>

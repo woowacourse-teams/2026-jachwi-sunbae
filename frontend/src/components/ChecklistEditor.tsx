@@ -203,7 +203,6 @@ const ChecklistEditor = ({
       <section className="editor-section" aria-labelledby="selected-items-heading">
         <div className="section-heading-row">
           <div>
-            <p className="section-eyebrow">선택한 항목</p>
             <h2 id="selected-items-heading">확인 순서</h2>
           </div>
           <span className="selection-count">{items.length}개</span>
@@ -320,7 +319,6 @@ const ChecklistEditor = ({
       </section>
 
       <section className="editor-section" aria-labelledby="custom-item-heading">
-        <p className="section-eyebrow">직접 추가</p>
         <h2 id="custom-item-heading">나만의 질문 추가</h2>
         <div className="form-field custom-question-adder">
           <label htmlFor="new-custom-question">질문</label>

@@ -139,7 +139,6 @@ const ResolvedPropertyActiveChecklist = ({
 
         {current !== null && (
           <section className="current-connection" aria-labelledby="current-connection-heading">
-            <p className="section-eyebrow">현재 연결</p>
             <h2 id="current-connection-heading">{current.name}</h2>
             <p>{current.itemCount}개 항목 · 원본 변경이 이 매물에도 바로 반영돼요.</p>
             <button
@@ -160,7 +159,6 @@ const ResolvedPropertyActiveChecklist = ({
 
         <div className="section-heading-row active-selection-heading">
           <div>
-            <p className="section-eyebrow">내 체크리스트</p>
             <h2>연결할 목록 선택</h2>
           </div>
           <Link className="secondary-link" to={createPath}>

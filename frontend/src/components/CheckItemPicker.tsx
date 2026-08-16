@@ -38,7 +38,6 @@ const CheckItemPicker = ({ config, stage, existingSourceIds, disabled, onAdd }: 
     <section className="item-picker" aria-labelledby="item-picker-heading">
       <div className="section-heading-row">
         <div>
-          <p className="section-eyebrow">제공 항목</p>
           <h2 id="item-picker-heading">제공 항목 추가</h2>
         </div>
         <span className="selection-count" aria-live="polite">
