@@ -1,0 +1,49 @@
+.tabs {
+  width: 100%;
+}
+
+.tabList {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-surface);
+}
+
+.tab {
+  position: relative;
+  display: grid;
+  min-width: 0;
+  min-height: 2.75rem;
+  padding: 0.65rem 0.35rem;
+  color: var(--color-placeholder);
+  font-size: clamp(0.72rem, 3.1vw, 0.82rem);
+  font-weight: 800;
+  line-height: 1.35;
+  text-align: center;
+  text-decoration: none;
+  place-items: center;
+}
+
+.tab::after {
+  position: absolute;
+  right: 0.75rem;
+  bottom: -1px;
+  left: 0.75rem;
+  height: 2px;
+  background: transparent;
+  content: '';
+}
+
+.tab[aria-current='page'] {
+  color: var(--color-ink);
+}
+
+.tab[aria-current='page']::after {
+  background: var(--color-ink);
+}
+
+.tab:focus-visible {
+  border-radius: 0.35rem;
+  outline: 2px solid var(--color-primary);
+  outline-offset: -2px;
+}

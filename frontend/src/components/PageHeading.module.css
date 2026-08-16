@@ -1,19 +1,31 @@
 .heading {
-  margin-bottom: 1.2rem;
+  margin-bottom: 1rem;
+}
+
+.row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 0.75rem;
 }
 
 .heading h1 {
-  margin: 0.4rem 0 0;
+  margin: 0;
   overflow-wrap: anywhere;
-  font-size: clamp(1.65rem, 7vw, 2.4rem);
+  font-size: clamp(1.45rem, 7vw, 1.85rem);
   letter-spacing: -0.05em;
-  line-height: 1.15;
+  line-height: 1.2;
 }
 
 .heading p {
-  margin: 0.55rem 0 0;
+  margin: 0.45rem 0 0;
   color: var(--color-ink-soft);
-  line-height: 1.55;
+  font-size: 0.78rem;
+  line-height: 1.5;
+}
+
+.action {
+  padding-top: 0.05rem;
 }
 
 .backLink {
@@ -23,4 +35,14 @@
   color: var(--color-primary-dark);
   font-weight: 750;
   text-decoration: none;
+}
+
+@media (max-width: 330px) {
+  .row {
+    grid-template-columns: 1fr;
+  }
+
+  .action > * {
+    width: 100%;
+  }
 }
