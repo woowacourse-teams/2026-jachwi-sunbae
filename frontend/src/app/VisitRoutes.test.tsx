@@ -911,6 +911,6 @@ describe('FE-4 완료와 마이페이지', () => {
     await user.click(
       screen.getAllByRole('button', { name: '로그아웃' })[1] ?? screen.getByRole('button', { name: '로그아웃' }),
     );
-    expect(await screen.findByRole('button', { name: 'Google로 로그인하기' })).toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: 'Google로 로그인하고 이용하기' })).toBeInTheDocument();
   });
 });
