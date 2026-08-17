@@ -1,6 +1,6 @@
 import { QueryClientProvider } from '@tanstack/react-query';
 import { StrictMode } from 'react';
-import { render, screen, waitFor, within } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { HttpResponse, http } from 'msw';
 import { MemoryRouter } from 'react-router-dom';
@@ -126,11 +126,12 @@ describe('FE-3 체크리스트 탐색과 편집', () => {
     renderAuthenticated('/checklists/new?stage=ONLINE_PHONE');
     await screen.findByRole('heading', { name: '새 체크리스트' });
     expect(screen.getAllByRole('link', { current: 'page' })).toHaveLength(2);
-    await user.click(await screen.findByRole('button', { name: /원룸 제공 항목.*원룸 항목으로 시작/ }));
+    await user.click(await screen.findByRole('button', { name: '원룸 제공 항목으로 시작' }));
     const name = await screen.findByLabelText('체크리스트 이름');
     await user.clear(name);
     await user.type(name, '  전화 확인  ');
-    await user.click(screen.getByRole('button', { name: `${secondOnlineItemFixture.question} 위로 이동` }));
+    screen.getByRole('button', { name: `${secondOnlineItemFixture.question} 순서 변경` }).focus();
+    await user.keyboard('{ArrowUp}');
     await user.click(screen.getByRole('button', { name: '체크리스트 만들기' }));
     expect(await screen.findByRole('heading', { name: '전화 확인', level: 1 })).toBeInTheDocument();
     expect(requestBody).toEqual({
@@ -144,19 +145,13 @@ describe('FE-3 체크리스트 탐색과 편집', () => {
     expect(requestBody).not.toHaveProperty('checkItemIds');
   });
 
-  it('편집 중 시작 방식을 바꾸면 항목 초기화를 확인하고 작성한 이름은 보존한다', async () => {
+  it('시작 방식을 선택한 뒤에는 초기화 버튼을 노출하지 않는다', async () => {
     useCatalogHandlers();
-    const confirm = vi.spyOn(window, 'confirm').mockReturnValue(true);
     const user = userEvent.setup();
     renderAuthenticated('/checklists/new?stage=ONLINE_PHONE');
-    await user.click(await screen.findByRole('button', { name: /원룸 제공 항목.*원룸 항목으로 시작/ }));
-    const name = await screen.findByLabelText('체크리스트 이름');
-    await user.clear(name);
-    await user.type(name, '유지할 이름');
-    await user.click(screen.getByRole('button', { name: '시작 방식 변경 (항목 초기화)' }));
-    expect(confirm).toHaveBeenCalledOnce();
-    await user.click(screen.getByRole('button', { name: /빈 목록.*빈 목록으로 시작/ }));
-    expect(await screen.findByLabelText('체크리스트 이름')).toHaveValue('유지할 이름');
+    await user.click(await screen.findByRole('button', { name: '빈 목록으로 시작' }));
+    expect(await screen.findByLabelText('체크리스트 이름')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: '시작 방식 변경 (항목 초기화)' })).not.toBeInTheDocument();
   });
 
   it('CUSTOM 항목만으로 생성하며 신규 항목에 checklistItemId를 만들지 않는다', async () => {
@@ -190,7 +185,7 @@ describe('FE-3 체크리스트 탐색과 편집', () => {
     );
     const user = userEvent.setup();
     renderAuthenticated('/checklists/new?stage=ONLINE_PHONE');
-    await user.click(await screen.findByRole('button', { name: /빈 목록.*빈 목록으로 시작/ }));
+    await user.click(await screen.findByRole('button', { name: '빈 목록으로 시작' }));
     await user.clear(screen.getByLabelText('체크리스트 이름'));
     await user.type(screen.getByLabelText('체크리스트 이름'), '나만의 질문');
     await user.type(screen.getByLabelText('질문'), '  창틀 곰팡이는 괜찮은가?  ');
@@ -226,10 +221,14 @@ describe('FE-3 체크리스트 탐색과 편집', () => {
     );
     const user = userEvent.setup();
     renderAuthenticated('/checklists/new?stage=ONLINE_PHONE');
-    await user.click(await screen.findByRole('button', { name: /원룸 제공 항목.*원룸 항목으로 시작/ }));
+    await user.click(await screen.findByRole('button', { name: '원룸 제공 항목으로 시작' }));
     await user.type(await screen.findByLabelText('질문'), onlineItemFixture.question);
     await user.click(screen.getByRole('button', { name: '직접 질문 추가' }));
-    await user.click(screen.getAllByRole('button', { name: `${onlineItemFixture.question} 위로 이동` }).at(-1)!);
+    screen
+      .getAllByRole('button', { name: `${onlineItemFixture.question} 순서 변경` })
+      .at(-1)!
+      .focus();
+    await user.keyboard('{ArrowUp}');
     await user.click(screen.getByRole('button', { name: '체크리스트 만들기' }));
     await waitFor(() =>
       expect(requestBody).toEqual({
@@ -346,7 +345,7 @@ describe('FE-3 체크리스트 탐색과 편집', () => {
     useCatalogHandlers();
     const user = userEvent.setup();
     renderAuthenticated('/checklists/new?stage=ONLINE_PHONE');
-    await user.click(await screen.findByRole('button', { name: /원룸 제공 항목.*원룸 항목으로 시작/ }));
+    await user.click(await screen.findByRole('button', { name: '원룸 제공 항목으로 시작' }));
     const customInput = await screen.findByLabelText('질문');
     await user.type(customInput, '같은 질문');
     await user.click(screen.getByRole('button', { name: '직접 질문 추가' }));
@@ -355,6 +354,8 @@ describe('FE-3 체크리스트 탐색과 편집', () => {
     expect(screen.getByLabelText('직접 추가 질문 3')).toHaveValue('같은 질문');
     expect(screen.getByLabelText('직접 추가 질문 4')).toHaveValue('같은 질문');
 
+    await user.click(screen.getByRole('button', { name: '+ 체크 항목 추가' }));
+    expect(screen.getByText('체크 항목 편집')).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: '전체 제공 항목 보기' }));
     const providedCheckbox = await screen.findByRole('checkbox', { name: new RegExp(onlineItemFixture.question) });
     expect(providedCheckbox).toBeChecked();
@@ -372,22 +373,85 @@ describe('FE-3 체크리스트 탐색과 편집', () => {
     );
     const user = userEvent.setup();
     renderAuthenticated('/checklists/7');
-    const moveButton = await screen.findByRole('button', {
-      name: `${customChecklistItemFixture.question} 위로 이동`,
+    const moveHandle = await screen.findByRole('button', {
+      name: `${customChecklistItemFixture.question} 순서 변경`,
     });
-    moveButton.focus();
-    await user.keyboard('{Enter}');
+    moveHandle.focus();
+    await user.keyboard('{ArrowUp}');
     const itemList = screen.getByRole('heading', { name: '확인 순서' }).closest('section')?.querySelector('ol');
     expect(itemList).not.toBeNull();
     expect(within(itemList as HTMLOListElement).getAllByRole('listitem')[0]).toHaveTextContent('직접 추가');
-    expect(screen.getByLabelText('직접 추가 질문 1')).toHaveFocus();
+    expect(moveHandle).toHaveFocus();
+  });
+
+  it('마우스로 순서 조작 핸들을 끌어 혼합 항목 순서를 바꾼다', async () => {
+    server.use(
+      http.get(`${config.apiBaseUrl}/api/checklists/7`, () =>
+        HttpResponse.json(successEnvelope(mixedChecklistDetailFixture)),
+      ),
+      http.get(`${config.apiBaseUrl}/api/check-items`, () =>
+        HttpResponse.json(successEnvelope(checkItemPageFixture([onlineItemFixture]))),
+      ),
+    );
+    renderAuthenticated('/checklists/7');
+    const moveHandle = await screen.findByRole('button', {
+      name: `${customChecklistItemFixture.question} 순서 변경`,
+    });
+    const itemList = screen.getByRole('heading', { name: '확인 순서' }).closest('section')?.querySelector('ol');
+    expect(itemList).not.toBeNull();
+    const rows = within(itemList as HTMLOListElement).getAllByRole('listitem');
+    const firstRow = rows[0];
+
+    Object.defineProperties(moveHandle, {
+      setPointerCapture: { configurable: true, value: vi.fn() },
+      hasPointerCapture: { configurable: true, value: vi.fn(() => false) },
+    });
+    const originalElementFromPoint = document.elementFromPoint;
+    Object.defineProperty(document, 'elementFromPoint', {
+      configurable: true,
+      value: vi.fn(() => firstRow),
+    });
+
+    try {
+      fireEvent.pointerDown(moveHandle, {
+        pointerId: 1,
+        pointerType: 'mouse',
+        isPrimary: true,
+        button: 0,
+        clientX: 0,
+        clientY: 40,
+      });
+      fireEvent.pointerMove(moveHandle, {
+        pointerId: 1,
+        pointerType: 'mouse',
+        isPrimary: true,
+        button: 0,
+        clientX: 0,
+        clientY: 0,
+      });
+      fireEvent.pointerUp(moveHandle, {
+        pointerId: 1,
+        pointerType: 'mouse',
+        isPrimary: true,
+        button: 0,
+        clientX: 0,
+        clientY: 0,
+      });
+    } finally {
+      Object.defineProperty(document, 'elementFromPoint', {
+        configurable: true,
+        value: originalElementFromPoint,
+      });
+    }
+
+    expect(within(itemList as HTMLOListElement).getAllByRole('listitem')[0]).toHaveTextContent('직접 추가');
   });
 
   it('공백 및 200 코드포인트 초과 CUSTOM을 막고 이모지 200자는 허용한다', async () => {
     useCatalogHandlers();
     const user = userEvent.setup();
     renderAuthenticated('/checklists/new?stage=ONLINE_PHONE');
-    await user.click(await screen.findByRole('button', { name: /빈 목록.*빈 목록으로 시작/ }));
+    await user.click(await screen.findByRole('button', { name: '빈 목록으로 시작' }));
     const customInput = screen.getByLabelText('질문');
     await user.type(customInput, '   ');
     await user.click(screen.getByRole('button', { name: '직접 질문 추가' }));
@@ -418,7 +482,7 @@ describe('FE-3 체크리스트 탐색과 편집', () => {
     );
     const user = userEvent.setup();
     renderAuthenticated('/checklists/new?stage=ONLINE_PHONE');
-    await user.click(await screen.findByRole('button', { name: /빈 목록.*빈 목록으로 시작/ }));
+    await user.click(await screen.findByRole('button', { name: '빈 목록으로 시작' }));
     const customInput = screen.getByLabelText('질문');
     await user.type(customInput, '아직 목록에 넣지 않은 질문');
     await user.click(screen.getByRole('button', { name: '체크리스트 만들기' }));
@@ -459,7 +523,8 @@ describe('FE-3 체크리스트 탐색과 편집', () => {
     await user.type(name, '실패해도 남는 이름');
     await user.clear(custom);
     await user.type(custom, '수정 중인 질문');
-    await user.click(screen.getByRole('button', { name: '수정 중인 질문 위로 이동' }));
+    screen.getByRole('button', { name: '수정 중인 질문 순서 변경' }).focus();
+    await user.keyboard('{ArrowUp}');
     await user.click(screen.getByRole('button', { name: '변경 내용 저장' }));
     expect(await screen.findByRole('alert')).toHaveTextContent('작성한 내용은 그대로 유지');
     expect(name).toHaveValue('실패해도 남는 이름');
@@ -566,7 +631,7 @@ describe('FE-3 체크리스트 탐색과 편집', () => {
     const name = await screen.findByLabelText('체크리스트 이름');
     await user.clear(name);
     await user.type(name, '저장하지 않은 이름');
-    await user.click(screen.getByRole('link', { name: '← 목록' }));
+    await user.click(screen.getByRole('link', { name: '체크리스트 목록으로 돌아가기' }));
     expect(confirm).toHaveBeenCalledOnce();
     expect(screen.getByLabelText('체크리스트 이름')).toHaveValue('저장하지 않은 이름');
   });
