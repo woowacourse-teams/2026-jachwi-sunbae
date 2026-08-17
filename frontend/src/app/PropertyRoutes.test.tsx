@@ -61,8 +61,7 @@ describe('FE-2 매물 목록', () => {
     renderAuthenticated('/properties');
 
     expect(await screen.findByText('아직 등록한 매물이 없어요.')).toBeInTheDocument();
-    await user.type(screen.getByRole('textbox', { name: '매물 이름 검색' }), '없는 매물');
-    await user.click(screen.getByRole('button', { name: '검색' }));
+    await user.type(screen.getByRole('textbox', { name: '매물 이름 검색' }), '없는 매물{Enter}');
     expect(await screen.findByText('검색 결과가 없어요.')).toBeInTheDocument();
   });
 
@@ -72,12 +71,51 @@ describe('FE-2 매물 목록', () => {
         HttpResponse.json(successEnvelope(propertyPageFixture([propertySummaryFixture, secondPropertySummaryFixture]))),
       ),
     );
+    const user = userEvent.setup();
     renderAuthenticated('/properties');
 
     expect(await screen.findByRole('link', { name: '신림역 원룸' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: '망원동 투룸' })).toBeInTheDocument();
-    expect(screen.getByText('방문 완료')).toBeInTheDocument();
+    expect(screen.queryByText('방문 완료')).not.toBeInTheDocument();
+    expect(screen.getAllByText('미완료')).toHaveLength(2);
+    expect(screen.getByRole('list', { name: '최근 방문 결과 집계' })).toHaveTextContent('괜찮음 10');
+    expect(screen.getByRole('list', { name: '최근 방문 결과 집계' })).toHaveTextContent('주의 5');
+    expect(screen.getByRole('list', { name: '최근 방문 결과 집계' })).toHaveTextContent('미확인 7');
     expect(screen.getByText('아직 방문 확인 기록이 없어요.')).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: '완료' }));
+    expect(screen.getByRole('link', { name: '신림역 원룸' })).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: '망원동 투룸' })).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: '미완료' }));
+    expect(screen.queryByRole('link', { name: '신림역 원룸' })).not.toBeInTheDocument();
+    expect(screen.getByRole('link', { name: '망원동 투룸' })).toBeInTheDocument();
+  });
+
+  it('전체 개수와 서버가 반환한 순서를 목록에 반영한다', async () => {
+    server.use(
+      http.get(`${config.apiBaseUrl}/api/properties`, () =>
+        HttpResponse.json(
+          successEnvelope(
+            propertyPageFixture([
+              { ...propertySummaryFixture, lastActivityAt: '2026-08-12T07:30:00Z' },
+              { ...secondPropertySummaryFixture, lastActivityAt: '2026-08-09T07:30:00Z' },
+            ]),
+          ),
+        ),
+      ),
+    );
+    renderAuthenticated('/properties');
+
+    expect(
+      await screen.findByText((_, element) => element?.tagName === 'SPAN' && element.textContent === '전체 2'),
+    ).toBeInTheDocument();
+    const list = screen.getByRole('region', { name: '매물 목록' });
+    expect(
+      within(list)
+        .getAllByRole('link')
+        .map((link) => link.getAttribute('aria-label')),
+    ).toEqual(['신림역 원룸', '망원동 투룸']);
   });
 
   it('검색 변경 시 늦은 이전 응답이 새 검색 결과를 덮어쓰지 않는다', async () => {
@@ -98,10 +136,10 @@ describe('FE-2 매물 목록', () => {
     const searchbox = await screen.findByRole('textbox', { name: '매물 이름 검색' });
 
     await user.type(searchbox, '느린 검색');
-    await user.click(screen.getByRole('button', { name: '검색' }));
+    await user.keyboard('{Enter}');
     await user.clear(searchbox);
     await user.type(searchbox, '  망원  ');
-    await user.click(screen.getByRole('button', { name: '검색' }));
+    await user.keyboard('{Enter}');
 
     expect(await screen.findByRole('link', { name: '망원동 투룸' })).toBeInTheDocument();
     await delay(150);
