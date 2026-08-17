@@ -2,7 +2,7 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { MemoryRouter } from 'react-router-dom';
 import App from '../App';
-import { setAuthentication } from '../app/authStore';
+import { clearAuthentication, setAuthentication } from '../app/authStore';
 import {
   checkItemPageFixture,
   checklistPageFixture,
@@ -69,7 +69,9 @@ const routeByScenario: Record<string, string> = {
 };
 
 window.history.replaceState(null, '', routeByScenario[scenario] ?? '/properties');
-if (scenario !== 'login' && scenario !== 'components') {
+if (scenario === 'login') {
+  clearAuthentication(null);
+} else if (scenario !== 'components') {
   setAuthentication({ accessToken: 'browser-test-memory-token', tokenType: 'Bearer', expiresIn: 60 * 60 });
 }
 
