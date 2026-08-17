@@ -82,7 +82,7 @@
   padding: 1.5rem;
   border: 1px dashed var(--color-border);
   border-radius: var(--radius-lg);
-  background: rgb(255 253 250 / 72%);
+  background: color-mix(in srgb, var(--color-surface) 72%, transparent);
   color: var(--color-ink-soft);
   text-align: center;
 }
@@ -98,7 +98,7 @@
 }
 
 .content-state--error {
-  border-color: rgb(168 59 50 / 35%);
+  border-color: color-mix(in srgb, var(--color-error) 35%, transparent);
   background: var(--color-error-surface);
 }
 
@@ -150,7 +150,6 @@
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
   background: var(--color-surface);
-  box-shadow: var(--shadow-soft);
   color: var(--color-ink);
   text-decoration: none;
 }
@@ -166,15 +165,15 @@
 .visit-detail-meta > span {
   padding: 0.35rem 0.6rem;
   border-radius: 999px;
-  background: #fff0ce;
-  color: #75520a;
+  background: var(--color-warning-surface);
+  color: var(--color-warning-ink);
   font-size: 0.72rem;
   font-weight: 850;
 }
 
 .visit-record-list__heading > span[data-status='COMPLETED'],
 .visit-detail-meta > span[data-status='COMPLETED'] {
-  background: #e8f2df;
+  background: var(--color-success-surface);
   color: var(--color-success);
 }
 
@@ -212,7 +211,7 @@
   padding: 0.8rem;
   border-left: 3px solid var(--color-success);
   border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
-  background: #eef6e9;
+  background: var(--color-success-surface);
   color: var(--color-success);
   font-size: 0.82rem;
   line-height: 1.55;
@@ -245,8 +244,8 @@
 }
 
 .visit-stage-tabs button[aria-selected='true'] {
-  background: var(--color-primary-dark);
-  color: #fff;
+  background: var(--color-theme-accent);
+  color: var(--color-on-brand-soft);
 }
 
 .visit-stage-tabs small {
@@ -259,7 +258,6 @@
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
   background: var(--color-surface);
-  box-shadow: var(--shadow-soft);
 }
 
 .visit-stage-panel__heading {
@@ -287,7 +285,7 @@
   padding: 1rem;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
-  background: #fff;
+  background: var(--color-surface);
 }
 
 .visit-item-card[data-pending='true'] {
@@ -360,37 +358,36 @@
 }
 
 .visit-status-options label:has(input:focus-visible) {
-  outline: 3px solid #1859a9;
+  outline: 3px solid var(--color-focus);
   outline-offset: 3px;
 }
 
 .visit-status-options label:has(input:checked) {
   border-color: var(--color-primary);
   background: var(--color-surface-muted);
-  box-shadow: 0 0 0 2px rgb(100 127 61 / 12%);
 }
 
 .visit-status-options label[data-status='CAUTION']:has(input:checked) {
-  border-color: #b37b06;
-  background: #fff7e3;
+  border-color: var(--color-warning);
+  background: var(--color-warning-surface);
 }
 
 .visit-status-options label[data-status='UNCONFIRMED']:has(input:checked) {
-  border-color: #8b8c83;
-  background: #f2f1ed;
+  border-color: var(--color-check-unconfirmed-ink);
+  background: var(--color-surface-muted);
 }
 
 .visit-status-options label > span {
-  color: var(--color-success);
+  color: var(--color-check-good-ink);
   font-size: 1.1rem;
 }
 
 .visit-status-options label[data-status='CAUTION'] > span {
-  color: #9b6a00;
+  color: var(--color-check-caution-ink);
 }
 
 .visit-status-options label[data-status='UNCONFIRMED'] > span {
-  color: var(--color-muted);
+  color: var(--color-check-unconfirmed-ink);
 }
 
 .visit-status-options strong {
@@ -501,7 +498,6 @@
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
   background: var(--color-surface);
-  box-shadow: var(--shadow-soft);
 }
 
 .upcoming-feature-card h2 {
@@ -604,7 +600,6 @@
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
   background: var(--color-surface);
-  box-shadow: 0 0.3rem 0.9rem rgb(55 44 20 / 5%);
 }
 
 .section-eyebrow {
@@ -692,23 +687,8 @@
   margin-top: 0.8rem;
 }
 
-.detail-photo-preview-button {
-  display: block;
-  width: 100%;
-  padding: 0;
-  border: 0;
-  background: transparent;
-  cursor: zoom-in;
-}
-
-.detail-photo-preview-button:focus-visible {
-  border-radius: var(--radius-md);
-  outline: 2px solid var(--color-focus);
-  outline-offset: 3px;
-}
-
 .authenticated-photo--error {
-  border: 1px solid rgb(168 59 50 / 28%);
+  border: 1px solid color-mix(in srgb, var(--color-error) 28%, transparent);
   background: var(--color-error-surface);
   color: var(--color-error);
 }
@@ -859,7 +839,6 @@
 }
 
 .checklist-list,
-.preset-options,
 .selected-check-items,
 .check-item-search-results {
   display: grid;
@@ -883,7 +862,6 @@
   cursor: pointer;
 }
 
-.preset-section,
 .editor-section,
 .item-picker,
 .current-connection {
@@ -892,10 +870,8 @@
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
   background: var(--color-surface);
-  box-shadow: 0 0.3rem 0.9rem rgb(55 44 20 / 5%);
 }
 
-.preset-section h2,
 .editor-section h2,
 .item-picker h2,
 .current-connection h2,
@@ -904,35 +880,10 @@
   font-size: 1.15rem;
 }
 
-.preset-section > p:not(.section-eyebrow),
 .current-connection p:not(.section-eyebrow) {
   color: var(--color-ink-soft);
   font-size: 0.82rem;
   line-height: 1.55;
-}
-
-.preset-options button {
-  display: grid;
-  gap: 0.3rem;
-  width: 100%;
-  padding: 1rem;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  background: var(--color-surface-muted);
-  color: var(--color-ink);
-  text-align: left;
-  cursor: pointer;
-}
-
-.preset-options button span,
-.preset-options button small {
-  color: var(--color-ink-soft);
-}
-
-.preset-options button small {
-  margin-top: 0.3rem;
-  color: var(--color-primary-dark);
-  font-weight: 800;
 }
 
 .preset-change-button {
@@ -1176,11 +1127,6 @@
   text-align: center;
 }
 
-.compact-state--error {
-  background: var(--color-error-surface);
-  color: var(--color-error);
-}
-
 .checklist-editor__empty-items {
   min-height: auto;
   justify-content: flex-start;
@@ -1191,6 +1137,11 @@
   font-size: 0.7rem;
   line-height: 1.5;
   text-align: left;
+}
+
+.compact-state--error {
+  background: var(--color-error-surface);
+  color: var(--color-error);
 }
 
 .compact-state--column {
@@ -1249,7 +1200,6 @@
 .item-picker__add {
   width: 100%;
   min-height: 2.75rem;
-  margin-top: 0.75rem;
   padding-top: 0.55rem;
   padding-bottom: 0.55rem;
 }
@@ -1312,8 +1262,7 @@
   padding: 0.65rem;
   border: 1px solid var(--color-border);
   border-radius: 999px;
-  background: rgb(255 253 250 / 94%);
-  box-shadow: var(--shadow-soft);
+  background: var(--color-surface-translucent);
   backdrop-filter: blur(10px);
 }
 
@@ -1371,7 +1320,7 @@
   padding: 0.3rem 0.45rem;
   border-radius: 999px;
   background: var(--color-primary);
-  color: #fff;
+  color: var(--color-on-primary);
   font-size: 0.65rem;
   font-style: normal;
   font-weight: 800;
@@ -1388,7 +1337,7 @@
 }
 
 .danger-section {
-  border-color: rgb(168 59 50 / 32%);
+  border-color: color-mix(in srgb, var(--color-error) 32%, transparent);
 }
 
 .danger-section ul {
@@ -1414,7 +1363,7 @@
 .danger-button {
   border: 0;
   background: var(--color-error);
-  color: #fff;
+  color: var(--color-on-primary);
 }
 
 .file-input {
@@ -1448,7 +1397,7 @@
   justify-content: space-between;
   gap: 0.7rem;
   padding: 0.55rem 0;
-  border-top: 1px solid rgb(100 127 61 / 15%);
+  border-top: 1px solid color-mix(in srgb, var(--color-primary) 15%, transparent);
   font-size: 0.78rem;
 }
 
@@ -1489,8 +1438,8 @@
   padding: 0.35rem;
   border: 0;
   border-radius: 999px;
-  background: rgb(31 36 25 / 82%);
-  color: #fff;
+  background: var(--color-overlay-strong);
+  color: var(--color-on-primary);
   font-size: 0.72rem;
   cursor: pointer;
 }
@@ -1498,7 +1447,7 @@
 .primary-link,
 .primary-button {
   background: var(--color-primary-dark);
-  color: #fff;
+  color: var(--color-on-primary);
 }
 
 .secondary-button {
@@ -1512,7 +1461,7 @@
 .spinner {
   width: 1.4rem;
   height: 1.4rem;
-  border: 3px solid rgb(100 127 61 / 24%);
+  border: 3px solid color-mix(in srgb, var(--color-primary) 24%, transparent);
   border-top-color: var(--color-primary);
   border-radius: 50%;
   animation: spin 800ms linear infinite;
@@ -1553,8 +1502,7 @@
 
 @media (max-width: 340px) {
   .property-page {
-    padding-right: 0.7rem;
-    padding-left: 0.7rem;
+    --page-inline-padding: 0.7rem;
   }
 
   .checklist-summary-list li {
