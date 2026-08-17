@@ -1,6 +1,7 @@
 declare const __API_BASE_URL__: string;
 declare const __GOOGLE_CLIENT_ID__: string;
 declare const __GOOGLE_REDIRECT_URI__: string;
+declare const __ENABLE_MSW__: boolean;
 
 declare module '*.svg' {
   const source: string;
