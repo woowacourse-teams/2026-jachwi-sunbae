@@ -79,11 +79,17 @@ const memoUpdateResult = (visitItemId: number, memo: string, version: number) =>
 });
 
 describe('FE-4 방문 시작과 목록', () => {
-  it('활성 체크리스트 스냅샷 정책을 확인한 뒤 새 방문 상세로 이동한다', async () => {
+  it('연결된 체크리스트를 누르면 새 방문 상세로 이동한다', async () => {
     let startCalls = 0;
     server.use(
       http.get(`${config.apiBaseUrl}/api/properties/10`, () =>
-        HttpResponse.json(successEnvelope(propertyDetailFixture)),
+        HttpResponse.json(
+          successEnvelope({
+            ...propertyDetailFixture,
+            activeChecklists: [{ stage: 'ONLINE_PHONE', checklistId: 7, name: '전화 문의 기본 목록', itemCount: 2 }],
+            recentVisit: null,
+          }),
+        ),
       ),
       http.post(`${config.apiBaseUrl}/api/properties/10/visits`, () => {
         startCalls += 1;
@@ -98,11 +104,7 @@ describe('FE-4 방문 시작과 목록', () => {
     const user = userEvent.setup();
     renderAuthenticated('/properties/10');
 
-    await user.click(await screen.findByRole('button', { name: '새 방문 시작' }));
-    const dialog = screen.getByRole('dialog', { name: '신림역 원룸 방문을 시작할까요?' });
-    expect(within(dialog).getByText(/질문을 지금 상태 그대로 복사/)).toBeInTheDocument();
-    expect(within(dialog).getByText(/원본 체크리스트를 나중에 수정·교체·삭제해도/)).toBeInTheDocument();
-    await user.click(within(dialog).getByRole('button', { name: '방문 시작' }));
+    await user.click(await screen.findByRole('button', { name: '온라인·전화 체크 시작' }));
 
     expect(await screen.findByRole('heading', { name: '신림역 원룸 방문', level: 1 })).toBeInTheDocument();
     expect(startCalls).toBe(1);

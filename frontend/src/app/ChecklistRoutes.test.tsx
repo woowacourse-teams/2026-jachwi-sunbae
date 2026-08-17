@@ -639,18 +639,67 @@ describe('FE-3 체크리스트 탐색과 편집', () => {
 });
 
 describe('FE-3 매물 활성 체크리스트', () => {
-  it('매물 상세에 연결이 없는 단계까지 세 단계 모두 표시한다', async () => {
+  it('진행 중 방문이 있으면 연결된 단계에서 해당 체크 화면으로 바로 이동한다', async () => {
+    server.use(
+      http.get(`${config.apiBaseUrl}/api/properties/10`, () =>
+        HttpResponse.json(
+          successEnvelope({
+            ...propertyDetailFixture,
+            activeChecklists: [{ stage: 'ONLINE_PHONE', checklistId: 7, name: '전화 문의 기본 목록', itemCount: 2 }],
+            recentVisit: {
+              ...propertyDetailFixture.recentVisit,
+              status: 'IN_PROGRESS',
+              completedAt: null,
+            },
+            photoPreview: { totalCount: 0, photos: [] },
+          }),
+        ),
+      ),
+      http.get(`${config.apiBaseUrl}/api/visits/31`, () =>
+        HttpResponse.json(successEnvelope({ ...visitDetailFixture, status: 'IN_PROGRESS', completedAt: null })),
+      ),
+    );
+    renderAuthenticated('/properties/10');
+    expect(await screen.findByRole('link', { name: '온라인·전화 체크하기' })).toHaveAttribute(
+      'href',
+      '/visits/31?stage=ONLINE_PHONE',
+    );
+    expect(screen.getByRole('link', { name: '계약 전 체크리스트 연결' }).parentElement).toHaveClass(
+      /unlinkedChecklist/,
+    );
+  });
+
+  it('매물 상세에서 세 단계와 최근 체크 결과를 한 번에 확인한다', async () => {
     server.use(
       http.get(`${config.apiBaseUrl}/api/properties/10`, () =>
         HttpResponse.json(successEnvelope({ ...propertyDetailFixture, photoPreview: { totalCount: 0, photos: [] } })),
       ),
+      http.get(`${config.apiBaseUrl}/api/visits/31`, () => HttpResponse.json(successEnvelope(visitDetailFixture))),
     );
     renderAuthenticated('/properties/10');
-    const section = await screen.findByRole('heading', { name: '현재 연결된 확인 단계' });
+    const section = await screen.findByRole('heading', { name: '체크리스트' });
     const container = section.closest('section');
     expect(container).not.toBeNull();
-    expect(within(container as HTMLElement).getAllByRole('listitem')).toHaveLength(3);
-    expect(within(container as HTMLElement).getAllByText('연결된 체크리스트 없음')).toHaveLength(2);
+    expect(within(container as HTMLElement).getByRole('link', { name: '연결 관리' })).toHaveAttribute(
+      'href',
+      '/properties/10/active-checklists/ONLINE_PHONE',
+    );
+    expect(within(container as HTMLElement).getAllByRole('tab')).toHaveLength(3);
+    expect(await within(container as HTMLElement).findByText('관리비 포함 항목을 확인했나요?')).toBeInTheDocument();
+    expect(within(container as HTMLElement).getAllByText('연결된 체크리스트 없음')).toHaveLength(1);
+    expect(within(container as HTMLElement).getByText('밤 소음도 다시 확인')).toBeInTheDocument();
+    expect(within(container as HTMLElement).getByRole('link', { name: '온라인·전화 체크하기' })).toHaveAttribute(
+      'href',
+      '/visits/31?stage=ONLINE_PHONE',
+    );
+    expect(within(container as HTMLElement).getByRole('link', { name: '집에서 확인 체크하기' })).toHaveAttribute(
+      'href',
+      '/visits/31?stage=ON_SITE',
+    );
+    expect(within(container as HTMLElement).getByRole('link', { name: '계약 전 체크리스트 연결' })).toHaveAttribute(
+      'href',
+      '/properties/10/active-checklists/PRE_CONTRACT',
+    );
   });
 
   it('목록 선택만으로는 API-401을 호출하지 않고 최종 확인 때 연결한다', async () => {
