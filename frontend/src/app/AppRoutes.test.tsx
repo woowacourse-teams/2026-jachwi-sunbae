@@ -253,7 +253,9 @@ describe('FE-1 인증 흐름', () => {
     server.use(http.get(`${config.apiBaseUrl}/api/members/me`, () => HttpResponse.json(successEnvelope(member))));
     renderRoutes('/');
 
-    await user.click(await screen.findByRole('button', { name: '로그아웃' }));
+    await user.click(await screen.findByRole('link', { name: '마이' }));
+    await screen.findByRole('heading', { name: '마이페이지' });
+    await user.click(screen.getByRole('button', { name: '로그아웃' }));
 
     expect(await screen.findByRole('button', { name: 'Google로 로그인하고 이용하기' })).toBeInTheDocument();
     expect(getAccessToken()).toBeNull();
