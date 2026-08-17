@@ -27,9 +27,22 @@
   line-height: 1.45;
 }
 
+.control input,
+.control textarea {
+  cursor: text;
+}
+
 .control input::placeholder,
 .control textarea::placeholder {
   color: var(--color-placeholder);
+  font-size: 0.82rem;
+}
+
+.control input:focus-visible,
+.control textarea:focus-visible {
+  border-color: color-mix(in srgb, var(--color-focus) 58%, var(--color-border-strong));
+  outline: 0;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-focus) 10%, transparent);
 }
 
 .control input[aria-invalid='true'],

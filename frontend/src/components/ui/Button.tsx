@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import type { LinkProps } from 'react-router-dom';
 import styles from './Button.module.css';
 
-export type ButtonVariant = 'primary' | 'secondary' | 'text';
+export type ButtonVariant = 'primary' | 'soft' | 'secondary' | 'neutral' | 'danger' | 'text';
 
 type SharedButtonProps = {
   children: ReactNode;

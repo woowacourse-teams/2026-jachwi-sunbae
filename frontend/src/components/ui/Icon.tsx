@@ -1,19 +1,19 @@
 export type IconName =
   | 'arrow-left'
   | 'arrow-right'
-  | 'check-circle'
   | 'checklist'
   | 'close'
+  | 'edit'
   | 'home'
   | 'image'
   | 'inbox'
   | 'info'
+  | 'external-link'
+  | 'link'
   | 'more-vertical'
-  | 'pending-circle'
   | 'plus'
   | 'search'
-  | 'user'
-  | 'warning-triangle';
+  | 'user';
 
 type IconProps = {
   name: IconName;
@@ -37,13 +37,6 @@ const IconPaths = ({ name }: { name: IconName }) => {
           <path d="M5 12h10" />
         </>
       );
-    case 'check-circle':
-      return (
-        <>
-          <circle cx="12" cy="12" r="9" />
-          <path d="m8 12 2.6 2.6L16.5 9" />
-        </>
-      );
     case 'checklist':
       return (
         <>
@@ -60,6 +53,13 @@ const IconPaths = ({ name }: { name: IconName }) => {
         <>
           <path d="m7 7 10 10" />
           <path d="M17 7 7 17" />
+        </>
+      );
+    case 'edit':
+      return (
+        <>
+          <path d="M12 20h9" />
+          <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L8 18l-4 1 1-4Z" />
         </>
       );
     case 'home':
@@ -93,19 +93,27 @@ const IconPaths = ({ name }: { name: IconName }) => {
           <path d="M12 8h.01" />
         </>
       );
+    case 'external-link':
+      return (
+        <>
+          <path d="M14 4h6v6" />
+          <path d="m20 4-9 9" />
+          <path d="M18 13v6a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h6" />
+        </>
+      );
+    case 'link':
+      return (
+        <>
+          <path d="M10 13a5 5 0 0 0 7.5.5l2-2a5 5 0 0 0-7-7l-1.1 1.1" />
+          <path d="M14 11a5 5 0 0 0-7.5-.5l-2 2a5 5 0 0 0 7 7l1.1-1.1" />
+        </>
+      );
     case 'more-vertical':
       return (
         <>
           <circle cx="12" cy="5" r="1" fill="currentColor" stroke="none" />
           <circle cx="12" cy="12" r="1" fill="currentColor" stroke="none" />
           <circle cx="12" cy="19" r="1" fill="currentColor" stroke="none" />
-        </>
-      );
-    case 'pending-circle':
-      return (
-        <>
-          <circle cx="12" cy="12" r="9" />
-          <path d="M12 7v5l3 2" />
         </>
       );
     case 'plus':
@@ -127,14 +135,6 @@ const IconPaths = ({ name }: { name: IconName }) => {
         <>
           <circle cx="12" cy="8" r="4" />
           <path d="M4.5 21a7.5 7.5 0 0 1 15 0" />
-        </>
-      );
-    case 'warning-triangle':
-      return (
-        <>
-          <path d="M10.3 4.2 2.8 18a2 2 0 0 0 1.8 3h14.8a2 2 0 0 0 1.8-3L13.7 4.2a2 2 0 0 0-3.4 0Z" />
-          <path d="M12 9v4" />
-          <path d="M12 17h.01" />
         </>
       );
   }

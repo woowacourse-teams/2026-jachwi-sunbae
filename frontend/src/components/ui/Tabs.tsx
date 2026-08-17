@@ -1,4 +1,4 @@
-import type { HTMLAttributes, ReactNode } from 'react';
+import type { ButtonHTMLAttributes, HTMLAttributes, ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import type { LinkProps } from 'react-router-dom';
 import styles from './Tabs.module.css';
@@ -13,6 +13,11 @@ type TabListProps = HTMLAttributes<HTMLElement> & {
 };
 
 type TabProps = Omit<LinkProps, 'children'> & {
+  children: ReactNode;
+  selected?: boolean;
+};
+
+type TabButtonProps = Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'children'> & {
   children: ReactNode;
   selected?: boolean;
 };
@@ -33,4 +38,10 @@ export const Tab = ({ children, selected = false, className, ...props }: TabProp
   <Link {...props} className={`${styles.tab} ${className ?? ''}`} aria-current={selected ? 'page' : undefined}>
     {children}
   </Link>
+);
+
+export const TabButton = ({ children, selected = false, className, type = 'button', ...props }: TabButtonProps) => (
+  <button {...props} type={type} role="tab" className={`${styles.tab} ${className ?? ''}`} aria-selected={selected}>
+    {children}
+  </button>
 );

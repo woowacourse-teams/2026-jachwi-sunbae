@@ -19,8 +19,8 @@
 }
 
 .warning {
-  background: #fff7dc;
-  color: #75520a;
+  background: var(--color-warning-surface);
+  color: var(--color-warning-ink);
 }
 
 .error {

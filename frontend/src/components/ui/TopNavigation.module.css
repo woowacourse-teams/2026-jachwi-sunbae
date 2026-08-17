@@ -7,6 +7,21 @@
   margin-bottom: 0.65rem;
 }
 
+.root[data-has-back='true'] {
+  position: relative;
+  min-height: var(--app-bar-height);
+}
+
+.root[data-has-back='true'] .title {
+  position: absolute;
+  left: 50%;
+  width: min(60%, 14rem);
+  transform: translateX(-50%);
+  font-size: 0.95rem;
+  text-align: center;
+  pointer-events: none;
+}
+
 .leading {
   display: flex;
   min-width: 0;
@@ -20,7 +35,11 @@
   height: 2.25rem;
   flex: 0 0 auto;
   margin-left: -0.55rem;
+  padding: 0;
+  border: 0;
+  background: transparent;
   color: var(--color-ink);
+  cursor: pointer;
   place-items: center;
   text-decoration: none;
 }

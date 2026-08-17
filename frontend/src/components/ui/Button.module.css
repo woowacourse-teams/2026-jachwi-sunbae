@@ -21,12 +21,21 @@
 
 .primary {
   background: var(--color-primary-dark);
-  color: #fff;
-  box-shadow: var(--shadow-button);
+  color: var(--color-on-primary);
 }
 
 .primary:hover:not(:disabled) {
   background: var(--color-ink);
+}
+
+.soft {
+  background: var(--color-action);
+  color: var(--color-on-action);
+  font-weight: 750;
+}
+
+.soft:hover:not(:disabled) {
+  background: var(--color-action-hover);
 }
 
 .secondary {
@@ -37,6 +46,25 @@
 
 .secondary:hover:not(:disabled) {
   background: var(--color-surface-muted);
+}
+
+.neutral {
+  border-color: transparent;
+  background: var(--color-surface-neutral);
+  color: var(--color-ink-soft);
+}
+
+.neutral:hover:not(:disabled) {
+  background: var(--color-surface-disabled);
+}
+
+.danger {
+  background: var(--color-error);
+  color: var(--color-on-primary);
+}
+
+.danger:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--color-error) 84%, var(--color-ink));
 }
 
 .text {
@@ -54,15 +82,16 @@
 .spinner {
   width: 1rem;
   height: 1rem;
-  border: 2px solid rgb(255 255 255 / 36%);
+  border: 2px solid color-mix(in srgb, var(--color-on-primary) 36%, transparent);
   border-top-color: currentColor;
   border-radius: 50%;
   animation: spin 700ms linear infinite;
 }
 
 .secondary .spinner,
+.neutral .spinner,
 .text .spinner {
-  border-color: rgb(63 86 40 / 22%);
+  border-color: color-mix(in srgb, var(--color-primary) 22%, transparent);
   border-top-color: currentColor;
 }
 

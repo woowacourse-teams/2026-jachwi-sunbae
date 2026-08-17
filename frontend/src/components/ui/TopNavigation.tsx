@@ -7,20 +7,40 @@ type TopNavigationProps = {
   title: string;
   meta?: ReactNode;
   backTo?: string;
+  onBack?: () => void;
   backLabel?: string;
+  navigationIcon?: 'arrow-left' | 'close';
   endSlot?: ReactNode;
   className?: string;
 };
 
-const TopNavigation = ({ title, meta, backTo, backLabel = '뒤로 가기', endSlot, className }: TopNavigationProps) => (
-  <header className={`${styles.root} ${className ?? ''}`}>
+const TopNavigation = ({
+  title,
+  meta,
+  backTo,
+  onBack,
+  backLabel = '뒤로 가기',
+  navigationIcon = 'arrow-left',
+  endSlot,
+  className,
+}: TopNavigationProps) => (
+  <header
+    className={`${styles.root} ${className ?? ''}`}
+    data-has-back={backTo !== undefined || onBack !== undefined ? 'true' : 'false'}
+  >
     <div className={styles.leading}>
-      {backTo !== undefined && (
+      {onBack !== undefined ? (
+        <button className={styles.backLink} type="button" aria-label={backLabel} onClick={onBack}>
+          <Icon name={navigationIcon} size={21} />
+        </button>
+      ) : backTo !== undefined ? (
         <Link className={styles.backLink} to={backTo} aria-label={backLabel}>
-          <Icon name="arrow-left" size={21} />
+          <Icon name={navigationIcon} size={21} />
         </Link>
-      )}
-      <strong className={styles.title}>{title}</strong>
+      ) : null}
+      <strong className={styles.title} title={title}>
+        {title}
+      </strong>
     </div>
     {(meta !== undefined || endSlot !== undefined) && (
       <div className={styles.endSlot}>

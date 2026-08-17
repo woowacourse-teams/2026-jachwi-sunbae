@@ -6,7 +6,7 @@
   grid-template-columns: 3rem minmax(0, 1fr) 3rem;
   min-height: var(--app-bar-height);
   align-items: center;
-  background: rgb(255 255 255 / 96%);
+  background: var(--color-surface-translucent);
   backdrop-filter: blur(12px);
 }
 

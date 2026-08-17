@@ -8,6 +8,7 @@ type SearchFieldProps = {
   value: string;
   placeholder?: string;
   maxLength?: number;
+  disabled?: boolean;
   onValueChange: (value: string) => void;
   onSubmit: () => void;
   onClear?: () => void;
@@ -19,6 +20,7 @@ const SearchField = ({
   value,
   placeholder,
   maxLength,
+  disabled = false,
   onValueChange,
   onSubmit,
   onClear,
@@ -50,17 +52,18 @@ const SearchField = ({
         id={inputId}
         value={value}
         maxLength={maxLength}
+        disabled={disabled}
         placeholder={placeholder}
         enterKeyHint="search"
         onChange={(event) => onValueChange(event.target.value)}
       />
       {value.length > 0 && (
-        <button className={styles.clear} type="button" aria-label="검색어 지우기" onClick={clear}>
+        <button className={styles.clear} type="button" aria-label="검색어 지우기" disabled={disabled} onClick={clear}>
           <Icon name="close" size={17} />
         </button>
       )}
       {showSubmitButton && (
-        <button className={styles.submit} type="submit">
+        <button className={styles.submit} type="submit" disabled={disabled}>
           검색
         </button>
       )}

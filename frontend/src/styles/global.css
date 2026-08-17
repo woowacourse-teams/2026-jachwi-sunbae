@@ -16,14 +16,14 @@
 
 html {
   min-height: 100%;
-  background: var(--color-canvas);
+  background: var(--color-surface);
 }
 
 body {
   min-height: 100vh;
   margin: 0;
   overflow-x: hidden;
-  background: var(--color-canvas);
+  background: var(--color-surface);
 }
 
 #root {
@@ -43,7 +43,7 @@ button:focus-visible,
 a:focus-visible,
 input:focus-visible,
 textarea:focus-visible {
-  outline: 3px solid #1859a9;
+  outline: 3px solid var(--color-focus);
   outline-offset: 3px;
 }
 

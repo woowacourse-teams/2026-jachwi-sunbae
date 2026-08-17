@@ -11,6 +11,14 @@ import styles from './ComponentCatalog.module.css';
 
 const ComponentCatalog = () => {
   const [query, setQuery] = useState('신림역');
+  const colors = [
+    { label: 'Brand', token: '--color-brand-300', value: '#CBEFB6' },
+    { label: 'Brand surface', token: '--color-surface-brand', value: '#EDF9E6' },
+    { label: 'Primary', token: '--color-primary', value: '#3F7C1B' },
+    { label: 'Primary strong', token: '--color-primary-strong', value: '#326316' },
+    { label: 'Ink', token: '--color-ink', value: '#171C18' },
+    { label: 'Muted', token: '--color-muted', value: '#69736B' },
+  ];
 
   return (
     <div className={styles.canvas}>
@@ -24,9 +32,25 @@ const ComponentCatalog = () => {
           </header>
 
           <section className={styles.section}>
+            <h2>Color</h2>
+            <div className={styles.colorGrid}>
+              {colors.map((color) => (
+                <div className={styles.colorItem} key={color.token}>
+                  <span className={styles.colorSwatch} style={{ background: `var(${color.token})` }} />
+                  <span>
+                    <strong>{color.label}</strong>
+                    <small>{color.value}</small>
+                  </span>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          <section className={styles.section}>
             <h2>Button</h2>
             <div className={styles.inlineExamples}>
               <Button>확인</Button>
+              <Button variant="soft">저장</Button>
               <Button variant="secondary">취소</Button>
               <Button variant="text">나중에</Button>
             </div>
@@ -43,7 +67,7 @@ const ComponentCatalog = () => {
             <TextField label="매물 이름" placeholder="예: 신림역 원룸" />
             <TextField label="보증금" defaultValue="10,000,000" suffix="원" helpText="숫자만 입력해 주세요." />
             <TextField label="오류 상태" defaultValue="" error="필수 입력값입니다." />
-            <TextAreaField label="발견 경로" rows={3} placeholder="URL이나 중개사 정보를 입력해 주세요." />
+            <TextAreaField label="확인한 곳" rows={3} placeholder="URL이나 중개사 정보를 입력해 주세요." />
           </section>
 
           <section className={styles.section}>

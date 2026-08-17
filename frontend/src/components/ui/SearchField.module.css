@@ -5,7 +5,7 @@
   min-height: 3rem;
   align-items: center;
   margin: 0;
-  border: 1px solid var(--color-border-strong);
+  border: 1px solid var(--color-ink);
   border-radius: var(--radius-sm);
   background: var(--color-surface);
 }
@@ -16,7 +16,7 @@
 
 .searchIcon {
   margin-left: 0.85rem;
-  color: var(--color-muted);
+  color: var(--color-ink);
 }
 
 .search input {
@@ -41,7 +41,7 @@
   min-height: 2.75rem;
   border: 0;
   background: transparent;
-  color: var(--color-muted);
+  color: var(--color-ink);
   cursor: pointer;
 }
 
@@ -52,7 +52,6 @@
 
 .submit {
   padding: 0 0.85rem 0 0.4rem;
-  color: var(--color-primary-dark);
   font-weight: 800;
 }
 
