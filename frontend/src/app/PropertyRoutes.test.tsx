@@ -226,7 +226,7 @@ describe('FE-2 등록·수정·메모', () => {
     await user.type(screen.getByLabelText('이름'), ' 신림역 원룸 ');
     await user.type(screen.getByLabelText('보증금'), '0');
     await user.type(screen.getByLabelText('월세'), '550000');
-    await user.type(screen.getByLabelText('발견 경로'), ' 중개사 추천 ');
+    await user.type(screen.getByLabelText('확인한 곳'), ' 중개사 추천 ');
     await user.click(screen.getByRole('button', { name: '매물 등록' }));
 
     expect(await screen.findByRole('heading', { name: '신림역 원룸', level: 1 })).toBeInTheDocument();
@@ -252,7 +252,7 @@ describe('FE-2 등록·수정·메모', () => {
     await user.type(await screen.findByLabelText('이름'), '유지할 이름');
     await user.type(screen.getByLabelText('보증금'), '1000');
     await user.type(screen.getByLabelText('월세'), '55');
-    await user.type(screen.getByLabelText('발견 경로'), 'https://example.com');
+    await user.type(screen.getByLabelText('확인한 곳'), 'https://example.com');
     await user.click(screen.getByRole('button', { name: '매물 등록' }));
 
     expect(await screen.findByText('서버에서 매물 이름을 확인하지 못했습니다.')).toBeInTheDocument();
