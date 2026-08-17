@@ -125,7 +125,7 @@ describe('FE-1 인증 흐름', () => {
 
     renderRoutes(`/oauth/google/callback?code=sensitive-code&state=${validState}`);
 
-    expect(await screen.findByRole('heading', { name: '내 매물' }, { timeout: 5_000 })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: '내 매물' })).toBeInTheDocument();
     expect(loginRequest).toEqual({
       authorizationCode: 'sensitive-code',
       codeVerifier: 'v'.repeat(43),
@@ -209,7 +209,7 @@ describe('FE-1 인증 흐름', () => {
 
     renderRoutes('/');
 
-    expect(await screen.findByRole('heading', { name: '내 매물' }, { timeout: 5_000 })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: '내 매물' })).toBeInTheDocument();
   });
 
   it('API-002가 401이면 메모리 토큰을 지우고 로그인으로 이동한다', async () => {
@@ -244,7 +244,7 @@ describe('FE-1 인증 흐름', () => {
 
     renderRoutes('/login');
 
-    expect(await screen.findByRole('heading', { name: '내 매물' }, { timeout: 5_000 })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: '내 매물' })).toBeInTheDocument();
   });
 
   it('로그아웃하면 인증 정보와 회원 캐시를 지우고 로그인으로 이동한다', async () => {
