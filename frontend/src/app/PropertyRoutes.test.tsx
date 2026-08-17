@@ -30,6 +30,8 @@ const config: PublicConfig = {
 
 const detailWithoutPhotos = {
   ...propertyDetailFixture,
+  recentVisit: null,
+  activeChecklists: [],
   photoCount: 0,
   photoPreview: { totalCount: 0, photos: [] },
   deletionImpact: { ...propertyDetailFixture.deletionImpact, photoCount: 0 },
@@ -294,29 +296,22 @@ describe('FE-2 등록·수정·메모', () => {
     expect(patchBody).toEqual({ monthlyRentAmount: 530_000 });
   });
 
-  it('API-103의 구조화된 방문 전 사전 메모 8개를 초깃값으로 표시한다', async () => {
+  it('기존 구조화 메모를 하나의 자유 메모로 합쳐 표시한다', async () => {
     server.use(
       http.get(`${config.apiBaseUrl}/api/properties/10`, () => HttpResponse.json(successEnvelope(detailWithoutPhotos))),
     );
     renderAuthenticated('/properties/10');
 
-    expect(
-      await screen.findByRole('heading', { name: '방을 보러 가기 전에 확인할 내용을 정리해요' }),
-    ).toBeInTheDocument();
-    expect(screen.getByRole('textbox', { name: '방 보러 가는 일정' })).toHaveValue('8월 20일 오후 2시 방문');
-    expect(screen.getByRole('textbox', { name: '입주 가능일' })).toHaveValue('9월 1일부터 입주 가능');
-    expect(screen.getByRole('textbox', { name: '가계약금' })).toHaveValue('가계약금 30만 원');
-    expect(screen.getByRole('textbox', { name: '방 옵션' })).toHaveValue('냉장고와 세탁기 포함');
-    expect(screen.getByRole('textbox', { name: '관리비 및 공과금' })).toHaveValue('관리비와 전기·가스 별도');
-    expect(screen.getByRole('textbox', { name: '통학·통근 시간' })).toHaveValue('학교까지 버스로 20분');
-    expect(screen.getByRole('textbox', { name: '정부 지원금 가능 종류' })).toHaveValue(
-      '중소기업 청년 대출 가능 여부 확인',
-    );
-    expect(screen.getByRole('textbox', { name: '추가 메모' })).toHaveValue('채광 다시 확인');
+    const memo = await screen.findByRole('textbox', { name: '메모' });
+    const memoValue = (memo as HTMLTextAreaElement).value;
+    expect(memoValue).toContain('채광 다시 확인');
+    expect(memoValue).toContain('방 보러 가는 일정: 8월 20일 오후 2시 방문');
+    expect(memoValue).toContain('입주 가능일: 9월 1일부터 입주 가능');
+    expect(memoValue).toContain('정부 지원금 가능 종류: 중소기업 청년 대출 가능 여부 확인');
     expect(screen.getByRole('button', { name: '메모 저장' })).toBeDisabled();
   });
 
-  it('저장 이력이 없는 빈 구조화 메모의 초기 상태를 안내한다', async () => {
+  it('저장 이력이 없는 빈 메모의 초기 상태를 안내한다', async () => {
     server.use(
       http.get(`${config.apiBaseUrl}/api/properties/10`, () =>
         HttpResponse.json(
@@ -340,11 +335,11 @@ describe('FE-2 등록·수정·메모', () => {
     );
     renderAuthenticated('/properties/10');
 
-    expect(await screen.findByText('아직 저장한 방문 전 사전 메모가 없어요.')).toBeInTheDocument();
+    expect(await screen.findByText('아직 저장한 메모가 없어요.')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: '메모 저장' })).toBeDisabled();
   });
 
-  it('API-106에 8개 필드를 전체 저장하고 실패 시 작성 내용을 유지해 재시도한다', async () => {
+  it('자유 메모로 저장하고 실패 시 작성 내용을 유지해 재시도한다', async () => {
     let saveAttempts = 0;
     const bodies: unknown[] = [];
     server.use(
@@ -365,25 +360,25 @@ describe('FE-2 등록·수정·메모', () => {
     );
     const user = userEvent.setup();
     renderAuthenticated('/properties/10');
-    const viewingSchedule = await screen.findByRole('textbox', { name: '방 보러 가는 일정' });
+    const memo = await screen.findByRole('textbox', { name: '메모' });
 
-    await user.clear(viewingSchedule);
-    await user.type(viewingSchedule, '8월 21일 오후 3시');
+    await user.clear(memo);
+    await user.type(memo, '8월 21일 오후 3시에 방문');
     await user.click(screen.getByRole('button', { name: '메모 저장' }));
     expect(await screen.findByText(/작성 중인 내용은 유지/)).toBeInTheDocument();
-    expect(viewingSchedule).toHaveValue('8월 21일 오후 3시');
+    expect(memo).toHaveValue('8월 21일 오후 3시에 방문');
 
     await user.click(screen.getByRole('button', { name: '다시 저장' }));
     expect(await screen.findByText(/저장했어요. 마지막 저장/)).toBeInTheDocument();
     const expectedBody = {
-      viewingSchedule: '8월 21일 오후 3시',
-      moveInAvailability: detailWithoutPhotos.memo.moveInAvailability,
-      provisionalDeposit: detailWithoutPhotos.memo.provisionalDeposit,
-      roomOptions: detailWithoutPhotos.memo.roomOptions,
-      maintenanceAndUtilities: detailWithoutPhotos.memo.maintenanceAndUtilities,
-      commuteTime: detailWithoutPhotos.memo.commuteTime,
-      governmentSupport: detailWithoutPhotos.memo.governmentSupport,
-      additionalMemo: detailWithoutPhotos.memo.additionalMemo,
+      viewingSchedule: '',
+      moveInAvailability: '',
+      provisionalDeposit: '',
+      roomOptions: '',
+      maintenanceAndUtilities: '',
+      commuteTime: '',
+      governmentSupport: '',
+      additionalMemo: '8월 21일 오후 3시에 방문',
     };
     expect(bodies).toEqual([expectedBody, expectedBody]);
     expect(bodies[1]).not.toHaveProperty('content');
@@ -412,38 +407,30 @@ describe('FE-2 등록·수정·메모', () => {
     );
     const user = userEvent.setup();
     renderAuthenticated('/properties/10');
-    const viewingSchedule = await screen.findByRole('textbox', { name: '방 보러 가는 일정' });
+    const memo = await screen.findByRole('textbox', { name: '메모' });
 
-    await user.type(viewingSchedule, ' 변경');
+    await user.type(memo, ' 변경');
     await user.click(screen.getByRole('button', { name: '메모 저장' }));
 
-    expect(screen.getByText('방문 전 사전 메모를 저장하고 있어요…')).toBeInTheDocument();
+    expect(screen.getByText('퀵 메모를 저장하고 있어요…')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: '메모 저장 중…' })).toBeDisabled();
-    expect(viewingSchedule).toHaveAttribute('readonly');
+    expect(memo).toHaveAttribute('readonly');
     expect(await screen.findByText(/저장했어요. 마지막 저장/)).toBeInTheDocument();
   });
 
-  it('구조화 필드 200자와 추가 메모 5,000자를 Unicode 코드포인트 기준으로 검증한다', async () => {
+  it('자유 메모 5,000자를 Unicode 코드포인트 기준으로 검증한다', async () => {
     server.use(
       http.get(`${config.apiBaseUrl}/api/properties/10`, () => HttpResponse.json(successEnvelope(detailWithoutPhotos))),
     );
     renderAuthenticated('/properties/10');
-    const viewingSchedule = await screen.findByRole('textbox', { name: '방 보러 가는 일정' });
-    const additionalMemo = screen.getByRole('textbox', { name: '추가 메모' });
+    const memo = await screen.findByRole('textbox', { name: '메모' });
     const saveButton = screen.getByRole('button', { name: '메모 저장' });
 
-    fireEvent.change(viewingSchedule, { target: { value: '🏠'.repeat(201) } });
-    expect(screen.getByText('200자 이하로 입력해 주세요.')).toBeInTheDocument();
-    expect(saveButton).toBeDisabled();
-
-    fireEvent.change(viewingSchedule, { target: { value: '🏠'.repeat(200) } });
-    expect(saveButton).toBeEnabled();
-
-    fireEvent.change(additionalMemo, { target: { value: '🏠'.repeat(5_001) } });
+    fireEvent.change(memo, { target: { value: '🏠'.repeat(5_001) } });
     expect(screen.getByText('5,000자 이하로 입력해 주세요.')).toBeInTheDocument();
     expect(saveButton).toBeDisabled();
 
-    fireEvent.change(additionalMemo, { target: { value: '🏠'.repeat(5_000) } });
+    fireEvent.change(memo, { target: { value: '🏠'.repeat(5_000) } });
     expect(saveButton).toBeEnabled();
   });
 
@@ -458,11 +445,10 @@ describe('FE-2 등록·수정·메모', () => {
     );
     const user = userEvent.setup();
     renderAuthenticated('/properties/10');
-    const viewingSchedule = await screen.findByRole('textbox', { name: '방 보러 가는 일정' });
-    const moveInAvailability = screen.getByRole('textbox', { name: '입주 가능일' });
+    const memoField = await screen.findByRole('textbox', { name: '메모' });
 
-    await user.clear(viewingSchedule);
-    await user.type(viewingSchedule, '작성 중인 방문 일정');
+    await user.clear(memoField);
+    await user.type(memoField, '작성 중인 메모');
     memo = {
       ...memo,
       viewingSchedule: '다른 곳에서 저장된 일정',
@@ -472,14 +458,13 @@ describe('FE-2 등록·수정·메모', () => {
     await queryClient.invalidateQueries({ queryKey: propertyQueryKeys.detail(10), exact: true });
     await waitFor(() => expect(detailCalls).toBeGreaterThan(1));
 
-    expect(viewingSchedule).toHaveValue('작성 중인 방문 일정');
-    expect(moveInAvailability).toHaveValue(detailWithoutPhotos.memo.moveInAvailability);
+    expect(memoField).toHaveValue('작성 중인 메모');
     expect(screen.getByText('저장되지 않은 변경사항이 있어요.')).toBeInTheDocument();
   });
 });
 
 describe('FE-2 사진과 삭제 확인', () => {
-  it('상세 사진을 크게 열고 다음 사진으로 이동한 뒤 실행 버튼으로 포커스를 돌려준다', async () => {
+  it('상세 사진은 큰 화면에서 넘겨 보고 수정 화면에서는 관리한다', async () => {
     server.use(
       http.get(`${config.apiBaseUrl}/api/properties/10`, () =>
         HttpResponse.json(successEnvelope(propertyDetailFixture)),
@@ -506,7 +491,7 @@ describe('FE-2 사진과 삭제 확인', () => {
     );
 
     const user = userEvent.setup();
-    renderAuthenticated('/properties/10');
+    const detailView = renderAuthenticated('/properties/10');
     const photoButton = await screen.findByRole('button', { name: '신림역 원룸 사진 1 크게 보기' });
     await user.click(photoButton);
 
@@ -515,17 +500,13 @@ describe('FE-2 사진과 삭제 확인', () => {
     await user.click(screen.getByRole('button', { name: '다음 사진' }));
     expect(await screen.findByRole('img', { name: '신림역 원룸 사진 2' })).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: '사진 크게 보기 닫기' }));
+    expect(screen.queryByText('사진 관리')).not.toBeInTheDocument();
+    detailView.unmount();
 
-    expect(screen.queryByRole('dialog', { name: '신림역 원룸 사진 크게 보기' })).not.toBeInTheDocument();
-    await waitFor(() => expect(photoButton).toHaveFocus());
-
-    await user.click(photoButton);
-    await screen.findByRole('dialog', { name: '신림역 원룸 사진 크게 보기' });
-    await user.keyboard('{Escape}');
-    await waitFor(() =>
-      expect(screen.queryByRole('dialog', { name: '신림역 원룸 사진 크게 보기' })).not.toBeInTheDocument(),
-    );
-    await waitFor(() => expect(photoButton).toHaveFocus());
+    renderAuthenticated('/properties/10/edit');
+    expect(await screen.findByRole('heading', { name: '사진 관리' })).toBeInTheDocument();
+    expect(screen.getByLabelText('사진 파일 선택')).toBeEnabled();
+    expect(await screen.findByRole('img', { name: '업로드 순 1번째 사진' })).toBeInTheDocument();
   });
 
   it('빈 사진 목록과 잘못된 형식·10MiB 초과를 업로드 전에 안내한다', async () => {
