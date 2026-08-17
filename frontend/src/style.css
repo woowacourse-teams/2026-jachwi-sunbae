@@ -670,6 +670,21 @@
   margin-top: 0.8rem;
 }
 
+.detail-photo-preview-button {
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: zoom-in;
+}
+
+.detail-photo-preview-button:focus-visible {
+  border-radius: var(--radius-md);
+  outline: 2px solid var(--color-focus);
+  outline-offset: 3px;
+}
+
 .authenticated-photo--error {
   border: 1px solid rgb(168 59 50 / 28%);
   background: var(--color-error-surface);

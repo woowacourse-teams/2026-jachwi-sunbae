@@ -479,6 +479,55 @@ describe('FE-2 등록·수정·메모', () => {
 });
 
 describe('FE-2 사진과 삭제 확인', () => {
+  it('상세 사진을 크게 열고 다음 사진으로 이동한 뒤 실행 버튼으로 포커스를 돌려준다', async () => {
+    server.use(
+      http.get(`${config.apiBaseUrl}/api/properties/10`, () =>
+        HttpResponse.json(successEnvelope(propertyDetailFixture)),
+      ),
+      http.get(`${config.apiBaseUrl}/api/properties/10/photos`, () =>
+        HttpResponse.json(
+          successEnvelope({
+            photos: [
+              photoFixture,
+              { ...photoFixture, photoId: 82, contentUrl: '/api/properties/10/photos/82/content' },
+            ],
+            totalCount: 2,
+          }),
+        ),
+      ),
+      http.get(
+        `${config.apiBaseUrl}/api/properties/10/photos/81/content`,
+        () => new HttpResponse(new Uint8Array([255, 216, 255]), { headers: { 'Content-Type': 'image/jpeg' } }),
+      ),
+      http.get(
+        `${config.apiBaseUrl}/api/properties/10/photos/82/content`,
+        () => new HttpResponse(new Uint8Array([255, 216, 254]), { headers: { 'Content-Type': 'image/jpeg' } }),
+      ),
+    );
+
+    const user = userEvent.setup();
+    renderAuthenticated('/properties/10');
+    const photoButton = await screen.findByRole('button', { name: '신림역 원룸 사진 1 크게 보기' });
+    await user.click(photoButton);
+
+    expect(await screen.findByRole('dialog', { name: '신림역 원룸 사진 크게 보기' })).toBeInTheDocument();
+    expect(await screen.findByRole('img', { name: '신림역 원룸 사진 1' })).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: '다음 사진' }));
+    expect(await screen.findByRole('img', { name: '신림역 원룸 사진 2' })).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: '사진 크게 보기 닫기' }));
+
+    expect(screen.queryByRole('dialog', { name: '신림역 원룸 사진 크게 보기' })).not.toBeInTheDocument();
+    await waitFor(() => expect(photoButton).toHaveFocus());
+
+    await user.click(photoButton);
+    await screen.findByRole('dialog', { name: '신림역 원룸 사진 크게 보기' });
+    await user.keyboard('{Escape}');
+    await waitFor(() =>
+      expect(screen.queryByRole('dialog', { name: '신림역 원룸 사진 크게 보기' })).not.toBeInTheDocument(),
+    );
+    await waitFor(() => expect(photoButton).toHaveFocus());
+  });
+
   it('빈 사진 목록과 잘못된 형식·10MiB 초과를 업로드 전에 안내한다', async () => {
     let uploadCalls = 0;
     server.use(
