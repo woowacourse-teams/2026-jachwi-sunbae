@@ -25,6 +25,7 @@ import {
 } from '../test/checklistFixtures';
 import { errorEnvelope, memberFixture, propertyDetailFixture, successEnvelope } from '../test/propertyFixtures';
 import { server } from '../test/server';
+import { visitDetailFixture } from '../test/visitFixtures';
 import type { PublicConfig } from '../types/PublicConfig';
 import type { ChecklistDetail } from '../types/Checklist';
 
@@ -682,13 +683,19 @@ describe('FE-3 매물 활성 체크리스트', () => {
           }),
         );
       }),
+      http.post(`${config.apiBaseUrl}/api/properties/10/visits`, () =>
+        HttpResponse.json(successEnvelope(visitDetailFixture), { status: 201 }),
+      ),
     );
     const user = userEvent.setup();
     renderAuthenticated('/properties/10/active-checklists/ONLINE_PHONE');
-    await user.click(await screen.findByRole('radio', { name: /직방 매물 문의 목록/ }));
+    await user.click(await screen.findByRole('checkbox', { name: /직방 매물 문의 목록/ }));
     expect(assignCalls).toBe(0);
     await user.click(screen.getByRole('button', { name: '이 체크리스트 연결' }));
-    expect(await screen.findByRole('heading', { name: propertyDetailFixture.name, level: 1 })).toBeInTheDocument();
+    expect(
+      await screen.findByRole('heading', { name: `${propertyDetailFixture.name} 방문`, level: 1 }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: /온라인·전화/ })).toHaveAttribute('aria-selected', 'true');
     expect(assignCalls).toBe(1);
   });
 
@@ -723,8 +730,49 @@ describe('FE-3 매물 활성 체크리스트', () => {
       }),
     );
     renderAuthenticated({ pathname: '/properties/10/active-checklists/ONLINE_PHONE', state: { newChecklistId: 8 } });
-    expect(await screen.findByRole('radio', { name: /직방 매물 문의 목록/ })).toBeChecked();
+    expect(await screen.findByRole('checkbox', { name: /직방 매물 문의 목록/ })).toBeChecked();
     expect(screen.getByText('방금 생성')).toBeInTheDocument();
     expect(assignCalls).toBe(0);
+  });
+
+  it('현재 연결된 체크리스트를 다시 누르면 별도 해제 버튼 없이 연결을 해제한다', async () => {
+    let connected = true;
+    let removeCalls = 0;
+    const onSiteChecklist = {
+      ...checklistSummaryFixture,
+      name: '집에서 확인할 목록',
+      stage: 'ON_SITE',
+    };
+    server.use(
+      http.get(`${config.apiBaseUrl}/api/properties/10`, () =>
+        HttpResponse.json(
+          successEnvelope({
+            ...propertyDetailFixture,
+            activeChecklists: connected
+              ? [{ stage: 'ON_SITE', checklistId: 7, name: onSiteChecklist.name, itemCount: 2 }]
+              : [],
+            photoPreview: { totalCount: 0, photos: [] },
+          }),
+        ),
+      ),
+      http.get(`${config.apiBaseUrl}/api/checklists`, () =>
+        HttpResponse.json(successEnvelope(checklistPageFixture([onSiteChecklist]))),
+      ),
+      http.delete(`${config.apiBaseUrl}/api/properties/10/active-checklists/ON_SITE`, () => {
+        connected = false;
+        removeCalls += 1;
+        return new HttpResponse(null, { status: 204 });
+      }),
+    );
+    const user = userEvent.setup();
+    renderAuthenticated('/properties/10/active-checklists/ON_SITE');
+    const checkbox = await screen.findByRole('checkbox', { name: /집에서 확인할 목록/ });
+    expect(checkbox).toBeChecked();
+    expect(screen.queryByRole('button', { name: '이 단계 연결 해제' })).not.toBeInTheDocument();
+
+    await user.click(checkbox);
+
+    await waitFor(() => expect(removeCalls).toBe(1));
+    await waitFor(() => expect(checkbox).not.toBeChecked());
   });
 });

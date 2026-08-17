@@ -13,8 +13,14 @@
 }
 
 .property-page {
+  --page-inline-padding: clamp(0.85rem, 4vw, 1.5rem);
+
   min-height: calc(100svh - 4.35rem);
-  padding: 1.2rem clamp(0.85rem, 4vw, 1.5rem) 3.5rem;
+  padding: 1.2rem var(--page-inline-padding) 3.5rem;
+}
+
+.property-page.active-checklist-page {
+  padding-top: 0.5rem;
 }
 
 .property-page.checklist-editor-page {
@@ -1316,7 +1322,6 @@
 .active-checklist-options label.is-selected {
   border-color: var(--color-primary);
   background: var(--color-surface-muted);
-  box-shadow: 0 0 0 2px rgb(100 127 61 / 12%);
 }
 
 .active-checklist-options input {
