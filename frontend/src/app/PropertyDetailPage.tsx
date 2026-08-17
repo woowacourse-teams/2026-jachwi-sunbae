@@ -6,6 +6,7 @@ import AuthenticatedPhoto from '../components/AuthenticatedPhoto';
 import ConfirmDialog from '../components/ConfirmDialog';
 import PageHeading from '../components/PageHeading';
 import PreVisitMemoEditor from '../components/PreVisitMemoEditor';
+import PropertyPhotoViewer from '../components/PropertyPhotoViewer';
 import VisitSummaryPanel from '../components/VisitSummaryPanel';
 import StartVisitPanel from '../components/StartVisitPanel';
 import { usePropertyDetail } from '../hooks/query/useProperties';
@@ -49,7 +50,9 @@ const ResolvedPropertyDetailPage = ({ config, propertyId }: { config: PublicConf
   const property = usePropertyDetail(config, propertyId);
   const removeMutation = useRemoveProperty(config, propertyId);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [selectedPhotoIndex, setSelectedPhotoIndex] = useState<number | null>(null);
   const deleteButtonRef = useRef<HTMLButtonElement>(null);
+  const photoTriggerRef = useRef<HTMLButtonElement>(null);
 
   if (property.isPending) {
     return (
@@ -96,6 +99,11 @@ const ResolvedPropertyDetailPage = ({ config, propertyId }: { config: PublicConf
     } catch {
       // Dialog remains open with a safe retryable error.
     }
+  };
+
+  const closePhotoViewer = () => {
+    setSelectedPhotoIndex(null);
+    window.requestAnimationFrame(() => photoTriggerRef.current?.focus());
   };
 
   return (
@@ -160,14 +168,22 @@ const ResolvedPropertyDetailPage = ({ config, propertyId }: { config: PublicConf
               <span>직접 확인한 사진을 안전하게 보관해 보세요.</span>
             </div>
           ) : (
-            <AuthenticatedPhoto
-              config={config}
-              propertyId={propertyId}
-              photoId={preview.photoId}
-              contentUrl={preview.contentUrl}
-              alt="등록한 매물 사진 미리보기"
-              className="detail-photo-preview"
-            />
+            <button
+              ref={photoTriggerRef}
+              className="detail-photo-preview-button"
+              type="button"
+              aria-label={`${detail.name} 사진 1 크게 보기`}
+              onClick={() => setSelectedPhotoIndex(0)}
+            >
+              <AuthenticatedPhoto
+                config={config}
+                propertyId={propertyId}
+                photoId={preview.photoId}
+                contentUrl={preview.contentUrl}
+                alt=""
+                className="detail-photo-preview"
+              />
+            </button>
           )}
         </section>
 
@@ -229,6 +245,16 @@ const ResolvedPropertyDetailPage = ({ config, propertyId }: { config: PublicConf
             매물 삭제
           </button>
         </section>
+
+        {selectedPhotoIndex !== null && (
+          <PropertyPhotoViewer
+            config={config}
+            propertyId={propertyId}
+            propertyName={detail.name}
+            initialIndex={selectedPhotoIndex}
+            onClose={closePhotoViewer}
+          />
+        )}
 
         <ConfirmDialog
           isOpen={isDeleteDialogOpen}
