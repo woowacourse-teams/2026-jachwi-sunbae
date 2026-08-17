@@ -8,11 +8,16 @@
   align-content: center;
   justify-items: center;
   gap: 0.25rem;
-  border: 1px solid var(--color-primary);
+  border: 1px solid var(--color-border-strong);
   border-radius: var(--radius-sm);
-  background: var(--color-surface-muted);
-  color: var(--color-primary-dark);
+  background: var(--color-surface-neutral);
+  color: var(--color-muted);
   cursor: pointer;
+  transition: background-color 160ms ease;
+}
+
+.tile:hover:not([data-disabled='true']) {
+  background: var(--color-search-surface);
 }
 
 .tile strong {

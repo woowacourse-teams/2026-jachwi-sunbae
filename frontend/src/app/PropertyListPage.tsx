@@ -13,14 +13,28 @@ import type { PublicConfig } from '../types/PublicConfig';
 import styles from './PropertyListPage.module.css';
 
 type PropertyListPageProps = { config: PublicConfig };
+type PropertyStatusFilter = 'ALL' | 'INCOMPLETE' | 'COMPLETED';
+
+const propertyStatusFilters: Array<{ value: PropertyStatusFilter; label: string }> = [
+  { value: 'ALL', label: '전체' },
+  { value: 'INCOMPLETE', label: '미완료' },
+  { value: 'COMPLETED', label: '완료' },
+];
 
 const PropertyListPage = ({ config }: PropertyListPageProps) => {
   const location = useLocation();
   const [draftQuery, setDraftQuery] = useState('');
   const [query, setQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState<PropertyStatusFilter>('ALL');
   const headingRef = useRef<HTMLHeadingElement>(null);
   const properties = usePropertyList(config, query);
   const items = properties.data?.pages.flatMap((page) => page.content) ?? [];
+  const filteredItems = items.filter((property) => {
+    if (statusFilter === 'ALL') return true;
+    const isCompleted = property.recentVisit?.status === 'COMPLETED';
+    return statusFilter === 'COMPLETED' ? isCompleted : !isCompleted;
+  });
+  const totalElements = properties.data?.pages[0]?.totalElements ?? 0;
   const shouldFocusHeading = (location.state as { focusHeading?: boolean } | null)?.focusHeading === true;
 
   useEffect(() => {
@@ -46,17 +60,42 @@ const PropertyListPage = ({ config }: PropertyListPageProps) => {
   return (
     <main className={styles.page}>
       <div className={styles.content}>
-        <TopNavigation title="기록한 매물" meta={properties.isSuccess ? `${items.length}개` : undefined} />
+        <TopNavigation
+          title="기록한 매물"
+          endSlot={
+            <ButtonLink className={styles.addButton} to="/properties/new" variant="text" aria-label="새 매물 등록">
+              <Icon name="plus" size={15} /> 매물 추가
+            </ButtonLink>
+          }
+        />
         <h1 ref={headingRef} className="sr-only" tabIndex={-1}>
           내 매물
         </h1>
 
-        <div className={styles.searchRow}>
-          {propertySearch}
-          <ButtonLink className={styles.addButton} to="/properties/new" aria-label="새 매물 등록">
-            <Icon name="plus" size={15} /> 추가
-          </ButtonLink>
-        </div>
+        <div className={styles.searchRow}>{propertySearch}</div>
+
+        {properties.isSuccess && items.length > 0 && (
+          <div className={styles.statusFilters} aria-label="매물 진행 상태 필터">
+            {propertyStatusFilters.map((filter) => (
+              <button
+                key={filter.value}
+                type="button"
+                aria-pressed={statusFilter === filter.value}
+                onClick={() => setStatusFilter(filter.value)}
+              >
+                {filter.label}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {properties.isSuccess && (
+          <div className={styles.listToolbar}>
+            <span className={styles.totalCount}>
+              전체 <strong>{totalElements}</strong>
+            </span>
+          </div>
+        )}
 
         {properties.isPending && (
           <div className={styles.loading} role="status">
@@ -114,12 +153,16 @@ const PropertyListPage = ({ config }: PropertyListPageProps) => {
           </>
         )}
 
-        {items.length > 0 && (
+        {filteredItems.length > 0 && (
           <section className={styles.cardList} aria-label="매물 목록">
-            {items.map((property) => (
+            {filteredItems.map((property) => (
               <PropertyCard key={property.propertyId} property={property} />
             ))}
           </section>
+        )}
+
+        {properties.isSuccess && items.length > 0 && filteredItems.length === 0 && (
+          <EmptyState title="해당 상태의 매물이 없어요." description="다른 상태를 선택해 보세요." />
         )}
 
         {properties.hasNextPage && (

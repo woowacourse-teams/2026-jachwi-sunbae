@@ -33,8 +33,8 @@ const PropertyCard = ({ property, thumbnailUrl }: PropertyCardProps) => {
         </div>
         {summary === undefined ? (
           <div className={styles.emptyVisit}>
-            <span>아직 방문 확인 기록이 없어요.</span>
             <span className={styles.emptyBar} aria-hidden="true" />
+            <span>아직 방문 확인 기록이 없어요.</span>
           </div>
         ) : (
           <VisitResultBar summary={summary} />

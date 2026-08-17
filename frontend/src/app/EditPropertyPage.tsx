@@ -4,6 +4,7 @@ import { ApiError } from '../apis/apiClient';
 import type { UpdatePropertyRequestDto } from '../apis/dtos/PropertyDto';
 import { getPropertyErrorMessage } from '../apis/propertyErrorMessages';
 import PropertyForm from '../components/PropertyForm';
+import PropertyPhotoManager from '../components/PropertyPhotoManager';
 import TopNavigation from '../components/ui/TopNavigation';
 import { usePropertyDetail } from '../hooks/query/useProperties';
 import { useUpdateProperty } from '../hooks/query/usePropertyMutations';
@@ -74,7 +75,13 @@ const ResolvedEditPropertyPage = ({ config, propertyId }: { config: PublicConfig
   return (
     <main className={styles.page}>
       <div className={styles.container}>
-        <TopNavigation title="매물 정보 수정" backTo={`/properties/${propertyId}`} backLabel="매물 정보로 돌아가기" />
+        <TopNavigation
+          title="매물 정보 수정"
+          backTo={`/properties/${propertyId}`}
+          backLabel="매물 정보 수정 닫기"
+          navigationIcon="close"
+        />
+        <PropertyPhotoManager config={config} propertyId={propertyId} showHeading />
         <p className={styles.description}>수정할 값을 눌러 내용을 변경해 주세요.</p>
         <PropertyForm
           initialValues={{

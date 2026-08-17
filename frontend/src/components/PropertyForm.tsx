@@ -11,7 +11,7 @@ import {
 } from '../utils/propertyForm';
 import type { PropertyFormErrors, PropertyFormField, PropertyFormValues } from '../utils/propertyForm';
 import BottomActionArea from './ui/BottomActionArea';
-import { Button, ButtonLink } from './ui/Button';
+import { Button } from './ui/Button';
 import InlineNotice from './ui/InlineNotice';
 import TextAreaField from './ui/TextAreaField';
 import TextField from './ui/TextField';
@@ -23,7 +23,6 @@ type PropertyFormProps = {
   isSubmitting: boolean;
   mutationError: ApiError | null;
   formNotice?: string | null;
-  cancelTo?: string;
   variant?: 'default' | 'detail';
   onSubmit: (input: PropertyInputDto, values: PropertyFormValues) => void;
 };
@@ -36,7 +35,6 @@ const PropertyForm = ({
   isSubmitting,
   mutationError,
   formNotice,
-  cancelTo,
   variant = 'default',
   onSubmit,
 }: PropertyFormProps) => {
@@ -85,56 +83,73 @@ const PropertyForm = ({
         maxLength={50}
         autoComplete="off"
         placeholder="예: 신림역 근처 원룸"
-        fieldClassName={variant === 'detail' ? styles.detailField : undefined}
-        className={variant === 'detail' ? styles.detailInput : undefined}
+        fieldClassName={variant === 'detail' ? styles.detailField : styles.defaultField}
+        className={variant === 'detail' ? styles.detailInput : styles.defaultInput}
         error={displayedErrors.name}
         onChange={(event) => setValue('name', event.target.value)}
       />
 
-      <TextField
-        id="property-deposit"
-        name="depositAmount"
-        label="보증금"
-        value={values.depositAmount}
-        inputMode="numeric"
-        autoComplete="off"
-        placeholder="예: 10,000,000"
-        suffix="원"
-        fieldClassName={variant === 'detail' ? styles.detailField : undefined}
-        className={variant === 'detail' ? styles.detailInput : undefined}
-        error={displayedErrors.depositAmount}
-        onChange={(event) => setMoneyValue('depositAmount', event.target.value)}
-      />
+      <div className={variant === 'detail' ? styles.detailMoneyFields : styles.moneyFields}>
+        <TextField
+          id="property-deposit"
+          name="depositAmount"
+          label="보증금"
+          value={values.depositAmount}
+          inputMode="numeric"
+          autoComplete="off"
+          placeholder="0"
+          suffix="원"
+          fieldClassName={variant === 'detail' ? styles.detailField : styles.defaultField}
+          className={variant === 'detail' ? styles.detailInput : styles.defaultInput}
+          error={displayedErrors.depositAmount}
+          onChange={(event) => setMoneyValue('depositAmount', event.target.value)}
+        />
 
-      <TextField
-        id="property-rent"
-        name="monthlyRentAmount"
-        label="월세"
-        value={values.monthlyRentAmount}
-        inputMode="numeric"
-        autoComplete="off"
-        placeholder="예: 550,000"
-        suffix="원"
-        fieldClassName={variant === 'detail' ? styles.detailField : undefined}
-        className={variant === 'detail' ? styles.detailInput : undefined}
-        error={displayedErrors.monthlyRentAmount}
-        onChange={(event) => setMoneyValue('monthlyRentAmount', event.target.value)}
-      />
+        <TextField
+          id="property-rent"
+          name="monthlyRentAmount"
+          label="월세"
+          value={values.monthlyRentAmount}
+          inputMode="numeric"
+          autoComplete="off"
+          placeholder="0"
+          suffix="원"
+          fieldClassName={variant === 'detail' ? styles.detailField : styles.defaultField}
+          className={variant === 'detail' ? styles.detailInput : styles.defaultInput}
+          error={displayedErrors.monthlyRentAmount}
+          onChange={(event) => setMoneyValue('monthlyRentAmount', event.target.value)}
+        />
+      </div>
 
-      <TextAreaField
-        id="property-source"
-        name="discoverySource"
-        label="발견 경로"
-        value={values.discoverySource}
-        maxLength={500}
-        rows={3}
-        placeholder="URL이나 앱 이름, 중개사 설명을 입력해 주세요."
-        helpText="URL과 일반 텍스트를 모두 입력할 수 있어요."
-        fieldClassName={variant === 'detail' ? styles.detailField : undefined}
-        className={variant === 'detail' ? styles.detailInput : undefined}
-        error={displayedErrors.discoverySource}
-        onChange={(event) => setValue('discoverySource', event.target.value)}
-      />
+      {variant === 'detail' ? (
+        <TextAreaField
+          id="property-source"
+          name="discoverySource"
+          label="확인한 곳"
+          value={values.discoverySource}
+          maxLength={500}
+          rows={3}
+          placeholder="URL, 앱 이름 또는 중개사 정보를 입력해 주세요."
+          fieldClassName={styles.detailField}
+          className={styles.detailInput}
+          error={displayedErrors.discoverySource}
+          onChange={(event) => setValue('discoverySource', event.target.value)}
+        />
+      ) : (
+        <TextField
+          id="property-source"
+          name="discoverySource"
+          label="확인한 곳"
+          value={values.discoverySource}
+          maxLength={500}
+          autoComplete="off"
+          placeholder="URL, 앱 이름 또는 중개사 정보"
+          fieldClassName={styles.defaultField}
+          className={styles.defaultInput}
+          error={displayedErrors.discoverySource}
+          onChange={(event) => setValue('discoverySource', event.target.value)}
+        />
+      )}
 
       {formNotice !== null && formNotice !== undefined && <InlineNotice>{formNotice}</InlineNotice>}
       {mutationError !== null && (
@@ -142,12 +157,7 @@ const PropertyForm = ({
       )}
 
       <BottomActionArea>
-        {cancelTo !== undefined && (
-          <ButtonLink to={cancelTo} variant="secondary" fullWidth>
-            취소
-          </ButtonLink>
-        )}
-        <Button type="submit" fullWidth isLoading={isSubmitting} loadingLabel="저장 중…">
+        <Button type="submit" variant="soft" fullWidth isLoading={isSubmitting} loadingLabel="저장 중…">
           {submitLabel}
         </Button>
       </BottomActionArea>

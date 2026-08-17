@@ -39,18 +39,6 @@
   background: var(--color-check-unconfirmed);
 }
 
-.goodResult {
-  color: var(--color-check-good-ink);
-}
-
-.cautionResult {
-  color: var(--color-check-caution-ink);
-}
-
-.unconfirmedResult {
-  color: var(--color-check-unconfirmed-ink);
-}
-
 .results ul {
   display: flex;
   flex-wrap: wrap;
@@ -66,40 +54,42 @@
 .results li {
   display: inline-flex;
   align-items: center;
-  gap: 0.22rem;
+  gap: 0.3rem;
+  color: var(--color-ink-soft);
 }
 
-.iconBadge {
-  display: inline-grid;
-  width: 1.2rem;
-  height: 1.2rem;
+.results li::before {
+  width: 3px;
+  height: 0.75rem;
   flex: 0 0 auto;
-  border-radius: 0.35rem;
-  color: #fff;
-  place-items: center;
-}
-
-.goodResult .iconBadge {
-  background: var(--color-check-good-ink);
-}
-
-.cautionResult .iconBadge {
-  background: var(--color-check-caution);
-  color: var(--color-check-caution-ink);
-}
-
-.unconfirmedResult .iconBadge {
+  border-radius: 1px;
   background: var(--color-check-unconfirmed);
-  color: var(--color-check-unconfirmed-ink);
+  content: '';
+}
+
+.results .goodResult::before {
+  background: var(--color-check-good);
+}
+
+.results .cautionResult::before {
+  background: var(--color-check-caution);
+}
+
+.results li[data-empty='true']::before {
+  opacity: 0.45;
 }
 
 .resultText {
   display: inline-flex;
-  gap: 0.22rem;
+  gap: 0.18rem;
 }
 
 .results strong {
-  color: inherit;
+  color: var(--color-muted);
   font-size: inherit;
-  font-weight: inherit;
+  font-weight: 850;
+}
+
+.activeCount {
+  color: var(--color-ink);
 }
