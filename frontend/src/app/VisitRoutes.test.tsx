@@ -904,13 +904,11 @@ describe('FE-4 완료와 마이페이지', () => {
     expect(await screen.findByRole('heading', { name: '마이페이지' })).toBeInTheDocument();
     expect(screen.getByText(memberFixture.email)).toBeInTheDocument();
     expect(screen.getByText('Google 계정으로 로그인됨')).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /내 매물/ })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /비교표/ })).toHaveAttribute('href', '/compare');
     expect(screen.getByRole('link', { name: /내보내기/ })).toHaveAttribute('href', '/export');
     expect(screen.getByRole('link', { name: /선배 팁/ })).toHaveAttribute('href', '/tips');
-    await user.click(
-      screen.getAllByRole('button', { name: '로그아웃' })[1] ?? screen.getByRole('button', { name: '로그아웃' }),
-    );
+    expect(screen.queryByRole('heading', { name: '현재 로그인' })).not.toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: '로그아웃' }));
     expect(await screen.findByRole('button', { name: 'Google로 로그인하고 이용하기' })).toBeInTheDocument();
   });
 });
