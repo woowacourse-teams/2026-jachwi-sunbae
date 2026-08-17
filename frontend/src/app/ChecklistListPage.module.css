@@ -4,15 +4,21 @@
 }
 
 .container {
-  padding: 0.5rem 1rem 2rem;
+  padding: 0.5rem 0 2rem;
 }
 
 .navigationArea {
+  padding: 0 1rem;
   background: var(--color-surface);
 }
 
 .topNavigation {
   margin-bottom: 0;
+}
+
+.navigationArea > :global([data-full-bleed='true']) {
+  width: calc(100% + 2rem);
+  margin-left: -1rem;
 }
 
 .createAction {
@@ -22,9 +28,16 @@
   white-space: nowrap;
 }
 
-.description {
-  margin: 0.8rem 0 1rem;
-  color: var(--color-ink-soft);
-  font-size: 0.78rem;
-  line-height: 1.5;
+.list {
+  display: grid;
+  gap: 0.65rem;
+  margin: 1rem;
+  padding: 0;
+  list-style: none;
+}
+
+.container > :global(.content-state),
+.container > :global(.load-more) {
+  margin-right: 1rem;
+  margin-left: 1rem;
 }

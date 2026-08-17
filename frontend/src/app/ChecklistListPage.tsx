@@ -5,7 +5,7 @@ import ChecklistStageTabs from '../components/ChecklistStageTabs';
 import { ButtonLink } from '../components/ui/Button';
 import Icon from '../components/ui/Icon';
 import TopNavigation from '../components/ui/TopNavigation';
-import { checklistStageMeta, isChecklistStage } from '../constants/checklist';
+import { isChecklistStage } from '../constants/checklist';
 import { useChecklistList } from '../hooks/query/useChecklists';
 import type { ChecklistStage } from '../types/Checklist';
 import type { PublicConfig } from '../types/PublicConfig';
@@ -50,10 +50,9 @@ const ResolvedChecklistListPage = ({ config, stage }: { config: PublicConfig; st
               </ButtonLink>
             }
           />
-          <ChecklistStageTabs stage={stage} />
+          <ChecklistStageTabs stage={stage} fullBleed />
         </div>
         <h1 className="sr-only">내 체크리스트</h1>
-        <p className={styles.description}>{checklistStageMeta[stage].description}</p>
         {list.isPending ? (
           <div className="content-state" role="status">
             <span className="spinner" />
@@ -73,9 +72,9 @@ const ResolvedChecklistListPage = ({ config, stage }: { config: PublicConfig; st
             <span>프리셋으로 빠르게 시작해 보세요.</span>
           </div>
         ) : (
-          <ul className="checklist-list">
+          <ul className={styles.list}>
             {items.map((item) => (
-              <ChecklistListCard key={item.checklistId} config={config} checklist={item} />
+              <ChecklistListCard key={item.checklistId} checklist={item} />
             ))}
           </ul>
         )}
