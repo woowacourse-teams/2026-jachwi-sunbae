@@ -1,25 +1,14 @@
 package com.jachwisunbae.property.controller.dto.response;
 
-import com.jachwisunbae.property.service.dto.result.PropertyResult;
-import java.time.Instant;
+import com.jachwisunbae.property.entity.Property;
+import java.util.List;
 
-public record CreatePropertyResponse(
-        long propertyId,
-        String name,
-        long depositAmount,
-        long monthlyRentAmount,
-        DiscoverySourceResponse discoverySource,
-        Instant createdAt
-) {
-
-    public static CreatePropertyResponse from(final PropertyResult result) {
-        return new CreatePropertyResponse(
-                result.propertyId(),
-                result.name(),
-                result.depositAmount(),
-                result.monthlyRentAmount(),
-                DiscoverySourceResponse.from(result.discoverySource()),
-                result.createdAt()
-        );
+public record CreatePropertyResponse(Long id, String name, Long depositAmount, Long monthlyRentAmount,
+                                     String discoverySource,
+                                     List<Object> photos, PropertyCreateProgress overallProgress) {
+    public static CreatePropertyResponse from(final Property property) {
+        return new CreatePropertyResponse(property.getId(), property.getName(), property.getDepositAmount(),
+                property.getMonthlyRentAmount(), property.getDiscoverySource(),
+                List.of(), new PropertyCreateProgress(0, 0, 0, 0, 0, 0));
     }
 }

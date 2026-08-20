@@ -1,25 +1,21 @@
 package com.jachwisunbae.property.controller.dto.response;
 
-import com.jachwisunbae.property.service.dto.result.PropertyResult;
-import java.time.Instant;
+import com.jachwisunbae.property.entity.Property;
 
 public record UpdatePropertyResponse(
-        long propertyId,
+        Long id,
         String name,
-        long depositAmount,
-        long monthlyRentAmount,
-        DiscoverySourceResponse discoverySource,
-        Instant updatedAt
-) {
-
-    public static UpdatePropertyResponse from(final PropertyResult result) {
+        Long depositAmount,
+        Long monthlyRentAmount,
+        String discoverySource
+){
+    public static UpdatePropertyResponse from(final Property property) {
         return new UpdatePropertyResponse(
-                result.propertyId(),
-                result.name(),
-                result.depositAmount(),
-                result.monthlyRentAmount(),
-                DiscoverySourceResponse.from(result.discoverySource()),
-                result.updatedAt()
+                property.getId(),
+                property.getName(),
+                property.getDepositAmount(),
+                property.getMonthlyRentAmount(),
+                property.getDiscoverySource()
         );
     }
 }

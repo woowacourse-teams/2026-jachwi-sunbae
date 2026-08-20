@@ -22,7 +22,7 @@
 
 ### 목표
 
-외부 사용자가 접근할 수 있도록 백엔드와 프론트엔드를 배포하고([지정 요구사항 2](../../backend/docs/requirements/02-deploy-and-observe.md)), `main` 병합에서 검증·배포까지 자동으로 이어지게 한다. 프론트엔드는 React 19 + TypeScript + Webpack 5(Node 22.23.1)로 이미 개발되어 있으므로 이번 설계의 실행 범위는 백엔드와 프론트엔드 배포, 진입 계층을 모두 포함한다.
+외부 사용자가 접근할 수 있도록 백엔드와 프론트엔드를 배포하고, `main` 병합에서 검증·배포까지 자동으로 이어지게 한다. 프론트엔드는 React 19 + TypeScript + Webpack 5(Node 22.23.1)로 이미 개발되어 있으므로 이번 설계의 실행 범위는 백엔드와 프론트엔드 배포, 진입 계층을 모두 포함한다.
 
 [시스템 개요](../../backend/docs/architecture/system-overview.md)에는 프론트엔드가 "개발 예정"으로 적혀 있으나 실제 `frontend/`에는 코드가 있다. 배포 착수와 함께 해당 문서의 표기를 실제 상태로 맞춘다.
 
@@ -42,12 +42,12 @@
 | 항목 | 결정 | 핵심 이유 |
 | --- | --- | --- |
 | 컴퓨트 | EC2 1대, `t4g.small`, `project-app` 서브넷 | 백엔드 전용. 예산 안에서 JVM에 필요한 메모리(2GB) 확보 |
-| 데이터베이스 | RDS MySQL, `db.t4g.micro`, `project-storage` 서브넷 | 자동 백업·스냅샷이 Flyway 롤백 절차의 "검증된 백업 복구" 전제와 맞음 |
+| 데이터베이스 | RDS MySQL, `db.t4g.micro`, `project-storage` 서브넷 | 자동 백업과 스냅샷으로 데이터 복구 기반을 제공함 |
 | 사진 저장소 | S3 `techcourse-project-2026` 팀 폴더 | 로컬 MinIO와 같은 S3 API 경계([ADR-0006](../../backend/docs/adr/0006-use-private-s3-compatible-photo-storage.md)). EC2 인스턴스 role로 접근 |
 | 프론트 서빙 | S3 + CloudFront | 정적 SPA(React 19/Webpack). CDN 캐싱·백엔드와 분리. 환경변수는 빌드 타임 주입이라 운영 값으로 재빌드 필요 |
 | 진입·HTTPS | ALB + WAF(`techcourse-project-waf`) + ACM | LB에 WAF 연결이 필수. WAF 요금은 팀 예산에서 제외되고 ACM 퍼블릭 인증서는 무료 |
 | 도메인 | 가비아에서 구매한 `jachwi-sunbae.kr` | DNS 검증과 레코드는 가비아 DNS에서 설정 |
-| 배포 자동화 | CodePipeline + CodeBuild + CodeDeploy | 액세스 키 없이 제공된 service role로 배포 |
+| 배포 자동화 | CodePipeline `Commands` + CodeDeploy | 액세스 키 없이 제공된 service role로 배포 |
 | 비밀 관리 | EC2 로컬 설정 파일(`0600`) + CodeDeploy 훅 | 액세스 키를 만들 수 없고, SSM Parameter Store는 계정 전체가 한 범위라 팀 간 격리가 되지 않음 |
 
 확정된 식별자는 다음과 같다. 팀 서비스 영문명은 도메인과 맞춰 `jachwi-sunbae`로 두고 태그·S3 폴더명·설정 경로에 일관되게 쓴다.
@@ -74,20 +74,22 @@
                         ↓ HTTP
                      EC2(project-app 서브넷, t4g.small)
                      Spring Boot, prod 프로필
-                        ├─ JDBC ─ RDS MySQL(project-storage 서브넷)
-                        ├─ S3 API ─ techcourse-project-2026 버킷(사진)  ← EC2 ec2-project role
+                        ├─ 연동 예정 ─ RDS MySQL(project-storage 서브넷)
+                        ├─ 연동 예정 ─ techcourse-project-2026 버킷(사진)  ← EC2 ec2-project role
                         ├─ /etc/jachwi-sunbae/app.env (운영 비밀, 0600)
-                        └─ HTTPS ─ Google token endpoint·JWK
+                        └─ 연동 예정 ─ Google OAuth
 ```
 
-배포 경로(코드 → 서비스)는 애플리케이션 트래픽과 분리된다.
+배포 경로(코드 → 서비스)는 애플리케이션 트래픽과 분리된다. 상세 명령과 훅은 [백엔드 배포](../../backend/docs/operations/deployment.md)와 [프론트엔드 배포](../../frontend/docs/deployment.md)가 정본이다.
 
 ```text
-GitHub(main 병합)
-  → CodePipeline(소스: GitHub 버전 1)
-    → CodeBuild(codebuild-project role) ─ 빌드·테스트 ─ 산출물 → S3 techcourse-project-2026-artifacts
-    → CodeDeploy(codedeploy-project role) ─ EC2(ec2-project role, CodeDeploy 에이전트)에 배포
-    → 배포 후 Actuator health·smoke test 확인
+PR → GitHub Actions 필수 검사 → 보호 브랜치 병합
+  ├─ develop → dev 파이프라인
+  └─ main    → prod 파이프라인
+       ├─ 백엔드 Commands ─ jar 빌드(-x test) ─ CodeDeploy
+       │    └─ Actuator health와 소스 SHA 확인
+       └─ 프론트 Commands ─ build ─ S3 sync ─ CloudFront 무효화 완료
+            └─ 실제 index.html의 번들 파일명 확인
 ```
 
 ## 4. 구성 요소별 설계
@@ -204,7 +206,7 @@ dnf install -y java-21-amazon-corretto ruby wget
 - CloudFront OAC는 인프라 안내가 지정한 `techcourse-project-2026.s3.ap-northeast-2.amazonaws.com`을 origin으로 사용한다.
 - 캐시는 Policy를 새로 만들지 않는다. 새 콘솔에는 레거시 캐시 설정 항목이 없어 관리형 정책 `CachingOptimized`를 쓴다. 관리형이므로 새 정책을 만들지 않는다는 안내의 의도에 맞는다. 기본 TTL이 24시간이라 이름이 고정인 `index.html`은 배포마다 무효화한다.
 - **SPA 폴백**: react-router 클라이언트 라우팅이므로 CloudFront에서 403·404 응답을 `/index.html`(200)로 매핑해 새로고침·딥링크가 깨지지 않게 한다. Google 콜백 경로 `/oauth/google/callback`도 프론트 라우트다.
-- **환경변수는 빌드 타임에 주입된다.** `webpack.config.js`의 `DefinePlugin`이 `API_BASE_URL`·`GOOGLE_CLIENT_ID`·`GOOGLE_REDIRECT_URI`를 번들에 박아넣는다. 런타임 설정이 아니므로 운영 배포는 CodeBuild가 운영 값(`API_BASE_URL=https://api.<도메인>`, `GOOGLE_REDIRECT_URI=https://www.<도메인>/oauth/google/callback`)으로 **다시 빌드**해야 한다. 이 값들은 CodeBuild 프로젝트의 환경변수로 전달한다. 어차피 번들에 박혀 공개되는 값이므로 비밀이 아니다.
+- **환경변수는 빌드 타임에 주입된다.** `webpack.config.js`의 `DefinePlugin`이 `API_BASE_URL`·`GOOGLE_CLIENT_ID`·`GOOGLE_REDIRECT_URI`를 번들에 박아넣는다. 런타임 설정이 아니므로 운영 배포는 CodePipeline `Commands` 액션이 운영 값(`API_BASE_URL=https://api.<도메인>`, `GOOGLE_REDIRECT_URI=https://www.<도메인>/oauth/google/callback`)으로 **다시 빌드**해야 한다. 이 값들은 액션의 실행 환경변수로 전달한다. 어차피 번들에 박혀 공개되는 값이므로 비밀이 아니다.
 - **캐시 무효화는 `contenthash`로 한다.** 운영 빌드의 파일명에 해시를 붙여 내용이 바뀌면 파일명이 바뀌게 한다. 배포마다 전체 무효화(`/*`)를 걸 필요가 없고, 이름이 고정인 `index.html`만 무효화하면 나머지는 자동으로 새 파일을 가리킨다. 개발 빌드에는 붙이지 않는다.
 - **CloudFront origin path를 `/jachwi-sunbae/web`으로 지정한다.** 같은 버킷의 `jachwi-sunbae/` 아래에 비공개 사진 객체가 있다. origin path를 비워 두면 CloudFront가 버킷 전체를 공개해 사진이 인증 없이 노출된다.
 - 절차는 [프론트엔드 배포](../../frontend/docs/deployment.md)에 있다.
@@ -251,42 +253,35 @@ dnf install -y java-21-amazon-corretto ruby wget
 - 실제 비밀은 저장소·문서·`.env.example`에 커밋하지 않는다는 원칙을 그대로 유지한다.
 - **사용자 데이터에 비밀을 넣지 않는다.** 사용자 데이터는 인스턴스 메타데이터로 노출되어 인스턴스 안의 무엇이든 읽을 수 있다.
 
-| 구분 | 환경변수 |
-| --- | --- |
-| 비밀 | `DB_PASSWORD`, `JWT_SECRET_BASE64`, `GOOGLE_OAUTH_CLIENT_SECRET` |
-| 비밀 아님 | `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USERNAME`, `GOOGLE_OAUTH_CLIENT_ID`, `GOOGLE_OAUTH_ALLOWED_REDIRECT_URIS`, `CORS_ALLOWED_ORIGINS`, `PHOTO_STORAGE_REGION`, `PHOTO_STORAGE_BUCKET` |
+현재 초기화된 백엔드 애플리케이션은 운영 비밀값을 사용하지 않는다. systemd 계약을 유지하기 위해 파일은 빈 상태로 둘 수 있으며, 실제 연동을 추가할 때 필요한 값과 비밀 여부를 다시 정한다.
 
 이 방식의 대가를 분명히 해둔다. 값을 바꾸려면 사람이 서버에 접속해야 하고, 비밀이 서버 디스크에 평문으로 남으며, 인스턴스를 다시 만들면 파일을 다시 만들어야 한다. 이력도 남지 않는다. 대신 파일 권한이 곧 경계이므로 다른 팀이 읽을 수 없다. 팀 전용 비밀 저장소를 쓸 수 있게 되면 다시 판단한다.
 
 **셸 접속이 전제 조건이다.** 이 파일을 두려면 인스턴스에 들어가야 한다. 세션 관리자로 접속되는 것을 확인했다([4.2 컴퓨트](#42-컴퓨트-ec2)).
 
-**사진 저장소 자격증명은 그대로 옮길 수 없다.** 현재 `application.yml`은 `PHOTO_STORAGE_ACCESS_KEY`·`PHOTO_STORAGE_SECRET_KEY`를 필수로 요구하지만, 운영에서는 정적 키를 두지 않고 EC2 인스턴스 role로 접근한다([4.4 사진 저장소](#44-사진-저장소-s3)). `prod` 프로필에서는 이 두 값을 설정 파일에 두지 말고, 기본 자격증명 공급자 체인을 쓰도록 설정을 분기한다. `PHOTO_STORAGE_ENDPOINT`도 MinIO 주소가 아니라 실제 S3 엔드포인트여야 한다.
-
 ## 5. 배포 자동화 파이프라인
 
 액세스 키를 만들 수 없으므로 **AWS 네이티브 파이프라인**으로 구성한다. 모든 단계가 제공된 service role로 동작한다.
 
-1. **소스**: CodePipeline 소스 공급자는 GitHub(버전 1). `main` 병합을 트리거로 한다.
-2. **빌드·검증**: CodeBuild(service role `codebuild-project`)가 Gradle 빌드와 테스트를 실행한다. 산출물은 `techcourse-project-2026-artifacts`에 저장하고, 로그는 CloudWatch 그룹 `/aws/codebuild/project-2026`을 사용한다.
-3. **배포**: CodeDeploy(service role `codedeploy-project`)가 EC2에 배포한다. EC2에는 CodeDeploy 에이전트가 있고 `ec2-project` role로 산출물을 받는다. `appspec.yml`과 배포 훅 스크립트로 기동·전환을 정의한다.
-4. **배포 후 검증**: 배포 훅에서 Actuator health(`{"status":"UP"}`)와 핵심 smoke test(로그인·매물 조회 등 대표 흐름)를 확인한다. 실패하면 배포를 중단한다.
+1. **병합 전 검증**: `main`과 `develop`의 보호 규칙이 GitHub Actions의 백엔드·프론트엔드·문서 검사를 필수로 요구한다.
+2. **소스**: CodePipeline 소스 공급자는 GitHub(버전 1). `main`은 prod, `develop`은 dev 파이프라인을 트리거한다.
+3. **백엔드 빌드**: CodePipeline `Commands`가 테스트를 제외하고 jar를 만든다. GitHub Actions에서 이미 검사한 커밋만 병합되므로 테스트를 반복하지 않는다. 소스 SHA는 jar의 build-info와 배포 리비전 파일에 함께 기록한다.
+4. **백엔드 배포·검증**: CodeDeploy가 EC2에 배포한다. `appspec.yml`과 훅 스크립트가 프로세스를 재시작하고 Actuator health와 실행 중인 소스 SHA를 확인한다.
+5. **프론트엔드 배포·검증**: 별도 `Commands` 액션이 빌드 결과를 환경별 S3 경로에 동기화한다. CloudFront `index.html` 무효화가 끝난 뒤 실제 응답이 이번 번들 파일명을 참조하는지 확인한다.
 
-프론트엔드 파이프라인도 같은 원칙(액세스 키 없이 service role) 위에 구성한다. CodeBuild(Node 22.23.1)가 운영 환경변수로 `npm ci && npm run build`를 수행해 `dist/`를 만들고, 결과를 S3 `techcourse-project-2026` 팀 폴더에 동기화한 뒤 CloudFront 캐시를 무효화한다. 백엔드와 별도 파이프라인으로 두어 한쪽 실패가 다른 쪽 배포를 막지 않게 한다.
+네 파이프라인은 제공된 CodePipeline service role로 동작한다. 백엔드와 프론트엔드를 별도 파이프라인으로 두어 한쪽 실패가 다른 쪽 배포를 막지 않게 한다.
 
-PR 검증은 기존 GitHub Actions(`.github/workflows/backend-ci.yml`)가 맡고, 배포용 빌드는 CodeBuild가 맡는다. 두 경계를 구분해 유지한다.
+같은 환경의 백엔드와 프론트엔드 파이프라인은 같은 브랜치 push를 소스로 사용하고 AWS 트리거에 디렉터리 필터가 없다. 따라서 백엔드만 바뀐 병합도 두 파이프라인을 모두 시작한다. GitHub Actions의 내부 변경 감지는 병합 전 검사량만 줄이며 CodePipeline 실행 여부를 제어하지 않는다.
+
+PR 검증은 GitHub Actions가 맡고 배포용 산출물 생성과 실제 서비스 검증은 CodePipeline이 맡는다. 두 경계를 보호 규칙과 배포 리비전 비교로 연결한다.
 
 ## 6. 데이터베이스 변경이 포함된 배포
 
-절차는 [배포](../../backend/docs/operations/deployment.md), [데이터베이스 마이그레이션 가이드](../../backend/docs/guides/database-migrations.md), [ADR-0007](../../backend/docs/adr/0007-use-flyway-for-database-migrations.md)이 정본이다. 여기서는 이번 배포 환경에서 달라지는 점만 적는다.
-
-- **첫 배포는 baseline 대상이 아니다.** [배포](../../backend/docs/operations/deployment.md)의 baseline 단계는 pre-Flyway v1.0 DB를 전제한다. 새로 만드는 RDS는 빈 DB이므로 Flyway가 V1부터 최신까지 그대로 적용한다. `baseline-on-migrate`는 상시 설정으로 두지 않는다.
-- **대상 DB 교차 확인의 기준이 생긴다.** 지금까지 로컬 MySQL뿐이었으나 운영 RDS가 추가되므로, 마이그레이션 전 접속 대상이 의도한 RDS인지 확인한다.
-- 이후 DB 변경 배포는 정본 문서의 절차를 그대로 따른다.
+현재 백엔드는 데이터베이스에 연결하지 않으며 마이그레이션 도구를 사용하지 않는다. 데이터베이스 연동과 변경 절차는 실제 구현을 시작할 때 다시 결정한다.
 
 ## 7. 롤백
 
-- 애플리케이션 롤백은 CodeDeploy의 직전 정상 리비전으로 되돌린다. 판단 기준과 승인자는 [롤백](../../backend/docs/operations/rollback.md)을 따른다.
-- 데이터베이스는 자동 down migration을 두지 않는다. 데이터 유입 시점에 따라 검증된 백업 복구 또는 후속 순방향 마이그레이션 중 안전한 방법을 선택한다.
+- 애플리케이션 자동 롤백은 CodePipeline 스테이지가 직전 정상 실행을 다시 배포한다. 롤백 실행의 초록불 뒤에도 실제 `/actuator/info`가 직전 정상 SHA를 반환해야 완료다. 판단 기준과 검증 절차는 [롤백](../../backend/docs/operations/rollback.md)을 따른다.
 
 ## 8. 비용 추정
 
@@ -321,7 +316,7 @@ PR 검증은 기존 GitHub Actions(`.github/workflows/backend-ci.yml`)가 맡고
 
 | 결정 | 채택 | 검토한 대안 | 채택하지 않은 이유 |
 | --- | --- | --- | --- |
-| 배포 자동화 | CodePipeline+CodeBuild+CodeDeploy | GitHub Actions self-hosted runner를 EC2에 설치 | 셋업은 더 단순하나, 팀이 AWS 네이티브 CI/CD 학습을 자율 요구사항으로 가져갈 수 있어 학습 가치가 큰 쪽을 택함. 러너 방식은 축소 대안으로 유지 |
+| 배포 자동화 | CodePipeline `Commands`+CodeDeploy | GitHub Actions self-hosted runner를 EC2에 설치 | 셋업은 더 단순하나, 팀이 AWS 네이티브 CI/CD 학습을 자율 요구사항으로 가져갈 수 있어 학습 가치가 큰 쪽을 택함. 러너 방식은 축소 대안으로 유지 |
 | 데이터베이스 | RDS MySQL | EC2에 MySQL 직접 설치 | 비용은 낮으나 백업·복구·운영 부담이 크고, 롤백 절차의 백업 복구 전제와 맞지 않음 |
 | 비밀 관리 | EC2 로컬 설정 파일 | SSM Parameter Store(SecureString), AWS Secrets Manager | Parameter Store는 인스턴스 role로 동작하지만 계정 전체가 한 범위라 다른 팀 파라미터까지 보인다. 팀 간 격리가 없어 운영 비밀을 두기에 맞지 않다. Secrets Manager는 시크릿당 월 요금이 붙어 예산에 부담이 된다 |
 | EC2 운영체제 | Amazon Linux 2023 (arm64) | Ubuntu (arm64) | 팀에 익숙하고 참고 자료가 많아 우분투를 먼저 택했으나, 빠른 시작 목록에 26.04만 있었다. CodeDeploy 에이전트는 AWS가 지원 목록에 올린 배포판에서만 검증되고 26.04는 갓 나온 버전이라 확인되지 않았다. 파이프라인 전체를 막을 수 있는 위험이라 검증된 조합을 택했다. SSM 에이전트와 AWS CLI v2가 기본 설치되는 이점도 있다 |

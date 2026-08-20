@@ -9,7 +9,7 @@
 
 ## 배포 경로
 
-브랜치 병합이 트리거다. 액세스 키를 만들 수 없으므로 GitHub Actions가 AWS에 직접 배포하지 않고, 제공된 service role로 동작하는 AWS 네이티브 파이프라인을 쓴다.
+브랜치 병합이 트리거다. `main`과 `develop`은 필수 상태 검사를 통과한 PR만 병합할 수 있다. 액세스 키를 만들 수 없으므로 GitHub Actions가 AWS에 직접 배포하지 않고, 제공된 service role로 동작하는 AWS 네이티브 파이프라인을 쓴다.
 
 ```text
 develop 병합                       main 병합
@@ -57,11 +57,9 @@ CodeDeploy 배포 그룹이 **EC2 태그**로 대상을 고른다.
 | `backend/deploy/jachwi-sunbae.service` | systemd 유닛 |
 | `backend/deploy/scripts/` | 배포 훅 스크립트 |
 
-## 테스트를 어디서 실행하는가
+## 빌드 검증
 
-**빌드 단계는 테스트를 실행하지 않는다.** `clean bootJar -x test`만 실행한다. 테스트는 GitHub Actions(`.github/workflows/backend-ci.yml`)가 PR과 `main` push에서 실행하므로, 배포되는 커밋은 이미 검증을 통과한 상태다.
-
-같은 테스트를 두 곳에서 돌리지 않는 것이 첫 번째 이유다. 두 번째는 통합 테스트가 Testcontainers로 Docker를 요구해 관리형 빌드 환경에 특권 모드가 필요해지기 때문이다.
+배포 빌드는 `clean bootJar -x test`로 실행 가능한 JAR를 만든다. GitHub Actions는 PR과 `main`·`develop` push에서 `clean build`를 실행한다. 두 브랜치는 [브랜치와 커밋](../../../docs/convention/branch-and-commit.md)의 보호 규칙에 따라 필수 검사를 통과하지 않으면 병합할 수 없으므로 CodePipeline이 받는 커밋은 이미 검증을 통과한 상태다. 현재 초기화된 백엔드에는 테스트 소스가 없지만 이후 테스트가 추가되어도 같은 경계를 유지한다.
 
 ## 배포 훅
 
@@ -71,7 +69,7 @@ CodeDeploy 배포 그룹이 **EC2 태그**로 대상을 고른다.
 | `BeforeInstall` | `/opt/jachwi-sunbae`를 비운다. 이 배포가 만들지 않은 파일이 남아 있으면 CodeDeploy가 실패한다 |
 | `AfterInstall` | 환경변수 파일과 실행 사용자의 존재를 확인하고, 권한을 맞추고, systemd 유닛을 설치한다 |
 | `ApplicationStart` | 서비스를 **재시작**한다. 실제 프로세스 교체를 보장하는 단계다 |
-| `ValidateService` | `/actuator/health`가 `UP`이 될 때까지 최대 4분 기다린다. 실패하면 배포를 중단하고 최근 로그를 남긴다 |
+| `ValidateService` | `/actuator/health`가 `UP`이고 `/actuator/info`의 `build.commit`이 이번 배포 SHA와 같은지 확인한다. 실패하면 배포를 중단하고 최근 로그를 남긴다 |
 
 ## 왜 `start`가 아니라 `restart`인가
 
@@ -82,6 +80,15 @@ CodeDeploy 배포 그룹이 **EC2 태그**로 대상을 고른다.
 실제로 이 일이 있었다. `stop.sh`가 `systemctl list-unit-files` 출력을 grep해 서비스 존재를 검사했는데 그 검사가 어긋나 중지를 건너뛰었고, 이어진 배포가 1초 만에 health를 통과했다.
 
 `ApplicationStop`에 기대는 설계 자체가 옳지 않다. 이 훅은 **직전 리비전의 스크립트**로 실행되므로 첫 배포에서는 아예 실행되지 않고, 직전 리비전의 스크립트가 잘못돼 있으면 동작하지도 않는다. 프로세스 교체는 `restart`가 보장한다.
+
+## 이번 리비전이 실행됐는지 확인하는 방법
+
+`restart`는 알려진 프로세스 교체 실패를 막지만 실행 중인 프로세스의 정체를 증명하지는 않는다. 빌드와 검증은 같은 소스 SHA를 다음 두 곳에 넣는다.
+
+- Gradle `buildInfo`의 `build.commit`: 실행 중인 애플리케이션이 `/actuator/info`로 응답한다.
+- `deployment-revision.txt`: CodeDeploy가 이번 산출물과 함께 `/opt/jachwi-sunbae`에 배치한다.
+
+`ValidateService`는 health가 `UP`이어도 두 SHA가 다르면 즉시 실패한다. 옛 프로세스가 응답하거나 다른 산출물이 배포된 경우를 성공으로 기록하지 않는다. `deployment-revision.txt`가 없거나 SHA 형식이 아니어도 실패한다.
 
 ## 애플리케이션 포트
 
@@ -106,18 +113,9 @@ CodeDeploy 배포 그룹이 **EC2 태그**로 대상을 고른다.
 
 **환경변수 파일은 배포 산출물에 넣지 않는다.** CodeDeploy가 덮어쓰는 경로 밖에 두어 배포마다 값이 사라지지 않게 한다. systemd가 `EnvironmentFile`로 root 권한에서 읽은 뒤 `jachwi`로 내려가므로 애플리케이션 계정에 읽기 권한을 주지 않는다.
 
-값의 목록과 운영에서 달라지는 부분은 [환경변수](../guides/environment-variables.md)에 있다.
+현재 초기화된 애플리케이션은 운영 비밀값을 사용하지 않는다. 다만 배포 훅과 systemd 유닛의 기존 계약을 유지하기 위해 환경변수 파일은 빈 파일로라도 둔다. 새 환경변수를 도입할 때 [환경변수](../guides/environment-variables.md)와 배포 환경을 함께 갱신한다.
 
-dev와 prod에서 달라지는 값은 여섯이다. 나머지는 같다.
-
-| 키 | 이유 |
-| --- | --- |
-| `DB_NAME`, `DB_USERNAME`, `DB_PASSWORD` | 같은 RDS 인스턴스의 다른 스키마를 쓴다 |
-| `JWT_SECRET_BASE64` | 같으면 dev에서 발급한 토큰이 prod에서도 통한다 |
-| `GOOGLE_OAUTH_ALLOWED_REDIRECT_URIS`, `CORS_ALLOWED_ORIGINS` | 도메인이 다르다 |
-| `PHOTO_STORAGE_KEY_PREFIX` | 같으면 dev 테스트 사진이 prod 사진과 섞인다 |
-
-`SPRING_PROFILES_ACTIVE`는 **dev에서도 `prod`다.** 이 값은 환경 이름이 아니라 정적 자격증명을 쓰지 않는 운영 프로필을 뜻한다.
+`SPRING_PROFILES_ACTIVE`는 dev와 prod 모두 `prod`로 둔다. 이 프로필은 애플리케이션이 80 포트를 사용하게 한다.
 
 ## 빌드를 CodeBuild가 아니라 Commands로 하는 이유
 
@@ -128,11 +126,22 @@ dev와 prod에서 달라지는 값은 여섯이다. 나머지는 같다.
 빌드 명령은 다음을 한다.
 
 1. Corretto 21을 설치하고 `JAVA_HOME`을 잡는다. **관리형 환경의 기본 Java가 17일 수 있어 버전을 명시한다.**
-2. `clean bootJar -x test`로 실행 가능한 jar를 만든다.
-3. `-plain.jar`가 아닌 jar를 `app.jar`로 복사한다.
-4. `backend/deploy/`의 내용을 작업 디렉터리 루트로 옮긴다. **`appspec.yml`이 아티팩트 최상단에 없으면 CodeDeploy가 배포를 시작하지 못한다.**
+2. `CODEBUILD_RESOLVED_SOURCE_VERSION`이 40자리 Git SHA인지 확인한다.
+3. 그 SHA를 `build.commit`으로 넣고 `clean bootJar -x test`로 실행 가능한 jar를 만든다.
+4. 같은 SHA를 `deployment-revision.txt`에 기록한다.
+5. `-plain.jar`가 아닌 jar를 `app.jar`로 복사한다.
+6. `backend/deploy/`의 내용을 작업 디렉터리 루트로 옮긴다. **`appspec.yml`이 아티팩트 최상단에 없으면 CodeDeploy가 배포를 시작하지 못한다.**
 
-출력 아티팩트 `BuildArtifact`에는 `app.jar`, `appspec.yml`, `jachwi-sunbae.service`, `scripts/**/*`가 들어간다. 이 목록을 비워두면 Deploy 단계의 입력이 저장소 원본으로 잡혀 배포가 실패한다.
+기존 명령에 다음 검증과 파일 생성을 포함한다. `CODEBUILD_RESOLVED_SOURCE_VERSION`은 CodePipeline이 Commands 실행 환경에 제공한 소스 리비전이다.
+
+```bash
+test -n "${CODEBUILD_RESOLVED_SOURCE_VERSION:-}"
+printf '%s' "${CODEBUILD_RESOLVED_SOURCE_VERSION}" | grep -Eq '^[0-9a-f]{40}$'
+SOURCE_COMMIT_ID="${CODEBUILD_RESOLVED_SOURCE_VERSION}" ./backend/gradlew -p backend --no-daemon --max-workers=1 clean bootJar -x test
+printf '%s\n' "${CODEBUILD_RESOLVED_SOURCE_VERSION}" > deployment-revision.txt
+```
+
+출력 아티팩트 `BuildArtifact`에는 `app.jar`, `deployment-revision.txt`, `appspec.yml`, `jachwi-sunbae.service`, `scripts/**/*`가 들어간다. 이 목록을 비워두면 Deploy 단계의 입력이 저장소 원본으로 잡혀 배포가 실패한다.
 
 ## 로그 확인
 
@@ -143,18 +152,4 @@ sudo systemctl status jachwi-sunbae.service
 
 배포 자체가 실패했다면 EC2의 `/opt/codedeploy-agent/deployment-root/deployment-logs/`를 함께 본다.
 
-배포 결과와 사용자 관찰은 [지정 요구사항 2](../requirements/02-deploy-and-observe.md)에 증거와 함께 기록한다.
-
-## 데이터베이스 변경이 포함된 배포
-
-데이터베이스 변경 절차는 [데이터베이스 마이그레이션 가이드](../guides/database-migrations.md)를 따른다.
-
-1. 대상 환경과 DB를 교차 확인하고 애플리케이션 쓰기를 중단한다.
-2. pre-Flyway v1.0 DB라면 스키마·행 수를 기록하고 백업을 별도 DB에 복구해 검증한 뒤 버전 1을 명시적으로 baseline한다.
-3. V2~V4를 적용하고 Flyway history, 기존 데이터 보존, backfill과 제약을 검증한다.
-4. 애플리케이션을 배포하고 Actuator health와 핵심 smoke test를 확인한 뒤 쓰기를 재개한다.
-5. checksum 불일치나 마이그레이션 실패가 있으면 배포와 쓰기 재개를 중단하고 [롤백](rollback.md)의 데이터 유입 시점별 절차를 선택한다.
-
-`baseline-on-migrate`는 배포 환경의 상시 설정으로 두지 않는다. v1.1은 expand/backfill 단계이므로 이전 컬럼과 GOSHIWON 데이터 삭제를 같은 배포에 포함하지 않는다.
-
-운영 RDS는 새로 만든 빈 DB이므로 **첫 배포는 2단계의 baseline 대상이 아니다.** Flyway가 V1부터 최신까지 그대로 적용한다.
+배포 결과는 관련 GitHub 이슈 또는 PR에 기록한다.

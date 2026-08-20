@@ -1,49 +1,34 @@
 package com.jachwisunbae.member.controller;
 
-import com.jachwisunbae.common.config.OpenApiConfig;
-import com.jachwisunbae.common.resolver.AuthenticatedMemberId;
-import com.jachwisunbae.common.response.ApiResponse;
-import com.jachwisunbae.common.response.ErrorResponse;
-import com.jachwisunbae.member.controller.dto.response.MemberResponse;
-import com.jachwisunbae.member.service.MemberQueryService;
+import com.jachwisunbae.auth.web.AuthenticatedMemberId;
+import com.jachwisunbae.common.web.ApiResponse;
+import com.jachwisunbae.member.controller.dto.MemberDetailResponse;
+import com.jachwisunbae.member.service.MemberService;
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.media.Content;
-import io.swagger.v3.oas.annotations.media.Schema;
-import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
-import org.springframework.http.ResponseEntity;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/api/members")
+@Tag(name = "Members", description = "현재 로그인 회원 조회 API")
+@SecurityRequirement(name = "bearerAuth")
 public class MemberController {
 
-    private final MemberQueryService memberQueryService;
+    private final MemberService memberService;
 
-    public MemberController(final MemberQueryService memberQueryService) {
-        this.memberQueryService = memberQueryService;
+    public MemberController(MemberService memberService) {
+        this.memberService = memberService;
     }
 
-    @Operation(
-            summary = "현재 사용자 조회",
-            description = "검증된 자취선배 JWT Access Token의 현재 회원 프로필을 조회한다.",
-            security = @SecurityRequirement(name = OpenApiConfig.BEARER_AUTH_SCHEME)
-    )
-    @ApiResponses({
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "현재 회원 조회 성공"),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(
-                    responseCode = "401",
-                    description = "인증 누락·만료·유효하지 않은 Access Token",
-                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))
-            )
-    })
     @GetMapping("/me")
-    public ResponseEntity<ApiResponse<MemberResponse>> getMe(
-            @AuthenticatedMemberId final long memberId
-    ) {
-        final MemberResponse response = MemberResponse.from(memberQueryService.getMe(memberId));
-        return ResponseEntity.ok(ApiResponse.success(response));
+    @Operation(summary = "현재 회원 정보 조회", description = "Access Token의 회원 ID로 이름과 이메일을 조회합니다.")
+    public ApiResponse<MemberDetailResponse> get(
+        @AuthenticatedMemberId final Long memberId
+    ){
+        return ApiResponse.of(MemberDetailResponse.from(memberService.findById(memberId)));
     }
+
 }
