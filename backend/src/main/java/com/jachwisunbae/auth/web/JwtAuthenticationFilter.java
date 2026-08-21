@@ -30,13 +30,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response,
             FilterChain chain) throws ServletException, IOException {
-        //TODO
         if (CorsUtils.isPreFlightRequest(request) || isPublicRequest(request)) {
-            chain.doFilter(request, response);
-            return;
-        }
-
-        if (isPublicRequest(request)) {
             chain.doFilter(request, response);
             return;
         }
