@@ -1,14 +1,5 @@
-import type { ChecklistItemInputDto } from '../apis/dtos/ChecklistDto';
+import type { ChecklistItemInputDto, ProvidedChecklistItemInputDto } from '../apis/dtos/ChecklistDto';
 import type { ChecklistEditorItem } from '../types/ChecklistEditor';
-
-export const unicodeCodePointLength = (value: string): number => Array.from(value).length;
-
-export const validateCustomQuestion = (value: string): string | null => {
-  const question = value.trim();
-  if (unicodeCodePointLength(question) === 0) return '직접 추가할 질문을 입력해 주세요.';
-  if (unicodeCodePointLength(question) > 200) return '직접 추가 질문은 200자 이하로 입력해 주세요.';
-  return null;
-};
 
 export const moveEditorItem = (
   items: ChecklistEditorItem[],
@@ -37,3 +28,9 @@ export const toChecklistItemInputs = (items: ChecklistEditorItem[]): ChecklistIt
       ? { systemCheckItemId: item.sourceCheckItemId }
       : { systemCheckItemId: null, question: item.question.trim() },
   );
+
+export const toProvidedChecklistItemInputs = (items: ChecklistEditorItem[]): ProvidedChecklistItemInputDto[] =>
+  items.map((item) => {
+    if (item.origin !== 'PROVIDED') throw new Error('새 체크리스트에는 제공 항목만 추가할 수 있습니다.');
+    return { systemCheckItemId: item.sourceCheckItemId };
+  });

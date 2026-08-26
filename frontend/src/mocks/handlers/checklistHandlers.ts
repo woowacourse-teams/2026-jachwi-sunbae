@@ -15,7 +15,11 @@ import type { ChecklistStage } from '../../types/Checklist';
 
 type ChecklistItemBody = { systemCheckItemId?: unknown; question?: unknown };
 
-const checklistItemsFromBody = (stage: ChecklistStage, value: unknown): MockChecklistItem[] | null => {
+const checklistItemsFromBody = (
+  stage: ChecklistStage,
+  value: unknown,
+  legacyCustomQuestions: ReadonlySet<string> = new Set(),
+): MockChecklistItem[] | null => {
   if (!Array.isArray(value) || value.length < 1 || value.length > 30) return null;
   const seen = new Set<string>();
   const result: MockChecklistItem[] = [];
@@ -41,7 +45,7 @@ const checklistItemsFromBody = (stage: ChecklistStage, value: unknown): MockChec
     if (item.systemCheckItemId === null && typeof item.question === 'string') {
       const question = item.question.trim();
       const key = `CUSTOM:${question}`;
-      if (question.length < 1 || question.length > 200 || seen.has(key)) return null;
+      if (!legacyCustomQuestions.has(question) || seen.has(key)) return null;
       seen.add(key);
       result.push({
         id: 9_000 + index,
@@ -128,7 +132,10 @@ export const checklistHandlers = [
     ) {
       return failure('INVALID_REQUEST', 400);
     }
-    const items = checklistItemsFromBody(current.stage, body.items);
+    const legacyCustomQuestions = new Set(
+      current.items.filter((item) => item.origin === 'CUSTOM').map((item) => item.question),
+    );
+    const items = checklistItemsFromBody(current.stage, body.items, legacyCustomQuestions);
     if (items === null) return failure('CHECKLIST_ITEMS_INVALID', 400);
     const updated = { ...current, name: body.name.trim(), items };
     setMockChecklists(getMockChecklists().map((checklist) => (checklist.id === current.id ? updated : checklist)));

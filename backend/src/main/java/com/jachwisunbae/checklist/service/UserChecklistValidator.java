@@ -14,7 +14,21 @@ import java.util.Set;
 @Component
 public class UserChecklistValidator {
 
-    public void validateItems(final List<UserChecklistItemRequest> items) {
+    public void validateCreateItems(final List<UserChecklistItemRequest> items) {
+        validateItems(items, Set.of());
+    }
+
+    public void validateUpdateItems(final List<UserChecklistItemRequest> items,
+                                    final List<UserChecklistItem> existingItems) {
+        Set<String> legacyCustomQuestions = existingItems.stream()
+                .filter(UserChecklistItem::isCustom)
+                .map(UserChecklistItem::getQuestion)
+                .collect(java.util.stream.Collectors.toUnmodifiableSet());
+        validateItems(items, legacyCustomQuestions);
+    }
+
+    private void validateItems(final List<UserChecklistItemRequest> items,
+                               final Set<String> legacyCustomQuestions) {
         if (items == null) {
             throw new BusinessException(DomainErrorCode.CHECKLIST_ITEMS_INVALID,
                     "체크리스트 항목 목록은 null일 수 없습니다.");
@@ -42,6 +56,10 @@ public class UserChecklistValidator {
                 if (question.isEmpty() || question.codePointCount(0, question.length()) > 200) {
                     throw invalidItem();
                 }
+                if (!legacyCustomQuestions.contains(question)) {
+                    throw new BusinessException(DomainErrorCode.CHECKLIST_ITEMS_INVALID,
+                            "사용자 직접 질문은 새로 추가하거나 수정할 수 없습니다.");
+                }
                 if (!customQuestions.add(question)) {
                     throw duplicateItem();
                 }
@@ -65,7 +83,7 @@ public class UserChecklistValidator {
 
     private BusinessException invalidItem() {
         return new BusinessException(DomainErrorCode.CHECKLIST_ITEMS_INVALID,
-                "각 항목에는 시스템 항목 ID 또는 직접 추가 질문 중 하나만 필요합니다.");
+                "자취선배가 제공하는 체크 항목 ID가 필요합니다.");
     }
 
     private BusinessException duplicateItem() {

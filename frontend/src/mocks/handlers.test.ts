@@ -34,14 +34,14 @@ describe('최종 API 명세 MSW handlers', () => {
     expect(data.items[0]).toMatchObject({ propertyMemoItemId: 1001, systemMemoItemId: 1 });
   });
 
-  it('시스템 ID와 직접 질문을 동시에 보낸 항목은 거절한다', async () => {
+  it('사용자 직접 질문을 보낸 항목은 거절한다', async () => {
     const response = await fetch(apiUrl('/api/checklists'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         name: '잘못된 체크리스트',
         stage: 'ONLINE_PHONE',
-        items: [{ systemCheckItemId: 101, question: '동시에 보낸 질문' }],
+        items: [{ systemCheckItemId: null, question: '직접 질문' }],
       }),
     });
     const body = await readJson(response);
@@ -57,12 +57,7 @@ describe('최종 API 명세 MSW handlers', () => {
       body: JSON.stringify({
         name: '현장 확인 목록',
         stage: 'ON_SITE',
-        items: [
-          { systemCheckItemId: 201 },
-          { systemCheckItemId: 202 },
-          { systemCheckItemId: 203 },
-          { systemCheckItemId: null, question: '창틀 곰팡이는 괜찮은가?' },
-        ],
+        items: [{ systemCheckItemId: 201 }, { systemCheckItemId: 202 }, { systemCheckItemId: 203 }],
       }),
     });
     const createBody = await readJson(createResponse);
@@ -73,8 +68,8 @@ describe('최종 API 명세 MSW handlers', () => {
     };
 
     expect(createResponse.status).toBe(201);
-    expect(created).toMatchObject({ itemCount: 4 });
-    expect(created.items.map((item) => item.systemCheckItemId)).toEqual([201, 202, 203, null]);
+    expect(created).toMatchObject({ itemCount: 3 });
+    expect(created.items.map((item) => item.systemCheckItemId)).toEqual([201, 202, 203]);
 
     const applyResponse = await fetch(apiUrl('/api/properties/10/checklists/ON_SITE'), {
       method: 'PUT',
@@ -91,7 +86,7 @@ describe('최종 API 명세 MSW handlers', () => {
 
     expect(applyResponse.status).toBe(200);
     expect(applied).toMatchObject({ propertyId: 10, stage: 'ON_SITE' });
-    expect(applied.items).toHaveLength(4);
+    expect(applied.items).toHaveLength(3);
     expect(applied.items[0]).toMatchObject({ status: 'UNCONFIRMED', memo: '' });
 
     const itemId = applied.items[0]?.id;

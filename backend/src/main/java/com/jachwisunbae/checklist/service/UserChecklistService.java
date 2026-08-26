@@ -45,7 +45,7 @@ public class UserChecklistService {
 
     @Transactional
     public UserChecklist create(final Long memberId, final CreateUserChecklistRequest request) {
-        validator.validateItems(request.items());
+        validator.validateCreateItems(request.items());
         Map<Long, SystemCheckItem> systemItems = findSystemItems(request.stage(), request.items());
         requireActive(systemItems.values().stream().toList());
         UserChecklist persistedChecklist = userChecklistRepository.save(
@@ -81,7 +81,8 @@ public class UserChecklistService {
         UserChecklist checklist = userChecklistRepository
                 .findByIdAndMemberIdForUpdate(checklistId, memberId)
                 .orElseThrow(() -> new BusinessException(DomainErrorCode.CHECKLIST_NOT_FOUND, "체크리스트를 찾을 수 없습니다."));
-        validator.validateItems(request.items());
+        List<UserChecklistItem> existingItems = userChecklistRepository.findItems(checklistId);
+        validator.validateUpdateItems(request.items(), existingItems);
         Map<Long, SystemCheckItem> systemItems = findSystemItems(checklist.getStage(), request.items());
         requireInactiveItemsAlreadyIncluded(checklistId, systemItems.values().stream().toList());
         List<UserChecklistItem> updatedItems = createItems(

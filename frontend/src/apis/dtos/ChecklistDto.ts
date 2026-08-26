@@ -1,11 +1,12 @@
 import type { ChecklistStage } from '../../types/Checklist';
 
 export type ChecklistItemInputDto = { systemCheckItemId: number } | { systemCheckItemId: null; question: string };
+export type ProvidedChecklistItemInputDto = { systemCheckItemId: number };
 
 export type CreateChecklistV11RequestDto = {
   name: string;
   stage: ChecklistStage;
-  items: ChecklistItemInputDto[];
+  items: ProvidedChecklistItemInputDto[];
 };
 
 export type UpdateChecklistV11RequestDto = {

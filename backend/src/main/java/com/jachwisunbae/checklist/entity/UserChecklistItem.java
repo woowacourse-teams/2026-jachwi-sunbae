@@ -71,6 +71,6 @@ public class UserChecklistItem {
 
     private static String validateQuestion(final String question) {
         return DomainPreconditions.requireTrimmed(question, 1, 200, DomainErrorCode.CHECKLIST_ITEMS_INVALID,
-                "직접 추가 질문은 trim 후 1자 이상 200자 이하여야 합니다.");
+                "이전 사용자 항목 질문은 trim 후 1자 이상 200자 이하여야 합니다.");
     }
 }

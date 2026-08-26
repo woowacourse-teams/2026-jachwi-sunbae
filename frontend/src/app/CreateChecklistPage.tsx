@@ -11,7 +11,7 @@ import type { ChecklistStage } from '../types/Checklist';
 import { checkItemToEditorItem } from '../types/ChecklistEditor';
 import type { PublicConfig } from '../types/PublicConfig';
 import { parseChecklistReturnTo } from '../utils/checklist';
-import { toChecklistItemInputs } from '../utils/checklistEditor';
+import { toProvidedChecklistItemInputs } from '../utils/checklistEditor';
 import styles from './CreateChecklistPage.module.css';
 
 const CreateChecklistPage = ({ config }: { config: PublicConfig }) => {
@@ -114,7 +114,7 @@ const ResolvedCreateChecklistPage = ({
               const created = await create.mutateAsync({
                 name,
                 stage,
-                items: toChecklistItemInputs(items),
+                items: toProvidedChecklistItemInputs(items),
               });
               if (safeReturn !== null && safeReturn.stage === stage) {
                 navigate(safeReturn.path, { replace: true, state: { newChecklistId: created.checklistId } });

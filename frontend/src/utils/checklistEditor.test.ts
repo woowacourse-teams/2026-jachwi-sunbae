@@ -14,7 +14,7 @@ describe('체크리스트 편집 상태와 DTO 변환', () => {
   const anotherOptionalItem = checkItemToEditorItem(secondOnlineItemFixture as CheckItem);
   const existingItem = checklistItemToEditorItem(providedChecklistItemFixture as ChecklistItem);
 
-  it('저장 요청에는 제공 항목과 직접 질문을 최종 표시 순서대로 담는다', () => {
+  it('이전 직접 질문은 수정하지 않고 제공 항목과 함께 순서를 보존한다', () => {
     const customItem = checklistItemToEditorItem(customChecklistItemFixture as ChecklistItem);
     expect(toChecklistItemInputs([anotherOptionalItem, customItem, existingItem])).toEqual([
       { systemCheckItemId: anotherOptionalItem.sourceCheckItemId },

@@ -98,7 +98,7 @@
 | `PUT` | `/api/checklists/{checklistId}` | 이름·전체 항목 교체 |
 | `DELETE` | `/api/checklists/{checklistId}` | 삭제 |
 
-생성과 수정은 저장할 전체 항목을 표시 순서대로 보낸다. 제공 항목은 `systemCheckItemId`, 직접 질문은 nullable ID와 `question`을 사용하며 두 값 중 하나만 지정한다. 생성 화면은 현재 단계의 활성 `CORE`를 먼저 구성해 같은 요청 형태로 보낸다.
+생성과 수정은 저장할 전체 제공 항목의 `systemCheckItemId`를 표시 순서대로 보낸다. 생성 화면은 현재 단계의 활성 `CORE`를 먼저 구성해 같은 요청 형태로 보낸다. 사용자 질문을 직접 생성하거나 수정하는 요청은 거절한다.
 
 ```json
 {
@@ -106,12 +106,12 @@
   "stage": "ON_SITE",
   "items": [
     { "systemCheckItemId": 113 },
-    { "systemCheckItemId": null, "question": "창틀 곰팡이는 괜찮은가?" }
+    { "systemCheckItemId": 114 }
   ]
 }
 ```
 
-`PUT`은 `stage`를 제외하고 같은 `name`, `items`를 받는다. 이름은 1~30자, 전체 항목은 1~30개, 직접 질문은 trim 후 1~200자다. 응답 항목은 사용자 체크리스트 항목 `id`, `PROVIDED` 또는 `CUSTOM`인 `origin`, nullable `systemCheckItemId`, `itemType`, 질문, 표시 순서와 활성 여부를 반환한다. 직접 질문은 `OPTIONAL`이며 시스템 항목 비활성 여부와 무관하게 활성이다.
+`PUT`은 `stage`를 제외하고 같은 `name`, `items`를 받는다. 이름은 1~30자, 전체 항목은 1~30개다. 응답 항목은 사용자 체크리스트 항목 `id`, `origin`, `systemCheckItemId`, `itemType`, 질문, 표시 순서와 활성 여부를 반환한다. 새 응답의 `origin`은 `PROVIDED`다. 이전 버전에서 저장된 `CUSTOM` 항목은 문구를 바꾸지 않은 유지·정렬·제거 요청만 호환하며 새 생성과 문구 수정은 허용하지 않는다.
 
 ## 매물 적용 체크리스트
 

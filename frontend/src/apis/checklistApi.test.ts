@@ -102,7 +102,7 @@ describe('최종 체크리스트 API 계약', () => {
     });
   });
 
-  it('생성 시 제공 항목과 직접 질문을 최종 순서대로 전송한다', async () => {
+  it('생성 시 제공 항목을 최종 순서대로 전송한다', async () => {
     authenticate();
     let body: unknown;
     server.use(
@@ -115,12 +115,12 @@ describe('최종 체크리스트 API 계약', () => {
     await createChecklistV11(config, {
       name: '전화 문의 기본 목록',
       stage: 'ONLINE_PHONE',
-      items: [{ systemCheckItemId: 101 }, { systemCheckItemId: null, question: '창틀 곰팡이는 괜찮은가?' }],
+      items: [{ systemCheckItemId: 101 }],
     });
     expect(body).toEqual({
       name: '전화 문의 기본 목록',
       stage: 'ONLINE_PHONE',
-      items: [{ systemCheckItemId: 101 }, { systemCheckItemId: null, question: '창틀 곰팡이는 괜찮은가?' }],
+      items: [{ systemCheckItemId: 101 }],
     });
   });
 

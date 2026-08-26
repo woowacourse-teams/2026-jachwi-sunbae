@@ -3,7 +3,6 @@ import { getChecklistErrorMessage } from '../apis/checklistErrorMessages';
 import { useCheckItemSearch } from '../hooks/query/useChecklists';
 import type { CheckItem, ChecklistStage } from '../types/Checklist';
 import type { PublicConfig } from '../types/PublicConfig';
-import { validateCustomQuestion } from '../utils/checklistEditor';
 import BottomActionArea from './ui/BottomActionArea';
 import { Button } from './ui/Button';
 import SearchField from './ui/SearchField';
@@ -13,41 +12,19 @@ type CheckItemPickerProps = {
   config: PublicConfig;
   stage: ChecklistStage;
   existingSourceIds: number[];
-  existingQuestions: string[];
   disabled: boolean;
   onCancel: () => void;
-  onAdd: (items: CheckItem[], customQuestion: string | null) => void;
+  onAdd: (items: CheckItem[]) => void;
 };
 
-const CheckItemPicker = ({
-  config,
-  stage,
-  existingSourceIds,
-  existingQuestions,
-  disabled,
-  onCancel,
-  onAdd,
-}: CheckItemPickerProps) => {
+const CheckItemPicker = ({ config, stage, existingSourceIds, disabled, onCancel, onAdd }: CheckItemPickerProps) => {
   const [input, setInput] = useState('');
   const [query, setQuery] = useState('');
-  const [customQuestion, setCustomQuestion] = useState('');
-  const [customTouched, setCustomTouched] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<number>>(() => new Set());
   const result = useCheckItemSearch(config, stage, query);
   const items = useMemo(() => result.data?.pages.flatMap((page) => page.content) ?? [], [result.data]);
   const existingIds = useMemo(() => new Set(existingSourceIds), [existingSourceIds]);
-  const existingQuestionSet = useMemo(() => new Set(existingQuestions), [existingQuestions]);
-  const trimmedCustomQuestion = customQuestion.trim();
-  const duplicatesSelectedProvided = items.some(
-    (item) => selectedIds.has(item.checkItemId) && item.question.trim() === trimmedCustomQuestion,
-  );
-  const customQuestionError =
-    trimmedCustomQuestion.length === 0
-      ? validateCustomQuestion(customQuestion)
-      : existingQuestionSet.has(trimmedCustomQuestion) || duplicatesSelectedProvided
-        ? '이미 목록에 있는 질문이에요.'
-        : validateCustomQuestion(customQuestion);
-  const additionCount = selectedIds.size + (trimmedCustomQuestion.length > 0 ? 1 : 0);
+  const additionCount = selectedIds.size;
 
   const search = (nextQuery: string) => {
     setQuery(nextQuery.trim());
@@ -56,15 +33,9 @@ const CheckItemPicker = ({
 
   const addSelected = () => {
     const selected = items.filter((item) => selectedIds.has(item.checkItemId) && !existingIds.has(item.checkItemId));
-    if (trimmedCustomQuestion.length > 0 && customQuestionError !== null) {
-      setCustomTouched(true);
-      return;
-    }
-    if (selected.length === 0 && trimmedCustomQuestion.length === 0) return;
-    onAdd(selected, trimmedCustomQuestion.length > 0 ? trimmedCustomQuestion : null);
+    if (selected.length === 0) return;
+    onAdd(selected);
     setSelectedIds(new Set());
-    setCustomQuestion('');
-    setCustomTouched(false);
   };
 
   return (
@@ -92,31 +63,6 @@ const CheckItemPicker = ({
             setSelectedIds(new Set());
           }}
         />
-      </div>
-
-      <div className={styles.customQuestionComposer}>
-        <label htmlFor="custom-check-question">내 질문 직접 추가</label>
-        <textarea
-          id="custom-check-question"
-          value={customQuestion}
-          maxLength={200}
-          placeholder="예: 창틀에 곰팡이 흔적이 있는가?"
-          disabled={disabled}
-          aria-invalid={(customTouched && customQuestionError !== null) || undefined}
-          aria-describedby="custom-check-question-help"
-          onBlur={() => {
-            if (customQuestion.length > 0) setCustomTouched(true);
-          }}
-          onChange={(event) => setCustomQuestion(event.target.value)}
-        />
-        <small
-          id="custom-check-question-help"
-          className={customTouched && customQuestionError ? styles.customQuestionError : undefined}
-        >
-          {customTouched && customQuestionError !== null
-            ? customQuestionError
-            : `내가 확인하고 싶은 문장을 직접 적을 수 있어요. ${Array.from(customQuestion).length}/200`}
-        </small>
       </div>
 
       <div className={styles.pickerActions}>

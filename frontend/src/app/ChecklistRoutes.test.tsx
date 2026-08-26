@@ -124,7 +124,7 @@ describe('체크리스트 탐색과 편집', () => {
     expect(screen.getByRole('link', { name: '직방 매물 문의 목록 편집' })).toBeInTheDocument();
   });
 
-  it('새 체크리스트는 CORE로 열리고 제공 OPTIONAL과 직접 질문을 함께 추가한다', async () => {
+  it('새 체크리스트는 CORE로 열리고 제공 OPTIONAL을 추가한다', async () => {
     let requestBody: unknown;
     server.use(
       http.get(`${config.apiBaseUrl}/api/check-items`, () =>
@@ -163,22 +163,17 @@ describe('체크리스트 탐색과 편집', () => {
       addSelectedButton.compareDocumentPosition(searchResultsHeading) & Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeTruthy();
     expect(optionalItem).not.toBeChecked();
+    expect(screen.queryByLabelText('내 질문 직접 추가')).not.toBeInTheDocument();
     await user.click(optionalItem);
-    await user.type(screen.getByLabelText('내 질문 직접 추가'), '창틀 곰팡이는 괜찮은가?');
-    await user.click(screen.getByRole('button', { name: '선택한 2개 항목 추가' }));
+    await user.click(screen.getByRole('button', { name: '선택한 1개 항목 추가' }));
     expect(screen.getByText(secondOnlineItemFixture.question)).toBeInTheDocument();
-    expect(screen.getByLabelText('직접 추가 질문')).toHaveValue('창틀 곰팡이는 괜찮은가?');
 
     await user.click(screen.getByRole('button', { name: '체크리스트 만들기' }));
     await waitFor(() =>
       expect(requestBody).toEqual({
         name: '원룸 온라인·전화 체크리스트',
         stage: 'ONLINE_PHONE',
-        items: [
-          { systemCheckItemId: 101 },
-          { systemCheckItemId: 102 },
-          { systemCheckItemId: null, question: '창틀 곰팡이는 괜찮은가?' },
-        ],
+        items: [{ systemCheckItemId: 101 }, { systemCheckItemId: 102 }],
       }),
     );
     expect(await screen.findByRole('link', { name: '새 체크리스트 만들기' })).toHaveAttribute(
