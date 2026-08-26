@@ -35,7 +35,11 @@ erDiagram
 
 ## 회원과 닉네임 자격정보
 
-`members`는 기존 소유자 FK를 유지하는 내부 회원이며 `email`은 이전 Google 회원과 신규 내부 식별자를 함께 담는다. API에는 이메일을 노출하지 않는다. 신규 회원은 충돌하지 않는 `nickname-<UUID>@jachwi-sunbae.local` 값을 사용한다.
+`members`는 기존 소유자 FK를 유지하는 내부 회원이며 `email`은 이전 Google 회원과 신규 내부 식별자를 함께 담는다. API에는 이메일을 노출하지 않는다. 신규 회원은 충돌하지 않는 `nickname-<UUID>@jachwi-sunbae.local` 값을 사용한다. `first_property_created_at`은 최초 매물을 삭제한 뒤에도 첫 등록 전환을 다시 발생시키지 않도록 회원 생애 최초 매물 생성 시각을 보존한다.
+
+| `members` 컬럼 | 타입 | 제약 | 설명 |
+| --- | --- | --- | --- |
+| `first_property_created_at` | DATETIME(6) | NULL | 최초 매물 생성 시각. 한 번 기록하면 매물 삭제 뒤에도 유지 |
 
 | 컬럼 | 타입 | 제약 | 설명 |
 | --- | --- | --- | --- |
@@ -135,4 +139,5 @@ erDiagram
 - `db/upgrade/002-custom-checklist-items.sql`: 이전 버전의 nullable 출처를 보존하고 이전 18개 제공 문항을 비활성화한 뒤 현재 53개 문항을 등록. 현재 API는 새 직접 질문을 허용하지 않음
 - `db/upgrade/003-adapt-team-mvp1-schema.sql`: 팀 RDS의 Flyway V11 형태를 데이터 손실 없이 현재 회원·매물·메모·사진 제약으로 보강
 - `db/upgrade/004-property-comparison-view-events.sql`: 기존 RDS에 비교 화면 진입 이벤트 테이블을 멱등 추가
+- `db/upgrade/005-member-first-property-created-at.sql`: 기존 매물의 최초 생성 시각을 회원에 보강하고 이후 첫 매물 전환을 한 번만 기록
 - 데모 회원·매물·진행 결과는 `DEMO_SEED_ENABLED=true`일 때만 만들며 운영 시드에 섞지 않는다.

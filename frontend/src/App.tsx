@@ -1,5 +1,6 @@
 import AppProviders from './app/AppProviders';
 import AppRoutes from './app/AppRoutes';
+import { TrackingConsentProvider } from './app/TrackingConsentContext';
 import { getPublicConfig } from './app/publicConfig';
 import StatusPanel from './components/StatusPanel';
 import type { PublicConfig } from './types/PublicConfig';
@@ -24,7 +25,9 @@ const App = ({ config }: AppProps) => {
 
   return (
     <AppProviders>
-      <AppRoutes config={resolvedConfig} />
+      <TrackingConsentProvider metaPixelId={resolvedConfig.metaPixelId}>
+        <AppRoutes config={resolvedConfig} />
+      </TrackingConsentProvider>
     </AppProviders>
   );
 };

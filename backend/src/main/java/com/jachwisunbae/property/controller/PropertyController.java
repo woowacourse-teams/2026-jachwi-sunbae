@@ -23,9 +23,9 @@ import com.jachwisunbae.property.controller.dto.response.PropertyMemoResponse;
 import com.jachwisunbae.property.controller.dto.response.PropertyPhotoListResponse;
 import com.jachwisunbae.property.controller.dto.response.PropertyPhotoResponse;
 import com.jachwisunbae.property.controller.dto.response.UpdatePropertyResponse;
-import com.jachwisunbae.property.entity.Property;
 import com.jachwisunbae.property.repository.query.PropertyPhotosQuery;
 import com.jachwisunbae.property.service.PropertyChecklistService;
+import com.jachwisunbae.property.service.PropertyCreationResult;
 import com.jachwisunbae.property.service.PropertyCsvService;
 import com.jachwisunbae.property.service.PropertyComparisonPdfService;
 import com.jachwisunbae.property.service.PropertyComparisonViewService;
@@ -126,13 +126,16 @@ public class PropertyController {
     }
 
     @PostMapping
-    @Operation(summary = "매물 생성", description = "후보 매물을 생성합니다. 회원당 최대 30개까지 등록할 수 있습니다.")
+    @Operation(summary = "매물 생성",
+            description = "후보 매물을 생성합니다. 회원당 최대 30개까지 등록할 수 있으며, 응답의 firstProperty는 "
+                    + "현재 회원이 첫 매물을 만든 경우에만 true입니다.")
     public ResponseEntity<ApiResponse<CreatePropertyResponse>> create(
             @AuthenticatedMemberId final Long memberId,
             @Valid @RequestBody final CreatePropertyRequest request) {
-        Property property = propertyService.create(memberId, request);
-        return ResponseEntity.created(URI.create("/api/properties/" + property.getId()))
-                .body(ApiResponse.of("매물을 등록했습니다.", CreatePropertyResponse.from(property)));
+        PropertyCreationResult result = propertyService.create(memberId, request);
+        return ResponseEntity.created(URI.create("/api/properties/" + result.property().getId()))
+                .body(ApiResponse.of("매물을 등록했습니다.",
+                        CreatePropertyResponse.from(result.property(), result.firstProperty())));
     }
 
     @GetMapping("/{propertyId}")

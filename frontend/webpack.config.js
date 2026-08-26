@@ -13,6 +13,7 @@ module.exports = (_env, argv) => {
   const apiBaseUrl = process.env.API_BASE_URL ?? (isMockingEnabled ? 'http://127.0.0.1:3000' : 'http://localhost:8080');
   const mapProviderMode = process.env.MAP_PROVIDER_MODE ?? 'demo';
   const kakaoMapJavaScriptKey = process.env.KAKAO_MAP_JAVASCRIPT_KEY ?? '';
+  const metaPixelId = process.env.META_PIXEL_ID ?? '';
 
   return {
     entry: isBrowserTestHarness ? './src/test-browser/main.tsx' : './src/main.tsx',
@@ -38,6 +39,7 @@ module.exports = (_env, argv) => {
         __API_BASE_URL__: JSON.stringify(apiBaseUrl),
         __MAP_PROVIDER_MODE__: JSON.stringify(mapProviderMode),
         __KAKAO_MAP_JAVASCRIPT_KEY__: JSON.stringify(kakaoMapJavaScriptKey),
+        __META_PIXEL_ID__: JSON.stringify(metaPixelId),
         __ENABLE_MSW__: JSON.stringify(isMockingEnabled),
       }),
       new HtmlWebpackPlugin({

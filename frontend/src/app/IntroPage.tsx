@@ -325,6 +325,7 @@ const IntroPage = () => (
     <footer className={styles.footer}>
       <img src={logo} alt="" />
       <p>집을 보여주는 사람이 아니라, 그 집에서 살아갈 사람의 편.</p>
+      <Link to="/privacy">개인정보·광고 측정 안내</Link>
     </footer>
   </main>
 );

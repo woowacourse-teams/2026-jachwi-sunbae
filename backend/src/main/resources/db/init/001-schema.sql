@@ -7,6 +7,7 @@ CREATE TABLE IF NOT EXISTS members
     email         VARCHAR(320) NOT NULL,
     name          VARCHAR(100) NOT NULL,
     last_login_at DATETIME(6)  NOT NULL,
+    first_property_created_at DATETIME(6) NULL,
     created_at    DATETIME(6)  NOT NULL,
     updated_at    DATETIME(6)  NOT NULL,
     CONSTRAINT uk_members_email UNIQUE (email)

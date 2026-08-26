@@ -32,6 +32,8 @@ class NicknameAuthIntegrationTest extends IntegrationTest {
         JsonNode created = login("  공유닉네임  ", null, 200);
         JsonNode returned = login("공유닉네임", null, 200);
 
+        assertThat(created.path("newMember").asBoolean()).isTrue();
+        assertThat(returned.path("newMember").asBoolean()).isFalse();
         assertThat(returned.path("member").path("memberId").asLong())
                 .isEqualTo(created.path("member").path("memberId").asLong());
         assertThat(returned.path("member").path("passwordProtected").asBoolean()).isFalse();

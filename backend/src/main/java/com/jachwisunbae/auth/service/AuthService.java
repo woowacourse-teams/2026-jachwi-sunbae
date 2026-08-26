@@ -76,7 +76,7 @@ public class AuthService {
                 member.getId(), identity.displayName(), identity.key(), passwordHash, now, now);
         credentialRepository.save(credential);
         attemptLimiter.reset(identity.key());
-        return createLoginResponse(member, credential.passwordProtected());
+        return createLoginResponse(member, credential.passwordProtected(), true);
     }
 
     private LoginResponse loginExisting(NicknameCredential credential, String password) {
@@ -97,7 +97,7 @@ public class AuthService {
         member.recordNicknameLogin(credential.nickname(), now);
         memberRepository.update(member);
         attemptLimiter.reset(credential.nicknameKey());
-        return createLoginResponse(member, credential.passwordProtected());
+        return createLoginResponse(member, credential.passwordProtected(), false);
     }
 
     private boolean matches(String password, String passwordHash) {
@@ -124,11 +124,12 @@ public class AuthService {
         return rawPassword;
     }
 
-    private LoginResponse createLoginResponse(Member member, boolean passwordProtected) {
+    private LoginResponse createLoginResponse(Member member, boolean passwordProtected, boolean newMember) {
         return new LoginResponse(
                 jwtProvider.createAccessToken(member.getId()),
                 "Bearer",
                 accessTokenSeconds,
+                newMember,
                 new LoginMemberResponse(member.getId(), member.getName(), passwordProtected));
     }
 }

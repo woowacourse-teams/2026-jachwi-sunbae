@@ -57,15 +57,16 @@ prod → /main.8a49163cbe52bf996d07.js
 
 ## 환경변수는 빌드 타임에 박힌다
 
-`webpack.config.js`의 `DefinePlugin`이 `API_BASE_URL`·`MAP_PROVIDER_MODE`·`KAKAO_MAP_JAVASCRIPT_KEY`를 번들에 박아넣는다. 런타임 설정이 아니므로 **값을 바꾸면 재빌드·재배포해야 한다.**
+`webpack.config.js`의 `DefinePlugin`이 `API_BASE_URL`·`MAP_PROVIDER_MODE`·`KAKAO_MAP_JAVASCRIPT_KEY`·`META_PIXEL_ID`를 번들에 박아넣는다. 런타임 설정이 아니므로 **값을 바꾸면 재빌드·재배포해야 한다.**
 
 | 환경변수                   | prod                           | dev                                |
 | -------------------------- | ------------------------------ | ---------------------------------- |
 | `API_BASE_URL`             | `https://api.jachwi-sunbae.kr` | `https://dev-api.jachwi-sunbae.kr` |
 | `MAP_PROVIDER_MODE`        | `kakao`                        | `kakao`                            |
 | `KAKAO_MAP_JAVASCRIPT_KEY` | Kakao 앱의 JavaScript 키       | 같은 Kakao 앱의 JavaScript 키      |
+| `META_PIXEL_ID`            | 비움(운영 측정 승인 전)        | `1591771152645660`                 |
 
-값은 CodePipeline Commands 빌드 액션의 환경변수로 전달한다. Kakao JavaScript 키는 허용 도메인으로 제한하는 공개 식별자이며 REST API 키나 다른 비밀값을 넣지 않는다. Kakao Developers에는 `https://www.jachwi-sunbae.kr`과 `https://dev.jachwi-sunbae.kr`을 Web 도메인으로 모두 등록한다.
+값은 CodePipeline Commands 빌드 액션의 환경변수로 전달한다. Kakao JavaScript 키와 Meta Pixel ID는 브라우저 번들에 포함되는 공개 식별자이며 REST API 키나 다른 비밀값을 넣지 않는다. Kakao Developers에는 `https://www.jachwi-sunbae.kr`과 `https://dev.jachwi-sunbae.kr`을 Web 도메인으로 모두 등록한다. `META_PIXEL_ID`를 비우면 Pixel과 동의 고지를 함께 비활성화하며, 값을 설정해도 사용자가 동의하기 전에는 Meta 스크립트를 불러오지 않는다.
 
 `API_BASE_URL`이 비거나 올바른 HTTP(S) URL이 아니면 시작 시 예외가 발생한다. `MAP_PROVIDER_MODE=kakao`에서 JavaScript 키가 비어도 같은 방식으로 실패한다. 잘못된 값으로 조용히 demo 지도를 제공하지 않는다.
 

@@ -99,6 +99,14 @@ describe('닉네임 인증 흐름', () => {
     expect(screen.getByText(/같은 닉네임을 입력한 사람이 기록을 함께 조회하고 수정/)).toBeInTheDocument();
   });
 
+  it('인증 없이 광고 측정 안내와 선택 상태를 확인한다', () => {
+    renderRoutes('/privacy');
+
+    expect(screen.getByRole('heading', { name: '광고가 실제 사용으로 이어지는지 확인합니다.' })).toBeInTheDocument();
+    expect(screen.getByText(/닉네임, 비밀번호, 주소, 사진, 메모와 체크 내용은 전송하지 않습니다/)).toBeInTheDocument();
+    expect(screen.getByText('현재 상태: 이 환경에서는 측정하지 않음')).toBeInTheDocument();
+  });
+
   it('보호 경로에 비인증으로 접근하면 닉네임 시작 화면으로 이동한다', async () => {
     renderRoutes('/');
 

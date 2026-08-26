@@ -45,6 +45,7 @@ export const parseLoginResponseDto = (value: unknown): LoginResponseDto => {
     accessToken: value.accessToken,
     tokenType: value.tokenType,
     expiresIn: value.expiresIn,
+    newMember: typeof value.newMember === 'boolean' ? value.newMember : false,
     member: parseLoginMember(value.member),
   };
 };

@@ -1,11 +1,12 @@
 import { type FormEvent, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { ApiError, getSafeApiErrorMessage } from '../apis/apiClient';
 import { submitNicknameLogin } from '../apis/authApi';
 import logo from '../assets/jachwi-sunbae-logo.png';
 import Icon from '../components/ui/Icon';
 import { useAuthentication } from '../hooks/useAuthentication';
 import type { PublicConfig } from '../types/PublicConfig';
+import { trackMetaPixelCompleteRegistration } from '../utils/metaPixel';
 import { setAuthentication } from './authStore';
 import styles from './LoginPage.module.css';
 
@@ -67,6 +68,7 @@ const LoginPage = ({ config }: LoginPageProps) => {
         password: password.length === 0 ? undefined : password,
       });
       setAuthentication(response);
+      if (response.newMember) trackMetaPixelCompleteRegistration();
       navigate('/properties', { replace: true });
     } catch (error) {
       isStartingRef.current = false;
@@ -165,7 +167,9 @@ const LoginPage = ({ config }: LoginPageProps) => {
             <Icon name="arrow-right" size={18} />
             {isStarting ? '시작하는 중…' : '이름으로 시작하기'}
           </button>
-          <p className={styles.agreement}>처음 쓰는 닉네임이면 새 기록 공간을 만들어요.</p>
+          <p className={styles.agreement}>
+            처음 쓰는 닉네임이면 새 기록 공간을 만들어요. <Link to="/privacy">개인정보·광고 측정 안내</Link>
+          </p>
         </form>
       </section>
     </main>

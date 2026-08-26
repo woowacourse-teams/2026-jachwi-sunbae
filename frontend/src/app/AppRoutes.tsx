@@ -9,6 +9,7 @@ import type { PublicConfig } from '../types/PublicConfig';
 import IntroPage from './IntroPage';
 import LoginPage from './LoginPage';
 import NotFoundPage from './NotFoundPage';
+import PrivacyPage from './PrivacyPage';
 import ProtectedRoute from './ProtectedRoute';
 
 const PropertyListPage = lazy(() => import('./PropertyListPage'));
@@ -54,6 +55,7 @@ const LoginRoute = ({ config }: AppRoutesProps) => {
 const AppRoutes = ({ config }: AppRoutesProps) => (
   <Routes>
     <Route path="/intro" element={<IntroPage />} />
+    <Route path="/privacy" element={<PrivacyPage />} />
     <Route path="/login" element={<LoginRoute config={config} />} />
     <Route element={<ProtectedRoute config={config} />}>
       <Route element={<PropertyAppLayout />}>
