@@ -59,11 +59,11 @@ prod → /main.8a49163cbe52bf996d07.js
 
 `webpack.config.js`의 `DefinePlugin`이 `API_BASE_URL`·`MAP_PROVIDER_MODE`·`KAKAO_MAP_JAVASCRIPT_KEY`를 번들에 박아넣는다. 런타임 설정이 아니므로 **값을 바꾸면 재빌드·재배포해야 한다.**
 
-| 환경변수 | prod | dev |
-| --- | --- | --- |
-| `API_BASE_URL` | `https://api.jachwi-sunbae.kr` | `https://dev-api.jachwi-sunbae.kr` |
-| `MAP_PROVIDER_MODE` | `kakao` | `kakao` |
-| `KAKAO_MAP_JAVASCRIPT_KEY` | Kakao 앱의 JavaScript 키 | 같은 Kakao 앱의 JavaScript 키 |
+| 환경변수                   | prod                           | dev                                |
+| -------------------------- | ------------------------------ | ---------------------------------- |
+| `API_BASE_URL`             | `https://api.jachwi-sunbae.kr` | `https://dev-api.jachwi-sunbae.kr` |
+| `MAP_PROVIDER_MODE`        | `kakao`                        | `kakao`                            |
+| `KAKAO_MAP_JAVASCRIPT_KEY` | Kakao 앱의 JavaScript 키       | 같은 Kakao 앱의 JavaScript 키      |
 
 값은 CodePipeline Commands 빌드 액션의 환경변수로 전달한다. Kakao JavaScript 키는 허용 도메인으로 제한하는 공개 식별자이며 REST API 키나 다른 비밀값을 넣지 않는다. Kakao Developers에는 `https://www.jachwi-sunbae.kr`과 `https://dev.jachwi-sunbae.kr`을 Web 도메인으로 모두 등록한다.
 
