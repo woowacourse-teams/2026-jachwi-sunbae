@@ -77,6 +77,11 @@ const IntroDemoPlayer = () => {
   }, [activeIndex, isInView, isPaused]);
 
   const togglePlayback = () => setIsPaused((paused) => !paused);
+  const selectChapter = (index: number) => {
+    if (index === activeIndex && videoRef.current !== null) videoRef.current.currentTime = 0;
+    setActiveIndex(index);
+    setIsPaused(false);
+  };
 
   return (
     <section ref={sectionRef} className={styles.section} aria-labelledby="demo-heading">
@@ -122,13 +127,20 @@ const IntroDemoPlayer = () => {
 
         <ol className={styles.chapterList} aria-label="사용 예시 영상 순서">
           {chapters.map((chapter, index) => (
-            <li key={chapter.title} data-active={index === activeIndex || undefined}>
-              <span>{String(index + 1).padStart(2, '0')}</span>
-              <div>
-                <strong>{chapter.title}</strong>
-                <p>{chapter.description}</p>
-                <small>2배속 · {chapter.duration}</small>
-              </div>
+            <li key={chapter.title}>
+              <button
+                type="button"
+                data-active={index === activeIndex || undefined}
+                aria-pressed={index === activeIndex}
+                onClick={() => selectChapter(index)}
+              >
+                <span>{String(index + 1).padStart(2, '0')}</span>
+                <div>
+                  <strong>{chapter.title}</strong>
+                  <p>{chapter.description}</p>
+                  <small>2배속 · {chapter.duration}</small>
+                </div>
+              </button>
             </li>
           ))}
         </ol>
