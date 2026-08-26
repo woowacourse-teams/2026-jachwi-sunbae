@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import logo from '../assets/jachwi-sunbae-logo.png';
+import IntroDemoPlayer from '../components/IntroDemoPlayer';
 import Icon, { type IconName } from '../components/ui/Icon';
 import styles from './IntroPage.module.css';
 
@@ -249,6 +250,8 @@ const IntroPage = () => (
           ))}
         </ol>
       </section>
+
+      <IntroDemoPlayer />
 
       <section className={styles.valueSection} aria-labelledby="value-heading">
         <p className={styles.sectionLabel}>자취선배가 임차인 편에서 돕는 방식</p>

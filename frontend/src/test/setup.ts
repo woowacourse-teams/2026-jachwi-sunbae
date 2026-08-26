@@ -36,6 +36,15 @@ Object.defineProperty(URL, 'revokeObjectURL', {
   value: vi.fn(),
 });
 
+Object.defineProperty(HTMLMediaElement.prototype, 'play', {
+  configurable: true,
+  value: vi.fn().mockResolvedValue(undefined),
+});
+Object.defineProperty(HTMLMediaElement.prototype, 'pause', {
+  configurable: true,
+  value: vi.fn(),
+});
+
 HTMLDialogElement.prototype.showModal = function showModal() {
   this.setAttribute('open', '');
 };
@@ -56,6 +65,8 @@ afterEach(() => {
   window.history.replaceState(null, '', '/');
   vi.mocked(URL.createObjectURL).mockClear();
   vi.mocked(URL.revokeObjectURL).mockClear();
+  vi.mocked(HTMLMediaElement.prototype.play).mockClear();
+  vi.mocked(HTMLMediaElement.prototype.pause).mockClear();
 });
 
 afterAll(() => server.close());
