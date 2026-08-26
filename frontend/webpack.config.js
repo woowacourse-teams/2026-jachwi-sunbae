@@ -101,6 +101,10 @@ module.exports = (_env, argv) => {
           test: /\.(png|svg|jpg|jpeg|gif)$/i,
           type: 'asset',
         },
+        {
+          test: /\.mp4$/i,
+          type: 'asset/resource',
+        },
       ],
     },
     resolve: {
