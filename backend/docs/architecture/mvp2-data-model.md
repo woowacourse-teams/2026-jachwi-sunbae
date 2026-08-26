@@ -17,6 +17,7 @@
 erDiagram
     MEMBERS ||--|| NICKNAME_CREDENTIALS : authenticates
     MEMBERS ||--o{ PROPERTIES : owns
+    MEMBERS ||--o{ PROPERTY_COMPARISON_VIEW_EVENTS : opens
     MEMBERS ||--o{ USER_CHECKLISTS : owns
     PROPERTIES ||--o{ PROPERTY_PHOTOS : has
     PROPERTIES ||--o| MAIN_PROPERTY_PHOTOS : selects
@@ -72,6 +73,19 @@ erDiagram
 - `(id, member_id)` UNIQUE는 사진 소유자 복합 FK를 위해 유지한다.
 - 주소가 없는 MVP1 행은 주소와 좌표를 NULL로 둔다.
 
+## 비교 화면 진입 이벤트
+
+`property_comparison_view_events`는 비교 화면을 연 회원과 시각, 그 시점의 보유 매물 수를 사실 기록으로 남긴다. 매물 수를 이벤트에 스냅샷하므로 사용자가 뒤에 매물을 삭제해도 `2개 이상 매물을 등록한 뒤 비교 화면에 도달`한 여부가 바뀌지 않는다.
+
+| 컬럼 | 타입 | 제약 | 설명 |
+| --- | --- | --- | --- |
+| `id` | BIGINT UNSIGNED | PK, AUTO_INCREMENT | 진입 이벤트 ID |
+| `member_id` | BIGINT | FK, NOT NULL, CASCADE | 비교 화면을 연 회원 |
+| `property_count` | SMALLINT UNSIGNED | NOT NULL, CHECK 0~30 | 진입 시점의 보유 매물 수 |
+| `viewed_at` | DATETIME(6) | NOT NULL | UTC 진입 시각 |
+
+`(member_id, viewed_at, id)`는 회원별 첫 진입·반복 진입 조회에, `(property_count, viewed_at, id)`는 2개 이상 보유 진입 집계에 사용한다. 회원을 삭제하면 이벤트도 cascade 삭제한다.
+
 ## 대표 사진 정합성
 
 `main_property_photos.property_id`를 UNIQUE로 만들어 매물당 대표 사진을 하나만 허용한다. 대표 사진 행의 사진이 같은 매물 소속임을 서비스와 복합 FK로 함께 보장한다.
@@ -120,4 +134,5 @@ erDiagram
 - `db/upgrade/*.sql`: 기존 데이터가 있는 DB에 번호순으로 반복 적용 가능한 순방향 보강 SQL
 - `db/upgrade/002-custom-checklist-items.sql`: 이전 버전의 nullable 출처를 보존하고 이전 18개 제공 문항을 비활성화한 뒤 현재 53개 문항을 등록. 현재 API는 새 직접 질문을 허용하지 않음
 - `db/upgrade/003-adapt-team-mvp1-schema.sql`: 팀 RDS의 Flyway V11 형태를 데이터 손실 없이 현재 회원·매물·메모·사진 제약으로 보강
+- `db/upgrade/004-property-comparison-view-events.sql`: 기존 RDS에 비교 화면 진입 이벤트 테이블을 멱등 추가
 - 데모 회원·매물·진행 결과는 `DEMO_SEED_ENABLED=true`일 때만 만들며 운영 시드에 섞지 않는다.

@@ -33,6 +33,8 @@ docker compose up -d
 
 Spring Boot의 `DatabaseUpgradeInitializer`는 요청을 받기 전에 `db/upgrade/*.sql`을 파일명 순서로 실행한다. 각 SQL은 매번 실행될 수 있으므로 테이블·인덱스 생성과 데이터 보강이 반복되어도 결과가 같아야 하며 기존 비밀번호나 사용자 데이터를 덮어쓰면 안 된다. 실패하면 애플리케이션 시작도 실패해 새 코드가 불완전한 스키마에서 요청을 받지 않는다.
 
+`004-property-comparison-view-events.sql`은 기존 회원·매물을 변경하지 않고 비교 화면 진입 이벤트 테이블만 추가한다. 새 테이블이 이미 있으면 다시 만들지 않는다.
+
 닉네임 인증 전환의 `001-nickname-credentials.sql`과 초기화 코드는 다음만 수행한다.
 
 - 자격정보 테이블이 없으면 만든다.

@@ -28,6 +28,7 @@ import com.jachwisunbae.property.repository.query.PropertyPhotosQuery;
 import com.jachwisunbae.property.service.PropertyChecklistService;
 import com.jachwisunbae.property.service.PropertyCsvService;
 import com.jachwisunbae.property.service.PropertyComparisonPdfService;
+import com.jachwisunbae.property.service.PropertyComparisonViewService;
 import com.jachwisunbae.property.service.PropertyDeletionService;
 import com.jachwisunbae.property.service.PropertyMemoService;
 import com.jachwisunbae.property.service.PropertyPhotoService;
@@ -67,6 +68,7 @@ public class PropertyController {
     private final PropertyDeletionService propertyDeletionService;
     private final PropertyCsvService propertyCsvService;
     private final PropertyComparisonPdfService propertyComparisonPdfService;
+    private final PropertyComparisonViewService propertyComparisonViewService;
 
     public PropertyController(final PropertyService propertyService,
                               final PropertyMemoService propertyMemoService,
@@ -74,7 +76,8 @@ public class PropertyController {
                               final PropertyPhotoService propertyPhotoService,
                               final PropertyDeletionService propertyDeletionService,
                               final PropertyCsvService propertyCsvService,
-                              final PropertyComparisonPdfService propertyComparisonPdfService) {
+                              final PropertyComparisonPdfService propertyComparisonPdfService,
+                              final PropertyComparisonViewService propertyComparisonViewService) {
         this.propertyService = propertyService;
         this.propertyMemoService = propertyMemoService;
         this.propertyChecklistService = propertyChecklistService;
@@ -82,6 +85,7 @@ public class PropertyController {
         this.propertyDeletionService = propertyDeletionService;
         this.propertyCsvService = propertyCsvService;
         this.propertyComparisonPdfService = propertyComparisonPdfService;
+        this.propertyComparisonViewService = propertyComparisonViewService;
     }
 
     @GetMapping
@@ -111,6 +115,14 @@ public class PropertyController {
                         "attachment; filename=\"jachwi-sunbae-property-comparison.pdf\"")
                 .contentType(MediaType.APPLICATION_PDF)
                 .body(propertyComparisonPdfService.export(memberId, request.propertyIds()));
+    }
+
+    @PostMapping("/comparison-views")
+    @Operation(summary = "비교 화면 진입 기록",
+            description = "현재 회원이 비교 화면을 연 시각과 그 시점의 보유 매물 수를 실험 이벤트로 저장합니다.")
+    public ResponseEntity<Void> recordComparisonView(@AuthenticatedMemberId final Long memberId) {
+        propertyComparisonViewService.record(memberId);
+        return ResponseEntity.noContent().build();
     }
 
     @PostMapping

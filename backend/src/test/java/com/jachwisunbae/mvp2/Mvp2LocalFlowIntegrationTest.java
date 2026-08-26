@@ -61,6 +61,7 @@ class Mvp2LocalFlowIntegrationTest extends IntegrationTest {
                 .andExpect(jsonPath("$.paths", hasKey("/api/maps/nearby")))
                 .andExpect(jsonPath("$.paths", hasKey("/api/properties/export.csv")))
                 .andExpect(jsonPath("$.paths", hasKey("/api/properties/export.pdf")))
+                .andExpect(jsonPath("$.paths", hasKey("/api/properties/comparison-views")))
                 .andExpect(jsonPath("$.paths", hasKey("/api/auth/nickname")))
                 .andExpect(jsonPath("$.paths", hasKey("/api/properties/{propertyId}/photos/{photoId}")));
 
@@ -176,6 +177,18 @@ class Mvp2LocalFlowIntegrationTest extends IntegrationTest {
                 .andExpect(content().bytes(PNG));
 
         long secondPropertyId = createProperty(token);
+        mockMvc.perform(post("/api/properties/comparison-views")
+                        .header("Authorization", bearer(token)))
+                .andExpect(status().isNoContent());
+        assertThat(jdbcTemplate.queryForObject("""
+                SELECT event.property_count
+                FROM property_comparison_view_events event
+                JOIN properties property ON property.member_id = event.member_id
+                WHERE property.id = ?
+                ORDER BY event.id DESC
+                LIMIT 1
+                """, Integer.class, propertyId)).isEqualTo(2);
+
         mockMvc.perform(post("/api/properties/export.pdf")
                         .header("Authorization", bearer(token))
                         .contentType(MediaType.APPLICATION_JSON)
