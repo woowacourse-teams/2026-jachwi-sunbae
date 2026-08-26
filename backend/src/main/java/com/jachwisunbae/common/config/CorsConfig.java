@@ -1,11 +1,12 @@
 package com.jachwisunbae.common.config;
 
 import java.util.List;
+
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
-import org.springframework.core.Ordered;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.Ordered;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import org.springframework.web.filter.CorsFilter;
@@ -16,7 +17,7 @@ public class CorsConfig {
     private final List<String> allowedOrigins;
 
     public CorsConfig(
-        @Value("${app.cors.allowed-origins}") List<String> allowedOrigins) {
+            @Value("${app.cors.allowed-origins}") List<String> allowedOrigins) {
         this.allowedOrigins = allowedOrigins;
     }
 

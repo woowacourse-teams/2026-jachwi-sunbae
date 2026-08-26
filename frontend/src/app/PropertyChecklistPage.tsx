@@ -1,8 +1,12 @@
 import { Link, useParams } from 'react-router-dom';
 import { ApiError } from '../apis/apiClient';
+import ChecklistPageLayout from '../components/ChecklistPageLayout';
 import PropertyChecklistItemControl from '../components/PropertyChecklistItemControl';
-import TopNavigation from '../components/ui/TopNavigation';
-import { usePropertyChecklistDetail, usePropertyDetail } from '../hooks/query/useProperties';
+import {
+  usePropertyChecklistDetail,
+  usePropertyChecklistOverview,
+  usePropertyDetail,
+} from '../hooks/query/useProperties';
 import type { PublicConfig } from '../types/PublicConfig';
 import { getChecklistStageLabel, parsePositiveId } from '../utils/propertyFormat';
 import styles from './PropertyChecklistPage.module.css';
@@ -24,7 +28,12 @@ const PropertyChecklistPage = ({ config }: { config: PublicConfig }) => {
   }
 
   return (
-    <ResolvedPropertyChecklistPage config={config} propertyId={propertyId} propertyChecklistId={propertyChecklistId} />
+    <ResolvedPropertyChecklistPage
+      key={propertyChecklistId}
+      config={config}
+      propertyId={propertyId}
+      propertyChecklistId={propertyChecklistId}
+    />
   );
 };
 
@@ -38,6 +47,7 @@ const ResolvedPropertyChecklistPage = ({
   propertyChecklistId: number;
 }) => {
   const checklist = usePropertyChecklistDetail(config, propertyId, propertyChecklistId);
+  const overview = usePropertyChecklistOverview(config, propertyId);
   const property = usePropertyDetail(config, propertyId);
 
   if (checklist.isPending) {
@@ -63,37 +73,52 @@ const ResolvedPropertyChecklistPage = ({
 
   const detail = checklist.data;
   const completedCount = detail.items.filter((item) => item.status !== 'UNCONFIRMED').length;
+  const getStagePath = (stage: typeof detail.stage) => {
+    const stageSummary = overview.data?.stages.find((item) => item.stage === stage);
+    if (stageSummary?.applied === true && stageSummary.propertyChecklistId !== null) {
+      return `/properties/${propertyId}/checklists/${stageSummary.propertyChecklistId}`;
+    }
+    return `/properties/${propertyId}/active-checklists/${stage}?from=property-detail`;
+  };
 
   return (
-    <main className={styles.page}>
-      <div className={styles.container}>
-        <TopNavigation
-          title={property.data === undefined ? '매물 체크리스트' : `${property.data.name} 체크리스트`}
-          backTo={`/properties/${propertyId}`}
-          backLabel="매물 상세로 돌아가기"
-        />
-        <header className={styles.heading}>
-          <div>
-            <span>{getChecklistStageLabel(detail.stage)}</span>
-            <h1>{detail.checklistName}</h1>
-          </div>
-          <strong>
-            {completedCount}/{detail.items.length}
-          </strong>
-        </header>
-        <ol className={styles.items}>
-          {detail.items.map((item) => (
-            <PropertyChecklistItemControl
-              key={item.itemId}
-              config={config}
-              propertyId={propertyId}
-              propertyChecklistId={propertyChecklistId}
-              item={item}
-            />
-          ))}
-        </ol>
-      </div>
-    </main>
+    <ChecklistPageLayout
+      title={property.data === undefined ? '매물 체크리스트' : `${property.data.name} 체크리스트`}
+      backTo={`/properties/${propertyId}`}
+      backLabel="매물 상세로 돌아가기"
+      stage={detail.stage}
+      getStageTo={getStagePath}
+      endSlot={
+        <Link
+          className={styles.replaceLink}
+          to={`/properties/${propertyId}/active-checklists/${detail.stage}?from=property-detail&mode=replace`}
+          aria-label="체크리스트 변경"
+        >
+          변경
+        </Link>
+      }
+    >
+      <header className={styles.heading}>
+        <div>
+          <span>{getChecklistStageLabel(detail.stage)}</span>
+          <h1>{detail.checklistName}</h1>
+        </div>
+        <strong>
+          {completedCount}/{detail.items.length}
+        </strong>
+      </header>
+      <ol className={styles.items}>
+        {detail.items.map((item) => (
+          <PropertyChecklistItemControl
+            key={item.itemId}
+            config={config}
+            propertyId={propertyId}
+            propertyChecklistId={propertyChecklistId}
+            item={item}
+          />
+        ))}
+      </ol>
+    </ChecklistPageLayout>
   );
 };
 
