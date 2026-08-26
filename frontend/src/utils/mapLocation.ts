@@ -5,7 +5,7 @@ export type MapCoordinate = {
 
 export const SEOUL_MAP_CENTER: MapCoordinate = { latitude: 37.5665, longitude: 126.978 };
 
-const LAST_MAP_CENTER_KEY = 'moca.lastMapCenter';
+const LAST_MAP_CENTER_KEY = 'jachwi-sunbae.lastMapCenter';
 
 const isCoordinate = (value: unknown): value is MapCoordinate => {
   if (typeof value !== 'object' || value === null) return false;

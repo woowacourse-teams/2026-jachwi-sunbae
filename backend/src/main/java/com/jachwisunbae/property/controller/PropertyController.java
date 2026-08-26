@@ -94,7 +94,7 @@ public class PropertyController {
     @Operation(summary = "매물 비교표 CSV", description = "현재 회원의 매물 요약을 UTF-8 BOM CSV로 내려받습니다.")
     public ResponseEntity<byte[]> exportCsv(@AuthenticatedMemberId final Long memberId) {
         return ResponseEntity.ok()
-                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"moca-properties.csv\"")
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"jachwi-sunbae-properties.csv\"")
                 .contentType(new MediaType("text", "csv", StandardCharsets.UTF_8))
                 .body(propertyCsvService.export(memberId));
     }
@@ -108,7 +108,7 @@ public class PropertyController {
             @Valid @RequestBody final ExportPropertyComparisonRequest request) {
         return ResponseEntity.ok()
                 .header(HttpHeaders.CONTENT_DISPOSITION,
-                        "attachment; filename=\"moca-property-comparison.pdf\"")
+                        "attachment; filename=\"jachwi-sunbae-property-comparison.pdf\"")
                 .contentType(MediaType.APPLICATION_PDF)
                 .body(propertyComparisonPdfService.export(memberId, request.propertyIds()));
     }

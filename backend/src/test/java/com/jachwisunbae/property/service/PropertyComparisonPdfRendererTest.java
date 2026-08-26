@@ -35,7 +35,7 @@ class PropertyComparisonPdfRendererTest {
                 record(11L, "망원동 투룸", false)));
 
         assertThat(pdf).startsWith((byte) '%', (byte) 'P', (byte) 'D', (byte) 'F');
-        Path sample = Path.of("build", "reports", "pdf", "moca-property-comparison-sample.pdf");
+        Path sample = Path.of("build", "reports", "pdf", "jachwi-sunbae-property-comparison-sample.pdf");
         Files.createDirectories(sample.getParent());
         Files.write(sample, pdf);
 

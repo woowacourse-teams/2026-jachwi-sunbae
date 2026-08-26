@@ -1,12 +1,11 @@
-# MVP1 배포 아키텍처 기록
+# 배포 아키텍처 설계
 
-- 상태: MVP1에서 구성 완료, MVP2에서 사용하지 않음
+- 상태: 구성 완료
 - 최초 작성일: 2026-08-13
 - 참여자: 자취선배 백엔드 팀
-- 문서 성격: 시점 고정
-- 갱신 정책: MVP1 당시 우테코 AWS 구성을 보존하며 갱신하지 않는다
-
-> Moca MVP2의 현재 계획은 [MVP2 배포 아키텍처](mvp2-deployment-architecture.md)를 따른다. 아래 리소스와 도메인은 새 개인 AWS 계정에서 사용하지 않는다.
+- 문서 성격: 파생
+- 대조 대상: 우테코 인프라 안내(Notion), 실제 AWS 리소스 구성, [배포](../../backend/docs/operations/deployment.md)
+- 갱신 정책: 이 문서의 값을 실구성과 맞춰 유지한다. 중심 결정은 [ADR-0008](../../backend/docs/adr/0008-deploy-with-aws-native-pipeline.md)로 승격했고 이 문서는 구성 참조로 남는다
 
 이 문서는 [배포](../../backend/docs/operations/deployment.md)와 [롤백](../../backend/docs/operations/rollback.md)이 `미정`으로 비워 둔 배포 대상과 플랫폼을 채우기 위해 시작했다. 2026-08-13부터 08-15까지 실제로 구성했고 아래 주소에서 동작한다.
 
@@ -75,10 +74,10 @@
                         ↓ HTTP
                      EC2(project-app 서브넷, t4g.small)
                      Spring Boot, prod 프로필
-                        ├─ 연동 예정 ─ RDS MySQL(project-storage 서브넷)
-                        ├─ 연동 예정 ─ techcourse-project-2026 버킷(사진)  ← EC2 ec2-project role
+                        ├─ RDS MySQL(project-storage 서브넷)
+                        ├─ techcourse-project-2026 버킷(사진)  ← EC2 ec2-project role
                         ├─ /etc/jachwi-sunbae/app.env (운영 비밀, 0600)
-                        └─ 연동 예정 ─ Google OAuth
+                        └─ Kakao Local REST API · 선택적 TAGO 버스정류소 API
 ```
 
 배포 경로(코드 → 서비스)는 애플리케이션 트래픽과 분리된다. 상세 명령과 훅은 [백엔드 배포](../../backend/docs/operations/deployment.md)와 [프론트엔드 배포](../../frontend/docs/deployment.md)가 정본이다.
@@ -125,7 +124,7 @@ PR → GitHub Actions 필수 검사 → 보호 브랜치 병합
 
 **인터넷 egress는 확인했다(2026-08-13).** `project-app-a`(`subnet-0e693cde6a836c0b8`, `10.0.20.0/24`, `ap-northeast-2a`)에 라우팅 테이블 `rtb-project-private-a`(`rtb-03226c586ffce1d86`)가 명시적으로 연결되어 있고, `0.0.0.0/0`이 NAT 게이트웨이 `nat-0198ce7cbc3e952...`로 향한다. 상태는 활성이며 블랙홀이 아니다. 따라서 EC2는 사설 서브넷 `project-app`에 둔다. `project-public` + 퍼블릭 IP 대안은 채택하지 않는다.
 
-**같은 VPC의 기본 라우팅 테이블 `rtb-project-default`에는 `0.0.0.0/0` 경로가 없다.** `10.0.0.0/16 → local`뿐이다. 라우팅 테이블이 명시적으로 연결되지 않은 서브넷에 EC2를 올리면 이 기본 테이블을 따르게 되어 인터넷으로 나가지 못한다. 이때 애플리케이션은 기동하지만 Google 토큰 엔드포인트에 나가지 못해 **로그인만 실패한다.** 원인을 찾기 어려운 종류의 실패이므로, EC2를 만들 때 선택한 서브넷의 라우팅 테이블 연결을 반드시 확인한다.
+**같은 VPC의 기본 라우팅 테이블 `rtb-project-default`에는 `0.0.0.0/0` 경로가 없다.** `10.0.0.0/16 → local`뿐이다. 라우팅 테이블이 명시적으로 연결되지 않은 서브넷에 EC2를 올리면 이 기본 테이블을 따르게 되어 인터넷으로 나가지 못한다. 이때 애플리케이션은 기동해도 Kakao·TAGO·S3 같은 외부 연동이 실패한다. 원인을 찾기 어려운 종류의 실패이므로, EC2를 만들 때 선택한 서브넷의 라우팅 테이블 연결을 반드시 확인한다.
 
 NAT 게이트웨이를 새로 만드는 선택지는 월 약 $32로 예산을 초과하므로 두지 않는다. 기존 NAT를 쓴다.
 
@@ -206,8 +205,8 @@ dnf install -y java-21-amazon-corretto ruby wget
 - 정적 SPA이므로 EC2가 아니라 S3에 올리고 CloudFront로 서빙한다. 프론트엔드 자율 요구사항의 `Cache Busting`·`CDN Cache Invalidation`·`contenthash`가 이 구조를 전제로 한다.
 - CloudFront OAC는 인프라 안내가 지정한 `techcourse-project-2026.s3.ap-northeast-2.amazonaws.com`을 origin으로 사용한다.
 - 캐시는 Policy를 새로 만들지 않는다. 새 콘솔에는 레거시 캐시 설정 항목이 없어 관리형 정책 `CachingOptimized`를 쓴다. 관리형이므로 새 정책을 만들지 않는다는 안내의 의도에 맞는다. 기본 TTL이 24시간이라 이름이 고정인 `index.html`은 배포마다 무효화한다.
-- **SPA 폴백**: react-router 클라이언트 라우팅이므로 CloudFront에서 403·404 응답을 `/index.html`(200)로 매핑해 새로고침·딥링크가 깨지지 않게 한다. Google 콜백 경로 `/oauth/google/callback`도 프론트 라우트다.
-- **환경변수는 빌드 타임에 주입된다.** `webpack.config.js`의 `DefinePlugin`이 `API_BASE_URL`·`GOOGLE_CLIENT_ID`·`GOOGLE_REDIRECT_URI`를 번들에 박아넣는다. 런타임 설정이 아니므로 운영 배포는 CodePipeline `Commands` 액션이 운영 값(`API_BASE_URL=https://api.<도메인>`, `GOOGLE_REDIRECT_URI=https://www.<도메인>/oauth/google/callback`)으로 **다시 빌드**해야 한다. 이 값들은 액션의 실행 환경변수로 전달한다. 어차피 번들에 박혀 공개되는 값이므로 비밀이 아니다.
+- **SPA 폴백**: react-router 클라이언트 라우팅이므로 CloudFront에서 403·404 응답을 `/index.html`(200)로 매핑해 `/intro`, `/properties/:id`, `/map` 같은 새로고침·딥링크가 깨지지 않게 한다.
+- **환경변수는 빌드 타임에 주입된다.** `webpack.config.js`의 `DefinePlugin`이 `API_BASE_URL`·`MAP_PROVIDER_MODE`·`KAKAO_MAP_JAVASCRIPT_KEY`를 번들에 박아넣는다. 런타임 설정이 아니므로 CodePipeline `Commands` 액션이 환경별 값으로 **다시 빌드**해야 한다. Kakao JavaScript 키는 브라우저에 공개되는 값이지만 Kakao Developers의 Web 도메인을 dev·prod 공식 도메인으로 제한한다.
 - **캐시 무효화는 `contenthash`로 한다.** 운영 빌드의 파일명에 해시를 붙여 내용이 바뀌면 파일명이 바뀌게 한다. 배포마다 전체 무효화(`/*`)를 걸 필요가 없고, 이름이 고정인 `index.html`만 무효화하면 나머지는 자동으로 새 파일을 가리킨다. 개발 빌드에는 붙이지 않는다.
 - **CloudFront origin path를 `/jachwi-sunbae/web`으로 지정한다.** 같은 버킷의 `jachwi-sunbae/` 아래에 비공개 사진 객체가 있다. origin path를 비워 두면 CloudFront가 버킷 전체를 공개해 사진이 인증 없이 노출된다.
 - 절차는 [프론트엔드 배포](../../frontend/docs/deployment.md)에 있다.
@@ -237,12 +236,14 @@ dnf install -y java-21-amazon-corretto ruby wget
 
   AWS로 처리하려면 리다이렉트 전용 S3 버킷과 CloudFront 배포, apex를 포함한 `us-east-1` 인증서가 더 필요하다. 비용은 거의 0이지만 **만든 뒤 지울 수 없는 리소스가 둘 늘어난다.** 팀에 삭제 권한이 대부분 없고 태그 없는 리소스는 종료 대상이다. 사용자는 안내받은 `https://www.jachwi-sunbae.kr`로 들어오므로 얻는 것에 비해 대가가 크다고 판단했다. apex 유입이 실제로 문제가 되면 그때 만든다.
 - ACM 검증 CNAME 등록 시 가비아는 입력한 호스트에 도메인을 자동으로 붙인다. ACM이 준 이름에서 도메인 접미사를 뺀 부분만 넣고, 등록 뒤 공개 조회로 실제 값을 확인한다.
-- 운영 값은 다음과 같다. wildcard는 쓰지 않는다. Google OAuth 콘솔의 허용 redirect URI에도 같은 값을 등록한다.
+- 운영 값은 다음과 같다. wildcard는 쓰지 않는다.
 
 | 환경변수 | 값 |
 | --- | --- |
 | `CORS_ALLOWED_ORIGINS` | `https://www.jachwi-sunbae.kr` |
-| `GOOGLE_OAUTH_ALLOWED_REDIRECT_URIS` | `https://www.jachwi-sunbae.kr/oauth/google/callback` |
+| `MAP_PROVIDER_MODE` | `kakao` |
+| `PHOTO_STORAGE_BUCKET` | `techcourse-project-2026` |
+| `PHOTO_STORAGE_KEY_PREFIX` | prod `jachwi-sunbae/photos/`, dev `jachwi-sunbae/photos-dev/` |
 
 ### 4.8 비밀·환경변수
 
@@ -254,7 +255,7 @@ dnf install -y java-21-amazon-corretto ruby wget
 - 실제 비밀은 저장소·문서·`.env.example`에 커밋하지 않는다는 원칙을 그대로 유지한다.
 - **사용자 데이터에 비밀을 넣지 않는다.** 사용자 데이터는 인스턴스 메타데이터로 노출되어 인스턴스 안의 무엇이든 읽을 수 있다.
 
-현재 초기화된 백엔드 애플리케이션은 운영 비밀값을 사용하지 않는다. systemd 계약을 유지하기 위해 파일은 빈 상태로 둘 수 있으며, 실제 연동을 추가할 때 필요한 값과 비밀 여부를 다시 정한다.
+MVP2 백엔드는 DB·JWT·Kakao REST·사진 저장소 설정을 사용한다. 환경별 필수·선택 값은 [환경변수](../../backend/docs/guides/environment-variables.md)를 정본으로 삼고, 정적 AWS 액세스 키는 넣지 않는다.
 
 이 방식의 대가를 분명히 해둔다. 값을 바꾸려면 사람이 서버에 접속해야 하고, 비밀이 서버 디스크에 평문으로 남으며, 인스턴스를 다시 만들면 파일을 다시 만들어야 한다. 이력도 남지 않는다. 대신 파일 권한이 곧 경계이므로 다른 팀이 읽을 수 없다. 팀 전용 비밀 저장소를 쓸 수 있게 되면 다시 판단한다.
 
@@ -278,7 +279,7 @@ PR 검증은 GitHub Actions가 맡고 배포용 산출물 생성과 실제 서�
 
 ## 6. 데이터베이스 변경이 포함된 배포
 
-현재 백엔드는 데이터베이스에 연결하지 않으며 마이그레이션 도구를 사용하지 않는다. 데이터베이스 연동과 변경 절차는 실제 구현을 시작할 때 다시 결정한다.
+새 DB는 현재 init SQL로 초기화하고 기존 DB는 애플리케이션 시작 시 번호순 멱등 upgrade SQL을 적용한다. 팀 MVP1 RDS의 Flyway V11 형태는 `003-adapt-team-mvp1-schema.sql`로 보강하며 기존 `flyway_schema_history`는 삭제하거나 갱신하지 않는다. 첫 MVP2 dev 배포 전 논리 백업과 복원 가능 여부, 애플리케이션 계정의 additive DDL 권한을 확인한다. 상세 절차와 재실행 안전성은 [데이터베이스 초기화](../../backend/docs/guides/database-initialization.md)를 따른다.
 
 ## 7. 롤백
 

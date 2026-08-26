@@ -33,9 +33,9 @@ public class DemoDataInitializer implements ApplicationRunner {
         LocalDateTime now = LocalDateTime.now(clock);
         jdbcTemplate.update("INSERT INTO members (email, name, last_login_at, created_at, updated_at) "
                         + "VALUES (?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE name = VALUES(name)",
-                "demo@moca.local", demoName, now, now, now);
+                "demo@jachwi-sunbae.local", demoName, now, now, now);
         Long memberId = jdbcTemplate.queryForObject(
-                "SELECT id FROM members WHERE email = ?", Long.class, "demo@moca.local");
+                "SELECT id FROM members WHERE email = ?", Long.class, "demo@jachwi-sunbae.local");
         jdbcTemplate.update("INSERT INTO nickname_credentials "
                         + "(member_id, nickname, nickname_key, password_hash, created_at, updated_at) "
                         + "VALUES (?, ?, ?, NULL, ?, ?) ON DUPLICATE KEY UPDATE nickname = VALUES(nickname)",

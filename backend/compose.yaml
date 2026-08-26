@@ -1,11 +1,11 @@
-name: moca-mvp2-backend
+name: jachwi-sunbae-backend
 
 services:
   mysql:
     image: mysql:8.4.10
     environment:
-      MYSQL_DATABASE: ${DB_NAME:-moca_mvp2}
-      MYSQL_USER: ${DB_USERNAME:-moca_mvp2}
+      MYSQL_DATABASE: ${DB_NAME:-jachwi_sunbae}
+      MYSQL_USER: ${DB_USERNAME:-jachwi_sunbae}
       MYSQL_PASSWORD: ${DB_PASSWORD:-local_password}
       MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-local_root_password}
       TZ: UTC
@@ -47,7 +47,7 @@ services:
     environment:
       PHOTO_STORAGE_ACCESS_KEY: ${PHOTO_STORAGE_ACCESS_KEY:-local-photo-access-key}
       PHOTO_STORAGE_SECRET_KEY: ${PHOTO_STORAGE_SECRET_KEY:-local-photo-secret-key}
-      PHOTO_STORAGE_BUCKET: ${PHOTO_STORAGE_BUCKET:-moca-mvp2-photos}
+      PHOTO_STORAGE_BUCKET: ${PHOTO_STORAGE_BUCKET:-jachwi-sunbae-photos}
     entrypoint: /bin/sh
     command:
       - -c

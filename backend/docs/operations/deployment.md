@@ -1,11 +1,9 @@
-# MVP1 백엔드 배포 기록
+# 배포
 
-- 상태: MVP1에서 동작, MVP2에서 사용하지 않음
+- 상태: 동작 중
 - 현재 배포 환경: prod `https://api.jachwi-sunbae.kr`, dev `https://dev-api.jachwi-sunbae.kr`
-- 문서 성격: 시점 고정
-- 갱신 정책: MVP1 당시 CodePipeline·CodeDeploy 구성을 보존하며 갱신하지 않는다
-
-> Moca MVP2의 현재 기준은 [MVP2 백엔드 배포](mvp2-deployment.md)를 따른다. 아래 파이프라인과 도메인은 새 개인 AWS 계정에서 사용하지 않는다.
+- 문서 성격: 파생
+- 대조 대상: `backend/deploy/`, 실제 AWS 파이프라인 구성
 
 전체 구성과 선택 근거는 [배포 아키텍처 설계](../../../docs/operations/deployment-architecture.md)에 있다. 이 문서는 백엔드를 실제로 배포하는 절차와 그 절차가 의존하는 서버 상태를 적는다.
 
@@ -61,7 +59,7 @@ CodeDeploy 배포 그룹이 **EC2 태그**로 대상을 고른다.
 
 ## 빌드 검증
 
-배포 빌드는 `clean bootJar -x test`로 실행 가능한 JAR를 만든다. GitHub Actions는 PR과 `main`·`develop` push에서 `clean build`를 실행한다. 두 브랜치는 [브랜치와 커밋](../../../docs/convention/branch-and-commit.md)의 보호 규칙에 따라 필수 검사를 통과하지 않으면 병합할 수 없으므로 CodePipeline이 받는 커밋은 이미 검증을 통과한 상태다. 현재 초기화된 백엔드에는 테스트 소스가 없지만 이후 테스트가 추가되어도 같은 경계를 유지한다.
+배포 빌드는 `clean bootJar -x test`로 실행 가능한 JAR를 만든다. GitHub Actions는 PR과 `main`·`develop` push에서 `clean build`를 실행한다. 두 브랜치는 [브랜치와 커밋](../../../docs/convention/branch-and-commit.md)의 보호 규칙에 따라 필수 검사를 통과하지 않으면 병합할 수 없으므로 CodePipeline이 받는 커밋은 이미 전체 단위·통합 테스트를 통과한 상태다.
 
 ## 배포 훅
 
@@ -118,6 +116,31 @@ CodeDeploy 배포 그룹이 **EC2 태그**로 대상을 고른다.
 애플리케이션은 CORS 허용 Origin과 인증·저장소 설정을 환경변수로 사용한다. 배포 전에 [환경변수](../guides/environment-variables.md)에 정의된 값을 환경변수 파일에 채우고, 새 환경변수를 도입할 때 배포 환경도 함께 갱신한다.
 
 `SPRING_PROFILES_ACTIVE`는 dev와 prod 모두 `prod`로 둔다. 이 프로필은 애플리케이션이 80 포트를 사용하게 한다.
+
+### MVP2 첫 dev 배포 전 확인
+
+1. RDS 자동 백업의 최신 복구 지점을 확인한다. 기존 `flyway_schema_history`나 사용자 데이터를 삭제하지 않는다.
+2. 아래 사전 점검 쿼리를 dev DB에서 실행한다. 두 쿼리 모두 결과가 없어야 한다. 결과가 있으면 행을 임의로 지우지 말고 사진 관계를 먼저 확인한다.
+
+   ```sql
+   SELECT property_id, COUNT(*) AS representative_count
+   FROM main_property_photos
+   GROUP BY property_id
+   HAVING COUNT(*) > 1;
+
+   SELECT main_photo.id, main_photo.property_id, main_photo.property_photos_id,
+          photo.property_id AS actual_photo_property_id
+   FROM main_property_photos AS main_photo
+   JOIN property_photos AS photo ON photo.id = main_photo.property_photos_id
+   WHERE main_photo.property_id <> photo.property_id;
+   ```
+
+3. dev 애플리케이션 DB 계정에 이번 additive upgrade에 필요한 `ALTER`, `CREATE`, `INDEX`, `SELECT`, `INSERT`, `UPDATE` 권한이 있는지 확인한다.
+4. `/etc/jachwi-sunbae/app.env`에 dev DB·JWT·CORS·Kakao REST·S3 접두사를 [환경변수](../guides/environment-variables.md)의 dev 값으로 설정한다. 정적 AWS 키는 두지 않는다.
+5. 버스정류소 API 승인이 끝나지 않았다면 `BUS_STOP_PROVIDER=none`으로 둔다.
+6. 프론트 dev `Commands` 액션에 `API_BASE_URL=https://dev-api.jachwi-sunbae.kr`, `MAP_PROVIDER_MODE=kakao`, Kakao JavaScript 키를 주입한다.
+
+첫 기동의 `db/upgrade/*.sql` 중 하나라도 실패하면 애플리케이션은 요청을 받지 않고 배포 검증이 실패한다. 스키마를 수동으로 일부만 적용하지 말고 로그와 [데이터베이스 초기화](../guides/database-initialization.md)를 확인한다.
 
 ## 빌드를 CodeBuild가 아니라 Commands로 하는 이유
 

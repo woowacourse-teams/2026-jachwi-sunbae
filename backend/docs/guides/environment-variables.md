@@ -18,12 +18,12 @@ Spring Boot 애플리케이션은 CORS 허용 Origin과 인증·저장소 설정
 | --- | --- | --- |
 | `DB_HOST` | `localhost` | MySQL 호스트 |
 | `DB_PORT` | `3306` | MySQL 포트 |
-| `DB_NAME` | `moca_mvp2` | 데이터베이스 이름 |
-| `DB_USERNAME` | `moca_mvp2` | 애플리케이션 계정 |
+| `DB_NAME` | `jachwi_sunbae` | 데이터베이스 이름 |
+| `DB_USERNAME` | `jachwi_sunbae` | 애플리케이션 계정 |
 | `DB_PASSWORD` | `local_password` | 애플리케이션 계정 비밀번호 |
 | `DB_ROOT_PASSWORD` | `local_root_password` | 로컬 MySQL root 비밀번호 |
 | `DB_SSL_MODE` | `DISABLED` | 운영 JDBC TLS 모드. 로컬 프로필은 별도 설정을 사용한다 |
-| `JWT_SECRET` | 로컬 데모용 32바이트 이상 값 | HS256 서명 비밀값. 운영에서는 새 무작위 값을 사용한다 |
+| `JWT_SECRET_BASE64` | Base64 인코딩한 32바이트 이상 값 | HS256 서명 비밀값. 운영에서는 환경별 무작위 값을 사용한다 |
 | `DEMO_MEMBER_NAME` | `이자취` | 데모 회원 표시 이름 |
 | `DEMO_SEED_ENABLED` | `true` | 데모 매물·메모·체크 상태 초기화 여부 |
 | `NICKNAME_AUTH_MAX_FAILURES` | `5` | 보호 닉네임의 제한 시간 내 최대 인증 실패 횟수 |
@@ -31,7 +31,7 @@ Spring Boot 애플리케이션은 CORS 허용 Origin과 인증·저장소 설정
 | `CORS_ALLOWED_ORIGINS` | `http://localhost:3000` | 쉼표로 구분한 프론트엔드 Origin 허용 목록 |
 | `PHOTO_STORAGE_ENDPOINT` | `http://localhost:9000` | S3 호환 객체 저장소 API endpoint. 정적 자격증명으로 접속하는 환경에서만 쓴다 |
 | `PHOTO_STORAGE_REGION` | `us-east-1` | S3 서명에 사용하는 region |
-| `PHOTO_STORAGE_BUCKET` | `moca-mvp2-photos` | 비공개 사진 객체 bucket |
+| `PHOTO_STORAGE_BUCKET` | `jachwi-sunbae-photos` | 로컬 MinIO 사진 객체 bucket |
 | `PHOTO_STORAGE_KEY_PREFIX` | 비움 | 객체 key 앞에 붙일 경로. 버킷을 다른 팀과 공유할 때 사용하며 로컬은 전용 버킷이라 비운다 |
 | `PHOTO_STORAGE_ACCESS_KEY` | 로컬 전용 예시 값 | 객체 저장소 access key. 정적 자격증명으로 접속하는 환경에서만 쓴다 |
 | `PHOTO_STORAGE_SECRET_KEY` | 로컬 전용 예시 값 | 객체 저장소 secret key. 정적 자격증명으로 접속하는 환경에서만 쓴다 |
@@ -55,12 +55,27 @@ cp .env.example .env
 
 Docker Compose는 같은 디렉터리의 `.env`를 자동으로 읽는다. Spring Boot를 직접 실행할 때는 셸 또는 실행 환경에 필요한 값을 주입한다.
 
-## 운영 프로필
+## dev·prod 프로필
 
-운영은 `prod` 프로필로 기동한다. 운영 환경변수는 EC2의 `/etc/moca/app.env` 파일로 주입한다. `CORS_ALLOWED_ORIGINS`에는 공개 프론트 Origin 하나를 둔다. 새 환경변수를 도입할 때 구성은 [MVP2 배포 아키텍처](../../../docs/operations/mvp2-deployment-architecture.md)와 [MVP2 백엔드 배포](../operations/mvp2-deployment.md)에 함께 반영한다.
+dev와 prod EC2는 모두 `SPRING_PROFILES_ACTIVE=prod`로 기동하며 `/etc/jachwi-sunbae/app.env`에서 환경변수를 읽는다. 애플리케이션은 80 포트를 직접 사용한다. 실제 값은 환경마다 분리하고 파일 권한은 `root:root`, `0600`으로 유지한다.
 
-AWS S3에서는 EC2 instance role을 사용하므로 `PHOTO_STORAGE_ENDPOINT`, `PHOTO_STORAGE_ACCESS_KEY`, `PHOTO_STORAGE_SECRET_KEY`를 설정하지 않는다. 이 세 값은 로컬 MinIO에만 사용한다.
+| 설정 | dev | prod |
+| --- | --- | --- |
+| `CORS_ALLOWED_ORIGINS` | `https://dev.jachwi-sunbae.kr` | `https://www.jachwi-sunbae.kr` |
+| `PHOTO_STORAGE_REGION` | `ap-northeast-2` | `ap-northeast-2` |
+| `PHOTO_STORAGE_BUCKET` | `techcourse-project-2026` | `techcourse-project-2026` |
+| `PHOTO_STORAGE_KEY_PREFIX` | `jachwi-sunbae/photos-dev/` | `jachwi-sunbae/photos/` |
+| `DEMO_SEED_ENABLED` | `false` | `false` |
+| `MAP_PROVIDER_MODE` | `kakao` | `kakao` |
 
-닉네임 인증은 외부 키가 필요 없다. `MAP_PROVIDER_MODE=kakao`이면 `KAKAO_REST_API_KEY`가 필요하고, 실제 버스정류소까지 표시하려면 `BUS_STOP_PROVIDER=tago`와 `DATA_GO_KR_SERVICE_KEY`를 추가한다. 프론트엔드에는 공개 Kakao JavaScript 키만 넣는다. 지도 기본 모드를 `demo`로 두면 외부 키 없이 전체 로컬 흐름을 실행할 수 있다.
+DB 접속값과 `JWT_SECRET_BASE64`, `KAKAO_REST_API_KEY`는 환경별 실제 값이 필요하다. 버스정류소를 켜면 `BUS_STOP_PROVIDER=tago`와 공공데이터포털 일반 인증키의 Decoding 값인 `DATA_GO_KR_SERVICE_KEY`도 넣는다. 활용 승인이 끝나기 전에는 `BUS_STOP_PROVIDER=none`으로 배포해 병원·학교·편의점·중개업소와 지하철 결과를 먼저 사용한다.
+
+AWS S3는 EC2 `ec2-project` instance role로 접근하므로 `PHOTO_STORAGE_ENDPOINT`, `PHOTO_STORAGE_ACCESS_KEY`, `PHOTO_STORAGE_SECRET_KEY`를 EC2에 두지 않는다. 이 세 값은 로컬 MinIO에만 사용한다. 프론트엔드에는 공개 Kakao JavaScript 키만 빌드 타임에 주입한다.
+
+첫 MVP2 기동은 기존 팀 DB에 `db/upgrade/*.sql`을 적용한다. 애플리케이션 DB 계정은 이 전환 동안 필요한 `ALTER`, `CREATE`, `INDEX`, `SELECT`, `INSERT`, `UPDATE` 권한을 가져야 한다. 전환 전에 자동 백업의 최신 복구 지점을 확인한다.
+
+새 환경변수를 도입할 때 [배포 아키텍처](../../../docs/operations/deployment-architecture.md)와 [백엔드 배포](../operations/deployment.md)를 함께 갱신한다.
+
+닉네임 인증은 외부 키가 필요 없다. 지도 기본 모드를 `demo`로 두면 외부 키 없이 전체 로컬 흐름을 실행할 수 있다.
 
 실제 비밀값은 `.env.example`, 애플리케이션 설정, 문서와 Git에 커밋하지 않는다.

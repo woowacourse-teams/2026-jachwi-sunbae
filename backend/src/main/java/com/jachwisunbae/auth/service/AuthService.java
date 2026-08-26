@@ -69,7 +69,7 @@ public class AuthService {
 
     private LoginResponse createNicknameMember(NicknameIdentity identity, String password) {
         LocalDateTime now = LocalDateTime.now(clock);
-        String internalEmail = "nickname-" + UUID.randomUUID() + "@moca.local";
+        String internalEmail = "nickname-" + UUID.randomUUID() + "@jachwi-sunbae.local";
         Member member = memberRepository.save(Member.create(internalEmail, identity.displayName(), now));
         String passwordHash = password == null ? null : passwordEncoder.encode(password);
         NicknameCredential credential = new NicknameCredential(

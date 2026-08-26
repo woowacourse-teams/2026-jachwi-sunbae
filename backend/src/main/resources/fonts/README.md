@@ -1,6 +1,6 @@
 # PDF 한글 글꼴
 
-`NanumGothic-Regular.ttf`와 `NanumGothic-Bold.ttf`는 Moca 매물 비교 PDF에 한글을 임베딩하기 위한
+`NanumGothic-Regular.ttf`와 `NanumGothic-Bold.ttf`는 자취선배 매물 비교 PDF에 한글을 임베딩하기 위한
 Google Fonts 나눔고딕이다.
 
 - 출처: `google/fonts` 저장소 `ofl/nanumgothic`

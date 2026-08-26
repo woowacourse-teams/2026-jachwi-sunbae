@@ -25,7 +25,7 @@
 
 ## QR 배포 자산
 
-- [공개 소개 QR PNG](../../assets/jachwisunbae-intro-qr.png)는 `https://jachwisunbae.shop/intro`를 담습니다.
+- [공개 소개 QR PNG](../../assets/jachwisunbae-intro-qr.png)는 `https://www.jachwi-sunbae.kr/intro`를 담습니다.
 - 인쇄하거나 다른 홍보물에 배치할 때 QR 가장자리의 흰색 여백을 자르거나 다른 요소로 덮지 않습니다.
 - 모집 채널과 무관하게 같은 QR을 사용하며 채널 추적 파라미터를 붙이지 않습니다.
 

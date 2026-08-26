@@ -6,9 +6,10 @@ plugins {
 
 group = 'com.jachwisunbae'
 version = '0.0.1-SNAPSHOT'
-description = 'Moca MVP2 backend application'
+description = 'Jachwi Sunbae MVP2 backend application'
 
 def sourceCommitId = providers.environmentVariable('SOURCE_COMMIT_ID')
+		.orElse(providers.environmentVariable('CODEBUILD_RESOLVED_SOURCE_VERSION'))
 		.orElse(providers.gradleProperty('sourceCommitId'))
 		.orElse('local')
 

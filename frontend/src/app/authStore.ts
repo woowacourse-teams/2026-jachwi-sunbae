@@ -20,7 +20,7 @@ type AuthenticationInput = {
 };
 
 const listeners = new Set<() => void>();
-const SESSION_STORAGE_KEY = 'moca.authentication.session';
+const SESSION_STORAGE_KEY = 'jachwi-sunbae.authentication.session';
 let expirationTimer: ReturnType<typeof setTimeout> | null = null;
 let authenticationRevision = 0;
 const readStoredSession = (): AuthenticationSession | null => {

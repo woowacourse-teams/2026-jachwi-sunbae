@@ -34,7 +34,7 @@ erDiagram
 
 ## 회원과 닉네임 자격정보
 
-`members`는 기존 소유자 FK를 유지하는 내부 회원이며 `email`은 이전 Google 회원과 신규 내부 식별자를 함께 담는다. API에는 이메일을 노출하지 않는다. 신규 회원은 충돌하지 않는 `nickname-<UUID>@moca.local` 값을 사용한다.
+`members`는 기존 소유자 FK를 유지하는 내부 회원이며 `email`은 이전 Google 회원과 신규 내부 식별자를 함께 담는다. API에는 이메일을 노출하지 않는다. 신규 회원은 충돌하지 않는 `nickname-<UUID>@jachwi-sunbae.local` 값을 사용한다.
 
 | 컬럼 | 타입 | 제약 | 설명 |
 | --- | --- | --- | --- |
@@ -119,4 +119,5 @@ erDiagram
 - `002-seed.sql`: 시스템 메모 항목, 세 단계의 시스템 체크 항목, 데모에 필요한 최소 기준 데이터
 - `db/upgrade/*.sql`: 기존 데이터가 있는 DB에 번호순으로 반복 적용 가능한 순방향 보강 SQL
 - `db/upgrade/002-custom-checklist-items.sql`: 체크 항목의 nullable 출처를 허용하고 이전 18개 제공 문항을 보존한 채 비활성화한 뒤 현재 53개 문항을 등록
+- `db/upgrade/003-adapt-team-mvp1-schema.sql`: 팀 RDS의 Flyway V11 형태를 데이터 손실 없이 현재 회원·매물·메모·사진 제약으로 보강
 - 데모 회원·매물·진행 결과는 `DEMO_SEED_ENABLED=true`일 때만 만들며 운영 시드에 섞지 않는다.

@@ -165,7 +165,7 @@ public class PropertyComparisonPdfRenderer {
             PDPage page = document.getPage(index);
             try (PDPageContentStream stream = new PDPageContentStream(document, page,
                     PDPageContentStream.AppendMode.APPEND, true, true)) {
-                String label = "Moca 매물 비교 기록  ·  " + (index + 1) + " / " + total;
+                String label = "자취선배 매물 비교 기록  ·  " + (index + 1) + " / " + total;
                 float width = font.getStringWidth(label) / 1000f * 7.5f;
                 stream.beginText();
                 stream.setFont(font, 7.5f);

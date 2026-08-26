@@ -26,10 +26,9 @@ Git·GitHub 협업 규칙은 백엔드에 한정되지 않으므로 [`docs/conve
 - [MVP2 데이터 모델](architecture/mvp2-data-model.md)
 - [MVP2 API 계약](api/mvp2-api-contract.md)
 - [지도 연동](guides/map-integration.md)
-- [MVP2 백엔드 배포](operations/mvp2-deployment.md)
-- [MVP2 롤백](operations/mvp2-rollback.md)
-
-`operations/deployment.md`와 `operations/rollback.md`는 MVP1 당시 구성을 보존한 기록이며 현재 절차가 아니다.
+- [백엔드 배포](operations/deployment.md)
+- [롤백](operations/rollback.md)
+- [프론트엔드 배포](../../frontend/docs/deployment.md)
 
 ## 문서 작성 원칙
 

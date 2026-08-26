@@ -53,7 +53,7 @@ const PropertyComparePage = ({ config }: PropertyComparePageProps) => {
       const url = URL.createObjectURL(blob);
       const anchor = document.createElement('a');
       anchor.href = url;
-      anchor.download = `moca-property-comparison-${new Date().toISOString().slice(0, 10)}.pdf`;
+      anchor.download = `jachwi-sunbae-property-comparison-${new Date().toISOString().slice(0, 10)}.pdf`;
       document.body.append(anchor);
       anchor.click();
       anchor.remove();

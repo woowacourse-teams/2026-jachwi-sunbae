@@ -2,7 +2,7 @@
 
 - 상태: MVP2 구현·공개 환경 운영 중
 - 문서 성격: 파생
-- 대조 대상: 실제 백엔드·프론트엔드 구성 요소, [MVP2 배포 아키텍처](../../../docs/operations/mvp2-deployment-architecture.md)
+- 대조 대상: 실제 백엔드·프론트엔드 구성 요소, [배포 아키텍처](../../../docs/operations/deployment-architecture.md)
 
 ## 현재 경계
 
@@ -27,4 +27,4 @@ Spring Boot
 
 API의 실행 계약은 구현에서 생성되는 Swagger/OpenAPI를 우선 확인한다. 제품 요구사항은 [MVP2 기능 명세](../../../docs/product/specs/README.md), 스키마 설명은 [MVP2 데이터 모델](mvp2-data-model.md), 외부 지도 전환은 [지도 연동](../guides/map-integration.md)을 따른다.
 
-운영은 `jachwisunbae.shop`의 단일 EC2에서 Caddy가 HTTPS와 SPA를 제공하고 `/api`를 Spring Boot로 전달한다. MySQL은 같은 인스턴스의 비공개 Docker 네트워크, 사진은 별도 비공개 S3에 두며 GitHub Actions가 OIDC와 SSM으로 수동 배포한다. 상세 구성과 운영 제한은 [MVP2 배포 아키텍처](../../../docs/operations/mvp2-deployment-architecture.md)를 따른다.
+팀 AWS에서는 프론트엔드를 S3·CloudFront, 백엔드를 ALB 뒤 EC2·systemd로 운영하고 RDS MySQL과 공유 S3의 환경별 접두사를 사용한다. `develop`과 `main` 병합은 각각 dev와 prod CodePipeline·CodeDeploy를 시작한다. 상세 구성과 운영 제한은 [배포 아키텍처](../../../docs/operations/deployment-architecture.md)를 따른다.

@@ -1,11 +1,9 @@
-# MVP1 프론트엔드 배포 기록
+# 프론트엔드 배포
 
-- 상태: MVP1에서 동작, MVP2에서 사용하지 않음
+- 상태: 동작 중
 - 현재 배포 환경: prod `https://www.jachwi-sunbae.kr`, dev `https://dev.jachwi-sunbae.kr`
-- 문서 성격: 시점 고정
-- 갱신 정책: MVP1 당시 S3·CloudFront 구성을 보존하며 갱신하지 않는다
-
-> Moca MVP2의 현재 기준은 [MVP2 프론트엔드 배포](mvp2-deployment.md)를 따른다.
+- 문서 성격: 파생
+- 대조 대상: `frontend/webpack.config.js`, 실제 CloudFront·S3·파이프라인 구성
 
 전체 구성과 선택 근거는 [배포 아키텍처 설계](../../docs/operations/deployment-architecture.md)에 있다. 백엔드 배포는 [배포](../../backend/docs/operations/deployment.md)를 참고한다.
 
@@ -59,17 +57,17 @@ prod → /main.8a49163cbe52bf996d07.js
 
 ## 환경변수는 빌드 타임에 박힌다
 
-`webpack.config.js`의 `DefinePlugin`이 `API_BASE_URL`·`GOOGLE_CLIENT_ID`·`GOOGLE_REDIRECT_URI`를 번들에 박아넣는다. 런타임 설정이 아니므로 **값을 바꾸면 재빌드·재배포해야 한다.**
+`webpack.config.js`의 `DefinePlugin`이 `API_BASE_URL`·`MAP_PROVIDER_MODE`·`KAKAO_MAP_JAVASCRIPT_KEY`를 번들에 박아넣는다. 런타임 설정이 아니므로 **값을 바꾸면 재빌드·재배포해야 한다.**
 
-| 환경변수              | prod                                                 | dev                                                  |
-| --------------------- | ---------------------------------------------------- | ---------------------------------------------------- |
-| `API_BASE_URL`        | `https://api.jachwi-sunbae.kr`                       | `https://dev-api.jachwi-sunbae.kr`                   |
-| `GOOGLE_CLIENT_ID`    | 같은 값                                              | 같은 값                                              |
-| `GOOGLE_REDIRECT_URI` | `https://www.jachwi-sunbae.kr/oauth/google/callback` | `https://dev.jachwi-sunbae.kr/oauth/google/callback` |
+| 환경변수 | prod | dev |
+| --- | --- | --- |
+| `API_BASE_URL` | `https://api.jachwi-sunbae.kr` | `https://dev-api.jachwi-sunbae.kr` |
+| `MAP_PROVIDER_MODE` | `kakao` | `kakao` |
+| `KAKAO_MAP_JAVASCRIPT_KEY` | Kakao 앱의 JavaScript 키 | 같은 Kakao 앱의 JavaScript 키 |
 
-값은 CodePipeline 빌드 액션의 환경변수로 전달한다. 번들에 박혀 브라우저에 그대로 노출되므로 비밀이 아니다. 클라이언트 시크릿은 여기 두지 않는다.
+값은 CodePipeline Commands 빌드 액션의 환경변수로 전달한다. Kakao JavaScript 키는 허용 도메인으로 제한하는 공개 식별자이며 REST API 키나 다른 비밀값을 넣지 않는다. Kakao Developers에는 `https://www.jachwi-sunbae.kr`과 `https://dev.jachwi-sunbae.kr`을 Web 도메인으로 모두 등록한다.
 
-값이 비면 `getPublicConfig()`가 예외를 던져 화면이 뜨지 않는다. 잘못된 값으로 조용히 동작하는 것보다 낫다.
+`API_BASE_URL`이 비거나 올바른 HTTP(S) URL이 아니면 시작 시 예외가 발생한다. `MAP_PROVIDER_MODE=kakao`에서 JavaScript 키가 비어도 같은 방식으로 실패한다. 잘못된 값으로 조용히 demo 지도를 제공하지 않는다.
 
 ## 캐시 무효화
 
@@ -108,9 +106,9 @@ assets/jachwi-sunbae-logo.2e4dac46707736dbc407.png
 
 ## SPA 폴백
 
-react-router의 클라이언트 라우팅을 쓴다. `/properties/1` 같은 경로는 S3에 실제 객체가 없으므로, CloudFront에서 403·404 응답을 `/index.html`(상태 200)로 매핑해야 한다.
+react-router의 클라이언트 라우팅을 쓴다. `/intro`, `/properties/1`, `/map` 같은 경로는 S3에 실제 객체가 없으므로, CloudFront에서 403·404 응답을 `/index.html`(상태 200)로 매핑해야 한다.
 
-이게 없으면 첫 진입과 새로고침이 깨진다. 구글 콜백 경로 `/oauth/google/callback`도 프론트 라우트다.
+이게 없으면 소개 QR의 `/intro` 직접 진입과 매물·지도 화면 새로고침이 깨진다.
 
 ## CloudFront origin path
 

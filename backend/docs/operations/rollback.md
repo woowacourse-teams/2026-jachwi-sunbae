@@ -1,10 +1,8 @@
-# MVP1 롤백 기록
+# 롤백
 
-- 상태: MVP1에서 동작, MVP2에서 사용하지 않음
-- 문서 성격: 시점 고정
-- 갱신 정책: MVP1 당시 롤백 구성을 보존하며 갱신하지 않는다
-
-> Moca MVP2의 현재 기준은 [MVP2 롤백](mvp2-rollback.md)을 따른다.
+- 상태: 동작 중
+- 문서 성격: 파생
+- 대조 대상: 실제 CodeDeploy 배포 그룹 설정, `backend/deploy/`
 
 배포 구성은 [배포](deployment.md)에 있다.
 
@@ -50,3 +48,7 @@ curl -fsS https://dev-api.jachwi-sunbae.kr/actuator/info
 2026-08-20에 이 절차를 실행해 실패 리비전의 기동과 직전 정상 리비전의 실제 복구를 확인했다. SHA와 시각, 복구 PR은 [CI/CD 배포 검증 기록](../../../docs/operations/2026-08-20-cicd-deployment-validation.md)에 남긴다.
 
 데이터 손실 가능성이 있는 작업은 즉시 실행하지 않고 영향 범위와 복구 가능성을 먼저 확인한다.
+
+## 데이터베이스 변경이 포함된 MVP2 롤백
+
+MVP2 upgrade는 순방향 additive 변경이며 애플리케이션 롤백 때 자동으로 컬럼·테이블·기존 `flyway_schema_history`를 제거하지 않는다. 이전 애플리케이션이 추가 컬럼을 무시할 수 있으므로 우선 직전 정상 리비전을 재배포한다. 데이터까지 되돌려야 한다면 자동 백업을 격리된 RDS에 복원해 영향 범위를 확인한 뒤 진행하며, 운영 DB에 `DROP`이나 역방향 SQL을 즉시 실행하지 않는다.
