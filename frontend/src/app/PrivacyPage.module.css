@@ -1,0 +1,114 @@
+.page {
+  height: 100%;
+  overflow-y: auto;
+  background: #fff;
+}
+
+.content {
+  width: min(100%, var(--app-max-width));
+  min-height: 100%;
+  margin: 0 auto;
+  padding: 0 1rem calc(2rem + env(safe-area-inset-bottom));
+  background: var(--color-canvas);
+}
+
+.section {
+  padding: 1.4rem 0 1rem;
+}
+
+.eyebrow {
+  margin: 0 0 0.35rem;
+  color: var(--color-primary);
+  font-size: 0.68rem;
+  font-weight: 800;
+}
+
+.section h1 {
+  margin: 0;
+  font-size: 1.35rem;
+  line-height: 1.35;
+  letter-spacing: -0.04em;
+  word-break: keep-all;
+}
+
+.section > p:last-child,
+.card p,
+.card li,
+.externalNotice {
+  color: var(--color-muted);
+  font-size: 0.72rem;
+  line-height: 1.65;
+}
+
+.card {
+  margin-top: 0.8rem;
+  padding: 1rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+}
+
+.card h2 {
+  margin: 0;
+  font-size: 0.9rem;
+}
+
+.card ul {
+  display: grid;
+  gap: 0.35rem;
+  margin: 0.7rem 0;
+  padding-left: 1.2rem;
+}
+
+.card p {
+  margin: 0.65rem 0 0;
+}
+
+.card .strongNotice {
+  color: var(--color-primary-dark);
+  font-weight: 750;
+}
+
+.card .status {
+  padding: 0.65rem 0.75rem;
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-brand);
+  color: var(--color-primary-dark);
+  font-weight: 750;
+}
+
+.actions {
+  display: grid;
+  grid-template-columns: 1fr 1.4fr;
+  gap: 0.55rem;
+  margin-top: 0.8rem;
+}
+
+.actions button {
+  min-height: 2.7rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 750;
+  cursor: pointer;
+}
+
+.secondary {
+  border: 1px solid var(--color-border-strong);
+  background: var(--color-surface);
+  color: var(--color-ink-soft);
+}
+
+.primary {
+  border: 1px solid var(--color-primary);
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+}
+
+.externalNotice {
+  margin: 1rem 0 0;
+}
+
+.externalNotice a {
+  color: var(--color-primary-dark);
+  font-weight: 750;
+}

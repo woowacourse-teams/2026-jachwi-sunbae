@@ -743,6 +743,12 @@
   font-size: 0.58rem;
 }
 
+.footer a {
+  color: var(--color-brand-100);
+  font-size: 0.58rem;
+  font-weight: 700;
+}
+
 @media (hover: hover) {
   .topCta,
   .primaryCta,

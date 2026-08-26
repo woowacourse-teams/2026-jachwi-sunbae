@@ -13,6 +13,7 @@ import com.jachwisunbae.property.repository.PropertyRepository;
 import com.jachwisunbae.property.repository.PropertyPhotoRepository;
 import com.jachwisunbae.property.repository.PropertyProgressRepository;
 import com.jachwisunbae.member.repository.MemberRepository;
+import com.jachwisunbae.member.entity.Member;
 import com.jachwisunbae.common.exception.BusinessException;
 import com.jachwisunbae.common.exception.DomainErrorCode;
 import com.jachwisunbae.property.repository.query.PropertyListItemQuery;
@@ -70,18 +71,25 @@ public class PropertyService {
     }
 
     @Transactional
-    public Property create(final Long memberId, final CreatePropertyRequest request) {
-        memberRepository.findByIdForUpdate(memberId).orElseThrow(() -> new BusinessException(
+    public PropertyCreationResult create(final Long memberId, final CreatePropertyRequest request) {
+        Member member = memberRepository.findByIdForUpdate(memberId).orElseThrow(() -> new BusinessException(
                 DomainErrorCode.MEMBER_NOT_FOUND, "회원을 찾을 수 없습니다."));
-        validatePropertyCount(memberId);
+        int propertyCount = propertyRepository.countByMemberId(memberId);
+        validatePropertyCount(propertyCount);
 
-        return propertyRepository.save(Property.create(memberId, request.name(), request.depositAmount(),
+        LocalDateTime now = LocalDateTime.now(clock);
+        Property property = propertyRepository.save(Property.create(memberId, request.name(), request.depositAmount(),
                 request.monthlyRentAmount(), request.discoverySource(), request.roadAddress(), request.jibunAddress(),
-                request.latitude(), request.longitude(), LocalDateTime.now(clock)));
+                request.latitude(), request.longitude(), now));
+        boolean firstProperty = member.recordFirstProperty(now);
+        if (firstProperty) {
+            memberRepository.update(member);
+        }
+        return new PropertyCreationResult(property, firstProperty);
     }
 
-    private void validatePropertyCount(final Long memberId) {
-        if (propertyRepository.countByMemberId(memberId) >= 30) {
+    private void validatePropertyCount(final int propertyCount) {
+        if (propertyCount >= 30) {
             throw new BusinessException(DomainErrorCode.PROPERTY_LIMIT_EXCEEDED,
                     "회원당 매물은 30개까지 등록할 수 있습니다.");
         }

@@ -4,6 +4,7 @@ import PropertyForm from '../components/PropertyForm';
 import TopNavigation from '../components/ui/TopNavigation';
 import { useCreateProperty } from '../hooks/query/usePropertyMutations';
 import type { PublicConfig } from '../types/PublicConfig';
+import { trackMetaPixelFirstPropertyRecorded } from '../utils/metaPixel';
 import styles from './CreatePropertyPage.module.css';
 
 type CreatePropertyPageProps = { config: PublicConfig };
@@ -44,7 +45,10 @@ const CreatePropertyPage = ({ config }: CreatePropertyPageProps) => {
           onSubmit={(input) => {
             void createMutation
               .mutateAsync(input)
-              .then((created) => navigate(`/properties/${created.propertyId}`, { replace: true }))
+              .then((created) => {
+                if (created.firstProperty) trackMetaPixelFirstPropertyRecorded();
+                navigate(`/properties/${created.propertyId}`, { replace: true });
+              })
               .catch(() => undefined);
           }}
         />

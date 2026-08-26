@@ -1,5 +1,6 @@
 import type { PublicConfig } from '../types/PublicConfig';
 import type {
+  CreatedProperty,
   PropertyBasicInfo,
   PropertyDetail,
   PropertyChecklistOverview,
@@ -15,6 +16,7 @@ import type {
   UpdatePropertyRequestDto,
 } from './dtos/PropertyDto';
 import {
+  parseCreatedProperty,
   parseNoContent,
   parsePropertyBasicInfo,
   parsePropertyDetail,
@@ -75,13 +77,13 @@ export const recordPropertyComparisonView = (config: PublicConfig): Promise<unde
     parseData: parseNoContent,
   });
 
-export const createProperty = (config: PublicConfig, request: PropertyInputDto): Promise<PropertyBasicInfo> =>
+export const createProperty = (config: PublicConfig, request: PropertyInputDto): Promise<CreatedProperty> =>
   apiRequest({
     config,
     path: '/api/properties',
     method: 'POST',
     body: request,
-    parseData: parsePropertyBasicInfo,
+    parseData: parseCreatedProperty,
   });
 
 export const fetchPropertyDetail = (

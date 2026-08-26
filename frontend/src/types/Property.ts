@@ -73,6 +73,10 @@ export type PropertyBasicInfo = {
   lastActivityAt: string | null;
 };
 
+export type CreatedProperty = PropertyBasicInfo & {
+  firstProperty: boolean;
+};
+
 export type PropertyPhoto = {
   photoId: number;
   contentUrl: string;

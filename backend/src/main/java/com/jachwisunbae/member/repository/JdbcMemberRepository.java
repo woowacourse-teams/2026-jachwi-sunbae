@@ -23,7 +23,7 @@ public class JdbcMemberRepository implements MemberRepository {
     @Override
     public Optional<Member> findById(final Long memberId) {
         String sql = """
-                SELECT id, email, name, last_login_at, created_at, updated_at
+                SELECT id, email, name, last_login_at, first_property_created_at, created_at, updated_at
                 FROM members
                 WHERE id = ?
                 """;
@@ -36,7 +36,7 @@ public class JdbcMemberRepository implements MemberRepository {
     @Override
     public Optional<Member> findByIdForUpdate(final Long memberId) {
         String sql = """
-                SELECT id, email, name, last_login_at, created_at, updated_at
+                SELECT id, email, name, last_login_at, first_property_created_at, created_at, updated_at
                 FROM members
                 WHERE id = ?
                 FOR UPDATE
@@ -63,18 +63,19 @@ public class JdbcMemberRepository implements MemberRepository {
             return statement;
         }, keyHolder);
         return Member.reconstruct(keyHolder.getKey().longValue(), member.getEmail(), member.getName(),
-                member.getLastLoginAt(), member.getCreatedAt(), member.getUpdatedAt());
+                member.getLastLoginAt(), member.getFirstPropertyCreatedAt(), member.getCreatedAt(),
+                member.getUpdatedAt());
     }
 
     @Override
     public void update(final Member member) {
         String sql = """
                 UPDATE members
-                SET email = ?, name = ?, last_login_at = ?, updated_at = ?
+                SET email = ?, name = ?, last_login_at = ?, first_property_created_at = ?, updated_at = ?
                 WHERE id = ?
                 """;
         jdbcTemplate.update(sql, member.getEmail(), member.getName(), member.getLastLoginAt(),
-                member.getUpdatedAt(), member.getId());
+                member.getFirstPropertyCreatedAt(), member.getUpdatedAt(), member.getId());
     }
 
     private RowMapper<Member> memberRowMapper() {
@@ -83,6 +84,8 @@ public class JdbcMemberRepository implements MemberRepository {
                 resultSet.getString("email"),
                 resultSet.getString("name"),
                 resultSet.getTimestamp("last_login_at").toLocalDateTime(),
+                resultSet.getTimestamp("first_property_created_at") == null ? null
+                        : resultSet.getTimestamp("first_property_created_at").toLocalDateTime(),
                 resultSet.getTimestamp("created_at").toLocalDateTime(),
                 resultSet.getTimestamp("updated_at").toLocalDateTime()
         );

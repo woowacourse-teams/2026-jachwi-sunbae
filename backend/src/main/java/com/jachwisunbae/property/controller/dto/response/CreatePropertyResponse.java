@@ -10,8 +10,9 @@ public record CreatePropertyResponse(Long id, String name, Long depositAmount, L
                                      String discoverySource, String address, String roadAddress,
                                      String jibunAddress, BigDecimal latitude, BigDecimal longitude,
                                      Instant createdAt, Instant updatedAt, Instant lastActivityAt,
-                                     List<Object> photos, PropertyCreateProgress overallProgress) {
-    public static CreatePropertyResponse from(final Property property) {
+                                     List<Object> photos, PropertyCreateProgress overallProgress,
+                                     boolean firstProperty) {
+    public static CreatePropertyResponse from(final Property property, final boolean firstProperty) {
         return new CreatePropertyResponse(property.getId(), property.getName(), property.getDepositAmount(),
                 property.getMonthlyRentAmount(), property.getDiscoverySource(),
                 property.getAddress(), property.getRoadAddress(), property.getJibunAddress(),
@@ -19,6 +20,6 @@ public record CreatePropertyResponse(Long id, String name, Long depositAmount, L
                 property.getCreatedAt().toInstant(ZoneOffset.UTC),
                 property.getUpdatedAt().toInstant(ZoneOffset.UTC),
                 property.getLastActivityAt().toInstant(ZoneOffset.UTC),
-                List.of(), new PropertyCreateProgress(0, 0, 0, 0, 0, 0));
+                List.of(), new PropertyCreateProgress(0, 0, 0, 0, 0, 0), firstProperty);
     }
 }

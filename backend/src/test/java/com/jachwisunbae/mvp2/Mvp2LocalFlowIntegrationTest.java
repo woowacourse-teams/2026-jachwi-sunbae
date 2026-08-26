@@ -74,7 +74,9 @@ class Mvp2LocalFlowIntegrationTest extends IntegrationTest {
                 .andExpect(jsonPath("$.data", hasSize(1)))
                 .andExpect(jsonPath("$.data[0].roadAddress").value("서울 관악구 신림로 12길 3"));
 
-        long propertyId = createProperty(token);
+        CreatedProperty firstProperty = createProperty(token);
+        assertThat(firstProperty.firstProperty()).isTrue();
+        long propertyId = firstProperty.id();
 
         String otherMemberToken = nicknameLoginToken("다른테스터", "other-safe-password");
         mockMvc.perform(get("/api/properties/{propertyId}", propertyId)
@@ -176,7 +178,9 @@ class Mvp2LocalFlowIntegrationTest extends IntegrationTest {
                 .andExpect(content().contentType("image/png"))
                 .andExpect(content().bytes(PNG));
 
-        long secondPropertyId = createProperty(token);
+        CreatedProperty secondProperty = createProperty(token);
+        assertThat(secondProperty.firstProperty()).isFalse();
+        long secondPropertyId = secondProperty.id();
         mockMvc.perform(post("/api/properties/comparison-views")
                         .header("Authorization", bearer(token)))
                 .andExpect(status().isNoContent());
@@ -235,6 +239,11 @@ class Mvp2LocalFlowIntegrationTest extends IntegrationTest {
         assertThat(countForProperty("property_memos", propertyId)).isZero();
         assertThat(countForProperty("property_checklists", propertyId)).isZero();
         verify(photoStorage, atLeastOnce()).delete(anyString());
+
+        mockMvc.perform(delete("/api/properties/{propertyId}", secondPropertyId)
+                        .header("Authorization", bearer(token)))
+                .andExpect(status().isNoContent());
+        assertThat(createProperty(token).firstProperty()).isFalse();
     }
 
     private String nicknameLoginToken(String nickname, String password) throws Exception {
@@ -251,7 +260,7 @@ class Mvp2LocalFlowIntegrationTest extends IntegrationTest {
         return data(result).path("accessToken").asText();
     }
 
-    private long createProperty(String token) throws Exception {
+    private CreatedProperty createProperty(String token) throws Exception {
         MvcResult result = mockMvc.perform(post("/api/properties")
                         .header("Authorization", bearer(token))
                         .contentType(MediaType.APPLICATION_JSON)
@@ -263,7 +272,11 @@ class Mvp2LocalFlowIntegrationTest extends IntegrationTest {
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.data.lastActivityAt").exists())
                 .andReturn();
-        return data(result).path("id").asLong();
+        JsonNode created = data(result);
+        return new CreatedProperty(created.path("id").asLong(), created.path("firstProperty").asBoolean());
+    }
+
+    private record CreatedProperty(long id, boolean firstProperty) {
     }
 
     private JsonNode data(MvcResult result) throws Exception {
