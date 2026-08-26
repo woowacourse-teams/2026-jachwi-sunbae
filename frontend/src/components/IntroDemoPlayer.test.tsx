@@ -31,6 +31,17 @@ describe('공개 소개 사용 영상', () => {
     expect(screen.getByRole('button', { name: '일시정지' })).toHaveAttribute('aria-pressed', 'false');
   });
 
+  it('순서 카드를 누르면 해당 영상으로 전환해 재생한다', () => {
+    render(<IntroDemoPlayer />);
+
+    const nearbyChapterButton = screen.getByRole('button', { name: /주변 시설과 모든 기록 비교/ });
+    fireEvent.click(nearbyChapterButton);
+
+    expect(screen.getByLabelText('주변 시설과 모든 기록 비교 사용 예시 영상, 2배속')).toBeInTheDocument();
+    expect(nearbyChapterButton).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByRole('button', { name: '일시정지' })).toBeInTheDocument();
+  });
+
   it('동작 줄이기 환경에서는 정지 상태로 시작한다', async () => {
     vi.spyOn(window, 'matchMedia').mockReturnValue({ matches: true } as MediaQueryList);
 

@@ -160,33 +160,47 @@
   list-style: none;
 }
 
-.chapterList li {
+.chapterList button {
   display: grid;
+  width: 100%;
   grid-template-columns: 2rem minmax(0, 1fr);
   gap: 0.75rem;
   padding: 1rem;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
   background: var(--color-surface);
+  color: inherit;
+  font: inherit;
+  text-align: left;
   transition:
     border-color 180ms ease,
     background-color 180ms ease,
     transform 180ms ease;
+  cursor: pointer;
 }
 
-.chapterList li[data-active='true'] {
+.chapterList button:hover {
+  border-color: var(--color-border-strong);
+}
+
+.chapterList button:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--color-primary) 34%, transparent);
+  outline-offset: 3px;
+}
+
+.chapterList button[data-active='true'] {
   border-color: var(--color-primary);
   background: color-mix(in srgb, var(--color-brand-100) 62%, var(--color-surface));
   transform: translateX(0.2rem);
 }
 
-.chapterList li > span {
+.chapterList button > span {
   color: var(--color-placeholder);
   font-size: 0.6rem;
   font-weight: 900;
 }
 
-.chapterList li[data-active='true'] > span {
+.chapterList button[data-active='true'] > span {
   color: var(--color-primary);
 }
 
@@ -237,17 +251,17 @@
     margin-left: auto;
   }
 
-  .chapterList li {
+  .chapterList button {
     padding: 1.2rem;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .chapterList li {
+  .chapterList button {
     transition: none;
   }
 
-  .chapterList li[data-active='true'] {
+  .chapterList button[data-active='true'] {
     transform: none;
   }
 }
