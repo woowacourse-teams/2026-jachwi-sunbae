@@ -1,0 +1,266 @@
+.page {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+  background: var(--color-surface);
+}
+
+.mapNavigation {
+  position: relative;
+  z-index: 40;
+  min-height: 3.9rem;
+  margin: 0;
+  padding: 0.55rem 1rem 0.35rem;
+  background: rgb(255 255 255 / 98%);
+  box-shadow: 0 1px 0 rgb(205 203 194 / 45%);
+}
+
+.mapStage {
+  position: relative;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.mapNotice {
+  position: absolute;
+  z-index: 20;
+  top: 0.75rem;
+  left: 50%;
+  display: flex;
+  width: max-content;
+  max-width: calc(100% - 6rem);
+  align-items: center;
+  gap: 0.35rem;
+  margin: 0;
+  padding: 0.5rem 0.65rem;
+  border: 1px solid rgb(224 222 213 / 84%);
+  border-radius: 999px;
+  background: rgb(255 255 255 / 94%);
+  box-shadow: 0 0.3rem 0.9rem rgb(44 50 39 / 14%);
+  color: var(--color-ink-soft);
+  font-size: 0.6rem;
+  font-weight: 750;
+  text-align: center;
+  transform: translateX(-50%);
+}
+
+.mapNotice button {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--color-primary-dark);
+  font-size: inherit;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.mapControls,
+.selectMapControls {
+  position: absolute;
+  z-index: 15;
+  right: 0.78rem;
+  bottom: 4.9rem;
+  display: grid;
+  gap: 0.52rem;
+}
+
+.mapControls > button,
+.selectMapControls > button {
+  display: grid;
+  width: 2.9rem;
+  height: 2.9rem;
+  padding: 0;
+  border: 1px solid rgb(221 220 212 / 88%);
+  border-radius: 50%;
+  background: rgb(255 255 255 / 96%);
+  box-shadow: 0 0.35rem 1rem rgb(42 48 35 / 18%);
+  color: #30342e;
+  cursor: pointer;
+  place-items: center;
+}
+
+.mapControls > button:disabled,
+.selectMapControls > button:disabled {
+  cursor: wait;
+  opacity: 0.62;
+}
+
+.addPropertyButton {
+  position: absolute;
+  z-index: 16;
+  right: 0.78rem;
+  bottom: 0.72rem;
+  display: grid;
+  width: 3.5rem;
+  height: 3.5rem;
+  border-radius: 50%;
+  background: var(--color-primary);
+  box-shadow: 0 0.45rem 1.15rem rgb(46 62 31 / 30%);
+  color: white;
+  place-items: center;
+}
+
+.explorePage .mapControls {
+  bottom: 12.8rem;
+}
+
+.explorePage .addPropertyButton {
+  bottom: 8.6rem;
+}
+
+.selectMapControls {
+  bottom: 13.8rem;
+}
+
+.addressSheet {
+  position: absolute;
+  z-index: 18;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  display: grid;
+  gap: 0.62rem;
+  padding: 1.15rem 1rem calc(1rem + env(safe-area-inset-bottom));
+  border-radius: 1.2rem 1.2rem 0 0;
+  background: rgb(255 255 255 / 97%);
+  box-shadow: 0 -0.5rem 1.5rem rgb(44 50 39 / 14%);
+  backdrop-filter: blur(10px);
+}
+
+.addressSheet > strong {
+  overflow: hidden;
+  font-size: 1.05rem;
+  line-height: 1.35;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.addressSheet > p {
+  margin: 0;
+  overflow: hidden;
+  color: var(--color-muted);
+  font-size: 0.7rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.addressNotice {
+  min-height: 2.75rem;
+  margin: 0;
+  padding: 0.7rem;
+  border: 0;
+  border-radius: 0.75rem;
+  background: #fff0ee;
+  color: #ee625d !important;
+  font-size: 0.66rem !important;
+  font-weight: 800;
+  text-align: center;
+}
+
+button.addressNotice {
+  cursor: pointer;
+}
+
+.confirmLocationButton {
+  min-height: 3.25rem;
+  padding: 0.8rem 1rem;
+  border: 0;
+  border-radius: 0.85rem;
+  background: #111;
+  color: white;
+  font-size: 0.78rem;
+  font-weight: 850;
+  cursor: pointer;
+}
+
+.confirmLocationButton:disabled {
+  background: #d8d8d5;
+  cursor: not-allowed;
+}
+
+.radiusFilters {
+  position: absolute;
+  z-index: 14;
+  top: 0.6rem;
+  right: 0.5rem;
+  left: 0.5rem;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.35rem;
+}
+
+.radiusFilters button {
+  min-height: 2.65rem;
+  padding: 0.45rem 0.3rem;
+  border: 1px solid rgb(218 218 214 / 92%);
+  border-radius: 999px;
+  background: rgb(255 255 255 / 95%);
+  box-shadow: 0 0.25rem 0.8rem rgb(44 50 39 / 12%);
+  color: #464945;
+  font-size: 0.7rem;
+  font-weight: 850;
+  cursor: pointer;
+}
+
+.radiusFilters button[aria-pressed='true'] {
+  border-color: #367ff0;
+  background: #3d82ee;
+  color: white;
+}
+
+.nearbyPage .mapStage > aside {
+  top: 4.15rem;
+}
+
+.explorePage .mapStage > aside {
+  top: 4.15rem;
+}
+
+.nearbyPage .mapNotice {
+  top: 4.3rem;
+}
+
+.explorePage .mapNotice {
+  top: 4.3rem;
+}
+
+.fullState {
+  display: grid;
+  min-height: 0;
+  padding: 1rem;
+  place-content: center;
+}
+
+.fullState > button {
+  margin-top: 0.7rem;
+  border: 0;
+  background: transparent;
+  color: var(--color-primary-dark);
+  font-weight: 850;
+}
+
+@media (max-width: 340px) {
+  .mapNavigation {
+    min-height: 3.55rem;
+    padding-inline: 0.8rem;
+  }
+
+  .radiusFilters {
+    gap: 0.22rem;
+  }
+
+  .radiusFilters button {
+    min-height: 2.35rem;
+    font-size: 0.62rem;
+  }
+
+  .nearbyPage .mapStage > aside {
+    top: 3.75rem;
+  }
+
+  .addressSheet {
+    padding-inline: 0.8rem;
+  }
+}

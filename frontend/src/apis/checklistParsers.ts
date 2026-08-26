@@ -4,6 +4,7 @@ import type {
   CheckItem,
   CheckItemPage,
   ChecklistDetail,
+  ChecklistItem,
   ChecklistPage,
   ChecklistPreset,
   ChecklistStage,
@@ -50,12 +51,15 @@ export const parseCheckItemPage = (value: unknown, stage: ChecklistStage): Check
   };
 };
 
-/** 원룸 프리셋은 최종 API에 없으며, 체크 항목 조회 결과를 화면 시작 구성으로만 변환한다. */
-export const toChecklistPreset = (stage: ChecklistStage, items: CheckItem[]): ChecklistPreset => ({
-  presetType: 'ONE_ROOM',
-  stage,
-  items: items.map((item, order) => ({ ...item, order })),
-});
+/** 원룸 프리셋은 최종 API에 없으며, 활성 CORE만 화면 시작 구성으로 변환한다. */
+export const toChecklistPreset = (stage: ChecklistStage, items: CheckItem[]): ChecklistPreset => {
+  const coreItems = items.filter((item) => item.itemType === 'CORE');
+  return {
+    presetType: 'ONE_ROOM',
+    stage,
+    items: coreItems.map((item, order) => ({ ...item, order })),
+  };
+};
 
 const parseChecklistSummary = (value: unknown): ChecklistSummary => {
   const result = readRecord(value);
@@ -84,20 +88,36 @@ export const parseChecklistPage = (value: unknown): ChecklistPage => {
   };
 };
 
-const parseChecklistItem = (value: unknown) => {
+const parseChecklistItem = (value: unknown): ChecklistItem => {
   const item = readRecord(value);
-  const systemCheckItemId = readInteger(item, 'systemCheckItemId', 1);
-  return {
-    checklistItemId: systemCheckItemId,
-    origin: 'PROVIDED' as const,
-    sourceCheckItemId: systemCheckItemId,
-    checkItemId: systemCheckItemId,
+  const checklistItemId = readInteger(item, 'id', 1);
+  const origin = readString(item, 'origin');
+  const systemCheckItemId = readNullableInteger(item, 'systemCheckItemId', 1);
+  const common = {
+    checklistItemId,
     itemType: parseItemType(item.itemType),
     question: readString(item, 'question', { maximumCodePoints: 200 }),
     guide: null,
     order: readInteger(item, 'displayOrder', 1),
     active: 'active' in item ? readBoolean(item, 'active') : true,
   };
+  if (origin === 'PROVIDED' && systemCheckItemId !== null) {
+    return {
+      ...common,
+      origin: 'PROVIDED',
+      sourceCheckItemId: systemCheckItemId,
+      checkItemId: systemCheckItemId,
+    };
+  }
+  if (origin === 'CUSTOM' && systemCheckItemId === null) {
+    return {
+      ...common,
+      origin: 'CUSTOM',
+      sourceCheckItemId: null,
+      checkItemId: null,
+    };
+  }
+  throw new Error('체크리스트 항목 출처 응답이 올바르지 않습니다.');
 };
 
 export const parseChecklistDetail = (value: unknown): ChecklistDetail => {

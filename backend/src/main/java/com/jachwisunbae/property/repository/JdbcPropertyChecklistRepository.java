@@ -34,7 +34,7 @@ public class JdbcPropertyChecklistRepository implements PropertyChecklistReposit
         return jdbcTemplate.query("SELECT pci.system_check_item_id, pci.question, pci.display_order, pci.status, pci.memo "
                         + "FROM property_checklists pc JOIN property_checklist_items pci "
                         + "ON pci.property_checklist_id = pc.id WHERE pc.property_id = ? AND pc.stage = ?",
-                (rs, rowNum) -> new PropertyChecklistItemStateQuery(rs.getLong("system_check_item_id"),
+                (rs, rowNum) -> new PropertyChecklistItemStateQuery(rs.getObject("system_check_item_id", Long.class),
                         rs.getString("question"), rs.getInt("display_order"),
                         CheckStatus.valueOf(rs.getString("status")), rs.getString("memo")),
                 propertyId, stage.name());
@@ -48,7 +48,7 @@ public class JdbcPropertyChecklistRepository implements PropertyChecklistReposit
     }
 
     @Override
-    public long save(final long propertyId, final long sourceChecklistId, final String checklistName,
+    public long save(final long propertyId, final Long sourceChecklistId, final String checklistName,
                      final CheckStage stage) {
         KeyHolder keyHolder = new GeneratedKeyHolder();
         jdbcTemplate.update(connection -> {
@@ -56,7 +56,7 @@ public class JdbcPropertyChecklistRepository implements PropertyChecklistReposit
                     "INSERT INTO property_checklists (property_id, user_checklist_id, checklist_name, stage) VALUES (?, ?, ?, ?)",
                     Statement.RETURN_GENERATED_KEYS);
             statement.setLong(1, propertyId);
-            statement.setLong(2, sourceChecklistId);
+            statement.setObject(2, sourceChecklistId);
             statement.setString(3, checklistName);
             statement.setString(4, stage.name());
             return statement;
@@ -94,7 +94,8 @@ public class JdbcPropertyChecklistRepository implements PropertyChecklistReposit
         List<PropertyChecklistItemQuery> savedItems = jdbcTemplate.query(
                 "SELECT id, system_check_item_id, question, display_order, status, memo "
                         + "FROM property_checklist_items WHERE property_checklist_id = ? ORDER BY display_order ASC, id ASC",
-                (rs, row) -> new PropertyChecklistItemQuery(rs.getLong("id"), rs.getLong("system_check_item_id"),
+                (rs, row) -> new PropertyChecklistItemQuery(rs.getLong("id"),
+                        rs.getObject("system_check_item_id", Long.class),
                         rs.getString("question"), rs.getInt("display_order"),
                         CheckStatus.valueOf(rs.getString("status")), rs.getString("memo")), propertyChecklistId);
         PropertyChecklistApplicationQuery root = checklist.get();
@@ -133,7 +134,7 @@ public class JdbcPropertyChecklistRepository implements PropertyChecklistReposit
                         + "JOIN properties p ON p.id = pc.property_id "
                         + "WHERE p.id = ? AND p.member_id = ? AND pc.id = ? AND pci.id = ?",
                 (rs, row) -> new PropertyChecklistItemQuery(rs.getLong("id"),
-                        rs.getLong("system_check_item_id"), rs.getString("question"),
+                        rs.getObject("system_check_item_id", Long.class), rs.getString("question"),
                         rs.getInt("display_order"), CheckStatus.valueOf(rs.getString("status")),
                         rs.getString("memo")), propertyId, memberId, propertyChecklistId, itemId)
                 .stream().findFirst();

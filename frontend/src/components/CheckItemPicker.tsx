@@ -24,6 +24,7 @@ const CheckItemPicker = ({ config, stage, existingSourceIds, disabled, onCancel,
   const result = useCheckItemSearch(config, stage, query);
   const items = useMemo(() => result.data?.pages.flatMap((page) => page.content) ?? [], [result.data]);
   const existingIds = useMemo(() => new Set(existingSourceIds), [existingSourceIds]);
+  const additionCount = selectedIds.size;
 
   const search = (nextQuery: string) => {
     setQuery(nextQuery.trim());
@@ -44,7 +45,7 @@ const CheckItemPicker = ({ config, stage, existingSourceIds, disabled, onCancel,
           <h2 id="item-picker-heading">체크 항목 검색</h2>
         </div>
         <span className={styles.selectionCount} aria-live="polite">
-          {selectedIds.size}개 선택
+          {additionCount}개 선택
         </span>
       </div>
       <div className={styles.checkItemSearch}>
@@ -62,6 +63,23 @@ const CheckItemPicker = ({ config, stage, existingSourceIds, disabled, onCancel,
             setSelectedIds(new Set());
           }}
         />
+      </div>
+
+      <div className={styles.pickerActions}>
+        <BottomActionArea sticky={false} divider={false}>
+          <Button variant="secondary" type="button" disabled={disabled} onClick={onCancel}>
+            취소
+          </Button>
+          <Button
+            fullWidth
+            className={styles.pickerAdd}
+            type="button"
+            disabled={disabled || additionCount === 0}
+            onClick={addSelected}
+          >
+            선택한 {additionCount}개 항목 추가
+          </Button>
+        </BottomActionArea>
       </div>
 
       {result.isPending ? (
@@ -133,22 +151,6 @@ const CheckItemPicker = ({ config, stage, existingSourceIds, disabled, onCancel,
           {result.isFetchingNextPage ? '불러오는 중…' : '항목 더 보기'}
         </Button>
       )}
-      <div className={styles.pickerActions}>
-        <BottomActionArea sticky={false} divider={false}>
-          <Button variant="secondary" type="button" disabled={disabled} onClick={onCancel}>
-            취소
-          </Button>
-          <Button
-            fullWidth
-            className={styles.pickerAdd}
-            type="button"
-            disabled={disabled || selectedIds.size === 0}
-            onClick={addSelected}
-          >
-            선택한 {selectedIds.size}개 항목 추가
-          </Button>
-        </BottomActionArea>
-      </div>
     </section>
   );
 };

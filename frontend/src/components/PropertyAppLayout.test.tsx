@@ -4,11 +4,11 @@ import { describe, expect, it } from 'vitest';
 import PropertyAppLayout from './PropertyAppLayout';
 
 describe('모바일 앱 셸', () => {
-  it('현재 화면과 주요 메뉴 세 개를 함께 표시한다', () => {
+  it('현재 화면과 주요 메뉴 네 개를 함께 표시한다', () => {
     render(
       <MemoryRouter initialEntries={['/properties']}>
         <Routes>
-          <Route element={<Outlet context={{ memberId: 1, displayName: '이자취', email: 'jachwi@example.com' }} />}>
+          <Route element={<Outlet context={{ memberId: 1, displayName: '이자취', passwordProtected: false }} />}>
             <Route element={<PropertyAppLayout />}>
               <Route path="/properties" element={<h1>매물 목록</h1>} />
             </Route>

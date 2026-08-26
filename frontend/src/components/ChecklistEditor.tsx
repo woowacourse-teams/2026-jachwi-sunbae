@@ -20,7 +20,6 @@ type ChecklistEditorProps = {
   submitLabel: string;
   isSubmitting: boolean;
   serverError?: string;
-  actionDivider?: boolean;
   viewMode?: 'EDIT' | 'ADD_ITEMS';
   onViewModeChange?: (mode: 'EDIT' | 'ADD_ITEMS') => void;
   onNameChange?: (name: string) => void;
@@ -36,7 +35,6 @@ const ChecklistEditor = ({
   submitLabel,
   isSubmitting,
   serverError,
-  actionDivider = true,
   viewMode = 'EDIT',
   onViewModeChange,
   onNameChange,
@@ -93,7 +91,21 @@ const ChecklistEditor = ({
   }, [items, pendingFocusKey]);
 
   const nameError = validateChecklistName(name);
-  const itemError = items.length === 0 ? '체크 항목을 한 개 이상 추가해 주세요.' : null;
+  const duplicateQuestion = useMemo(() => {
+    const questions = new Set<string>();
+    return items.some((item) => {
+      const question = item.question.trim();
+      if (questions.has(question)) return true;
+      questions.add(question);
+      return false;
+    });
+  }, [items]);
+  const itemError =
+    items.length === 0
+      ? '체크 항목을 한 개 이상 추가해 주세요.'
+      : duplicateQuestion
+        ? '같은 질문을 중복해서 추가할 수 없어요.'
+        : null;
 
   const move = (index: number, direction: -1 | 1, focusContent = true) => {
     const item = items[index];
@@ -124,13 +136,15 @@ const ChecklistEditor = ({
     setAnnouncement(`${removed.question} 항목을 제거했어요. 저장하기 전까지 서버에는 반영되지 않습니다.`);
   };
 
-  const addProvidedItems = (newItems: CheckItem[]) => {
+  const addItems = (newItems: CheckItem[]) => {
     const existingIds = new Set(items.flatMap((item) => (item.origin === 'PROVIDED' ? [item.sourceCheckItemId] : [])));
-    const additions = newItems.filter((item) => !existingIds.has(item.checkItemId)).map(checkItemToEditorItem);
+    const additions: ChecklistEditorItem[] = newItems
+      .filter((item) => !existingIds.has(item.checkItemId))
+      .map(checkItemToEditorItem);
     if (additions.length === 0) return;
     setItems((current) => [...current, ...additions]);
     setPendingFocusKey(additions[0].clientKey);
-    setAnnouncement(`${additions.length}개 제공 항목을 목록 끝에 추가했어요.`);
+    setAnnouncement(`${additions.length}개 체크 항목을 목록 끝에 추가했어요.`);
     onViewModeChange?.('EDIT');
   };
 
@@ -143,7 +157,7 @@ const ChecklistEditor = ({
           existingSourceIds={items.flatMap((item) => (item.origin === 'PROVIDED' ? [item.sourceCheckItemId] : []))}
           disabled={isSubmitting}
           onCancel={() => onViewModeChange?.('EDIT')}
-          onAdd={addProvidedItems}
+          onAdd={addItems}
         />
       </div>
     );
@@ -183,9 +197,9 @@ const ChecklistEditor = ({
           fieldClassName={styles.nameField}
           label="체크리스트 이름"
           value={name}
-          maxLength={50}
+          maxLength={30}
           disabled={isSubmitting}
-          helpText={`같은 단계에서 같은 이름을 여러 번 사용할 수 있어요. ${name.length}/50`}
+          helpText={`같은 단계에서 같은 이름을 여러 번 사용할 수 있어요. ${name.length}/30`}
           error={hasSubmitted && nameError !== null ? nameError : undefined}
           onChange={(event) => {
             setName(event.target.value);
@@ -193,6 +207,34 @@ const ChecklistEditor = ({
           }}
         />
       </section>
+
+      <Button
+        type="button"
+        variant="secondary"
+        fullWidth
+        className={styles.openPicker}
+        disabled={isSubmitting}
+        onClick={() => onViewModeChange?.('ADD_ITEMS')}
+      >
+        + 체크 항목 추가
+      </Button>
+
+      <div className={styles.editorActions}>
+        <BottomActionArea sticky={false} divider={false}>
+          <Button type="submit" variant="soft" fullWidth isLoading={isSubmitting} loadingLabel="저장 중…">
+            {submitLabel}
+          </Button>
+        </BottomActionArea>
+      </div>
+
+      <p className={styles.editorSaveStatus} role="status" aria-live="polite">
+        {announcement}
+      </p>
+      {serverError !== undefined && (
+        <p className="form-error" role="alert">
+          {serverError} 작성한 내용은 그대로 유지됩니다. 같은 버튼으로 다시 시도할 수 있어요.
+        </p>
+      )}
 
       <section className={styles.editorSection} aria-labelledby="selected-items-heading">
         <div className={styles.sectionHeadingRow}>
@@ -279,7 +321,7 @@ const ChecklistEditor = ({
                   </button>
                   <div className={styles.itemCopy}>
                     <span className={`sr-only item-origin item-origin--${item.origin.toLowerCase()}`}>
-                      {item.origin === 'PROVIDED' ? '제공 항목' : '직접 추가'}
+                      {item.origin === 'PROVIDED' ? '제공 항목' : '이전 사용자 항목'}
                     </span>
                     <strong
                       ref={(element) => {
@@ -291,6 +333,9 @@ const ChecklistEditor = ({
                       {item.question}
                     </strong>
                     {item.guide !== null && <small>{item.guide}</small>}
+                    {item.origin === 'CUSTOM' && (
+                      <small className={styles.inactiveItemNote}>이전에 추가된 항목 · 이동 또는 제거 가능</small>
+                    )}
                     {isInactiveProvided && (
                       <small className={styles.inactiveItemNote}>
                         더 이상 제공되지 않음 · 유지, 이동 또는 제거 가능
@@ -319,33 +364,6 @@ const ChecklistEditor = ({
           </p>
         )}
       </section>
-
-      <Button
-        type="button"
-        variant="secondary"
-        fullWidth
-        className={styles.openPicker}
-        disabled={isSubmitting}
-        onClick={() => onViewModeChange?.('ADD_ITEMS')}
-      >
-        + 체크 항목 추가
-      </Button>
-
-      <p className={styles.editorSaveStatus} role="status" aria-live="polite">
-        {announcement}
-      </p>
-      {serverError !== undefined && (
-        <p className="form-error" role="alert">
-          {serverError} 작성한 내용은 그대로 유지됩니다. 같은 버튼으로 다시 시도할 수 있어요.
-        </p>
-      )}
-      <div className={styles.editorActions}>
-        <BottomActionArea divider={actionDivider}>
-          <Button type="submit" variant="soft" fullWidth isLoading={isSubmitting} loadingLabel="저장 중…">
-            {submitLabel}
-          </Button>
-        </BottomActionArea>
-      </div>
     </form>
   );
 };

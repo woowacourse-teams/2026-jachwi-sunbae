@@ -222,17 +222,26 @@ export const apiRequest = async <T>({
 export const apiBlobRequest = async ({
   config,
   path,
+  method = 'GET',
+  body,
+  acceptedContentTypes = ['image/jpeg', 'image/png', 'image/webp'],
   signal,
 }: {
   config: PublicConfig;
   path: string;
+  method?: 'GET' | 'POST';
+  body?: unknown;
+  acceptedContentTypes?: string[];
   signal?: AbortSignal;
 }): Promise<Blob> => {
+  const headers = new Headers({ Accept: acceptedContentTypes.join(', ') });
+  if (body !== undefined) headers.set('Content-Type', 'application/json');
   const response = await executeRequest({
     config,
     path,
-    method: 'GET',
-    headers: new Headers({ Accept: 'image/jpeg, image/png, image/webp' }),
+    method,
+    headers,
+    body: body === undefined ? undefined : JSON.stringify(body),
     signal,
     requiresAuthentication: true,
   });
@@ -243,7 +252,7 @@ export const apiBlobRequest = async ({
 
   const contentType = response.headers.get('Content-Type')?.split(';')[0]?.trim();
 
-  if (contentType !== 'image/jpeg' && contentType !== 'image/png' && contentType !== 'image/webp') {
+  if (contentType === undefined || !acceptedContentTypes.includes(contentType)) {
     throw new ApiError({ kind: 'invalid-response', status: response.status });
   }
 
@@ -262,14 +271,6 @@ export const getSafeApiErrorMessage = (error: unknown): string => {
 
   if (error.status === 401) {
     return '인증이 만료되었습니다. 다시 로그인해 주세요.';
-  }
-
-  if (error.code === 'GOOGLE_AUTHORIZATION_CODE_INVALID') {
-    return 'Google 인증을 확인하지 못했습니다. 로그인을 다시 시작해 주세요.';
-  }
-
-  if (error.code === 'GOOGLE_AUTHENTICATION_FAILED') {
-    return 'Google 로그인 연결이 원활하지 않습니다. 잠시 후 다시 시도해 주세요.';
   }
 
   return '요청을 처리하지 못했습니다. 잠시 후 다시 시도해 주세요.';

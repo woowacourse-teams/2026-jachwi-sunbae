@@ -18,8 +18,6 @@ import { getChecklistErrorMessage } from './checklistErrorMessages';
 
 const config: PublicConfig = {
   apiBaseUrl: 'http://localhost:8080',
-  googleClientId: 'test-client',
-  googleRedirectUri: 'http://localhost:3000/oauth/google/callback',
 };
 
 const authenticate = () => setAuthentication({ accessToken: 'memory-token', tokenType: 'Bearer', expiresIn: 60 });
@@ -36,6 +34,8 @@ const checklistDetailResponse = {
   itemCount: 2,
   items: [
     {
+      id: 701,
+      origin: 'PROVIDED',
       systemCheckItemId: 101,
       itemType: 'CORE',
       question: '관리비를 확인했나요?',
@@ -43,6 +43,8 @@ const checklistDetailResponse = {
       active: true,
     },
     {
+      id: 702,
+      origin: 'PROVIDED',
       systemCheckItemId: 102,
       itemType: 'OPTIONAL',
       question: '입주일을 확인했나요?',
@@ -71,13 +73,13 @@ describe('최종 체크리스트 API 계약', () => {
     });
   });
 
-  it('삭제된 프리셋 API 대신 시스템 체크 항목으로 화면 시작 구성을 만든다', async () => {
+  it('삭제된 프리셋 API 대신 시스템 체크 항목의 CORE만 화면 시작 구성으로 만든다', async () => {
     server.use(
       http.get(`${config.apiBaseUrl}/api/check-items`, () => HttpResponse.json(successEnvelope(checkItemsResponse))),
     );
 
     const result = await fetchChecklistPreset(config, 'ONLINE_PHONE', 'ONE_ROOM');
-    expect(result.items.map((item) => item.order)).toEqual([0, 1]);
+    expect(result.items).toMatchObject([{ checkItemId: 101, itemType: 'CORE', order: 0 }]);
   });
 
   it('체크리스트 목록의 items와 totalCount를 읽는다', async () => {
@@ -100,7 +102,7 @@ describe('최종 체크리스트 API 계약', () => {
     });
   });
 
-  it('생성 시 OPTIONAL 시스템 항목 ID만 전송한다', async () => {
+  it('생성 시 제공 항목을 최종 순서대로 전송한다', async () => {
     authenticate();
     let body: unknown;
     server.use(
@@ -113,12 +115,12 @@ describe('최종 체크리스트 API 계약', () => {
     await createChecklistV11(config, {
       name: '전화 문의 기본 목록',
       stage: 'ONLINE_PHONE',
-      optionalSystemCheckItemIds: [102],
+      items: [{ systemCheckItemId: 101 }],
     });
     expect(body).toEqual({
       name: '전화 문의 기본 목록',
       stage: 'ONLINE_PHONE',
-      optionalSystemCheckItemIds: [102],
+      items: [{ systemCheckItemId: 101 }],
     });
   });
 
@@ -141,8 +143,14 @@ describe('최종 체크리스트 API 계약', () => {
         { sourceCheckItemId: 102, itemType: 'OPTIONAL', active: true, order: 2 },
       ],
     });
-    await updateChecklistV11(config, 7, { name: '전화 문의 기본 목록', systemCheckItemIds: [101, 102] });
-    expect(body).toEqual({ name: '전화 문의 기본 목록', systemCheckItemIds: [101, 102] });
+    await updateChecklistV11(config, 7, {
+      name: '전화 문의 기본 목록',
+      items: [{ systemCheckItemId: 101 }, { systemCheckItemId: 102 }],
+    });
+    expect(body).toEqual({
+      name: '전화 문의 기본 목록',
+      items: [{ systemCheckItemId: 101 }, { systemCheckItemId: 102 }],
+    });
   });
 
   it('체크리스트 삭제는 200 빈 본문을 읽지 않는다', async () => {
@@ -186,7 +194,7 @@ describe('최종 체크리스트 API 계약', () => {
       checklistId: 7,
       itemCount: 1,
     });
-    expect(body).toEqual({ checklistId: 7 });
+    expect(body).toEqual({ sourceType: 'USER', checklistId: 7 });
   });
 
   it('서버 오류 코드는 안전한 사용자 문구로 매핑한다', async () => {

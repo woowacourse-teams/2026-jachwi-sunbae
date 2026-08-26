@@ -8,6 +8,10 @@
   background: var(--color-canvas);
 }
 
+.root[data-full-screen='true'] {
+  grid-template-rows: minmax(0, 1fr);
+}
+
 .content {
   min-height: 0;
   overflow-x: hidden;
@@ -24,7 +28,7 @@
   position: relative;
   z-index: 30;
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   width: calc(100% - 1.25rem);
   min-height: var(--bottom-navigation-height);
   margin: 0.45rem auto calc(0.45rem + env(safe-area-inset-bottom));

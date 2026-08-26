@@ -5,6 +5,8 @@ import com.jachwisunbae.property.controller.dto.response.PropertyListResponse;
 import com.jachwisunbae.property.controller.dto.response.PropertyDetailResponse;
 import com.jachwisunbae.property.controller.dto.response.PropertyProgress;
 import com.jachwisunbae.property.controller.dto.response.PropertyListItemResponse;
+import com.jachwisunbae.property.controller.dto.response.PropertyChecklistOverviewResponse;
+import com.jachwisunbae.property.controller.dto.response.PropertyRepresentativePhoto;
 import com.jachwisunbae.property.controller.dto.request.CreatePropertyRequest;
 import com.jachwisunbae.property.entity.Property;
 import com.jachwisunbae.property.repository.PropertyRepository;
@@ -20,6 +22,8 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import java.time.Clock;
+import java.time.LocalDateTime;
 
 @Service
 @Transactional(readOnly = true)
@@ -28,19 +32,30 @@ public class PropertyService {
     private final MemberRepository memberRepository;
     private final PropertyPhotoRepository propertyPhotoRepository;
     private final PropertyProgressRepository propertyProgressRepository;
+    private final Clock clock;
 
     public PropertyService(final PropertyRepository propertyRepository, final MemberRepository memberRepository,
                            final PropertyPhotoRepository propertyPhotoRepository,
-                           final PropertyProgressRepository propertyProgressRepository) {
+                           final PropertyProgressRepository propertyProgressRepository,
+                           final Clock clock) {
         this.propertyRepository = propertyRepository;
         this.memberRepository = memberRepository;
         this.propertyPhotoRepository = propertyPhotoRepository;
         this.propertyProgressRepository = propertyProgressRepository;
+        this.clock = clock;
     }
 
     public PropertyListResponse findList(final Long memberId) {
         List<PropertyListItemResponse> items = propertyRepository.findListByMemberId(memberId).stream()
-                .map(PropertyListItemResponse::from)
+                .map(row -> {
+                    PropertyRepresentativePhoto photo = row.photoId() == null ? null
+                            : new PropertyRepresentativePhoto(row.photoId(),
+                            "/api/properties/" + row.propertyId() + "/photos/" + row.photoId(),
+                            row.photoContentType());
+                    PropertyChecklistOverviewResponse overview = PropertyChecklistOverviewResponse.from(
+                            row.propertyId(), propertyProgressRepository.findByPropertyIdAndStage(row.propertyId()));
+                    return PropertyListItemResponse.from(row, photo, overview.overallProgress(), overview.stages());
+                })
                 .toList();
         return new PropertyListResponse(items.size(), items);
     }
@@ -50,6 +65,7 @@ public class PropertyService {
                 .orElseThrow(() -> new BusinessException(DomainErrorCode.PROPERTY_NOT_FOUND,
                         "매물을 찾을 수 없습니다."));
         return PropertyDetailResponse.from(property, propertyPhotoRepository.findByPropertyId(propertyId),
+                propertyPhotoRepository.findRepresentativePhotoId(propertyId).orElse(null),
                 PropertyProgress.from(propertyProgressRepository.findByPropertyId(propertyId)));
     }
 
@@ -60,7 +76,8 @@ public class PropertyService {
         validatePropertyCount(memberId);
 
         return propertyRepository.save(Property.create(memberId, request.name(), request.depositAmount(),
-                request.monthlyRentAmount(), request.discoverySource()));
+                request.monthlyRentAmount(), request.discoverySource(), request.roadAddress(), request.jibunAddress(),
+                request.latitude(), request.longitude(), LocalDateTime.now(clock)));
     }
 
     private void validatePropertyCount(final Long memberId) {
@@ -76,7 +93,8 @@ public class PropertyService {
                 .orElseThrow(() -> new BusinessException(DomainErrorCode.PROPERTY_NOT_FOUND,
                         "매물을 찾을 수 없습니다."));
         property.replaceBasicInfo(request.name(), request.depositAmount(),
-                request.monthlyRentAmount(), request.discoverySource());
+                request.monthlyRentAmount(), request.discoverySource(), request.roadAddress(), request.jibunAddress(),
+                request.latitude(), request.longitude(), LocalDateTime.now(clock));
         return propertyRepository.update(property);
     }
 

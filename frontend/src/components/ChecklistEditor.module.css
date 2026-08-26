@@ -100,22 +100,19 @@
 }
 
 .selectedCheckItems {
-  margin-top: 0.5rem;
+  margin-top: 0.75rem;
 }
 
 .selectedCheckItems li {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
-  gap: 0.45rem;
-  padding: 0.55rem 0;
-  border: 0;
-  border-bottom: 1px solid var(--color-border);
-  border-radius: 0;
-}
-
-.selectedCheckItems li:first-child {
-  border-top: 1px solid var(--color-border);
+  gap: 0.6rem;
+  min-height: 4rem;
+  padding: 0.75rem 0.7rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
 }
 
 .dragHandle {
@@ -150,11 +147,11 @@
 }
 
 .selectedCheckItems li[data-drag-over='true'] {
+  border-color: var(--color-primary);
   background: var(--color-surface-brand);
 }
 
-.itemCopy,
-.customItemField {
+.itemCopy {
   min-width: 0;
 }
 
@@ -164,23 +161,20 @@
   overflow-wrap: anywhere;
 }
 
+.itemCopy strong {
+  font-size: 0.78rem;
+  line-height: 1.45;
+}
+
 .itemCopy small {
   margin-top: 0.2rem;
   color: var(--color-muted);
   font-size: 0.7rem;
 }
 
-.itemCopy .inactiveItemNote,
-.customItemField .field-error {
+.itemCopy .inactiveItemNote {
   color: var(--color-error);
   font-weight: 750;
-}
-
-.customItemField label {
-  display: block;
-  margin-bottom: 0.35rem;
-  font-size: 0.78rem;
-  font-weight: 800;
 }
 
 .itemActions {
@@ -373,8 +367,8 @@
 }
 
 .pickerActions {
-  margin-top: auto;
-  padding-top: 0.75rem;
+  margin-top: 0.35rem;
+  padding: 0.35rem 0 0.75rem;
 }
 
 .pickerActions > div {
@@ -384,12 +378,6 @@
 .pickerAdd {
   width: 100%;
   min-height: 2.75rem;
-}
-
-.customQuestionAdder {
-  display: grid;
-  gap: 0.75rem;
-  margin-top: 0.75rem;
 }
 
 .editorActions {

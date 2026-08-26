@@ -1,5 +1,6 @@
 import { HttpResponse } from 'msw';
 import { isChecklistStage } from '../constants/checklist';
+import { CHECKLIST_STAGES } from '../types/Checklist';
 import type { ChecklistStage } from '../types/Checklist';
 
 export const now = '2026-08-20T05:00:00.000Z';
@@ -40,7 +41,16 @@ export const checkItems: MockCheckItem[] = [
   { id: 302, stage: 'PRE_CONTRACT', itemType: 'OPTIONAL', question: '특약 사항이 계약서에 반영됐나요?' },
 ];
 
-export type MockChecklistItem = MockCheckItem & { displayOrder: number; active: boolean };
+export type MockChecklistItem = {
+  id: number;
+  systemCheckItemId: number | null;
+  origin: 'PROVIDED' | 'CUSTOM';
+  stage: ChecklistStage;
+  itemType: 'CORE' | 'OPTIONAL';
+  question: string;
+  displayOrder: number;
+  active: boolean;
+};
 export type MockChecklist = {
   id: number;
   name: string;
@@ -51,7 +61,17 @@ export type MockChecklist = {
 export const checklistItemsFor = (stage: ChecklistStage, ids: number[]) =>
   ids.flatMap((id, index) => {
     const item = checkItems.find((candidate) => candidate.id === id && candidate.stage === stage);
-    return item === undefined ? [] : [{ ...item, systemCheckItemId: item.id, displayOrder: index + 1, active: true }];
+    return item === undefined
+      ? []
+      : [
+          {
+            ...item,
+            systemCheckItemId: item.id,
+            origin: 'PROVIDED' as const,
+            displayOrder: index + 1,
+            active: true,
+          },
+        ];
   });
 
 let checklists: MockChecklist[] = [
@@ -80,7 +100,7 @@ export const checklistDetail = (checklist: MockChecklist) => ({
   name: checklist.name,
   stage: checklist.stage,
   itemCount: checklist.items.length,
-  items: checklist.items.map(({ id, stage: _stage, ...item }) => ({ systemCheckItemId: id, ...item })),
+  items: checklist.items.map(({ stage: _stage, ...item }) => item),
 });
 
 export type MockPhoto = {
@@ -98,8 +118,11 @@ export type MockProperty = {
   name: string;
   depositAmount: number;
   monthlyRentAmount: number;
-  maintenanceFeeAmount: number | null;
   discoverySource: string | null;
+  roadAddress: string | null;
+  jibunAddress: string | null;
+  latitude: number | null;
+  longitude: number | null;
 };
 
 let properties: MockProperty[] = [
@@ -108,23 +131,29 @@ let properties: MockProperty[] = [
     name: '신림역 원룸',
     depositAmount: 10_000_000,
     monthlyRentAmount: 550_000,
-    maintenanceFeeAmount: 50_000,
     discoverySource: 'https://example.com/listings/10',
+    roadAddress: '서울 관악구 신림로 12길 3',
+    jibunAddress: '서울 관악구 신림동 1433-12',
+    latitude: 37.4841234,
+    longitude: 126.9291234,
   },
   {
     id: 11,
     name: '망원동 투룸',
     depositAmount: 30_000_000,
     monthlyRentAmount: 750_000,
-    maintenanceFeeAmount: null,
     discoverySource: null,
+    roadAddress: '서울 마포구 월드컵로 10길 12',
+    jibunAddress: '서울 마포구 서교동 12-3',
+    latitude: 37.5551234,
+    longitude: 126.9101234,
   },
 ];
 
 export const createMockPhoto = (propertyId: number, photoId: number, representative = false): MockPhoto => ({
   id: photoId,
   propertyId,
-  url: `/api/properties/${propertyId}/photos/${photoId}/content`,
+  url: `/api/properties/${propertyId}/photos/${photoId}`,
   contentType: 'image/png',
   sizeBytes: createMockPhotoBytes(photoId).byteLength,
   representative,
@@ -147,7 +176,7 @@ export const emptyProgress = {
 
 export type MockAppliedItem = {
   id: number;
-  systemCheckItemId: number;
+  systemCheckItemId: number | null;
   question: string;
   displayOrder: number;
   status: 'UNCONFIRMED' | 'GOOD' | 'CAUTION';
@@ -228,22 +257,36 @@ export const propertyProgress = (propertyId: number) => {
 
 export const propertyResponse = (property: MockProperty) => {
   const photos = photosByProperty.get(property.id) ?? [];
-  const basicInfo = { ...property, maintenanceFeeAmount: undefined };
+  const applied = appliedByProperty.get(property.id) ?? new Map();
   return {
-    ...basicInfo,
+    ...property,
+    address: property.roadAddress ?? property.jibunAddress,
+    photoCount: photos.length,
+    createdAt: now,
+    updatedAt: now,
+    lastActivityAt: now,
     photos,
     representativePhoto: photos.find((photo) => photo.representative) ?? null,
     overallProgress: propertyProgress(property.id),
+    stages: CHECKLIST_STAGES.map((stage) => {
+      const checklist = applied.get(stage);
+      return {
+        stage,
+        applied: checklist !== undefined,
+        propertyChecklistId: checklist?.id ?? null,
+        checklistName: checklist?.checklistName ?? null,
+        sourceChecklistId: checklist?.sourceChecklistId ?? null,
+        progress: checklist === undefined ? emptyProgress : progressFromItems(checklist.items),
+      };
+    }),
   };
 };
 
 export const systemMemoItems = [
-  { id: 1, label: '집 주소', displayOrder: 1 },
-  { id: 2, label: '입주 가능일', displayOrder: 2 },
-  { id: 3, label: '가계약금', displayOrder: 3 },
-  { id: 4, label: '방 옵션', displayOrder: 4 },
-  { id: 5, label: '관리비 및 공과금', displayOrder: 5 },
-  { id: 6, label: '통학 통근 시간', displayOrder: 6 },
+  { id: 1, label: '입주 가능일', displayOrder: 1 },
+  { id: 2, label: '방 옵션', displayOrder: 2 },
+  { id: 3, label: '관리비 및 공과금', displayOrder: 3 },
+  { id: 4, label: '방문 일정', displayOrder: 4 },
 ];
 
 export type MockMemo = {

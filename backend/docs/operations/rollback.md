@@ -48,3 +48,7 @@ curl -fsS https://dev-api.jachwi-sunbae.kr/actuator/info
 2026-08-20에 이 절차를 실행해 실패 리비전의 기동과 직전 정상 리비전의 실제 복구를 확인했다. SHA와 시각, 복구 PR은 [CI/CD 배포 검증 기록](../../../docs/operations/2026-08-20-cicd-deployment-validation.md)에 남긴다.
 
 데이터 손실 가능성이 있는 작업은 즉시 실행하지 않고 영향 범위와 복구 가능성을 먼저 확인한다.
+
+## 데이터베이스 변경이 포함된 MVP2 롤백
+
+MVP2 upgrade는 순방향 additive 변경이며 애플리케이션 롤백 때 자동으로 컬럼·테이블·기존 `flyway_schema_history`를 제거하지 않는다. 이전 애플리케이션이 추가 컬럼을 무시할 수 있으므로 우선 직전 정상 리비전을 재배포한다. 데이터까지 되돌려야 한다면 자동 백업을 격리된 RDS에 복원해 영향 범위를 확인한 뒤 진행하며, 운영 DB에 `DROP`이나 역방향 SQL을 즉시 실행하지 않는다.

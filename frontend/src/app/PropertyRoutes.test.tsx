@@ -4,7 +4,7 @@ import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { HttpResponse, delay, http } from 'msw';
 import { MemoryRouter } from 'react-router-dom';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { setAuthentication } from './authStore';
 import { queryClient } from './queryClient';
 import AppRoutes from './AppRoutes';
@@ -25,8 +25,6 @@ import type { PublicConfig } from '../types/PublicConfig';
 
 const config: PublicConfig = {
   apiBaseUrl: 'http://localhost:8080',
-  googleClientId: 'test-client',
-  googleRedirectUri: 'http://localhost:3000/oauth/google/callback',
 };
 
 const detailWithoutPhotosFixture = {
@@ -44,7 +42,7 @@ const renderAuthenticated = (path: string) => {
     <StrictMode>
       <QueryClientProvider client={queryClient}>
         <MemoryRouter initialEntries={[path]}>
-          <AppRoutes config={config} storage={window.sessionStorage} />
+          <AppRoutes config={config} />
         </MemoryRouter>
       </QueryClientProvider>
     </StrictMode>,
@@ -77,13 +75,15 @@ describe('FE-2 매물 목록', () => {
 
     expect(await screen.findByRole('link', { name: '신림역 원룸' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: '망원동 투룸' })).toBeInTheDocument();
-    expect(within(screen.getByRole('region', { name: '매물 목록' })).getAllByText('미완료')).toHaveLength(1);
-    const firstPropertySummary = within(screen.getByRole('link', { name: '신림역 원룸' })).getByRole('list', {
-      name: '체크리스트 진행 결과 집계',
-    });
-    expect(firstPropertySummary).toHaveTextContent('괜찮음 10');
-    expect(firstPropertySummary).toHaveTextContent('주의 5');
-    expect(firstPropertySummary).toHaveTextContent('미확인 7');
+    const firstProperty = within(screen.getByRole('link', { name: '신림역 원룸' }));
+    expect(firstProperty.queryByText('미완료')).not.toBeInTheDocument();
+    expect(firstProperty.getByText('발견 경로 · https://example.com/listings/10')).toBeInTheDocument();
+    expect(firstProperty.getByText('1단계 · 온라인·전화')).toBeInTheDocument();
+    expect(firstProperty.getByText('2단계 · 집에서 확인')).toBeInTheDocument();
+    expect(firstProperty.getByText('3단계 · 계약 전')).toBeInTheDocument();
+    expect(firstProperty.getByText('7/10')).toBeInTheDocument();
+    expect(firstProperty.getByText('8/12')).toBeInTheDocument();
+    expect(firstProperty.getByText('미적용')).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: '완료' }));
     expect(screen.queryByRole('link', { name: '신림역 원룸' })).not.toBeInTheDocument();
@@ -153,6 +153,38 @@ describe('FE-2 매물 목록', () => {
     shouldFail = false;
     await user.click(screen.getByRole('button', { name: '다시 시도' }));
     expect(await screen.findByRole('link', { name: '신림역 원룸' })).toBeInTheDocument();
+  });
+});
+
+describe('FE-2 매물 비교 PDF', () => {
+  it('2~5개 매물을 선택한 뒤 저장 기록 PDF를 요청한다', async () => {
+    let requestedIds: unknown;
+    server.use(
+      http.get(`${config.apiBaseUrl}/api/properties`, () =>
+        HttpResponse.json(successEnvelope(propertyPageFixture([propertySummaryFixture, secondPropertySummaryFixture]))),
+      ),
+      http.post(`${config.apiBaseUrl}/api/properties/export.pdf`, async ({ request }) => {
+        requestedIds = await request.json();
+        return new HttpResponse(new Uint8Array([37, 80, 68, 70]), {
+          headers: { 'Content-Type': 'application/pdf' },
+        });
+      }),
+    );
+    const createObjectUrl = vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:comparison');
+    const revokeObjectUrl = vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => undefined);
+    const click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => undefined);
+    const user = userEvent.setup();
+    renderAuthenticated('/compare');
+
+    expect(await screen.findByRole('heading', { name: '함께 볼 매물을 골라 주세요.' })).toBeInTheDocument();
+    await user.click(await screen.findByRole('checkbox', { name: /신림역 원룸/ }));
+    await user.click(screen.getByRole('checkbox', { name: /망원동 투룸/ }));
+    await user.click(screen.getByRole('button', { name: '선택한 2개 PDF 받기' }));
+
+    await waitFor(() => expect(requestedIds).toEqual({ propertyIds: [10, 11] }));
+    expect(createObjectUrl).toHaveBeenCalledWith(expect.objectContaining({ type: 'application/pdf' }));
+    expect(click).toHaveBeenCalledOnce();
+    await waitFor(() => expect(revokeObjectUrl).toHaveBeenCalledWith('blob:comparison'));
   });
 });
 
@@ -456,7 +488,7 @@ describe('FE-2 사진과 삭제 확인', () => {
     expect(await screen.findByRole('img', { name: '업로드 순 1번째 사진' })).toBeInTheDocument();
   });
 
-  it('빈 사진 목록과 잘못된 형식·10MiB 초과를 업로드 전에 안내한다', async () => {
+  it('빈 사진 목록과 잘못된 형식·5MiB 초과를 업로드 전에 안내한다', async () => {
     let uploadCalls = 0;
     server.use(
       http.get(`${config.apiBaseUrl}/api/properties/10`, () => HttpResponse.json(successEnvelope(detailWithoutPhotos))),
@@ -479,7 +511,7 @@ describe('FE-2 사진과 삭제 확인', () => {
     ]);
 
     expect(await screen.findByText('JPEG, PNG 또는 WebP 사진을 선택해 주세요.')).toBeInTheDocument();
-    expect(screen.getByText('사진 한 장은 10MiB 이하만 등록할 수 있습니다.')).toBeInTheDocument();
+    expect(screen.getByText('사진 한 장은 5MiB 이하만 등록할 수 있습니다.')).toBeInTheDocument();
     expect(uploadCalls).toBe(0);
   });
 

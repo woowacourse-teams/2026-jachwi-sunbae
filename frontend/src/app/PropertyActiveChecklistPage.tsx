@@ -2,8 +2,6 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { ApiError } from '../apis/apiClient';
 import { getChecklistErrorMessage } from '../apis/checklistErrorMessages';
-import ChecklistStartOptions from '../components/ChecklistStartOptions';
-import type { ChecklistStartMode } from '../components/ChecklistStartOptions';
 import ChecklistPageLayout from '../components/ChecklistPageLayout';
 import BottomActionArea from '../components/ui/BottomActionArea';
 import { Button } from '../components/ui/Button';
@@ -66,9 +64,9 @@ const ResolvedPropertyActiveChecklist = ({
   const isReplacing = searchParams.get('mode') === 'replace';
   const overviewStage = overview.data?.stages.find((item) => item.stage === stage);
   const current =
-    overviewStage?.applied === true && overviewStage.sourceChecklistId !== null && overviewStage.checklistName !== null
+    overviewStage?.applied === true && overviewStage.checklistName !== null
       ? {
-          checklistId: overviewStage.sourceChecklistId,
+          checklistId: overviewStage.sourceChecklistId ?? -1,
           name: overviewStage.checklistName,
         }
       : null;
@@ -148,9 +146,8 @@ const ResolvedPropertyActiveChecklist = ({
   const returnPath = `/properties/${propertyId}/active-checklists/${stage}${
     returnSearch.length > 0 ? `?${returnSearch}` : ''
   }`;
-  const createPath = (startMode?: ChecklistStartMode) => {
+  const createPath = () => {
     const query = new URLSearchParams({ stage, returnTo: returnPath });
-    if (startMode !== undefined) query.set('start', startMode);
     return `/checklists/new?${query.toString()}`;
   };
   const selectionChanged = selectedId !== null && selectedId !== current?.checklistId;
@@ -158,7 +155,7 @@ const ResolvedPropertyActiveChecklist = ({
   const saveSelection = async () => {
     if (selectedId === null) return;
     try {
-      const applied = await assign.mutateAsync(selectedId);
+      const applied = await assign.mutateAsync(selectedId === -1 ? 'SYSTEM_DEFAULT' : selectedId);
       navigate(`/properties/${propertyId}/checklists/${applied.propertyChecklistId}`, {
         replace: true,
         ...(fromPropertyDetail ? { state: { from: 'property-detail' } } : {}),
@@ -186,11 +183,11 @@ const ResolvedPropertyActiveChecklist = ({
       stage={stage}
       getStageTo={(nextStage) => {
         const next = overview.data.stages.find((item) => item.stage === nextStage);
-        if (next?.applied === true && next.propertyChecklistId !== null) {
-          return `/properties/${propertyId}/checklists/${next.propertyChecklistId}`;
-        }
-        const query = fromPropertyDetail ? '?from=property-detail' : '';
-        return `/properties/${propertyId}/active-checklists/${nextStage}${query}`;
+        const query = new URLSearchParams();
+        if (fromPropertyDetail) query.set('from', 'property-detail');
+        if (next?.applied === true) query.set('mode', 'replace');
+        const search = query.toString();
+        return `/properties/${propertyId}/active-checklists/${nextStage}${search.length > 0 ? `?${search}` : ''}`;
       }}
       className={`${styles.page} property-page checklist-page active-checklist-page`}
       containerClassName="page-container checklist-page__narrow"
@@ -199,35 +196,43 @@ const ResolvedPropertyActiveChecklist = ({
 
       <p className={styles.description}>이 단계에서 사용할 체크리스트를 선택해요.</p>
 
-      {items.length === 0 ? (
-        <section className={styles.startOptions} aria-label="새 체크리스트 시작 방식">
-          <p>바로 사용할 구성을 선택해 체크리스트를 만들어 주세요.</p>
-          <ChecklistStartOptions onSelect={(mode) => navigate(createPath(mode))} />
-        </section>
-      ) : (
-        <fieldset className="active-checklist-options">
-          <legend className="sr-only">연결할 체크리스트</legend>
-          {items.map((item) => (
-            <label key={item.checklistId} className={selectedId === item.checklistId ? 'is-selected' : undefined}>
-              <input
-                type="checkbox"
-                name="active-checklist"
-                value={item.checklistId}
-                checked={selectedId === item.checklistId}
-                disabled={assign.isPending}
-                onChange={() => toggleSelection(item.checklistId)}
-              />
-              <span>
-                <strong>{item.name}</strong>
-                <small>
-                  {item.itemCount}개 항목 · 매물 {item.assignedPropertyCount}곳에서 사용
-                </small>
-              </span>
-              {newlyCreatedId === item.checklistId && <em>방금 생성</em>}
-            </label>
-          ))}
-        </fieldset>
-      )}
+      <fieldset className="active-checklist-options">
+        <legend className="sr-only">연결할 체크리스트</legend>
+        <label className={selectedId === -1 ? 'is-selected' : undefined}>
+          <input
+            type="checkbox"
+            name="active-checklist"
+            value="SYSTEM_DEFAULT"
+            checked={selectedId === -1}
+            disabled={assign.isPending}
+            onChange={() => toggleSelection(-1)}
+          />
+          <span>
+            <strong>자취선배 기본 체크리스트</strong>
+            <small>이 단계의 필수 항목으로 바로 시작</small>
+          </span>
+          <em>추천</em>
+        </label>
+        {items.map((item) => (
+          <label key={item.checklistId} className={selectedId === item.checklistId ? 'is-selected' : undefined}>
+            <input
+              type="checkbox"
+              name="active-checklist"
+              value={item.checklistId}
+              checked={selectedId === item.checklistId}
+              disabled={assign.isPending}
+              onChange={() => toggleSelection(item.checklistId)}
+            />
+            <span>
+              <strong>{item.name}</strong>
+              <small>
+                {item.itemCount}개 항목 · 매물 {item.assignedPropertyCount}곳에서 사용
+              </small>
+            </span>
+            {newlyCreatedId === item.checklistId && <em>방금 생성</em>}
+          </label>
+        ))}
+      </fieldset>
 
       <Link className={styles.createCard} to={createPath()}>
         <span aria-hidden="true">+</span> 새 체크리스트 만들기

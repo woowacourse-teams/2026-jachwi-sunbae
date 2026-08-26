@@ -25,12 +25,25 @@ export const propertyHandlers = [
       items: [...getMockProperties()].sort((a, b) => b.id - a.id).map(propertyResponse),
     }),
   ),
+  http.post('*/api/properties/export.pdf', async ({ request }) => {
+    const body = (await request.json()) as { propertyIds?: number[] };
+    if (!Array.isArray(body.propertyIds) || body.propertyIds.length < 2 || body.propertyIds.length > 5) {
+      return failure('PROPERTY_INPUT_INVALID', 400);
+    }
+    return new HttpResponse(new TextEncoder().encode('%PDF-1.7\n% mock comparison\n%%EOF'), {
+      headers: { 'Content-Type': 'application/pdf' },
+    });
+  }),
   http.post('*/api/properties', async ({ request }) => {
     const body = (await request.json()) as {
       name: string;
       depositAmount?: number;
       monthlyRentAmount?: number;
       discoverySource?: string;
+      roadAddress?: string;
+      jibunAddress?: string;
+      latitude?: number;
+      longitude?: number;
     };
     const id = Math.max(0, ...getMockProperties().map((property) => property.id)) + 1;
     const property = {
@@ -38,8 +51,11 @@ export const propertyHandlers = [
       name: body.name,
       depositAmount: body.depositAmount ?? 0,
       monthlyRentAmount: body.monthlyRentAmount ?? 0,
-      maintenanceFeeAmount: null,
       discoverySource: body.discoverySource ?? null,
+      roadAddress: body.roadAddress ?? null,
+      jibunAddress: body.jibunAddress ?? null,
+      latitude: body.latitude ?? null,
+      longitude: body.longitude ?? null,
     };
     setMockProperties([...getMockProperties(), property]);
     setMockPhotosByProperty(new Map(getMockPhotosByProperty()).set(id, []));
@@ -57,6 +73,10 @@ export const propertyHandlers = [
       depositAmount?: number;
       monthlyRentAmount?: number;
       discoverySource?: string;
+      roadAddress?: string;
+      jibunAddress?: string;
+      latitude?: number;
+      longitude?: number;
     };
     const updated = {
       ...property,
@@ -64,10 +84,13 @@ export const propertyHandlers = [
       depositAmount: body.depositAmount ?? 0,
       monthlyRentAmount: body.monthlyRentAmount ?? 0,
       discoverySource: body.discoverySource ?? null,
+      roadAddress: body.roadAddress ?? null,
+      jibunAddress: body.jibunAddress ?? null,
+      latitude: body.latitude ?? null,
+      longitude: body.longitude ?? null,
     };
     setMockProperties(getMockProperties().map((candidate) => (candidate.id === updated.id ? updated : candidate)));
-    const response = { ...updated, maintenanceFeeAmount: undefined };
-    return success(response);
+    return success(updated);
   }),
   http.delete('*/api/properties/:propertyId', ({ params }) => {
     const property = getProperty(params.propertyId);
@@ -138,6 +161,10 @@ export const propertyHandlers = [
     return new HttpResponse(null, { status: 200 });
   }),
   http.get('*/api/properties/:propertyId/photos/:photoId/content', ({ params }) => {
+    const photoId = readPositiveInteger(params.photoId) ?? 81;
+    return new HttpResponse(createMockPhotoBytes(photoId), { headers: { 'Content-Type': 'image/png' } });
+  }),
+  http.get('*/api/properties/:propertyId/photos/:photoId', ({ params }) => {
     const photoId = readPositiveInteger(params.photoId) ?? 81;
     return new HttpResponse(createMockPhotoBytes(photoId), { headers: { 'Content-Type': 'image/png' } });
   }),

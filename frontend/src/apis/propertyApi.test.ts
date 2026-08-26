@@ -25,8 +25,6 @@ import {
 
 const config: PublicConfig = {
   apiBaseUrl: 'http://localhost:8080',
-  googleClientId: 'test-client',
-  googleRedirectUri: 'http://localhost:3000/oauth/google/callback',
 };
 
 const authenticate = () => setAuthentication({ accessToken: 'memory-token', tokenType: 'Bearer', expiresIn: 60 });
@@ -58,6 +56,7 @@ describe('FE-2 API 경계', () => {
                   unconfirmedCount: 0,
                   progressRate: 0,
                 },
+                stages: [],
               },
               {
                 id: 11,
@@ -74,6 +73,7 @@ describe('FE-2 API 경계', () => {
                   unconfirmedCount: 0,
                   progressRate: 0,
                 },
+                stages: [],
               },
             ],
           }),
@@ -117,7 +117,6 @@ describe('FE-2 API 경계', () => {
       name: '신림역 원룸',
       depositAmount: 0,
       monthlyRentAmount: 550_000,
-      maintenanceFeeAmount: null,
       discoverySource: 'https://example.com/home',
     });
 
@@ -241,7 +240,6 @@ describe('FE-2 API 경계', () => {
       name: '신림역 원룸',
       depositAmount: 10_000_000,
       monthlyRentAmount: 530_000,
-      maintenanceFeeAmount: null,
       discoverySource: null,
     });
     expect(requestBody).toEqual({

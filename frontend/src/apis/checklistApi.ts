@@ -96,7 +96,7 @@ export const createChecklist = (config: PublicConfig, body: CreateChecklistReque
   createChecklistV11(config, {
     name: body.name,
     stage: body.stage,
-    optionalSystemCheckItemIds: body.checkItemIds,
+    items: body.checkItemIds.map((systemCheckItemId) => ({ systemCheckItemId })),
   });
 
 export const fetchChecklistDetail = (config: PublicConfig, checklistId: number, signal?: AbortSignal) =>
@@ -137,7 +137,10 @@ export const updateChecklist = async (
   body: UpdateChecklistRequestDto,
 ): Promise<LegacyChecklistDetail> =>
   toLegacyChecklistDetail(
-    await updateChecklistV11(config, checklistId, { name: body.name, systemCheckItemIds: body.checkItemIds }),
+    await updateChecklistV11(config, checklistId, {
+      name: body.name,
+      items: body.checkItemIds.map((systemCheckItemId) => ({ systemCheckItemId })),
+    }),
   );
 
 export const removeChecklist = (config: PublicConfig, checklistId: number) =>
@@ -158,10 +161,15 @@ export const assignActiveChecklist = (
     config,
     path: `/api/properties/${propertyId}/checklists/${stage}`,
     method: 'PUT',
-    body,
+    body: body.sourceType === 'SYSTEM_DEFAULT' ? body : { sourceType: 'USER', checklistId: body.checklistId },
     parseData: (value) => {
       const result = parseActiveChecklist(value);
-      if (result.propertyId !== propertyId || result.stage !== stage || result.checklistId !== body.checklistId) {
+      if (
+        result.propertyId !== propertyId ||
+        result.stage !== stage ||
+        (body.sourceType !== 'SYSTEM_DEFAULT' && result.checklistId !== body.checklistId) ||
+        (body.sourceType === 'SYSTEM_DEFAULT' && result.checklistId !== null)
+      ) {
         throw new Error('active-checklist');
       }
       return result;

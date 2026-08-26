@@ -67,8 +67,8 @@ const PropertyListPage = ({ config }: PropertyListPageProps) => {
           className={styles.topNavigation}
           title="최근 담은 매물"
           endSlot={
-            <ButtonLink className={styles.compareButton} to="/compare" variant="secondary">
-              비교표 보기
+            <ButtonLink className={styles.compareButton} variant="secondary" to="/compare">
+              비교표 받기
             </ButtonLink>
           }
         />
@@ -160,7 +160,7 @@ const PropertyListPage = ({ config }: PropertyListPageProps) => {
         {!hasInitialError && filteredItems.length > 0 && (
           <section className={styles.cardList} aria-label="매물 목록">
             {filteredItems.map((property) => (
-              <PropertyCard key={property.propertyId} property={property} />
+              <PropertyCard key={property.propertyId} property={property} config={config} />
             ))}
           </section>
         )}

@@ -1,0 +1,323 @@
+.canvas {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-height: 20rem;
+  overflow: hidden;
+  background: #e9e5d8;
+  isolation: isolate;
+}
+
+.liveLayer {
+  position: absolute;
+  inset: 0;
+}
+
+.demo {
+  background:
+    linear-gradient(28deg, transparent 45%, rgb(255 255 255 / 82%) 46% 51%, transparent 52%),
+    linear-gradient(102deg, transparent 43%, rgb(255 255 255 / 72%) 44% 50%, transparent 51%),
+    repeating-linear-gradient(0deg, transparent 0 52px, rgb(160 151 128 / 20%) 53px 54px),
+    repeating-linear-gradient(90deg, transparent 0 70px, rgb(160 151 128 / 18%) 71px 72px), #ece8dc;
+}
+
+.roadOne,
+.roadTwo {
+  position: absolute;
+  height: 8px;
+  border: 2px solid white;
+  background: #d6c9a4;
+  transform: rotate(-18deg);
+}
+
+.roadOne {
+  inset: 30% -15% auto -10%;
+}
+
+.roadTwo {
+  inset: 72% -15% auto -10%;
+  transform: rotate(12deg);
+}
+
+.park {
+  position: absolute;
+  top: 12%;
+  right: 7%;
+  padding: 1.1rem 0.7rem;
+  border-radius: 45% 55% 52% 48%;
+  background: #ced9ae;
+  color: #667a3e;
+  font-size: 0.48rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+}
+
+.demoMarkerPosition {
+  position: absolute;
+  z-index: 6;
+  transform: translate(-50%, -50%);
+}
+
+.marker {
+  position: relative;
+  display: grid;
+  width: 1.55rem;
+  height: 1.55rem;
+  padding: 0;
+  border: 2px solid white;
+  border-radius: 50%;
+  background: #64748b;
+  box-shadow: 0 0.28rem 0.8rem rgb(44 50 39 / 28%);
+  color: white;
+  cursor: default;
+  place-items: center;
+}
+
+.marker.demoMarkerPosition {
+  position: absolute;
+}
+
+.placeMarker.demoMarkerPosition {
+  z-index: 5;
+}
+
+.currentMarker.demoMarkerPosition {
+  z-index: 7;
+}
+
+.propertyMarker.demoMarkerPosition {
+  z-index: 8;
+}
+
+.selectedMarker.demoMarkerPosition {
+  z-index: 9;
+}
+
+button.marker {
+  cursor: pointer;
+}
+
+button.placeMarker::before,
+button.clusterMarker::before {
+  position: absolute;
+  inset: -0.55rem;
+  content: '';
+}
+
+.propertyMarker,
+.currentMarker {
+  width: 2.7rem;
+  height: 2.7rem;
+  border-radius: 50% 50% 50% 0;
+  background: #f04444;
+  transform: rotate(-45deg);
+}
+
+.propertyMarker > *,
+.currentMarker > * {
+  transform: rotate(45deg);
+}
+
+.currentMarker {
+  background: #343434;
+}
+
+.selectedMarker {
+  width: 3.35rem;
+  height: 3.35rem;
+  background: #f54242;
+}
+
+.activeMarker {
+  outline: 2px solid white;
+  outline-offset: 2px;
+  filter: saturate(1.15);
+  scale: 1.08;
+}
+
+.placeMarker[data-category='HOSPITAL'] {
+  background: #f06b57;
+}
+
+.placeMarker[data-category='TRANSPORT'] {
+  background: #7963e8;
+}
+
+.placeMarker[data-category='SCHOOL'] {
+  background: #f59e0b;
+}
+
+.placeMarker[data-category='CONVENIENCE'] {
+  background: #08a982;
+}
+
+.placeMarker[data-category='AGENCY'] {
+  background: #64748b;
+}
+
+.clusterMarker {
+  width: 1.95rem;
+  height: 1.95rem;
+  border-width: 2px;
+  background: rgb(52 116 236 / 90%);
+  box-shadow:
+    0 0 0 0.22rem rgb(52 116 236 / 18%),
+    0 0.3rem 0.9rem rgb(31 65 127 / 24%);
+}
+
+.clusterMarker[data-category='HOSPITAL'] {
+  background: rgb(240 107 87 / 92%);
+}
+
+.clusterMarker[data-category='TRANSPORT'] {
+  background: rgb(121 99 232 / 92%);
+}
+
+.clusterMarker[data-category='SCHOOL'] {
+  background: rgb(245 158 11 / 92%);
+}
+
+.clusterMarker[data-category='CONVENIENCE'] {
+  background: rgb(8 169 130 / 92%);
+}
+
+.clusterMarker[data-category='AGENCY'] {
+  background: rgb(100 116 139 / 92%);
+}
+
+.markerIcon {
+  font-size: 0.78rem;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.categoryIcon {
+  font-size: 0.78rem;
+}
+
+.clusterMarker .categoryIcon {
+  font-size: 0.72rem;
+}
+
+.markerCount {
+  position: absolute;
+  right: -0.28rem;
+  bottom: -0.28rem;
+  display: grid;
+  min-width: 0.92rem;
+  height: 0.92rem;
+  padding: 0 0.2rem;
+  border: 2px solid white;
+  border-radius: 999px;
+  background: #252a23;
+  color: white;
+  font-size: 0.46rem;
+  place-items: center;
+}
+
+.markerCaption {
+  position: absolute;
+  top: calc(100% + 0.28rem);
+  left: 50%;
+  padding: 0.08rem 0.28rem;
+  border-radius: 0.3rem;
+  background: rgb(255 255 255 / 78%);
+  color: #30342e;
+  font-size: 0.52rem;
+  font-weight: 850;
+  line-height: 1.25;
+  text-align: center;
+  white-space: nowrap;
+  transform: translateX(-50%);
+}
+
+.propertyMarker .markerCaption,
+.currentMarker .markerCaption {
+  transform: translateX(-50%) rotate(45deg);
+}
+
+.radiusCircle {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  aspect-ratio: 1;
+  border: 2px solid rgb(74 143 244 / 46%);
+  border-radius: 50%;
+  background: rgb(74 143 244 / 6%);
+  transform: translate(-50%, -50%);
+}
+
+.fixedCenterPin {
+  position: absolute;
+  z-index: 9;
+  top: 50%;
+  left: 50%;
+  display: grid;
+  width: 2.8rem;
+  height: 2.8rem;
+  border: 4px solid white;
+  border-radius: 50% 50% 50% 0;
+  background: #343434;
+  box-shadow: 0 0.35rem 0.9rem rgb(32 35 30 / 30%);
+  color: white;
+  place-items: center;
+  transform: translate(-50%, -72%) rotate(-45deg);
+}
+
+.fixedCenterPin > span {
+  font-size: 1.1rem;
+  transform: rotate(45deg);
+}
+
+.fixedCenterPin > small {
+  position: absolute;
+  top: calc(100% + 0.42rem);
+  left: 65%;
+  color: #30342e;
+  font-size: 0.55rem;
+  font-weight: 850;
+  white-space: nowrap;
+  transform: rotate(45deg) translateX(-50%);
+}
+
+.radiusLabels {
+  position: absolute;
+  z-index: 4;
+  top: 28%;
+  left: 8%;
+  display: grid;
+  gap: 2.6rem;
+  color: #2176ec;
+  font-size: 0.65rem;
+  font-weight: 900;
+  pointer-events: none;
+}
+
+.demoBadge {
+  position: absolute;
+  right: 0.6rem;
+  bottom: 0.6rem;
+  padding: 0.22rem 0.4rem;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 78%);
+  color: var(--color-muted);
+  font-size: 0.5rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+}
+
+.sdkError {
+  position: absolute;
+  z-index: 20;
+  top: 50%;
+  left: 50%;
+  width: min(16rem, calc(100% - 2rem));
+  padding: 0.75rem;
+  border-radius: 0.75rem;
+  background: rgb(255 241 238 / 96%);
+  color: var(--color-error);
+  font-size: 0.68rem;
+  font-weight: 750;
+  text-align: center;
+  transform: translate(-50%, -50%);
+}

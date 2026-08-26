@@ -3,6 +3,7 @@ import type {
   PropertyBasicInfo,
   PropertyChecklistOverview,
   PropertyChecklistProgress,
+  PropertyChecklistStageSummary,
   PropertyChecklistDetail,
   PropertyChecklistItemStatus,
   PropertyDetail,
@@ -12,6 +13,7 @@ import type {
   PropertyPhotoList,
   PropertyPhotoPreview,
   PropertySummary,
+  PropertyLocation,
 } from '../types/Property';
 import {
   readArray,
@@ -52,6 +54,27 @@ const readDetailString = (record: Record<string, unknown>, key: string, fallback
   const value = record[key];
   return typeof value === 'string' ? value : fallback;
 };
+
+const parsePropertyLocation = (record: Record<string, unknown>): PropertyLocation => {
+  const nullableText = (key: string): string | null => {
+    const value = record[key];
+    return typeof value === 'string' && value.trim() !== '' ? value : null;
+  };
+  const nullableCoordinate = (key: string): number | null => {
+    const value = record[key];
+    return typeof value === 'number' && Number.isFinite(value) ? value : null;
+  };
+  return {
+    address: nullableText('address'),
+    roadAddress: nullableText('roadAddress'),
+    jibunAddress: nullableText('jibunAddress'),
+    latitude: nullableCoordinate('latitude'),
+    longitude: nullableCoordinate('longitude'),
+  };
+};
+
+const readOptionalUtcDateTime = (record: Record<string, unknown>, key: string): string =>
+  typeof record[key] === 'string' ? readUtcDateTime(record, key) : '1970-01-01T00:00:00Z';
 
 const parseDetailPhoto = (value: unknown): PropertyPhotoPreview | null => {
   if (value === null || typeof value !== 'object' || Array.isArray(value)) return null;
@@ -101,10 +124,12 @@ const parsePropertySummary = (value: unknown): PropertySummary => {
     depositAmount: readInteger(record, 'depositAmount'),
     monthlyRentAmount: readInteger(record, 'monthlyRentAmount'),
     discoverySource: parseDiscoverySource(record.discoverySource),
+    location: parsePropertyLocation(record),
     representativePhoto: parsedRepresentativePhoto,
     progress: parsePropertyChecklistProgress(record.overallProgress),
-    photoCount: parsedRepresentativePhoto === null ? 0 : 1,
-    lastActivityAt: '1970-01-01T00:00:00Z',
+    stages: Array.isArray(record.stages) ? record.stages.map(parsePropertyChecklistStageSummary) : [],
+    photoCount: typeof record.photoCount === 'number' ? readInteger(record, 'photoCount') : 0,
+    lastActivityAt: readOptionalUtcDateTime(record, 'lastActivityAt'),
   };
 };
 
@@ -138,15 +163,15 @@ export const parsePropertyDetail = (value: unknown): PropertyDetail => {
     name: readDetailString(record, 'name', '이름 없는 매물'),
     depositAmount: readDetailInteger(record, 'depositAmount'),
     monthlyRentAmount: readDetailInteger(record, 'monthlyRentAmount'),
-    maintenanceFeeAmount:
-      typeof record.maintenanceFeeAmount === 'number' && Number.isSafeInteger(record.maintenanceFeeAmount)
-        ? record.maintenanceFeeAmount
-        : null,
     discoverySource: parseDiscoverySource(record.discoverySource),
-    photoPreview: { totalCount: photos.length, photos },
-    createdAt: '1970-01-01T00:00:00Z',
-    updatedAt: '1970-01-01T00:00:00Z',
-    lastActivityAt: '1970-01-01T00:00:00Z',
+    location: parsePropertyLocation(record),
+    photoPreview: {
+      totalCount: typeof record.photoCount === 'number' ? readInteger(record, 'photoCount') : photos.length,
+      photos,
+    },
+    createdAt: readOptionalUtcDateTime(record, 'createdAt'),
+    updatedAt: readOptionalUtcDateTime(record, 'updatedAt'),
+    lastActivityAt: readOptionalUtcDateTime(record, 'lastActivityAt'),
   };
 };
 
@@ -158,14 +183,15 @@ export const parsePropertyBasicInfo = (value: unknown): PropertyBasicInfo => {
     name: readString(record, 'name'),
     depositAmount: readInteger(record, 'depositAmount'),
     monthlyRentAmount: readInteger(record, 'monthlyRentAmount'),
-    maintenanceFeeAmount: 'maintenanceFeeAmount' in record ? readNullableInteger(record, 'maintenanceFeeAmount') : null,
     discoverySource: parseDiscoverySource(record.discoverySource),
+    location: parsePropertyLocation(record),
     updatedAt:
       typeof record.updatedAt === 'string'
         ? readUtcDateTime(record, 'updatedAt')
         : typeof record.createdAt === 'string'
           ? readUtcDateTime(record, 'createdAt')
           : null,
+    lastActivityAt: typeof record.lastActivityAt === 'string' ? readUtcDateTime(record, 'lastActivityAt') : null,
   };
 };
 
@@ -203,26 +229,28 @@ const parsePropertyChecklistProgress = (value: unknown): PropertyChecklistProgre
   };
 };
 
+const parsePropertyChecklistStageSummary = (value: unknown): PropertyChecklistStageSummary => {
+  const stageRecord = readRecord(value);
+  const stage = readString(stageRecord, 'stage');
+  if (stage !== 'ONLINE_PHONE' && stage !== 'ON_SITE' && stage !== 'PRE_CONTRACT') {
+    throw new Error('체크리스트 단계가 올바르지 않습니다.');
+  }
+  return {
+    stage,
+    applied: readBoolean(stageRecord, 'applied'),
+    propertyChecklistId: readNullableInteger(stageRecord, 'propertyChecklistId', 1),
+    checklistName: readNullableString(stageRecord, 'checklistName'),
+    sourceChecklistId: readNullableInteger(stageRecord, 'sourceChecklistId', 1),
+    progress: parsePropertyChecklistProgress(stageRecord.progress),
+  };
+};
+
 export const parsePropertyChecklistOverview = (value: unknown): PropertyChecklistOverview => {
   const record = readRecord(value);
   return {
     propertyId: readInteger(record, 'propertyId', 1),
     overallProgress: parsePropertyChecklistProgress(record.overallProgress),
-    stages: readArray(record, 'stages').map((stageValue) => {
-      const stageRecord = readRecord(stageValue);
-      const stage = readString(stageRecord, 'stage');
-      if (stage !== 'ONLINE_PHONE' && stage !== 'ON_SITE' && stage !== 'PRE_CONTRACT') {
-        throw new Error('체크리스트 단계가 올바르지 않습니다.');
-      }
-      return {
-        stage,
-        applied: readBoolean(stageRecord, 'applied'),
-        propertyChecklistId: readNullableInteger(stageRecord, 'propertyChecklistId', 1),
-        checklistName: readNullableString(stageRecord, 'checklistName'),
-        sourceChecklistId: readNullableInteger(stageRecord, 'sourceChecklistId', 1),
-        progress: parsePropertyChecklistProgress(stageRecord.progress),
-      };
-    }),
+    stages: readArray(record, 'stages').map(parsePropertyChecklistStageSummary),
   };
 };
 
@@ -250,7 +278,7 @@ export const parsePropertyChecklistDetail = (value: unknown): PropertyChecklistD
         const item = readRecord(value);
         return {
           itemId: readInteger(item, 'id', 1),
-          systemCheckItemId: readInteger(item, 'systemCheckItemId', 1),
+          systemCheckItemId: readNullableInteger(item, 'systemCheckItemId', 1),
           question: readString(item, 'question', { maximumCodePoints: 200 }),
           displayOrder: readInteger(item, 'displayOrder', 1),
           status: parsePropertyChecklistItemStatus(item.status),

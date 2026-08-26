@@ -6,9 +6,9 @@ import PropertyAppLayout from '../components/PropertyAppLayout';
 import { useAuthentication } from '../hooks/useAuthentication';
 import { isChecklistStage } from '../constants/checklist';
 import type { PublicConfig } from '../types/PublicConfig';
+import IntroPage from './IntroPage';
 import LoginPage from './LoginPage';
 import NotFoundPage from './NotFoundPage';
-import OAuthCallbackPage from './OAuthCallbackPage';
 import ProtectedRoute from './ProtectedRoute';
 
 const PropertyListPage = lazy(() => import('./PropertyListPage'));
@@ -24,6 +24,10 @@ const ChecklistDetailPage = lazy(() => import('./ChecklistDetailPage'));
 const PropertyActiveChecklistPage = lazy(() => import('./PropertyActiveChecklistPage'));
 const PropertyChecklistPage = lazy(() => import('./PropertyChecklistPage'));
 const MyPage = lazy(() => import('./MyPage'));
+const MapPage = lazy(() => import('./MapPage'));
+const MapLocationSelectPage = lazy(() => import('./MapLocationSelectPage'));
+const NearbyAnalysisPage = lazy(() => import('./NearbyAnalysisPage'));
+const PropertyComparePage = lazy(() => import('./PropertyComparePage'));
 const UpcomingFeaturePage = lazy(() => import('./UpcomingFeaturePage'));
 
 const lazyPage = (page: ReactNode) => <LazyRouteBoundary>{page}</LazyRouteBoundary>;
@@ -35,27 +39,22 @@ const ChecklistResourceRoute = ({ config }: { config: PublicConfig }) => {
 
 type AppRoutesProps = {
   config: PublicConfig;
-  storage?: Storage;
-  navigateExternally?: (url: string) => void;
 };
 
-const LoginRoute = ({ config, storage, navigateExternally }: AppRoutesProps) => {
+const LoginRoute = ({ config }: AppRoutesProps) => {
   const { session } = useAuthentication();
 
   if (session !== null) {
     return <Navigate to="/properties" replace />;
   }
 
-  return <LoginPage config={config} storage={storage} navigateExternally={navigateExternally} />;
+  return <LoginPage config={config} />;
 };
 
-const AppRoutes = ({ config, storage, navigateExternally }: AppRoutesProps) => (
+const AppRoutes = ({ config }: AppRoutesProps) => (
   <Routes>
-    <Route
-      path="/login"
-      element={<LoginRoute config={config} storage={storage} navigateExternally={navigateExternally} />}
-    />
-    <Route path="/oauth/google/callback" element={<OAuthCallbackPage config={config} storage={storage} />} />
+    <Route path="/intro" element={<IntroPage />} />
+    <Route path="/login" element={<LoginRoute config={config} />} />
     <Route element={<ProtectedRoute config={config} />}>
       <Route element={<PropertyAppLayout />}>
         <Route index element={<Navigate to="/properties" replace />} />
@@ -65,6 +64,7 @@ const AppRoutes = ({ config, storage, navigateExternally }: AppRoutesProps) => (
         <Route path="/properties/:propertyId/edit" element={lazyPage(<EditPropertyPage config={config} />)} />
         <Route path="/properties/:propertyId/photos" element={lazyPage(<PropertyPhotosPage config={config} />)} />
         <Route path="/properties/:propertyId/memo" element={lazyPage(<PropertyMemoPage config={config} />)} />
+        <Route path="/properties/:propertyId/nearby" element={lazyPage(<NearbyAnalysisPage config={config} />)} />
         <Route
           path="/properties/:propertyId/active-checklists/:stage"
           element={lazyPage(<PropertyActiveChecklistPage config={config} />)}
@@ -76,8 +76,10 @@ const AppRoutes = ({ config, storage, navigateExternally }: AppRoutesProps) => (
         <Route path="/checklists" element={lazyPage(<ChecklistHomePage />)} />
         <Route path="/checklists/new" element={lazyPage(<CreateChecklistPage config={config} />)} />
         <Route path="/checklists/:resource" element={lazyPage(<ChecklistResourceRoute config={config} />)} />
-        <Route path="/me" element={lazyPage(<MyPage />)} />
-        <Route path="/compare" element={lazyPage(<UpcomingFeaturePage feature="compare" />)} />
+        <Route path="/me" element={lazyPage(<MyPage config={config} />)} />
+        <Route path="/map" element={lazyPage(<MapPage config={config} />)} />
+        <Route path="/map/select-location" element={lazyPage(<MapLocationSelectPage config={config} />)} />
+        <Route path="/compare" element={lazyPage(<PropertyComparePage config={config} />)} />
         <Route path="/export" element={lazyPage(<UpcomingFeaturePage feature="export" />)} />
         <Route path="/tips" element={lazyPage(<UpcomingFeaturePage feature="tips" />)} />
       </Route>

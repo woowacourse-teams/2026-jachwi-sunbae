@@ -1,30 +1,36 @@
 import { Link } from 'react-router-dom';
 import type { PropertySummary } from '../types/Property';
+import type { PublicConfig } from '../types/PublicConfig';
 import { formatManwon } from '../utils/propertyFormat';
 import Icon from './ui/Icon';
 import ChecklistProgressBar from './ChecklistProgressBar';
 import styles from './PropertyCard.module.css';
+import AuthenticatedPhoto from './AuthenticatedPhoto';
+import { checklistStageMeta } from '../constants/checklist';
 
 type PropertyCardProps = {
   property: PropertySummary;
   thumbnailUrl?: string;
+  config?: PublicConfig;
 };
 
-const PropertyCard = ({ property, thumbnailUrl }: PropertyCardProps) => {
+const PropertyCard = ({ property, thumbnailUrl, config }: PropertyCardProps) => {
   const resolvedThumbnailUrl = thumbnailUrl ?? property.representativePhoto?.contentUrl;
-  const progressLabel =
-    property.progress.totalCount === 0 || property.progress.completedCount < property.progress.totalCount
-      ? '미완료'
-      : null;
-
   return (
     <article>
       <Link className={styles.card} to={`/properties/${property.propertyId}`} aria-label={property.name}>
-        {progressLabel !== null && <span className={styles.progressLabel}>{progressLabel}</span>}
         <div className={styles.mainInfo}>
           <div className={styles.thumbnail}>
             {resolvedThumbnailUrl === undefined ? (
               <Icon name="image" size={22} />
+            ) : config !== undefined && property.representativePhoto !== null ? (
+              <AuthenticatedPhoto
+                config={config}
+                propertyId={property.propertyId}
+                photoId={property.representativePhoto.photoId}
+                contentUrl={resolvedThumbnailUrl}
+                alt=""
+              />
             ) : (
               <img src={resolvedThumbnailUrl} alt="" />
             )}
@@ -35,16 +41,31 @@ const PropertyCard = ({ property, thumbnailUrl }: PropertyCardProps) => {
             <p className={styles.price}>
               보증금 {formatManwon(property.depositAmount)} / 월세 {formatManwon(property.monthlyRentAmount)}
             </p>
+            {property.location.address !== null && <p className={styles.address}>{property.location.address}</p>}
+            {property.discoverySource.value.length > 0 && (
+              <p className={styles.discoverySource}>발견 경로 · {property.discoverySource.value}</p>
+            )}
           </div>
         </div>
-        {property.progress.totalCount === 0 ? (
-          <div className={styles.emptyProgress}>
-            <span className={styles.emptyBar} aria-hidden="true" />
-            <span>아직 방문 확인 기록이 없어요.</span>
-          </div>
-        ) : (
-          <ChecklistProgressBar progress={property.progress} />
-        )}
+        <ol className={styles.stageProgress} aria-label="단계별 체크리스트 진행 현황">
+          {property.stages.map((stage, index) => (
+            <li key={stage.stage}>
+              <div className={styles.stageHeading}>
+                <span>
+                  {index + 1}단계 · {checklistStageMeta[stage.stage].shortLabel}
+                </span>
+                <strong>
+                  {stage.applied ? `${stage.progress.completedCount}/${stage.progress.totalCount}` : '미적용'}
+                </strong>
+              </div>
+              {stage.applied ? (
+                <ChecklistProgressBar progress={stage.progress} compact />
+              ) : (
+                <span className={styles.inactiveBar} aria-hidden="true" />
+              )}
+            </li>
+          ))}
+        </ol>
       </Link>
     </article>
   );

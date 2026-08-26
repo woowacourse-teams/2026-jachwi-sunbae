@@ -4,9 +4,10 @@ import { Button } from '../components/ui/Button';
 import Icon from '../components/ui/Icon';
 import TopNavigation from '../components/ui/TopNavigation';
 import type { Member } from '../types/Member';
+import type { PublicConfig } from '../types/PublicConfig';
 import styles from './MyPage.module.css';
 
-const MyPage = () => {
+const MyPage = ({ config }: { config: PublicConfig }) => {
   const member = useOutletContext<Member>();
   const displayInitial = member.displayName.trim().slice(0, 1) || '자';
 
@@ -20,8 +21,10 @@ const MyPage = () => {
           </span>
           <div className={styles.memberInfo}>
             <h2 id="member-heading">{member.displayName}</h2>
-            <p>{member.email}</p>
-            <small>Google 계정 연결됨</small>
+            <p>
+              {member.passwordProtected ? '비밀번호로 기록을 보호하고 있어요.' : '비밀번호 없는 공유 닉네임이에요.'}
+            </p>
+            <small>브라우저를 닫으면 다시 닉네임으로 시작합니다.</small>
           </div>
         </section>
         <nav className={styles.menu} aria-label="내 기록">
@@ -39,11 +42,18 @@ const MyPage = () => {
             <strong>내 체크리스트 관리</strong>
             <Icon name="arrow-right" size={15} />
           </Link>
-          <Link to="/export">
+          <Link to="/map">
+            <span className={styles.menuIcon}>
+              <Icon name="map" size={15} />
+            </span>
+            <strong>지도와 주변 시설</strong>
+            <Icon name="arrow-right" size={15} />
+          </Link>
+          <Link to="/compare">
             <span className={styles.menuIcon}>
               <Icon name="external-link" size={15} />
             </span>
-            <strong>내보낸 비교표</strong>
+            <strong>매물 비교 PDF</strong>
             <Icon name="arrow-right" size={15} />
           </Link>
         </nav>
@@ -58,7 +68,7 @@ const MyPage = () => {
           <Icon name="arrow-right" size={15} />
         </Link>
         <footer className={styles.footer}>
-          <span>자취선배 v0.1.0</span>
+          <span>자취선배 MVP2 · {config.mapProviderMode === 'kakao' ? 'LIVE MAP' : 'DEMO MAP'}</span>
           <Button variant="text" className={styles.logoutButton} onClick={() => clearAuthentication('logout')}>
             로그아웃
           </Button>

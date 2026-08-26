@@ -1,7 +1,9 @@
 spring:
   sql:
     init:
-      mode: never
+      mode: always
+      schema-locations: classpath:db/init/001-schema.sql
+      data-locations: classpath:db/init/002-seed.sql
 
 auth:
   jwt:
@@ -9,9 +11,9 @@ auth:
     issuer: jachwi-sunbae
     audience: jachwi-sunbae-api
     access-token-seconds: 43200
-  google:
-    client-id: test-google-client-id
-    client-secret: test-google-client-secret
+  nickname:
+    max-failures: 5
+    failure-window-seconds: 600
 
 app:
   cors:
@@ -24,3 +26,11 @@ photo:
     bucket: test-photos
     access-key: test-access-key
     secret-key: test-secret-key
+
+map:
+  provider:
+    mode: demo
+
+demo:
+  seed:
+    enabled: false
