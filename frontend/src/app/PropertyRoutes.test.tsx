@@ -157,6 +157,24 @@ describe('FE-2 매물 목록', () => {
 });
 
 describe('FE-2 매물 비교 PDF', () => {
+  it('비교 화면 진입을 한 번 기록한다', async () => {
+    let comparisonViewCalls = 0;
+    server.use(
+      http.get(`${config.apiBaseUrl}/api/properties`, () =>
+        HttpResponse.json(successEnvelope(propertyPageFixture([propertySummaryFixture, secondPropertySummaryFixture]))),
+      ),
+      http.post(`${config.apiBaseUrl}/api/properties/comparison-views`, () => {
+        comparisonViewCalls += 1;
+        return new HttpResponse(null, { status: 204 });
+      }),
+    );
+
+    renderAuthenticated('/compare');
+
+    expect(await screen.findByRole('heading', { name: '함께 볼 매물을 골라 주세요.' })).toBeInTheDocument();
+    await waitFor(() => expect(comparisonViewCalls).toBe(1));
+  });
+
   it('2~5개 매물을 선택한 뒤 저장 기록 PDF를 요청한다', async () => {
     let requestedIds: unknown;
     server.use(

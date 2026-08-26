@@ -34,6 +34,7 @@ export const propertyHandlers = [
       headers: { 'Content-Type': 'application/pdf' },
     });
   }),
+  http.post('*/api/properties/comparison-views', () => new HttpResponse(null, { status: 204 })),
   http.post('*/api/properties', async ({ request }) => {
     const body = (await request.json()) as {
       name: string;

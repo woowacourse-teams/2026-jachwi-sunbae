@@ -5,7 +5,13 @@ import type {
   UpdatePropertyRequestDto,
 } from '../../apis/dtos/PropertyDto';
 import { removePropertyPhoto, setRepresentativePropertyPhoto, uploadPropertyPhoto } from '../../apis/photoApi';
-import { createProperty, removeProperty, savePropertyMemoDocument, updateProperty } from '../../apis/propertyApi';
+import {
+  createProperty,
+  recordPropertyComparisonView,
+  removeProperty,
+  savePropertyMemoDocument,
+  updateProperty,
+} from '../../apis/propertyApi';
 import { propertyQueryKeys } from '../../app/propertyQueryKeys';
 import { queryClient } from '../../app/queryClient';
 import type { PublicConfig } from '../../types/PublicConfig';
@@ -15,6 +21,11 @@ export const useCreateProperty = (config: PublicConfig) =>
   useMutation({
     mutationFn: (request: PropertyInputDto) => createProperty(config, request),
     onSuccess: async () => queryClient.invalidateQueries({ queryKey: propertyQueryKeys.lists() }),
+  });
+
+export const useRecordPropertyComparisonView = (config: PublicConfig) =>
+  useMutation({
+    mutationFn: () => recordPropertyComparisonView(config),
   });
 
 export const useUpdateProperty = (config: PublicConfig, propertyId: number) =>

@@ -67,6 +67,14 @@ export const fetchPropertyComparisonPdf = (
     signal,
   });
 
+export const recordPropertyComparisonView = (config: PublicConfig): Promise<undefined> =>
+  apiRequest({
+    config,
+    path: '/api/properties/comparison-views',
+    method: 'POST',
+    parseData: parseNoContent,
+  });
+
 export const createProperty = (config: PublicConfig, request: PropertyInputDto): Promise<PropertyBasicInfo> =>
   apiRequest({
     config,

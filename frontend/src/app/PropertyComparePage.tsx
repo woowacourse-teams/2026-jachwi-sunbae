@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { fetchPropertyComparisonPdf } from '../apis/propertyApi';
 import { getPropertyErrorMessage } from '../apis/propertyErrorMessages';
 import AuthenticatedPhoto from '../components/AuthenticatedPhoto';
@@ -8,6 +8,7 @@ import Icon from '../components/ui/Icon';
 import InlineNotice from '../components/ui/InlineNotice';
 import TopNavigation from '../components/ui/TopNavigation';
 import { usePropertyList } from '../hooks/query/useProperties';
+import { useRecordPropertyComparisonView } from '../hooks/query/usePropertyMutations';
 import type { PropertySummary } from '../types/Property';
 import type { PublicConfig } from '../types/PublicConfig';
 import { formatManwon } from '../utils/propertyFormat';
@@ -29,12 +30,20 @@ const StageOverview = ({ property }: { property: PropertySummary }) => (
 );
 
 const PropertyComparePage = ({ config }: PropertyComparePageProps) => {
+  const hasRecordedView = useRef(false);
+  const { mutate: recordComparisonView } = useRecordPropertyComparisonView(config);
   const properties = usePropertyList(config);
   const items = properties.data?.pages.flatMap((page) => page.content) ?? [];
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
   const [isExporting, setIsExporting] = useState(false);
   const [exportError, setExportError] = useState(false);
   const selectedSet = useMemo(() => new Set(selectedIds), [selectedIds]);
+
+  useEffect(() => {
+    if (hasRecordedView.current) return;
+    hasRecordedView.current = true;
+    recordComparisonView();
+  }, [recordComparisonView]);
 
   const toggle = (propertyId: number) => {
     setExportError(false);

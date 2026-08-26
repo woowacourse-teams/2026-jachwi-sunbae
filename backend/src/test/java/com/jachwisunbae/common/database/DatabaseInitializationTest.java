@@ -16,6 +16,7 @@ class DatabaseInitializationTest extends IntegrationTest {
             "members",
             "nickname_credentials",
             "properties",
+            "property_comparison_view_events",
             "property_photos",
             "main_property_photos",
             "system_memo_items",

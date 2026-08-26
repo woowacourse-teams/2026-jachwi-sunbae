@@ -37,6 +37,7 @@
 | `GET` | `/api/properties` | 최근 활동순 목록과 대표 사진·사진 수·1·2·3단계별 진행 현황 |
 | `GET` | `/api/properties/export.csv` | 호환용 UTF-8 BOM 매물 요약 다운로드 |
 | `POST` | `/api/properties/export.pdf` | 선택한 2~5개 매물의 전체 기록 PDF 다운로드 |
+| `POST` | `/api/properties/comparison-views` | 비교 화면 진입 시각과 현재 보유 매물 수 기록 |
 | `POST` | `/api/properties` | 매물 생성 |
 | `GET` | `/api/properties/{propertyId}` | 상세 조회 |
 | `PUT` | `/api/properties/{propertyId}` | 기본 정보 전체 교체 |
@@ -68,6 +69,8 @@
 ```
 
 성공은 `application/pdf`와 attachment 파일을 반환한다. PDF의 첫 페이지는 나란한 기본 정보·단계 집계이고, 이후는 매물별 기본 정보·모든 사진·구조화 메모·자유 메모·적용한 모든 체크 질문과 상태·항목 메모를 담는다. PDF에 넣는 사진은 메모리와 파일 크기를 제한하도록 긴 변 1,200px 이하 JPEG로 변환하며 객체 저장소의 원본은 변경하지 않는다. 2~5개 범위나 중복 위반은 400, 소유하지 않은 매물은 404다.
+
+`POST /api/properties/comparison-views`는 요청 본문 없이 현재 회원의 진입 시각과 그 시점의 보유 매물 수를 저장하고 `204 No Content`를 반환한다. 화면은 진입할 때마다 한 번 요청하고, 집계는 `property_count >= 2`인 서로 다른 `member_id`를 기준으로 한다. 이 실험 기록 실패도 비교 화면과 PDF 이용은 계속한다.
 
 ## 사진
 
