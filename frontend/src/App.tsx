@@ -26,16 +26,12 @@ const App = ({ config }: AppProps) => {
 
   return (
     <AppProviders>
-      <PostHogTracker
-        projectToken={resolvedConfig.posthogProjectToken}
-        host={resolvedConfig.posthogHost}
-      />
+      <PostHogTracker projectToken={resolvedConfig.posthogProjectToken} host={resolvedConfig.posthogHost} />
       <TrackingConsentProvider metaPixelId={resolvedConfig.metaPixelId}>
         <AppRoutes config={resolvedConfig} />
       </TrackingConsentProvider>
     </AppProviders>
   );
 };
-
 
 export default App;

@@ -61,4 +61,3 @@ export const resetPostHogForTests = (): void => {
   trackingEnabled = false;
   lastTrackedPath = null;
 };
-

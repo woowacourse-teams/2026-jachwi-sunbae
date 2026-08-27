@@ -1,14 +1,15 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-const posthog = {
-  capture: vi.fn(),
-  identify: vi.fn(),
-  init: vi.fn(),
-  opt_out_capturing: vi.fn(),
-  reset: vi.fn(),
-};
+const { mockPostHog } = vi.hoisted(() => ({
+  mockPostHog: {
+    capture: vi.fn(),
+    init: vi.fn(),
+    opt_out_capturing: vi.fn(),
+    reset: vi.fn(),
+  },
+}));
 
-vi.mock('posthog-js', () => ({ default: posthog }));
+vi.mock('posthog-js', () => ({ default: mockPostHog }));
 
 import {
   initPostHog,
@@ -29,7 +30,7 @@ describe('PostHog 익명 제품 분석', () => {
     expect(isValidPostHogConfiguration('phc_test', 'not-a-url')).toBe(false);
     expect(initPostHog('phc_test', 'https://us.i.posthog.com')).toBe(true);
 
-    expect(posthog.init).toHaveBeenCalledWith('phc_test', {
+    expect(mockPostHog.init).toHaveBeenCalledWith('phc_test', {
       api_host: 'https://us.i.posthog.com',
       autocapture: true,
       capture_pageview: false,
@@ -47,8 +48,7 @@ describe('PostHog 익명 제품 분석', () => {
     expect(trackPostHogPageView('/properties')).toBe(false);
     expect(trackPostHogEvent('property_created', { count: 1 })).toBe(true);
 
-    expect(posthog.capture).toHaveBeenCalledWith('$pageview', { path: '/properties' });
-    expect(posthog.capture).toHaveBeenCalledWith('property_created', { count: 1 });
+    expect(mockPostHog.capture).toHaveBeenCalledWith('$pageview', { path: '/properties' });
+    expect(mockPostHog.capture).toHaveBeenCalledWith('property_created', { count: 1 });
   });
 });
-
