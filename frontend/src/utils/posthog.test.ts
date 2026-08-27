@@ -25,7 +25,7 @@ describe('PostHog 익명 제품 분석', () => {
     vi.clearAllMocks();
   });
 
-  it('유효한 토큰과 호스트로 세션 녹화 없이 안전하게 초기화한다', () => {
+  it('유효한 토큰과 호스트로 세션 녹화 및 마스킹과 함께 초기화한다', () => {
     expect(isValidPostHogConfiguration('', 'https://us.i.posthog.com')).toBe(false);
     expect(isValidPostHogConfiguration('phc_test', 'not-a-url')).toBe(false);
     expect(initPostHog('phc_test', 'https://us.i.posthog.com')).toBe(true);
@@ -34,7 +34,7 @@ describe('PostHog 익명 제품 분석', () => {
       api_host: 'https://us.i.posthog.com',
       autocapture: true,
       capture_pageview: false,
-      disable_session_recording: true,
+      disable_session_recording: false,
       mask_all_text: true,
       mask_all_element_attributes: true,
     });

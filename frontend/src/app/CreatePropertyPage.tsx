@@ -5,6 +5,7 @@ import TopNavigation from '../components/ui/TopNavigation';
 import { useCreateProperty } from '../hooks/query/usePropertyMutations';
 import type { PublicConfig } from '../types/PublicConfig';
 import { trackMetaPixelFirstPropertyRecorded } from '../utils/metaPixel';
+import { trackPostHogEvent } from '../utils/posthog';
 import styles from './CreatePropertyPage.module.css';
 
 type CreatePropertyPageProps = { config: PublicConfig };
@@ -47,6 +48,7 @@ const CreatePropertyPage = ({ config }: CreatePropertyPageProps) => {
               .mutateAsync(input)
               .then((created) => {
                 if (created.firstProperty) trackMetaPixelFirstPropertyRecorded();
+                trackPostHogEvent('property_created', { first_property: created.firstProperty });
                 navigate(`/properties/${created.propertyId}`, { replace: true });
               })
               .catch(() => undefined);

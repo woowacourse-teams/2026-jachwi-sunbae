@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import mapRegisterVideo from '../assets/intro/intro-map-register.mp4';
 import nearbyCompareVideo from '../assets/intro/intro-nearby-compare.mp4';
 import quickRegisterVideo from '../assets/intro/intro-quick-register.mp4';
+import { trackPostHogEvent } from '../utils/posthog';
 import styles from './IntroDemoPlayer.module.css';
 
 type DemoChapter = {
@@ -104,6 +105,7 @@ const IntroDemoPlayer = () => {
               playsInline
               preload="metadata"
               onEnded={() => setActiveIndex((index) => (index + 1) % chapters.length)}
+              onPlay={() => trackPostHogEvent('intro_demo_played', { chapter: activeChapter.title })}
               onLoadedMetadata={(event) => {
                 event.currentTarget.defaultPlaybackRate = PLAYBACK_RATE;
                 event.currentTarget.playbackRate = PLAYBACK_RATE;
