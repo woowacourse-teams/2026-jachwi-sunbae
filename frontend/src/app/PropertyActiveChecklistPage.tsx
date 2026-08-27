@@ -9,6 +9,7 @@ import { isChecklistStage } from '../constants/checklist';
 import { useAssignActiveChecklist } from '../hooks/query/useChecklistMutations';
 import { useChecklistList } from '../hooks/query/useChecklists';
 import { usePropertyChecklistOverview, usePropertyDetail } from '../hooks/query/useProperties';
+import useDelayedLoading from '../hooks/ui/useDelayedLoading';
 import type { ChecklistStage } from '../types/Checklist';
 import type { PublicConfig } from '../types/PublicConfig';
 import { parsePositiveId } from '../utils/propertyFormat';
@@ -59,6 +60,9 @@ const ResolvedPropertyActiveChecklist = ({
   const overview = usePropertyChecklistOverview(config, propertyId);
   const list = useChecklistList(config, stage);
   const assign = useAssignActiveChecklist(config, propertyId, stage);
+  const isPending = property.isPending || overview.isPending || list.isPending;
+  const isLoadingVisible = useDelayedLoading(isPending);
+  const isLoading = isPending || isLoadingVisible;
   const newlyCreatedId = readNewChecklistId(location.state);
   const fromPropertyDetail = isFromPropertyDetail(location.state) || searchParams.get('from') === 'property-detail';
   const isReplacing = searchParams.get('mode') === 'replace';
@@ -98,14 +102,16 @@ const ResolvedPropertyActiveChecklist = ({
     if (selectedId === null && current !== null) setSelectedId(current.checklistId);
   }, [current, selectedId]);
 
-  if (property.isPending || overview.isPending || list.isPending)
+  if (isLoading)
     return (
       <main className="property-page">
         <div className="page-container">
-          <div className="content-state" role="status">
-            <span className="spinner" />
-            연결 정보를 불러오는 중이에요.
-          </div>
+          {isLoadingVisible && (
+            <div className="content-state" role="status">
+              <span className="spinner" />
+              연결 정보를 불러오는 중이에요.
+            </div>
+          )}
         </div>
       </main>
     );

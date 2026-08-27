@@ -7,6 +7,7 @@ import {
   usePropertyChecklistOverview,
   usePropertyDetail,
 } from '../hooks/query/useProperties';
+import useDelayedLoading from '../hooks/ui/useDelayedLoading';
 import type { PublicConfig } from '../types/PublicConfig';
 import { getChecklistStageLabel, parsePositiveId } from '../utils/propertyFormat';
 import styles from './PropertyChecklistPage.module.css';
@@ -47,11 +48,13 @@ const ResolvedPropertyChecklistPage = ({
   propertyChecklistId: number;
 }) => {
   const checklist = usePropertyChecklistDetail(config, propertyId, propertyChecklistId);
+  const isLoadingVisible = useDelayedLoading(checklist.isPending);
+  const isLoading = checklist.isPending || isLoadingVisible;
   const overview = usePropertyChecklistOverview(config, propertyId);
   const property = usePropertyDetail(config, propertyId);
 
-  if (checklist.isPending) {
-    return <div className="content-state">체크리스트를 불러오는 중이에요.</div>;
+  if (isLoading) {
+    return isLoadingVisible ? <div className="content-state">체크리스트를 불러오는 중이에요.</div> : null;
   }
 
   if (checklist.isError) {

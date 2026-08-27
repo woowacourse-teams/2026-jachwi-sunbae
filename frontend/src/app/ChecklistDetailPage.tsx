@@ -10,6 +10,7 @@ import TopNavigation from '../components/ui/TopNavigation';
 import TopNavigationMenu from '../components/ui/TopNavigationMenu';
 import { useRemoveChecklist, useUpdateChecklist } from '../hooks/query/useChecklistMutations';
 import { useChecklistDetail } from '../hooks/query/useChecklists';
+import useDelayedLoading from '../hooks/ui/useDelayedLoading';
 import { checklistItemToEditorItem } from '../types/ChecklistEditor';
 import type { PublicConfig } from '../types/PublicConfig';
 import { toChecklistItemInputs } from '../utils/checklistEditor';
@@ -37,6 +38,8 @@ const ResolvedChecklistDetail = ({ config, checklistId }: { config: PublicConfig
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const detail = useChecklistDetail(config, checklistId);
+  const isLoadingVisible = useDelayedLoading(detail.isPending);
+  const isLoading = detail.isPending || isLoadingVisible;
   const update = useUpdateChecklist(config, checklistId);
   const remove = useRemoveChecklist(config, checklistId);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
@@ -52,14 +55,16 @@ const ResolvedChecklistDetail = ({ config, checklistId }: { config: PublicConfig
     [checklistId],
   );
 
-  if (detail.isPending)
+  if (isLoading)
     return (
       <main className="property-page">
         <div className="page-container">
-          <div className="content-state" role="status">
-            <span className="spinner" />
-            체크리스트를 불러오는 중이에요.
-          </div>
+          {isLoadingVisible && (
+            <div className="content-state" role="status">
+              <span className="spinner" />
+              체크리스트를 불러오는 중이에요.
+            </div>
+          )}
         </div>
       </main>
     );
