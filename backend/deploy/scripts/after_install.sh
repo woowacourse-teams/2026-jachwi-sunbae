@@ -3,6 +3,7 @@ set -euo pipefail
 
 APP_DIR=/opt/jachwi-sunbae
 ENV_FILE=/etc/jachwi-sunbae/app.env
+LOG_DIR=/var/log/jachwi-sunbae
 SERVICE=jachwi-sunbae.service
 RUN_USER=jachwi
 
@@ -21,6 +22,12 @@ fi
 chown -R "${RUN_USER}:${RUN_USER}" "${APP_DIR}"
 chmod 0640 "${APP_DIR}/app.jar"
 chmod 0755 "${APP_DIR}"/scripts/*.sh
+
+install -d -o "${RUN_USER}" -g "${RUN_USER}" -m 0750 "${LOG_DIR}"
+install -d -o "${RUN_USER}" -g "${RUN_USER}" -m 0750 "${LOG_DIR}/archive"
+touch "${LOG_DIR}/service-events.log"
+chown "${RUN_USER}:${RUN_USER}" "${LOG_DIR}/service-events.log"
+chmod 0640 "${LOG_DIR}/service-events.log"
 
 install -m 0644 "${APP_DIR}/${SERVICE}" "/etc/systemd/system/${SERVICE}"
 systemctl daemon-reload
