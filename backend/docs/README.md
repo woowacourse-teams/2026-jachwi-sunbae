@@ -28,6 +28,8 @@ Git·GitHub 협업 규칙은 백엔드에 한정되지 않으므로 [`docs/conve
 - [지도 연동](guides/map-integration.md)
 - [백엔드 배포](operations/deployment.md)
 - [롤백](operations/rollback.md)
+- [모니터링](operations/monitoring.md)
+- [장애 대응](operations/incident-response.md)
 - [프론트엔드 배포](../../frontend/docs/deployment.md)
 
 ## 문서 작성 원칙

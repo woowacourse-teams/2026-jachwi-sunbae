@@ -44,6 +44,8 @@ Spring Boot 애플리케이션은 CORS 허용 Origin과 인증·저장소 설정
 | `MAP_CACHE_TTL_SECONDS` | `600` | 주변 시설 응답 cache TTL(초) |
 | `MAP_CONNECT_TIMEOUT_MILLIS` | `2000` | 지도 외부 공급자 연결 제한 시간 |
 | `MAP_READ_TIMEOUT_MILLIS` | `5000` | 지도 외부 공급자 응답 제한 시간 |
+| `DEPLOYMENT_ENVIRONMENT` | `local` | 구조화 로그의 실행 환경. EC2에서는 `dev` 또는 `prod`를 사용한다 |
+| `LOG_PATH` | `./logs` | `prod` 프로필에서 JSON 로그 파일을 저장할 디렉터리 |
 
 ## 사용 방법
 
@@ -67,6 +69,8 @@ dev와 prod EC2는 모두 `SPRING_PROFILES_ACTIVE=prod`로 기동하며 `/etc/ja
 | `PHOTO_STORAGE_KEY_PREFIX` | `jachwi-sunbae/photos-dev/` | `jachwi-sunbae/photos/` |
 | `DEMO_SEED_ENABLED` | `false` | `false` |
 | `MAP_PROVIDER_MODE` | `kakao` | `kakao` |
+| `DEPLOYMENT_ENVIRONMENT` | `dev` | `prod` |
+| `LOG_PATH` | `/var/log/jachwi-sunbae` | `/var/log/jachwi-sunbae` |
 
 DB 접속값과 `JWT_SECRET_BASE64`, `KAKAO_REST_API_KEY`는 환경별 실제 값이 필요하다. 버스정류소를 켜면 `BUS_STOP_PROVIDER=tago`와 공공데이터포털 일반 인증키의 Decoding 값인 `DATA_GO_KR_SERVICE_KEY`도 넣는다. 활용 승인이 끝나기 전에는 `BUS_STOP_PROVIDER=none`으로 배포해 병원·학교·편의점·중개업소와 지하철 결과를 먼저 사용한다.
 
