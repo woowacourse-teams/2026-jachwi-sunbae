@@ -93,7 +93,7 @@ export default PostCard;
 - API 응답은 DTO 타입으로 받고, 화면에서 사용하는 타입과 필요하면 변환합니다.
 - 타입 단언(`as`)과 non-null assertion(`!`)은 근거가 있을 때만 사용합니다.
 - 공통 타입은 `src/types`, 특정 기능에서만 사용하는 타입은 해당 기능 폴더에 둡니다.
-- 타입 검사와 Babel 변환을 구분합니다. Babel은 타입을 검사하지 않으므로 `npm run typecheck`를 실행합니다.
+- 타입 검사와 Babel 변환을 구분합니다. Babel은 타입을 검사하지 않으므로 `npm run build`가 번들 생성 전에 `npm run typecheck`를 실행합니다. 개발 중 타입 오류만 빠르게 확인할 때는 `npm run typecheck`를 직접 실행합니다.
 
 ## 6. CSS
 
@@ -141,11 +141,10 @@ const PostCard = () => <article className={styles.card}>...</article>;
 ## 9. 검사 명령어
 
 ```bash
-npm run typecheck
 npm run lint
 npm run format:check
 npm run test
 npm run build
 ```
 
-코드를 제출하기 전에 타입 검사, 린트, 포맷 검사, 테스트, 빌드를 모두 통과시키는 것을 기준으로 합니다.
+`npm run build`가 타입 검사를 포함하므로 코드를 제출하기 전에 린트, 포맷 검사, 테스트, 빌드를 모두 통과시키는 것을 기준으로 합니다. 타입 오류만 빠르게 확인할 때는 `npm run typecheck`를 직접 실행합니다.

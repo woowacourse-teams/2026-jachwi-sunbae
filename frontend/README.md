@@ -73,11 +73,12 @@ JWT secret, Kakao REST key, S3 자격증명은 프론트에 넣지 않습니다.
 ## 검사
 
 ```bash
-npm run typecheck
 npm run lint
 npm run format:check
 npm test
 npm run build
 ```
+
+`npm run build`는 번들 생성 전에 `npm run typecheck`를 실행합니다. 개발 중 타입 오류만 빠르게 확인하려면 `npm run typecheck`를 직접 실행합니다.
 
 실제 모바일 브라우저 확인은 운영 엔트리포인트를 `390x844`와 일반 모바일 폭에서 실행해 17개 경로와 주요 CRUD·체크·지도 흐름을 확인합니다.
