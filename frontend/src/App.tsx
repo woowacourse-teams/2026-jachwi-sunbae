@@ -2,6 +2,7 @@ import AppProviders from './app/AppProviders';
 import AppRoutes from './app/AppRoutes';
 import { TrackingConsentProvider } from './app/TrackingConsentContext';
 import { getPublicConfig } from './app/publicConfig';
+import PostHogTracker from './components/PostHogTracker';
 import StatusPanel from './components/StatusPanel';
 import type { PublicConfig } from './types/PublicConfig';
 import './styles/tokens.css';
@@ -25,6 +26,7 @@ const App = ({ config }: AppProps) => {
 
   return (
     <AppProviders>
+      <PostHogTracker projectToken={resolvedConfig.posthogProjectToken} host={resolvedConfig.posthogHost} />
       <TrackingConsentProvider metaPixelId={resolvedConfig.metaPixelId}>
         <AppRoutes config={resolvedConfig} />
       </TrackingConsentProvider>
