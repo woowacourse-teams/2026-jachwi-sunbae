@@ -7,6 +7,7 @@ import TopNavigation from '../components/ui/TopNavigation';
 import { checklistStageMeta, isChecklistStage } from '../constants/checklist';
 import { useCreateChecklist } from '../hooks/query/useChecklistMutations';
 import { useChecklistPreset } from '../hooks/query/useChecklists';
+import useDelayedLoading from '../hooks/ui/useDelayedLoading';
 import type { ChecklistStage } from '../types/Checklist';
 import { checkItemToEditorItem } from '../types/ChecklistEditor';
 import type { PublicConfig } from '../types/PublicConfig';
@@ -52,6 +53,8 @@ const ResolvedCreateChecklistPage = ({
   const [searchParams, setSearchParams] = useSearchParams();
   const safeReturn = parseChecklistReturnTo(returnTo);
   const preset = useChecklistPreset(config, stage, 'ONE_ROOM', true);
+  const isPresetLoadingVisible = useDelayedLoading(preset.isPending);
+  const isPresetLoading = preset.isPending || isPresetLoadingVisible;
   const create = useCreateChecklist(config);
   const isAddingItems = searchParams.get('mode') === 'add-items';
 
@@ -78,11 +81,13 @@ const ResolvedCreateChecklistPage = ({
         <h1 className="sr-only">새 체크리스트</h1>
         <ChecklistStageTabs stage={stage} getTo={tabTarget} fullBleed />
 
-        {preset.isPending ? (
-          <div className={styles.presetStatus} role="status">
-            <span className="spinner" />
-            프리셋을 불러오는 중이에요.
-          </div>
+        {isPresetLoading ? (
+          isPresetLoadingVisible ? (
+            <div className={styles.presetStatus} role="status">
+              <span className="spinner" />
+              프리셋을 불러오는 중이에요.
+            </div>
+          ) : null
         ) : preset.isError ? (
           <div className={styles.presetError} role="alert">
             <div>

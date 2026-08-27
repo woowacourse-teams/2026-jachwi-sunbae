@@ -7,6 +7,7 @@ import { Button } from '../components/ui/Button';
 import TopNavigation from '../components/ui/TopNavigation';
 import { isChecklistStage } from '../constants/checklist';
 import { useChecklistList } from '../hooks/query/useChecklists';
+import useDelayedLoading from '../hooks/ui/useDelayedLoading';
 import type { ChecklistStage } from '../types/Checklist';
 import type { PublicConfig } from '../types/PublicConfig';
 import styles from './ChecklistListPage.module.css';
@@ -31,6 +32,8 @@ const InvalidStage = () => (
 const ResolvedChecklistListPage = ({ config, stage }: { config: PublicConfig; stage: ChecklistStage }) => {
   const list = useChecklistList(config, stage);
   const items = list.data?.pages.flatMap((page) => page.content) ?? [];
+  const isLoadingVisible = useDelayedLoading(list.isPending);
+  const isLoading = list.isPending || isLoadingVisible;
 
   return (
     <main className={styles.page}>
@@ -41,11 +44,13 @@ const ResolvedChecklistListPage = ({ config, stage }: { config: PublicConfig; st
           <p className={styles.description}>단계별로 내 체크리스트를 만들고 항목을 관리합니다.</p>
         </div>
         <h1 className="sr-only">체크리스트</h1>
-        {list.isPending ? (
-          <div className="content-state" role="status">
-            <span className="spinner" />
-            체크리스트를 불러오는 중이에요.
-          </div>
+        {isLoading ? (
+          isLoadingVisible ? (
+            <div className="content-state" role="status">
+              <span className="spinner" />
+              체크리스트를 불러오는 중이에요.
+            </div>
+          ) : null
         ) : list.isError ? (
           <div className="content-state content-state--error" role="alert">
             <strong>체크리스트를 불러오지 못했어요.</strong>
@@ -61,7 +66,7 @@ const ResolvedChecklistListPage = ({ config, stage }: { config: PublicConfig; st
             ))}
           </ul>
         )}
-        {!list.isPending && !list.isError && (
+        {!isLoading && !list.isError && (
           <div className={styles.createCard}>
             <AddItemLink to={`/checklists/new?stage=${stage}`}>새 체크리스트 만들기</AddItemLink>
           </div>
