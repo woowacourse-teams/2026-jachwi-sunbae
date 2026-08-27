@@ -1,5 +1,6 @@
 import type {
   DiscoverySource,
+  CreatedProperty,
   PropertyBasicInfo,
   PropertyChecklistOverview,
   PropertyChecklistProgress,
@@ -192,6 +193,14 @@ export const parsePropertyBasicInfo = (value: unknown): PropertyBasicInfo => {
           ? readUtcDateTime(record, 'createdAt')
           : null,
     lastActivityAt: typeof record.lastActivityAt === 'string' ? readUtcDateTime(record, 'lastActivityAt') : null,
+  };
+};
+
+export const parseCreatedProperty = (value: unknown): CreatedProperty => {
+  const record = readRecord(value);
+  return {
+    ...parsePropertyBasicInfo(record),
+    firstProperty: typeof record.firstProperty === 'boolean' ? record.firstProperty : false,
   };
 };
 

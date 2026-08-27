@@ -14,6 +14,7 @@ public class DomainErrorHttpMapper {
                     SYSTEM_CHECK_ITEM_QUESTION_INVALID,
                     MEMBER_EMAIL_INVALID,
                     MEMBER_NAME_INVALID,
+                    MEMBER_FIRST_PROPERTY_CREATED_AT_REQUIRED,
                     NICKNAME_INVALID,
                     NICKNAME_PASSWORD_INVALID,
                     USER_CHECKLIST_MEMBER_REQUIRED,

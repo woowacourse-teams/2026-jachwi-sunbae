@@ -28,7 +28,7 @@
 }
 ```
 
-로그인 응답은 `accessToken`, `tokenType`, `expiresIn`과 `member.memberId`, `member.name`, `member.passwordProtected`를 제공한다. `/api/members/me`도 `memberId`, `displayName`, `passwordProtected`만 반환하며 내부 식별용 이메일은 노출하지 않는다.
+로그인 응답은 `accessToken`, `tokenType`, `expiresIn`, `newMember`와 `member.memberId`, `member.name`, `member.passwordProtected`를 제공한다. `newMember`는 이번 요청에서 닉네임 회원을 새로 만든 경우에만 `true`이고, 기존 닉네임 로그인은 `false`다. `/api/members/me`도 `memberId`, `displayName`, `passwordProtected`만 반환하며 내부 식별용 이메일은 노출하지 않는다.
 
 ## 매물
 
@@ -57,6 +57,8 @@
   "discoverySource": "https://example.com/property/1"
 }
 ```
+
+매물 생성 응답은 생성된 매물 필드와 `firstProperty`를 제공한다. `firstProperty`는 회원 행의 최초 등록 시각을 잠금 안에서 기록해 생애 첫 매물인 경우에만 `true`다. 첫 매물을 삭제한 뒤 다시 등록해도 `false`다.
 
 목록·상세 응답은 `address`, `roadAddress`, `jibunAddress`, `latitude`, `longitude`, `photoCount`, `representativePhoto`, `overallProgress`, `lastActivityAt`을 제공한다. 목록은 추가로 `stages`에 `ONLINE_PHONE`, `ON_SITE`, `PRE_CONTRACT` 순서의 `applied`와 단계별 `progress`를 제공한다. `address`는 도로명 주소가 있으면 그 값을, 없으면 지번 주소를 담는 표시용 파생 필드다.
 

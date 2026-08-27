@@ -31,14 +31,16 @@ npm run dev
 | `API_BASE_URL`             | `http://localhost:8080` | 백엔드 기준 URL                       |
 | `MAP_PROVIDER_MODE`        | `demo`                  | `demo` 또는 `kakao`                   |
 | `KAKAO_MAP_JAVASCRIPT_KEY` | 비움                    | `kakao` 모드의 공개 JavaScript SDK 키 |
+| `META_PIXEL_ID`            | 비움                    | 동의 기반 Meta Pixel 공개 데이터셋 ID |
 
-JWT secret, Kakao REST key, S3 자격증명은 프론트에 넣지 않습니다. 실제 Kakao 설정은 [환경변수](../backend/docs/guides/environment-variables.md)와 [지도 외부 연동](../backend/docs/guides/map-integration.md)을 따릅니다.
+JWT secret, Kakao REST key, S3 자격증명은 프론트에 넣지 않습니다. `META_PIXEL_ID`가 비면 광고 측정 고지와 Pixel을 모두 비활성화합니다. 실제 Kakao 설정은 [환경변수](../backend/docs/guides/environment-variables.md)와 [지도 외부 연동](../backend/docs/guides/map-integration.md)을 따릅니다.
 
 ## 화면과 경로
 
 | 화면      | 경로                                                      | 기능                                              |
 | --------- | --------------------------------------------------------- | ------------------------------------------------- |
 | `00`      | `/login`                                                  | 닉네임과 선택 비밀번호로 시작                     |
+| 공개 안내 | `/intro`, `/privacy`                                      | 서비스 소개와 광고 측정 동의·철회                 |
 | `01`      | `/properties`                                             | 최근 활동순 매물, 단계별 진행 현황, PDF 비교 진입 |
 | 매물 비교 | `/compare`                                                | 2~5개 매물 선택과 전체 기록 PDF 다운로드          |
 | `02`      | `/properties/new`                                         | 주소·좌표를 포함한 매물 등록                      |
@@ -66,6 +68,7 @@ JWT secret, Kakao REST key, S3 자격증명은 프론트에 넣지 않습니다.
 - 사진 콘텐츠는 URL을 `<img>`에 직접 주지 않고 Bearer 인증 Blob으로 조회해 Object URL을 만든 뒤 해제합니다.
 - 사진은 JPEG·PNG·WebP, 파일당 5MiB, 매물당 30장으로 선택 단계부터 검증합니다.
 - 서버 상태는 TanStack Query가 관리하고, 체크 항목 상태와 메모 저장 채널은 서로 독립적입니다.
+- Meta Pixel은 사용자가 명시적으로 동의한 뒤에만 불러옵니다. 페이지 방문·신규 닉네임 생성·첫 매물 등록 여부만 전송하며 닉네임·비밀번호와 매물 기록 내용은 보내지 않습니다.
 
 ## 검사
 

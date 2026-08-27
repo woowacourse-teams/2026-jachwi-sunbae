@@ -206,7 +206,7 @@ dnf install -y java-21-amazon-corretto ruby wget
 - CloudFront OAC는 인프라 안내가 지정한 `techcourse-project-2026.s3.ap-northeast-2.amazonaws.com`을 origin으로 사용한다.
 - 캐시는 Policy를 새로 만들지 않는다. 새 콘솔에는 레거시 캐시 설정 항목이 없어 관리형 정책 `CachingOptimized`를 쓴다. 관리형이므로 새 정책을 만들지 않는다는 안내의 의도에 맞는다. 기본 TTL이 24시간이라 이름이 고정인 `index.html`은 배포마다 무효화한다.
 - **SPA 폴백**: react-router 클라이언트 라우팅이므로 CloudFront에서 403·404 응답을 `/index.html`(200)로 매핑해 `/intro`, `/properties/:id`, `/map` 같은 새로고침·딥링크가 깨지지 않게 한다.
-- **환경변수는 빌드 타임에 주입된다.** `webpack.config.js`의 `DefinePlugin`이 `API_BASE_URL`·`MAP_PROVIDER_MODE`·`KAKAO_MAP_JAVASCRIPT_KEY`를 번들에 박아넣는다. 런타임 설정이 아니므로 CodePipeline `Commands` 액션이 환경별 값으로 **다시 빌드**해야 한다. Kakao JavaScript 키는 브라우저에 공개되는 값이지만 Kakao Developers의 Web 도메인을 dev·prod 공식 도메인으로 제한한다.
+- **환경변수는 빌드 타임에 주입된다.** `webpack.config.js`의 `DefinePlugin`이 `API_BASE_URL`·`MAP_PROVIDER_MODE`·`KAKAO_MAP_JAVASCRIPT_KEY`·`META_PIXEL_ID`를 번들에 박아넣는다. 런타임 설정이 아니므로 CodePipeline `Commands` 액션이 환경별 값으로 **다시 빌드**해야 한다. Kakao JavaScript 키와 Meta Pixel ID는 브라우저에 공개되는 값이다. Kakao Developers의 Web 도메인은 dev·prod 공식 도메인으로 제한하고, Pixel은 사용자의 명시적 동의 뒤에만 불러온다.
 - **캐시 무효화는 `contenthash`로 한다.** 운영 빌드의 파일명에 해시를 붙여 내용이 바뀌면 파일명이 바뀌게 한다. 배포마다 전체 무효화(`/*`)를 걸 필요가 없고, 이름이 고정인 `index.html`만 무효화하면 나머지는 자동으로 새 파일을 가리킨다. 개발 빌드에는 붙이지 않는다.
 - **CloudFront origin path를 `/jachwi-sunbae/web`으로 지정한다.** 같은 버킷의 `jachwi-sunbae/` 아래에 비공개 사진 객체가 있다. origin path를 비워 두면 CloudFront가 버킷 전체를 공개해 사진이 인증 없이 노출된다.
 - 절차는 [프론트엔드 배포](../../frontend/docs/deployment.md)에 있다.

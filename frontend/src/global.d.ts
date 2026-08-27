@@ -1,6 +1,7 @@
 declare const __API_BASE_URL__: string;
 declare const __MAP_PROVIDER_MODE__: string;
 declare const __KAKAO_MAP_JAVASCRIPT_KEY__: string;
+declare const __META_PIXEL_ID__: string;
 declare const __ENABLE_MSW__: boolean;
 
 type KakaoLatLng = { getLat: () => number; getLng: () => number };

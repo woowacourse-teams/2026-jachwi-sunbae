@@ -35,5 +35,6 @@ export const getPublicConfig = (): PublicConfig => {
     apiBaseUrl: requireHttpUrl(typeof __API_BASE_URL__ === 'string' ? __API_BASE_URL__ : '', 'API_BASE_URL'),
     mapProviderMode,
     kakaoMapJavaScriptKey: typeof __KAKAO_MAP_JAVASCRIPT_KEY__ === 'string' ? __KAKAO_MAP_JAVASCRIPT_KEY__.trim() : '',
+    metaPixelId: typeof __META_PIXEL_ID__ === 'string' ? __META_PIXEL_ID__.trim() : '',
   };
 };

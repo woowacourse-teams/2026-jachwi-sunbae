@@ -95,6 +95,7 @@ describe('FE-2 API 경계', () => {
           successEnvelope({
             id: 10,
             name: '신림역 원룸',
+            firstProperty: true,
             depositAmount: 0,
             monthlyRentAmount: 550_000,
             discoverySource: 'https://example.com/home',
@@ -127,6 +128,7 @@ describe('FE-2 API 경계', () => {
       discoverySource: 'https://example.com/home',
     });
     expect(result.discoverySource.type).toBe('URL');
+    expect(result.firstProperty).toBe(true);
   });
 
   it('매물 상세 응답의 기본 정보·사진·전체 진행률을 읽는다', async () => {
