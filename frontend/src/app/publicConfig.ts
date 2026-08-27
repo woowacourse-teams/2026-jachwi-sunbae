@@ -36,5 +36,7 @@ export const getPublicConfig = (): PublicConfig => {
     mapProviderMode,
     kakaoMapJavaScriptKey: typeof __KAKAO_MAP_JAVASCRIPT_KEY__ === 'string' ? __KAKAO_MAP_JAVASCRIPT_KEY__.trim() : '',
     metaPixelId: typeof __META_PIXEL_ID__ === 'string' ? __META_PIXEL_ID__.trim() : '',
+    posthogProjectToken: typeof __POSTHOG_PROJECT_TOKEN__ === 'string' ? __POSTHOG_PROJECT_TOKEN__.trim() : '',
+    posthogHost: typeof __POSTHOG_HOST__ === 'string' ? __POSTHOG_HOST__.trim() : '',
   };
 };

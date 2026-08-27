@@ -14,6 +14,8 @@ module.exports = (_env, argv) => {
   const mapProviderMode = process.env.MAP_PROVIDER_MODE ?? 'demo';
   const kakaoMapJavaScriptKey = process.env.KAKAO_MAP_JAVASCRIPT_KEY ?? '';
   const metaPixelId = process.env.META_PIXEL_ID ?? '';
+  const posthogProjectToken = process.env.POSTHOG_PROJECT_TOKEN ?? '';
+  const posthogHost = process.env.POSTHOG_HOST ?? '';
 
   return {
     entry: isBrowserTestHarness ? './src/test-browser/main.tsx' : './src/main.tsx',
@@ -40,6 +42,8 @@ module.exports = (_env, argv) => {
         __MAP_PROVIDER_MODE__: JSON.stringify(mapProviderMode),
         __KAKAO_MAP_JAVASCRIPT_KEY__: JSON.stringify(kakaoMapJavaScriptKey),
         __META_PIXEL_ID__: JSON.stringify(metaPixelId),
+        __POSTHOG_PROJECT_TOKEN__: JSON.stringify(posthogProjectToken),
+        __POSTHOG_HOST__: JSON.stringify(posthogHost),
         __ENABLE_MSW__: JSON.stringify(isMockingEnabled),
       }),
       new HtmlWebpackPlugin({
