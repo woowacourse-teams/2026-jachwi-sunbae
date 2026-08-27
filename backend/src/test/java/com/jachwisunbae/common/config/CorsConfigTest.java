@@ -11,6 +11,7 @@ import com.jachwisunbae.auth.web.AuthenticationErrorWriter;
 import com.jachwisunbae.auth.web.JwtAuthenticationFilter;
 import com.jachwisunbae.common.exception.BusinessException;
 import com.jachwisunbae.common.exception.DomainErrorCode;
+import com.jachwisunbae.common.observability.RequestLoggingFilter;
 import com.jachwisunbae.common.web.error.DomainErrorHttpMapper;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -44,6 +45,10 @@ class CorsConfigTest {
                 .andExpect(header().string(
                         HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN,
                         "https://dev.jachwi-sunbae.kr"))
+                .andExpect(header().string(
+                        HttpHeaders.ACCESS_CONTROL_EXPOSE_HEADERS,
+                        RequestLoggingFilter.REQUEST_ID_HEADER))
+                .andExpect(header().exists(RequestLoggingFilter.REQUEST_ID_HEADER))
                 .andExpect(header().doesNotExist(
                         HttpHeaders.ACCESS_CONTROL_ALLOW_CREDENTIALS));
     }

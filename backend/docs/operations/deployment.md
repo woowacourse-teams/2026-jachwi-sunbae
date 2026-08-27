@@ -71,6 +71,21 @@ CodeDeploy 배포 그룹이 **EC2 태그**로 대상을 고른다.
 | `ApplicationStart` | 서비스를 **재시작**한다. 실제 프로세스 교체를 보장하는 단계다 |
 | `ValidateService` | `/actuator/health`가 `UP`이고 `/actuator/info`의 `build.commit`이 이번 배포 SHA와 같은지 확인한다. 실패하면 배포를 중단하고 최근 로그를 남긴다 |
 
+`AfterInstall`은 `/var/log/jachwi-sunbae`와 archive 디렉터리를 만들고 `jachwi` 사용자에게만 쓰기 권한을 준다. 로그 형식·보존·CloudWatch 적용 방법은 [모니터링](monitoring.md)에 있다.
+
+## 프로세스 자동 재시작
+
+systemd는 Java 프로세스가 비정상 종료되면 5초 뒤 재시작한다. 5분 동안 5번 연속 기동에 실패하면 무한 재시작으로 장애 원인을 덮지 않도록 멈춘다. `ExecStopPost`는 종료 결과와 exit status를 `/var/log/jachwi-sunbae/service-events.log`에 JSON으로 기록한다.
+
+정상 배포의 SIGTERM은 실패가 아니므로 자동 재시작하지 않는다. 배포의 `ApplicationStart`가 새 리비전을 명시적으로 시작한다. EC2 자체의 중지나 AWS 호스트 장애는 systemd가 복구할 수 없으며 [모니터링의 자동 복구 범위](monitoring.md#자동-복구-범위)를 따른다.
+
+지속 장애의 원인을 해결한 뒤 재시작 제한 상태를 해제한다.
+
+```bash
+sudo systemctl reset-failed jachwi-sunbae.service
+sudo systemctl start jachwi-sunbae.service
+```
+
 ## 왜 `start`가 아니라 `restart`인가
 
 `ApplicationStart`는 `systemctl start`가 아니라 `systemctl restart`를 쓴다.
@@ -181,8 +196,12 @@ printf '%s\n' "${REVISION}" > deployment-revision.txt
 ```bash
 sudo journalctl -u jachwi-sunbae.service -f
 sudo systemctl status jachwi-sunbae.service
+sudo tail -f /var/log/jachwi-sunbae/application.log
+sudo tail -f /var/log/jachwi-sunbae/service-events.log
 ```
 
 배포 자체가 실패했다면 EC2의 `/opt/codedeploy-agent/deployment-root/deployment-logs/`를 함께 본다.
+
+장애 시점 조회와 CloudWatch Logs Insights 쿼리는 [모니터링](monitoring.md)을 따른다.
 
 배포 결과는 관련 GitHub 이슈 또는 PR에 기록한다.

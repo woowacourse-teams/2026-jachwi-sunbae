@@ -71,6 +71,7 @@ ADR은 전체를 동결하지 않는다. [ADR 작성 규칙](../../backend/docs/
 | [시스템 개요](../../backend/docs/architecture/system-overview.md) | 실제 구성 요소 | 사람 |
 | [배포](../../backend/docs/operations/deployment.md) | `backend/deploy/`, 실제 AWS 파이프라인 구성 | 사람 |
 | [롤백](../../backend/docs/operations/rollback.md) | 실제 CodeDeploy 배포 그룹 설정 | 사람 |
+| [모니터링](../../backend/docs/operations/monitoring.md) | `backend/src/main/resources/logback-spring.xml`, `backend/deploy/`, 실제 CloudWatch 설정 | 사람 |
 | [배포 아키텍처 설계](../operations/deployment-architecture.md) | 실제 AWS 리소스 구성 | 사람 |
 | [핵심 가설](../product/hypotheses.md) | [실험 기록](../experiments/)의 결과 | 사람 |
 | [`frontend/README.md`](../../frontend/README.md) | `frontend/` 구조와 `package.json` | 사람 |
