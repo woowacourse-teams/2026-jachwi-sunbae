@@ -29,10 +29,11 @@ export const initPostHog = (projectToken: string, host: string): boolean => {
       api_host: normalizedHost,
       autocapture: true,
       capture_pageview: false,
-      disable_session_recording: true,
+      disable_session_recording: false,
       mask_all_text: true,
       mask_all_element_attributes: true,
     });
+
     initializedConfiguration = configurationKey;
   }
 

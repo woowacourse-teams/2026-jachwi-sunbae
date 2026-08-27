@@ -13,6 +13,7 @@ import { checkItemToEditorItem } from '../types/ChecklistEditor';
 import type { PublicConfig } from '../types/PublicConfig';
 import { parseChecklistReturnTo } from '../utils/checklist';
 import { toProvidedChecklistItemInputs } from '../utils/checklistEditor';
+import { trackPostHogEvent } from '../utils/posthog';
 import styles from './CreateChecklistPage.module.css';
 
 const CreateChecklistPage = ({ config }: { config: PublicConfig }) => {
@@ -121,6 +122,7 @@ const ResolvedCreateChecklistPage = ({
                 stage,
                 items: toProvidedChecklistItemInputs(items),
               });
+              trackPostHogEvent('checklist_created', { stage });
               if (safeReturn !== null && safeReturn.stage === stage) {
                 navigate(safeReturn.path, { replace: true, state: { newChecklistId: created.checklistId } });
               } else {

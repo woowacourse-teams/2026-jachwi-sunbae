@@ -12,6 +12,7 @@ import { useRecordPropertyComparisonView } from '../hooks/query/usePropertyMutat
 import type { PropertySummary } from '../types/Property';
 import type { PublicConfig } from '../types/PublicConfig';
 import { formatManwon } from '../utils/propertyFormat';
+import { trackPostHogEvent } from '../utils/posthog';
 import styles from './PropertyComparePage.module.css';
 
 const MIN_SELECTION = 2;
@@ -67,6 +68,7 @@ const PropertyComparePage = ({ config }: PropertyComparePageProps) => {
       anchor.click();
       anchor.remove();
       window.setTimeout(() => URL.revokeObjectURL(url), 0);
+      trackPostHogEvent('property_comparison_pdf_exported', { count: selectedIds.length });
     } catch {
       setExportError(true);
     } finally {
