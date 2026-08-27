@@ -11,6 +11,12 @@ server:
 logging:
   level:
     root: info
+  file:
+    path: ${LOG_PATH:/var/log/jachwi-sunbae}
+  structured:
+    ecs:
+      service:
+        environment: ${DEPLOYMENT_ENVIRONMENT:unknown}
 
 auth:
   jwt:

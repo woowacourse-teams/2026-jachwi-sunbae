@@ -1,5 +1,7 @@
 package com.jachwisunbae.common.config;
 
+import static com.jachwisunbae.common.observability.RequestLoggingFilter.REQUEST_ID_HEADER;
+
 import java.util.List;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
@@ -26,6 +28,7 @@ public class CorsConfig {
         configuration.setAllowedOrigins(allowedOrigins);
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("Authorization", "Content-Type", "Accept"));
+        configuration.setExposedHeaders(List.of(REQUEST_ID_HEADER));
         configuration.setMaxAge(3600L);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
@@ -33,7 +36,7 @@ public class CorsConfig {
 
         FilterRegistrationBean<CorsFilter> registration =
                 new FilterRegistrationBean<>(new CorsFilter(source));
-        registration.setOrder(Ordered.HIGHEST_PRECEDENCE);
+        registration.setOrder(Ordered.HIGHEST_PRECEDENCE + 1);
         return registration;
     }
 }
