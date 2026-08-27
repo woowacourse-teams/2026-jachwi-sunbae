@@ -3,6 +3,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 const { mockPostHog } = vi.hoisted(() => ({
   mockPostHog: {
     capture: vi.fn(),
+    identify: vi.fn(),
     init: vi.fn(),
     opt_out_capturing: vi.fn(),
     reset: vi.fn(),
@@ -12,14 +13,16 @@ const { mockPostHog } = vi.hoisted(() => ({
 vi.mock('posthog-js', () => ({ default: mockPostHog }));
 
 import {
+  identifyPostHogMember,
   initPostHog,
   isValidPostHogConfiguration,
   resetPostHogForTests,
+  resetPostHogIdentity,
   trackPostHogEvent,
   trackPostHogPageView,
 } from './posthog';
 
-describe('PostHog 익명 제품 분석', () => {
+describe('PostHog 제품 분석', () => {
   afterEach(() => {
     resetPostHogForTests();
     vi.clearAllMocks();
@@ -50,5 +53,19 @@ describe('PostHog 익명 제품 분석', () => {
 
     expect(mockPostHog.capture).toHaveBeenCalledWith('$pageview', { path: '/properties' });
     expect(mockPostHog.capture).toHaveBeenCalledWith('property_created', { count: 1 });
+  });
+
+  it('회원 식별과 초기화를 수행한다', () => {
+    expect(identifyPostHogMember(12, '자취선배1')).toBe(false);
+    initPostHog('phc_test', 'https://us.i.posthog.com');
+
+    expect(identifyPostHogMember(12, '자취선배1')).toBe(true);
+    expect(mockPostHog.identify).toHaveBeenCalledWith('member-12', {
+      displayName: '자취선배1',
+      name: '자취선배1',
+    });
+
+    resetPostHogIdentity();
+    expect(mockPostHog.reset).toHaveBeenCalledOnce();
   });
 });

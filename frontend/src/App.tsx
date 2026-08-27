@@ -26,7 +26,7 @@ const App = ({ config }: AppProps) => {
 
   return (
     <AppProviders>
-      <PostHogTracker projectToken={resolvedConfig.posthogProjectToken} host={resolvedConfig.posthogHost} />
+      <PostHogTracker config={resolvedConfig} />
       <TrackingConsentProvider metaPixelId={resolvedConfig.metaPixelId}>
         <AppRoutes config={resolvedConfig} />
       </TrackingConsentProvider>

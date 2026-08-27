@@ -57,6 +57,21 @@ export const trackPostHogEvent = (eventName: string, properties?: Record<string,
   return true;
 };
 
+export const identifyPostHogMember = (memberId: number, displayName?: string): boolean => {
+  if (!trackingEnabled || !Number.isInteger(memberId) || memberId <= 0) return false;
+
+  const distinctId = `member-${memberId}`;
+  posthog.identify(distinctId, {
+    displayName: displayName ?? distinctId,
+    name: displayName ?? distinctId,
+  });
+  return true;
+};
+
+export const resetPostHogIdentity = (): void => {
+  if (initializedConfiguration !== null) posthog.reset();
+};
+
 export const resetPostHogForTests = (): void => {
   initializedConfiguration = null;
   trackingEnabled = false;
