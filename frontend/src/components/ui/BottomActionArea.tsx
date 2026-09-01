@@ -14,12 +14,7 @@ type BottomActionAreaProps = {
   className?: string;
 };
 
-const BottomActionArea = ({
-  children,
-  placement = 'sticky',
-  divider = true,
-  className,
-}: BottomActionAreaProps) => (
+const BottomActionArea = ({ children, placement = 'sticky', divider = true, className }: BottomActionAreaProps) => (
   <div
     className={`${styles.actions} ${styles[placement]} ${className ?? ''}`.trim()}
     data-divider={divider ? 'true' : 'false'}

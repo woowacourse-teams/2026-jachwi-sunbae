@@ -37,10 +37,7 @@ const ResolvedEditPropertyPage = ({ config, propertyId }: { config: PublicConfig
   const updateMutation = useUpdateProperty(config, propertyId);
   const [formNotice, setFormNotice] = useState<string | null>(null);
 
-  if (property.isPending)
-    return (
-      <ContentState loading title="매물 정보를 불러오는 중이에요." />
-    );
+  if (property.isPending) return <ContentState loading title="매물 정보를 불러오는 중이에요." />;
   if (property.isError)
     return (
       <ContentState

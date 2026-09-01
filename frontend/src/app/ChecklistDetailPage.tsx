@@ -59,9 +59,7 @@ const ResolvedChecklistDetail = ({ config, checklistId }: { config: PublicConfig
     return (
       <main className="property-page">
         <div className="page-container">
-          {isLoadingVisible && (
-            <ContentState page={false} loading title="체크리스트를 불러오는 중이에요." />
-          )}
+          {isLoadingVisible && <ContentState page={false} loading title="체크리스트를 불러오는 중이에요." />}
         </div>
       </main>
     );

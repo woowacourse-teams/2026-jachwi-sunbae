@@ -28,8 +28,7 @@ export const usePropertyPhotoObjectUrls = (
   const results = useQueries({
     queries: targets.map((target) => ({
       queryKey: propertyQueryKeys.photoContent(target.propertyId, target.photoId),
-      queryFn: ({ signal }: { signal: AbortSignal }) =>
-        fetchPropertyPhotoContent(config, target.contentUrl, signal),
+      queryFn: ({ signal }: { signal: AbortSignal }) => fetchPropertyPhotoContent(config, target.contentUrl, signal),
       staleTime: Number.POSITIVE_INFINITY,
       gcTime: 0,
     })),

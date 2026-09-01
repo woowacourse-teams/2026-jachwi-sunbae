@@ -36,12 +36,7 @@ const PropertyPhotoThumbnail = ({ property, thumbnailUrl, config, onActivate }: 
           alt={`${property.name} 대표 사진`}
         />
       ) : (
-        <img
-          src={contentUrl}
-          alt={`${property.name} 대표 사진`}
-          draggable={false}
-          onError={() => setFailed(true)}
-        />
+        <img src={contentUrl} alt={`${property.name} 대표 사진`} draggable={false} onError={() => setFailed(true)} />
       )}
     </div>
   );

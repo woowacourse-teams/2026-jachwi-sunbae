@@ -68,7 +68,9 @@ const loadNaverSdk = (clientId: string): Promise<void> => {
     };
     if (existing !== null) {
       existing.addEventListener('load', ready, { once: true });
-      existing.addEventListener('error', () => reject(new Error('Naver Maps SDK를 불러오지 못했습니다.')), { once: true });
+      existing.addEventListener('error', () => reject(new Error('Naver Maps SDK를 불러오지 못했습니다.')), {
+        once: true,
+      });
       return;
     }
     const script = document.createElement('script');
@@ -76,10 +78,14 @@ const loadNaverSdk = (clientId: string): Promise<void> => {
     script.async = true;
     script.src = `https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=${encodeURIComponent(clientId)}`;
     script.addEventListener('load', ready, { once: true });
-    script.addEventListener('error', () => {
-      naverSdkPromise = null;
-      reject(new Error('Naver Maps SDK를 불러오지 못했습니다.'));
-    }, { once: true });
+    script.addEventListener(
+      'error',
+      () => {
+        naverSdkPromise = null;
+        reject(new Error('Naver Maps SDK를 불러오지 못했습니다.'));
+      },
+      { once: true },
+    );
     document.head.append(script);
   });
   return naverSdkPromise;
@@ -108,15 +114,25 @@ type LiveOverlay = NaverOverlay;
 const naverEngine = (clientId: string): LiveEngine => ({
   label: 'Naver 지도',
   load: () => loadNaverSdk(clientId),
-  createMap: (container, center, level) => new window.naver!.maps.Map(container, { center: new window.naver!.maps.LatLng(center.latitude, center.longitude), zoom: toNaverZoom(level) }),
+  createMap: (container, center, level) =>
+    new window.naver!.maps.Map(container, {
+      center: new window.naver!.maps.LatLng(center.latitude, center.longitude),
+      zoom: toNaverZoom(level),
+    }),
   latLng: (latitude, longitude) => new window.naver!.maps.LatLng(latitude, longitude),
-  getCenter: (map) => { const center = (map as NaverMap).getCenter(); return { latitude: center.lat(), longitude: center.lng() }; },
+  getCenter: (map) => {
+    const center = (map as NaverMap).getCenter();
+    return { latitude: center.lat(), longitude: center.lng() };
+  },
   getZoom: (map) => toMapLevel((map as NaverMap).getZoom()),
   setCenter: (map, center) => (map as NaverMap).setCenter(center as NaverLatLng),
   setZoom: (map, level) => (map as NaverMap).setZoom(toNaverZoom(level)),
   relayout: (map) => (map as NaverMap).refresh(),
-  addListener: (map, event, callback) => window.naver!.maps.Event.addListener(map, event, (value) => callback(value?.coord?.lat(), value?.coord?.lng())),
-  removeListener: (listener) => { void listener; },
+  addListener: (map, event, callback) =>
+    window.naver!.maps.Event.addListener(map, event, (value) => callback(value?.coord?.lat(), value?.coord?.lng())),
+  removeListener: (listener) => {
+    void listener;
+  },
   createOverlay: (map, marker, content, zIndex) => {
     const overlay = new window.naver!.maps.OverlayView();
     const position = new window.naver!.maps.LatLng(marker.latitude, marker.longitude);
@@ -138,7 +154,17 @@ const naverEngine = (clientId: string): LiveEngine => ({
     overlay.setMap(map as NaverMap);
     return overlay;
   },
-  createCircle: (map, center, radius) => new window.naver!.maps.Circle({ map: map as NaverMap, center: center as NaverLatLng, radius, strokeWeight: 2, strokeColor: '#555555', strokeOpacity: 0.58, fillColor: '#999999', fillOpacity: 0.08 }),
+  createCircle: (map, center, radius) =>
+    new window.naver!.maps.Circle({
+      map: map as NaverMap,
+      center: center as NaverLatLng,
+      radius,
+      strokeWeight: 2,
+      strokeColor: '#555555',
+      strokeOpacity: 0.58,
+      fillColor: '#999999',
+      fillOpacity: 0.08,
+    }),
 });
 
 const markerSymbol = (marker: MapMarker): string => {
@@ -272,13 +298,15 @@ const MapCanvas = ({
 
     setSdkError(false);
     setMapReady(false);
-    void engine.load()
+    void engine
+      .load()
       .then(() => {
         if (disposed || containerRef.current === null) return;
         map = engine.createMap(containerRef.current, center, level);
         mapRef.current = map;
         engine.addListener(map, 'click', (latitude, longitude) => {
-          if (latitude !== undefined && longitude !== undefined) callbackRef.current.onSelectLocation?.(latitude, longitude);
+          if (latitude !== undefined && longitude !== undefined)
+            callbackRef.current.onSelectLocation?.(latitude, longitude);
         });
         engine.addListener(map, 'idle', () => {
           if (map === null) return;
@@ -323,9 +351,9 @@ const MapCanvas = ({
     )
       return;
     const map = mapRef.current;
-      const observer = new ResizeObserver(() => {
-        engine.relayout(map);
-      });
+    const observer = new ResizeObserver(() => {
+      engine.relayout(map);
+    });
     observer.observe(containerRef.current);
     return () => observer.disconnect();
   }, [center.latitude, center.longitude, engine, liveMode, mapReady]);
@@ -340,19 +368,21 @@ const MapCanvas = ({
     const map = mapRef.current;
     if (!liveMode || !mapReady || map === null) return;
     overlaysRef.current.forEach((overlay) => overlay.setMap(null));
-    overlaysRef.current = markers.map(
-      (marker) =>
-        engine.createOverlay(map, marker, createMarkerContent(marker, selectedMarkerId, onSelectMarker),
-          selectedMarkerId === marker.id
-            ? 10
-            : marker.tone === 'selected'
-              ? 9
-              : marker.tone === 'property'
-                ? 8
-                : marker.tone === 'current'
-                  ? 7
-                  : 5,
-        ),
+    overlaysRef.current = markers.map((marker) =>
+      engine.createOverlay(
+        map,
+        marker,
+        createMarkerContent(marker, selectedMarkerId, onSelectMarker),
+        selectedMarkerId === marker.id
+          ? 10
+          : marker.tone === 'selected'
+            ? 9
+            : marker.tone === 'property'
+              ? 8
+              : marker.tone === 'current'
+                ? 7
+                : 5,
+      ),
     );
     return () => {
       overlaysRef.current.forEach((overlay) => overlay.setMap(null));
@@ -364,9 +394,8 @@ const MapCanvas = ({
     const map = mapRef.current;
     if (!liveMode || !mapReady || map === null) return;
     circlesRef.current.forEach((circle) => circle.setMap(null));
-    circlesRef.current = circles.map(
-      (circle) =>
-        engine.createCircle(map, engine.latLng(radiusCenter.latitude, radiusCenter.longitude), circle.radiusMeters),
+    circlesRef.current = circles.map((circle) =>
+      engine.createCircle(map, engine.latLng(radiusCenter.latitude, radiusCenter.longitude), circle.radiusMeters),
     );
     return () => {
       circlesRef.current.forEach((circle) => circle.setMap(null));

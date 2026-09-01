@@ -8,8 +8,7 @@ type IconButtonBaseProps = {
   className?: string;
 };
 
-type IconButtonProps = IconButtonBaseProps &
-  ({ to: string; onClick?: never } | { to?: never; onClick: () => void });
+type IconButtonProps = IconButtonBaseProps & ({ to: string; onClick?: never } | { to?: never; onClick: () => void });
 
 /** 아이콘만 넣는 동그란 보조 버튼. 이동이면 `to`, 동작이면 `onClick`을 준다. */
 const IconButton = ({ label, children, className, to, onClick }: IconButtonProps) => {

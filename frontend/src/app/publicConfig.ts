@@ -21,9 +21,8 @@ const requireHttpUrl = (value: string, variableName: string): string => {
 };
 
 export const getPublicConfig = (): PublicConfig => {
-  const mapProviderMode = typeof __MAP_PROVIDER_MODE__ === 'string' && __MAP_PROVIDER_MODE__ === 'naver'
-    ? 'naver'
-    : 'demo';
+  const mapProviderMode =
+    typeof __MAP_PROVIDER_MODE__ === 'string' && __MAP_PROVIDER_MODE__ === 'naver' ? 'naver' : 'demo';
 
   if (
     mapProviderMode === 'naver' &&

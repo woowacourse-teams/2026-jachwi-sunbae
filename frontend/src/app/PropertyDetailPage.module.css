@@ -64,7 +64,6 @@
   margin-bottom: 0.5rem;
 }
 
-
 .sectionStateCard,
 .sectionRetryCard {
   display: flex;
@@ -452,7 +451,6 @@
   padding: 0;
   list-style: none;
 }
-
 
 .checklistList a {
   display: grid;

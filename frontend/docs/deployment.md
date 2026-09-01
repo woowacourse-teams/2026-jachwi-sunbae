@@ -59,14 +59,14 @@ prod → /main.8a49163cbe52bf996d07.js
 
 `webpack.config.js`의 `DefinePlugin`이 `API_BASE_URL`·`MAP_PROVIDER_MODE`·`NAVER_MAP_CLIENT_ID`·`META_PIXEL_ID`·`POSTHOG_PROJECT_TOKEN`·`POSTHOG_HOST`를 번들에 박아넣는다. 런타임 설정이 아니므로 **값을 바꾸면 재빌드·재배포해야 한다.**
 
-| 환경변수                   | prod                           | dev                                |
-| -------------------------- | ------------------------------ | ---------------------------------- |
-| `API_BASE_URL`             | `https://api.jachwi-sunbae.kr` | `https://dev-api.jachwi-sunbae.kr` |
-| `MAP_PROVIDER_MODE`        | `naver`                        | `naver`                            |
-| `NAVER_MAP_CLIENT_ID`      | Naver Maps Client ID           | 같은 Naver Maps Application의 ID   |
-| `META_PIXEL_ID`            | 비움(운영 측정 승인 전)        | `1591771152645660`                 |
-| `POSTHOG_PROJECT_TOKEN`    | PostHog 프로젝트 토큰          | PostHog 프로젝트 토큰              |
-| `POSTHOG_HOST`             | `https://us.i.posthog.com`     | `https://us.i.posthog.com`         |
+| 환경변수                | prod                           | dev                                |
+| ----------------------- | ------------------------------ | ---------------------------------- |
+| `API_BASE_URL`          | `https://api.jachwi-sunbae.kr` | `https://dev-api.jachwi-sunbae.kr` |
+| `MAP_PROVIDER_MODE`     | `naver`                        | `naver`                            |
+| `NAVER_MAP_CLIENT_ID`   | Naver Maps Client ID           | 같은 Naver Maps Application의 ID   |
+| `META_PIXEL_ID`         | 비움(운영 측정 승인 전)        | `1591771152645660`                 |
+| `POSTHOG_PROJECT_TOKEN` | PostHog 프로젝트 토큰          | PostHog 프로젝트 토큰              |
+| `POSTHOG_HOST`          | `https://us.i.posthog.com`     | `https://us.i.posthog.com`         |
 
 값은 CodePipeline Commands 빌드 액션의 환경변수로 전달한다. Naver Maps Client ID, Meta Pixel ID, PostHog 프로젝트 토큰은 브라우저 번들에 포함되는 공개 식별자이며 REST API 키나 Client Secret 등 비밀값을 넣지 않는다. Naver Maps Application에 `https://www.jachwi-sunbae.kr`과 `https://dev.jachwi-sunbae.kr`을 Web 서비스 URL로 등록한다. `META_PIXEL_ID`를 비우면 Pixel과 동의 고지를 함께 비활성화하며, 값을 설정해도 사용자가 동의하기 전에는 Meta 스크립트를 불러오지 않는다. PostHog는 세션 녹화와 유저 식별 없이 익명 페이지뷰 및 제품 분석 모드로 동작한다.
 
