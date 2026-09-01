@@ -16,6 +16,7 @@ import type { PublicConfig } from '../types/PublicConfig';
 import { toChecklistItemInputs } from '../utils/checklistEditor';
 import { parsePositiveId } from '../utils/propertyFormat';
 import styles from './ChecklistDetailPage.module.css';
+import ContentState from '../components/ui/ContentState';
 
 const ChecklistDetailPage = ({ config }: { config: PublicConfig }) => {
   const checklistId = parsePositiveId(useParams().resource);
@@ -26,10 +27,9 @@ const ChecklistDetailPage = ({ config }: { config: PublicConfig }) => {
 const InvalidChecklist = () => (
   <main className="property-page">
     <div className="page-container">
-      <div className="content-state">
-        <strong>올바른 체크리스트 주소가 아니에요.</strong>
+      <ContentState page={false} title="올바른 체크리스트 주소가 아니에요.">
         <Link to="/checklists">내 체크리스트로 돌아가기</Link>
-      </div>
+      </ContentState>
     </div>
   </main>
 );
@@ -60,10 +60,7 @@ const ResolvedChecklistDetail = ({ config, checklistId }: { config: PublicConfig
       <main className="property-page">
         <div className="page-container">
           {isLoadingVisible && (
-            <div className="content-state" role="status">
-              <span className="spinner" />
-              체크리스트를 불러오는 중이에요.
-            </div>
+            <ContentState page={false} loading title="체크리스트를 불러오는 중이에요." />
           )}
         </div>
       </main>
@@ -73,16 +70,15 @@ const ResolvedChecklistDetail = ({ config, checklistId }: { config: PublicConfig
     return (
       <main className="property-page">
         <div className="page-container">
-          <div className="content-state content-state--error" role="alert">
-            <strong>{notFound ? '체크리스트를 찾을 수 없어요.' : '체크리스트를 불러오지 못했어요.'}</strong>
-            <span>{getChecklistErrorMessage(detail.error)}</span>
-            {!notFound && (
-              <button type="button" className="inline-button" onClick={() => void detail.refetch()}>
-                다시 시도
-              </button>
-            )}
+          <ContentState
+            page={false}
+            tone="error"
+            title={notFound ? '체크리스트를 찾을 수 없어요.' : '체크리스트를 불러오지 못했어요.'}
+            description={getChecklistErrorMessage(detail.error)}
+            onRetry={notFound ? undefined : () => void detail.refetch()}
+          >
             <Link to="/checklists">내 체크리스트로 돌아가기</Link>
-          </div>
+          </ContentState>
         </div>
       </main>
     );
@@ -94,7 +90,7 @@ const ResolvedChecklistDetail = ({ config, checklistId }: { config: PublicConfig
     try {
       await remove.mutateAsync();
       deleteSucceededRef.current = true;
-      navigate(`/checklists/${checklist.stage}`, { replace: true, state: { focusHeading: true } });
+      navigate('/checklists', { replace: true, state: { focusHeading: true } });
     } catch {
       /* Keep the dialog open for retry. */
     }
@@ -108,9 +104,7 @@ const ResolvedChecklistDetail = ({ config, checklistId }: { config: PublicConfig
           title={isAddingItems ? '체크 항목 편집' : checklist.name}
           backLabel={isAddingItems ? '체크리스트 편집으로 돌아가기' : '체크리스트 목록으로 돌아가기'}
           navigationIcon="arrow-left"
-          {...(isAddingItems
-            ? { onBack: () => setSearchParams({}, { replace: true }) }
-            : { backTo: `/checklists/${checklist.stage}` })}
+          {...(isAddingItems ? { onBack: () => setSearchParams({}, { replace: true }) } : { backTo: '/checklists' })}
           {...(!isAddingItems && {
             endSlot: (
               <TopNavigationMenu label="체크리스트 메뉴 열기">
@@ -129,6 +123,7 @@ const ResolvedChecklistDetail = ({ config, checklistId }: { config: PublicConfig
           initialName={checklist.name}
           initialItems={checklist.items.map(checklistItemToEditorItem)}
           submitLabel="변경 내용 저장"
+          fixedSubmitAction
           isSubmitting={update.isPending}
           serverError={update.isError ? getChecklistErrorMessage(update.error) : undefined}
           viewMode={isAddingItems ? 'ADD_ITEMS' : 'EDIT'}
@@ -137,7 +132,7 @@ const ResolvedChecklistDetail = ({ config, checklistId }: { config: PublicConfig
           }
           onSubmit={async ({ name, items }) => {
             const saved = await update.mutateAsync({ name, items: toChecklistItemInputs(items) });
-            navigate(`/checklists/${checklist.stage}`, { replace: true, state: { focusHeading: true } });
+            navigate('/checklists', { replace: true, state: { focusHeading: true } });
             return saved;
           }}
         />

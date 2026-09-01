@@ -1,36 +1,18 @@
-import { Link, useParams } from 'react-router-dom';
 import { getChecklistErrorMessage } from '../apis/checklistErrorMessages';
 import ChecklistListCard from '../components/ChecklistListCard';
-import ChecklistStageTabs from '../components/ChecklistStageTabs';
-import AddItemLink from '../components/ui/AddItemLink';
+import AddItemAction from '../components/ui/AddItemAction';
 import { Button } from '../components/ui/Button';
 import TopNavigation from '../components/ui/TopNavigation';
-import { isChecklistStage } from '../constants/checklist';
+import { USER_CHECKLIST_STAGE } from '../constants/checklist';
 import { useChecklistList } from '../hooks/query/useChecklists';
 import useDelayedLoading from '../hooks/ui/useDelayedLoading';
-import type { ChecklistStage } from '../types/Checklist';
 import type { PublicConfig } from '../types/PublicConfig';
 import styles from './ChecklistListPage.module.css';
+import ContentState from '../components/ui/ContentState';
 
+/** 사용자 체크리스트는 현장 단계 하나만 제공하므로 단계 선택 탭이 없다. */
 const ChecklistListPage = ({ config }: { config: PublicConfig }) => {
-  const { resource: stageParam } = useParams();
-  if (!isChecklistStage(stageParam)) return <InvalidStage />;
-  return <ResolvedChecklistListPage config={config} stage={stageParam} />;
-};
-
-const InvalidStage = () => (
-  <main className="property-page">
-    <div className="page-container">
-      <div className="content-state">
-        <strong>올바른 체크리스트 단계가 아니에요.</strong>
-        <Link to="/checklists">내 체크리스트로 돌아가기</Link>
-      </div>
-    </div>
-  </main>
-);
-
-const ResolvedChecklistListPage = ({ config, stage }: { config: PublicConfig; stage: ChecklistStage }) => {
-  const list = useChecklistList(config, stage);
+  const list = useChecklistList(config, USER_CHECKLIST_STAGE);
   const items = list.data?.pages.flatMap((page) => page.content) ?? [];
   const isLoadingVisible = useDelayedLoading(list.isPending);
   const isLoading = list.isPending || isLoadingVisible;
@@ -40,26 +22,24 @@ const ResolvedChecklistListPage = ({ config, stage }: { config: PublicConfig; st
       <div className={styles.container}>
         <div className={styles.navigationArea}>
           <TopNavigation title="체크리스트" className={styles.topNavigation} />
-          <ChecklistStageTabs stage={stage} fullBleed />
-          <p className={styles.description}>단계별로 내 체크리스트를 만들고 항목을 관리합니다.</p>
+          <p className={styles.description}>집을 보면서 확인할 나만의 체크리스트를 만들고 항목을 관리합니다.</p>
         </div>
-        <h1 className="sr-only">체크리스트</h1>
+
         {isLoading ? (
           isLoadingVisible ? (
-            <div className="content-state" role="status">
-              <span className="spinner" />
-              체크리스트를 불러오는 중이에요.
-            </div>
+            <ContentState page={false} loading title="체크리스트를 불러오는 중이에요." />
           ) : null
         ) : list.isError ? (
-          <div className="content-state content-state--error" role="alert">
-            <strong>체크리스트를 불러오지 못했어요.</strong>
-            <span>{getChecklistErrorMessage(list.error)}</span>
-            <button className="inline-button" type="button" onClick={() => void list.refetch()}>
-              다시 시도
-            </button>
-          </div>
-        ) : items.length === 0 ? null : (
+          <ContentState
+            page={false}
+            tone="error"
+            title="체크리스트를 불러오지 못했어요."
+            description={getChecklistErrorMessage(list.error)}
+            onRetry={() => void list.refetch({ cancelRefetch: false })}
+          />
+        ) : items.length === 0 ? (
+          <p className={styles.emptyState}>아직 만든 체크리스트가 없어요.</p>
+        ) : (
           <ul className={styles.list}>
             {items.map((item) => (
               <ChecklistListCard key={item.checklistId} config={config} checklist={item} />
@@ -68,9 +48,10 @@ const ResolvedChecklistListPage = ({ config, stage }: { config: PublicConfig; st
         )}
         {!isLoading && !list.isError && (
           <div className={styles.createCard}>
-            <AddItemLink to={`/checklists/new?stage=${stage}`}>새 체크리스트 만들기</AddItemLink>
+            <AddItemAction to="/checklists/new">새 체크리스트 만들기</AddItemAction>
           </div>
         )}
+
         {list.hasNextPage && (
           <div className="load-more">
             {list.isFetchNextPageError && (
