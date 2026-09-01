@@ -9,7 +9,12 @@ import {
   toPropertyInputDto,
   validatePropertyForm,
 } from '../utils/propertyForm';
-import type { PropertyFormErrors, PropertyFormField, PropertyFormValues } from '../utils/propertyForm';
+import type {
+  PropertyFormErrors,
+  PropertyFormField,
+  PropertyFormMode,
+  PropertyFormValues,
+} from '../utils/propertyForm';
 import BottomActionArea from './ui/BottomActionArea';
 import { Button } from './ui/Button';
 import InlineNotice from './ui/InlineNotice';
@@ -24,6 +29,8 @@ type PropertyFormProps = {
   mutationError: ApiError | null;
   formNotice?: string | null;
   variant?: 'default' | 'detail';
+  mode?: PropertyFormMode;
+  embedded?: boolean;
   onSubmit: (input: PropertyInputDto, values: PropertyFormValues) => void;
   onSelectLocation?: () => void;
 };
@@ -44,6 +51,8 @@ const PropertyForm = ({
   mutationError,
   formNotice,
   variant = 'default',
+  mode = 'default',
+  embedded = false,
   onSubmit,
   onSelectLocation,
 }: PropertyFormProps) => {
@@ -69,7 +78,7 @@ const PropertyForm = ({
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    const nextErrors = validatePropertyForm(values);
+    const nextErrors = validatePropertyForm(values, mode);
     setErrors(nextErrors);
 
     if (Object.keys(nextErrors).length > 0) return;
@@ -99,53 +108,55 @@ const PropertyForm = ({
         onChange={(event) => setValue('name', event.target.value)}
       />
 
-      <div className={styles.locationFields}>
-        <TextField
-          id="property-road-address"
-          name="roadAddress"
-          label="주소"
-          requirement="선택"
-          value={values.roadAddress ?? ''}
-          maxLength={255}
-          autoComplete="street-address"
-          placeholder="도로명 주소"
-          fieldClassName={variant === 'detail' ? styles.detailField : styles.defaultField}
-          className={variant === 'detail' ? styles.detailInput : styles.defaultInput}
-          error={displayedErrors.roadAddress}
-          onChange={(event) => setValue('roadAddress', event.target.value)}
-        />
-        <TextField
-          id="property-jibun-address"
-          name="jibunAddress"
-          label="지번 주소"
-          requirement="선택"
-          value={values.jibunAddress ?? ''}
-          maxLength={255}
-          autoComplete="off"
-          placeholder="지번 주소"
-          fieldClassName={variant === 'detail' ? styles.detailField : styles.defaultField}
-          className={variant === 'detail' ? styles.detailInput : styles.defaultInput}
-          error={displayedErrors.jibunAddress}
-          onChange={(event) => setValue('jibunAddress', event.target.value)}
-        />
-        {onSelectLocation !== undefined && (
-          <Button type="button" variant="secondary" fullWidth onClick={onSelectLocation}>
-            {values.latitude == null ? '지도에서 위치 선택' : '선택한 위치 바꾸기'}
-          </Button>
-        )}
-        {values.latitude != null && values.longitude != null && (
-          <p className={styles.locationCoordinates}>
-            선택 위치 {values.latitude.toFixed(5)}, {values.longitude.toFixed(5)}
-          </p>
-        )}
-      </div>
+      {mode !== 'registration' && (
+        <div className={styles.locationFields}>
+          <TextField
+            id="property-road-address"
+            name="roadAddress"
+            label="주소"
+            requirement="선택"
+            value={values.roadAddress ?? ''}
+            maxLength={255}
+            autoComplete="street-address"
+            placeholder="도로명 주소"
+            fieldClassName={variant === 'detail' ? styles.detailField : styles.defaultField}
+            className={variant === 'detail' ? styles.detailInput : styles.defaultInput}
+            error={displayedErrors.roadAddress}
+            onChange={(event) => setValue('roadAddress', event.target.value)}
+          />
+          <TextField
+            id="property-jibun-address"
+            name="jibunAddress"
+            label="지번 주소"
+            requirement="선택"
+            value={values.jibunAddress ?? ''}
+            maxLength={255}
+            autoComplete="off"
+            placeholder="지번 주소"
+            fieldClassName={variant === 'detail' ? styles.detailField : styles.defaultField}
+            className={variant === 'detail' ? styles.detailInput : styles.defaultInput}
+            error={displayedErrors.jibunAddress}
+            onChange={(event) => setValue('jibunAddress', event.target.value)}
+          />
+          {onSelectLocation !== undefined && (
+            <Button type="button" variant="secondary" fullWidth onClick={onSelectLocation}>
+              {values.latitude == null ? '지도에서 위치 선택' : '선택한 위치 바꾸기'}
+            </Button>
+          )}
+          {values.latitude != null && values.longitude != null && (
+            <p className={styles.locationCoordinates}>
+              선택 위치 {values.latitude.toFixed(5)}, {values.longitude.toFixed(5)}
+            </p>
+          )}
+        </div>
+      )}
 
       <div className={variant === 'detail' ? styles.detailMoneyFields : styles.moneyFields}>
         <TextField
           id="property-deposit"
           name="depositAmount"
           label="보증금"
-          requirement="선택"
+          requirement={mode === 'registration' ? '필수' : '선택'}
           value={values.depositAmount}
           inputMode="numeric"
           autoComplete="off"
@@ -161,7 +172,7 @@ const PropertyForm = ({
           id="property-rent"
           name="monthlyRentAmount"
           label="월세"
-          requirement="선택"
+          requirement={mode === 'registration' ? '필수' : '선택'}
           value={values.monthlyRentAmount}
           inputMode="numeric"
           autoComplete="off"
@@ -174,7 +185,7 @@ const PropertyForm = ({
         />
       </div>
 
-      {variant === 'detail' ? (
+      {mode === 'registration' ? null : variant === 'detail' ? (
         <TextAreaField
           id="property-source"
           name="discoverySource"
@@ -211,11 +222,17 @@ const PropertyForm = ({
         <InlineNotice tone="error">{getPropertyErrorMessage(mutationError)} 입력값은 그대로 유지됩니다.</InlineNotice>
       )}
 
-      <BottomActionArea>
+      {embedded ? (
         <Button type="submit" variant="soft" fullWidth isLoading={isSubmitting} loadingLabel="저장 중…">
           {submitLabel}
         </Button>
-      </BottomActionArea>
+      ) : (
+        <BottomActionArea>
+          <Button type="submit" variant="soft" fullWidth isLoading={isSubmitting} loadingLabel="저장 중…">
+            {submitLabel}
+          </Button>
+        </BottomActionArea>
+      )}
     </form>
   );
 };

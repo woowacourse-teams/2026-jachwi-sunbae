@@ -7,6 +7,7 @@ import { usePropertyDetail } from '../hooks/query/useProperties';
 import type { PublicConfig } from '../types/PublicConfig';
 import { parsePositiveId } from '../utils/propertyFormat';
 import styles from './PropertyPhotosPage.module.css';
+import ContentState from '../components/ui/ContentState';
 
 type PropertyPhotosPageProps = { config: PublicConfig };
 
@@ -18,10 +19,9 @@ const PropertyPhotosPage = ({ config }: PropertyPhotosPageProps) => {
     return (
       <main className="property-page">
         <div className="page-container">
-          <div className="content-state">
-            <strong>올바른 매물 주소가 아니에요.</strong>
+          <ContentState page={false} title="올바른 매물 주소가 아니에요.">
             <Link to="/properties">매물 목록으로 돌아가기</Link>
-          </div>
+          </ContentState>
         </div>
       </main>
     );
@@ -35,10 +35,7 @@ const ResolvedPropertyPhotosPage = ({ config, propertyId }: { config: PublicConf
     return (
       <main className="property-page">
         <div className="page-container">
-          <div className="content-state" role="status">
-            <span className="spinner" />
-            사진 정보를 불러오는 중이에요.
-          </div>
+          <ContentState page={false} loading title="사진 정보를 불러오는 중이에요." />
         </div>
       </main>
     );
@@ -49,16 +46,15 @@ const ResolvedPropertyPhotosPage = ({ config, propertyId }: { config: PublicConf
     return (
       <main className="property-page">
         <div className="page-container">
-          <div className="content-state content-state--error" role="alert">
-            <strong>{isNotFound ? '매물을 찾을 수 없어요.' : '사진 목록을 불러오지 못했어요.'}</strong>
-            <span>{getPropertyErrorMessage(error)}</span>
-            {!isNotFound && (
-              <button className="inline-button" type="button" onClick={() => void property.refetch()}>
-                다시 시도
-              </button>
-            )}
+          <ContentState
+            page={false}
+            tone="error"
+            title={isNotFound ? '매물을 찾을 수 없어요.' : '사진 목록을 불러오지 못했어요.'}
+            description={getPropertyErrorMessage(error)}
+            onRetry={isNotFound ? undefined : () => void property.refetch()}
+          >
             <Link to="/properties">매물 목록으로 돌아가기</Link>
-          </div>
+          </ContentState>
         </div>
       </main>
     );

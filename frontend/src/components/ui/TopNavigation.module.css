@@ -16,7 +16,7 @@
   left: 50%;
   width: min(60%, 14rem);
   transform: translateX(-50%);
-  font-size: 0.82rem;
+  font-size: 0.98rem;
   text-align: center;
   pointer-events: none;
 }

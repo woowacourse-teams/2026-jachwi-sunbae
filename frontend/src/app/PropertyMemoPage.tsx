@@ -12,16 +12,16 @@ import { useSavePropertyMemoDocument } from '../hooks/query/usePropertyMutations
 import type { PublicConfig } from '../types/PublicConfig';
 import { parsePositiveId } from '../utils/propertyFormat';
 import styles from './PropertyMemoPage.module.css';
+import ContentState from '../components/ui/ContentState';
 
 const PropertyMemoPage = ({ config }: { config: PublicConfig }) => {
   const propertyId = parsePositiveId(useParams().propertyId);
   if (propertyId === null) {
     return (
       <main className="property-page">
-        <div className="content-state">
-          <strong>올바른 매물 주소가 아니에요.</strong>
+        <ContentState page={false} title="올바른 매물 주소가 아니에요.">
           <Link to="/properties">매물 목록으로 돌아가기</Link>
-        </div>
+        </ContentState>
       </main>
     );
   }
@@ -43,26 +43,22 @@ const ResolvedPropertyMemoPage = ({ config, propertyId }: { config: PublicConfig
   }, [memo.data]);
 
   if (property.isPending || memo.isPending) {
-    return <div className="content-state">메모를 불러오는 중이에요.</div>;
+    return <ContentState page={false} loading title="메모를 불러오는 중이에요." />;
   }
   if (property.isError || memo.isError) {
     const error = property.error ?? memo.error;
     return (
       <main className="property-page">
-        <div className="content-state content-state--error" role="alert">
-          <strong>메모를 불러오지 못했어요.</strong>
-          <span>{getPropertyErrorMessage(error)}</span>
-          <button
-            type="button"
-            className="inline-button"
-            onClick={() => {
-              void property.refetch();
-              void memo.refetch();
-            }}
-          >
-            다시 시도
-          </button>
-        </div>
+        <ContentState
+          page={false}
+          tone="error"
+          title="메모를 불러오지 못했어요."
+          description={getPropertyErrorMessage(error)}
+          onRetry={() => {
+            void property.refetch();
+            void memo.refetch();
+          }}
+        />
       </main>
     );
   }

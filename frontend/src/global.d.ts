@@ -1,51 +1,51 @@
 declare const __API_BASE_URL__: string;
 declare const __MAP_PROVIDER_MODE__: string;
-declare const __KAKAO_MAP_JAVASCRIPT_KEY__: string;
+declare const __NAVER_MAP_CLIENT_ID__: string;
 declare const __META_PIXEL_ID__: string;
 declare const __POSTHOG_PROJECT_TOKEN__: string;
 declare const __POSTHOG_HOST__: string;
 declare const __ENABLE_MSW__: boolean;
 
-type KakaoLatLng = { getLat: () => number; getLng: () => number };
-type KakaoMap = {
-  getCenter: () => KakaoLatLng;
-  getLevel: () => number;
-  setCenter: (center: KakaoLatLng) => void;
-  setLevel: (level: number) => void;
+interface Window {
+  naver?: { maps: NaverMapsNamespace };
+}
+
+type NaverLatLng = { lat: () => number; lng: () => number };
+type NaverMap = {
+  getCenter: () => NaverLatLng;
+  getZoom: () => number;
+  setCenter: (center: NaverLatLng) => void;
+  setZoom: (zoom: number) => void;
+  refresh: () => void;
 };
-type KakaoCustomOverlay = { setMap: (map: KakaoMap | null) => void };
-type KakaoCircle = { setMap: (map: KakaoMap | null) => void };
-type KakaoMapsNamespace = {
-  load: (callback: () => void) => void;
-  LatLng: new (latitude: number, longitude: number) => KakaoLatLng;
-  Map: new (container: HTMLElement, options: { center: KakaoLatLng; level: number }) => KakaoMap;
-  CustomOverlay: new (options: {
-    map: KakaoMap;
-    position: KakaoLatLng;
-    content: HTMLElement;
-    xAnchor?: number;
-    yAnchor?: number;
-    zIndex?: number;
-  }) => KakaoCustomOverlay;
+type NaverOverlay = {
+  setMap: (map: NaverMap | null) => void;
+  setPosition?: (position: NaverLatLng) => void;
+  getProjection?: () => { fromCoordToOffset: (position: NaverLatLng) => { x: number; y: number } };
+  getPanes?: () => { overlayLayer: HTMLElement };
+  onAdd?: () => void;
+  draw?: () => void;
+  onRemove?: () => void;
+};
+type NaverMapsNamespace = {
+  LatLng: new (latitude: number, longitude: number) => NaverLatLng;
+  Map: new (container: HTMLElement, options: { center: NaverLatLng; zoom: number }) => NaverMap;
+  OverlayView: new (...args: never[]) => NaverOverlay;
   Circle: new (options: {
-    map: KakaoMap;
-    center: KakaoLatLng;
+    map: NaverMap;
+    center: NaverLatLng;
     radius: number;
     strokeWeight: number;
     strokeColor: string;
     strokeOpacity: number;
     fillColor: string;
     fillOpacity: number;
-  }) => KakaoCircle;
-  event: {
-    addListener: (target: object, eventName: string, callback: (event: { latLng: KakaoLatLng }) => void) => void;
-    removeListener: (target: object, eventName: string, callback: (event: { latLng: KakaoLatLng }) => void) => void;
+  }) => NaverOverlay;
+  Event: {
+    addListener: (target: object, eventName: string, callback: (event: { coord: NaverLatLng }) => void) => void;
+    removeListener: (target: object, eventName: string, callback: (event: { coord: NaverLatLng }) => void) => void;
   };
 };
-
-interface Window {
-  kakao?: { maps: KakaoMapsNamespace };
-}
 
 declare module '*.svg' {
   const source: string;

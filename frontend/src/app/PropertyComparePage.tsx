@@ -4,7 +4,6 @@ import { getPropertyErrorMessage } from '../apis/propertyErrorMessages';
 import AuthenticatedPhoto from '../components/AuthenticatedPhoto';
 import { Button, ButtonLink } from '../components/ui/Button';
 import EmptyState from '../components/ui/EmptyState';
-import Icon from '../components/ui/Icon';
 import InlineNotice from '../components/ui/InlineNotice';
 import TopNavigation from '../components/ui/TopNavigation';
 import { usePropertyList } from '../hooks/query/useProperties';
@@ -14,6 +13,8 @@ import type { PublicConfig } from '../types/PublicConfig';
 import { formatManwon } from '../utils/propertyFormat';
 import { trackPostHogEvent } from '../utils/posthog';
 import styles from './PropertyComparePage.module.css';
+import mascotImage from '../assets/empty-property.jpg';
+import SelectionControl from '../components/ui/SelectionControl';
 
 const MIN_SELECTION = 2;
 const MAX_SELECTION = 5;
@@ -124,19 +125,16 @@ const PropertyComparePage = ({ config }: PropertyComparePageProps) => {
               const disabled = !selected && selectedIds.length >= MAX_SELECTION;
               return (
                 <li key={property.propertyId}>
-                  <label className={styles.propertyOption} data-selected={selected || undefined}>
-                    <input
-                      type="checkbox"
-                      checked={selected}
-                      disabled={disabled}
-                      onChange={() => toggle(property.propertyId)}
-                    />
-                    <span className={styles.checkmark} aria-hidden="true">
-                      {selected && '✓'}
-                    </span>
+                  <SelectionControl
+                    className={styles.propertyOption}
+                    checked={selected}
+                    disabled={disabled}
+                    onSelect={() => toggle(property.propertyId)}
+                    markClassName={styles.checkmark}
+                  >
                     <span className={styles.thumbnail}>
                       {property.representativePhoto === null ? (
-                        <Icon name="image" size={20} />
+                        <img src={mascotImage} alt="" className={styles.emptyThumbnailMascot} />
                       ) : (
                         <AuthenticatedPhoto
                           config={config}
@@ -157,7 +155,7 @@ const PropertyComparePage = ({ config }: PropertyComparePageProps) => {
                       )}
                       <StageOverview property={property} />
                     </span>
-                  </label>
+                  </SelectionControl>
                 </li>
               );
             })}

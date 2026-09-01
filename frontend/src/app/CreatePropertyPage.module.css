@@ -1,14 +1,314 @@
 .page {
   min-height: 100%;
-  background: var(--color-canvas);
+  background: var(--color-canvas, #fff);
 }
 
 .content {
-  padding: 0 1rem 1rem;
+  padding: 0 1.25rem calc(6rem + env(safe-area-inset-bottom));
 }
 
-.heading {
-  margin: 0.9rem 0 0.85rem;
-  font-size: 1rem;
-  letter-spacing: -0.035em;
+.createNavigation[data-has-back='true'] h1 {
+  font-size: 1.08rem;
+}
+
+.introduction {
+  margin-top: 1.5rem;
+}
+
+.introduction h1,
+.introduction p {
+  margin: 0;
+}
+
+.introduction h1 {
+  color: var(--color-ink, #212124);
+  font-size: 1.45rem;
+  font-weight: 800;
+  letter-spacing: -0.04em;
+}
+
+.introduction p {
+  margin-top: 0.45rem;
+  color: var(--color-muted, #868b94);
+  font-size: 0.88rem;
+  line-height: 1.5;
+}
+
+.formContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  margin-top: 0.6rem;
+}
+
+.fieldGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+/* 다음 단계가 열릴 때 새 입력칸이 현재 입력칸 위에 쌓이도록 한다. */
+.nameField {
+  order: 1;
+}
+
+.rentField {
+  order: 2;
+}
+
+.depositField {
+  order: 3;
+}
+
+.fieldHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.label {
+  color: var(--color-ink, #212124);
+  font-size: 0.92rem;
+  font-weight: 750;
+}
+
+.hint {
+  color: var(--color-muted, #868b94);
+  font-size: 0.75rem;
+}
+
+.chips {
+  display: flex;
+  gap: 0.35rem;
+}
+
+.chip {
+  padding: 0.2rem 0.55rem;
+  border: 1px solid var(--color-border, #eaebed);
+  border-radius: 999px;
+  background: var(--color-surface-muted, #f7f7f7);
+  color: var(--color-muted, #868b94);
+  font-size: 0.72rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.chip:hover {
+  border-color: var(--color-ink, #212124);
+  color: var(--color-ink, #212124);
+}
+
+.chipActive {
+  padding: 0.2rem 0.55rem;
+  border: 1px solid var(--color-ink, #212124);
+  border-radius: 999px;
+  background: var(--color-ink, #212124);
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.priceRow {
+  display: flex;
+  gap: 0.65rem;
+}
+
+.priceCol {
+  flex: 1;
+}
+
+.input {
+  width: 100%;
+  height: 3.25rem;
+  background: transparent;
+  color: var(--color-ink, #212124);
+  font-size: 0.95rem;
+  box-sizing: border-box;
+  outline: none;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.input[aria-invalid='true'],
+.fieldGroup :global(input[aria-invalid='true']) {
+  border-bottom-color: var(--color-danger, #c96b6b);
+  background: transparent;
+}
+
+.input[aria-invalid='true']:focus,
+.fieldGroup :global(input[aria-invalid='true']):focus {
+  border-bottom-color: var(--color-danger, #c96b6b);
+  box-shadow: none;
+}
+
+.fieldGroup :global(p) {
+  color: var(--color-danger, #c96b6b);
+}
+
+.fieldGroup:has(:global(input[aria-invalid='true'])) :global(label) {
+  color: var(--color-danger, #c96b6b);
+}
+
+.input:focus {
+  border-bottom-color: var(--color-brand-yellow, #f5b91e);
+  box-shadow: none;
+}
+
+.input::placeholder {
+  color: var(--color-placeholder, #adb5bd);
+}
+
+.errorNotice {
+  margin: 0;
+  color: var(--color-error, #e53e3e);
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.stepNotice {
+  margin: 0;
+  color: var(--color-muted, #868b94);
+  font-size: 0.78rem;
+  line-height: 1.55;
+}
+
+.stepNotice {
+  order: 4;
+  margin-top: 1rem;
+}
+
+.formContainer > [data-divider] {
+  position: fixed;
+  right: 0;
+  bottom: var(--keyboard-inset, 0px);
+  left: 0;
+  z-index: 20;
+  box-sizing: border-box;
+  width: 100%;
+  max-width: var(--app-max-width);
+  margin: 0 auto;
+  padding: 0.75rem 1.25rem calc(0.75rem + env(safe-area-inset-bottom));
+  transition: bottom 0.18s ease-out;
+}
+
+.locationSection {
+  order: 0;
+  margin: 0 -1.25rem;
+  padding: 0.8rem 1.25rem 1rem;
+  border-top: 1px solid var(--color-border, #eaebed);
+  border-bottom: 1px solid var(--color-border, #eaebed);
+  background: var(--color-surface, #fff);
+}
+
+.locationHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.65rem;
+}
+
+.locationHeader strong {
+  color: var(--color-ink, #212124);
+  font-size: 0.92rem;
+}
+
+.locationHeader button {
+  padding: 0.35rem 0.55rem;
+  border: 1px solid var(--color-border, #eaebed);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--color-primary-dark, #536d2d);
+  font: inherit;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.currentLocationButton {
+  display: inline-flex;
+  width: 2.25rem;
+  height: 2.25rem;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 1px solid var(--color-border, #eaebed);
+  border-radius: 50%;
+  background: var(--color-surface, #fff);
+  color: var(--color-primary-dark, #536d2d);
+  cursor: pointer;
+}
+
+.addressSearchArea {
+  position: relative;
+  margin-bottom: 0.65rem;
+}
+
+.searchStatus {
+  margin: 0.35rem 0 0;
+  color: var(--color-muted, #868b94);
+  font-size: 0.75rem;
+}
+
+.searchResults {
+  position: absolute;
+  z-index: 2;
+  top: calc(100% + 0.25rem);
+  right: 0;
+  left: 0;
+  max-height: 10rem;
+  margin: 0;
+  padding: 0.25rem;
+  overflow: auto;
+  border: 1px solid var(--color-border, #eaebed);
+  border-radius: var(--radius-sm, 0.65rem);
+  background: var(--color-surface, #fff);
+  box-shadow: 0 0.5rem 1.25rem rgb(0 0 0 / 10%);
+  list-style: none;
+}
+
+.searchResults button {
+  width: 100%;
+  padding: 0.65rem;
+  border: 0;
+  border-radius: 0.45rem;
+  background: transparent;
+  color: var(--color-ink, #212124);
+  font: inherit;
+  font-size: 0.78rem;
+  text-align: left;
+  cursor: pointer;
+}
+
+.searchResults button:hover,
+.searchResults button:focus-visible {
+  background: var(--color-surface-muted, #f7f7f7);
+}
+
+.mapPreview {
+  position: relative;
+  width: calc(100% + 2.5rem);
+  height: 12rem;
+  margin-left: -1.25rem;
+  overflow: hidden;
+  border-radius: 0;
+}
+
+.mapPreview > div {
+  min-height: 0;
+}
+
+.selectedAddress {
+  margin: 0.65rem 0 0;
+  color: var(--color-ink-soft, #5d6455);
+  font-size: 0.82rem;
+  font-weight: 650;
+  line-height: 1.45;
+}
+
+.locationSection .errorNotice {
+  margin-top: 0.35rem;
 }

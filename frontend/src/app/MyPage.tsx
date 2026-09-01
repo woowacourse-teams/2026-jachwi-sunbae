@@ -68,7 +68,7 @@ const MyPage = ({ config }: { config: PublicConfig }) => {
           <Icon name="arrow-right" size={15} />
         </Link>
         <footer className={styles.footer}>
-          <span>자취선배 MVP2 · {config.mapProviderMode === 'kakao' ? 'LIVE MAP' : 'DEMO MAP'}</span>
+          <span>자취선배 MVP2 · {config.mapProviderMode === 'demo' ? 'DEMO MAP' : 'LIVE MAP'}</span>
           <Button variant="text" className={styles.logoutButton} onClick={() => clearAuthentication('logout')}>
             로그아웃
           </Button>

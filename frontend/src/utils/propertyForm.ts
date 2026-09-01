@@ -16,6 +16,7 @@ export type PropertyFormValues = {
 
 export type PropertyFormField = keyof PropertyFormValues;
 export type PropertyFormErrors = Partial<Record<PropertyFormField, string>>;
+export type PropertyFormMode = 'default' | 'registration';
 
 const countCodePoints = (value: string) => Array.from(value).length;
 
@@ -57,7 +58,10 @@ const toWon = (manwon: number): number | null => {
   return Number.isSafeInteger(amount) && amount <= MAX_PROPERTY_AMOUNT ? amount : null;
 };
 
-export const validatePropertyForm = (values: PropertyFormValues): PropertyFormErrors => {
+export const validatePropertyForm = (
+  values: PropertyFormValues,
+  mode: PropertyFormMode = 'default',
+): PropertyFormErrors => {
   const errors: PropertyFormErrors = {};
   const name = values.name.trim();
   const discoverySource = values.discoverySource.trim();
@@ -68,11 +72,15 @@ export const validatePropertyForm = (values: PropertyFormValues): PropertyFormEr
     errors.name = '이름은 30자 이하로 입력해 주세요.';
   }
 
-  if (values.depositAmount !== '' && parseMoneyInput(values.depositAmount) === null) {
+  if (mode === 'registration' && values.depositAmount === '') {
+    errors.depositAmount = '보증금을 입력해 주세요.';
+  } else if (values.depositAmount !== '' && parseMoneyInput(values.depositAmount) === null) {
     errors.depositAmount = '보증금은 0 이상 최대 안전 정수 이하의 정수로 입력해 주세요.';
   }
 
-  if (values.monthlyRentAmount !== '' && parseMoneyInput(values.monthlyRentAmount) === null) {
+  if (mode === 'registration' && values.monthlyRentAmount === '') {
+    errors.monthlyRentAmount = '월세를 입력해 주세요.';
+  } else if (values.monthlyRentAmount !== '' && parseMoneyInput(values.monthlyRentAmount) === null) {
     errors.monthlyRentAmount = '월세는 0 이상 최대 안전 정수 이하의 정수로 입력해 주세요.';
   }
 
