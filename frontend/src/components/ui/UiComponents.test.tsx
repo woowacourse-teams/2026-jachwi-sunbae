@@ -3,7 +3,6 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { describe, expect, it, vi } from 'vitest';
-import AppBar from './AppBar';
 import { Button, ButtonLink } from './Button';
 import EmptyState from './EmptyState';
 import TopNavigation from './TopNavigation';
@@ -52,15 +51,13 @@ describe('공용 UI 컴포넌트', () => {
     expect(clear).toHaveBeenCalledOnce();
   });
 
-  it('AppBar와 ButtonLink는 이동 목적지를 명시한다', () => {
+  it('ButtonLink는 이동 목적지를 명시한다', () => {
     render(
       <MemoryRouter>
-        <AppBar title="새 매물 등록" backTo="/properties" backLabel="매물 목록으로 돌아가기" />
         <ButtonLink to="/properties/new">새 매물 등록</ButtonLink>
       </MemoryRouter>,
     );
 
-    expect(screen.getByRole('link', { name: '매물 목록으로 돌아가기' })).toHaveAttribute('href', '/properties');
     expect(screen.getByRole('link', { name: '새 매물 등록' })).toHaveAttribute('href', '/properties/new');
   });
 

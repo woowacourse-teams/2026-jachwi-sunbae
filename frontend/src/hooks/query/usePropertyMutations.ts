@@ -5,6 +5,7 @@ import type {
   UpdatePropertyRequestDto,
 } from '../../apis/dtos/PropertyDto';
 import { removePropertyPhoto, setRepresentativePropertyPhoto, uploadPropertyPhoto } from '../../apis/photoApi';
+import { assignActiveChecklist } from '../../apis/checklistApi';
 import {
   createProperty,
   recordPropertyComparisonView,
@@ -20,7 +21,15 @@ import type { PropertyBasicInfo, PropertyDetail } from '../../types/Property';
 export const useCreateProperty = (config: PublicConfig) =>
   useMutation({
     mutationFn: (request: PropertyInputDto) => createProperty(config, request),
-    onSuccess: async () => queryClient.invalidateQueries({ queryKey: propertyQueryKeys.lists() }),
+    onSuccess: async (created) => {
+      await Promise.all([
+        assignActiveChecklist(config, created.propertyId, 'ON_SITE', {
+          sourceType: 'SYSTEM_DEFAULT',
+          checklistId: null,
+        }),
+        queryClient.invalidateQueries({ queryKey: propertyQueryKeys.lists() }),
+      ]);
+    },
   });
 
 export const useRecordPropertyComparisonView = (config: PublicConfig) =>

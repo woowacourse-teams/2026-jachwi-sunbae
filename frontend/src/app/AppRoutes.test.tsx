@@ -85,15 +85,16 @@ describe('닉네임 인증 흐름', () => {
     expect(screen.queryByRole('textbox', { name: '이름 또는 닉네임' })).not.toBeInTheDocument();
 
     await user.click(screen.getByRole('link', { name: '내 방에서 돈 새는 곳 확인하기' }));
-    expect(await screen.findByRole('heading', { name: '이름만으로 바로 시작해요' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: '자취선배 시작하기' })).toBeInTheDocument();
   });
 
   it('비인증 사용자에게 닉네임과 선택 비밀번호 입력을 표시한다', () => {
     renderRoutes('/login');
 
     expect(screen.getByRole('img', { name: '자취선배' })).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: '이름만으로 바로 시작해요' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: '자취선배 시작하기' })).toBeInTheDocument();
     expect(screen.getByRole('textbox', { name: '이름 또는 닉네임' })).toBeInTheDocument();
+
     expect(screen.getByLabelText(/비밀번호/)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: '이름으로 시작하기' })).toBeInTheDocument();
     expect(screen.getByText(/같은 닉네임을 입력한 사람이 기록을 함께 조회하고 수정/)).toBeInTheDocument();

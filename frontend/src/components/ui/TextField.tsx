@@ -8,7 +8,10 @@ type TextFieldProps = Omit<InputHTMLAttributes<HTMLInputElement>, 'children'> & 
   helpText?: string;
   error?: string;
   suffix?: ReactNode;
+  labelSuffix?: ReactNode;
   fieldClassName?: string;
+  /** 기본은 밑줄. 네모 테두리가 필요한 곳만 `box`로 되돌린다. */
+  variant?: 'box' | 'underline';
 };
 
 const TextField = ({
@@ -17,9 +20,11 @@ const TextField = ({
   helpText,
   error,
   suffix,
+  labelSuffix,
   id,
   className,
   fieldClassName,
+  variant = 'underline',
   ...inputProps
 }: TextFieldProps) => {
   const generatedId = useId();
@@ -29,14 +34,15 @@ const TextField = ({
   const describedBy = [helpId, errorId].filter(Boolean).join(' ') || undefined;
 
   return (
-    <div className={`${styles.field} ${fieldClassName ?? ''}`}>
+    <div className={`${styles.field} ${fieldClassName ?? ''}`} data-variant={variant}>
       <label htmlFor={inputId}>
-        {label}
-        {requirement !== undefined && (
-          <span className={styles.requirement} aria-hidden="true">
-            {requirement}
+        {requirement === '필수' && (
+          <span className={styles.requiredMarker} aria-hidden="true">
+            *
           </span>
         )}
+        {label}
+        {labelSuffix}
       </label>
       <div className={styles.control}>
         <input

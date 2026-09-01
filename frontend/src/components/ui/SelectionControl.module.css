@@ -1,0 +1,17 @@
+.control {
+  position: relative;
+  cursor: pointer;
+}
+
+.control:has(.input:disabled) {
+  cursor: not-allowed;
+}
+
+/* 표시는 옆의 요소가 대신 그리고, input 자체는 초점만 받도록 숨긴다. */
+.input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  opacity: 0;
+}

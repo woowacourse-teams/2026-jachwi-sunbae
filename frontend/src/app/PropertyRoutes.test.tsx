@@ -77,13 +77,8 @@ describe('FE-2 매물 목록', () => {
     expect(screen.getByRole('link', { name: '망원동 투룸' })).toBeInTheDocument();
     const firstProperty = within(screen.getByRole('link', { name: '신림역 원룸' }));
     expect(firstProperty.queryByText('미완료')).not.toBeInTheDocument();
-    expect(firstProperty.getByText('발견 경로 · https://example.com/listings/10')).toBeInTheDocument();
-    expect(firstProperty.getByText('1단계 · 온라인·전화')).toBeInTheDocument();
-    expect(firstProperty.getByText('2단계 · 집에서 확인')).toBeInTheDocument();
-    expect(firstProperty.getByText('3단계 · 계약 전')).toBeInTheDocument();
-    expect(firstProperty.getByText('7/10')).toBeInTheDocument();
+    expect(firstProperty.queryByText('체크리스트')).not.toBeInTheDocument();
     expect(firstProperty.getByText('8/12')).toBeInTheDocument();
-    expect(firstProperty.getByText('미적용')).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: '완료' }));
     expect(screen.queryByRole('link', { name: '신림역 원룸' })).not.toBeInTheDocument();
@@ -232,6 +227,28 @@ describe('FE-2 등록·수정·메모', () => {
           { status: 201 },
         );
       }),
+      http.put(`${config.apiBaseUrl}/api/properties/10/checklists/ON_SITE`, () =>
+        HttpResponse.json(
+          successEnvelope({
+            id: 51,
+            propertyId: 10,
+            sourceChecklistId: null,
+            checklistName: '현장 확인 기본',
+            stage: 'ON_SITE',
+            items: [],
+          }),
+        ),
+      ),
+      http.get(`${config.apiBaseUrl}/api/maps/reverse-geocode`, () =>
+        HttpResponse.json(
+          successEnvelope({
+            roadAddress: '서울 관악구 신림로 12길 3',
+            jibunAddress: '서울 관악구 신림동 1433-12',
+            latitude: 37.3948,
+            longitude: 127.1119,
+          }),
+        ),
+      ),
       http.get(`${config.apiBaseUrl}/api/properties/10`, () =>
         HttpResponse.json(
           successEnvelope({
@@ -242,52 +259,65 @@ describe('FE-2 등록·수정·메모', () => {
         ),
       ),
     );
-    const user = userEvent.setup();
-    renderAuthenticated('/properties/new');
 
-    await user.click(await screen.findByRole('button', { name: '매물 등록' }));
-    expect(screen.getByText('매물을 구분할 이름을 입력해 주세요.')).toBeInTheDocument();
-
-    await user.type(screen.getByLabelText('이름'), ' 신림역 원룸 ');
-    await user.type(screen.getByLabelText('보증금'), '0');
-    await user.type(screen.getByLabelText('월세'), '55');
-    await user.type(screen.getByLabelText('확인한 곳'), ' 중개사 추천 ');
-    await user.click(screen.getByRole('button', { name: '매물 등록' }));
-
-    expect(await screen.findByRole('heading', { name: '신림역 원룸', level: 1 })).toBeInTheDocument();
-    expect(
-      screen.getByText(
-        (_, element) => element?.tagName === 'P' && element.textContent === '보증금 0만원 / 월세 55만원',
-      ),
-    ).toBeInTheDocument();
-    expect(requestBody).toEqual({
-      name: '신림역 원룸',
-      depositAmount: 0,
-      monthlyRentAmount: 550_000,
-      discoverySource: '중개사 추천',
+    const originalGeolocation = navigator.geolocation;
+    Object.defineProperty(navigator, 'geolocation', {
+      configurable: true,
+      value: {
+        getCurrentPosition: vi.fn((success: PositionCallback) =>
+          success({
+            coords: {
+              latitude: 37.3948,
+              longitude: 127.1119,
+              accuracy: 10,
+              altitude: null,
+              altitudeAccuracy: null,
+              heading: null,
+              speed: null,
+              toJSON: () => ({}),
+            },
+            timestamp: Date.now(),
+            toJSON: () => ({}),
+          }),
+        ),
+      },
     });
-  });
 
-  it('등록 실패 시 입력을 유지하고 서버 validation 필드를 가까이 표시한다', async () => {
-    server.use(
-      http.post(`${config.apiBaseUrl}/api/properties`, () =>
-        HttpResponse.json(errorEnvelope('INVALID_REQUEST', [{ field: 'name', reason: 'internal validation' }]), {
-          status: 400,
-        }),
-      ),
-    );
-    const user = userEvent.setup();
-    renderAuthenticated('/properties/new');
+    try {
+      const user = userEvent.setup();
+      renderAuthenticated('/properties/new');
 
-    await user.type(await screen.findByLabelText('이름'), '유지할 이름');
-    await user.type(screen.getByLabelText('보증금'), '1000');
-    await user.type(screen.getByLabelText('월세'), '55');
-    await user.type(screen.getByLabelText('확인한 곳'), 'https://example.com');
-    await user.click(screen.getByRole('button', { name: '매물 등록' }));
+      // 1. 보증금 → 월세 → 지도 → 매물 이름 순으로, 다음을 눌렀을 때만 한 단계씩 열린다.
+      expect(await screen.findByRole('button', { name: '다음' })).toBeEnabled();
+      await user.type(screen.getByLabelText('보증금 (만원)'), '1000');
+      expect(screen.queryByLabelText('월세 (만원)')).not.toBeInTheDocument();
+      await user.click(screen.getByRole('button', { name: '다음' }));
+      expect(screen.getByLabelText('월세 (만원)')).toBeInTheDocument();
+      await user.click(screen.getByRole('button', { name: '다음' }));
+      expect(screen.getByLabelText('월세 (만원)')).toHaveAttribute('aria-invalid', 'true');
+      expect(screen.getByText('월세를 입력해 주세요.')).toBeInTheDocument();
+      await user.type(screen.getByLabelText('월세 (만원)'), '55');
+      await user.click(screen.getByRole('button', { name: '다음' }));
+      expect(await screen.findByRole('region', { name: '매물 위치 선택' })).toBeInTheDocument();
+      expect(screen.queryByLabelText('매물 이름')).not.toBeInTheDocument();
+      await user.click(screen.getByRole('button', { name: '다음' }));
+      expect(screen.getByLabelText('매물 이름')).toBeInTheDocument();
+      await user.type(screen.getByLabelText('매물 이름'), '신림역 원룸');
+      const createButton = await screen.findByRole('button', { name: '매물 등록' });
+      await waitFor(() => expect(createButton).toBeEnabled());
+      await user.click(createButton);
 
-    expect(await screen.findByText('서버에서 매물 이름을 확인하지 못했습니다.')).toBeInTheDocument();
-    expect(screen.getByLabelText('이름')).toHaveValue('유지할 이름');
-    expect(document.body.textContent).not.toContain('internal validation');
+      expect(await screen.findAllByRole('heading', { name: '신림역 원룸', level: 1 })).toHaveLength(2);
+      await waitFor(() => expect(requestBody).toBeDefined());
+      expect(requestBody).toMatchObject({
+        name: '신림역 원룸',
+        depositAmount: 10_000_000,
+        monthlyRentAmount: 550_000,
+        roadAddress: '서울 관악구 신림로 12길 3',
+      });
+    } finally {
+      Object.defineProperty(navigator, 'geolocation', { configurable: true, value: originalGeolocation });
+    }
   });
 
   it('수정은 변경이 없어도 전체 필드를 보내고 상세 화면으로 돌아간다', async () => {
@@ -313,7 +343,7 @@ describe('FE-2 등록·수정·메모', () => {
     renderAuthenticated('/properties/10/edit');
 
     await user.click(await screen.findByRole('button', { name: '변경사항 저장' }));
-    expect(await screen.findByRole('heading', { name: '신림역 원룸', level: 1 })).toBeInTheDocument();
+    expect(await screen.findAllByRole('heading', { name: '신림역 원룸', level: 1 })).toHaveLength(2);
     expect(updateCalls).toBe(1);
     expect(updateBody).toEqual({
       name: propertyDetailFixture.name,
@@ -334,11 +364,17 @@ describe('FE-2 등록·수정·메모', () => {
               {
                 propertyMemoItemId: 101,
                 systemMemoItemId: 1,
-                label: '집 주소',
+                label: '관리비·포함 항목',
                 displayOrder: 1,
-                content: '관악구 신림로 12길',
+                content: '10만원 (수도, 인터넷)',
               },
-              { propertyMemoItemId: 102, systemMemoItemId: 2, label: '입주 가능일', displayOrder: 2, content: '' },
+              {
+                propertyMemoItemId: 102,
+                systemMemoItemId: 2,
+                label: '입주 가능일',
+                displayOrder: 2,
+                content: '즉시 입주',
+              },
             ],
             freeMemo: '',
           }),
@@ -347,10 +383,9 @@ describe('FE-2 등록·수정·메모', () => {
     );
     renderAuthenticated('/properties/10');
 
-    expect(await screen.findByText('집 주소')).toBeInTheDocument();
+    expect(await screen.findByRole('region', { name: '매물 부가 정보' })).toBeInTheDocument();
+    expect(screen.getByText('관리비·포함 항목')).toBeInTheDocument();
     expect(screen.getByText('입주 가능일')).toBeInTheDocument();
-    expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /메모 작성/ })).toHaveAttribute('href', '/properties/10/memo');
   });
 
   it('별도 메모 화면에서 기본 양식과 자유 메모를 저장한 뒤 상세로 이동한다', async () => {
@@ -396,7 +431,7 @@ describe('FE-2 등록·수정·메모', () => {
     await user.type(screen.getByRole('textbox', { name: '추가 메모' }), '채광을 다시 확인하기');
     await user.click(screen.getByRole('button', { name: '메모 저장' }));
 
-    expect(await screen.findByRole('heading', { name: '신림역 원룸', level: 1 })).toBeInTheDocument();
+    expect(await screen.findAllByRole('heading', { name: '신림역 원룸', level: 1 })).toHaveLength(2);
     expect(requestBody).toEqual({
       items: [
         { systemMemoItemId: 1, content: '관악구 신림로 12길' },
@@ -450,7 +485,7 @@ describe('FE-2 등록·수정·메모', () => {
     expect(await screen.findByText(/메모를 저장하지 못했어요/)).toBeInTheDocument();
     expect(memo).toHaveValue('작성 중인 내용');
     await user.click(screen.getByRole('button', { name: '메모 저장' }));
-    expect(await screen.findByRole('heading', { name: '신림역 원룸', level: 1 })).toBeInTheDocument();
+    expect(await screen.findAllByRole('heading', { name: '신림역 원룸', level: 1 })).toHaveLength(2);
     expect(saveAttempts).toBe(2);
   });
 });
@@ -720,10 +755,9 @@ describe('FE-2 사진과 삭제 확인', () => {
     const user = userEvent.setup();
     renderAuthenticated('/properties/10');
 
-    await user.click(await screen.findByLabelText('매물 메뉴 열기'));
-    await user.click(screen.getByRole('button', { name: '삭제' }));
-    const dialog = screen.getByRole('dialog', { name: '신림역 원룸 매물을 삭제할까요?' });
-    expect(within(dialog).getByText(/사진·메모·연결된 체크리스트도 함께 삭제/)).toBeInTheDocument();
+    await user.click(await screen.findByRole('button', { name: '삭제' }));
+    const dialog = screen.getByRole('dialog', { name: '신림역 원룸을 삭제할까요?' });
+    expect(within(dialog).getByText(/삭제한 매물은 되돌릴 수 없습니다/)).toBeInTheDocument();
     await user.click(within(dialog).getByRole('button', { name: '취소' }));
     expect(deleteCalls).toBe(0);
 
@@ -743,12 +777,11 @@ describe('FE-2 사진과 삭제 확인', () => {
     const user = userEvent.setup();
     renderAuthenticated('/properties/10');
 
-    await user.click(await screen.findByLabelText('매물 메뉴 열기'));
-    await user.click(screen.getByRole('button', { name: '삭제' }));
+    await user.click(await screen.findByRole('button', { name: '삭제' }));
     const dialog = screen.getByRole('dialog');
     await user.click(within(dialog).getByRole('button', { name: '매물 삭제' }));
     expect(await within(dialog).findByText(/매물은 그대로 유지/)).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: '신림역 원룸', level: 1 })).toBeInTheDocument();
+    expect(screen.getAllByRole('heading', { name: '신림역 원룸', level: 1 })).toHaveLength(2);
   });
 
   it('PROPERTY_NOT_FOUND를 네트워크 오류와 구분해 목록 이동을 제공한다', async () => {

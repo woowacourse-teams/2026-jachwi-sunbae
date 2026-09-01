@@ -48,18 +48,6 @@
   cursor: pointer;
 }
 
-.secondary {
-  border: 1px solid var(--color-border-strong);
-  background: var(--color-surface);
-  color: var(--color-ink-soft);
-}
-
-.primary {
-  border: 1px solid var(--color-primary);
-  background: var(--color-primary);
-  color: var(--color-on-primary);
-}
-
 @media (min-width: 700px) {
   .banner {
     bottom: 1.5rem;

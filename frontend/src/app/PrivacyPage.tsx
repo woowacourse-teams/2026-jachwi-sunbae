@@ -1,6 +1,7 @@
 import TopNavigation from '../components/ui/TopNavigation';
 import { useTrackingConsent } from './TrackingConsentContext';
 import styles from './PrivacyPage.module.css';
+import { Button } from '../components/ui/Button';
 
 const PrivacyPage = () => {
   const { available, status, grant, deny } = useTrackingConsent();
@@ -46,12 +47,12 @@ const PrivacyPage = () => {
           </p>
           {available ? (
             <div className={styles.actions}>
-              <button type="button" className={styles.secondary} onClick={deny}>
+              <Button variant="secondary" onClick={deny}>
                 동의하지 않기
-              </button>
-              <button type="button" className={styles.primary} onClick={grant}>
+              </Button>
+              <Button variant="soft" onClick={grant}>
                 측정에 동의하기
-              </button>
+              </Button>
             </div>
           ) : null}
         </section>

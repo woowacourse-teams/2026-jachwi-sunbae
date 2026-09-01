@@ -2,8 +2,12 @@ import { type FormEvent, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ApiError, getSafeApiErrorMessage } from '../apis/apiClient';
 import { submitNicknameLogin } from '../apis/authApi';
-import logo from '../assets/jachwi-sunbae-logo.png';
+import logo from '../assets/jachwi-sunbae-logo-lockup-v3.svg';
 import Icon from '../components/ui/Icon';
+
+import { Button } from '../components/ui/Button';
+import InlineNotice from '../components/ui/InlineNotice';
+import TextField from '../components/ui/TextField';
 import { useAuthentication } from '../hooks/useAuthentication';
 import type { PublicConfig } from '../types/PublicConfig';
 import { trackMetaPixelCompleteRegistration } from '../utils/metaPixel';
@@ -90,83 +94,52 @@ const LoginPage = ({ config }: LoginPageProps) => {
         <div className={styles.heroLogo}>
           <img src={logo} alt="자취선배" />
         </div>
-        <header className={styles.brandHeader}>
-          <p>처음 방을 보는 날부터, 떠나는 날까지.</p>
-          <h1 id="login-heading">이름만으로 바로 시작해요</h1>
-        </header>
-
-        <section className={styles.guideCard} aria-label="자취선배 주요 기능">
-          <p>
-            방마다 체크한 내용을 그대로 남기고
-            <br />
-            한번에 비교해서 고르세요.
-          </p>
-        </section>
-
-        <ul className={styles.featureList}>
-          <li>
-            <span>
-              <Icon name="checklist" size={16} />
-            </span>
-            <strong>빠짐없이 체크</strong>
-          </li>
-          <li>
-            <span>
-              <Icon name="arrow-right" size={16} />
-            </span>
-            <strong>매물끼리 비교</strong>
-          </li>
-          <li>
-            <span>
-              <Icon name="link" size={16} />
-            </span>
-            <strong>기록 자동 보관</strong>
-          </li>
-        </ul>
+        <h1 id="login-heading" className="sr-only">
+          자취선배 시작하기
+        </h1>
 
         <form className={styles.actions} aria-label="닉네임으로 시작하기" onSubmit={handleLogin}>
-          {authenticationNotice === null ? null : (
-            <p className={styles.notice} role="status">
-              {authenticationNotice}
-            </p>
-          )}
-          {startError === null ? null : (
-            <p className={styles.error} role="alert">
-              {startError}
-            </p>
-          )}
-          <label className={styles.field}>
-            <span>이름 또는 닉네임</span>
-            <input
-              autoComplete="username"
-              maxLength={30}
-              value={nickname}
-              onChange={(event) => setNickname(event.target.value)}
-              placeholder="예: 자취초보"
-              disabled={isStarting}
-            />
-          </label>
-          <label className={styles.field}>
-            <span>
-              비밀번호 <small>선택 · 4자 이상</small>
-            </span>
-            <input
-              type="password"
-              autoComplete="current-password"
-              maxLength={64}
-              value={password}
-              onChange={(event) => setPassword(event.target.value)}
-              placeholder="기록을 보호하려면 입력하세요"
-              disabled={isStarting}
-            />
-          </label>
+          {authenticationNotice !== null && <InlineNotice>{authenticationNotice}</InlineNotice>}
+          {startError !== null && <InlineNotice tone="error">{startError}</InlineNotice>}
+          <TextField
+            label="이름 또는 닉네임"
+            requirement="필수"
+            fieldClassName={styles.inlineField}
+            autoComplete="username"
+            maxLength={30}
+            value={nickname}
+            onChange={(event) => setNickname(event.target.value)}
+            placeholder="예: 자취초보"
+            disabled={isStarting}
+          />
+          <TextField
+            label="비밀번호"
+            requirement="선택"
+            fieldClassName={styles.inlineField}
+            helpText="기록을 보호하려면 4자 이상 입력해 주세요."
+            type="password"
+            autoComplete="current-password"
+            maxLength={64}
+            value={password}
+            onChange={(event) => setPassword(event.target.value)}
+            placeholder="비밀번호 입력"
+            disabled={isStarting}
+          />
           <p className={styles.sharedWarning}>
             비밀번호를 비우면 같은 닉네임을 입력한 사람이 기록을 함께 조회하고 수정할 수 있어요.
           </p>
-          <button className={styles.loginButton} type="submit" disabled={isStarting}>
-            <Icon name="arrow-right" size={18} />
-            {isStarting ? '시작하는 중…' : '이름으로 시작하기'}
-          </button>
+          <Button
+            className={styles.loginButton}
+            variant="primary"
+            type="submit"
+            fullWidth
+            isLoading={isStarting}
+            loadingLabel="시작하는 중…"
+          >
+            <Icon name="arrow-right" size={16} />
+            이름으로 시작하기
+          </Button>
+
           <p className={styles.agreement}>
             처음 쓰는 닉네임이면 새 기록 공간을 만들어요. <Link to="/privacy">개인정보·광고 측정 안내</Link>
           </p>

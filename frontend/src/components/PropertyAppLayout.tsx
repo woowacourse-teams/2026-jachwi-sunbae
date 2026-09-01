@@ -6,7 +6,12 @@ import styles from './PropertyAppLayout.module.css';
 const PropertyAppLayout = () => {
   const member = useOutletContext<Member>();
   const location = useLocation();
-  const fullScreen = location.pathname === '/map/select-location';
+  const fullScreen =
+    location.pathname === '/map/select-location' ||
+    location.pathname.startsWith('/properties/new') ||
+    location.pathname === '/checklists/new' ||
+    /^\/checklists\/\d+$/.test(location.pathname) ||
+    /^\/properties\/\d+\/checklists\/\d+$/.test(location.pathname);
 
   return (
     <div className={styles.root} data-full-screen={fullScreen || undefined}>

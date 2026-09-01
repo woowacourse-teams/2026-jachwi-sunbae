@@ -7,10 +7,12 @@ type TextAreaFieldProps = Omit<TextareaHTMLAttributes<HTMLTextAreaElement>, 'chi
   helpText?: string;
   error?: string;
   fieldClassName?: string;
+  /** 기본은 밑줄. 네모 테두리가 필요한 곳만 `box`로 되돌린다. */
+  variant?: 'box' | 'underline';
 };
 
 const TextAreaField = forwardRef<HTMLTextAreaElement, TextAreaFieldProps>(
-  ({ label, helpText, error, id, className, fieldClassName, ...textareaProps }, ref) => {
+  ({ label, helpText, error, id, className, fieldClassName, variant = 'underline', ...textareaProps }, ref) => {
     const generatedId = useId();
     const textareaId = id ?? generatedId;
     const helpId = helpText === undefined ? undefined : `${textareaId}-help`;
@@ -18,7 +20,7 @@ const TextAreaField = forwardRef<HTMLTextAreaElement, TextAreaFieldProps>(
     const describedBy = [helpId, errorId].filter(Boolean).join(' ') || undefined;
 
     return (
-      <div className={`${styles.field} ${fieldClassName ?? ''}`}>
+      <div className={`${styles.field} ${fieldClassName ?? ''}`} data-variant={variant}>
         <label htmlFor={textareaId}>{label}</label>
         <div className={styles.control}>
           <textarea

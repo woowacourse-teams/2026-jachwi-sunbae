@@ -9,11 +9,11 @@
   font-weight: 800;
 }
 
-.requirement {
-  margin-left: 0.35rem;
-  color: var(--color-muted);
-  font-size: 0.62rem;
-  font-weight: 650;
+.requiredMarker {
+  margin-right: 0.2rem;
+  color: var(--color-error);
+  font-size: 0.8rem;
+  font-weight: 800;
 }
 
 .control {
@@ -39,10 +39,44 @@
   cursor: text;
 }
 
+/* 단위 표시가 붙는 칸만 오른쪽을 비워 글자가 겹치지 않게 한다. */
+.field[data-variant='underline'] .control:has(.suffix) input {
+  padding-right: 2.6rem;
+}
+
+/* 밑줄형: 네모 테두리를 걷고 아래 선만 남긴다. */
+.field[data-variant='underline'] .control input,
+.field[data-variant='underline'] .control textarea {
+  padding-right: 0;
+  padding-left: 0;
+  border: 0;
+  border-bottom: 1.5px solid var(--color-border-strong);
+  border-radius: 0;
+  background: transparent;
+}
+
+.field[data-variant='underline'] .control input:focus-visible,
+.field[data-variant='underline'] .control textarea:focus-visible {
+  border-bottom-color: var(--color-brand-yellow);
+  border-bottom-width: 2px;
+  outline: none;
+  box-shadow: none;
+}
+
+.field[data-variant='underline'] .control input[aria-invalid='true'] {
+  border-bottom-color: var(--color-danger, #c96b6b);
+}
+
+.field:has(.control input[aria-invalid='true']) > label,
+.control input[aria-invalid='true'] {
+  color: var(--color-danger, #c96b6b);
+}
+
 .control input::placeholder,
 .control textarea::placeholder {
   color: var(--color-placeholder);
-  font-size: 0.72rem;
+  /* 입력 글자와 같은 크기로 둔다. 따로 줄이면 placeholder만 유독 작아 보인다. */
+  font-size: inherit;
 }
 
 .control input:focus-visible,
@@ -84,6 +118,6 @@
 }
 
 .error {
-  color: var(--color-error);
+  color: var(--color-danger, #ff4b4b);
   font-weight: 700;
 }

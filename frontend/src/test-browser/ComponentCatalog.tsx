@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import AppBar from '../components/ui/AppBar';
+import TopNavigation from '../components/ui/TopNavigation';
 import BottomActionArea from '../components/ui/BottomActionArea';
 import { Button, ButtonLink } from '../components/ui/Button';
 import EmptyState from '../components/ui/EmptyState';
@@ -23,7 +23,7 @@ const ComponentCatalog = () => {
   return (
     <div className={styles.canvas}>
       <main className={styles.catalog}>
-        <AppBar title="공용 컴포넌트" backTo="/properties" />
+        <TopNavigation title="공용 컴포넌트" backTo="/properties" />
         <div className={styles.content}>
           <header className={styles.intro}>
             <span>LOCAL COMPONENT CATALOG</span>
@@ -99,7 +99,7 @@ const ComponentCatalog = () => {
 
           <section className={styles.section}>
             <h2>BottomActionArea</h2>
-            <BottomActionArea sticky={false}>
+            <BottomActionArea placement="inline">
               <Button variant="secondary">이전</Button>
               <Button>다음</Button>
             </BottomActionArea>

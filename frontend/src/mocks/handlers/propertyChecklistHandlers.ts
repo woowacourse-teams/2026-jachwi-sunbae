@@ -39,7 +39,11 @@ export const propertyChecklistHandlers = [
     const property = getProperty(params.propertyId);
     const stage = readStage(params.stage);
     const body = (await request.json()) as { checklistId?: unknown };
-    const source = getMockChecklists().find((checklist) => checklist.id === body.checklistId);
+    const isSystemDefault = body.checklistId === null || body.checklistId === undefined;
+    const source =
+      isSystemDefault
+        ? getMockChecklists().find((checklist) => checklist.stage === stage)
+        : getMockChecklists().find((checklist) => checklist.id === body.checklistId);
     if (property === undefined) return failure('PROPERTY_NOT_FOUND', 404);
     if (stage === null || source === undefined) return failure('CHECKLIST_NOT_FOUND', 404);
     if (source.stage !== stage) return failure('CHECKLIST_STAGE_MISMATCH', 400);
@@ -53,7 +57,7 @@ export const propertyChecklistHandlers = [
     const applied = {
       id: previous?.id ?? takeNextAppliedChecklistId(),
       propertyId: property.id,
-      sourceChecklistId: source.id,
+      sourceChecklistId: isSystemDefault ? null : source.id,
       checklistName: source.name,
       stage,
       items: source.items.map((item, index) => {
