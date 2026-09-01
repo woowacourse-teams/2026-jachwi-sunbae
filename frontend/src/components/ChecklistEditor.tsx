@@ -7,6 +7,7 @@ import type { PublicConfig } from '../types/PublicConfig';
 import { editorItemsFingerprint, moveEditorItem } from '../utils/checklistEditor';
 import { validateChecklistName } from '../utils/checklist';
 import CheckItemPicker from './CheckItemPicker';
+import AddItemAction from './ui/AddItemAction';
 import BottomActionArea from './ui/BottomActionArea';
 import { Button } from './ui/Button';
 import TextField from './ui/TextField';
@@ -19,6 +20,7 @@ type ChecklistEditorProps = {
   initialItems: ChecklistEditorItem[];
   submitLabel: string;
   isSubmitting: boolean;
+  fixedSubmitAction?: boolean;
   serverError?: string;
   viewMode?: 'EDIT' | 'ADD_ITEMS';
   onViewModeChange?: (mode: 'EDIT' | 'ADD_ITEMS') => void;
@@ -34,6 +36,7 @@ const ChecklistEditor = ({
   initialItems,
   submitLabel,
   isSubmitting,
+  fixedSubmitAction = false,
   serverError,
   viewMode = 'EDIT',
   onViewModeChange,
@@ -165,7 +168,7 @@ const ChecklistEditor = ({
 
   return (
     <form
-      className={styles.checklistEditor}
+      className={`${styles.checklistEditor} ${fixedSubmitAction ? styles.fixedSubmitEditor : ''}`}
       onSubmit={async (event) => {
         event.preventDefault();
         setHasSubmitted(true);
@@ -208,24 +211,15 @@ const ChecklistEditor = ({
         />
       </section>
 
-      <Button
-        type="button"
-        variant="secondary"
-        fullWidth
-        className={styles.openPicker}
-        disabled={isSubmitting}
-        onClick={() => onViewModeChange?.('ADD_ITEMS')}
-      >
-        + 체크 항목 추가
-      </Button>
+      <AddItemAction disabled={isSubmitting} onClick={() => onViewModeChange?.('ADD_ITEMS')}>
+        체크 항목 추가
+      </AddItemAction>
 
-      <div className={styles.editorActions}>
-        <BottomActionArea sticky={false} divider={false}>
-          <Button type="submit" variant="soft" fullWidth isLoading={isSubmitting} loadingLabel="저장 중…">
-            {submitLabel}
-          </Button>
-        </BottomActionArea>
-      </div>
+      <BottomActionArea placement={fixedSubmitAction ? 'screen' : 'inline'} divider={false}>
+        <Button type="submit" variant="soft" fullWidth isLoading={isSubmitting} loadingLabel="저장 중…">
+          {submitLabel}
+        </Button>
+      </BottomActionArea>
 
       <p className={styles.editorSaveStatus} role="status" aria-live="polite">
         {announcement}

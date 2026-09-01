@@ -1,6 +1,13 @@
 import type { ChecklistPresetType, ChecklistStage } from '../types/Checklist';
 import { CHECKLIST_STAGES, PRESET_TYPES } from '../types/Checklist';
 
+/**
+ * 사용자가 직접 만들고 관리하는 체크리스트는 현장 단계 하나만 제공한다.
+ * 계약 전 단계는 매물 체크리스트 안의 '계약하러 가기'로만 진입하며, 온라인·전화 단계는 노출하지 않는다.
+ */
+export const USER_CHECKLIST_STAGE: ChecklistStage = 'ON_SITE';
+
+/** API 계약상 단계 값은 그대로 유지하되, 화면에는 현장·계약 전만 노출한다. */
 export const checklistStageMeta: Record<ChecklistStage, { label: string; shortLabel: string; description: string }> = {
   ONLINE_PHONE: {
     label: '온라인·전화',

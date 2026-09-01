@@ -19,6 +19,7 @@ import type { PublicConfig } from '../types/PublicConfig';
 import AppRoutes from './AppRoutes';
 import { setAuthentication } from './authStore';
 import { queryClient } from './queryClient';
+import { readLastSelectedChecklist } from './lastChecklistStore';
 
 const config: PublicConfig = {
   apiBaseUrl: 'http://localhost:8080',
@@ -38,6 +39,11 @@ const renderAuthenticated = (entry: TestEntry) => {
     </StrictMode>,
   );
 };
+
+const onSiteChecklistSummary = { ...checklistSummaryFixture, stage: 'ON_SITE' };
+const secondOnSiteChecklistSummary = { ...secondChecklistSummaryFixture, stage: 'ON_SITE' };
+const onSiteItemFixture = { ...onlineItemFixture, stage: 'ON_SITE' };
+const secondOnSiteItemFixture = { ...secondOnlineItemFixture, stage: 'ON_SITE' };
 
 const finalChecklistDetail = (overrides: Record<string, unknown> = {}) => ({
   id: 7,
@@ -84,13 +90,15 @@ const emptyStageProgress = (stage: 'ON_SITE' | 'PRE_CONTRACT') => ({
 });
 
 describe('체크리스트 탐색과 편집', () => {
-  it('체크리스트 홈에서 세 단계를 안내하고 단계 목록으로 이동한다', async () => {
+  it('체크리스트 홈 접속 시 현장 체크리스트 목록으로 이동한다', async () => {
+    server.use(
+      http.get(`${config.apiBaseUrl}/api/checklists`, () =>
+        HttpResponse.json(successEnvelope(checklistPageFixture([]))),
+      ),
+    );
     renderAuthenticated('/checklists');
 
-    expect(await screen.findByRole('heading', { name: '체크리스트', level: 1 })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /온라인·전화 확인/ })).toHaveAttribute('href', '/checklists/ONLINE_PHONE');
-    expect(screen.getByRole('link', { name: /집에서 확인/ })).toHaveAttribute('href', '/checklists/ON_SITE');
-    expect(screen.getByRole('link', { name: /부동산 계약 확인/ })).toHaveAttribute('href', '/checklists/PRE_CONTRACT');
+    expect(await screen.findByRole('heading', { name: '체크리스트' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: '체크리스트' })).toHaveAttribute('aria-current', 'page');
   });
 
@@ -100,24 +108,43 @@ describe('체크리스트 탐색과 편집', () => {
         HttpResponse.json(successEnvelope(checklistPageFixture([]))),
       ),
     );
-    renderAuthenticated('/checklists/ONLINE_PHONE');
+    renderAuthenticated('/checklists');
 
     expect(await screen.findByRole('link', { name: '새 체크리스트 만들기' })).toHaveAttribute(
       'href',
-      '/checklists/new?stage=ONLINE_PHONE',
+      '/checklists/new',
     );
     expect(screen.queryByText('이 단계에 만든 체크리스트가 없어요.')).not.toBeInTheDocument();
+  });
+
+  it('체크리스트 목록 최초 요청 실패 후 다시 시도하면 목록을 표시한다', async () => {
+    let shouldFail = true;
+    server.use(
+      http.get(`${config.apiBaseUrl}/api/checklists`, () =>
+        shouldFail
+          ? HttpResponse.error()
+          : HttpResponse.json(successEnvelope(checklistPageFixture([onSiteChecklistSummary]))),
+      ),
+    );
+    const user = userEvent.setup();
+    renderAuthenticated('/checklists');
+
+    expect(await screen.findByText('체크리스트를 불러오지 못했어요.')).toBeInTheDocument();
+    shouldFail = false;
+    await user.click(screen.getByRole('button', { name: '다시 시도' }));
+
+    expect(await screen.findByRole('link', { name: '전화 문의 기본 목록 편집' })).toBeInTheDocument();
   });
 
   it('단계 목록에 편집과 삭제 동작을 함께 표시한다', async () => {
     server.use(
       http.get(`${config.apiBaseUrl}/api/checklists`, () =>
         HttpResponse.json(
-          successEnvelope(checklistPageFixture([checklistSummaryFixture, secondChecklistSummaryFixture])),
+          successEnvelope(checklistPageFixture([onSiteChecklistSummary, secondOnSiteChecklistSummary])),
         ),
       ),
     );
-    renderAuthenticated('/checklists/ONLINE_PHONE');
+    renderAuthenticated('/checklists');
 
     expect(await screen.findByRole('link', { name: '전화 문의 기본 목록 편집' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: '전화 문의 기본 목록 삭제' })).toBeInTheDocument();
@@ -128,26 +155,26 @@ describe('체크리스트 탐색과 편집', () => {
     let requestBody: unknown;
     server.use(
       http.get(`${config.apiBaseUrl}/api/check-items`, () =>
-        HttpResponse.json(successEnvelope(checkItemPageFixture([onlineItemFixture, secondOnlineItemFixture]))),
+        HttpResponse.json(successEnvelope(checkItemPageFixture([onSiteItemFixture, secondOnSiteItemFixture]))),
       ),
       http.post(`${config.apiBaseUrl}/api/checklists`, async ({ request }) => {
         requestBody = await request.json();
         return HttpResponse.json(
-          successEnvelope(finalChecklistDetail({ id: 9, name: '원룸 온라인·전화 체크리스트' })),
+          successEnvelope(finalChecklistDetail({ id: 9, name: '원룸 집에서 확인 체크리스트', stage: 'ON_SITE' })),
           { status: 201 },
         );
       }),
     );
     const user = userEvent.setup();
-    renderAuthenticated('/checklists/new?stage=ONLINE_PHONE');
+    renderAuthenticated('/checklists/new');
 
-    expect(await screen.findByLabelText('체크리스트 이름')).toHaveValue('원룸 온라인·전화 체크리스트');
+    expect(await screen.findByLabelText('체크리스트 이름')).toHaveValue('원룸 집에서 확인 체크리스트');
     expect(screen.getByText(onlineItemFixture.question)).toBeInTheDocument();
     expect(screen.queryByText(secondOnlineItemFixture.question)).not.toBeInTheDocument();
     expect(screen.queryByText('빈 목록')).not.toBeInTheDocument();
     expect(screen.queryByText('원룸 제공 항목')).not.toBeInTheDocument();
 
-    const addItemButton = screen.getByRole('button', { name: '+ 체크 항목 추가' });
+    const addItemButton = screen.getByRole('button', { name: '체크 항목 추가' });
     const createButton = screen.getByRole('button', { name: '체크리스트 만들기' });
     const orderHeading = screen.getByRole('heading', { name: '확인 순서' });
     expect(addItemButton.compareDocumentPosition(orderHeading) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
@@ -171,14 +198,14 @@ describe('체크리스트 탐색과 편집', () => {
     await user.click(screen.getByRole('button', { name: '체크리스트 만들기' }));
     await waitFor(() =>
       expect(requestBody).toEqual({
-        name: '원룸 온라인·전화 체크리스트',
-        stage: 'ONLINE_PHONE',
+        name: '원룸 집에서 확인 체크리스트',
+        stage: 'ON_SITE',
         items: [{ systemCheckItemId: 101 }, { systemCheckItemId: 102 }],
       }),
     );
     expect(await screen.findByRole('link', { name: '새 체크리스트 만들기' })).toHaveAttribute(
       'href',
-      '/checklists/new?stage=ONLINE_PHONE',
+      '/checklists/new',
     );
   });
 
@@ -188,7 +215,7 @@ describe('체크리스트 탐색과 편집', () => {
         HttpResponse.json({ code: 'INTERNAL_SERVER_ERROR', message: '조회 실패', data: null }, { status: 503 }),
       ),
     );
-    renderAuthenticated('/checklists/new?stage=ONLINE_PHONE');
+    renderAuthenticated('/checklists/new');
 
     const error = await screen.findByRole('alert');
     expect(within(error).getByText('프리셋을 불러오지 못했어요.')).toBeInTheDocument();
@@ -227,13 +254,13 @@ describe('체크리스트 탐색과 편집', () => {
     );
     expect(await screen.findByRole('link', { name: '새 체크리스트 만들기' })).toHaveAttribute(
       'href',
-      '/checklists/new?stage=ONLINE_PHONE',
+      '/checklists/new',
     );
   });
 });
 
 describe('매물 체크리스트 연결과 자동 저장', () => {
-  it('매물의 모든 단계는 체크리스트 적용 여부와 관계없이 선택 화면으로 이동한다', async () => {
+  it('매물에 체크리스트가 없으면 선택 화면 없이 바로 기본 체크리스트 시작 버튼을 보여준다', async () => {
     server.use(
       http.get(`${config.apiBaseUrl}/api/properties/10`, () =>
         HttpResponse.json(successEnvelope({ ...propertyDetailResponseFixture(), photos: [] })),
@@ -275,24 +302,10 @@ describe('매물 체크리스트 연결과 자동 저장', () => {
     );
     renderAuthenticated('/properties/10');
 
-    const sectionHeading = await screen.findByRole('heading', { name: '3단계 체크리스트' });
+    const sectionHeading = await screen.findByRole('heading', { name: '체크리스트' });
     const section = sectionHeading.closest('section');
     expect(section).not.toBeNull();
-    expect(
-      within(section as HTMLElement).getByRole('link', { name: /온라인·전화.*전화 문의 기본 목록/ }),
-    ).toHaveAttribute('href', '/properties/10/active-checklists/ONLINE_PHONE?from=property-detail&mode=replace');
-    const onlineStage = within(section as HTMLElement).getByRole('link', {
-      name: /온라인·전화.*전화 문의 기본 목록/,
-    });
-    expect(within(onlineStage).getByLabelText(/\uC9C4\uD589 1\/2/)).toBeInTheDocument();
-    expect(within(onlineStage).getByRole('list')).toHaveTextContent(/1.*0.*1/);
-    expect(
-      within(section as HTMLElement).getByRole('link', { name: /계약 전.*연결된 체크리스트 없음/ }),
-    ).toHaveAttribute('href', '/properties/10/active-checklists/PRE_CONTRACT?from=property-detail');
-    const preContractStage = within(section as HTMLElement).getByRole('link', {
-      name: /계약 전.*연결된 체크리스트 없음/,
-    });
-    expect(within(preContractStage).getByLabelText(/\uC9C4\uD589 0\/0/)).toBeInTheDocument();
+    expect(within(section as HTMLElement).getByRole('button', { name: /체크리스트 확인하기/ })).toBeInTheDocument();
   });
 
   it('내 체크리스트가 없어도 시작 방식 선택 없이 새 체크리스트 만들기만 제공한다', async () => {
@@ -341,10 +354,7 @@ describe('매물 체크리스트 연결과 자동 저장', () => {
     renderAuthenticated('/properties/10/active-checklists/ONLINE_PHONE?from=property-detail');
 
     expect(await screen.findByRole('checkbox', { name: /자취선배 기본 체크리스트/ })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: '새 체크리스트 만들기' })).toHaveAttribute(
-      'href',
-      '/checklists/new?stage=ONLINE_PHONE&returnTo=%2Fproperties%2F10%2Factive-checklists%2FONLINE_PHONE%3Ffrom%3Dproperty-detail',
-    );
+    expect(screen.queryByRole('link', { name: '새 체크리스트 만들기' })).not.toBeInTheDocument();
     expect(screen.queryByText('빈 목록')).not.toBeInTheDocument();
     expect(screen.queryByText('원룸 제공 항목')).not.toBeInTheDocument();
   });
@@ -453,80 +463,18 @@ describe('매물 체크리스트 연결과 자동 저장', () => {
       ),
     );
     const user = userEvent.setup();
-    renderAuthenticated('/properties/10/active-checklists/ONLINE_PHONE?from=property-detail');
+    renderAuthenticated('/properties/10/active-checklists/ONLINE_PHONE?mode=replace');
 
     expect(await screen.findByRole('checkbox', { name: /전화 문의 기본 목록/ })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: '온라인·전화' })).toBeInTheDocument();
 
     await user.click(screen.getByRole('checkbox', { name: /전화 문의 기본 목록/ }));
     expect(requestBody).toBeUndefined();
-    await user.click(screen.getByRole('button', { name: '이 체크리스트 연결' }));
+    await user.click(screen.getByRole('button', { name: '체크리스트 적용' }));
 
     await waitFor(() => expect(requestBody).toEqual({ sourceType: 'USER', checklistId: 7 }));
     expect(await screen.findByRole('heading', { name: '전화 문의 기본 목록', level: 1 })).toBeInTheDocument();
-  });
-
-  it('연결을 확정하지 않고 단계를 바꾸면 선택 상태를 폐기한다', async () => {
-    server.use(
-      http.get(`${config.apiBaseUrl}/api/properties/10`, () =>
-        HttpResponse.json(successEnvelope(propertyDetailResponseFixture())),
-      ),
-      http.get(`${config.apiBaseUrl}/api/properties/10/checklists`, () =>
-        HttpResponse.json(
-          successEnvelope({
-            propertyId: 10,
-            overallProgress: {
-              totalCount: 0,
-              completedCount: 0,
-              goodCount: 0,
-              cautionCount: 0,
-              unconfirmedCount: 0,
-              progressRate: 0,
-            },
-            stages: [
-              {
-                stage: 'ONLINE_PHONE',
-                applied: false,
-                propertyChecklistId: null,
-                checklistName: null,
-                sourceChecklistId: null,
-                progress: {
-                  totalCount: 0,
-                  completedCount: 0,
-                  goodCount: 0,
-                  cautionCount: 0,
-                  unconfirmedCount: 0,
-                  progressRate: 0,
-                },
-              },
-              emptyStageProgress('ON_SITE'),
-              emptyStageProgress('PRE_CONTRACT'),
-            ],
-          }),
-        ),
-      ),
-      http.get(`${config.apiBaseUrl}/api/checklists`, ({ request }) => {
-        const stage = new URL(request.url).searchParams.get('stage');
-        const item = {
-          ...checklistSummaryFixture,
-          id: stage === 'ON_SITE' ? 9 : 7,
-          checklistId: stage === 'ON_SITE' ? 9 : 7,
-          name: stage === 'ON_SITE' ? '집에서 확인할 목록' : '전화 문의 기본 목록',
-          stage,
-        };
-        return HttpResponse.json(successEnvelope(checklistPageFixture([item])));
-      }),
-    );
-    const user = userEvent.setup();
-    renderAuthenticated('/properties/10/active-checklists/ONLINE_PHONE');
-
-    await user.click(await screen.findByRole('checkbox', { name: /전화 문의 기본 목록/ }));
-    expect(screen.getByRole('button', { name: '이 체크리스트 연결' })).toBeEnabled();
-
-    await user.click(screen.getByRole('link', { name: '집에서 확인' }));
-
-    expect(await screen.findByRole('checkbox', { name: /집에서 확인할 목록/ })).not.toBeChecked();
-    expect(screen.queryByRole('button', { name: '이 체크리스트 연결' })).not.toBeInTheDocument();
+    // 다음 매물은 이번에 고른 목록으로 시작한다.
+    expect(readLastSelectedChecklist()).toBe(7);
   });
 
   it('적용된 체크리스트에서 변경을 누르면 현재 연결을 유지한 채 교체 목록을 보여준다', async () => {
@@ -585,9 +533,8 @@ describe('매물 체크리스트 연결과 자동 저장', () => {
     expect(screen.getByRole('button', { name: '선택한 체크리스트로 교체' })).toBeEnabled();
   });
 
-  it('상태는 선택 즉시, 메모는 포커스가 빠질 때 자동 저장한다', async () => {
+  it('상태를 선택하면 즉시 저장하고 항목 메모 UI는 제공하지 않는다', async () => {
     let statusRequest: unknown;
-    let memoRequest: unknown;
     server.use(
       http.get(`${config.apiBaseUrl}/api/properties/10`, () =>
         HttpResponse.json(successEnvelope({ ...propertyDetailResponseFixture(), photos: [] })),
@@ -599,7 +546,7 @@ describe('매물 체크리스트 연결과 자동 저장', () => {
             propertyId: 10,
             sourceChecklistId: 7,
             checklistName: '전화 문의 기본 목록',
-            stage: 'ONLINE_PHONE',
+            stage: 'ON_SITE',
             items: [
               {
                 id: 701,
@@ -651,33 +598,19 @@ describe('매물 체크리스트 연결과 자동 저장', () => {
         statusRequest = await request.json();
         return HttpResponse.json(successEnvelope({ item: { id: 701, status: 'CAUTION' } }));
       }),
-      http.patch(`${config.apiBaseUrl}/api/properties/10/checklists/47/items/701/memo`, async ({ request }) => {
-        memoRequest = await request.json();
-        return HttpResponse.json(successEnvelope({ item: { id: 701, memo: '욕실도 확인' } }));
-      }),
     );
     const user = userEvent.setup();
     renderAuthenticated('/properties/10/checklists/47');
 
     expect(await screen.findByRole('heading', { name: '전화 문의 기본 목록', level: 1 })).toBeInTheDocument();
-    expect(await screen.findByRole('link', { name: '온라인·전화' })).toHaveAttribute(
+    // 적용한 체크리스트를 바꾸는 진입점은 상단 헤더 오른쪽의 `편집` 하나뿐이다.
+    expect(screen.getByRole('link', { name: '편집' })).toHaveAttribute(
       'href',
-      '/properties/10/checklists/47',
+      '/properties/10/active-checklists/ON_SITE?mode=replace',
     );
-    expect(screen.getByRole('link', { name: '집에서 확인' })).toHaveAttribute(
-      'href',
-      '/properties/10/active-checklists/ON_SITE?from=property-detail',
-    );
-    expect(screen.queryByRole('link', { name: '체크리스트 변경' })).not.toBeInTheDocument();
 
     await user.click(screen.getByRole('radio', { name: '주의' }));
     await waitFor(() => expect(statusRequest).toEqual({ status: 'CAUTION' }));
-
-    await user.click(screen.getByRole('button', { name: '수압이 충분한가요? 메모 열기' }));
-    const memo = screen.getByRole('textbox', { name: '수압이 충분한가요? 메모' });
-    await user.type(memo, '욕실도 확인');
-    expect(memoRequest).toBeUndefined();
-    await user.tab();
-    await waitFor(() => expect(memoRequest).toEqual({ memo: '욕실도 확인' }));
+    expect(screen.queryByRole('button', { name: '수압이 충분한가요? 메모 열기' })).not.toBeInTheDocument();
   });
 });
