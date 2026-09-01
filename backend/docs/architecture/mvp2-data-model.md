@@ -9,7 +9,7 @@
 - 제품 정책의 정본은 기능 명세와 [결정 대장](../../../docs/product/decisions/README.md)이다.
 - 이 문서는 `001-schema.sql`에서 파생되는 설명 문서다.
 - Flyway는 사용하지 않는다. 새 DB는 현재 스키마로 초기화하고 기존 데이터가 있는 DB는 멱등 upgrade SQL로 보강한다.
-- 주변 시설 응답은 저장하지 않고 Kakao Local API 또는 데모 adapter에서 그때 조회한다.
+- 주변 시설 응답은 저장하지 않고 NAVER API HUB 지역 검색 또는 데모 adapter에서 그때 조회한다.
 
 ## ERD
 

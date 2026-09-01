@@ -31,13 +31,13 @@ MVP2는 완벽한 운영 제품보다 [와이어프레임](../../design/wirefram
 - 병원·교통·학교·편의점·중개업소 카테고리
 - 500m·1km·2km 주변 시설 조회와 집계
 - 외부 API 키가 없을 때 동일 화면을 확인하는 데모 데이터
-- 키가 있을 때 Kakao Maps JavaScript SDK와 Kakao Local REST API 사용
+- 키가 있을 때 Naver Maps JavaScript API와 백엔드 Naver Maps·NAVER API HUB 사용
 
 ### 개발·배포 준비
 
 - MySQL·MinIO 기반 로컬 실행
 - 운영에서 S3 사진 저장
-- 지도 `demo`와 `kakao`, 사진 MinIO와 S3 외부 연동 모드
+- 지도 `demo`와 `naver`, 사진 MinIO와 S3 외부 연동 모드
 - OpenAPI·Swagger와 환경변수 예시
 - 단일 EC2·Caddy·로컬 MySQL 배포 준비 문서와 수동 배포 워크플로
 
@@ -56,7 +56,7 @@ MVP2는 완벽한 운영 제품보다 [와이어프레임](../../design/wirefram
 ## 완료 기준
 
 - 외부 계정이나 키 없이 닉네임 인증과 전체 화면·주요 흐름을 로컬에서 실행합니다.
-- 지도·저장소 키와 역할을 설정하면 Kakao 지도·주소·주변 시설, S3 사진 저장으로 전환할 수 있습니다.
+- 지도·저장소 키와 역할을 설정하면 네이버 지도·주소·주변 시설, S3 사진 저장으로 전환할 수 있습니다.
 - 17개 기준 화면과 7개 빈 상태를 모바일 폭에서 탐색할 수 있습니다.
 - CRUD와 체크 자동 저장 결과가 MySQL에 남습니다.
 - MVP1 핵심 소유자 검증과 스냅샷 정책을 유지합니다.

@@ -147,7 +147,7 @@
 
 `categories`는 `HOSPITAL,TRANSPORT,SCHOOL,CONVENIENCE,AGENCY`의 쉼표 목록이며 생략하면 전체다. `radius`는 500·1000·2000만 허용한다.
 
-`places`는 Kakao 카테고리 검색별로 페이지당 15개, 최대 세 페이지를 정규화한 결과다. `TRANSPORT`는 Kakao 지하철을 기본으로 반환하고, TAGO를 설정했으면 조회 중심 500m 안의 실제 버스정류소를 합친 뒤 공급자 ID로 중복을 제거한다. `counts`는 공급자의 전체 검색 건수가 아니라 응답 `places`의 카테고리별 개수다. TAGO 장애 시 버스정류소만 제외하고 Kakao 결과는 계속 반환한다.
+`places`는 조회 중심 주소에 카테고리별 검색어를 붙여 NAVER API HUB 지역 검색을 카테고리마다 한 번 호출하고, 반환 좌표로 계산한 거리가 반경 안인 결과만 정규화한 목록이다. `TRANSPORT`는 지하철역 검색 결과를 기본으로 반환하고, TAGO를 설정했으면 조회 중심 500m 안의 실제 버스정류소를 합친 뒤 공급자 ID로 중복을 제거한다. `counts`는 공급자의 전체 검색 건수가 아니라 응답 `places`의 카테고리별 개수다. TAGO 장애 시 버스정류소만 제외하고 지역 검색 결과는 계속 반환한다.
 
 주변 조회 응답의 형태는 다음과 같다.
 
@@ -164,7 +164,7 @@
   },
   "places": [
     {
-      "providerPlaceId": "123",
+      "providerPlaceId": "naver:예시병원:37.58:126.99",
       "name": "예시 병원",
       "category": "HOSPITAL",
       "address": "서울 종로구 ...",
@@ -190,7 +190,7 @@
 | `PHOTO_CONTENT_TYPE_UNSUPPORTED` | 400 | 미지원 형식 |
 | `PHOTO_SIZE_EXCEEDED` | 400 | 5MiB 초과 |
 | `MAP_QUERY_INVALID` | 400 | 좌표·반경·카테고리 오류 |
-| `MAP_PROVIDER_UNAVAILABLE` | 503 | Kakao 장애·429·타임아웃 |
+| `MAP_PROVIDER_UNAVAILABLE` | 503 | 네이버 지도 장애·429·타임아웃 |
 
 ## 정합성 확인
 
