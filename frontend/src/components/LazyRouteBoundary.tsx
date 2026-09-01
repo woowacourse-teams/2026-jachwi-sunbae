@@ -32,13 +32,7 @@ class RouteErrorBoundary extends Component<{ children: ReactNode }, { hasError: 
 
 const LazyRouteBoundary = ({ children }: { children: ReactNode }) => (
   <RouteErrorBoundary>
-    <Suspense
-      fallback={
-        <ContentState loading title="화면을 불러오는 중이에요." />
-      }
-    >
-      {children}
-    </Suspense>
+    <Suspense fallback={<ContentState loading title="화면을 불러오는 중이에요." />}>{children}</Suspense>
   </RouteErrorBoundary>
 );
 

@@ -146,21 +146,24 @@ const MapPage = ({ config }: { config: PublicConfig }) => {
     }
   }, []);
 
-  const resolveAddAddress = useCallback(async (coordinate: { latitude: number; longitude: number }) => {
-    const requestId = addAddressRequestRef.current + 1;
-    addAddressRequestRef.current = requestId;
-    setAddAddressStatus('loading');
-    try {
-      const address = await reverseGeocode(config, coordinate.latitude, coordinate.longitude);
-      if (addAddressRequestRef.current !== requestId) return;
-      setAddAddress(address);
-      setAddAddressStatus('idle');
-    } catch {
-      if (addAddressRequestRef.current !== requestId) return;
-      setAddAddress(null);
-      setAddAddressStatus('error');
-    }
-  }, [config]);
+  const resolveAddAddress = useCallback(
+    async (coordinate: { latitude: number; longitude: number }) => {
+      const requestId = addAddressRequestRef.current + 1;
+      addAddressRequestRef.current = requestId;
+      setAddAddressStatus('loading');
+      try {
+        const address = await reverseGeocode(config, coordinate.latitude, coordinate.longitude);
+        if (addAddressRequestRef.current !== requestId) return;
+        setAddAddress(address);
+        setAddAddressStatus('idle');
+      } catch {
+        if (addAddressRequestRef.current !== requestId) return;
+        setAddAddress(null);
+        setAddAddressStatus('error');
+      }
+    },
+    [config],
+  );
 
   const enterAddMode = () => {
     radiusBeforeAddModeRef.current = selectedRadius;
@@ -520,9 +523,7 @@ const MapPage = ({ config }: { config: PublicConfig }) => {
             data-sheet={isAddMode ? 'closed' : sheetStage}
             data-dragging={dragHeight === null ? undefined : 'true'}
             style={
-              dragHeight === null || isAddMode
-                ? undefined
-                : ({ '--sheet-height': `${dragHeight}px` } as CSSProperties)
+              dragHeight === null || isAddMode ? undefined : ({ '--sheet-height': `${dragHeight}px` } as CSSProperties)
             }
           >
             <button
@@ -577,65 +578,65 @@ const MapPage = ({ config }: { config: PublicConfig }) => {
               role="status"
               aria-live="polite"
             >
-              {radiusLabel(selectedRadius)} 근처에 {categorySubject(selectedCategories[0])} {categoryCounts[selectedCategories[0]] ?? 0}개
-              있습니다.
+              {radiusLabel(selectedRadius)} 근처에 {categorySubject(selectedCategories[0])}{' '}
+              {categoryCounts[selectedCategories[0]] ?? 0}개 있습니다.
             </div>
           )}
 
           {!isAddMode && mapped.length > 0 && (
-          <section
-            ref={sheetRef}
-            className={`${styles.propertyModal} ${
-              sheetStage === 'closed'
-                ? styles.modalCollapsed
-                : sheetStage === 'mid'
-                  ? styles.modalMid
-                  : styles.modalFull
-            }`}
-            style={dragHeight === null ? undefined : { height: `${dragHeight}px` }}
-            data-dragging={dragHeight === null ? undefined : 'true'}
-            aria-label="지도 주변 매물 목록"
-          >
-            <div
-              className={styles.modalHeader}
-              onPointerDown={handleDragStart}
-              onPointerMove={handleDragMove}
-              onPointerUp={handleDragEnd}
-              onPointerCancel={(event) => {
-                touchStartYRef.current = null;
-                dragStartRef.current = null;
-                setDragHeight(null);
-                event.currentTarget.releasePointerCapture?.(event.pointerId);
-              }}
-              onClick={cycleSheetStage}
+            <section
+              ref={sheetRef}
+              className={`${styles.propertyModal} ${
+                sheetStage === 'closed'
+                  ? styles.modalCollapsed
+                  : sheetStage === 'mid'
+                    ? styles.modalMid
+                    : styles.modalFull
+              }`}
+              style={dragHeight === null ? undefined : { height: `${dragHeight}px` }}
+              data-dragging={dragHeight === null ? undefined : 'true'}
+              aria-label="지도 주변 매물 목록"
             >
-              <div className={styles.modalGrabber}>
-                <span className={styles.modalHandle} />
+              <div
+                className={styles.modalHeader}
+                onPointerDown={handleDragStart}
+                onPointerMove={handleDragMove}
+                onPointerUp={handleDragEnd}
+                onPointerCancel={(event) => {
+                  touchStartYRef.current = null;
+                  dragStartRef.current = null;
+                  setDragHeight(null);
+                  event.currentTarget.releasePointerCapture?.(event.pointerId);
+                }}
+                onClick={cycleSheetStage}
+              >
+                <div className={styles.modalGrabber}>
+                  <span className={styles.modalHandle} />
+                </div>
+                <div className={styles.modalHeadingRow}>
+                  <span>지도 위 매물</span>
+                </div>
               </div>
-              <div className={styles.modalHeadingRow}>
-                <span>지도 위 매물</span>
+
+              <div className={styles.modalBody}>
+                {(() => {
+                  const targetProperty =
+                    visibleProperties.find((item) => item.propertyId === selectedPropertyId) ??
+                    visibleProperties[0] ??
+                    null;
+
+                  if (targetProperty !== null) {
+                    return (
+                      <div className={styles.singleCardContainer}>
+                        <PropertyCard property={targetProperty} config={config} />
+                      </div>
+                    );
+                  }
+
+                  return <div className={styles.emptyNoticeArea}>현재 지도 화면에 등록된 매물이 없어요.</div>;
+                })()}
               </div>
-            </div>
-
-            <div className={styles.modalBody}>
-              {(() => {
-                const targetProperty =
-                  visibleProperties.find((item) => item.propertyId === selectedPropertyId) ??
-                  visibleProperties[0] ??
-                  null;
-
-                if (targetProperty !== null) {
-                  return (
-                    <div className={styles.singleCardContainer}>
-                      <PropertyCard property={targetProperty} config={config} />
-                    </div>
-                  );
-                }
-
-                return <div className={styles.emptyNoticeArea}>현재 지도 화면에 등록된 매물이 없어요.</div>;
-              })()}
-            </div>
-          </section>
+            </section>
           )}
         </section>
       )}

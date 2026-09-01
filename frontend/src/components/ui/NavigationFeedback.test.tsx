@@ -18,7 +18,6 @@ describe('공용 내비게이션과 상태 안내', () => {
     expect(screen.getByRole('button', { name: '메뉴' })).toBeInTheDocument();
   });
 
-
   it('상태 안내와 하단 액션을 의미 있는 영역으로 제공합니다', () => {
     render(
       <>

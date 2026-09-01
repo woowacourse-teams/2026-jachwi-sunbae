@@ -26,12 +26,12 @@ npm run dev
 
 ## 공개 빌드 설정
 
-| 환경변수                   | 데모 기본               | 설명                                  |
-| -------------------------- | ----------------------- | ------------------------------------- |
-| `API_BASE_URL`             | `http://localhost:8080` | 백엔드 기준 URL                       |
-| `MAP_PROVIDER_MODE`        | 키가 있으면 `naver`     | `demo` 또는 `naver`                  |
-| `NAVER_MAP_CLIENT_ID`      | 비움                    | `naver` 모드의 공개 Maps Client ID   |
-| `META_PIXEL_ID`            | 비움                    | 동의 기반 Meta Pixel 공개 데이터셋 ID |
+| 환경변수              | 데모 기본               | 설명                                  |
+| --------------------- | ----------------------- | ------------------------------------- |
+| `API_BASE_URL`        | `http://localhost:8080` | 백엔드 기준 URL                       |
+| `MAP_PROVIDER_MODE`   | 키가 있으면 `naver`     | `demo` 또는 `naver`                   |
+| `NAVER_MAP_CLIENT_ID` | 비움                    | `naver` 모드의 공개 Maps Client ID    |
+| `META_PIXEL_ID`       | 비움                    | 동의 기반 Meta Pixel 공개 데이터셋 ID |
 
 JWT secret, 지도 Client Secret, S3 자격증명은 프론트에 넣지 않습니다. `META_PIXEL_ID`가 비면 광고 측정 고지와 Pixel을 모두 비활성화합니다. 실제 지도 설정은 [환경변수](../backend/docs/guides/environment-variables.md)와 [지도 외부 연동](../backend/docs/guides/map-integration.md)을 따릅니다.
 

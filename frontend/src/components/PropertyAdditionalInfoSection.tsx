@@ -42,9 +42,7 @@ const PropertyAdditionalInfoSection = ({ propertyId, memo }: PropertyAdditionalI
       }
     >
       {fields.map(({ definition, item }) =>
-        item === undefined ? null : (
-          <InfoRow key={definition.key} label={definition.label} value={item.content} />
-        ),
+        item === undefined ? null : <InfoRow key={definition.key} label={definition.label} value={item.content} />,
       )}
     </InfoSection>
   );

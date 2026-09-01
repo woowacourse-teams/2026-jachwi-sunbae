@@ -73,13 +73,14 @@ const CreatePropertyPage = ({ config }: { config: PublicConfig }) => {
   const [errors, setErrors] = useState<PropertyFormErrors>({});
   // 입력값이 바뀌는 즉시 다음 필드를 노출하지 않고, 사용자가 다음을 눌렀을 때만 한 단계씩 연다.
   const [revealedStep, setRevealedStep] = useState(0);
-  const [selectedLocation, setSelectedLocation] = useState<MapAddress>(() =>
-    routeState.selectedLocation ?? {
-      address: null,
-      roadAddress: null,
-      jibunAddress: null,
-      ...DEFAULT_MAP_CENTER,
-    },
+  const [selectedLocation, setSelectedLocation] = useState<MapAddress>(
+    () =>
+      routeState.selectedLocation ?? {
+        address: null,
+        roadAddress: null,
+        jibunAddress: null,
+        ...DEFAULT_MAP_CENTER,
+      },
   );
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<MapAddress[]>([]);
@@ -334,7 +335,9 @@ const CreatePropertyPage = ({ config }: { config: PublicConfig }) => {
                   ? '주소를 확인하는 중이에요.'
                   : (selectedLocation.roadAddress ?? selectedLocation.jibunAddress ?? '주소를 확인하지 못했어요.')}
               </p>
-              {locationStatus === 'error' && <p className={styles.errorNotice}>지도를 움직여 위치를 다시 선택해 주세요.</p>}
+              {locationStatus === 'error' && (
+                <p className={styles.errorNotice}>지도를 움직여 위치를 다시 선택해 주세요.</p>
+              )}
             </section>
           )}
 

@@ -2,11 +2,8 @@ import type { ChecklistItemInputDto, ProvidedChecklistItemInputDto } from '../ap
 import type { ChecklistEditorItem } from '../types/ChecklistEditor';
 import { moveItem } from './moveItem';
 
-export const moveEditorItem = (
-  items: ChecklistEditorItem[],
-  index: number,
-  direction: -1 | 1,
-): ChecklistEditorItem[] => moveItem(items, index, direction);
+export const moveEditorItem = (items: ChecklistEditorItem[], index: number, direction: -1 | 1): ChecklistEditorItem[] =>
+  moveItem(items, index, direction);
 
 export const editorItemsFingerprint = (items: ChecklistEditorItem[]): string =>
   JSON.stringify(

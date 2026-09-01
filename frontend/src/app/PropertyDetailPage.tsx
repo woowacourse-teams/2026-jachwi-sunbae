@@ -271,7 +271,9 @@ const ResolvedPropertyDetailPage = ({ config, propertyId }: { config: PublicConf
               onChange={(event) => setQuickMemoDraft(event.target.value)}
               autoFocus
             />
-            {saveMemo.isError && <p className={styles.quickMemoDialogError}>메모를 저장하지 못했어요. 다시 시도해 주세요.</p>}
+            {saveMemo.isError && (
+              <p className={styles.quickMemoDialogError}>메모를 저장하지 못했어요. 다시 시도해 주세요.</p>
+            )}
             <div className={styles.quickMemoDialogActions}>
               <button
                 type="button"
@@ -354,45 +356,43 @@ const ResolvedPropertyDetailPage = ({ config, propertyId }: { config: PublicConf
             <button className={styles.sectionRetry} type="button" onClick={() => void checklists.refetch()}>
               체크리스트 정보를 불러오지 못했어요. 다시 시도
             </button>
+          ) : onSiteChecklist?.applied === true && onSiteChecklist.propertyChecklistId !== null ? (
+            <Link
+              className={styles.checklistEntry}
+              to={`/properties/${propertyId}/checklists/${onSiteChecklist.propertyChecklistId}`}
+              state={{ from: 'property-detail' }}
+            >
+              <span className={styles.stageNumber}>✓</span>
+              <div className={styles.stageCopy}>
+                <strong>{onSiteChecklist.checklistName}</strong>
+                <small>이어서 체크하기</small>
+              </div>
+              <Icon name="arrow-right" size={18} />
+            </Link>
           ) : (
-            onSiteChecklist?.applied === true && onSiteChecklist.propertyChecklistId !== null ? (
-              <Link
-                className={styles.checklistEntry}
-                to={`/properties/${propertyId}/checklists/${onSiteChecklist.propertyChecklistId}`}
-                state={{ from: 'property-detail' }}
-              >
-                <span className={styles.stageNumber}>✓</span>
-                <div className={styles.stageCopy}>
-                  <strong>{onSiteChecklist.checklistName}</strong>
-                  <small>이어서 체크하기</small>
-                </div>
-                <Icon name="arrow-right" size={18} />
-              </Link>
-            ) : (
-              <button
-                className={styles.checklistEntry}
-                type="button"
-                disabled={assignDefaultChecklist.isPending}
-                onClick={() => {
-                  void assignDefaultChecklist
-                    .mutateAsync('SYSTEM_DEFAULT')
-                    .then((applied) => {
-                      navigate(`/properties/${propertyId}/checklists/${applied.propertyChecklistId}`, {
-                        replace: true,
-                        state: { from: 'property-detail' },
-                      });
-                    })
-                    .catch(() => undefined);
-                }}
-              >
-                <span className={styles.stageNumber}>✓</span>
-                <div className={styles.stageCopy}>
-                  <strong>체크리스트 확인하기</strong>
-                  <small>{assignDefaultChecklist.isPending ? '준비 중이에요…' : '체크리스트 시작하기'}</small>
-                </div>
-                <Icon name="arrow-right" size={18} />
-              </button>
-            )
+            <button
+              className={styles.checklistEntry}
+              type="button"
+              disabled={assignDefaultChecklist.isPending}
+              onClick={() => {
+                void assignDefaultChecklist
+                  .mutateAsync('SYSTEM_DEFAULT')
+                  .then((applied) => {
+                    navigate(`/properties/${propertyId}/checklists/${applied.propertyChecklistId}`, {
+                      replace: true,
+                      state: { from: 'property-detail' },
+                    });
+                  })
+                  .catch(() => undefined);
+              }}
+            >
+              <span className={styles.stageNumber}>✓</span>
+              <div className={styles.stageCopy}>
+                <strong>체크리스트 확인하기</strong>
+                <small>{assignDefaultChecklist.isPending ? '준비 중이에요…' : '체크리스트 시작하기'}</small>
+              </div>
+              <Icon name="arrow-right" size={18} />
+            </button>
           )}
           {assignDefaultChecklist.isError && (
             <p className={styles.sectionRetry}>체크리스트를 시작하지 못했어요. 다시 눌러 주세요.</p>
