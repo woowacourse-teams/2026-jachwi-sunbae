@@ -37,8 +37,11 @@ Spring Boot 애플리케이션은 CORS 허용 Origin과 인증·저장소 설정
 | `PHOTO_STORAGE_SECRET_KEY` | 로컬 전용 예시 값 | 객체 저장소 secret key. 정적 자격증명으로 접속하는 환경에서만 쓴다 |
 | `PHOTO_STORAGE_PORT` | `9000` | 로컬 MinIO API 포트 |
 | `PHOTO_STORAGE_CONSOLE_PORT` | `9001` | 로컬 MinIO 관리 화면 포트 |
-| `MAP_PROVIDER_MODE` | `demo` | `demo` 또는 `kakao` 지도·주소 adapter 선택 |
-| `KAKAO_REST_API_KEY` | 비움 | `kakao` 모드의 서버 전용 Local REST API 키 |
+| `MAP_PROVIDER_MODE` | `demo` | `demo` 또는 `naver` 지도·주소 adapter 선택 |
+| `NAVER_MAP_CLIENT_ID` | 비움 | `naver` 모드의 Maps Application Client ID |
+| `NAVER_MAP_CLIENT_SECRET` | 비움 | `naver` 모드의 Maps Application Client Secret. 백엔드 전용으로 관리한다 |
+| `NAVER_SEARCH_CLIENT_ID` | 비움 | `naver` 모드의 NAVER API HUB Client ID |
+| `NAVER_SEARCH_CLIENT_SECRET` | 비움 | `naver` 모드의 NAVER API HUB Client Secret. 백엔드 전용으로 관리한다 |
 | `BUS_STOP_PROVIDER` | `none` | `none` 또는 `tago` 버스정류소 adapter 선택 |
 | `DATA_GO_KR_SERVICE_KEY` | 비움 | `tago` 모드의 공공데이터포털 일반 인증키(Decoding) |
 | `MAP_CACHE_TTL_SECONDS` | `600` | 주변 시설 응답 cache TTL(초) |
@@ -68,13 +71,13 @@ dev와 prod EC2는 모두 `SPRING_PROFILES_ACTIVE=prod`로 기동하며 `/etc/ja
 | `PHOTO_STORAGE_BUCKET` | `techcourse-project-2026` | `techcourse-project-2026` |
 | `PHOTO_STORAGE_KEY_PREFIX` | `jachwi-sunbae/photos-dev/` | `jachwi-sunbae/photos/` |
 | `DEMO_SEED_ENABLED` | `false` | `false` |
-| `MAP_PROVIDER_MODE` | `kakao` | `kakao` |
+| `MAP_PROVIDER_MODE` | `naver` | `naver` |
 | `DEPLOYMENT_ENVIRONMENT` | `dev` | `prod` |
 | `LOG_PATH` | `/var/log/jachwi-sunbae` | `/var/log/jachwi-sunbae` |
 
-DB 접속값과 `JWT_SECRET_BASE64`, `KAKAO_REST_API_KEY`는 환경별 실제 값이 필요하다. 버스정류소를 켜면 `BUS_STOP_PROVIDER=tago`와 공공데이터포털 일반 인증키의 Decoding 값인 `DATA_GO_KR_SERVICE_KEY`도 넣는다. 활용 승인이 끝나기 전에는 `BUS_STOP_PROVIDER=none`으로 배포해 병원·학교·편의점·중개업소와 지하철 결과를 먼저 사용한다.
+DB 접속값과 `JWT_SECRET_BASE64`, Naver Maps·NAVER API HUB 인증 정보는 환경별 실제 값이 필요하다. 버스정류소를 켜면 `BUS_STOP_PROVIDER=tago`와 공공데이터포털 일반 인증키의 Decoding 값인 `DATA_GO_KR_SERVICE_KEY`도 넣는다. 활용 승인이 끝나기 전에는 `BUS_STOP_PROVIDER=none`으로 배포해 병원·학교·편의점·중개업소와 지하철 결과를 먼저 사용한다.
 
-AWS S3는 EC2 `ec2-project` instance role로 접근하므로 `PHOTO_STORAGE_ENDPOINT`, `PHOTO_STORAGE_ACCESS_KEY`, `PHOTO_STORAGE_SECRET_KEY`를 EC2에 두지 않는다. 이 세 값은 로컬 MinIO에만 사용한다. 프론트엔드에는 공개 Kakao JavaScript 키만 빌드 타임에 주입한다.
+AWS S3는 EC2 `ec2-project` instance role로 접근하므로 `PHOTO_STORAGE_ENDPOINT`, `PHOTO_STORAGE_ACCESS_KEY`, `PHOTO_STORAGE_SECRET_KEY`를 EC2에 두지 않는다. 이 세 값은 로컬 MinIO에만 사용한다. 프론트엔드에는 공개 Naver Maps Client ID만 빌드 타임에 주입한다.
 
 첫 MVP2 기동은 기존 팀 DB에 `db/upgrade/*.sql`을 적용한다. 애플리케이션 DB 계정은 이 전환 동안 필요한 `ALTER`, `CREATE`, `INDEX`, `SELECT`, `INSERT`, `UPDATE` 권한을 가져야 한다. 전환 전에 자동 백업의 최신 복구 지점을 확인한다.
 

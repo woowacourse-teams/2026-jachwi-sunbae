@@ -84,4 +84,4 @@ npm run dev
 - Swagger UI: `http://localhost:8080/swagger-ui/index.html`
 - MinIO 콘솔: `http://localhost:9001`
 
-처음 보는 닉네임은 새 기록 공간을 만듭니다. 비밀번호를 비우면 같은 닉네임을 아는 사람이 기록을 함께 수정할 수 있고, 비밀번호를 입력하면 해당 닉네임을 보호합니다. 실제 Kakao 지도와 팀 S3 전환 값은 [환경변수](backend/docs/guides/environment-variables.md)와 [지도 연동](backend/docs/guides/map-integration.md)을 따릅니다.
+처음 보는 닉네임은 새 기록 공간을 만듭니다. 비밀번호를 비우면 같은 닉네임을 아는 사람이 기록을 함께 수정할 수 있고, 비밀번호를 입력하면 해당 닉네임을 보호합니다. 실제 네이버 지도와 팀 S3 전환 값은 [환경변수](backend/docs/guides/environment-variables.md)와 [지도 연동](backend/docs/guides/map-integration.md)을 따릅니다.

@@ -20,7 +20,7 @@ set +a
 npm run dev
 ```
 
-기본 `.env.example`은 외부 키가 필요 없는 닉네임 인증·데모 지도 모드입니다. `http://localhost:3000`에서 닉네임과 선택 비밀번호로 바로 시작합니다. Webpack은 `.env.local`을 자동으로 읽지 않으므로 실행 전에 셸로 내보냅니다.
+기본 `.env.example`은 외부 키가 필요 없는 닉네임 인증·데모 지도 모드입니다. `.env.example`을 `.env.local`로 복사하면 Webpack이 빌드 시작에 그 값을 읽습니다(`.env.local`은 저장소에 올라가지 않으며, 이미 설정된 셸 환경변수를 덮어쓰지 않습니다). `http://localhost:3000`에서 닉네임과 선택 비밀번호로 바로 시작합니다.
 
 백엔드 없이 UI fixture만 확인하려면 `npm run dev:mock`을 사용합니다. MSW는 개발 빌드에서만 켜지며 운영 번들에는 포함되지 않습니다.
 
@@ -29,11 +29,11 @@ npm run dev
 | 환경변수                   | 데모 기본               | 설명                                  |
 | -------------------------- | ----------------------- | ------------------------------------- |
 | `API_BASE_URL`             | `http://localhost:8080` | 백엔드 기준 URL                       |
-| `MAP_PROVIDER_MODE`        | `demo`                  | `demo` 또는 `kakao`                   |
-| `KAKAO_MAP_JAVASCRIPT_KEY` | 비움                    | `kakao` 모드의 공개 JavaScript SDK 키 |
+| `MAP_PROVIDER_MODE`        | 키가 있으면 `naver`     | `demo` 또는 `naver`                  |
+| `NAVER_MAP_CLIENT_ID`      | 비움                    | `naver` 모드의 공개 Maps Client ID   |
 | `META_PIXEL_ID`            | 비움                    | 동의 기반 Meta Pixel 공개 데이터셋 ID |
 
-JWT secret, Kakao REST key, S3 자격증명은 프론트에 넣지 않습니다. `META_PIXEL_ID`가 비면 광고 측정 고지와 Pixel을 모두 비활성화합니다. 실제 Kakao 설정은 [환경변수](../backend/docs/guides/environment-variables.md)와 [지도 외부 연동](../backend/docs/guides/map-integration.md)을 따릅니다.
+JWT secret, 지도 Client Secret, S3 자격증명은 프론트에 넣지 않습니다. `META_PIXEL_ID`가 비면 광고 측정 고지와 Pixel을 모두 비활성화합니다. 실제 지도 설정은 [환경변수](../backend/docs/guides/environment-variables.md)와 [지도 외부 연동](../backend/docs/guides/map-integration.md)을 따릅니다.
 
 ## 화면과 경로
 
@@ -43,19 +43,18 @@ JWT secret, Kakao REST key, S3 자격증명은 프론트에 넣지 않습니다.
 | 공개 안내 | `/intro`, `/privacy`                                      | 서비스 소개와 광고 측정 동의·철회                 |
 | `01`      | `/properties`                                             | 최근 활동순 매물, 단계별 진행 현황, PDF 비교 진입 |
 | 매물 비교 | `/compare`                                                | 2~5개 매물 선택과 전체 기록 PDF 다운로드          |
-| `02`      | `/properties/new`                                         | 주소·좌표를 포함한 매물 등록                      |
-| `03`      | `/properties/:propertyId`                                 | 사진·메모·3단계 체크 요약                         |
+| `02`      | `/properties/new`                                         | 이름·보증금·월세 입력 후 지도에서 주소 확정       |
+| `03`      | `/properties/:propertyId`                                 | 기본·부가 정보 즉시 수정, 사진·메모·체크 요약     |
 | `03-1`    | `/properties/:propertyId/photos`                          | 업로드·대표 지정·삭제                             |
 | `03-2`    | `/properties/:propertyId/memo`                            | 네 개 구조화 메모와 자유 메모 저장                |
-| `03-3`    | `/properties/:propertyId/edit`                            | 기본 정보·주소·좌표 전체 수정                     |
+| `03-3`    | `/properties/:propertyId/edit`                            | 위치가 없는 매물의 주소·좌표 보정                 |
 | `04`      | `/properties/:propertyId/active-checklists/:stage`        | 기본 또는 내 체크리스트 적용·교체                 |
 | `05`      | `/properties/:propertyId/checklists/:propertyChecklistId` | 상태 즉시 저장·메모 자동 저장·진행 집계           |
-| `06`      | `/checklists`                                             | 단계 탭 진입                                      |
-| `07`      | `/checklists/:stage`                                      | 단계별 내 체크리스트 목록                         |
+| `06`      | `/checklists`                                             | 현장 단계 내 체크리스트 목록                      |
 | `08`      | `/checklists/:checklistId`                                | 체크리스트 상세·수정                              |
 | `09`      | `/checklists/new`                                         | 기본·선택 항목 조합 생성                          |
 | `10`      | `/me`                                                     | 계정·모드·주요 기능 이동·로그아웃                 |
-| `13-1`    | `/map`                                                    | 현재 위치 반경·시설 개수·핀 상세·선택 시설 지도   |
+| `13-1`    | `/map`                                                    | 현재 위치 500m 시작·검색창·매물 핀과 시세 표시    |
 | `13-2`    | `/map/select-location`                                    | 현재 위치·접힌 주소 검색·역지오코딩               |
 | `13-3`    | `/properties/:propertyId/nearby`                          | 반경별 시설 개수·선택 시설 핀 상세·스크롤 목록    |
 
