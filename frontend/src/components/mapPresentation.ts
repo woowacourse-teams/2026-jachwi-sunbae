@@ -10,5 +10,9 @@ export const MAP_CATEGORY_OPTIONS: Array<{ value: MapCategory; label: string; sh
 
 export const ALL_MAP_CATEGORIES = MAP_CATEGORY_OPTIONS.map((option) => option.value);
 
+/** 지도 시설 필터는 한 번에 한 카테고리만 켠다. 켜져 있는 카테고리를 다시 누르면 끈다. */
+export const selectSingleCategory = (categories: MapCategory[], category: MapCategory): MapCategory[] =>
+  categories.includes(category) ? [] : [category];
+
 export const getMapCategoryLabel = (category: MapCategory): string =>
   MAP_CATEGORY_OPTIONS.find((option) => option.value === category)?.label ?? category;

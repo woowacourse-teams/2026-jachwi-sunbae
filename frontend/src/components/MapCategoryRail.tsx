@@ -7,10 +7,11 @@ type MapCategoryRailProps = {
   selectedCategories: MapCategory[];
   counts?: Partial<Record<MapCategory, number>>;
   onToggle: (category: MapCategory) => void;
+  className?: string;
 };
 
-const MapCategoryRail = ({ selectedCategories, counts, onToggle }: MapCategoryRailProps) => (
-  <aside className={styles.rail} aria-label="지도 시설 카테고리">
+const MapCategoryRail = ({ selectedCategories, counts, onToggle, className }: MapCategoryRailProps) => (
+  <aside className={`${styles.rail} ${className ?? ''}`} aria-label="지도 시설 카테고리">
     {MAP_CATEGORY_OPTIONS.map((option) => {
       const selected = selectedCategories.includes(option.value);
       const count = counts?.[option.value];

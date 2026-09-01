@@ -71,6 +71,79 @@ const markerFromCluster = (cluster: PlaceCluster): MapMarker => {
   };
 };
 
+export type PropertyPin = {
+  propertyId: number;
+  name: string;
+  latitude: number;
+  longitude: number;
+  caption: string;
+  photoUrl?: string;
+};
+
+type PropertyCluster = {
+  latitude: number;
+  longitude: number;
+  pins: PropertyPin[];
+};
+
+const markerFromPropertyCluster = (cluster: PropertyCluster): MapMarker => {
+  if (cluster.pins.length === 1) {
+    const [pin] = cluster.pins;
+    return {
+      id: `property-${pin.propertyId}`,
+      latitude: pin.latitude,
+      longitude: pin.longitude,
+      label: pin.name,
+      caption: pin.caption,
+      tone: 'property',
+      photoUrl: pin.photoUrl,
+      actionable: true,
+    };
+  }
+
+  return {
+    id: `property-cluster-${cluster.pins
+      .map((pin) => pin.propertyId)
+      .sort((left, right) => left - right)
+      .join('-')}`,
+    latitude: cluster.latitude,
+    longitude: cluster.longitude,
+    label: `매물 ${cluster.pins.length}개`,
+    tone: 'propertyCluster',
+    count: cluster.pins.length,
+    photoUrl: cluster.pins.find((pin) => pin.photoUrl !== undefined)?.photoUrl,
+    actionable: true,
+  };
+};
+
+/** 겹쳐 보이는 매물 핀을 확대 단계별 반경으로 묶고, 묶이면 묶음 숫자를 보여 준다. */
+export const clusterProperties = (pins: PropertyPin[], level: number): MapMarker[] => {
+  const threshold = clusterDistanceForLevel(level);
+  const clusters: PropertyCluster[] = [];
+
+  [...pins]
+    .sort((left, right) => left.propertyId - right.propertyId)
+    .forEach((pin) => {
+      const nearest =
+        threshold === 0
+          ? undefined
+          : clusters
+              .map((cluster) => ({ cluster, distance: distanceMeters(cluster, pin) }))
+              .filter(({ distance }) => distance <= threshold)
+              .sort((left, right) => left.distance - right.distance)[0]?.cluster;
+      if (nearest === undefined) {
+        clusters.push({ latitude: pin.latitude, longitude: pin.longitude, pins: [pin] });
+        return;
+      }
+      const count = nearest.pins.length;
+      nearest.latitude = (nearest.latitude * count + pin.latitude) / (count + 1);
+      nearest.longitude = (nearest.longitude * count + pin.longitude) / (count + 1);
+      nearest.pins.push(pin);
+    });
+
+  return clusters.map(markerFromPropertyCluster);
+};
+
 export const clusterNearbyPlaces = (places: NearbyPlace[], level: number): MapMarker[] => {
   const threshold = clusterDistanceForLevel(level);
   if (threshold === 0) {

@@ -34,8 +34,11 @@ photo:
 map:
   provider:
     mode: ${MAP_PROVIDER_MODE:demo}
-  kakao:
-    rest-api-key: ${KAKAO_REST_API_KEY:}
+  naver:
+    client-id: ${NAVER_MAP_CLIENT_ID:}
+    client-secret: ${NAVER_MAP_CLIENT_SECRET:}
+    search-client-id: ${NAVER_SEARCH_CLIENT_ID:}
+    search-client-secret: ${NAVER_SEARCH_CLIENT_SECRET:}
   bus-stops:
     provider: ${BUS_STOP_PROVIDER:none}
     tago:

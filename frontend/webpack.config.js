@@ -1,18 +1,34 @@
+const fs = require('fs');
 const path = require('path');
 const webpack = require('webpack');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 const { BundleAnalyzerPlugin } = require('webpack-bundle-analyzer');
 
+// 로컬 개발용 키는 .env.local 에 둔다(저장소에 커밋하지 않는다). 이미 설정된 환경 변수를 덮어쓰지 않는다.
+const loadLocalEnv = () => {
+  const envPath = path.resolve(__dirname, '.env.local');
+  if (!fs.existsSync(envPath)) return;
+
+  for (const line of fs.readFileSync(envPath, 'utf8').split('\n')) {
+    const match = /^\s*([A-Z0-9_]+)\s*=\s*(.*?)\s*$/.exec(line);
+    if (match === null) continue;
+    if (process.env[match[1]] === undefined) process.env[match[1]] = match[2].replace(/^['"]|['"]$/g, '');
+  }
+};
+
+loadLocalEnv();
+
 const shouldAnalyze = process.env.ANALYZE === 'true';
 const isBrowserTestHarness = process.env.BROWSER_TEST_HARNESS === 'true';
 
 module.exports = (_env, argv) => {
   const isProduction = argv.mode === 'production';
-  const isMockingEnabled = !isProduction && process.env.ENABLE_MSW === 'true';
+  const isMockingEnabled = !isProduction && process.env.ENABLE_MSW !== 'false';
   const apiBaseUrl = process.env.API_BASE_URL ?? (isMockingEnabled ? 'http://127.0.0.1:3000' : 'http://localhost:8080');
-  const mapProviderMode = process.env.MAP_PROVIDER_MODE ?? 'demo';
-  const kakaoMapJavaScriptKey = process.env.KAKAO_MAP_JAVASCRIPT_KEY ?? '';
+
+  const naverMapClientId = process.env.NAVER_MAP_CLIENT_ID ?? '';
+  const mapProviderMode = process.env.MAP_PROVIDER_MODE ?? (naverMapClientId === '' ? 'demo' : 'naver');
   const metaPixelId = process.env.META_PIXEL_ID ?? '';
   const posthogProjectToken = process.env.POSTHOG_PROJECT_TOKEN ?? '';
   const posthogHost = process.env.POSTHOG_HOST ?? '';
@@ -40,7 +56,7 @@ module.exports = (_env, argv) => {
       new webpack.DefinePlugin({
         __API_BASE_URL__: JSON.stringify(apiBaseUrl),
         __MAP_PROVIDER_MODE__: JSON.stringify(mapProviderMode),
-        __KAKAO_MAP_JAVASCRIPT_KEY__: JSON.stringify(kakaoMapJavaScriptKey),
+        __NAVER_MAP_CLIENT_ID__: JSON.stringify(naverMapClientId),
         __META_PIXEL_ID__: JSON.stringify(metaPixelId),
         __POSTHOG_PROJECT_TOKEN__: JSON.stringify(posthogProjectToken),
         __POSTHOG_HOST__: JSON.stringify(posthogHost),

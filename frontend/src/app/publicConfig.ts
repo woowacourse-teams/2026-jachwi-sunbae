@@ -21,20 +21,21 @@ const requireHttpUrl = (value: string, variableName: string): string => {
 };
 
 export const getPublicConfig = (): PublicConfig => {
-  const mapProviderMode =
-    typeof __MAP_PROVIDER_MODE__ === 'string' && __MAP_PROVIDER_MODE__ === 'kakao' ? 'kakao' : 'demo';
+  const mapProviderMode = typeof __MAP_PROVIDER_MODE__ === 'string' && __MAP_PROVIDER_MODE__ === 'naver'
+    ? 'naver'
+    : 'demo';
 
   if (
-    mapProviderMode === 'kakao' &&
-    (typeof __KAKAO_MAP_JAVASCRIPT_KEY__ !== 'string' || __KAKAO_MAP_JAVASCRIPT_KEY__.trim().length === 0)
+    mapProviderMode === 'naver' &&
+    (typeof __NAVER_MAP_CLIENT_ID__ !== 'string' || __NAVER_MAP_CLIENT_ID__.trim().length === 0)
   ) {
-    throw new Error('KAKAO_MAP_JAVASCRIPT_KEY 환경변수가 필요합니다.');
+    throw new Error('NAVER_MAP_CLIENT_ID 환경변수가 필요합니다.');
   }
 
   return {
     apiBaseUrl: requireHttpUrl(typeof __API_BASE_URL__ === 'string' ? __API_BASE_URL__ : '', 'API_BASE_URL'),
     mapProviderMode,
-    kakaoMapJavaScriptKey: typeof __KAKAO_MAP_JAVASCRIPT_KEY__ === 'string' ? __KAKAO_MAP_JAVASCRIPT_KEY__.trim() : '',
+    naverMapClientId: typeof __NAVER_MAP_CLIENT_ID__ === 'string' ? __NAVER_MAP_CLIENT_ID__.trim() : '',
     metaPixelId: typeof __META_PIXEL_ID__ === 'string' ? __META_PIXEL_ID__.trim() : '',
     posthogProjectToken: typeof __POSTHOG_PROJECT_TOKEN__ === 'string' ? __POSTHOG_PROJECT_TOKEN__.trim() : '',
     posthogHost: typeof __POSTHOG_HOST__ === 'string' ? __POSTHOG_HOST__.trim() : '',

@@ -13,6 +13,13 @@
   inset: 0;
 }
 
+/* Naver SDK가 지도 container에 position: relative를 인라인으로 덮어쓴다.
+   .liveLayer가 크기를 잡고 이 안쪽 div만 SDK에 넘겨 높이가 0으로 접히지 않게 한다. */
+.liveMap {
+  width: 100%;
+  height: 100%;
+}
+
 .demo {
   background:
     linear-gradient(28deg, transparent 45%, rgb(255 255 255 / 82%) 46% 51%, transparent 52%),
@@ -104,22 +111,50 @@ button.clusterMarker::before {
   content: '';
 }
 
-.propertyMarker,
-.currentMarker {
+/*
+ * 물방울 모양은 ::before만 회전해서 만든다.
+ * 마커 element 자체를 회전하면 live 지도에서 overlay가 거는 inline transform에 덮여
+ * 모양은 안 돌고 사진·캡션만 기울어진다.
+ */
+.propertyMarker {
   width: 2.7rem;
   height: 2.7rem;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  isolation: isolate;
+}
+
+.propertyMarker::before {
+  position: absolute;
+  z-index: 0;
+  inset: 0;
+  border: 2px solid white;
   border-radius: 50% 50% 50% 0;
   background: #f04444;
+  box-shadow: 0 0.28rem 0.8rem rgb(44 50 39 / 28%);
+  content: '';
   transform: rotate(-45deg);
 }
 
-.propertyMarker > *,
-.currentMarker > * {
-  transform: rotate(45deg);
+.propertyMarker > * {
+  z-index: 1;
 }
 
+/*
+ * 현재 위치는 지도 앱 관례대로 파란 점으로 그린다.
+ * 바라보는 방향 표시는 기기 방위가 필요해 네이티브 앱에서 추가한다.
+ */
 .currentMarker {
-  background: #343434;
+  width: 1.15rem;
+  height: 1.15rem;
+  border: 3px solid white;
+  border-radius: 50%;
+  background: #1a73e8;
+  box-shadow:
+    0 0 0 0.45rem rgb(26 115 232 / 16%),
+    0 0.15rem 0.5rem rgb(20 60 120 / 38%);
 }
 
 .selectedMarker {
@@ -133,6 +168,16 @@ button.clusterMarker::before {
   outline-offset: 2px;
   filter: saturate(1.15);
   scale: 1.08;
+}
+
+/* 물방울 마커는 테두리를 element가 아니라 모양을 그리는 ::before에 두른다. */
+.propertyMarker.activeMarker {
+  outline: 0;
+}
+
+.propertyMarker.activeMarker::before {
+  outline: 2px solid white;
+  outline-offset: 2px;
 }
 
 .placeMarker[data-category='HOSPITAL'] {
@@ -153,6 +198,23 @@ button.clusterMarker::before {
 
 .placeMarker[data-category='AGENCY'] {
   background: #64748b;
+}
+
+/* 매물 군집은 물방울이 아니라 원으로 그려 하나의 매물과 구분한다. */
+.propertyClusterMarker {
+  width: 2.7rem;
+  height: 2.7rem;
+  border-radius: 50%;
+  background: #f04444;
+}
+
+.propertyClusterMarker .markerCount {
+  right: -0.3rem;
+  bottom: -0.3rem;
+  min-width: 1.2rem;
+  height: 1.2rem;
+  font-size: 0.62rem;
+  font-weight: 850;
 }
 
 .clusterMarker {
@@ -191,6 +253,26 @@ button.clusterMarker::before {
   line-height: 1;
 }
 
+.markerPhoto {
+  display: block;
+  width: 1.95rem;
+  height: 1.95rem;
+  border-radius: 50%;
+  background: var(--color-surface-muted, #f7f7f7);
+  object-fit: cover;
+  pointer-events: none;
+}
+
+.selectedMarker .markerPhoto {
+  width: 2.5rem;
+  height: 2.5rem;
+}
+
+.propertyClusterMarker .markerPhoto {
+  width: 2.1rem;
+  height: 2.1rem;
+}
+
 .categoryIcon {
   font-size: 0.78rem;
 }
@@ -217,23 +299,21 @@ button.clusterMarker::before {
 
 .markerCaption {
   position: absolute;
-  top: calc(100% + 0.28rem);
+  top: calc(100% + 0.35rem);
   left: 50%;
-  padding: 0.08rem 0.28rem;
-  border-radius: 0.3rem;
-  background: rgb(255 255 255 / 78%);
-  color: #30342e;
-  font-size: 0.52rem;
-  font-weight: 850;
+  padding: 0.15rem 0.45rem;
+  border: 1px solid var(--color-border, #eaebed);
+  border-radius: var(--radius-sm, 0.35rem);
+  background: rgb(255 255 255 / 96%);
+  box-shadow: 0 0.15rem 0.5rem rgb(0 0 0 / 12%);
+  color: var(--color-ink, #212124);
+  font-size: 0.68rem;
+  font-weight: 750;
   line-height: 1.25;
   text-align: center;
   white-space: nowrap;
   transform: translateX(-50%);
-}
-
-.propertyMarker .markerCaption,
-.currentMarker .markerCaption {
-  transform: translateX(-50%) rotate(45deg);
+  pointer-events: none;
 }
 
 .radiusCircle {
@@ -241,12 +321,17 @@ button.clusterMarker::before {
   top: 50%;
   left: 50%;
   aspect-ratio: 1;
-  border: 2px solid rgb(74 143 244 / 46%);
+  border: 2px solid color-mix(in srgb, var(--color-primary) 58%, transparent);
   border-radius: 50%;
-  background: rgb(74 143 244 / 6%);
+  background: color-mix(in srgb, var(--color-primary) 8%, transparent);
   transform: translate(-50%, -50%);
 }
 
+/*
+ * 어느 점을 고르는지 보이도록 매물 핀과 같은 물방울로 그린다.
+ * 모양은 ::before만 회전하고, 뾰족한 끝이 지도 중심에 오도록 위로 올린다.
+ * (2.8rem 상자를 -45도 돌리면 끝이 상자 아래로 반대각선-반높이 = 0.58rem 만큼 더 내려간다.)
+ */
 .fixedCenterPin {
   position: absolute;
   z-index: 9;
@@ -255,29 +340,29 @@ button.clusterMarker::before {
   display: grid;
   width: 2.8rem;
   height: 2.8rem;
-  border: 4px solid white;
-  border-radius: 50% 50% 50% 0;
-  background: #343434;
-  box-shadow: 0 0.35rem 0.9rem rgb(32 35 30 / 30%);
   color: white;
   place-items: center;
-  transform: translate(-50%, -72%) rotate(-45deg);
+  isolation: isolate;
+  transform: translate(-50%, calc(-100% - 0.58rem));
+}
+
+.fixedCenterPin::before {
+  position: absolute;
+  z-index: 0;
+  inset: 0;
+  border: 4px solid white;
+  border-radius: 50% 50% 50% 0;
+  background: var(--color-primary, #555);
+  box-shadow: 0 0.35rem 0.9rem rgb(32 35 30 / 30%);
+  content: '';
+  transform: rotate(-45deg);
 }
 
 .fixedCenterPin > span {
-  font-size: 1.1rem;
-  transform: rotate(45deg);
-}
-
-.fixedCenterPin > small {
-  position: absolute;
-  top: calc(100% + 0.42rem);
-  left: 65%;
-  color: #30342e;
-  font-size: 0.55rem;
-  font-weight: 850;
-  white-space: nowrap;
-  transform: rotate(45deg) translateX(-50%);
+  z-index: 1;
+  font-size: 1.5rem;
+  font-weight: 500;
+  line-height: 1;
 }
 
 .radiusLabels {
@@ -320,4 +405,16 @@ button.clusterMarker::before {
   font-weight: 750;
   text-align: center;
   transform: translate(-50%, -50%);
+}
+
+.mapError {
+  position: absolute;
+  z-index: 20;
+  inset: 0;
+  background: var(--color-canvas);
+}
+
+.mapError :global(.page) {
+  min-height: 100%;
+  padding: 1rem;
 }
