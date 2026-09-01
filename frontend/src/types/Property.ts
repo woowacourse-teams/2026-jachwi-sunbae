@@ -25,6 +25,12 @@ export type PropertySummary = {
     contentUrl: string;
     contentType: 'image/jpeg' | 'image/png' | 'image/webp';
   } | null;
+  photos?: Array<{
+    photoId: number;
+    contentUrl: string;
+    contentType?: 'image/jpeg' | 'image/png' | 'image/webp';
+  }>;
+  photoUrls?: string[];
   progress: PropertyChecklistProgress;
   stages: PropertyChecklistStageSummary[];
   photoCount: number;

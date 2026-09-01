@@ -5,8 +5,8 @@ import MapCanvas from './MapCanvas';
 
 const config: PublicConfig = {
   apiBaseUrl: 'http://localhost:8080',
-  mapProviderMode: 'kakao',
-  kakaoMapJavaScriptKey: 'test-key',
+  mapProviderMode: 'naver',
+  naverMapClientId: 'test-key',
 };
 
 class FakeLatLng {
@@ -15,22 +15,23 @@ class FakeLatLng {
     private readonly longitude: number,
   ) {}
 
-  getLat = () => this.latitude;
-  getLng = () => this.longitude;
+  lat = () => this.latitude;
+  lng = () => this.longitude;
 }
 
 class FakeOverlay {
   setMap = vi.fn();
 }
 
-describe('Kakao 지도 상태 동기화', () => {
+describe('Naver 지도 상태 동기화', () => {
   type FakeMapInstance = {
     center: FakeLatLng;
-    level: number;
+    zoom: number;
     getCenter: () => FakeLatLng;
-    getLevel: () => number;
+    getZoom: () => number;
     setCenter: ReturnType<typeof vi.fn>;
-    setLevel: ReturnType<typeof vi.fn>;
+    setZoom: ReturnType<typeof vi.fn>;
+    refresh: ReturnType<typeof vi.fn>;
   };
   let maps: FakeMapInstance[];
 
@@ -38,40 +39,66 @@ describe('Kakao 지도 상태 동기화', () => {
     maps = [];
     class FakeMap {
       center: FakeLatLng;
-      level: number;
+      zoom: number;
       getCenter = () => this.center;
-      getLevel = () => this.level;
+      getZoom = () => this.zoom;
       setCenter = vi.fn((center: FakeLatLng) => {
         this.center = center;
       });
-      setLevel = vi.fn((level: number) => {
-        this.level = level;
+      setZoom = vi.fn((zoom: number) => {
+        this.zoom = zoom;
       });
+      refresh = vi.fn();
 
-      constructor(_: HTMLElement, options: { center: FakeLatLng; level: number }) {
+      constructor(_: HTMLElement, options: { center: FakeLatLng; zoom: number }) {
         this.center = options.center;
-        this.level = options.level;
+        this.zoom = options.zoom;
         maps.push(this);
       }
     }
 
-    Object.defineProperty(window, 'kakao', {
+    Object.defineProperty(window, 'naver', {
       configurable: true,
       value: {
         maps: {
-          load: (callback: () => void) => callback(),
           LatLng: FakeLatLng,
           Map: FakeMap,
-          CustomOverlay: FakeOverlay,
+          OverlayView: FakeOverlay,
           Circle: FakeOverlay,
-          event: { addListener: vi.fn(), removeListener: vi.fn() },
+          Event: { addListener: vi.fn(), removeListener: vi.fn() },
         },
       },
     });
   });
 
   afterEach(() => {
-    Object.defineProperty(window, 'kakao', { configurable: true, value: undefined });
+    Object.defineProperty(window, 'naver', { configurable: true, value: undefined });
+    vi.unstubAllGlobals();
+  });
+
+  it('컨테이너 크기가 바뀌면 Naver 지도의 refresh를 부른다', async () => {
+    const resizeCallbacks: (() => void)[] = [];
+    class FakeResizeObserver {
+      constructor(private readonly callback: () => void) {}
+      observe = () => {
+        resizeCallbacks.push(this.callback);
+      };
+      disconnect = vi.fn();
+    }
+    vi.stubGlobal('ResizeObserver', FakeResizeObserver);
+
+    render(<MapCanvas config={config} center={{ latitude: 37.5665, longitude: 126.978 }} level={5} />);
+    await waitFor(() => expect(resizeCallbacks).toHaveLength(1));
+
+    expect(() => resizeCallbacks[0]()).not.toThrow();
+    expect(maps[0].refresh).toHaveBeenCalled();
+  });
+
+  it('앱 확대 단계를 반대 방향인 Naver zoom으로 바꿔 전달한다', async () => {
+    render(<MapCanvas config={config} center={{ latitude: 37.5665, longitude: 126.978 }} level={5} />);
+
+    await waitFor(() => expect(maps).toHaveLength(1));
+    expect(maps[0].zoom).toBe(15);
   });
 
   it('중심 좌표만 갱신될 때 사용자가 바꾼 확대 단계를 되돌리지 않는다', async () => {
@@ -80,12 +107,25 @@ describe('Kakao 지도 상태 동기화', () => {
     );
     await waitFor(() => expect(maps).toHaveLength(1));
     const [map] = maps;
-    map.level = 3;
 
     rerender(<MapCanvas config={config} center={{ latitude: 37.567, longitude: 126.979 }} level={5} />);
 
     await waitFor(() => expect(map.setCenter).toHaveBeenCalledOnce());
-    expect(map.setLevel).not.toHaveBeenCalled();
-    expect(map.getLevel()).toBe(3);
+    expect(map.setZoom).not.toHaveBeenCalled();
+    expect(map.zoom).toBe(15);
+  });
+
+  it('사용자가 지도에서 확대 단계를 바꾸면 같은 단계를 다시 지정하지 않는다', async () => {
+    const { rerender } = render(
+      <MapCanvas config={config} center={{ latitude: 37.5665, longitude: 126.978 }} level={5} />,
+    );
+    await waitFor(() => expect(maps).toHaveLength(1));
+    const [map] = maps;
+    map.zoom = 17;
+
+    rerender(<MapCanvas config={config} center={{ latitude: 37.5665, longitude: 126.978 }} level={3} />);
+
+    await waitFor(() => expect(map.zoom).toBe(17));
+    expect(map.setZoom).not.toHaveBeenCalled();
   });
 });

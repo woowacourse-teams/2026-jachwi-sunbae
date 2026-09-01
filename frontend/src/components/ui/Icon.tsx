@@ -3,6 +3,8 @@ export type IconName =
   | 'arrow-right'
   | 'checklist'
   | 'chevron-down'
+  | 'chevron-left'
+  | 'chevron-right'
   | 'chevron-up'
   | 'close'
   | 'edit'
@@ -12,6 +14,7 @@ export type IconName =
   | 'info'
   | 'external-link'
   | 'link'
+  | 'locate'
   | 'map'
   | 'more-vertical'
   | 'plus'
@@ -55,8 +58,13 @@ const IconPaths = ({ name }: { name: IconName }) => {
       );
     case 'chevron-down':
       return <path d="m6 9 6 6 6-6" />;
+    case 'chevron-left':
+      return <path d="m15 18-6-6 6-6" />;
+    case 'chevron-right':
+      return <path d="m9 18 6-6-6-6" />;
     case 'chevron-up':
       return <path d="m6 15 6-6 6 6" />;
+
     case 'close':
       return (
         <>
@@ -147,6 +155,7 @@ const IconPaths = ({ name }: { name: IconName }) => {
           <path d="m16.5 16.5 4 4" />
         </>
       );
+    case 'locate':
     case 'target':
       return (
         <>

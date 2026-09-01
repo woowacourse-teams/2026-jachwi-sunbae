@@ -2,12 +2,14 @@ import { useEffect, useRef, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { getPropertyErrorMessage } from '../apis/propertyErrorMessages';
 import PropertyCard from '../components/PropertyCard';
+import mascotImage from '../assets/empty-property.jpg';
 import { Button, ButtonLink } from '../components/ui/Button';
 import EmptyState from '../components/ui/EmptyState';
 import Icon from '../components/ui/Icon';
 import InlineNotice from '../components/ui/InlineNotice';
 import SearchField from '../components/ui/SearchField';
 import TopNavigation from '../components/ui/TopNavigation';
+import PageActionLink from '../components/ui/PageActionLink';
 import { usePropertyList } from '../hooks/query/useProperties';
 import type { PublicConfig } from '../types/PublicConfig';
 import styles from './PropertyListPage.module.css';
@@ -110,6 +112,9 @@ const PropertyListPage = ({ config }: PropertyListPageProps) => {
 
         {hasInitialError && (
           <div className={styles.errorState}>
+            <div className={styles.errorMascot} aria-hidden="true">
+              <img src={mascotImage} alt="" />
+            </div>
             <InlineNotice tone="error">
               <strong>매물 목록을 불러오지 못했어요.</strong>
               <span>{getPropertyErrorMessage(properties.error)}</span>
@@ -191,9 +196,9 @@ const PropertyListPage = ({ config }: PropertyListPageProps) => {
         )}
 
         {!hasInitialError && items.length > 0 && (
-          <ButtonLink className={styles.floatingAdd} to="/properties/new" aria-label="새 매물 등록">
-            <Icon name="plus" size={20} />
-          </ButtonLink>
+          <PageActionLink to="/properties/new" aria-label="매물 추가">
+            매물 추가
+          </PageActionLink>
         )}
       </div>
     </main>

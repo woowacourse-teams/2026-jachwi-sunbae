@@ -16,10 +16,41 @@
   font-size: 1rem;
 }
 
-.heading > strong {
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.heading strong {
   color: var(--color-primary-dark);
   font-size: 0.82rem;
   font-variant-numeric: tabular-nums;
+}
+
+/* 적용한 체크리스트를 바꾸는 진입점. 상단 헤더 오른쪽에 둔다. */
+.editAction {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2rem;
+  padding: 0.25rem 0.65rem;
+  border: 1px solid var(--color-border-strong, #d7c69e);
+  border-radius: 999px;
+  background: var(--color-surface, #fffdf8);
+  color: var(--color-primary-dark, #455a27);
+  font-size: 0.78rem;
+  font-weight: 750;
+  text-decoration: none;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.editAction:hover,
+.editAction:focus-visible {
+  border-color: var(--color-primary, #6c873b);
+  background: var(--color-surface-muted, #f2f3eb);
+  outline: none;
 }
 
 .items {
@@ -28,4 +59,27 @@
   margin: 0;
   padding: 0;
   list-style: none;
+}
+
+.saveAction {
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+  margin: 1rem -1rem 0;
+  padding: 0.75rem 1rem calc(0.75rem + env(safe-area-inset-bottom));
+  background: linear-gradient(to bottom, transparent, var(--color-canvas) 30%);
+}
+
+.saveAction a {
+  display: flex;
+  min-height: 2.8rem;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-sm, 0.5rem);
+  background: var(--color-surface);
+  color: var(--color-ink);
+  font-size: 0.8rem;
+  font-weight: 750;
+  text-decoration: none;
 }

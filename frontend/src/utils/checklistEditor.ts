@@ -1,17 +1,9 @@
 import type { ChecklistItemInputDto, ProvidedChecklistItemInputDto } from '../apis/dtos/ChecklistDto';
 import type { ChecklistEditorItem } from '../types/ChecklistEditor';
+import { moveItem } from './moveItem';
 
-export const moveEditorItem = (
-  items: ChecklistEditorItem[],
-  index: number,
-  direction: -1 | 1,
-): ChecklistEditorItem[] => {
-  const destination = index + direction;
-  if (index < 0 || index >= items.length || destination < 0 || destination >= items.length) return items;
-  const result = [...items];
-  [result[index], result[destination]] = [result[destination], result[index]];
-  return result;
-};
+export const moveEditorItem = (items: ChecklistEditorItem[], index: number, direction: -1 | 1): ChecklistEditorItem[] =>
+  moveItem(items, index, direction);
 
 export const editorItemsFingerprint = (items: ChecklistEditorItem[]): string =>
   JSON.stringify(

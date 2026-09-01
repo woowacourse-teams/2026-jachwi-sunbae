@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { useTrackingConsent } from '../app/TrackingConsentContext';
 import styles from './TrackingConsentBanner.module.css';
+import { Button } from './ui/Button';
 
 const TrackingConsentBanner = () => {
   const { grant, deny } = useTrackingConsent();
@@ -15,12 +16,12 @@ const TrackingConsentBanner = () => {
         </p>
       </div>
       <div className={styles.actions}>
-        <button type="button" className={styles.secondary} onClick={deny}>
+        <Button variant="secondary" onClick={deny}>
           동의하지 않기
-        </button>
-        <button type="button" className={styles.primary} onClick={grant}>
+        </Button>
+        <Button variant="soft" onClick={grant}>
           측정에 동의하기
-        </button>
+        </Button>
       </div>
     </aside>
   );

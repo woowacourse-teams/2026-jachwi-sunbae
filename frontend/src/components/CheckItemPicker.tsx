@@ -7,6 +7,7 @@ import BottomActionArea from './ui/BottomActionArea';
 import { Button } from './ui/Button';
 import SearchField from './ui/SearchField';
 import styles from './ChecklistEditor.module.css';
+import SelectionControl from './ui/SelectionControl';
 
 type CheckItemPickerProps = {
   config: PublicConfig;
@@ -65,22 +66,14 @@ const CheckItemPicker = ({ config, stage, existingSourceIds, disabled, onCancel,
         />
       </div>
 
-      <div className={styles.pickerActions}>
-        <BottomActionArea sticky={false} divider={false}>
-          <Button variant="secondary" type="button" disabled={disabled} onClick={onCancel}>
-            취소
-          </Button>
-          <Button
-            fullWidth
-            className={styles.pickerAdd}
-            type="button"
-            disabled={disabled || additionCount === 0}
-            onClick={addSelected}
-          >
-            선택한 {additionCount}개 항목 추가
-          </Button>
-        </BottomActionArea>
-      </div>
+      <BottomActionArea placement="screen" divider={false} className={styles.pickerActions}>
+        <Button variant="secondary" type="button" disabled={disabled} onClick={onCancel}>
+          취소
+        </Button>
+        <Button type="button" disabled={disabled || additionCount === 0} onClick={addSelected}>
+          선택한 {additionCount}개 항목 추가
+        </Button>
+      </BottomActionArea>
 
       {result.isPending ? (
         <div className={styles.compactState} role="status">
@@ -110,27 +103,22 @@ const CheckItemPicker = ({ config, stage, existingSourceIds, disabled, onCancel,
               const checked = exists || selectedIds.has(item.checkItemId);
               return (
                 <li key={item.checkItemId}>
-                  <label>
-                    <input
-                      className="sr-only"
-                      type="checkbox"
-                      checked={checked}
-                      disabled={disabled || exists}
-                      onChange={(event) => {
-                        const next = new Set(selectedIds);
-                        if (event.target.checked) next.add(item.checkItemId);
-                        else next.delete(item.checkItemId);
-                        setSelectedIds(next);
-                      }}
-                    />
-                    <span className={styles.resultControl} data-selected={checked || undefined}>
-                      {checked && <span aria-hidden="true">✓</span>}
-                    </span>
+                  <SelectionControl
+                    checked={checked}
+                    disabled={disabled || exists}
+                    onSelect={() => {
+                      const next = new Set(selectedIds);
+                      if (checked) next.delete(item.checkItemId);
+                      else next.add(item.checkItemId);
+                      setSelectedIds(next);
+                    }}
+                    markClassName={styles.resultControl}
+                  >
                     <span className={styles.resultCopy}>
                       <strong>{item.question}</strong>
                       {item.guide !== null && <small>{item.guide}</small>}
                     </span>
-                  </label>
+                  </SelectionControl>
                   {exists && <small className={styles.alreadyAdded}>이미 추가됨</small>}
                 </li>
               );

@@ -50,12 +50,16 @@ public class DemoMapProvider implements MapProvider {
                         latitude, longitude, 410, "서울 중구 태평로1가"),
                 place("demo-school-1", "덕수초등학교", MapCategory.SCHOOL,
                         latitude, longitude, 830, "서울 중구 덕수궁길 140"),
+                place("demo-school-2", "세종초등학교", MapCategory.SCHOOL,
+                        latitude, longitude, 340, "서울 중구 세종대로 76"),
                 place("demo-convenience-1", "모카 편의점", MapCategory.CONVENIENCE,
                         latitude, longitude, 180, "서울 중구 세종대로 100"),
                 place("demo-convenience-2", "24시 편의점", MapCategory.CONVENIENCE,
                         latitude, longitude, 620, "서울 중구 을지로 12"),
                 place("demo-agency-1", "자취선배 공인중개사", MapCategory.AGENCY,
-                        latitude, longitude, 510, "서울 중구 다동길 8")
+                        latitude, longitude, 510, "서울 중구 다동길 8"),
+                place("demo-agency-2", "세종대로 공인중개사", MapCategory.AGENCY,
+                        latitude, longitude, 260, "서울 중구 세종대로 104")
         );
         return places.stream()
                 .filter(place -> place.distanceMeters() <= radius && categories.contains(place.category()))

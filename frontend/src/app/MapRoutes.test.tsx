@@ -123,82 +123,26 @@ describe('MVP2 지도 화면', () => {
     Object.defineProperty(navigator, 'geolocation', { configurable: true, value: originalGeolocation });
   });
 
-  it('현재 위치 요약을 표시하고 시설을 선택했을 때만 핀과 목록을 제공한다', async () => {
-    const requestedRadii: string[] = [];
+  it('현재 위치와 주변 매물 목록을 표시하고 매물 선택 시 상세로 이동한다', async () => {
     server.use(
       http.get(`${config.apiBaseUrl}/api/properties`, () =>
         HttpResponse.json(successEnvelope({ totalCount: 1, items: [property] })),
       ),
       http.get(`${config.apiBaseUrl}/api/properties/10`, () => HttpResponse.json(successEnvelope(property))),
-      http.get(`${config.apiBaseUrl}/api/maps/nearby`, ({ request }) => {
-        const radius = Number(new URL(request.url).searchParams.get('radius'));
-        requestedRadii.push(String(radius));
-        const result = nearbyResult(radius);
-        return HttpResponse.json(
-          successEnvelope({
-            ...result,
-            counts: { ...result.counts, HOSPITAL: 3 },
-            places: [
-              ...result.places,
-              {
-                ...result.places[0],
-                providerPlaceId: 'demo-hospital-nearest',
-                name: '신림 가까운 의원',
-                distanceMeters: 120,
-              },
-              {
-                ...result.places[0],
-                providerPlaceId: 'demo-hospital-far',
-                name: '신림 먼 의원',
-                distanceMeters: 890,
-              },
-            ],
-          }),
-        );
-      }),
     );
 
-    const user = userEvent.setup();
     renderAuthenticated('/map');
 
     expect(await screen.findByRole('generic', { name: '데모 지도' })).toBeInTheDocument();
     expect(await screen.findByRole('img', { name: '현재 위치' })).toBeInTheDocument();
-    await waitFor(() => expect(requestedRadii).toContain('2000'));
-    expect(await screen.findByRole('heading', { name: '현재 위치 주변 2km' })).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: '병원 3개' })).not.toBeInTheDocument();
-    expect(screen.getByRole('button', { name: '병원 표시하기, 3개' })).toHaveAttribute('aria-pressed', 'false');
 
-    await user.click(screen.getByRole('button', { name: '병원 표시하기, 3개' }));
-    expect(await screen.findByRole('button', { name: '병원 3개' })).toBeInTheDocument();
+    // 상단 검색바 확인
+    expect(screen.getByRole('button', { name: '주소 또는 위치 검색' })).toBeInTheDocument();
 
-    await user.click(screen.getByRole('button', { name: '시설 목록 보기' }));
-    expect(screen.getByRole('region', { name: '스크롤 가능한 주변 시설 목록' })).toBeInTheDocument();
-    expect(screen.getByRole('list', { name: '주변 시설 목록' })).toHaveTextContent('신림 가까운 의원');
-    expect(screen.getByRole('list', { name: '주변 시설 목록' })).not.toHaveTextContent('모카 편의점');
-
-    await user.click(screen.getByRole('button', { name: '편의점 표시하기, 1개' }));
-    const convenienceMarker = await screen.findByRole('button', { name: '모카 편의점' });
-    expect(convenienceMarker.querySelector('[data-map-category-icon="CONVENIENCE"]')).toBeInTheDocument();
-    expect(
-      screen
-        .getByRole('button', { name: '편의점 숨기기, 1개' })
-        .querySelector('[data-map-category-icon="CONVENIENCE"]'),
-    ).toBeInTheDocument();
-    await user.click(convenienceMarker);
-    const placeDetail = await screen.findByRole('region', { name: '모카 편의점 시설 상세' });
-    expect(placeDetail).toHaveTextContent('편의점');
-    expect(placeDetail).toHaveTextContent('모카 편의점');
-    expect(placeDetail).toHaveTextContent('180m');
-    expect(placeDetail).toHaveTextContent('서울 관악구 신림로 18');
-    expect(screen.queryByRole('region', { name: '스크롤 가능한 주변 시설 목록' })).not.toBeInTheDocument();
-
-    await user.click(screen.getByRole('button', { name: '1km' }));
-    await waitFor(() => expect(requestedRadii).toContain('1000'));
-    expect(screen.getByRole('button', { name: '1km' })).toHaveAttribute('aria-pressed', 'true');
-    await user.click(await screen.findByRole('button', { name: '신림역 원룸' }));
-
-    expect(await screen.findByRole('heading', { name: '매물 주변 분석' })).toBeInTheDocument();
-    expect(screen.getByRole('img', { name: '선택한 매물' })).toBeInTheDocument();
+    // 하단 매물 카드 오버레이 확인 (PropertyCard 컴포넌트)
+    expect(await screen.findByRole('region', { name: '지도 주변 매물 목록' })).toBeInTheDocument();
+    expect(screen.getByText('신림역 원룸')).toBeInTheDocument();
+    expect(screen.getByText(/1,000만원 \/ 월세 55만원/)).toBeInTheDocument();
   });
 
   it('주소 검색은 필요할 때 열고 도로명·지번 주소와 좌표를 위치 선택에 유지한다', async () => {

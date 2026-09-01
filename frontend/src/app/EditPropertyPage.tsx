@@ -11,6 +11,7 @@ import type { PublicConfig } from '../types/PublicConfig';
 import { formatAmountForInput } from '../utils/propertyForm';
 import { parsePositiveId } from '../utils/propertyFormat';
 import styles from './EditPropertyPage.module.css';
+import ContentState from '../components/ui/ContentState';
 
 type EditPropertyPageProps = { config: PublicConfig };
 
@@ -20,14 +21,9 @@ const EditPropertyPage = ({ config }: EditPropertyPageProps) => {
 
   if (propertyId === null) {
     return (
-      <main className="property-page">
-        <div className="page-container">
-          <div className="content-state">
-            <strong>올바른 매물 주소가 아니에요.</strong>
-            <Link to="/properties">매물 목록으로 돌아가기</Link>
-          </div>
-        </div>
-      </main>
+      <ContentState title="올바른 매물 주소가 아니에요.">
+        <Link to="/properties">매물 목록으로 돌아가기</Link>
+      </ContentState>
     );
   }
 
@@ -41,32 +37,20 @@ const ResolvedEditPropertyPage = ({ config, propertyId }: { config: PublicConfig
   const updateMutation = useUpdateProperty(config, propertyId);
   const [formNotice, setFormNotice] = useState<string | null>(null);
 
-  if (property.isPending)
-    return (
-      <main className="property-page">
-        <div className="page-container">
-          <div className="content-state" role="status">
-            <span className="spinner" />
-            매물 정보를 불러오는 중이에요.
-          </div>
-        </div>
-      </main>
-    );
+  if (property.isPending) return <ContentState loading title="매물 정보를 불러오는 중이에요." />;
   if (property.isError)
     return (
-      <main className="property-page">
-        <div className="page-container">
-          <div className="content-state content-state--error">
-            <strong>
-              {property.error instanceof ApiError && property.error.code === 'PROPERTY_NOT_FOUND'
-                ? '매물을 찾을 수 없어요.'
-                : '매물 정보를 불러오지 못했어요.'}
-            </strong>
-            <span>{getPropertyErrorMessage(property.error)}</span>
-            <Link to="/properties">매물 목록으로 돌아가기</Link>
-          </div>
-        </div>
-      </main>
+      <ContentState
+        tone="error"
+        title={
+          property.error instanceof ApiError && property.error.code === 'PROPERTY_NOT_FOUND'
+            ? '매물을 찾을 수 없어요.'
+            : '매물 정보를 불러오지 못했어요.'
+        }
+        description={getPropertyErrorMessage(property.error)}
+      >
+        <Link to="/properties">매물 목록으로 돌아가기</Link>
+      </ContentState>
     );
 
   const initial = property.data;

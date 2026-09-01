@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { ApiError } from '../apis/apiClient';
 import { getPropertyErrorMessage } from '../apis/propertyErrorMessages';
@@ -6,25 +6,31 @@ import AuthenticatedPhoto from '../components/AuthenticatedPhoto';
 import ChecklistProgressBar from '../components/ChecklistProgressBar';
 import ConfirmDialog from '../components/ConfirmDialog';
 import PropertyPhotoViewer from '../components/PropertyPhotoViewer';
+import PropertyAdditionalInfoSection from '../components/PropertyAdditionalInfoSection';
+import PropertyBasicInfoSection from '../components/PropertyBasicInfoSection';
 import Icon from '../components/ui/Icon';
 import TopNavigation from '../components/ui/TopNavigation';
 import TopNavigationMenu from '../components/ui/TopNavigationMenu';
+import { ButtonLink } from '../components/ui/Button';
+import PageHeading from '../components/ui/PageHeading';
+
 import { usePropertyChecklistOverview, usePropertyDetail, usePropertyMemo } from '../hooks/query/useProperties';
-import { useRemoveProperty } from '../hooks/query/usePropertyMutations';
-import { CHECKLIST_STAGES } from '../types/Checklist';
+import { useAssignActiveChecklist } from '../hooks/query/useChecklistMutations';
+import { useRemoveProperty, useSavePropertyMemoDocument } from '../hooks/query/usePropertyMutations';
 import type { PublicConfig } from '../types/PublicConfig';
-import { formatManwon, getChecklistStageLabel, getSafeHttpUrl, parsePositiveId } from '../utils/propertyFormat';
+import { parsePositiveId } from '../utils/propertyFormat';
+import { clearLastSelectedChecklist, readLastSelectedChecklist } from './lastChecklistStore';
 import styles from './PropertyDetailPage.module.css';
+import ContentState from '../components/ui/ContentState';
 
 const PropertyDetailPage = ({ config }: { config: PublicConfig }) => {
   const propertyId = parsePositiveId(useParams().propertyId);
   if (propertyId === null) {
     return (
       <main className="property-page">
-        <div className="content-state">
-          <strong>올바른 매물 주소가 아니에요.</strong>
+        <ContentState page={false} title="올바른 매물 주소가 아니에요.">
           <Link to="/properties">매물 목록으로 돌아가기</Link>
-        </div>
+        </ContentState>
       </main>
     );
   }
@@ -36,35 +42,77 @@ const ResolvedPropertyDetailPage = ({ config, propertyId }: { config: PublicConf
   const property = usePropertyDetail(config, propertyId);
   const memo = usePropertyMemo(config, propertyId);
   const checklists = usePropertyChecklistOverview(config, propertyId);
+  const assignDefaultChecklist = useAssignActiveChecklist(config, propertyId, 'ON_SITE');
   const removeMutation = useRemoveProperty(config, propertyId);
+  const saveMemo = useSavePropertyMemoDocument(config, propertyId);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isQuickMemoOpen, setIsQuickMemoOpen] = useState(false);
+  const [quickMemoDraft, setQuickMemoDraft] = useState('');
   const [selectedPhotoIndex, setSelectedPhotoIndex] = useState<number | null>(null);
   const deleteButtonRef = useRef<HTMLButtonElement>(null);
+  const quickMemoDialogRef = useRef<HTMLDialogElement>(null);
+  const quickMemoTriggerRef = useRef<HTMLButtonElement>(null);
   const photoTriggerRef = useRef<HTMLButtonElement | null>(null);
+  const defaultChecklistAssignmentStarted = useRef(false);
+  const onSiteChecklist = checklists.data?.stages.find((item) => item.stage === 'ON_SITE');
 
-  if (property.isPending) return <div className="content-state">매물 상세를 불러오는 중이에요.</div>;
+  useEffect(() => {
+    const dialog = quickMemoDialogRef.current;
+    if (dialog === null) return;
+
+    if (isQuickMemoOpen && !dialog.open) {
+      dialog.showModal();
+      return;
+    }
+
+    if (!isQuickMemoOpen && dialog.open) {
+      dialog.close();
+      quickMemoTriggerRef.current?.focus();
+    }
+  }, [isQuickMemoOpen]);
+
+  useEffect(() => {
+    if (
+      checklists.isPending ||
+      checklists.isError ||
+      checklists.data === undefined ||
+      onSiteChecklist?.applied === true ||
+      defaultChecklistAssignmentStarted.current
+    ) {
+      return;
+    }
+
+    defaultChecklistAssignmentStarted.current = true;
+    // 마지막으로 고른 체크리스트로 시작하고, 그 목록이 사라졌으면 제공 템플릿으로 되돌린다.
+    const remembered = readLastSelectedChecklist();
+    void assignDefaultChecklist.mutateAsync(remembered).catch(() => {
+      if (remembered === 'SYSTEM_DEFAULT') return;
+      clearLastSelectedChecklist();
+      void assignDefaultChecklist.mutateAsync('SYSTEM_DEFAULT').catch(() => {
+        // 자동 적용은 한 번만 시도한다. 실패 시 화면의 시작 버튼으로 사용자가 재시도할 수 있다.
+      });
+    });
+  }, [assignDefaultChecklist, checklists.data, checklists.isError, checklists.isPending, onSiteChecklist?.applied]);
+
+  if (property.isPending) return <ContentState page={false} loading title="매물 상세를 불러오는 중이에요." />;
   if (property.isError) {
     const isNotFound = property.error instanceof ApiError && property.error.code === 'PROPERTY_NOT_FOUND';
     return (
       <main className="property-page">
-        <div className="content-state content-state--error" role="alert">
-          <strong>{isNotFound ? '매물을 찾을 수 없어요.' : '매물 상세를 불러오지 못했어요.'}</strong>
-          <span>{getPropertyErrorMessage(property.error)}</span>
-          {!isNotFound && (
-            <button className="inline-button" type="button" onClick={() => void property.refetch()}>
-              다시 시도
-            </button>
-          )}
+        <ContentState
+          page={false}
+          tone="error"
+          title={isNotFound ? '매물을 찾을 수 없어요.' : '매물 상세를 불러오지 못했어요.'}
+          description={getPropertyErrorMessage(property.error)}
+          onRetry={isNotFound ? undefined : () => void property.refetch()}
+        >
           <Link to="/properties">매물 목록으로 돌아가기</Link>
-        </div>
+        </ContentState>
       </main>
     );
   }
 
   const detail = property.data;
-  const safeSourceUrl = detail.discoverySource.type === 'URL' ? getSafeHttpUrl(detail.discoverySource.value) : null;
-  const highlightedMemoItems = memo.data?.items.filter((item) => item.content.trim() !== '') ?? [];
-  const progress = checklists.data?.overallProgress;
 
   const deleteProperty = async () => {
     try {
@@ -80,12 +128,12 @@ const ResolvedPropertyDetailPage = ({ config, propertyId }: { config: PublicConf
     <main className={styles.page}>
       <div className={styles.container}>
         <TopNavigation
-          title="매물 정보"
+          className={styles.detailNavigation}
+          title={detail.name}
           backTo="/properties"
           backLabel="매물 목록으로 돌아가기"
           endSlot={
-            <TopNavigationMenu label="매물 메뉴 열기">
-              <Link to={`/properties/${propertyId}/edit`}>수정</Link>
+            <TopNavigationMenu label="매물 정보 메뉴 열기">
               <button
                 ref={deleteButtonRef}
                 type="button"
@@ -101,40 +149,152 @@ const ResolvedPropertyDetailPage = ({ config, propertyId }: { config: PublicConf
           }
         />
 
-        <section className={styles.basicSection}>
-          <h1>{detail.name}</h1>
-          <p className={styles.priceSummary}>
-            보증금 {formatManwon(detail.depositAmount)} <span aria-hidden="true">/</span> 월세{' '}
-            {formatManwon(detail.monthlyRentAmount)}
-          </p>
-          {detail.location.address !== null && (
-            <Link className={styles.addressLink} to={`/properties/${propertyId}/nearby`}>
-              <Icon name="map" size={17} />
-              <span>{detail.location.address}</span>
-              <Icon name="arrow-right" size={16} />
+        <section className={styles.heroPhotoSection} aria-label="대표 사진">
+          {detail.photoPreview.photos.length > 0 ? (
+            <button
+              type="button"
+              className={styles.heroPhotoButton}
+              aria-label={`${detail.name} 대표 사진 크게 보기`}
+              onClick={() => {
+                photoTriggerRef.current = null;
+                setSelectedPhotoIndex(0);
+              }}
+            >
+              <AuthenticatedPhoto
+                config={config}
+                propertyId={propertyId}
+                photoId={detail.photoPreview.photos[0].photoId}
+                contentUrl={detail.photoPreview.photos[0].contentUrl}
+                alt={`${detail.name} 대표 사진`}
+                className={styles.heroPhoto}
+              />
+            </button>
+          ) : (
+            <Link className={styles.heroPhotoButton} to={`/properties/${propertyId}/photos`}>
+              <span className={styles.heroPhotoAdd}>
+                <Icon name="plus" size={16} />
+                사진 추가
+              </span>
             </Link>
           )}
-          {detail.discoverySource.value !== '' && (
-            <div className={styles.discoverySource}>
-              <span className={styles.discoveryLabel}>
-                <Icon name="link" size={17} /> 확인한 곳
-              </span>
-              {safeSourceUrl === null ? (
-                <span className={styles.discoveryValue}>{detail.discoverySource.value}</span>
-              ) : (
-                <a href={safeSourceUrl} target="_blank" rel="noopener noreferrer">
-                  매물 원문 보기 <Icon name="external-link" size={17} />
-                </a>
-              )}
-            </div>
-          )}
         </section>
+
+        <PageHeading title={detail.name} variant="overlap" />
+        <PropertyBasicInfoSection config={config} property={detail} />
+
+        {memo.isPending ? (
+          <section className={styles.sectionStateCard} aria-label="매물 부가 정보">
+            매물 부가 정보를 불러오는 중이에요.
+          </section>
+        ) : memo.isError ? (
+          <button className={styles.sectionRetryCard} type="button" onClick={() => void memo.refetch()}>
+            매물 부가 정보를 불러오지 못했어요. 다시 시도
+          </button>
+        ) : (
+          <PropertyAdditionalInfoSection config={config} propertyId={propertyId} memo={memo.data} />
+        )}
+
+        {memo.isPending ? (
+          <section className={styles.memoSection} aria-label="매물 메모">
+            <div className={styles.sectionHeading}>
+              <h2>메모</h2>
+            </div>
+            <p className={styles.sectionStateCard}>매물 메모를 불러오는 중이에요.</p>
+          </section>
+        ) : memo.isError ? (
+          <section className={styles.memoSection} aria-label="매물 메모">
+            <div className={styles.sectionHeading}>
+              <h2>메모</h2>
+            </div>
+            <button className={styles.sectionRetryCard} type="button" onClick={() => void memo.refetch()}>
+              매물 메모를 불러오지 못했어요. 다시 시도
+            </button>
+          </section>
+        ) : (
+          <section className={styles.quickMemoSection} aria-label="매물 메모">
+            <div className={styles.sectionHeading}>
+              <h2>메모</h2>
+            </div>
+            <button
+              ref={quickMemoTriggerRef}
+              type="button"
+              className={styles.quickMemoField}
+              onClick={() => {
+                setQuickMemoDraft(memo.data.freeMemo);
+                setIsQuickMemoOpen(true);
+              }}
+            >
+              {memo.data.freeMemo || '탭해서 메모를 입력해 주세요.'}
+            </button>
+          </section>
+        )}
+
+        <dialog
+          ref={quickMemoDialogRef}
+          className={styles.quickMemoDialog}
+          aria-labelledby="quick-memo-dialog-title"
+          onCancel={(event) => {
+            event.preventDefault();
+            if (!saveMemo.isPending) setIsQuickMemoOpen(false);
+          }}
+          onClose={() => {
+            if (isQuickMemoOpen && !saveMemo.isPending) setIsQuickMemoOpen(false);
+          }}
+        >
+          <form
+            onSubmit={(event) => {
+              event.preventDefault();
+              const memoDocument = memo.data;
+              if (memoDocument === undefined) return;
+              void saveMemo
+                .mutateAsync({
+                  items: memoDocument.items.map((item) => ({
+                    systemMemoItemId: item.systemMemoItemId,
+                    content: item.content,
+                  })),
+                  freeMemo: quickMemoDraft.trim(),
+                })
+                .then(() => setIsQuickMemoOpen(false))
+                .catch(() => undefined);
+            }}
+          >
+            <h2 id="quick-memo-dialog-title">메모</h2>
+            <label className={styles.quickMemoDialogLabel} htmlFor="quick-memo-input">
+              메모
+            </label>
+            <textarea
+              id="quick-memo-input"
+              value={quickMemoDraft}
+              maxLength={2_000}
+              rows={5}
+              placeholder="그 외 내용을 자유롭게 적어보세요."
+              onChange={(event) => setQuickMemoDraft(event.target.value)}
+              autoFocus
+            />
+            {saveMemo.isError && (
+              <p className={styles.quickMemoDialogError}>메모를 저장하지 못했어요. 다시 시도해 주세요.</p>
+            )}
+            <div className={styles.quickMemoDialogActions}>
+              <button
+                type="button"
+                className={styles.quickMemoCancelButton}
+                disabled={saveMemo.isPending}
+                onClick={() => setIsQuickMemoOpen(false)}
+              >
+                취소
+              </button>
+              <button type="submit" className={styles.quickMemoSaveButton} disabled={saveMemo.isPending}>
+                {saveMemo.isPending ? '저장 중…' : '저장'}
+              </button>
+            </div>
+          </form>
+        </dialog>
 
         <section className={styles.photoSection} aria-label="매물 사진">
           <div className={styles.sectionHeading}>
             <div>
-              <strong>사진</strong>
-              <span>{detail.photoPreview.totalCount}장</span>
+              <h2>사진</h2>
+              <span>{detail.photoPreview.totalCount}/30</span>
             </div>
             <Link to={`/properties/${propertyId}/photos`}>
               <Icon name="plus" size={16} /> 사진 관리
@@ -177,81 +337,76 @@ const ResolvedPropertyDetailPage = ({ config, propertyId }: { config: PublicConf
           )}
         </section>
 
-        <section className={styles.memoSection} aria-labelledby="memo-heading">
-          <div className={styles.sectionHeading}>
-            <strong id="memo-heading">메모</strong>
-            <Link to={`/properties/${propertyId}/memo`}>
-              메모 작성 <Icon name="arrow-right" size={16} />
-            </Link>
-          </div>
-          {memo.isPending ? (
-            <p className={styles.sectionState}>메모를 불러오는 중이에요.</p>
-          ) : memo.isError ? (
-            <button className={styles.sectionRetry} type="button" onClick={() => void memo.refetch()}>
-              메모를 불러오지 못했어요. 다시 시도
-            </button>
-          ) : highlightedMemoItems.length === 0 && memo.data.freeMemo.trim() === '' ? (
-            <p className={styles.sectionState}>아직 작성한 메모가 없어요.</p>
-          ) : (
-            <ul className={styles.memoSummary}>
-              {memo.data.items.map((item) => (
-                <li className={item.content.trim() === '' ? undefined : styles.hasMemo} key={item.systemMemoItemId}>
-                  {item.label}
-                </li>
-              ))}
-              {memo.data.freeMemo.trim() !== '' && <li className={styles.hasMemo}>추가 메모</li>}
-            </ul>
-          )}
-        </section>
-
         <section className={styles.checklistSection} aria-labelledby="checklist-heading">
           <div className={styles.checklistHeading}>
             <div>
-              <h2 id="checklist-heading">3단계 체크리스트</h2>
-              <p>단계를 누르면 체크리스트를 확인하거나 연결할 수 있어요.</p>
+              <h2 id="checklist-heading">체크리스트</h2>
+              <p>집을 보면서 바로 확인할 항목이에요.</p>
             </div>
-            {progress !== undefined && (
+            {onSiteChecklist !== undefined && (
               <strong>
-                {progress.completedCount}/{progress.totalCount}
+                {onSiteChecklist.progress.completedCount}/{onSiteChecklist.progress.totalCount}
               </strong>
             )}
           </div>
-          {progress !== undefined && progress.totalCount > 0 && <ChecklistProgressBar progress={progress} />}
+          {onSiteChecklist !== undefined && onSiteChecklist.progress.totalCount > 0 && (
+            <ChecklistProgressBar progress={onSiteChecklist.progress} />
+          )}
           {checklists.isError ? (
             <button className={styles.sectionRetry} type="button" onClick={() => void checklists.refetch()}>
-              체크리스트 연결을 불러오지 못했어요. 다시 시도
+              체크리스트 정보를 불러오지 못했어요. 다시 시도
             </button>
+          ) : onSiteChecklist?.applied === true && onSiteChecklist.propertyChecklistId !== null ? (
+            <Link
+              className={styles.checklistEntry}
+              to={`/properties/${propertyId}/checklists/${onSiteChecklist.propertyChecklistId}`}
+              state={{ from: 'property-detail' }}
+            >
+              <span className={styles.stageNumber}>✓</span>
+              <div className={styles.stageCopy}>
+                <strong>{onSiteChecklist.checklistName}</strong>
+                <small>이어서 체크하기</small>
+              </div>
+              <Icon name="arrow-right" size={18} />
+            </Link>
           ) : (
-            <ol className={styles.checklistList}>
-              {CHECKLIST_STAGES.map((stage, index) => {
-                const item = checklists.data?.stages.find((candidate) => candidate.stage === stage);
-                const checklistPath = `/properties/${propertyId}/active-checklists/${stage}?from=property-detail${
-                  item?.applied === true ? '&mode=replace' : ''
-                }`;
-                return (
-                  <li key={stage}>
-                    <Link to={checklistPath} state={{ from: 'property-detail' }}>
-                      <span className={styles.stageNumber}>{index + 1}</span>
-                      <div className={styles.stageCopy}>
-                        <div className={styles.stageTitleRow}>
-                          <strong>{getChecklistStageLabel(stage)}</strong>
-                          {item !== undefined && (
-                            <span
-                              aria-label={`${getChecklistStageLabel(stage)} \uC9C4\uD589 ${item.progress.completedCount}/${item.progress.totalCount}`}
-                            >
-                              {item.progress.completedCount}/{item.progress.totalCount}
-                            </span>
-                          )}
-                        </div>
-                        <small>{item?.applied === true ? item.checklistName : '연결된 체크리스트 없음'}</small>
-                        {item !== undefined && <ChecklistProgressBar progress={item.progress} compact />}
-                      </div>
-                      <Icon name="arrow-right" size={18} />
-                    </Link>
-                  </li>
-                );
-              })}
-            </ol>
+            <button
+              className={styles.checklistEntry}
+              type="button"
+              disabled={assignDefaultChecklist.isPending}
+              onClick={() => {
+                void assignDefaultChecklist
+                  .mutateAsync('SYSTEM_DEFAULT')
+                  .then((applied) => {
+                    navigate(`/properties/${propertyId}/checklists/${applied.propertyChecklistId}`, {
+                      replace: true,
+                      state: { from: 'property-detail' },
+                    });
+                  })
+                  .catch(() => undefined);
+              }}
+            >
+              <span className={styles.stageNumber}>✓</span>
+              <div className={styles.stageCopy}>
+                <strong>체크리스트 확인하기</strong>
+                <small>{assignDefaultChecklist.isPending ? '준비 중이에요…' : '체크리스트 시작하기'}</small>
+              </div>
+              <Icon name="arrow-right" size={18} />
+            </button>
+          )}
+          {assignDefaultChecklist.isError && (
+            <p className={styles.sectionRetry}>체크리스트를 시작하지 못했어요. 다시 눌러 주세요.</p>
+          )}
+          {onSiteChecklist?.applied === true && (
+            <ButtonLink
+              className={styles.contractButton}
+              variant="secondary"
+              fullWidth
+              to={`/properties/${propertyId}/active-checklists/PRE_CONTRACT?from=property-detail`}
+            >
+              계약하러 가기
+              <Icon name="arrow-right" size={16} />
+            </ButtonLink>
           )}
         </section>
 
@@ -270,8 +425,8 @@ const ResolvedPropertyDetailPage = ({ config, propertyId }: { config: PublicConf
 
         <ConfirmDialog
           isOpen={isDeleteDialogOpen}
-          title={`${detail.name} 매물을 삭제할까요?`}
-          description="사진·메모·연결된 체크리스트도 함께 삭제되며 되돌릴 수 없습니다."
+          title={`${detail.name}을 삭제할까요?`}
+          description="삭제한 매물은 되돌릴 수 없습니다."
           confirmLabel="매물 삭제"
           isConfirming={removeMutation.isPending}
           returnFocusRef={deleteButtonRef}

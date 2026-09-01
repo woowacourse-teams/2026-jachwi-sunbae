@@ -77,7 +77,7 @@
                         ├─ RDS MySQL(project-storage 서브넷)
                         ├─ techcourse-project-2026 버킷(사진)  ← EC2 ec2-project role
                         ├─ /etc/jachwi-sunbae/app.env (운영 비밀, 0600)
-                        └─ Kakao Local REST API · 선택적 TAGO 버스정류소 API
+                        └─ Naver Maps·NAVER API HUB · 선택적 TAGO 버스정류소 API
 ```
 
 배포 경로(코드 → 서비스)는 애플리케이션 트래픽과 분리된다. 상세 명령과 훅은 [백엔드 배포](../../backend/docs/operations/deployment.md)와 [프론트엔드 배포](../../frontend/docs/deployment.md)가 정본이다.
@@ -124,7 +124,7 @@ PR → GitHub Actions 필수 검사 → 보호 브랜치 병합
 
 **인터넷 egress는 확인했다(2026-08-13).** `project-app-a`(`subnet-0e693cde6a836c0b8`, `10.0.20.0/24`, `ap-northeast-2a`)에 라우팅 테이블 `rtb-project-private-a`(`rtb-03226c586ffce1d86`)가 명시적으로 연결되어 있고, `0.0.0.0/0`이 NAT 게이트웨이 `nat-0198ce7cbc3e952...`로 향한다. 상태는 활성이며 블랙홀이 아니다. 따라서 EC2는 사설 서브넷 `project-app`에 둔다. `project-public` + 퍼블릭 IP 대안은 채택하지 않는다.
 
-**같은 VPC의 기본 라우팅 테이블 `rtb-project-default`에는 `0.0.0.0/0` 경로가 없다.** `10.0.0.0/16 → local`뿐이다. 라우팅 테이블이 명시적으로 연결되지 않은 서브넷에 EC2를 올리면 이 기본 테이블을 따르게 되어 인터넷으로 나가지 못한다. 이때 애플리케이션은 기동해도 Kakao·TAGO·S3 같은 외부 연동이 실패한다. 원인을 찾기 어려운 종류의 실패이므로, EC2를 만들 때 선택한 서브넷의 라우팅 테이블 연결을 반드시 확인한다.
+**같은 VPC의 기본 라우팅 테이블 `rtb-project-default`에는 `0.0.0.0/0` 경로가 없다.** `10.0.0.0/16 → local`뿐이다. 라우팅 테이블이 명시적으로 연결되지 않은 서브넷에 EC2를 올리면 이 기본 테이블을 따르게 되어 인터넷으로 나가지 못한다. 이때 애플리케이션은 기동해도 네이버·TAGO·S3 같은 외부 연동이 실패한다. 원인을 찾기 어려운 종류의 실패이므로, EC2를 만들 때 선택한 서브넷의 라우팅 테이블 연결을 반드시 확인한다.
 
 NAT 게이트웨이를 새로 만드는 선택지는 월 약 $32로 예산을 초과하므로 두지 않는다. 기존 NAT를 쓴다.
 
@@ -206,7 +206,7 @@ dnf install -y java-21-amazon-corretto ruby wget
 - CloudFront OAC는 인프라 안내가 지정한 `techcourse-project-2026.s3.ap-northeast-2.amazonaws.com`을 origin으로 사용한다.
 - 캐시는 Policy를 새로 만들지 않는다. 새 콘솔에는 레거시 캐시 설정 항목이 없어 관리형 정책 `CachingOptimized`를 쓴다. 관리형이므로 새 정책을 만들지 않는다는 안내의 의도에 맞는다. 기본 TTL이 24시간이라 이름이 고정인 `index.html`은 배포마다 무효화한다.
 - **SPA 폴백**: react-router 클라이언트 라우팅이므로 CloudFront에서 403·404 응답을 `/index.html`(200)로 매핑해 `/intro`, `/properties/:id`, `/map` 같은 새로고침·딥링크가 깨지지 않게 한다.
-- **환경변수는 빌드 타임에 주입된다.** `webpack.config.js`의 `DefinePlugin`이 `API_BASE_URL`·`MAP_PROVIDER_MODE`·`KAKAO_MAP_JAVASCRIPT_KEY`·`META_PIXEL_ID`를 번들에 박아넣는다. 런타임 설정이 아니므로 CodePipeline `Commands` 액션이 환경별 값으로 **다시 빌드**해야 한다. Kakao JavaScript 키와 Meta Pixel ID는 브라우저에 공개되는 값이다. Kakao Developers의 Web 도메인은 dev·prod 공식 도메인으로 제한하고, Pixel은 사용자의 명시적 동의 뒤에만 불러온다.
+- **환경변수는 빌드 타임에 주입된다.** `webpack.config.js`의 `DefinePlugin`이 `API_BASE_URL`·`MAP_PROVIDER_MODE`·Naver Maps Client ID·`META_PIXEL_ID`를 번들에 박아넣는다. 런타임 설정이 아니므로 CodePipeline `Commands` 액션이 환경별 값으로 **다시 빌드**해야 한다. 지도 공개 키와 Meta Pixel ID는 브라우저에 공개되는 값이다. Naver Maps Application의 Web 서비스 URL은 dev·prod 공식 도메인으로 제한하고, Pixel은 사용자의 명시적 동의 뒤에만 불러온다.
 - **캐시 무효화는 `contenthash`로 한다.** 운영 빌드의 파일명에 해시를 붙여 내용이 바뀌면 파일명이 바뀌게 한다. 배포마다 전체 무효화(`/*`)를 걸 필요가 없고, 이름이 고정인 `index.html`만 무효화하면 나머지는 자동으로 새 파일을 가리킨다. 개발 빌드에는 붙이지 않는다.
 - **CloudFront origin path를 `/jachwi-sunbae/web`으로 지정한다.** 같은 버킷의 `jachwi-sunbae/` 아래에 비공개 사진 객체가 있다. origin path를 비워 두면 CloudFront가 버킷 전체를 공개해 사진이 인증 없이 노출된다.
 - 절차는 [프론트엔드 배포](../../frontend/docs/deployment.md)에 있다.
@@ -241,7 +241,7 @@ dnf install -y java-21-amazon-corretto ruby wget
 | 환경변수 | 값 |
 | --- | --- |
 | `CORS_ALLOWED_ORIGINS` | `https://www.jachwi-sunbae.kr` |
-| `MAP_PROVIDER_MODE` | `kakao` |
+| `MAP_PROVIDER_MODE` | `naver` |
 | `PHOTO_STORAGE_BUCKET` | `techcourse-project-2026` |
 | `PHOTO_STORAGE_KEY_PREFIX` | prod `jachwi-sunbae/photos/`, dev `jachwi-sunbae/photos-dev/` |
 
@@ -255,7 +255,7 @@ dnf install -y java-21-amazon-corretto ruby wget
 - 실제 비밀은 저장소·문서·`.env.example`에 커밋하지 않는다는 원칙을 그대로 유지한다.
 - **사용자 데이터에 비밀을 넣지 않는다.** 사용자 데이터는 인스턴스 메타데이터로 노출되어 인스턴스 안의 무엇이든 읽을 수 있다.
 
-MVP2 백엔드는 DB·JWT·Kakao REST·사진 저장소 설정을 사용한다. 환경별 필수·선택 값은 [환경변수](../../backend/docs/guides/environment-variables.md)를 정본으로 삼고, 정적 AWS 액세스 키는 넣지 않는다.
+MVP2 백엔드는 DB·JWT·네이버 지도·사진 저장소 설정을 사용한다. 환경별 필수·선택 값은 [환경변수](../../backend/docs/guides/environment-variables.md)를 정본으로 삼고, 정적 AWS 액세스 키는 넣지 않는다.
 
 이 방식의 대가를 분명히 해둔다. 값을 바꾸려면 사람이 서버에 접속해야 하고, 비밀이 서버 디스크에 평문으로 남으며, 인스턴스를 다시 만들면 파일을 다시 만들어야 한다. 이력도 남지 않는다. 대신 파일 권한이 곧 경계이므로 다른 팀이 읽을 수 없다. 팀 전용 비밀 저장소를 쓸 수 있게 되면 다시 판단한다.
 

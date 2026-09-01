@@ -4,6 +4,8 @@ export type MapCoordinate = {
 };
 
 export const SEOUL_MAP_CENTER: MapCoordinate = { latitude: 37.5665, longitude: 126.978 };
+export const PANGYO_MAP_CENTER: MapCoordinate = { latitude: 37.3948, longitude: 127.1119 };
+export const DEFAULT_MAP_CENTER: MapCoordinate = PANGYO_MAP_CENTER;
 
 const LAST_MAP_CENTER_KEY = 'jachwi-sunbae.lastMapCenter';
 

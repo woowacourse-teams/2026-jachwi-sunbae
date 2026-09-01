@@ -14,14 +14,14 @@ React SPA
 Spring Boot
   ├─ 닉네임·선택 비밀번호 인증 + 자체 JWT
   ├─ 회원·매물·사진·메모·체크리스트 API
-  ├─ demo 또는 Kakao Local 지도 adapter + 선택적 TAGO 버스정류소 adapter
+  ├─ demo·Naver 지도 및 NAVER API HUB adapter + 선택적 TAGO 버스정류소 adapter
   ├─ Spring JDBC → MySQL 8.4
   ├─ S3 API → 로컬 MinIO 또는 운영 비공개 S3
   ├─ Actuator health/info
   └─ Swagger/OpenAPI
 ```
 
-인증은 로컬과 운영 모두 외부 키 없이 닉네임과 선택 비밀번호를 사용하며 성공하면 자체 JWT Access Token을 발급한다. 비밀번호 없는 닉네임은 같은 닉네임 사용자와 기록을 공유하고, 보호 닉네임은 BCrypt hash로 확인한다. 지도 로컬 기본은 `demo`, 운영은 프론트 Kakao Maps JavaScript SDK와 백엔드 Kakao Local REST API를 사용하고, 설정하면 TAGO 실제 버스정류소를 교통 결과에 합친다.
+인증은 로컬과 운영 모두 외부 키 없이 닉네임과 선택 비밀번호를 사용하며 성공하면 자체 JWT Access Token을 발급한다. 비밀번호 없는 닉네임은 같은 닉네임 사용자와 기록을 공유하고, 보호 닉네임은 BCrypt hash로 확인한다. 지도 로컬 기본은 `demo`, 운영은 프론트 Naver Maps JavaScript SDK와 백엔드 Naver Maps·NAVER API HUB를 사용하고, 설정하면 TAGO 실제 버스정류소를 교통 결과에 합친다.
 
 회원 ID를 기준으로 주소·좌표를 포함한 매물, 구조화 메모와 단계별 체크리스트 스냅샷을 MySQL에 저장한다. 사진 메타데이터는 DB, 바이트는 비공개 객체 저장소에 두고 소유자 검증 백엔드 endpoint로만 조회한다. 새 DB 스키마 정본과 기존 DB의 순방향 보강 절차는 [데이터베이스 초기화](../guides/database-initialization.md)를 따른다.
 

@@ -1,19 +1,23 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { reverseGeocode } from '../apis/mapApi';
+import type { PropertyInputDto } from '../apis/dtos/PropertyDto';
 import MapAddressSearchPanel from '../components/MapAddressSearchPanel';
 import MapCanvas from '../components/MapCanvas';
 import type { MapMarker } from '../components/MapCanvas';
 import Icon from '../components/ui/Icon';
 import TopNavigation from '../components/ui/TopNavigation';
 import { usePropertyList } from '../hooks/query/useProperties';
+import { useCreateProperty } from '../hooks/query/usePropertyMutations';
 import type { MapAddress } from '../types/Map';
 import type { PublicConfig } from '../types/PublicConfig';
+import { trackMetaPixelFirstPropertyRecorded } from '../utils/metaPixel';
+import { trackPostHogEvent } from '../utils/posthog';
 import {
   coordinatesAreClose,
+  DEFAULT_MAP_CENTER,
   readLastMapCenter,
   requestCurrentMapLocation,
-  SEOUL_MAP_CENTER,
   writeLastMapCenter,
 } from '../utils/mapLocation';
 import styles from './MapPage.module.css';
@@ -21,6 +25,7 @@ import styles from './MapPage.module.css';
 type MapLocationRouteState = {
   returnTo?: string;
   initialLocation?: MapAddress;
+  registrationDraft?: PropertyInputDto;
 };
 
 const blankAddress = (latitude: number, longitude: number): MapAddress => ({
@@ -38,15 +43,20 @@ const MapLocationSelectPage = ({ config }: { config: PublicConfig }) => {
   const returnTo = routeState.returnTo ?? '/properties/new';
   const launchedFromForm = routeState.returnTo !== undefined;
   const editing = returnTo.endsWith('/edit');
-  const fallbackCenter = readLastMapCenter() ?? SEOUL_MAP_CENTER;
+  const registrationDraft = routeState.registrationDraft;
+  const fallbackCenter = readLastMapCenter() ?? DEFAULT_MAP_CENTER;
+
   const [selected, setSelected] = useState<MapAddress>(
     () => routeState.initialLocation ?? blankAddress(fallbackCenter.latitude, fallbackCenter.longitude),
   );
   const [status, setStatus] = useState<'locating' | 'geocoding' | 'ready' | 'error'>(
     routeState.initialLocation === undefined ? 'locating' : 'ready',
   );
+  // 이미 아는 위치를 확인하러 왔으면 건물이 보이는 단계로, 처음 고르는 중이면 조금 넓게 연다.
+  const knownLocationLevel = routeState.initialLocation === undefined ? 5 : 3;
   const [searchOpen, setSearchOpen] = useState(false);
   const properties = usePropertyList(config);
+  const createProperty = useCreateProperty(config);
   const requestSequenceRef = useRef(0);
   const centerTimerRef = useRef<number | null>(null);
 
@@ -82,8 +92,19 @@ const MapLocationSelectPage = ({ config }: { config: PublicConfig }) => {
   }, [selectCoordinates]);
 
   useEffect(() => {
-    if (routeState.initialLocation === undefined) void moveToCurrentLocation();
-  }, [moveToCurrentLocation, routeState.initialLocation]);
+    if (routeState.initialLocation === undefined) {
+      void moveToCurrentLocation();
+      return;
+    }
+
+    if (
+      routeState.initialLocation.address === null &&
+      routeState.initialLocation.roadAddress === null &&
+      routeState.initialLocation.jibunAddress === null
+    ) {
+      void selectCoordinates(routeState.initialLocation.latitude, routeState.initialLocation.longitude);
+    }
+  }, [moveToCurrentLocation, routeState.initialLocation, selectCoordinates]);
 
   useEffect(
     () => () => {
@@ -98,11 +119,12 @@ const MapLocationSelectPage = ({ config }: { config: PublicConfig }) => {
         .filter((property) => property.location.latitude !== null && property.location.longitude !== null)
         .map((property) => ({
           id: `property-${property.propertyId}`,
-          latitude: property.location.latitude ?? SEOUL_MAP_CENTER.latitude,
-          longitude: property.location.longitude ?? SEOUL_MAP_CENTER.longitude,
+          latitude: property.location.latitude ?? DEFAULT_MAP_CENTER.latitude,
+          longitude: property.location.longitude ?? DEFAULT_MAP_CENTER.longitude,
           label: property.name,
           tone: 'property',
         })),
+
     [properties.data?.pages],
   );
 
@@ -120,7 +142,11 @@ const MapLocationSelectPage = ({ config }: { config: PublicConfig }) => {
       <TopNavigation
         className={styles.mapNavigation}
         title="지도에서 위치 확인"
-        backTo={launchedFromForm ? returnTo : '/map'}
+        {...(registrationDraft === undefined
+          ? { backTo: launchedFromForm ? returnTo : '/map' }
+          : {
+              onBack: () => navigate(returnTo, { replace: true, state: { registrationDraft } }),
+            })}
         backLabel="이전 화면으로 돌아가기"
         meta="13-2"
       />
@@ -129,7 +155,7 @@ const MapLocationSelectPage = ({ config }: { config: PublicConfig }) => {
           config={config}
           center={selected}
           markers={propertyMarkers}
-          level={5}
+          level={knownLocationLevel}
           interactive
           showCenterPin
           onSelectLocation={(latitude, longitude) => void selectCoordinates(latitude, longitude)}
@@ -176,13 +202,30 @@ const MapLocationSelectPage = ({ config }: { config: PublicConfig }) => {
               주소로 다시 찾아볼까요?
             </button>
           ) : (
-            <p className={styles.addressNotice}>표시된 주소가 맞는지 확인해 주세요.</p>
+            <p className={styles.addressHint}>표시된 주소가 맞는지 확인해 주세요.</p>
           )}
           <button
             className={styles.confirmLocationButton}
             type="button"
-            disabled={status !== 'ready' || selectedAddress === null}
+            disabled={status !== 'ready' || selectedAddress === null || createProperty.isPending}
             onClick={() => {
+              if (registrationDraft !== undefined) {
+                void createProperty
+                  .mutateAsync({
+                    ...registrationDraft,
+                    roadAddress: selected.roadAddress,
+                    jibunAddress: selected.jibunAddress,
+                    latitude: selected.latitude,
+                    longitude: selected.longitude,
+                  })
+                  .then((created) => {
+                    if (created.firstProperty) trackMetaPixelFirstPropertyRecorded();
+                    trackPostHogEvent('property_created', { first_property: created.firstProperty });
+                    navigate(`/properties/${created.propertyId}`, { replace: true });
+                  })
+                  .catch(() => undefined);
+                return;
+              }
               navigate(returnTo, {
                 replace: true,
                 state: {
@@ -194,8 +237,17 @@ const MapLocationSelectPage = ({ config }: { config: PublicConfig }) => {
               });
             }}
           >
-            {editing ? '이 위치 적용하기' : '이 위치로 매물 등록하기'}
+            {createProperty.isPending
+              ? '매물을 등록하는 중…'
+              : editing
+                ? '이 위치 적용하기'
+                : '이 위치로 매물 등록하기'}
           </button>
+          {createProperty.isError && (
+            <p className={styles.addressError} role="alert">
+              매물을 등록하지 못했어요. 입력한 정보는 유지되니 다시 시도해 주세요.
+            </p>
+          )}
         </section>
       </section>
     </main>

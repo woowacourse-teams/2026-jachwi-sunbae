@@ -1,8 +1,9 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { CSSProperties } from 'react';
 import type { MapCategory } from '../types/Map';
 import type { PublicConfig } from '../types/PublicConfig';
 import MapCategoryIcon, { createMapCategoryIconElement } from './MapCategoryIcon';
+import StatusPanel from './StatusPanel';
 import styles from './MapCanvas.module.css';
 
 export type MapMarker = {
@@ -10,10 +11,14 @@ export type MapMarker = {
   latitude: number;
   longitude: number;
   label: string;
-  tone?: 'property' | 'current' | 'place' | 'selected' | 'cluster';
+  /** 마커 아래에 노출할 짧은 문구. 없으면 label을 쓴다. */
+  caption?: string;
+  tone?: 'property' | 'current' | 'place' | 'selected' | 'cluster' | 'propertyCluster';
   category?: MapCategory;
   count?: number;
   placeId?: string;
+  /** 마커 안에 넣을 매물 사진. 인증이 끝난 blob URL만 받는다. */
+  photoUrl?: string;
   actionable?: boolean;
 };
 
@@ -39,60 +44,150 @@ type MapCanvasProps = {
   radiusCenter?: { latitude: number; longitude: number };
 };
 
-let kakaoSdkPromise: Promise<void> | null = null;
+const clamp = (value: number, min: number, max: number): number => Math.min(Math.max(value, min), max);
 
-const loadKakaoSdk = (key: string): Promise<void> => {
-  if (window.kakao?.maps !== undefined) {
-    return new Promise((resolve) => window.kakao?.maps.load(resolve));
-  }
-  if (kakaoSdkPromise !== null) return kakaoSdkPromise;
+/** 앱의 확대 단계는 1이 가장 확대된 상태이고 Naver zoom은 21이 가장 확대된 상태다. */
+const NAVER_ZOOM_BASE = 20;
+const toNaverZoom = (level: number): number => clamp(NAVER_ZOOM_BASE - level, 6, 21);
+const toMapLevel = (zoom: number): number => clamp(NAVER_ZOOM_BASE - zoom, 1, 14);
 
-  kakaoSdkPromise = new Promise((resolve, reject) => {
-    const existing = document.querySelector<HTMLScriptElement>('script[data-moca-kakao-map]');
+let naverSdkPromise: Promise<void> | null = null;
+
+const loadNaverSdk = (clientId: string): Promise<void> => {
+  if (window.naver?.maps !== undefined) return Promise.resolve();
+  if (naverSdkPromise !== null) return naverSdkPromise;
+  naverSdkPromise = new Promise((resolve, reject) => {
+    const existing = document.querySelector<HTMLScriptElement>('script[data-jachwi-naver-map]');
     const ready = () => {
-      if (window.kakao?.maps === undefined) {
-        kakaoSdkPromise = null;
-        reject(new Error('Kakao Maps SDK를 불러오지 못했습니다.'));
+      if (window.naver?.maps === undefined) {
+        naverSdkPromise = null;
+        reject(new Error('Naver Maps SDK를 불러오지 못했습니다.'));
         return;
       }
-      window.kakao.maps.load(resolve);
+      resolve();
     };
     if (existing !== null) {
       existing.addEventListener('load', ready, { once: true });
-      existing.addEventListener(
-        'error',
-        () => {
-          kakaoSdkPromise = null;
-          reject(new Error('Kakao Maps SDK를 불러오지 못했습니다.'));
-        },
-        { once: true },
-      );
+      existing.addEventListener('error', () => reject(new Error('Naver Maps SDK를 불러오지 못했습니다.')), {
+        once: true,
+      });
       return;
     }
     const script = document.createElement('script');
-    script.dataset.mocaKakaoMap = 'true';
+    script.dataset.jachwiNaverMap = 'true';
     script.async = true;
-    script.src = `https://dapi.kakao.com/v2/maps/sdk.js?appkey=${encodeURIComponent(key)}&autoload=false`;
+    script.src = `https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=${encodeURIComponent(clientId)}`;
     script.addEventListener('load', ready, { once: true });
     script.addEventListener(
       'error',
       () => {
-        kakaoSdkPromise = null;
-        reject(new Error('Kakao Maps SDK를 불러오지 못했습니다.'));
+        naverSdkPromise = null;
+        reject(new Error('Naver Maps SDK를 불러오지 못했습니다.'));
       },
       { once: true },
     );
     document.head.append(script);
   });
-  return kakaoSdkPromise;
+  return naverSdkPromise;
 };
 
+type LiveEngine = {
+  label: string;
+  load: () => Promise<void>;
+  createMap: (container: HTMLElement, center: { latitude: number; longitude: number }, level: number) => LiveMap;
+  latLng: (latitude: number, longitude: number) => LiveLatLng;
+  getCenter: (map: LiveMap) => { latitude: number; longitude: number };
+  getZoom: (map: LiveMap) => number;
+  setCenter: (map: LiveMap, center: LiveLatLng) => void;
+  setZoom: (map: LiveMap, level: number) => void;
+  relayout: (map: LiveMap) => void;
+  addListener: (map: LiveMap, event: string, callback: (latitude?: number, longitude?: number) => void) => unknown;
+  removeListener: (listener: unknown) => void;
+  createOverlay: (map: LiveMap, marker: MapMarker, content: HTMLElement, zIndex: number) => LiveOverlay;
+  createCircle: (map: LiveMap, center: LiveLatLng, radius: number) => LiveOverlay;
+};
+
+type LiveLatLng = NaverLatLng;
+type LiveMap = NaverMap;
+type LiveOverlay = NaverOverlay;
+
+const naverEngine = (clientId: string): LiveEngine => ({
+  label: 'Naver 지도',
+  load: () => loadNaverSdk(clientId),
+  createMap: (container, center, level) =>
+    new window.naver!.maps.Map(container, {
+      center: new window.naver!.maps.LatLng(center.latitude, center.longitude),
+      zoom: toNaverZoom(level),
+    }),
+  latLng: (latitude, longitude) => new window.naver!.maps.LatLng(latitude, longitude),
+  getCenter: (map) => {
+    const center = (map as NaverMap).getCenter();
+    return { latitude: center.lat(), longitude: center.lng() };
+  },
+  getZoom: (map) => toMapLevel((map as NaverMap).getZoom()),
+  setCenter: (map, center) => (map as NaverMap).setCenter(center as NaverLatLng),
+  setZoom: (map, level) => (map as NaverMap).setZoom(toNaverZoom(level)),
+  relayout: (map) => (map as NaverMap).refresh(),
+  addListener: (map, event, callback) =>
+    window.naver!.maps.Event.addListener(map, event, (value) => callback(value?.coord?.lat(), value?.coord?.lng())),
+  removeListener: (listener) => {
+    void listener;
+  },
+  createOverlay: (map, marker, content, zIndex) => {
+    const overlay = new window.naver!.maps.OverlayView();
+    const position = new window.naver!.maps.LatLng(marker.latitude, marker.longitude);
+    const element = content;
+    element.style.position = 'absolute';
+    element.style.transform = 'translate(-50%, -50%)';
+    element.style.zIndex = String(zIndex);
+    overlay.setPosition?.(position);
+    overlay.onAdd = () => overlay.getPanes?.().overlayLayer.append(element);
+    overlay.draw = () => {
+      const projection = overlay.getProjection?.();
+      if (projection !== undefined && overlay.getPanes !== undefined) {
+        const pixel = projection.fromCoordToOffset(position);
+        element.style.left = `${pixel.x}px`;
+        element.style.top = `${pixel.y}px`;
+      }
+    };
+    overlay.onRemove = () => element.remove();
+    overlay.setMap(map as NaverMap);
+    return overlay;
+  },
+  createCircle: (map, center, radius) =>
+    new window.naver!.maps.Circle({
+      map: map as NaverMap,
+      center: center as NaverLatLng,
+      radius,
+      strokeWeight: 2,
+      strokeColor: '#555555',
+      strokeOpacity: 0.58,
+      fillColor: '#999999',
+      fillOpacity: 0.08,
+    }),
+});
+
 const markerSymbol = (marker: MapMarker): string => {
-  if (marker.tone === 'cluster') return String(marker.count ?? '');
-  if (marker.tone === 'current') return '◎';
+  if (marker.tone === 'cluster' || marker.tone === 'propertyCluster') return String(marker.count ?? '');
   if (marker.tone === 'property' || marker.tone === 'selected') return '⌂';
   return '•';
 };
+
+/** 현재 위치는 지도 앱 관례대로 글리프 없는 파란 점 하나로 그린다. */
+const isCurrentLocationDot = (marker: MapMarker): boolean => marker.tone === 'current';
+
+const usesCategoryIcon = (marker: MapMarker): boolean =>
+  (marker.tone === 'place' || marker.tone === 'cluster') && marker.category !== undefined;
+
+/** 매물·매물 군집 마커는 대표 사진을 받았을 때 그 사진을 마커 안에 넣는다. */
+const usesPhoto = (marker: MapMarker): boolean =>
+  (marker.tone === 'property' || marker.tone === 'selected' || marker.tone === 'propertyCluster') &&
+  marker.photoUrl !== undefined;
+
+/** 묶음 숫자 배지. 사진이 없는 매물 군집은 숫자를 마커 본문에 그대로 쓰므로 배지를 겹치지 않는다. */
+const usesCountBadge = (marker: MapMarker): boolean =>
+  marker.count !== undefined &&
+  (marker.category !== undefined || (marker.tone === 'propertyCluster' && marker.photoUrl !== undefined));
 
 const markerClassName = (marker: MapMarker, selectedMarkerId: string | null): string =>
   [
@@ -102,6 +197,7 @@ const markerClassName = (marker: MapMarker, selectedMarkerId: string | null): st
     marker.tone === 'selected' ? styles.selectedMarker : '',
     marker.tone === 'place' ? styles.placeMarker : '',
     marker.tone === 'cluster' ? styles.clusterMarker : '',
+    marker.tone === 'propertyCluster' ? styles.propertyClusterMarker : '',
     selectedMarkerId === marker.id ? styles.activeMarker : '',
   ]
     .filter(Boolean)
@@ -127,9 +223,17 @@ const createMarkerContent = (
     });
   }
 
-  const usesCategoryIcon = (marker.tone === 'place' || marker.tone === 'cluster') && marker.category !== undefined;
-  if (usesCategoryIcon && marker.category !== undefined) {
+  if (isCurrentLocationDot(marker)) {
+    // 점 자체가 표시라서 안에 넣을 내용이 없다.
+  } else if (usesCategoryIcon(marker) && marker.category !== undefined) {
     element.append(createMapCategoryIconElement(marker.category, styles.categoryIcon));
+  } else if (usesPhoto(marker) && marker.photoUrl !== undefined) {
+    const photo = document.createElement('img');
+    photo.className = styles.markerPhoto;
+    photo.src = marker.photoUrl;
+    photo.alt = '';
+    photo.draggable = false;
+    element.append(photo);
   } else {
     const icon = document.createElement(marker.tone === 'cluster' ? 'strong' : 'span');
     icon.className = styles.markerIcon;
@@ -138,23 +242,21 @@ const createMarkerContent = (
     element.append(icon);
   }
 
-  if (marker.count !== undefined && marker.category !== undefined) {
+  if (usesCountBadge(marker)) {
     const count = document.createElement('strong');
     count.className = styles.markerCount;
     count.textContent = String(marker.count);
     element.append(count);
   }
 
-  if (marker.tone === 'current' || marker.tone === 'selected') {
+  if (marker.tone === 'selected' || marker.tone === 'property') {
     const caption = document.createElement('span');
     caption.className = styles.markerCaption;
-    caption.textContent = marker.label;
+    caption.textContent = marker.caption ?? marker.label;
     element.append(caption);
   }
   return element;
 };
-
-const clamp = (value: number, min: number, max: number): number => Math.min(Math.max(value, min), max);
 
 const demoMarkerStyle = (marker: MapMarker, center: { latitude: number; longitude: number }): CSSProperties => ({
   left: `${clamp(50 + (marker.longitude - center.longitude) * 3_100, 9, 91)}%`,
@@ -178,43 +280,40 @@ const MapCanvas = ({
   radiusCenter = center,
 }: MapCanvasProps) => {
   const containerRef = useRef<HTMLDivElement>(null);
-  const mapRef = useRef<KakaoMap | null>(null);
-  const overlaysRef = useRef<KakaoCustomOverlay[]>([]);
-  const circlesRef = useRef<KakaoCircle[]>([]);
+  const mapRef = useRef<LiveMap | null>(null);
+  const overlaysRef = useRef<LiveOverlay[]>([]);
+  const circlesRef = useRef<LiveOverlay[]>([]);
   const callbackRef = useRef({ onSelectLocation, onCenterChange, onLevelChange });
   const [mapReady, setMapReady] = useState(false);
   const [sdkError, setSdkError] = useState(false);
-  const liveMode = config.mapProviderMode === 'kakao' && (config.kakaoMapJavaScriptKey ?? '') !== '';
+  const engine = useMemo(() => naverEngine(config.naverMapClientId ?? ''), [config.naverMapClientId]);
+  const liveMode = config.mapProviderMode === 'naver' && (config.naverMapClientId ?? '') !== '';
 
   callbackRef.current = { onSelectLocation, onCenterChange, onLevelChange };
 
   useEffect(() => {
     if (!liveMode || containerRef.current === null) return;
     let disposed = false;
-    let map: KakaoMap | null = null;
-    let clickListener: ((event: { latLng: KakaoLatLng }) => void) | null = null;
-    let idleListener: ((event: { latLng: KakaoLatLng }) => void) | null = null;
+    let map: LiveMap | null = null;
 
     setSdkError(false);
     setMapReady(false);
-    void loadKakaoSdk(config.kakaoMapJavaScriptKey ?? '')
+    void engine
+      .load()
       .then(() => {
-        if (disposed || containerRef.current === null || window.kakao?.maps === undefined) return;
-        const maps = window.kakao.maps;
-        map = new maps.Map(containerRef.current, {
-          center: new maps.LatLng(center.latitude, center.longitude),
-          level,
-        });
+        if (disposed || containerRef.current === null) return;
+        map = engine.createMap(containerRef.current, center, level);
         mapRef.current = map;
-        clickListener = (event) => callbackRef.current.onSelectLocation?.(event.latLng.getLat(), event.latLng.getLng());
-        idleListener = () => {
+        engine.addListener(map, 'click', (latitude, longitude) => {
+          if (latitude !== undefined && longitude !== undefined)
+            callbackRef.current.onSelectLocation?.(latitude, longitude);
+        });
+        engine.addListener(map, 'idle', () => {
           if (map === null) return;
-          const nextCenter = map.getCenter();
-          callbackRef.current.onCenterChange?.(nextCenter.getLat(), nextCenter.getLng());
-          callbackRef.current.onLevelChange?.(map.getLevel());
-        };
-        maps.event.addListener(map, 'click', clickListener);
-        maps.event.addListener(map, 'idle', idleListener);
+          const nextCenter = engine.getCenter(map);
+          callbackRef.current.onCenterChange?.(nextCenter.latitude, nextCenter.longitude);
+          callbackRef.current.onLevelChange?.(engine.getZoom(map));
+        });
         setMapReady(true);
       })
       .catch(() => {
@@ -223,95 +322,91 @@ const MapCanvas = ({
 
     return () => {
       disposed = true;
-      if (map !== null && window.kakao?.maps !== undefined) {
-        if (clickListener !== null) window.kakao.maps.event.removeListener(map, 'click', clickListener);
-        if (idleListener !== null) window.kakao.maps.event.removeListener(map, 'idle', idleListener);
-      }
       overlaysRef.current.forEach((overlay) => overlay.setMap(null));
       circlesRef.current.forEach((circle) => circle.setMap(null));
       overlaysRef.current = [];
       circlesRef.current = [];
       mapRef.current = null;
     };
-  }, [config.kakaoMapJavaScriptKey, liveMode]);
+  }, [engine, liveMode]);
 
   useEffect(() => {
-    const maps = window.kakao?.maps;
-    if (!liveMode || !mapReady || maps === undefined || mapRef.current === null) return;
-    const current = mapRef.current.getCenter();
+    if (!liveMode || !mapReady || mapRef.current === null) return;
+    const current = engine.getCenter(mapRef.current);
     if (
-      Math.abs(current.getLat() - center.latitude) < 0.0000001 &&
-      Math.abs(current.getLng() - center.longitude) < 0.0000001
+      Math.abs(current.latitude - center.latitude) < 0.0000001 &&
+      Math.abs(current.longitude - center.longitude) < 0.0000001
     )
       return;
-    mapRef.current.setCenter(new maps.LatLng(center.latitude, center.longitude));
-  }, [center.latitude, center.longitude, liveMode, mapReady]);
+    engine.setCenter(mapRef.current, engine.latLng(center.latitude, center.longitude));
+  }, [center.latitude, center.longitude, engine, liveMode, mapReady]);
+
+  useEffect(() => {
+    if (
+      !liveMode ||
+      !mapReady ||
+      typeof ResizeObserver === 'undefined' ||
+      containerRef.current === null ||
+      mapRef.current === null
+    )
+      return;
+    const map = mapRef.current;
+    const observer = new ResizeObserver(() => {
+      engine.relayout(map);
+    });
+    observer.observe(containerRef.current);
+    return () => observer.disconnect();
+  }, [center.latitude, center.longitude, engine, liveMode, mapReady]);
 
   useEffect(() => {
     const map = mapRef.current;
-    if (!liveMode || !mapReady || map === null || map.getLevel() === level) return;
-    map.setLevel(level);
-  }, [level, liveMode, mapReady]);
+    if (!liveMode || !mapReady || map === null || engine.getZoom(map) === level) return;
+    engine.setZoom(map, level);
+  }, [engine, level, liveMode, mapReady]);
 
   useEffect(() => {
-    const maps = window.kakao?.maps;
     const map = mapRef.current;
-    if (!liveMode || !mapReady || maps === undefined || map === null) return;
+    if (!liveMode || !mapReady || map === null) return;
     overlaysRef.current.forEach((overlay) => overlay.setMap(null));
-    overlaysRef.current = markers.map(
-      (marker) =>
-        new maps.CustomOverlay({
-          map,
-          position: new maps.LatLng(marker.latitude, marker.longitude),
-          content: createMarkerContent(marker, selectedMarkerId, onSelectMarker),
-          xAnchor: 0.5,
-          yAnchor: marker.tone === 'property' || marker.tone === 'current' || marker.tone === 'selected' ? 0.82 : 0.5,
-          zIndex:
-            selectedMarkerId === marker.id
-              ? 10
-              : marker.tone === 'selected'
-                ? 9
-                : marker.tone === 'property'
-                  ? 8
-                  : marker.tone === 'current'
-                    ? 7
-                    : 5,
-        }),
+    overlaysRef.current = markers.map((marker) =>
+      engine.createOverlay(
+        map,
+        marker,
+        createMarkerContent(marker, selectedMarkerId, onSelectMarker),
+        selectedMarkerId === marker.id
+          ? 10
+          : marker.tone === 'selected'
+            ? 9
+            : marker.tone === 'property'
+              ? 8
+              : marker.tone === 'current'
+                ? 7
+                : 5,
+      ),
     );
     return () => {
       overlaysRef.current.forEach((overlay) => overlay.setMap(null));
       overlaysRef.current = [];
     };
-  }, [liveMode, mapReady, markers, onSelectMarker, selectedMarkerId]);
+  }, [engine, liveMode, mapReady, markers, onSelectMarker, selectedMarkerId]);
 
   useEffect(() => {
-    const maps = window.kakao?.maps;
     const map = mapRef.current;
-    if (!liveMode || !mapReady || maps === undefined || map === null) return;
+    if (!liveMode || !mapReady || map === null) return;
     circlesRef.current.forEach((circle) => circle.setMap(null));
-    circlesRef.current = circles.map(
-      (circle) =>
-        new maps.Circle({
-          map,
-          center: new maps.LatLng(radiusCenter.latitude, radiusCenter.longitude),
-          radius: circle.radiusMeters,
-          strokeWeight: 2,
-          strokeColor: '#6ea8fe',
-          strokeOpacity: 0.56,
-          fillColor: '#8ab8ff',
-          fillOpacity: 0.08,
-        }),
+    circlesRef.current = circles.map((circle) =>
+      engine.createCircle(map, engine.latLng(radiusCenter.latitude, radiusCenter.longitude), circle.radiusMeters),
     );
     return () => {
       circlesRef.current.forEach((circle) => circle.setMap(null));
       circlesRef.current = [];
     };
-  }, [circles, liveMode, mapReady, radiusCenter.latitude, radiusCenter.longitude]);
+  }, [circles, engine, liveMode, mapReady, radiusCenter.latitude, radiusCenter.longitude]);
 
   return (
     <div
       className={`${styles.canvas} ${liveMode ? styles.live : styles.demo}`}
-      aria-label={liveMode ? 'Kakao 지도' : '데모 지도'}
+      aria-label={liveMode ? engine.label : '데모 지도'}
       onClick={(event) => {
         if (liveMode || !interactive || onSelectLocation === undefined) return;
         const rect = event.currentTarget.getBoundingClientRect();
@@ -320,7 +415,11 @@ const MapCanvas = ({
         onSelectLocation(latitude, longitude);
       }}
     >
-      {liveMode && <div ref={containerRef} className={styles.liveLayer} />}
+      {liveMode && (
+        <div className={styles.liveLayer}>
+          <div ref={containerRef} className={styles.liveMap} />
+        </div>
+      )}
       {!liveMode && (
         <>
           <span className={styles.roadOne} />
@@ -335,22 +434,20 @@ const MapCanvas = ({
             />
           ))}
           {markers.map((marker) => {
-            const usesCategoryIcon =
-              (marker.tone === 'place' || marker.tone === 'cluster') && marker.category !== undefined;
             const markerNode = (
               <>
-                {usesCategoryIcon && marker.category !== undefined ? (
+                {isCurrentLocationDot(marker) ? null : usesCategoryIcon(marker) && marker.category !== undefined ? (
                   <MapCategoryIcon category={marker.category} className={styles.categoryIcon} />
+                ) : usesPhoto(marker) ? (
+                  <img className={styles.markerPhoto} src={marker.photoUrl} alt="" draggable={false} />
                 ) : (
                   <span className={styles.markerIcon} aria-hidden="true">
                     {markerSymbol(marker)}
                   </span>
                 )}
-                {marker.count !== undefined && marker.category !== undefined && (
-                  <strong className={styles.markerCount}>{marker.count}</strong>
-                )}
-                {(marker.tone === 'current' || marker.tone === 'selected') && (
-                  <span className={styles.markerCaption}>{marker.label}</span>
+                {usesCountBadge(marker) && <strong className={styles.markerCount}>{marker.count}</strong>}
+                {(marker.tone === 'selected' || marker.tone === 'property') && (
+                  <span className={styles.markerCaption}>{marker.caption ?? marker.label}</span>
                 )}
               </>
             );
@@ -391,8 +488,7 @@ const MapCanvas = ({
       )}
       {showCenterPin && (
         <span className={styles.fixedCenterPin} aria-label="선택할 지도 중심" role="img">
-          <span aria-hidden="true">◎</span>
-          <small>선택 위치</small>
+          <span aria-hidden="true">+</span>
         </span>
       )}
       {showRadiusLabels && (
@@ -405,7 +501,11 @@ const MapCanvas = ({
             ))}
         </div>
       )}
-      {sdkError && <div className={styles.sdkError}>지도를 불러오지 못했어요. 잠시 후 다시 시도해 주세요.</div>}
+      {sdkError && (
+        <div className={styles.mapError}>
+          <StatusPanel title="지도를 연결할 수 없어요." description="잠시 후 다시 시도해 주세요." tone="error" />
+        </div>
+      )}
     </div>
   );
 };

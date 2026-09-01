@@ -37,6 +37,14 @@
   list-style: none;
 }
 
+.emptyState {
+  margin: 1rem;
+  padding: 1.2rem 0;
+  color: var(--color-muted);
+  font-size: 0.78rem;
+  text-align: center;
+}
+
 .createCard {
   margin: 0.55rem 1rem 0;
 }

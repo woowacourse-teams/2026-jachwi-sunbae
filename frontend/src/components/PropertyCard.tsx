@@ -1,71 +1,104 @@
-import { Link } from 'react-router-dom';
+import { useState, type MouseEventHandler } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import type { PropertySummary } from '../types/Property';
 import type { PublicConfig } from '../types/PublicConfig';
 import { formatManwon } from '../utils/propertyFormat';
-import Icon from './ui/Icon';
 import ChecklistProgressBar from './ChecklistProgressBar';
 import styles from './PropertyCard.module.css';
 import AuthenticatedPhoto from './AuthenticatedPhoto';
-import { checklistStageMeta } from '../constants/checklist';
+import mascotImage from '../assets/empty-property.jpg';
+
+type PropertyPhotoThumbnailProps = {
+  property: PropertySummary;
+  thumbnailUrl?: string;
+  config?: PublicConfig;
+  onActivate?: () => void;
+};
+
+/** 목록 카드에는 대표 사진 한 장만 보여 준다. 나머지 사진은 매물 상세에서 본다. */
+const PropertyPhotoThumbnail = ({ property, thumbnailUrl, config, onActivate }: PropertyPhotoThumbnailProps) => {
+  const [failed, setFailed] = useState(false);
+  const photo = property.representativePhoto ?? property.photos?.[0] ?? null;
+  const contentUrl = thumbnailUrl ?? photo?.contentUrl ?? property.photoUrls?.[0];
+
+  return (
+    <div className={styles.photo} onClick={() => onActivate?.()}>
+      {contentUrl === undefined || failed ? (
+        <div className={styles.emptyPhoto} role="img" aria-label="등록된 사진 없음">
+          <img src={mascotImage} alt="" />
+        </div>
+      ) : config !== undefined && photo !== null ? (
+        <AuthenticatedPhoto
+          config={config}
+          propertyId={property.propertyId}
+          photoId={photo.photoId}
+          contentUrl={contentUrl}
+          alt={`${property.name} 대표 사진`}
+        />
+      ) : (
+        <img src={contentUrl} alt={`${property.name} 대표 사진`} draggable={false} onError={() => setFailed(true)} />
+      )}
+    </div>
+  );
+};
 
 type PropertyCardProps = {
   property: PropertySummary;
   thumbnailUrl?: string;
   config?: PublicConfig;
+  onClick?: MouseEventHandler<HTMLAnchorElement>;
 };
 
-const PropertyCard = ({ property, thumbnailUrl, config }: PropertyCardProps) => {
-  const resolvedThumbnailUrl = thumbnailUrl ?? property.representativePhoto?.contentUrl;
+const PropertyCard = ({ property, thumbnailUrl, config, onClick }: PropertyCardProps) => {
+  const navigate = useNavigate();
+  const onSiteStage = property.stages.find((stage) => stage.stage === 'ON_SITE');
+
   return (
-    <article>
-      <Link className={styles.card} to={`/properties/${property.propertyId}`} aria-label={property.name}>
-        <div className={styles.mainInfo}>
-          <div className={styles.thumbnail}>
-            {resolvedThumbnailUrl === undefined ? (
-              <Icon name="image" size={22} />
-            ) : config !== undefined && property.representativePhoto !== null ? (
-              <AuthenticatedPhoto
-                config={config}
-                propertyId={property.propertyId}
-                photoId={property.representativePhoto.photoId}
-                contentUrl={resolvedThumbnailUrl}
-                alt=""
+    <article className={styles.listItem}>
+      <div className={styles.visual}>
+        <PropertyPhotoThumbnail
+          property={property}
+          thumbnailUrl={thumbnailUrl}
+          config={config}
+          onActivate={() => navigate(`/properties/${property.propertyId}`)}
+        />
+      </div>
+
+      <Link
+        className={styles.mainLink}
+        to={`/properties/${property.propertyId}`}
+        aria-label={property.name}
+        onClick={onClick}
+      >
+        <div className={styles.details}>
+          <strong className={styles.title}>{property.name}</strong>
+          <span className={styles.price}>
+            보증금 {formatManwon(property.depositAmount)} / 월세 {formatManwon(property.monthlyRentAmount)}
+          </span>
+          {property.location.address !== null && <small className={styles.address}>{property.location.address}</small>}
+        </div>
+        {onSiteStage !== undefined && (
+          <div className={styles.stageProgress} aria-label="현장 체크리스트 진행 현황">
+            {onSiteStage.applied ? (
+              <ChecklistProgressBar
+                progress={onSiteStage.progress}
+                compact
+                trailing={
+                  <strong className={styles.stageCount}>
+                    {onSiteStage.progress.completedCount}/{onSiteStage.progress.totalCount}
+                  </strong>
+                }
               />
             ) : (
-              <img src={resolvedThumbnailUrl} alt="" />
-            )}
-            {property.representativePhoto !== null && <span>대표</span>}
-          </div>
-          <div className={styles.details}>
-            <h2>{property.name}</h2>
-            <p className={styles.price}>
-              보증금 {formatManwon(property.depositAmount)} / 월세 {formatManwon(property.monthlyRentAmount)}
-            </p>
-            {property.location.address !== null && <p className={styles.address}>{property.location.address}</p>}
-            {property.discoverySource.value.length > 0 && (
-              <p className={styles.discoverySource}>발견 경로 · {property.discoverySource.value}</p>
-            )}
-          </div>
-        </div>
-        <ol className={styles.stageProgress} aria-label="단계별 체크리스트 진행 현황">
-          {property.stages.map((stage, index) => (
-            <li key={stage.stage}>
-              <div className={styles.stageHeading}>
-                <span>
-                  {index + 1}단계 · {checklistStageMeta[stage.stage].shortLabel}
-                </span>
-                <strong>
-                  {stage.applied ? `${stage.progress.completedCount}/${stage.progress.totalCount}` : '미적용'}
-                </strong>
-              </div>
-              {stage.applied ? (
-                <ChecklistProgressBar progress={stage.progress} compact />
-              ) : (
+              <>
                 <span className={styles.inactiveBar} aria-hidden="true" />
-              )}
-            </li>
-          ))}
-        </ol>
+                <div className={styles.stageStartHint}>
+                  <strong>시작 전</strong>
+                </div>
+              </>
+            )}
+          </div>
+        )}
       </Link>
     </article>
   );

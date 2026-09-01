@@ -1,39 +1,41 @@
 :root {
-  --color-brand-50: #f5f6ed;
-  --color-brand-100: #edf1df;
-  --color-brand-200: #dfe8c9;
-  --color-brand-300: #c9d8a9;
-  --color-brand-400: #a9be7a;
-  --color-brand-500: #849f4f;
-  --color-brand-600: #6c873b;
-  --color-brand-700: #58702f;
-  --color-brand-800: #455a27;
-  --color-brand-900: #34431f;
+  --color-brand-50: #f7f7f7;
+  --color-brand-100: #f0f0f0;
+  --color-brand-200: #e5e5e5;
+  --color-brand-300: #d4d4d4;
+  --color-brand-400: #999;
+  --color-brand-500: #555;
+  --color-brand-600: #333;
+  --color-brand-700: #222;
+  --color-brand-800: #1f1f1f;
+  --color-brand-900: #111;
+  --color-brand-yellow: #f5b91e;
+  --color-danger: #c96b6b;
 
   /* Change this single accent to retheme selected tabs, progress indicators and soft actions together. */
   --color-theme-accent: var(--color-brand-500);
   --color-theme-accent-strong: var(--color-brand-700);
 
   /* Neutral surfaces and readable foregrounds. */
-  --color-canvas: #faf6e9;
-  --color-cream: #faf6e9;
-  --color-surface: #fffdf8;
-  --color-surface-muted: #f7f2e5;
-  --color-surface-neutral: #f2efe5;
-  --color-surface-disabled: #eeece4;
-  --color-surface-brand: #f0f4e6;
+  --color-canvas: #fff;
+  --color-cream: #fff;
+  --color-surface: #fff;
+  --color-surface-muted: #f7f7f7;
+  --color-surface-neutral: #f1f1f1;
+  --color-surface-disabled: #ebebeb;
+  --color-surface-brand: #f2f2f2;
   --color-surface-brand-strong: var(--color-theme-accent);
-  --color-navigation-surface: #fffaf0;
-  --color-ink: #2d3326;
-  --color-ink-soft: #4c5743;
-  --color-muted: #7b816f;
-  --color-placeholder: #aaa999;
-  --color-border: #e0d4b8;
-  --color-border-strong: #cbbd99;
-  --color-search-surface: #fffdf8;
-  --color-search-foreground: #353b2f;
-  --color-search-placeholder: #a09f90;
-  --color-on-brand-soft: #4d583f;
+  --color-navigation-surface: #fff;
+  --color-ink: #212124;
+  --color-ink-soft: #5f6368;
+  --color-muted: #868b94;
+  --color-placeholder: #a8abb0;
+  --color-border: #eaebed;
+  --color-border-strong: #d7d9dc;
+  --color-search-surface: #f2f3f4;
+  --color-search-foreground: #212124;
+  --color-search-placeholder: #8f949b;
+  --color-on-brand-soft: #212124;
 
   /* Form submit actions stay distinct from the lighter navigation accent. */
   --color-action: var(--color-brand-600);
@@ -49,27 +51,27 @@
 
   /* Semantic colors stay separate from the brand palette. */
   --color-accent: #e6b84d;
-  --color-warning: #d8a62b;
-  --color-warning-ink: #8a6411;
-  --color-warning-surface: #fff7dc;
-  --color-error: #a83b32;
-  --color-error-surface: #fff1ee;
-  --color-success: var(--color-brand-700);
-  --color-success-surface: var(--color-brand-100);
-  --color-check-good: var(--color-brand-600);
-  --color-check-good-ink: var(--color-brand-700);
-  --color-check-caution: #e7b640;
-  --color-check-caution-ink: #8b6512;
-  --color-check-unconfirmed: #ddd2b3;
-  --color-check-unconfirmed-ink: #887b5e;
+  --color-warning: #666;
+  --color-warning-ink: #444;
+  --color-warning-surface: #f4f4f4;
+  --color-error: #222;
+  --color-error-surface: #f1f1f1;
+  --color-success: #333;
+  --color-success-surface: #f1f1f1;
+  --color-check-good: #333;
+  --color-check-good-ink: #222;
+  --color-check-caution: #777;
+  --color-check-caution-ink: #444;
+  --color-check-unconfirmed: #c6c6c6;
+  --color-check-unconfirmed-ink: #666;
 
-  --color-overlay: rgb(23 28 24 / 56%);
-  --color-overlay-strong: rgb(23 28 24 / 78%);
+  --color-overlay: rgb(17 20 29 / 56%);
+  --color-overlay-strong: rgb(17 20 29 / 78%);
   --color-surface-translucent: rgb(255 255 255 / 96%);
-  --shadow-app-shell: 0 0 2.5rem rgb(23 28 24 / 12%);
-  --radius-sm: 0.55rem;
-  --radius-md: 0.75rem;
-  --radius-lg: 1rem;
+  --shadow-app-shell: 0 0 2.5rem rgb(30 35 52 / 10%);
+  --radius-sm: 0.65rem;
+  --radius-md: 0.85rem;
+  --radius-lg: 1.05rem;
   --space-xs: 0.4rem;
   --space-sm: 0.75rem;
   --space-md: 1rem;

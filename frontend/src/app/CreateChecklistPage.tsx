@@ -1,55 +1,30 @@
-import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+
 import { getChecklistErrorMessage } from '../apis/checklistErrorMessages';
 import ChecklistEditor from '../components/ChecklistEditor';
-import ChecklistStageTabs from '../components/ChecklistStageTabs';
 import { Button } from '../components/ui/Button';
 import TopNavigation from '../components/ui/TopNavigation';
-import { checklistStageMeta, isChecklistStage } from '../constants/checklist';
+import { USER_CHECKLIST_STAGE, checklistStageMeta } from '../constants/checklist';
 import { useCreateChecklist } from '../hooks/query/useChecklistMutations';
 import { useChecklistPreset } from '../hooks/query/useChecklists';
 import useDelayedLoading from '../hooks/ui/useDelayedLoading';
-import type { ChecklistStage } from '../types/Checklist';
 import { checkItemToEditorItem } from '../types/ChecklistEditor';
+import type { ChecklistStage } from '../types/Checklist';
 import type { PublicConfig } from '../types/PublicConfig';
 import { parseChecklistReturnTo } from '../utils/checklist';
 import { toProvidedChecklistItemInputs } from '../utils/checklistEditor';
 import { trackPostHogEvent } from '../utils/posthog';
 import styles from './CreateChecklistPage.module.css';
 
+/** 사용자 체크리스트는 현장 단계 하나뿐이라 단계 선택 화면 없이 바로 편집기로 들어간다. */
 const CreateChecklistPage = ({ config }: { config: PublicConfig }) => {
   const [searchParams] = useSearchParams();
-  const stageParam = searchParams.get('stage');
-  if (!isChecklistStage(stageParam)) return <InvalidCreateStage />;
-  return (
-    <ResolvedCreateChecklistPage
-      key={stageParam}
-      config={config}
-      stage={stageParam}
-      returnTo={searchParams.get('returnTo')}
-    />
-  );
+  return <ResolvedCreateChecklistPage config={config} returnTo={searchParams.get('returnTo')} />;
 };
 
-const InvalidCreateStage = () => (
-  <main className="property-page">
-    <div className="page-container">
-      <div className="content-state">
-        <strong>체크리스트를 만들 단계를 선택해 주세요.</strong>
-        <Link to="/checklists">단계 선택으로 돌아가기</Link>
-      </div>
-    </div>
-  </main>
-);
+const stage: ChecklistStage = USER_CHECKLIST_STAGE;
 
-const ResolvedCreateChecklistPage = ({
-  config,
-  stage,
-  returnTo,
-}: {
-  config: PublicConfig;
-  stage: ChecklistStage;
-  returnTo: string | null;
-}) => {
+const ResolvedCreateChecklistPage = ({ config, returnTo }: { config: PublicConfig; returnTo: string | null }) => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const safeReturn = parseChecklistReturnTo(returnTo);
@@ -58,8 +33,6 @@ const ResolvedCreateChecklistPage = ({
   const isPresetLoading = preset.isPending || isPresetLoadingVisible;
   const create = useCreateChecklist(config);
   const isAddingItems = searchParams.get('mode') === 'add-items';
-
-  const tabTarget = (nextStage: ChecklistStage) => `/checklists/new?stage=${nextStage}`;
 
   return (
     <main className={`${styles.page} property-page checklist-page checklist-editor-page`}>
@@ -77,10 +50,9 @@ const ResolvedCreateChecklistPage = ({
                   setSearchParams(next, { replace: true });
                 },
               }
-            : { backTo: safeReturn?.path ?? `/checklists/${stage}` })}
+            : { backTo: safeReturn?.path ?? '/checklists' })}
         />
         <h1 className="sr-only">새 체크리스트</h1>
-        <ChecklistStageTabs stage={stage} getTo={tabTarget} fullBleed />
 
         {isPresetLoading ? (
           isPresetLoadingVisible ? (
@@ -101,12 +73,12 @@ const ResolvedCreateChecklistPage = ({
           </div>
         ) : (
           <ChecklistEditor
-            key={stage}
             config={config}
             stage={stage}
             initialName={`원룸 ${checklistStageMeta[stage].label} 체크리스트`}
             initialItems={(preset.data?.items ?? []).map(checkItemToEditorItem)}
             submitLabel="체크리스트 만들기"
+            fixedSubmitAction
             isSubmitting={create.isPending}
             serverError={create.isError ? getChecklistErrorMessage(create.error) : undefined}
             viewMode={isAddingItems ? 'ADD_ITEMS' : 'EDIT'}
@@ -126,7 +98,7 @@ const ResolvedCreateChecklistPage = ({
               if (safeReturn !== null && safeReturn.stage === stage) {
                 navigate(safeReturn.path, { replace: true, state: { newChecklistId: created.checklistId } });
               } else {
-                navigate(`/checklists/${stage}`, { replace: true, state: { newChecklistId: created.checklistId } });
+                navigate('/checklists', { replace: true, state: { newChecklistId: created.checklistId } });
               }
               return created;
             }}
