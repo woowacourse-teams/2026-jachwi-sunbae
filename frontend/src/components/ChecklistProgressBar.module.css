@@ -48,6 +48,18 @@
   background: var(--color-check-unconfirmed);
 }
 
+.legend {
+  display: flex;
+  min-width: 0;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.trailing {
+  flex: 0 0 auto;
+}
+
 .results ul {
   display: flex;
   flex-wrap: wrap;
@@ -62,7 +74,7 @@
 
 .results[data-compact='true'] ul {
   gap: 0.25rem 0.55rem;
-  font-size: 0.58rem;
+  font-size: 0.64rem;
 }
 
 .results li {
@@ -102,7 +114,7 @@
   gap: 0.18rem;
 }
 
-.results strong {
+.results li strong {
   color: var(--color-muted);
   font-size: inherit;
   font-weight: 850;
