@@ -8,6 +8,17 @@
   border: 1px solid var(--color-border);
   border-radius: var(--radius-sm);
   background: var(--color-surface);
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.search:focus-within {
+  border-color: var(--color-ink, #212124);
+}
+
+.pill {
+  border-radius: 999px;
 }
 
 .withoutSubmit {
@@ -17,6 +28,19 @@
 .searchIcon {
   margin-left: 0.85rem;
   color: var(--color-ink);
+}
+
+.backButton {
+  display: grid;
+  width: 2.35rem;
+  height: 2.35rem;
+  margin-left: 0.25rem;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--color-ink);
+  cursor: pointer;
+  place-items: center;
 }
 
 .search input {
