@@ -1,0 +1,2 @@
+ALTER TABLE properties
+    MODIFY COLUMN address VARCHAR(500) NULL;

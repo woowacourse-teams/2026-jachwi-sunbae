@@ -14,7 +14,7 @@ MVP2가 기능을 확장하면서 회원 인증 정보 병합, 매물 주소 통
 - Spring Boot의 Flyway 자동 구성을 활성화하고 `classpath:db/migration`의 버전 SQL만 기본 프로필에서 실행한다.
 - 새 이력 테이블은 `integrated_schema_history`로 분리한다. 기존 `flyway_schema_history`는 읽거나 수정하지 않고 보존한다.
 - 이미 테이블이 있는 DB는 `baseline-on-migrate=true`, 기준선 버전 1로 등록한 뒤 V2 이후를 적용한다. 빈 DB는 V1부터 전체 버전을 적용한다.
-- V1은 현재 MVP2 기준 스키마, V2는 기준 데이터, V3은 통합 구조 확장, V4는 데이터 backfill과 변환 실패 기록을 담당한다.
+- V1은 현재 MVP2 기준 스키마, V2는 기준 데이터, V3은 통합 구조 확장, V4는 데이터 backfill과 변환 실패 기록, V5는 주소 길이 보정을 담당한다.
 - V3·V4에서는 레거시 컬럼과 `nickname_credentials`를 즉시 삭제하지 않는다. API 전환과 데이터 검증이 끝난 뒤 별도 순방향 버전에서 정리한다.
 - `DatabaseUpgradeInitializer`는 호환 테스트에서만 명시적으로 활성화할 수 있고 운영 기본값은 비활성화한다.
 
@@ -38,12 +38,13 @@ MVP2가 기능을 확장하면서 회원 인증 정보 병합, 매물 주소 통
 - 마이그레이션 파일은 적용 후 수정할 수 없고 새 버전 파일을 추가해야 한다.
 - MySQL DDL의 암시적 커밋으로 실패 시 모든 변경이 자동 원자적으로 되돌아가지 않으므로 운영 전 논리 백업과 복원 리허설이 필요하다.
 - V4는 해석할 수 없는 메모 값을 NULL로 보존하고 `migration_backfill_failures`에 기록한다. 실패 목록을 확인한 뒤 후속 보정 SQL을 추가한다.
+- V5는 기존 주소 값을 보존한 채 `properties.address`를 `VARCHAR(500)`으로 넓힌다.
 - `db/init/`과 `db/upgrade/`는 호환 테스트용 보관 경로로 남지만 기본 애플리케이션 실행 경로가 아니다.
 
 ## 검증 방법
 
-- Testcontainers MySQL 8.4에서 V1~V4 적용 후 `integrated_schema_history`의 성공 버전과 pending 0건을 확인한다.
-- 기존 테이블과 과거 `flyway_schema_history`가 있는 DB에서 기준선 등록 후 V2~V4만 적용되는지 확인한다.
+- Testcontainers MySQL 8.4에서 V1~V5 적용 후 `integrated_schema_history`의 성공 버전과 pending 0건을 확인한다.
+- 기존 테이블과 과거 `flyway_schema_history`가 있는 DB에서 기준선 등록 후 V2~V5만 적용되는지 확인한다.
 - 회원 hash 보존, 주소 우선순위, 다섯 가지 부가정보, 옵션·공과금 alias, 자유 메모 보존과 변환 실패 목록을 검증한다.
 - 애플리케이션 전체 테스트와 문서 정합성 검사를 통과시킨다.
 

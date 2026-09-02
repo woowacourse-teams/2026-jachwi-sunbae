@@ -81,6 +81,7 @@ class DatabaseInitializationTest extends IntegrationTest {
         assertThat(nullableColumn("members", "nickname_key")).isEqualTo("YES");
         assertThat(nullableColumn("members", "password_hash")).isEqualTo("YES");
         assertThat(nullableColumn("properties", "address")).isEqualTo("YES");
+        assertThat(columnLength("properties", "address")).isEqualTo(500L);
         assertThat(nullableColumn("properties", "deleted_at")).isEqualTo("YES");
         assertThat(nullableColumn("property_photos", "deleted_at")).isEqualTo("YES");
         assertThat(nullableColumn("user_checklists", "deleted_at")).isEqualTo("YES");
@@ -124,6 +125,14 @@ class DatabaseInitializationTest extends IntegrationTest {
                 FROM information_schema.columns
                 WHERE table_schema = DATABASE() AND table_name = ? AND column_name = ?
                 """, String.class, tableName, columnName);
+    }
+
+    private Long columnLength(String tableName, String columnName) {
+        return jdbcTemplate.queryForObject("""
+                SELECT character_maximum_length
+                FROM information_schema.columns
+                WHERE table_schema = DATABASE() AND table_name = ? AND column_name = ?
+                """, Long.class, tableName, columnName);
     }
 
     private boolean indexExists(String tableName, String indexName) {

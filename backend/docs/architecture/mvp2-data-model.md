@@ -7,7 +7,7 @@
 ## 원칙
 
 - 제품 정책의 정본은 기능 명세와 [결정 대장](../../../docs/product/decisions/README.md)이다.
-- 이 문서는 Flyway V1 기준선과 V3·V4 통합 마이그레이션에서 파생되는 현재 모델 설명이다.
+- 이 문서는 Flyway V1 기준선과 V3~V5 통합 마이그레이션에서 파생되는 현재 모델 설명이다.
 - 통합 마이그레이션은 먼저 새 컬럼과 테이블을 추가하고 기존 데이터를 backfill한다. API 전환과 검증이 끝나기 전까지 레거시 컬럼은 호환을 위해 남긴다.
 - 주변 시설 응답은 저장하지 않고 NAVER API HUB 지역 검색 또는 데모 adapter에서 그때 조회한다.
 
@@ -58,7 +58,7 @@ erDiagram
 | `name` | VARCHAR(50) | NOT NULL | 애플리케이션 제한 30자 |
 | `deposit_amount` | BIGINT | NOT NULL, DEFAULT 0 | 원 단위 보증금 |
 | `monthly_rent_amount` | BIGINT | NOT NULL, DEFAULT 0 | 원 단위 월세 |
-| `address` | VARCHAR(255) | NULL | 도로명 우선, 없으면 지번 주소를 복사한 표시 주소 |
+| `address` | VARCHAR(500) | NULL | 도로명 우선, 없으면 지번 주소를 복사한 표시 주소 |
 | `discovery_source` | VARCHAR(500) | NOT NULL, DEFAULT '' (레거시) | 통합 후 `property_details`로 복사 |
 | `road_address` | VARCHAR(255) | NULL | 대표 도로명 주소 |
 | `jibun_address` | VARCHAR(255) | NULL | 지번 주소 |
@@ -148,5 +148,6 @@ V4는 기존 구조화 메모에서 변환 가능한 값을 `property_details`�
 - `V2__seed_mvp2_reference_data.sql`: 시스템 체크 항목과 다섯 가지 매물 부가정보 항목
 - `V3__expand_integrated_schema.sql`: 회원 인증 정보 병합을 위한 nullable 컬럼, 주소·논리 삭제 컬럼, 부가정보·옵션·선호 테이블
 - `V4__backfill_integrated_schema.sql`: 기존 주소·인증·구조화 메모 backfill과 변환 실패 기록
+- `V5__align_property_address_length.sql`: 통합 주소 컬럼을 500자로 확장
 - `integrated_schema_history`: 새 Flyway 이력 테이블. 과거 `flyway_schema_history`는 보존한다.
 - 데모 회원·매물·진행 결과는 `DEMO_SEED_ENABLED=true`일 때만 만들며 운영 시드에 섞지 않는다.

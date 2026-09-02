@@ -13,6 +13,7 @@
 | `db/migration/V2__seed_mvp2_reference_data.sql` | 시스템 체크 항목과 다섯 가지 매물 부가정보 기준 데이터 |
 | `db/migration/V3__expand_integrated_schema.sql` | 통합 컬럼·테이블·소프트 삭제·조회 인덱스 확장 |
 | `db/migration/V4__backfill_integrated_schema.sql` | 기존 회원·주소·메모 데이터를 새 구조로 복사하고 변환 실패를 기록 |
+| `db/migration/V5__align_property_address_length.sql` | 통합 주소 컬럼을 500자로 확장 |
 | `db/init/`, `db/upgrade/` | 이전 실행 경로와 테스트 호환을 위한 보관 파일. 기본 프로필에서는 실행하지 않음 |
 
 Flyway 이력 테이블은 `integrated_schema_history`를 사용한다. 팀 RDS에 남아 있는 과거 `flyway_schema_history`는 변경하지 않는다. 이미 애플리케이션 테이블이 있는 DB에서 첫 기동하면 `baseline-on-migrate`가 버전 1을 기준선으로 기록하고 V2 이후를 적용한다.
@@ -53,7 +54,7 @@ V3은 기존 코드가 읽는 레거시 컬럼을 즉시 제거하지 않고 통
 4. Testcontainers MySQL에서 전체 버전 적용, 재기동 시 pending 없음, 기존 데이터 backfill과 실패 목록을 검증한다.
 5. 백엔드 테스트와 `python3 .github/scripts/check_docs.py`를 실행한다.
 
-테스트 프로필은 빈 Testcontainers MySQL에 Flyway V1~V4를 적용한다. 별도 호환 테스트만 `LEGACY_DATABASE_UPGRADE_ENABLED=true`를 켜서 이전 `DatabaseUpgradeInitializer`를 검증하며, 기본 데이터베이스 테스트는 Flyway 이력과 pending 상태를 확인한다.
+테스트 프로필은 빈 Testcontainers MySQL에 Flyway V1~V5를 적용한다. 별도 호환 테스트만 `LEGACY_DATABASE_UPGRADE_ENABLED=true`를 켜서 이전 `DatabaseUpgradeInitializer`를 검증하며, 기본 데이터베이스 테스트는 Flyway 이력과 pending 상태를 확인한다.
 
 ## 운영 주의사항
 
