@@ -19,6 +19,16 @@ class FakeLatLng {
   lng = () => this.longitude;
 }
 
+class FakeLatLngBounds {
+  constructor(
+    readonly sw: FakeLatLng,
+    readonly ne: FakeLatLng,
+  ) {}
+
+  getSW = () => this.sw;
+  getNE = () => this.ne;
+}
+
 class FakeOverlay {
   setMap = vi.fn();
 }
@@ -62,6 +72,7 @@ describe('Naver 지도 상태 동기화', () => {
       value: {
         maps: {
           LatLng: FakeLatLng,
+          LatLngBounds: FakeLatLngBounds,
           Map: FakeMap,
           OverlayView: FakeOverlay,
           Circle: FakeOverlay,

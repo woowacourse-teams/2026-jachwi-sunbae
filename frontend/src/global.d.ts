@@ -11,6 +11,7 @@ interface Window {
 }
 
 type NaverLatLng = { lat: () => number; lng: () => number };
+type NaverLatLngBounds = { getSW: () => NaverLatLng; getNE: () => NaverLatLng };
 type NaverMap = {
   getCenter: () => NaverLatLng;
   getZoom: () => number;
@@ -29,7 +30,11 @@ type NaverOverlay = {
 };
 type NaverMapsNamespace = {
   LatLng: new (latitude: number, longitude: number) => NaverLatLng;
-  Map: new (container: HTMLElement, options: { center: NaverLatLng; zoom: number }) => NaverMap;
+  LatLngBounds: new (sw: NaverLatLng, ne: NaverLatLng) => NaverLatLngBounds;
+  Map: new (
+    container: HTMLElement,
+    options: { center: NaverLatLng; zoom: number; minZoom?: number; maxBounds?: NaverLatLngBounds },
+  ) => NaverMap;
   OverlayView: new (...args: never[]) => NaverOverlay;
   Circle: new (options: {
     map: NaverMap;
