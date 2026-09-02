@@ -1,9 +1,7 @@
 spring:
   sql:
     init:
-      mode: always
-      schema-locations: classpath:db/init/001-schema.sql
-      data-locations: classpath:db/init/002-seed.sql
+      mode: never
 
 auth:
   jwt:

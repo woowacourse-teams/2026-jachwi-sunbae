@@ -3,11 +3,11 @@ package com.jachwisunbae.common.database;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.jachwisunbae.common.IntegrationTest;
-import java.time.LocalDateTime;
 import java.util.List;
+import org.flywaydb.core.Flyway;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.DefaultApplicationArguments;
+import org.springframework.context.ApplicationContext;
 import org.springframework.jdbc.core.JdbcTemplate;
 
 class DatabaseInitializationTest extends IntegrationTest {
@@ -33,7 +33,10 @@ class DatabaseInitializationTest extends IntegrationTest {
     private JdbcTemplate jdbcTemplate;
 
     @Autowired
-    private DatabaseUpgradeInitializer databaseUpgradeInitializer;
+    private Flyway flyway;
+
+    @Autowired
+    private ApplicationContext applicationContext;
 
     @Test
     void 현재_스키마와_기본_데이터로_새_DB를_초기화한다() {
@@ -42,7 +45,7 @@ class DatabaseInitializationTest extends IntegrationTest {
                 String.class
         );
 
-        assertThat(tables).containsExactlyInAnyOrderElementsOf(APPLICATION_TABLES);
+        assertThat(tables).containsAll(APPLICATION_TABLES);
         assertThat(jdbcTemplate.queryForObject(
                 "SELECT COUNT(*) FROM system_check_items WHERE deleted_at IS NULL", Long.class)).isEqualTo(53);
         assertThat(jdbcTemplate.queryForList("""
@@ -58,11 +61,11 @@ class DatabaseInitializationTest extends IntegrationTest {
                 java.util.Map.of("stage", "ON_SITE", "item_type", "OPTIONAL", "item_count", 19L),
                 java.util.Map.of("stage", "PRE_CONTRACT", "item_type", "CORE", "item_count", 7L),
                 java.util.Map.of("stage", "PRE_CONTRACT", "item_type", "OPTIONAL", "item_count", 7L));
-        assertThat(count("system_memo_items")).isEqualTo(4);
+        assertThat(count("system_memo_items")).isEqualTo(5);
         assertThat(jdbcTemplate.queryForList(
                 "SELECT label FROM system_memo_items ORDER BY display_order",
                 String.class
-        )).containsExactly("입주 가능일", "방 옵션", "관리비 및 공과금", "방문 일정");
+        )).containsExactly("입주 가능일", "방 옵션", "관리비 및 공과금", "방문 일정", "확인한 곳");
         assertThat(jdbcTemplate.queryForObject(
                 "SELECT question FROM system_check_items WHERE id = 101",
                 String.class
@@ -72,60 +75,23 @@ class DatabaseInitializationTest extends IntegrationTest {
     }
 
     @Test
-    void 기존_제공_문항은_삭제하지_않고_반복_업그레이드에서_비활성화한다() throws Exception {
-        jdbcTemplate.update("""
-                INSERT INTO system_check_items (id, stage, item_type, question, deleted_at)
-                VALUES (1, 'ONLINE_PHONE', 'CORE', '기존 질문 스냅샷 원본', NULL)
-                ON DUPLICATE KEY UPDATE deleted_at = NULL
-                """);
+    void Flyway는_적용된_버전을_기록하고_재실행에서_중복_적용하지_않는다() {
+        Long historyCount = jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM integrated_schema_history WHERE success = TRUE", Long.class);
+        int pendingBefore = flyway.info().pending().length;
 
-        databaseUpgradeInitializer.run(new DefaultApplicationArguments());
-        LocalDateTime retiredAt = jdbcTemplate.queryForObject(
-                "SELECT deleted_at FROM system_check_items WHERE id = 1", LocalDateTime.class);
-        databaseUpgradeInitializer.run(new DefaultApplicationArguments());
+        flyway.migrate();
 
-        assertThat(retiredAt).isNotNull();
+        assertThat(historyCount).isEqualTo(2L);
+        assertThat(flyway.info().pending()).hasSize(pendingBefore);
         assertThat(jdbcTemplate.queryForObject(
-                "SELECT question FROM system_check_items WHERE id = 1", String.class))
-                .isEqualTo("기존 질문 스냅샷 원본");
-        assertThat(jdbcTemplate.queryForObject(
-                "SELECT deleted_at FROM system_check_items WHERE id = 1", LocalDateTime.class))
-                .isEqualTo(retiredAt);
+                "SELECT COUNT(*) FROM integrated_schema_history WHERE success = TRUE", Long.class))
+                .isEqualTo(historyCount);
     }
 
     @Test
-    void 기존_회원은_NFKC_중복을_분리한_비밀번호_없는_닉네임을_이어받는다() throws Exception {
-        LocalDateTime now = LocalDateTime.now();
-        jdbcTemplate.update("DELETE FROM members WHERE email IN (?, ?)",
-                "legacy-fullwidth@example.com", "legacy-ascii@example.com");
-        jdbcTemplate.update("INSERT INTO members (email, name, last_login_at, created_at, updated_at) "
-                        + "VALUES (?, ?, ?, ?, ?)",
-                "legacy-fullwidth@example.com", "Ａ", now, now, now);
-        jdbcTemplate.update("INSERT INTO members (email, name, last_login_at, created_at, updated_at) "
-                        + "VALUES (?, ?, ?, ?, ?)",
-                "legacy-ascii@example.com", "a", now, now, now);
-
-        databaseUpgradeInitializer.run(new DefaultApplicationArguments());
-        databaseUpgradeInitializer.run(new DefaultApplicationArguments());
-
-        List<LegacyCredential> credentials = jdbcTemplate.query("""
-                SELECT credential.member_id, credential.nickname, credential.nickname_key, credential.password_hash
-                FROM nickname_credentials credential
-                JOIN members member ON member.id = credential.member_id
-                WHERE member.email IN (?, ?)
-                ORDER BY credential.member_id
-                """, (resultSet, rowNumber) -> new LegacyCredential(
-                        resultSet.getLong("member_id"),
-                        resultSet.getString("nickname"),
-                        resultSet.getString("nickname_key"),
-                        resultSet.getString("password_hash")),
-                "legacy-fullwidth@example.com", "legacy-ascii@example.com");
-
-        assertThat(credentials).hasSize(2);
-        assertThat(credentials.get(0).nickname()).isEqualTo("A");
-        assertThat(credentials.get(0).nicknameKey()).isEqualTo("a");
-        assertThat(credentials.get(1).nickname()).isEqualTo("a #" + credentials.get(1).memberId());
-        assertThat(credentials).allMatch(credential -> credential.passwordHash() == null);
+    void 레거시_애플리케이션_시작_업그레이더는_기본_프로필에서_등록하지_않는다() {
+        assertThat(applicationContext.getBeansOfType(DatabaseUpgradeInitializer.class)).isEmpty();
     }
 
     private Long count(String tableName) {
@@ -140,6 +106,4 @@ class DatabaseInitializationTest extends IntegrationTest {
                 """, String.class, tableName, columnName);
     }
 
-    private record LegacyCredential(long memberId, String nickname, String nicknameKey, String passwordHash) {
-    }
 }

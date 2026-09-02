@@ -4,11 +4,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.jachwisunbae.common.IntegrationTest;
 import java.time.LocalDateTime;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.DefaultApplicationArguments;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.test.context.TestPropertySource;
 
+@TestPropertySource(properties = "app.legacy-database-upgrade.enabled=true")
 class TeamMvp1DatabaseUpgradeIntegrationTest extends IntegrationTest {
 
     @Autowired
@@ -72,6 +75,41 @@ class TeamMvp1DatabaseUpgradeIntegrationTest extends IntegrationTest {
                 Long.class)).isEqualTo(2L);
     }
 
+    @Test
+    void 기존_회원은_NFKC_중복을_분리한_비밀번호_없는_닉네임을_이어받는다() throws Exception {
+        LocalDateTime now = LocalDateTime.now();
+        jdbcTemplate.update("DELETE FROM members WHERE email IN (?, ?)",
+                "legacy-fullwidth@example.com", "legacy-ascii@example.com");
+        jdbcTemplate.update("INSERT INTO members (email, name, last_login_at, created_at, updated_at) "
+                        + "VALUES (?, ?, ?, ?, ?)",
+                "legacy-fullwidth@example.com", "Ａ", now, now, now);
+        jdbcTemplate.update("INSERT INTO members (email, name, last_login_at, created_at, updated_at) "
+                        + "VALUES (?, ?, ?, ?, ?)",
+                "legacy-ascii@example.com", "a", now, now, now);
+
+        databaseUpgradeInitializer.run(new DefaultApplicationArguments());
+        databaseUpgradeInitializer.run(new DefaultApplicationArguments());
+
+        List<LegacyCredential> credentials = jdbcTemplate.query("""
+                SELECT credential.member_id, credential.nickname, credential.nickname_key, credential.password_hash
+                FROM nickname_credentials credential
+                JOIN members member ON member.id = credential.member_id
+                WHERE member.email IN (?, ?)
+                ORDER BY credential.member_id
+                """, (resultSet, rowNumber) -> new LegacyCredential(
+                        resultSet.getLong("member_id"),
+                        resultSet.getString("nickname"),
+                        resultSet.getString("nickname_key"),
+                        resultSet.getString("password_hash")),
+                "legacy-fullwidth@example.com", "legacy-ascii@example.com");
+
+        assertThat(credentials).hasSize(2);
+        assertThat(credentials.get(0).nickname()).isEqualTo("A");
+        assertThat(credentials.get(0).nicknameKey()).isEqualTo("a");
+        assertThat(credentials.get(1).nickname()).isEqualTo("a #" + credentials.get(1).memberId());
+        assertThat(credentials).allMatch(credential -> credential.passwordHash() == null);
+    }
+
     private boolean columnExists(String tableName, String columnName) {
         return Boolean.TRUE.equals(jdbcTemplate.queryForObject("""
                 SELECT EXISTS(
@@ -100,5 +138,8 @@ class TeamMvp1DatabaseUpgradeIntegrationTest extends IntegrationTest {
                     WHERE constraint_schema = DATABASE() AND table_name = ? AND constraint_name = ?
                 )
                 """, Boolean.class, tableName, constraintName));
+    }
+
+    private record LegacyCredential(long memberId, String nickname, String nicknameKey, String passwordHash) {
     }
 }
