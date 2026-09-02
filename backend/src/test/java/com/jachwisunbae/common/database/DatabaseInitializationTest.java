@@ -27,6 +27,7 @@ class DatabaseInitializationTest extends IntegrationTest {
             "property_utility_options",
             "member_checklist_preferences",
             "migration_backfill_failures",
+            "migration_legacy_stage_counts",
             "system_check_items",
             "user_checklists",
             "user_checklist_items",
@@ -93,6 +94,10 @@ class DatabaseInitializationTest extends IntegrationTest {
         assertThat(indexExists("property_utility_options", "PRIMARY")).isTrue();
         assertThat(indexExists("member_checklist_preferences", "idx_member_checklist_preferences_latest")).isTrue();
         assertThat(count("migration_backfill_failures")).isZero();
+        assertThat(jdbcTemplate.queryForObject(
+                "SELECT row_count FROM migration_legacy_stage_counts "
+                        + "WHERE migration_version = 'V3' AND source_table = 'system_check_items' "
+                        + "AND stage = 'ONLINE_PHONE'", Long.class)).isEqualTo(12L);
     }
 
     @Test
@@ -114,6 +119,12 @@ class DatabaseInitializationTest extends IntegrationTest {
     @Test
     void 레거시_애플리케이션_시작_업그레이더는_기본_프로필에서_등록하지_않는다() {
         assertThat(applicationContext.getBeansOfType(DatabaseUpgradeInitializer.class)).isEmpty();
+    }
+
+    @Test
+    void Spring_Flyway_구성에_기준선_가드가_등록된다() {
+        assertThat(java.util.Arrays.stream(flyway.getConfiguration().getCallbacks())
+                .anyMatch(callback -> callback instanceof IntegratedSchemaBaselineGuard)).isTrue();
     }
 
     private Long count(String tableName) {
