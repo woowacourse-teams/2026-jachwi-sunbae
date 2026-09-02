@@ -1,3 +1,23 @@
+.statePage {
+  display: grid;
+  min-height: 100%;
+  padding: 1.5rem 1rem;
+  place-items: center;
+}
+
+.plainState,
+.stateCard {
+  width: min(100%, 32rem);
+}
+
+.plainState :global(.content-state) {
+  min-height: auto;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+
 .heading {
   display: flex;
   align-items: end;

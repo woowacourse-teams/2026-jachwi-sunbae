@@ -533,8 +533,9 @@ describe('매물 체크리스트 연결과 자동 저장', () => {
     expect(screen.getByRole('button', { name: '선택한 체크리스트로 교체' })).toBeEnabled();
   });
 
-  it('상태를 선택하면 즉시 저장하고 항목 메모 UI는 제공하지 않는다', async () => {
+  it('상태와 항목 메모를 각각 즉시 저장한다', async () => {
     let statusRequest: unknown;
+    let memoRequest: unknown;
     server.use(
       http.get(`${config.apiBaseUrl}/api/properties/10`, () =>
         HttpResponse.json(successEnvelope({ ...propertyDetailResponseFixture(), photos: [] })),
@@ -553,6 +554,14 @@ describe('매물 체크리스트 연결과 자동 저장', () => {
                 systemCheckItemId: 101,
                 question: '수압이 충분한가요?',
                 displayOrder: 1,
+                status: 'UNCONFIRMED',
+                memo: '',
+              },
+              {
+                id: 702,
+                systemCheckItemId: 102,
+                question: '채광이 충분한가요?',
+                displayOrder: 2,
                 status: 'UNCONFIRMED',
                 memo: '',
               },
@@ -598,6 +607,10 @@ describe('매물 체크리스트 연결과 자동 저장', () => {
         statusRequest = await request.json();
         return HttpResponse.json(successEnvelope({ item: { id: 701, status: 'CAUTION' } }));
       }),
+      http.patch(`${config.apiBaseUrl}/api/properties/10/checklists/47/items/701/memo`, async ({ request }) => {
+        memoRequest = await request.json();
+        return HttpResponse.json(successEnvelope({ item: { id: 701, memo: '수압은 괜찮지만 온수 확인 필요' } }));
+      }),
     );
     const user = userEvent.setup();
     renderAuthenticated('/properties/10/checklists/47');
@@ -609,8 +622,15 @@ describe('매물 체크리스트 연결과 자동 저장', () => {
       '/properties/10/active-checklists/ON_SITE?mode=replace',
     );
 
-    await user.click(screen.getByRole('radio', { name: '주의' }));
+    await user.click(screen.getAllByRole('radio', { name: '주의' })[0]);
     await waitFor(() => expect(statusRequest).toEqual({ status: 'CAUTION' }));
-    expect(screen.queryByRole('button', { name: '수압이 충분한가요? 메모 열기' })).not.toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: '수압이 충분한가요? 메모 편집' }));
+    expect(screen.getByRole('button', { name: '채광이 충분한가요? 메모 편집' })).toBeDisabled();
+    const memo = screen.getByRole('textbox', { name: '수압이 충분한가요? 메모' });
+    await user.type(memo, '수압은 괜찮지만 온수 확인 필요');
+    await user.click(screen.getByRole('button', { name: '저장' }));
+    await waitFor(() => expect(memoRequest).toEqual({ memo: '수압은 괜찮지만 온수 확인 필요' }));
+    expect(screen.queryByRole('textbox', { name: '수압이 충분한가요? 메모' })).not.toBeInTheDocument();
+    expect(screen.getByText('수압은 괜찮지만 온수 확인 필요')).toBeInTheDocument();
   });
 });
