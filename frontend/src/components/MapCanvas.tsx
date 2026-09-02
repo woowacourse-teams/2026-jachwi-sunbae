@@ -392,7 +392,7 @@ const MapCanvas = ({
     });
     observer.observe(containerRef.current);
     return () => observer.disconnect();
-  }, [boundedCenter, engine, liveMode, mapReady]);
+  }, [engine, liveMode, mapReady]);
 
   useEffect(() => {
     const map = mapRef.current;
