@@ -155,7 +155,7 @@ sudo systemctl start jachwi-sunbae.service
 5. 버스정류소 API 승인이 끝나지 않았다면 `BUS_STOP_PROVIDER=none`으로 둔다.
 6. 프론트 dev `Commands` 액션에 `API_BASE_URL=https://dev-api.jachwi-sunbae.kr`, `MAP_PROVIDER_MODE`와 선택한 지도 공급자의 공개 키를 주입한다.
 
-첫 기동의 `db/upgrade/*.sql` 중 하나라도 실패하면 애플리케이션은 요청을 받지 않고 배포 검증이 실패한다. 스키마를 수동으로 일부만 적용하지 말고 로그와 [데이터베이스 초기화](../guides/database-initialization.md)를 확인한다.
+첫 기동 전에 Flyway가 `db/migration/V1__`부터 순서대로 실행한다. 기존 테이블이 있는 DB에서는 `integrated_schema_history`에 버전 1 기준선을 기록한 뒤 V2 이후를 적용한다. 마이그레이션이 하나라도 실패하면 애플리케이션은 요청을 받지 않고 배포 검증이 실패하므로 스키마를 수동으로 일부만 적용하지 말고 로그와 [데이터베이스 초기화](../guides/database-initialization.md)를 확인한다.
 
 ## 빌드를 CodeBuild가 아니라 Commands로 하는 이유
 

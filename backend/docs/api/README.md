@@ -1,6 +1,6 @@
 # MVP2 API 문서
 
-- 상태: 구현 완료 v1
+- 상태: API 전환 전 v1
 - 문서 성격: 파생
 - 대조 대상: 실제 Spring MVC 컨트롤러와 `/v3/api-docs`
 

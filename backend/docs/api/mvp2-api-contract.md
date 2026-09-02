@@ -1,8 +1,10 @@
 # MVP2 API 계약
 
-- 상태: 구현 완료 v1
+- 상태: API 전환 전 v1
 - 문서 성격: 파생
 - 대조 대상: [MVP2 기능 명세](../../../docs/product/specs/README.md), 실제 Spring MVC 컨트롤러와 `/v3/api-docs`
+
+통합 스키마 Flyway 마이그레이션은 API 전환에 필요한 nullable 컬럼·테이블을 먼저 추가하지만, 이 문서는 현재 컨트롤러가 제공하는 전환 전 API 계약을 기록한다. `lastActivityAt`, `ONLINE_PHONE`, 물리 삭제 등 레거시 계약의 제거·변경은 후속 API 전환 작업에서 함께 반영한다.
 
 ## 공통
 

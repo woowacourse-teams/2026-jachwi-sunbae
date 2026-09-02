@@ -51,4 +51,4 @@ curl -fsS https://dev-api.jachwi-sunbae.kr/actuator/info
 
 ## 데이터베이스 변경이 포함된 MVP2 롤백
 
-MVP2 upgrade는 순방향 additive 변경이며 애플리케이션 롤백 때 자동으로 컬럼·테이블·기존 `flyway_schema_history`를 제거하지 않는다. 이전 애플리케이션이 추가 컬럼을 무시할 수 있으므로 우선 직전 정상 리비전을 재배포한다. 데이터까지 되돌려야 한다면 자동 백업을 격리된 RDS에 복원해 영향 범위를 확인한 뒤 진행하며, 운영 DB에 `DROP`이나 역방향 SQL을 즉시 실행하지 않는다.
+통합 스키마 마이그레이션은 순방향으로만 진행하며 애플리케이션 롤백 때 `integrated_schema_history`와 적용된 컬럼·테이블을 자동으로 되돌리지 않는다. 이전 애플리케이션이 V3·V4의 nullable 확장 컬럼을 무시할 수 있으므로 우선 직전 정상 리비전을 재배포한다. 데이터까지 되돌려야 한다면 최신 논리 백업을 격리된 RDS에 복원해 영향 범위를 확인한 뒤 진행하며, 운영 DB에 `flyway clean`, `DROP`이나 역방향 SQL을 즉시 실행하지 않는다.

@@ -279,7 +279,7 @@ PR 검증은 GitHub Actions가 맡고 배포용 산출물 생성과 실제 서�
 
 ## 6. 데이터베이스 변경이 포함된 배포
 
-새 DB는 현재 init SQL로 초기화하고 기존 DB는 애플리케이션 시작 시 번호순 멱등 upgrade SQL을 적용한다. 팀 MVP1 RDS의 Flyway V11 형태는 `003-adapt-team-mvp1-schema.sql`로 보강하며 기존 `flyway_schema_history`는 삭제하거나 갱신하지 않는다. 첫 MVP2 dev 배포 전 논리 백업과 복원 가능 여부, 애플리케이션 계정의 additive DDL 권한을 확인한다. 상세 절차와 재실행 안전성은 [데이터베이스 초기화](../../backend/docs/guides/database-initialization.md)를 따른다.
+새 DB와 기존 DB 모두 애플리케이션 기동 시 Flyway 버전 마이그레이션을 적용한다. 새 이력은 `integrated_schema_history`에 기록하고 팀 MVP1 RDS의 기존 `flyway_schema_history`는 보존한다. 기존 애플리케이션 테이블이 있는 DB는 버전 1을 기준선으로 기록한 뒤 V2 이후를 적용한다. 첫 MVP2 dev 배포 전 논리 백업과 복원 가능 여부, 애플리케이션 계정의 DDL 권한과 V3·V4 backfill 실행 시간을 확인한다. 상세 절차와 재실행 안전성은 [데이터베이스 초기화](../../backend/docs/guides/database-initialization.md)를 따른다.
 
 ## 7. 롤백
 

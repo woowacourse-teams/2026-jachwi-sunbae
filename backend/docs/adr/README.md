@@ -29,6 +29,7 @@ ADR은 프로젝트에 영향을 주는 기술적 결정을 당시의 맥락과 
 | [0010](0010-prepare-single-ec2-deployment.md) | 단일 EC2 최소 배포를 준비한다 | 승인 | 2026-08-22 |
 | [0011](0011-apply-idempotent-database-upgrades.md) | 멱등 SQL로 기존 데이터베이스를 보강한다 | 승인 | 2026-08-25 |
 | [0012](0012-deploy-mvp2-with-team-pipeline.md) | MVP2를 팀 AWS 네이티브 파이프라인으로 배포한다 | 승인 | 2026-08-26 |
+| [0013](0013-use-flyway-for-integrated-schema.md) | 통합 스키마 변경 이력을 Flyway로 관리한다 | 승인 | 2026-09-03 |
 
 ## 새 ADR 골격
 
