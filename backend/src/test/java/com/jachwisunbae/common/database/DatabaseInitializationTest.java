@@ -100,6 +100,7 @@ class DatabaseInitializationTest extends IntegrationTest {
         Long historyCount = jdbcTemplate.queryForObject(
                 "SELECT COUNT(*) FROM integrated_schema_history WHERE success = TRUE", Long.class);
         int pendingBefore = flyway.info().pending().length;
+        assertThat(pendingBefore).isZero();
 
         flyway.migrate();
 
