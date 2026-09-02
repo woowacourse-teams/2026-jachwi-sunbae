@@ -18,7 +18,8 @@
   min-height: 0;
   overflow-x: hidden;
   overflow-y: auto;
-  overscroll-behavior-y: contain;
+  /* 상단에서 당기는 모바일 새로고침이 내부 스크롤러에 막히지 않게 한다. */
+  overscroll-behavior-y: auto;
   scrollbar-width: none;
 }
 
