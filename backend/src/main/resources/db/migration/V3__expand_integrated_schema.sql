@@ -1,3 +1,33 @@
+SET @v3_member_id_type = COALESCE(
+    (
+        SELECT CASE LOWER(column_type)
+            WHEN 'bigint unsigned' THEN 'BIGINT UNSIGNED'
+            WHEN 'bigint' THEN 'BIGINT'
+        END
+        FROM information_schema.columns
+        WHERE table_schema = DATABASE()
+          AND table_name = 'members'
+          AND column_name = 'id'
+        LIMIT 1
+    ),
+    'BIGINT'
+);
+
+SET @v3_property_id_type = COALESCE(
+    (
+        SELECT CASE LOWER(column_type)
+            WHEN 'bigint unsigned' THEN 'BIGINT UNSIGNED'
+            WHEN 'bigint' THEN 'BIGINT'
+        END
+        FROM information_schema.columns
+        WHERE table_schema = DATABASE()
+          AND table_name = 'properties'
+          AND column_name = 'id'
+        LIMIT 1
+    ),
+    'BIGINT'
+);
+
 CREATE TABLE IF NOT EXISTS nickname_credentials
 (
     member_id     BIGINT       NOT NULL,
@@ -7,12 +37,42 @@ CREATE TABLE IF NOT EXISTS nickname_credentials
     created_at    DATETIME(6)  NOT NULL,
     updated_at    DATETIME(6)  NOT NULL,
     PRIMARY KEY (member_id),
-    CONSTRAINT uk_nickname_credentials_key UNIQUE (nickname_key),
-    CONSTRAINT fk_nickname_credentials_member
-        FOREIGN KEY (member_id) REFERENCES members (id) ON DELETE CASCADE
+    CONSTRAINT uk_nickname_credentials_key UNIQUE (nickname_key)
 ) ENGINE = InnoDB
   DEFAULT CHARACTER SET = utf8mb4
   COLLATE = utf8mb4_0900_ai_ci;
+
+SET @v3_current_member_id_type = (
+    SELECT UPPER(column_type)
+    FROM information_schema.columns
+    WHERE table_schema = DATABASE()
+      AND table_name = 'nickname_credentials'
+      AND column_name = 'member_id'
+    LIMIT 1
+);
+SET @v3_sql = IF(
+    @v3_current_member_id_type = @v3_member_id_type,
+    'SELECT 1',
+    CONCAT('ALTER TABLE nickname_credentials MODIFY COLUMN member_id ', @v3_member_id_type, ' NOT NULL')
+);
+PREPARE v3_statement FROM @v3_sql;
+EXECUTE v3_statement;
+DEALLOCATE PREPARE v3_statement;
+
+SET @v3_sql = IF(
+    EXISTS(
+        SELECT 1
+        FROM information_schema.referential_constraints
+        WHERE constraint_schema = DATABASE()
+          AND table_name = 'nickname_credentials'
+          AND constraint_name = 'fk_nickname_credentials_member'
+    ),
+    'SELECT 1',
+    'ALTER TABLE nickname_credentials ADD CONSTRAINT fk_nickname_credentials_member FOREIGN KEY (member_id) REFERENCES members (id) ON DELETE CASCADE'
+);
+PREPARE v3_statement FROM @v3_sql;
+EXECUTE v3_statement;
+DEALLOCATE PREPARE v3_statement;
 
 SET @v3_sql = IF(
     EXISTS(
@@ -212,12 +272,27 @@ CREATE TABLE IF NOT EXISTS property_details
     visit_scheduled_at       DATETIME(6)    NULL,
     discovery_source         VARCHAR(500)   NULL,
     created_at               DATETIME(6)    NOT NULL,
-    PRIMARY KEY (property_id),
-    CONSTRAINT fk_property_details_property
-        FOREIGN KEY (property_id) REFERENCES properties (id) ON DELETE CASCADE
+    PRIMARY KEY (property_id)
 ) ENGINE = InnoDB
   DEFAULT CHARACTER SET = utf8mb4
   COLLATE = utf8mb4_0900_ai_ci;
+
+SET @v3_current_property_details_id_type = (
+    SELECT UPPER(column_type)
+    FROM information_schema.columns
+    WHERE table_schema = DATABASE()
+      AND table_name = 'property_details'
+      AND column_name = 'property_id'
+    LIMIT 1
+);
+SET @v3_sql = IF(
+    @v3_current_property_details_id_type = @v3_property_id_type,
+    'SELECT 1',
+    CONCAT('ALTER TABLE property_details MODIFY COLUMN property_id ', @v3_property_id_type, ' NOT NULL')
+);
+PREPARE v3_statement FROM @v3_sql;
+EXECUTE v3_statement;
+DEALLOCATE PREPARE v3_statement;
 
 SET @v3_sql = IF(
     EXISTS(
@@ -304,8 +379,6 @@ CREATE TABLE IF NOT EXISTS property_room_options
     property_id BIGINT      NOT NULL,
     option_code VARCHAR(30) NOT NULL,
     PRIMARY KEY (property_id, option_code),
-    CONSTRAINT fk_property_room_options_property
-        FOREIGN KEY (property_id) REFERENCES properties (id) ON DELETE CASCADE,
     CONSTRAINT ck_property_room_options_code CHECK (
         option_code IN (
             'AIR_CONDITIONER', 'REFRIGERATOR', 'WASHING_MACHINE', 'SINK',
@@ -317,19 +390,81 @@ CREATE TABLE IF NOT EXISTS property_room_options
   DEFAULT CHARACTER SET = utf8mb4
   COLLATE = utf8mb4_0900_ai_ci;
 
+SET @v3_current_room_option_id_type = (
+    SELECT UPPER(column_type)
+    FROM information_schema.columns
+    WHERE table_schema = DATABASE()
+      AND table_name = 'property_room_options'
+      AND column_name = 'property_id'
+    LIMIT 1
+);
+SET @v3_sql = IF(
+    @v3_current_room_option_id_type = @v3_property_id_type,
+    'SELECT 1',
+    CONCAT('ALTER TABLE property_room_options MODIFY COLUMN property_id ', @v3_property_id_type, ' NOT NULL')
+);
+PREPARE v3_statement FROM @v3_sql;
+EXECUTE v3_statement;
+DEALLOCATE PREPARE v3_statement;
+
+SET @v3_sql = IF(
+    EXISTS(
+        SELECT 1
+        FROM information_schema.referential_constraints
+        WHERE constraint_schema = DATABASE()
+          AND table_name = 'property_room_options'
+          AND constraint_name = 'fk_property_room_options_property'
+    ),
+    'SELECT 1',
+    'ALTER TABLE property_room_options ADD CONSTRAINT fk_property_room_options_property FOREIGN KEY (property_id) REFERENCES properties (id) ON DELETE CASCADE'
+);
+PREPARE v3_statement FROM @v3_sql;
+EXECUTE v3_statement;
+DEALLOCATE PREPARE v3_statement;
+
 CREATE TABLE IF NOT EXISTS property_utility_options
 (
     property_id BIGINT      NOT NULL,
     utility_code VARCHAR(30) NOT NULL,
     PRIMARY KEY (property_id, utility_code),
-    CONSTRAINT fk_property_utility_options_property
-        FOREIGN KEY (property_id) REFERENCES properties (id) ON DELETE CASCADE,
     CONSTRAINT ck_property_utility_options_code CHECK (
         utility_code IN ('WATER', 'ELECTRICITY', 'GAS', 'INTERNET')
     )
 ) ENGINE = InnoDB
   DEFAULT CHARACTER SET = utf8mb4
   COLLATE = utf8mb4_0900_ai_ci;
+
+SET @v3_current_utility_option_id_type = (
+    SELECT UPPER(column_type)
+    FROM information_schema.columns
+    WHERE table_schema = DATABASE()
+      AND table_name = 'property_utility_options'
+      AND column_name = 'property_id'
+    LIMIT 1
+);
+SET @v3_sql = IF(
+    @v3_current_utility_option_id_type = @v3_property_id_type,
+    'SELECT 1',
+    CONCAT('ALTER TABLE property_utility_options MODIFY COLUMN property_id ', @v3_property_id_type, ' NOT NULL')
+);
+PREPARE v3_statement FROM @v3_sql;
+EXECUTE v3_statement;
+DEALLOCATE PREPARE v3_statement;
+
+SET @v3_sql = IF(
+    EXISTS(
+        SELECT 1
+        FROM information_schema.referential_constraints
+        WHERE constraint_schema = DATABASE()
+          AND table_name = 'property_utility_options'
+          AND constraint_name = 'fk_property_utility_options_property'
+    ),
+    'SELECT 1',
+    'ALTER TABLE property_utility_options ADD CONSTRAINT fk_property_utility_options_property FOREIGN KEY (property_id) REFERENCES properties (id) ON DELETE CASCADE'
+);
+PREPARE v3_statement FROM @v3_sql;
+EXECUTE v3_statement;
+DEALLOCATE PREPARE v3_statement;
 
 CREATE TABLE IF NOT EXISTS member_checklist_preferences
 (
@@ -339,8 +474,6 @@ CREATE TABLE IF NOT EXISTS member_checklist_preferences
     user_checklist_id BIGINT UNSIGNED NULL,
     created_at        DATETIME(6)     NOT NULL,
     PRIMARY KEY (id),
-    CONSTRAINT fk_member_checklist_preferences_member
-        FOREIGN KEY (member_id) REFERENCES members (id) ON DELETE CASCADE,
     CONSTRAINT fk_member_checklist_preferences_checklist
         FOREIGN KEY (user_checklist_id) REFERENCES user_checklists (id) ON DELETE SET NULL,
     CONSTRAINT ck_member_checklist_preferences_stage
@@ -349,6 +482,38 @@ CREATE TABLE IF NOT EXISTS member_checklist_preferences
 ) ENGINE = InnoDB
   DEFAULT CHARACTER SET = utf8mb4
   COLLATE = utf8mb4_0900_ai_ci;
+
+SET @v3_current_preference_member_id_type = (
+    SELECT UPPER(column_type)
+    FROM information_schema.columns
+    WHERE table_schema = DATABASE()
+      AND table_name = 'member_checklist_preferences'
+      AND column_name = 'member_id'
+    LIMIT 1
+);
+SET @v3_sql = IF(
+    @v3_current_preference_member_id_type = @v3_member_id_type,
+    'SELECT 1',
+    CONCAT('ALTER TABLE member_checklist_preferences MODIFY COLUMN member_id ', @v3_member_id_type, ' NOT NULL')
+);
+PREPARE v3_statement FROM @v3_sql;
+EXECUTE v3_statement;
+DEALLOCATE PREPARE v3_statement;
+
+SET @v3_sql = IF(
+    EXISTS(
+        SELECT 1
+        FROM information_schema.referential_constraints
+        WHERE constraint_schema = DATABASE()
+          AND table_name = 'member_checklist_preferences'
+          AND constraint_name = 'fk_member_checklist_preferences_member'
+    ),
+    'SELECT 1',
+    'ALTER TABLE member_checklist_preferences ADD CONSTRAINT fk_member_checklist_preferences_member FOREIGN KEY (member_id) REFERENCES members (id) ON DELETE CASCADE'
+);
+PREPARE v3_statement FROM @v3_sql;
+EXECUTE v3_statement;
+DEALLOCATE PREPARE v3_statement;
 
 CREATE TABLE IF NOT EXISTS migration_backfill_failures
 (
