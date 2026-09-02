@@ -2,8 +2,10 @@ import { Navigate, Outlet } from 'react-router-dom';
 import { ApiError, getSafeApiErrorMessage } from '../apis/apiClient';
 import StatusPanel from '../components/StatusPanel';
 import { Button } from '../components/ui/Button';
+import ContentState from '../components/ui/ContentState';
 import { useCurrentMember } from '../hooks/query/useCurrentMember';
 import { useAuthentication } from '../hooks/useAuthentication';
+import useDelayedLoading from '../hooks/ui/useDelayedLoading';
 import type { PublicConfig } from '../types/PublicConfig';
 
 type ProtectedRouteProps = {
@@ -13,15 +15,14 @@ type ProtectedRouteProps = {
 const ProtectedRoute = ({ config }: ProtectedRouteProps) => {
   const { session } = useAuthentication();
   const currentMember = useCurrentMember(config, session !== null);
+  const isLoadingVisible = useDelayedLoading(currentMember.isPending);
 
   if (session === null) {
     return <Navigate to="/login" replace />;
   }
 
   if (currentMember.isPending) {
-    return (
-      <StatusPanel title="인증을 확인하고 있어요" description="현재 회원 정보를 안전하게 불러오는 중입니다." isBusy />
-    );
+    return isLoadingVisible ? <ContentState loading title="인증을 확인하고 있어요." /> : null;
   }
 
   if (currentMember.isError) {
