@@ -11,7 +11,7 @@ import PropertyBasicInfoSection from '../components/PropertyBasicInfoSection';
 import Icon from '../components/ui/Icon';
 import TopNavigation from '../components/ui/TopNavigation';
 import TopNavigationMenu from '../components/ui/TopNavigationMenu';
-import { ButtonLink } from '../components/ui/Button';
+import { Button, ButtonLink } from '../components/ui/Button';
 import PageHeading from '../components/ui/PageHeading';
 
 import { usePropertyChecklistOverview, usePropertyDetail, usePropertyMemo } from '../hooks/query/useProperties';
@@ -191,7 +191,12 @@ const ResolvedPropertyDetailPage = ({ config, propertyId }: { config: PublicConf
             매물 부가 정보를 불러오지 못했어요. 다시 시도
           </button>
         ) : (
-          <PropertyAdditionalInfoSection config={config} propertyId={propertyId} memo={memo.data} />
+          <PropertyAdditionalInfoSection
+            config={config}
+            propertyId={propertyId}
+            memo={memo.data}
+            discoverySource={detail.discoverySource.value}
+          />
         )}
 
         {memo.isPending ? (
@@ -341,73 +346,73 @@ const ResolvedPropertyDetailPage = ({ config, propertyId }: { config: PublicConf
           <div className={styles.checklistHeading}>
             <div>
               <h2 id="checklist-heading">체크리스트</h2>
-              <p>집을 보면서 바로 확인할 항목이에요.</p>
             </div>
-            {onSiteChecklist !== undefined && (
-              <strong>
-                {onSiteChecklist.progress.completedCount}/{onSiteChecklist.progress.totalCount}
-              </strong>
-            )}
           </div>
           {onSiteChecklist !== undefined && onSiteChecklist.progress.totalCount > 0 && (
-            <ChecklistProgressBar progress={onSiteChecklist.progress} />
+            <ChecklistProgressBar
+              progress={onSiteChecklist.progress}
+              trailing={
+                <strong className={styles.checklistCount}>
+                  {onSiteChecklist.progress.completedCount}/{onSiteChecklist.progress.totalCount}
+                </strong>
+              }
+            />
           )}
-          {checklists.isError ? (
+          {checklists.isError && (
             <button className={styles.sectionRetry} type="button" onClick={() => void checklists.refetch()}>
               체크리스트 정보를 불러오지 못했어요. 다시 시도
-            </button>
-          ) : onSiteChecklist?.applied === true && onSiteChecklist.propertyChecklistId !== null ? (
-            <Link
-              className={styles.checklistEntry}
-              to={`/properties/${propertyId}/checklists/${onSiteChecklist.propertyChecklistId}`}
-              state={{ from: 'property-detail' }}
-            >
-              <span className={styles.stageNumber}>✓</span>
-              <div className={styles.stageCopy}>
-                <strong>{onSiteChecklist.checklistName}</strong>
-                <small>이어서 체크하기</small>
-              </div>
-              <Icon name="arrow-right" size={18} />
-            </Link>
-          ) : (
-            <button
-              className={styles.checklistEntry}
-              type="button"
-              disabled={assignDefaultChecklist.isPending}
-              onClick={() => {
-                void assignDefaultChecklist
-                  .mutateAsync('SYSTEM_DEFAULT')
-                  .then((applied) => {
-                    navigate(`/properties/${propertyId}/checklists/${applied.propertyChecklistId}`, {
-                      replace: true,
-                      state: { from: 'property-detail' },
-                    });
-                  })
-                  .catch(() => undefined);
-              }}
-            >
-              <span className={styles.stageNumber}>✓</span>
-              <div className={styles.stageCopy}>
-                <strong>체크리스트 확인하기</strong>
-                <small>{assignDefaultChecklist.isPending ? '준비 중이에요…' : '체크리스트 시작하기'}</small>
-              </div>
-              <Icon name="arrow-right" size={18} />
             </button>
           )}
           {assignDefaultChecklist.isError && (
             <p className={styles.sectionRetry}>체크리스트를 시작하지 못했어요. 다시 눌러 주세요.</p>
           )}
-          {onSiteChecklist?.applied === true && (
-            <ButtonLink
-              className={styles.contractButton}
-              variant="secondary"
-              fullWidth
-              to={`/properties/${propertyId}/active-checklists/PRE_CONTRACT?from=property-detail`}
-            >
-              계약하러 가기
-              <Icon name="arrow-right" size={16} />
-            </ButtonLink>
-          )}
+          {!checklists.isError &&
+            (onSiteChecklist?.applied === true && onSiteChecklist.propertyChecklistId !== null ? (
+              <ButtonLink
+                className={styles.checklistEnterMain}
+                variant="primary"
+                fullWidth
+                to={`/properties/${propertyId}/checklists/${onSiteChecklist.propertyChecklistId}`}
+                state={{ from: 'property-detail' }}
+              >
+                체크리스트
+                <Icon name="arrow-right" size={16} />
+              </ButtonLink>
+            ) : (
+              <Button
+                className={styles.checklistEnterMain}
+                variant="primary"
+                fullWidth
+                isLoading={assignDefaultChecklist.isPending}
+                loadingLabel="준비 중…"
+                onClick={() => {
+                  void assignDefaultChecklist
+                    .mutateAsync('SYSTEM_DEFAULT')
+                    .then((applied) => {
+                      navigate(`/properties/${propertyId}/checklists/${applied.propertyChecklistId}`, {
+                        replace: true,
+                        state: { from: 'property-detail' },
+                      });
+                    })
+                    .catch(() => undefined);
+                }}
+              >
+                체크리스트
+                <Icon name="arrow-right" size={16} />
+              </Button>
+            ))}
+        </section>
+
+        <section className={styles.contractSection} aria-label="계약">
+          <ButtonLink
+            className={styles.contractButton}
+            variant="secondary"
+            fullWidth
+            to={`/properties/${propertyId}/active-checklists/PRE_CONTRACT?from=property-detail`}
+          >
+            계약 시 체크리스트
+            <Icon name="arrow-right" size={16} />
+          </ButtonLink>
         </section>
 
         {selectedPhotoIndex !== null && (

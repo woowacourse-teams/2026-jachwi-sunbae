@@ -9,7 +9,7 @@ import Icon from '../components/ui/Icon';
 import InlineNotice from '../components/ui/InlineNotice';
 import SearchField from '../components/ui/SearchField';
 import TopNavigation from '../components/ui/TopNavigation';
-import PageActionLink from '../components/ui/PageActionLink';
+import PageAction from '../components/ui/PageAction';
 import { usePropertyList } from '../hooks/query/useProperties';
 import type { PublicConfig } from '../types/PublicConfig';
 import styles from './PropertyListPage.module.css';
@@ -196,9 +196,9 @@ const PropertyListPage = ({ config }: PropertyListPageProps) => {
         )}
 
         {!hasInitialError && items.length > 0 && (
-          <PageActionLink to="/properties/new" aria-label="매물 추가">
+          <PageAction to="/properties/new" aria-label="매물 추가">
             매물 추가
-          </PageActionLink>
+          </PageAction>
         )}
       </div>
     </main>

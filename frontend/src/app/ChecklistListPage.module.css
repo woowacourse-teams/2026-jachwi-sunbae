@@ -49,12 +49,6 @@
   margin: 0.55rem 1rem 0;
 }
 
-.createCard :global(a) {
-  border-style: solid;
-  border-color: var(--color-border);
-  color: var(--color-ink);
-}
-
 .container > :global(.content-state),
 .container > :global(.load-more) {
   margin-right: 1rem;

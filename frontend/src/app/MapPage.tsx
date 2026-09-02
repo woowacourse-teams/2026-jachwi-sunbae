@@ -8,6 +8,7 @@ import MapCanvas from '../components/MapCanvas';
 import type { MapMarker, MapRadiusCircle } from '../components/MapCanvas';
 
 import MapCategoryRail from '../components/MapCategoryRail';
+import PageAction from '../components/ui/PageAction';
 import { clusterNearbyPlaces, clusterProperties } from '../components/mapClustering';
 import { usePropertyPhotoObjectUrls } from '../hooks/query/usePropertyPhotoObjectUrls';
 import { ALL_MAP_CATEGORIES, getMapCategoryLabel, selectSingleCategory } from '../components/mapPresentation';
@@ -23,11 +24,14 @@ import type { PublicConfig } from '../types/PublicConfig';
 import {
   coordinatesAreClose,
   DEFAULT_MAP_CENTER,
+  MapLocationError,
   PANGYO_MAP_CENTER,
   readLastMapCenter,
+  readGeolocationPermission,
   requestCurrentMapLocation,
   writeLastMapCenter,
 } from '../utils/mapLocation';
+import type { MapLocationFailure } from '../utils/mapLocation';
 import styles from './MapPage.module.css';
 
 /** 지도 탭은 시설 확인 목적에 맞춰 500m 반경을 기본으로 사용한다. */
@@ -50,6 +54,13 @@ const getViewportSpan = (level: number) => {
   return { latSpan: baseLat, lngSpan: baseLng };
 };
 
+/** 권한이 거부된 뒤에는 다시 눌러도 창이 뜨지 않으므로, 사유에 맞는 안내를 대신 보여 준다. */
+const LOCATION_FAILURE_TEXT: Record<MapLocationFailure, string> = {
+  denied: '위치 권한이 꺼져 있어요. 브라우저 주소창에서 위치를 허용해 주세요.',
+  insecure: 'https 주소에서만 현재 위치를 쓸 수 있어요.',
+  unavailable: '현재 위치를 찾지 못했어요.',
+};
+
 const MapPage = ({ config }: { config: PublicConfig }) => {
   const navigate = useNavigate();
   const properties = usePropertyList(config);
@@ -65,6 +76,8 @@ const MapPage = ({ config }: { config: PublicConfig }) => {
   const [viewportCenter, setViewportCenter] = useState(() => readLastMapCenter() ?? DEFAULT_MAP_CENTER);
   const [currentPosition, setCurrentPosition] = useState(viewportCenter);
   const [locationStatus, setLocationStatus] = useState<'locating' | 'ready' | 'fallback'>('locating');
+  const [locationFailure, setLocationFailure] = useState<MapLocationFailure>('unavailable');
+  const [locationPermission, setLocationPermission] = useState<PermissionState | 'unknown'>('unknown');
   const [searchOpen, setSearchOpen] = useState(false);
   const [mapLevel, setMapLevel] = useState(INITIAL_MAP_LEVEL);
   const [locationLabel, setLocationLabel] = useState('현재 위치');
@@ -110,15 +123,20 @@ const MapPage = ({ config }: { config: PublicConfig }) => {
   });
 
   const moveToCurrentLocation = useCallback(async () => {
+    // 사파리는 누른 그 순간에 요청해야 권한 창을 띄운다. 상태 변경보다 먼저 부른다.
+    const request = requestCurrentMapLocation();
     setLocationStatus('locating');
     try {
-      const coordinate = await requestCurrentMapLocation();
+      const coordinate = await request;
       setViewportCenter(coordinate);
       setCurrentPosition(coordinate);
       writeLastMapCenter(coordinate);
       setLocationLabel('현재 위치');
       setLocationStatus('ready');
-    } catch {
+    } catch (error) {
+      setLocationFailure(error instanceof MapLocationError ? error.reason : 'unavailable');
+      // 이미 거부된 권한은 눌러도 창이 뜨지 않는다. 버튼을 내놓을지 여기서 가른다.
+      void readGeolocationPermission().then(setLocationPermission);
       // 위치 권한을 받지 못하면 마지막으로 본 위치 → 첫 매물 → 우테코 판교사옥 순으로 대체한다.
       const lastCenter = readLastMapCenter();
       const firstProperty = mappedRef.current[0];
@@ -182,6 +200,9 @@ const MapPage = ({ config }: { config: PublicConfig }) => {
   useEffect(() => {
     void moveToCurrentLocation();
   }, [moveToCurrentLocation]);
+
+  const canRetryLocation =
+    locationFailure !== 'insecure' && locationFailure !== 'denied' && locationPermission !== 'denied';
 
   const filteredPlaces = useMemo(
     () => nearby.data?.places.filter((place) => selectedCategories.includes(place.category)) ?? [],
@@ -382,11 +403,11 @@ const MapPage = ({ config }: { config: PublicConfig }) => {
           aria-live="polite"
         >
           <span>
-            {locationStatus === 'locating' ? '현재 위치를 확인하는 중이에요.' : '현재 위치에 연결되지 않았어요.'}
+            {locationStatus === 'locating' ? '현재 위치를 확인하는 중이에요.' : LOCATION_FAILURE_TEXT[locationFailure]}
           </span>
-          {locationStatus === 'fallback' && (
+          {locationStatus === 'fallback' && canRetryLocation && (
             <button type="button" onClick={() => void moveToCurrentLocation()}>
-              다시 연결
+              {locationPermission === 'prompt' ? '위치 허용' : '다시 시도'}
             </button>
           )}
         </div>
@@ -504,28 +525,9 @@ const MapPage = ({ config }: { config: PublicConfig }) => {
             />
           )}
 
-          {/* 우측 위치 컨트롤 */}
-          {!isAddMode && (
-            <div className={styles.mapControls}>
-              <button
-                type="button"
-                className={styles.addAtCenterButton}
-                aria-label="지도에서 매물 추가"
-                onClick={enterAddMode}
-              >
-                <Icon name="plus" size={22} />
-              </button>
-            </div>
-          )}
+          {/* 우측 지도 컨트롤: 위는 현재 위치, 아래는 매물 추가 */}
 
-          <div
-            className={styles.currentLocationControl}
-            data-sheet={isAddMode ? 'closed' : sheetStage}
-            data-dragging={dragHeight === null ? undefined : 'true'}
-            style={
-              dragHeight === null || isAddMode ? undefined : ({ '--sheet-height': `${dragHeight}px` } as CSSProperties)
-            }
-          >
+          <div className={styles.mapControls}>
             <button
               type="button"
               className={styles.currentLocationButton}
@@ -536,6 +538,19 @@ const MapPage = ({ config }: { config: PublicConfig }) => {
               <Icon name="target" size={22} />
             </button>
           </div>
+
+          {!isAddMode && (
+            <div
+              className={styles.addPropertyAction}
+              data-sheet={sheetStage}
+              data-dragging={dragHeight === null ? undefined : 'true'}
+              style={dragHeight === null ? undefined : ({ '--sheet-height': `${dragHeight}px` } as CSSProperties)}
+            >
+              <PageAction placement="inline" onClick={enterAddMode} aria-label="지도에서 매물 추가">
+                매물 추가
+              </PageAction>
+            </div>
+          )}
 
           {/* 하단 2단계 스냅 바텀시트 (X 버튼 제거, 핸들 및 헤더 클릭/드래그 지원) */}
           {isAddMode && (
@@ -567,17 +582,7 @@ const MapPage = ({ config }: { config: PublicConfig }) => {
           )}
 
           {selectedRadius !== null && selectedCategories.length === 1 && (
-            <div
-              className={`${styles.nearbyCountToast} ${
-                sheetStage === 'mid'
-                  ? styles.nearbyCountToastMid
-                  : sheetStage === 'full'
-                    ? styles.nearbyCountToastFull
-                    : ''
-              }`}
-              role="status"
-              aria-live="polite"
-            >
+            <div className={styles.nearbyCountToast} role="status" aria-live="polite">
               {radiusLabel(selectedRadius)} 근처에 {categorySubject(selectedCategories[0])}{' '}
               {categoryCounts[selectedCategories[0]] ?? 0}개 있습니다.
             </div>
@@ -615,26 +620,25 @@ const MapPage = ({ config }: { config: PublicConfig }) => {
                 </div>
                 <div className={styles.modalHeadingRow}>
                   <span>지도 위 매물</span>
+                  <strong>{visibleProperties.length}개</strong>
                 </div>
               </div>
 
               <div className={styles.modalBody}>
-                {(() => {
-                  const targetProperty =
-                    visibleProperties.find((item) => item.propertyId === selectedPropertyId) ??
-                    visibleProperties[0] ??
-                    null;
-
-                  if (targetProperty !== null) {
-                    return (
-                      <div className={styles.singleCardContainer}>
-                        <PropertyCard property={targetProperty} config={config} />
-                      </div>
-                    );
-                  }
-
-                  return <div className={styles.emptyNoticeArea}>현재 지도 화면에 등록된 매물이 없어요.</div>;
-                })()}
+                {visibleProperties.length === 0 ? (
+                  <div className={styles.emptyNoticeArea}>현재 지도 화면에 등록된 매물이 없어요.</div>
+                ) : (
+                  <ul className={styles.visiblePropertyList}>
+                    {visibleProperties.map((property) => (
+                      <li
+                        key={property.propertyId}
+                        data-selected={property.propertyId === selectedPropertyId || undefined}
+                      >
+                        <PropertyCard property={property} config={config} />
+                      </li>
+                    ))}
+                  </ul>
+                )}
               </div>
             </section>
           )}

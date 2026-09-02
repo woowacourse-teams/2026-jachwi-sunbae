@@ -27,7 +27,6 @@ const PropertyBasicInfoSection = ({ property }: PropertyBasicInfoSectionProps) =
       value={`${formatManwon(property.depositAmount)} / ${formatManwon(property.monthlyRentAmount)}`}
     />
     <InfoRow label="주소" value={property.location.address ?? ''} emptyText="주소를 입력해 주세요" />
-    <InfoRow label="확인한 곳" value={property.discoverySource.value} />
   </InfoSection>
 );
 
