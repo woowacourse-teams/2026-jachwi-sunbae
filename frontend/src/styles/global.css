@@ -19,10 +19,13 @@ html {
   background: #fff;
 }
 
+/*
+ * body에 overflow: hidden을 두면 iOS 사파리·안드로이드 크롬의 기본 당김 새로고침이 발동하지 않는다.
+ * 실제 스크롤은 앱 셸(.root, 100dvh + overflow: hidden)이 가두므로 문서가 넘칠 일은 없다.
+ */
 body {
   height: 100%;
   margin: 0;
-  overflow: hidden;
   background: #fff;
 }
 
