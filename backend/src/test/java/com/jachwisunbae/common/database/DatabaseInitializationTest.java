@@ -22,6 +22,11 @@ class DatabaseInitializationTest extends IntegrationTest {
             "system_memo_items",
             "property_memos",
             "property_memo_items",
+            "property_details",
+            "property_room_options",
+            "property_utility_options",
+            "member_checklist_preferences",
+            "migration_backfill_failures",
             "system_check_items",
             "user_checklists",
             "user_checklist_items",
@@ -72,6 +77,20 @@ class DatabaseInitializationTest extends IntegrationTest {
         )).isEqualTo("보증금과 월세, 관리비는 어떤가요?");
         assertThat(nullableColumn("user_checklist_items", "system_check_item_id")).isEqualTo("YES");
         assertThat(nullableColumn("property_checklist_items", "system_check_item_id")).isEqualTo("YES");
+        assertThat(nullableColumn("members", "nickname")).isEqualTo("YES");
+        assertThat(nullableColumn("members", "nickname_key")).isEqualTo("YES");
+        assertThat(nullableColumn("members", "password_hash")).isEqualTo("YES");
+        assertThat(nullableColumn("properties", "address")).isEqualTo("YES");
+        assertThat(nullableColumn("properties", "deleted_at")).isEqualTo("YES");
+        assertThat(nullableColumn("property_photos", "deleted_at")).isEqualTo("YES");
+        assertThat(nullableColumn("user_checklists", "deleted_at")).isEqualTo("YES");
+        assertThat(nullableColumn("property_details", "maintenance_fee_amount")).isEqualTo("YES");
+        assertThat(nullableColumn("property_details", "discovery_source")).isEqualTo("YES");
+        assertThat(indexExists("members", "uk_members_nickname_key")).isTrue();
+        assertThat(indexExists("properties", "idx_properties_member_deleted_created")).isTrue();
+        assertThat(indexExists("property_room_options", "PRIMARY")).isTrue();
+        assertThat(indexExists("property_utility_options", "PRIMARY")).isTrue();
+        assertThat(indexExists("member_checklist_preferences", "idx_member_checklist_preferences_latest")).isTrue();
     }
 
     @Test
@@ -82,7 +101,7 @@ class DatabaseInitializationTest extends IntegrationTest {
 
         flyway.migrate();
 
-        assertThat(historyCount).isEqualTo(2L);
+        assertThat(historyCount).isEqualTo((long) flyway.info().applied().length);
         assertThat(flyway.info().pending()).hasSize(pendingBefore);
         assertThat(jdbcTemplate.queryForObject(
                 "SELECT COUNT(*) FROM integrated_schema_history WHERE success = TRUE", Long.class))
@@ -104,6 +123,16 @@ class DatabaseInitializationTest extends IntegrationTest {
                 FROM information_schema.columns
                 WHERE table_schema = DATABASE() AND table_name = ? AND column_name = ?
                 """, String.class, tableName, columnName);
+    }
+
+    private boolean indexExists(String tableName, String indexName) {
+        return Boolean.TRUE.equals(jdbcTemplate.queryForObject("""
+                SELECT EXISTS(
+                    SELECT 1
+                    FROM information_schema.statistics
+                    WHERE table_schema = DATABASE() AND table_name = ? AND index_name = ?
+                )
+                """, Boolean.class, tableName, indexName));
     }
 
 }
