@@ -24,7 +24,9 @@ const isBrowserTestHarness = process.env.BROWSER_TEST_HARNESS === 'true';
 
 module.exports = (_env, argv) => {
   const isProduction = argv.mode === 'production';
-  const isMockingEnabled = !isProduction && process.env.ENABLE_MSW !== 'false';
+  // 기본값은 로컬 개발에서만 MSW를 사용한다. 배포 dev에서 fixture가 필요할 때는
+  // ENABLE_MSW=true를 빌드 환경에 명시해 선택적으로 켤 수 있다.
+  const isMockingEnabled = process.env.ENABLE_MSW === 'true' || (!isProduction && process.env.ENABLE_MSW !== 'false');
   const apiBaseUrl = process.env.API_BASE_URL ?? (isMockingEnabled ? 'http://127.0.0.1:3000' : 'http://localhost:8080');
 
   const naverMapClientId = process.env.NAVER_MAP_CLIENT_ID ?? '';
