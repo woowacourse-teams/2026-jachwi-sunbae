@@ -103,7 +103,7 @@ class Mvp2LocalFlowIntegrationTest extends IntegrationTest {
         mockMvc.perform(post("/api/properties/{propertyId}/memo", propertyId)
                         .header("Authorization", bearer(token)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.items", hasSize(4)));
+                .andExpect(jsonPath("$.data.items", hasSize(5)));
 
         mockMvc.perform(put("/api/properties/{propertyId}/memo", propertyId)
                         .header("Authorization", bearer(token))
