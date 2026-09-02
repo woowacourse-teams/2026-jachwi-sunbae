@@ -4,6 +4,7 @@ import Icon from './ui/Icon';
 import infoStyles from './ui/InfoSection.module.css';
 import type { PropertyMemoDocument } from '../types/Property';
 import type { PublicConfig } from '../types/PublicConfig';
+import { propertyMemoDisplayLabel } from '../constants/propertyOptions';
 
 type PropertyAdditionalInfoSectionProps = {
   config: PublicConfig;
@@ -28,9 +29,9 @@ const PropertyAdditionalInfoSection = ({ propertyId, memo, discoverySource }: Pr
     }
   >
     {memo.items.map((item) => (
-      <InfoRow key={item.systemMemoItemId} label={item.label} value={item.content} />
+      <InfoRow key={item.systemMemoItemId} label={propertyMemoDisplayLabel(item.label)} value={item.content} />
     ))}
-    <InfoRow label="확인한 곳" value={discoverySource} />
+    <InfoRow label="링크" value={discoverySource} />
   </InfoSection>
 );
 

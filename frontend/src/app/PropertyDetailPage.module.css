@@ -246,12 +246,6 @@
   font-size: 1rem;
 }
 
-.quickMemoDialogLabel {
-  color: var(--color-ink-soft, #555);
-  font-size: 0.72rem;
-  font-weight: 700;
-}
-
 .quickMemoDialog textarea {
   width: 100%;
   min-height: 7.5rem;

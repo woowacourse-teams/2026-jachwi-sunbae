@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import type { PropertyOptionKey } from '../constants/propertyOptions';
 import PropertyOptionIcon from './PropertyOptionIcon';
 import SelectionControl from './ui/SelectionControl';
@@ -12,6 +13,8 @@ type PropertyOptionPickerProps = {
   disabled?: boolean;
   /** 아이콘 타일로 보일지, 글자 뱃지로 보일지. */
   variant?: 'icon' | 'badge';
+  /** 선택지와 같은 필드셋 안에 먼저 보여 줄 입력 영역. */
+  children?: ReactNode;
   onChange: (selected: string[]) => void;
 };
 
@@ -22,6 +25,7 @@ const PropertyOptionPicker = ({
   selected,
   disabled,
   variant = 'icon',
+  children,
   onChange,
 }: PropertyOptionPickerProps) => (
   <fieldset className={styles.picker}>
@@ -29,6 +33,7 @@ const PropertyOptionPicker = ({
       {label}
       <span className={styles.count}>{selected.length}개</span>
     </legend>
+    {children !== undefined && <div className={styles.pickerContent}>{children}</div>}
     <div className={variant === 'icon' ? styles.grid : styles.badges}>
       {options.map((option) => {
         const checked = selected.includes(option.label);
