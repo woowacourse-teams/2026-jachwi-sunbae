@@ -264,11 +264,9 @@ const ResolvedPropertyDetailPage = ({ config, propertyId }: { config: PublicConf
             }}
           >
             <h2 id="quick-memo-dialog-title">메모</h2>
-            <label className={styles.quickMemoDialogLabel} htmlFor="quick-memo-input">
-              메모
-            </label>
             <textarea
               id="quick-memo-input"
+              aria-label="메모 내용"
               value={quickMemoDraft}
               maxLength={2_000}
               rows={5}

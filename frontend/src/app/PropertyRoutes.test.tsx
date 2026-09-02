@@ -384,12 +384,13 @@ describe('FE-2 등록·수정·메모', () => {
     renderAuthenticated('/properties/10');
 
     expect(await screen.findByRole('region', { name: '매물 부가 정보' })).toBeInTheDocument();
-    expect(screen.getByText('관리비·포함 항목')).toBeInTheDocument();
+    expect(screen.getByText('관리비 포함 공과금')).toBeInTheDocument();
     expect(screen.getByText('입주 가능일')).toBeInTheDocument();
   });
 
   it('부가 정보 화면에서 기본 양식만 저장한 뒤 상세로 이동한다', async () => {
     let requestBody: unknown;
+    let propertyRequestBody: unknown;
     server.use(
       http.get(`${config.apiBaseUrl}/api/properties/10`, () => HttpResponse.json(successEnvelope(detailWithoutPhotos))),
       http.get(`${config.apiBaseUrl}/api/properties/10/memo`, () =>
@@ -399,6 +400,20 @@ describe('FE-2 등록·수정·메모', () => {
             items: [
               { propertyMemoItemId: 101, systemMemoItemId: 1, label: '집 주소', displayOrder: 1, content: '' },
               { propertyMemoItemId: 102, systemMemoItemId: 2, label: '입주 가능일', displayOrder: 2, content: '' },
+              {
+                propertyMemoItemId: 103,
+                systemMemoItemId: 3,
+                label: '관리비 및 공과금',
+                displayOrder: 3,
+                content: '8만원 (수도)',
+              },
+              {
+                propertyMemoItemId: 104,
+                systemMemoItemId: 4,
+                label: '방문 일정',
+                displayOrder: 4,
+                content: '',
+              },
             ],
             freeMemo: '',
           }),
@@ -416,18 +431,36 @@ describe('FE-2 등록·수정·메모', () => {
             items: body.items.map((item, index) => ({
               ...item,
               systemMemoItemId: index + 1,
-              label: index === 0 ? '집 주소' : '입주 가능일',
+              label:
+                index === 0 ? '집 주소' : index === 1 ? '입주 가능일' : index === 2 ? '관리비 및 공과금' : '방문 일정',
               displayOrder: index + 1,
             })),
             freeMemo: body.freeMemo,
           }),
         );
       }),
+      http.put(`${config.apiBaseUrl}/api/properties/10`, async ({ request }) => {
+        propertyRequestBody = await request.json();
+        return HttpResponse.json(successEnvelope({ id: 10, ...(propertyRequestBody as object) }));
+      }),
     );
     const user = userEvent.setup();
     renderAuthenticated('/properties/10/memo');
 
     await user.type(await screen.findByRole('textbox', { name: '집 주소' }), '관악구 신림로 12길');
+    const maintenanceTotal = screen.getByRole('textbox', { name: '총 관리비' });
+    expect(maintenanceTotal).toHaveValue('8만원');
+    expect(screen.getByRole('checkbox', { name: '수도세' })).toBeChecked();
+    await user.clear(maintenanceTotal);
+    await user.type(maintenanceTotal, '12만원');
+    await user.click(screen.getByRole('checkbox', { name: '인터넷' }));
+    const visitSchedule = screen.getByRole('textbox', { name: '방문 일정' });
+    expect(visitSchedule).toHaveProperty('type', 'text');
+    expect(visitSchedule).toHaveAttribute('placeholder', '예: 9월 5일 오후 2시');
+    await user.type(visitSchedule, '9월 5일 오후 2시');
+    const link = screen.getByRole('textbox', { name: '링크' });
+    await user.clear(link);
+    await user.type(link, 'https://new.example.com/listing');
     await user.click(screen.getByRole('button', { name: '부가 정보 저장' }));
 
     expect(await screen.findAllByRole('heading', { name: '신림역 원룸', level: 1 })).toHaveLength(2);
@@ -435,9 +468,12 @@ describe('FE-2 등록·수정·메모', () => {
       items: [
         { systemMemoItemId: 1, content: '관악구 신림로 12길' },
         { systemMemoItemId: 2, content: '' },
+        { systemMemoItemId: 3, content: '12만원 (수도세, 인터넷)' },
+        { systemMemoItemId: 4, content: '9월 5일 오후 2시' },
       ],
       freeMemo: '',
     });
+    expect(propertyRequestBody).toMatchObject({ discoverySource: 'https://new.example.com/listing' });
   });
 
   it('부가 정보 저장 실패 시 작성 내용을 유지해 다시 저장할 수 있다', async () => {
@@ -473,6 +509,10 @@ describe('FE-2 등록·수정·메모', () => {
             freeMemo: memoBody.freeMemo,
           }),
         );
+      }),
+      http.put(`${config.apiBaseUrl}/api/properties/10`, async ({ request }) => {
+        const body = (await request.json()) as object;
+        return HttpResponse.json(successEnvelope({ id: 10, ...body }));
       }),
     );
     const user = userEvent.setup();

@@ -10,12 +10,6 @@
   padding-bottom: 1rem;
 }
 
-.description {
-  margin: 0.65rem 0 0;
-  color: var(--color-muted);
-  font-size: 0.82rem;
-}
-
 .memoFields,
 .freeMemo {
   display: grid;
