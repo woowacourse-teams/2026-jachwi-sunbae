@@ -24,6 +24,42 @@ export const MAINTENANCE_OPTIONS = [
   { key: 'internet', label: '인터넷' },
 ] as const;
 
+export const MAINTENANCE_MEMO_LABEL = '관리비 포함 공과금';
+
+const MAINTENANCE_ALIASES: Record<(typeof MAINTENANCE_OPTIONS)[number]['label'], readonly string[]> = {
+  수도세: ['수도세', '수도'],
+  전기세: ['전기세', '전기'],
+  가스비: ['가스비', '가스'],
+  인터넷: ['인터넷'],
+};
+
+export const propertyMemoDisplayLabel = (label: string): string =>
+  label.includes('관리비') ? MAINTENANCE_MEMO_LABEL : label;
+
+/** 관리비 메모의 `총액 (포함 공과금)` 표현을 편집 UI 상태로 나눈다. */
+export const parseMaintenanceContent = (content: string): { total: string; selected: string[] } => {
+  const parenthesized = /^(.*?)\s*\((.*?)\)\s*$/.exec(content.trim());
+  const optionText = parenthesized?.[2] ?? content;
+  const selected = MAINTENANCE_OPTIONS.filter((option) =>
+    MAINTENANCE_ALIASES[option.label].some((alias) => optionText.split(',').some((token) => token.trim() === alias)),
+  ).map((option) => option.label);
+
+  return {
+    total: parenthesized?.[1]?.trim() ?? (selected.length === 0 ? content.trim() : ''),
+    selected,
+  };
+};
+
+export const serializeMaintenanceContent = (total: string, selected: string[]): string => {
+  const normalizedTotal = total.trim();
+  const normalizedSelected = MAINTENANCE_OPTIONS.map((option) => option.label).filter((label) =>
+    selected.includes(label),
+  );
+  if (normalizedTotal === '') return normalizedSelected.join(', ');
+  if (normalizedSelected.length === 0) return normalizedTotal;
+  return `${normalizedTotal} (${normalizedSelected.join(', ')})`;
+};
+
 /** 저장된 문자열을 고른 항목과 직접 적은 나머지로 나눈다. */
 export const parseSelectedLabels = (
   content: string,

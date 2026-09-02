@@ -5,19 +5,22 @@ import BottomActionArea from '../components/ui/BottomActionArea';
 import { Button } from '../components/ui/Button';
 import InlineNotice from '../components/ui/InlineNotice';
 import TextField from '../components/ui/TextField';
-import { fromDateTimeLocal, toDateTimeLocal } from '../utils/visitSchedule';
 import TopNavigation from '../components/ui/TopNavigation';
 import { usePropertyDetail, usePropertyMemo } from '../hooks/query/useProperties';
-import { useSavePropertyMemoDocument } from '../hooks/query/usePropertyMutations';
+import { useSavePropertyMemoDocument, useUpdateProperty } from '../hooks/query/usePropertyMutations';
 import type { PublicConfig } from '../types/PublicConfig';
 import { parsePositiveId } from '../utils/propertyFormat';
 import styles from './PropertyMemoPage.module.css';
 import ContentState from '../components/ui/ContentState';
 import PropertyOptionPicker from '../components/PropertyOptionPicker';
 import {
+  MAINTENANCE_MEMO_LABEL,
   MAINTENANCE_OPTIONS,
   PROPERTY_OPTIONS,
+  parseMaintenanceContent,
   parseSelectedLabels,
+  propertyMemoDisplayLabel,
+  serializeMaintenanceContent,
   serializeSelectedLabels,
 } from '../constants/propertyOptions';
 
@@ -40,12 +43,19 @@ const ResolvedPropertyMemoPage = ({ config, propertyId }: { config: PublicConfig
   const property = usePropertyDetail(config, propertyId);
   const memo = usePropertyMemo(config, propertyId);
   const saveMemo = useSavePropertyMemoDocument(config, propertyId);
+  const updateProperty = useUpdateProperty(config, propertyId);
   const [itemValues, setItemValues] = useState<Record<number, string>>({});
+  const [discoverySource, setDiscoverySource] = useState('');
 
   useEffect(() => {
     if (memo.data === undefined) return;
     setItemValues(Object.fromEntries(memo.data.items.map((item) => [item.systemMemoItemId, item.content])));
   }, [memo.data]);
+
+  useEffect(() => {
+    if (property.data === undefined) return;
+    setDiscoverySource(property.data.discoverySource.value);
+  }, [property.data]);
 
   if (property.isPending || memo.isPending) {
     return <ContentState page={false} loading title="부가 정보를 불러오는 중이에요." />;
@@ -77,46 +87,89 @@ const ResolvedPropertyMemoPage = ({ config, propertyId }: { config: PublicConfig
       />
       <form
         className={styles.form}
-        onSubmit={(event) => {
+        onSubmit={async (event) => {
           event.preventDefault();
-          void saveMemo
-            .mutateAsync({
-              items: memo.data.items.map((item) => ({
-                systemMemoItemId: item.systemMemoItemId,
-                content: itemValues[item.systemMemoItemId]?.trim() ?? '',
-              })),
-              freeMemo: memo.data.freeMemo,
-            })
-            .then(() => navigate(`/properties/${propertyId}`, { replace: true }))
-            .catch(() => undefined);
+          try {
+            await Promise.all([
+              saveMemo.mutateAsync({
+                items: memo.data.items.map((item) => ({
+                  systemMemoItemId: item.systemMemoItemId,
+                  content: itemValues[item.systemMemoItemId]?.trim() ?? '',
+                })),
+                freeMemo: memo.data.freeMemo,
+              }),
+              updateProperty.mutateAsync({
+                name: property.data.name,
+                depositAmount: property.data.depositAmount,
+                monthlyRentAmount: property.data.monthlyRentAmount,
+                discoverySource: discoverySource.trim() || null,
+                roadAddress: property.data.location.roadAddress,
+                jibunAddress: property.data.location.jibunAddress,
+                latitude: property.data.location.latitude,
+                longitude: property.data.location.longitude,
+              }),
+            ]);
+            navigate(`/properties/${propertyId}`, { replace: true });
+          } catch {
+            // 각 mutation의 오류 상태를 폼 아래에서 보여 준다.
+          }
         }}
       >
-        <p className={styles.description}>필요한 항목만 적어도 됩니다.</p>
         <section className={styles.memoFields} aria-labelledby="structured-memo-heading">
           <h1 id="structured-memo-heading">부가 정보</h1>
           {memo.data.items.map((item) => {
             // 옵션과 관리비 포함 항목은 글로 적는 대신 골라서 넣는다.
-            const picker = item.label.includes('옵션')
-              ? { options: PROPERTY_OPTIONS, variant: 'icon' as const }
-              : item.label.includes('관리비')
-                ? { options: MAINTENANCE_OPTIONS, variant: 'badge' as const }
-                : null;
+            const picker = item.label.includes('옵션') ? { options: PROPERTY_OPTIONS, variant: 'icon' as const } : null;
 
-            // 방문 일정은 날짜라서 글로 적기보다 달력에서 고르는 편이 빠르다.
+            // 브라우저 기본 날짜 입력은 빈 상태에서도 연·월·일 형식을 강제하므로 자유롭게 적게 한다.
             if (item.label.includes('방문')) {
               return (
                 <TextField
                   key={item.systemMemoItemId}
                   label={item.label}
-                  type="datetime-local"
-                  value={toDateTimeLocal(itemValues[item.systemMemoItemId] ?? '')}
+                  value={itemValues[item.systemMemoItemId] ?? ''}
+                  maxLength={100}
+                  placeholder="예: 9월 5일 오후 2시"
                   onChange={(event) =>
                     setItemValues((current) => ({
                       ...current,
-                      [item.systemMemoItemId]: fromDateTimeLocal(event.target.value),
+                      [item.systemMemoItemId]: event.target.value,
                     }))
                   }
                 />
+              );
+            }
+
+            if (item.label.includes('관리비')) {
+              const value = itemValues[item.systemMemoItemId] ?? '';
+              const { total, selected } = parseMaintenanceContent(value);
+              return (
+                <PropertyOptionPicker
+                  key={item.systemMemoItemId}
+                  label={MAINTENANCE_MEMO_LABEL}
+                  options={MAINTENANCE_OPTIONS}
+                  variant="badge"
+                  selected={selected}
+                  onChange={(next) =>
+                    setItemValues((current) => ({
+                      ...current,
+                      [item.systemMemoItemId]: serializeMaintenanceContent(total, next),
+                    }))
+                  }
+                >
+                  <TextField
+                    label="총 관리비"
+                    value={total}
+                    maxLength={50}
+                    placeholder="예: 10만원"
+                    onChange={(event) =>
+                      setItemValues((current) => ({
+                        ...current,
+                        [item.systemMemoItemId]: serializeMaintenanceContent(event.target.value, selected),
+                      }))
+                    }
+                  />
+                </PropertyOptionPicker>
               );
             }
 
@@ -144,7 +197,7 @@ const ResolvedPropertyMemoPage = ({ config, propertyId }: { config: PublicConfig
             return (
               <TextField
                 key={item.systemMemoItemId}
-                label={item.label}
+                label={propertyMemoDisplayLabel(item.label)}
                 value={itemValues[item.systemMemoItemId] ?? ''}
                 maxLength={100}
                 placeholder="필요한 내용을 입력해 주세요."
@@ -154,12 +207,27 @@ const ResolvedPropertyMemoPage = ({ config, propertyId }: { config: PublicConfig
               />
             );
           })}
+          <TextField
+            label="링크"
+            value={discoverySource}
+            maxLength={500}
+            inputMode="url"
+            autoComplete="url"
+            placeholder="매물 링크를 입력해 주세요."
+            onChange={(event) => setDiscoverySource(event.target.value)}
+          />
         </section>
-        {saveMemo.isError && (
+        {(saveMemo.isError || updateProperty.isError) && (
           <InlineNotice tone="error">부가 정보를 저장하지 못했어요. 다시 시도해 주세요.</InlineNotice>
         )}
         <BottomActionArea>
-          <Button type="submit" variant="soft" fullWidth isLoading={saveMemo.isPending} loadingLabel="저장 중…">
+          <Button
+            type="submit"
+            variant="soft"
+            fullWidth
+            isLoading={saveMemo.isPending || updateProperty.isPending}
+            loadingLabel="저장 중…"
+          >
             부가 정보 저장
           </Button>
         </BottomActionArea>

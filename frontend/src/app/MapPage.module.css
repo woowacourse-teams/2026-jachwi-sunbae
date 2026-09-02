@@ -22,9 +22,9 @@
 
 .selectPage .mapStage {
   height: auto;
-  width: 100vw;
-  max-width: none;
-  margin-left: calc(50% - 50vw);
+  width: 100%;
+  max-width: 100%;
+  margin-left: 0;
 }
 
 .selectPage :global(form[role='search']) {

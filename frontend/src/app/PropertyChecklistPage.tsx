@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { ApiError } from '../apis/apiClient';
 import ChecklistPageLayout from '../components/ChecklistPageLayout';
@@ -51,6 +52,7 @@ const ResolvedPropertyChecklistPage = ({
   const isLoadingVisible = useDelayedLoading(checklist.isPending);
   const isLoading = checklist.isPending || isLoadingVisible;
   const property = usePropertyDetail(config, propertyId);
+  const [editingMemoItemId, setEditingMemoItemId] = useState<number | null>(null);
 
   if (isLoading) {
     return isLoadingVisible ? <ContentState page={false} loading title="체크리스트를 불러오는 중이에요." /> : null;
@@ -59,15 +61,17 @@ const ResolvedPropertyChecklistPage = ({
   if (checklist.isError) {
     const isNotFound = checklist.error instanceof ApiError && checklist.error.code === 'PROPERTY_CHECKLIST_NOT_FOUND';
     return (
-      <main className="property-page">
-        <ContentState
-          page={false}
-          tone="error"
-          title={isNotFound ? '연결된 체크리스트를 찾을 수 없어요.' : '체크리스트를 불러오지 못했어요.'}
-          onRetry={isNotFound ? undefined : () => void checklist.refetch()}
-        >
-          <Link to={`/properties/${propertyId}`}>매물 상세로 돌아가기</Link>
-        </ContentState>
+      <main className={`${styles.statePage} property-page`}>
+        <div className={isNotFound ? styles.plainState : styles.stateCard}>
+          <ContentState
+            page={false}
+            tone="error"
+            title={isNotFound ? '연결된 체크리스트를 찾을 수 없어요.' : '체크리스트를 불러오지 못했어요.'}
+            onRetry={isNotFound ? undefined : () => void checklist.refetch()}
+          >
+            <Link to={`/properties/${propertyId}`}>매물 상세로 돌아가기</Link>
+          </ContentState>
+        </div>
       </main>
     );
   }
@@ -117,6 +121,10 @@ const ResolvedPropertyChecklistPage = ({
             propertyId={propertyId}
             propertyChecklistId={propertyChecklistId}
             item={item}
+            isMemoEditing={editingMemoItemId === item.itemId}
+            isMemoEditDisabled={editingMemoItemId !== null && editingMemoItemId !== item.itemId}
+            onStartMemoEdit={() => setEditingMemoItemId(item.itemId)}
+            onFinishMemoEdit={() => setEditingMemoItemId(null)}
           />
         ))}
       </ol>
