@@ -91,6 +91,7 @@ class DatabaseInitializationTest extends IntegrationTest {
         assertThat(indexExists("property_room_options", "PRIMARY")).isTrue();
         assertThat(indexExists("property_utility_options", "PRIMARY")).isTrue();
         assertThat(indexExists("member_checklist_preferences", "idx_member_checklist_preferences_latest")).isTrue();
+        assertThat(count("migration_backfill_failures")).isZero();
     }
 
     @Test
