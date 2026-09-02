@@ -24,9 +24,9 @@
 .sectionAction {
   display: inline-flex;
   align-items: center;
-  gap: 0.2rem;
+  gap: 0.25rem;
   color: var(--color-primary-dark, #455a27);
-  font-size: 0.68rem;
+  font-size: 0.8rem;
   font-weight: 800;
   text-decoration: none;
 }
@@ -63,7 +63,9 @@
 }
 
 /* 값은 읽기 전용이라 hover도 커서 변화도 두지 않는다. */
+/* 빈 값 표시는 짧아서 왼쪽에 붙으면 떠 보인다. 값 칸 가운데에 둔다. */
 .value[data-empty='true'] {
   color: var(--color-placeholder, #adb5bd);
   font-weight: 500;
+  text-align: center;
 }

@@ -28,7 +28,7 @@ type InfoRowProps = {
   emptyText?: string;
 };
 
-export const InfoRow = ({ label, value, emptyText = '입력하지 않았어요' }: InfoRowProps) => {
+export const InfoRow = ({ label, value, emptyText = '-' }: InfoRowProps) => {
   const isEmpty = value.trim() === '';
 
   return (

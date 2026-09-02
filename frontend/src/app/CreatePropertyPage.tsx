@@ -72,6 +72,9 @@ const CreatePropertyPage = ({ config }: { config: PublicConfig }) => {
   });
   const [errors, setErrors] = useState<PropertyFormErrors>({});
   // 입력값이 바뀌는 즉시 다음 필드를 노출하지 않고, 사용자가 다음을 눌렀을 때만 한 단계씩 연다.
+  // 지도에서 위치를 정해 넘어왔으면 다시 묻지 않는다. 그만큼 이름 단계가 한 칸 앞당겨진다.
+  const hasPresetLocation = routeState.selectedLocation !== undefined;
+  const nameStep = hasPresetLocation ? 2 : 3;
   const [revealedStep, setRevealedStep] = useState(0);
   const [selectedLocation, setSelectedLocation] = useState<MapAddress>(
     () =>
@@ -106,7 +109,7 @@ const CreatePropertyPage = ({ config }: { config: PublicConfig }) => {
     const nextErrors: PropertyFormErrors = {};
     if (!hasDeposit) nextErrors.depositAmount = '보증금을 입력해 주세요.';
     if (revealedStep >= 1 && !hasMonthlyRent) nextErrors.monthlyRentAmount = '월세를 입력해 주세요.';
-    if (revealedStep >= 3 && !hasName) nextErrors.name = '매물 이름을 입력해 주세요.';
+    if (revealedStep >= nameStep && !hasName) nextErrors.name = '매물 이름을 입력해 주세요.';
     setErrors(nextErrors);
     return Object.keys(nextErrors).length > 0;
   };
@@ -206,7 +209,7 @@ const CreatePropertyPage = ({ config }: { config: PublicConfig }) => {
       return;
     }
 
-    if (revealedStep === 2) {
+    if (!hasPresetLocation && revealedStep === 2) {
       setRevealedStep(3);
       return;
     }
@@ -259,7 +262,7 @@ const CreatePropertyPage = ({ config }: { config: PublicConfig }) => {
             />
           )}
 
-          {revealedStep >= 2 && (
+          {!hasPresetLocation && revealedStep >= 2 && (
             <section className={styles.locationSection} aria-label="매물 위치 선택">
               <div className={styles.locationHeader}>
                 <strong>위치를 선택해 주세요</strong>
@@ -341,7 +344,7 @@ const CreatePropertyPage = ({ config }: { config: PublicConfig }) => {
             </section>
           )}
 
-          {revealedStep >= 3 && (
+          {revealedStep >= nameStep && (
             <TextField
               label="매물 이름"
               fieldClassName={`${styles.fieldGroup} ${styles.nameField}`}
@@ -370,20 +373,18 @@ const CreatePropertyPage = ({ config }: { config: PublicConfig }) => {
           )}
 
           <p className={styles.stepNotice}>
-            {revealedStep >= 3 && locationStatus === 'ready'
+            {revealedStep >= nameStep && locationStatus === 'ready'
               ? '필수 정보를 모두 입력했다면 매물을 등록해 주세요.'
               : revealedStep === 0
                 ? '보증금을 입력한 뒤 다음을 눌러 주세요.'
                 : revealedStep === 1
                   ? '월세를 입력한 뒤 다음을 눌러 주세요.'
-                  : revealedStep === 2
-                    ? '위치를 선택한 뒤 다음을 눌러 주세요.'
-                    : '매물 이름을 입력해 주세요.'}
+                  : '위치를 선택한 뒤 다음을 눌러 주세요.'}
           </p>
 
           <BottomActionArea>
             <Button variant="primary" type="submit" fullWidth isLoading={createProperty.isPending}>
-              {revealedStep >= 3 ? '매물 등록' : '다음'}
+              {revealedStep >= nameStep ? '매물 등록' : '다음'}
             </Button>
           </BottomActionArea>
         </form>

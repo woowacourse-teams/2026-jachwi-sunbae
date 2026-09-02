@@ -48,8 +48,9 @@
 }
 
 /* 다음 단계가 열릴 때 새 입력칸이 현재 입력칸 위에 쌓이도록 한다. */
+/* 마지막으로 묻는 매물 이름을 맨 위에 둔다. 지도는 그 아래에 남는다. */
 .nameField {
-  order: 1;
+  order: 0;
 }
 
 .rentField {
@@ -196,7 +197,7 @@
 }
 
 .locationSection {
-  order: 0;
+  order: 1;
   margin: 0 -1.25rem;
   padding: 0.8rem 1.25rem 1rem;
   border-top: 1px solid var(--color-border, #eaebed);
