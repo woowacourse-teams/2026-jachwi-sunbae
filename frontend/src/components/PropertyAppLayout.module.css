@@ -14,6 +14,7 @@
 
 .content {
   position: relative;
+  transition: transform 0.2s ease-out;
   z-index: 0;
   min-height: 0;
   overflow-x: hidden;
@@ -21,6 +22,41 @@
   /* 상단에서 당기는 모바일 새로고침이 내부 스크롤러에 막히지 않게 한다. */
   overscroll-behavior-y: auto;
   scrollbar-width: none;
+}
+
+/* 당겨서 새로고침 표시. 문서가 스크롤되지 않아 브라우저 기본 제스처를 쓸 수 없다. */
+.pullIndicator {
+  position: absolute;
+  top: -2.6rem;
+  right: 0;
+  left: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  height: 2.6rem;
+  color: var(--color-muted);
+  font-size: 0.72rem;
+  font-weight: 700;
+  pointer-events: none;
+}
+
+.pullSpinner {
+  width: 0.85rem;
+  height: 0.85rem;
+  border: 2px solid var(--color-border-strong);
+  border-top-color: var(--color-primary);
+  border-radius: 50%;
+}
+
+.pullSpinner[data-spinning='true'] {
+  animation: pullSpin 0.7s linear infinite;
+}
+
+@keyframes pullSpin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .content::-webkit-scrollbar {
