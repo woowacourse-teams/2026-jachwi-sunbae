@@ -203,6 +203,29 @@ const markerClassName = (marker: MapMarker, selectedMarkerId: string | null): st
     .filter(Boolean)
     .join(' ');
 
+/** 이 값이 같으면 마커를 다시 그릴 필요가 없다. */
+const markerSignature = (marker: MapMarker, selectedMarkerId: string | null): string =>
+  [
+    marker.latitude,
+    marker.longitude,
+    marker.tone ?? '',
+    marker.category ?? '',
+    marker.count ?? '',
+    marker.photoUrl ?? '',
+    marker.label,
+    marker.caption ?? '',
+    marker.actionable === true ? '1' : '0',
+    selectedMarkerId === marker.id ? '1' : '0',
+  ].join('|');
+
+const markerZIndex = (marker: MapMarker, selectedMarkerId: string | null): number => {
+  if (selectedMarkerId === marker.id) return 10;
+  if (marker.tone === 'selected') return 9;
+  if (marker.tone === 'property' || marker.tone === 'propertyCluster') return 8;
+  if (marker.tone === 'current') return 7;
+  return 5;
+};
+
 const createMarkerContent = (
   marker: MapMarker,
   selectedMarkerId: string | null,
@@ -281,15 +304,15 @@ const MapCanvas = ({
 }: MapCanvasProps) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<LiveMap | null>(null);
-  const overlaysRef = useRef<LiveOverlay[]>([]);
+  const overlaysRef = useRef(new Map<string, { signature: string; overlay: LiveOverlay }>());
   const circlesRef = useRef<LiveOverlay[]>([]);
-  const callbackRef = useRef({ onSelectLocation, onCenterChange, onLevelChange });
+  const callbackRef = useRef({ onSelectLocation, onCenterChange, onLevelChange, onSelectMarker });
   const [mapReady, setMapReady] = useState(false);
   const [sdkError, setSdkError] = useState(false);
   const engine = useMemo(() => naverEngine(config.naverMapClientId ?? ''), [config.naverMapClientId]);
   const liveMode = config.mapProviderMode === 'naver' && (config.naverMapClientId ?? '') !== '';
 
-  callbackRef.current = { onSelectLocation, onCenterChange, onLevelChange };
+  callbackRef.current = { onSelectLocation, onCenterChange, onLevelChange, onSelectMarker };
 
   useEffect(() => {
     if (!liveMode || containerRef.current === null) return;
@@ -322,9 +345,9 @@ const MapCanvas = ({
 
     return () => {
       disposed = true;
-      overlaysRef.current.forEach((overlay) => overlay.setMap(null));
+      overlaysRef.current.forEach(({ overlay }) => overlay.setMap(null));
+      overlaysRef.current.clear();
       circlesRef.current.forEach((circle) => circle.setMap(null));
-      overlaysRef.current = [];
       circlesRef.current = [];
       mapRef.current = null;
     };
@@ -367,28 +390,34 @@ const MapCanvas = ({
   useEffect(() => {
     const map = mapRef.current;
     if (!liveMode || !mapReady || map === null) return;
-    overlaysRef.current.forEach((overlay) => overlay.setMap(null));
-    overlaysRef.current = markers.map((marker) =>
-      engine.createOverlay(
-        map,
-        marker,
-        createMarkerContent(marker, selectedMarkerId, onSelectMarker),
-        selectedMarkerId === marker.id
-          ? 10
-          : marker.tone === 'selected'
-            ? 9
-            : marker.tone === 'property'
-              ? 8
-              : marker.tone === 'current'
-                ? 7
-                : 5,
-      ),
-    );
-    return () => {
-      overlaysRef.current.forEach((overlay) => overlay.setMap(null));
-      overlaysRef.current = [];
-    };
-  }, [engine, liveMode, mapReady, markers, onSelectMarker, selectedMarkerId]);
+    // 달라진 마커만 다시 그린다. 전부 지웠다 만들면 지도를 옮길 때마다 깜빡인다.
+    const previous = overlaysRef.current;
+    const next = new Map<string, { signature: string; overlay: LiveOverlay }>();
+
+    markers.forEach((marker) => {
+      const signature = markerSignature(marker, selectedMarkerId);
+      const kept = previous.get(marker.id);
+      if (kept !== undefined && kept.signature === signature) {
+        previous.delete(marker.id);
+        next.set(marker.id, kept);
+        return;
+      }
+      if (kept !== undefined) {
+        kept.overlay.setMap(null);
+        previous.delete(marker.id);
+      }
+      const content = createMarkerContent(marker, selectedMarkerId, (selected) =>
+        callbackRef.current.onSelectMarker?.(selected),
+      );
+      next.set(marker.id, {
+        signature,
+        overlay: engine.createOverlay(map, marker, content, markerZIndex(marker, selectedMarkerId)),
+      });
+    });
+
+    previous.forEach(({ overlay }) => overlay.setMap(null));
+    overlaysRef.current = next;
+  }, [engine, liveMode, mapReady, markers, selectedMarkerId]);
 
   useEffect(() => {
     const map = mapRef.current;
