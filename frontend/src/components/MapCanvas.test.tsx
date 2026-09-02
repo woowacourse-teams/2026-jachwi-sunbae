@@ -113,6 +113,17 @@ describe('Naver 지도 상태 동기화', () => {
   });
 
   it('중심 좌표만 갱신될 때 사용자가 바꾼 확대 단계를 되돌리지 않는다', async () => {
+    const disconnect = vi.fn();
+    let resizeObserverCount = 0;
+    class FakeResizeObserver {
+      constructor(_: () => void) {
+        resizeObserverCount += 1;
+      }
+      observe = vi.fn();
+      disconnect = disconnect;
+    }
+    vi.stubGlobal('ResizeObserver', FakeResizeObserver);
+
     const { rerender } = render(
       <MapCanvas config={config} center={{ latitude: 37.5665, longitude: 126.978 }} level={5} />,
     );
@@ -124,6 +135,9 @@ describe('Naver 지도 상태 동기화', () => {
     await waitFor(() => expect(map.setCenter).toHaveBeenCalledOnce());
     expect(map.setZoom).not.toHaveBeenCalled();
     expect(map.zoom).toBe(15);
+    expect(resizeObserverCount).toBe(1);
+    expect(disconnect).not.toHaveBeenCalled();
+    expect(map.refresh).not.toHaveBeenCalled();
   });
 
   it('사용자가 지도에서 확대 단계를 바꾸면 같은 단계를 다시 지정하지 않는다', async () => {
