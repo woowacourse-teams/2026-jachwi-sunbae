@@ -533,6 +533,36 @@ CREATE TABLE IF NOT EXISTS migration_backfill_failures
   DEFAULT CHARACTER SET = utf8mb4
   COLLATE = utf8mb4_0900_ai_ci;
 
+CREATE TABLE IF NOT EXISTS migration_legacy_stage_counts
+(
+    migration_version VARCHAR(50) NOT NULL,
+    source_table      VARCHAR(64) NOT NULL,
+    stage             VARCHAR(30) NOT NULL,
+    row_count         BIGINT UNSIGNED NOT NULL,
+    captured_at       DATETIME(6) NOT NULL,
+    PRIMARY KEY (migration_version, source_table, stage)
+) ENGINE = InnoDB
+  DEFAULT CHARACTER SET = utf8mb4
+  COLLATE = utf8mb4_0900_ai_ci;
+
+INSERT INTO migration_legacy_stage_counts (
+    migration_version,
+    source_table,
+    stage,
+    row_count,
+    captured_at
+)
+SELECT 'V3',
+       'system_check_items',
+       'ONLINE_PHONE',
+       COUNT(*),
+       CURRENT_TIMESTAMP(6)
+FROM system_check_items
+WHERE stage = 'ONLINE_PHONE'
+ON DUPLICATE KEY UPDATE
+    row_count = VALUES(row_count),
+    captured_at = VALUES(captured_at);
+
 SET @v3_sql = IF(
     EXISTS(
         SELECT 1

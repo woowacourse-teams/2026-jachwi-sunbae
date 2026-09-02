@@ -5,8 +5,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import javax.sql.DataSource;
 import org.flywaydb.core.Flyway;
 import org.junit.jupiter.api.Test;
@@ -26,6 +28,9 @@ class FlywayExistingDatabaseIntegrationTest {
     @Container
     private static final MySQLContainer<?> MYSQL = new MySQLContainer<>("mysql:8.4.10");
 
+    @Container
+    private static final MySQLContainer<?> FRESH_MYSQL = new MySQLContainer<>("mysql:8.4.10");
+
     @Test
     void 기존_스키마를_baseline하고_통합_데이터를_backfill한다() {
         DataSource dataSource = dataSource();
@@ -42,6 +47,10 @@ class FlywayExistingDatabaseIntegrationTest {
                 "$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy", timestamp(), timestamp());
 
         long propertyId = insertLegacyProperty(jdbcTemplate, memberId);
+        long photoId = insertLegacyPhoto(jdbcTemplate, propertyId, memberId);
+        long userChecklistId = insertLegacyChecklist(jdbcTemplate, memberId);
+        insertLegacyChecklistItems(jdbcTemplate, userChecklistId);
+        insertLegacyPropertyChecklist(jdbcTemplate, propertyId, userChecklistId);
         jdbcTemplate.update("INSERT INTO property_memos (property_id, free_memo) VALUES (?, ?)",
                 propertyId, "자유 메모 원문");
         long memoId = jdbcTemplate.queryForObject(
@@ -62,6 +71,17 @@ class FlywayExistingDatabaseIntegrationTest {
                 new Object[]{invalidMemoId, 3L, "관리비 및 공과금", 3, "비쌈"},
                 new Object[]{invalidMemoId, 4L, "방문 일정", 4, "2026-02-31 15:30"}
         ));
+        long overflowPropertyId = insertLegacyProperty(jdbcTemplate, memberId);
+        jdbcTemplate.update("INSERT INTO property_memos (property_id, free_memo) VALUES (?, ?)",
+                overflowPropertyId, "범위를 벗어난 관리비도 자유 메모는 보존한다");
+        long overflowMemoId = jdbcTemplate.queryForObject(
+                "SELECT id FROM property_memos WHERE property_id = ?", Long.class, overflowPropertyId);
+        jdbcTemplate.update("""
+                INSERT INTO property_memo_items (
+                    property_memo_id, system_memo_item_id, label, display_order, content
+                ) VALUES (?, ?, ?, ?, ?)
+                """, overflowMemoId, 3L, "관리비 및 공과금", 3,
+                "999999999999999999999999원");
         jdbcTemplate.execute("""
                 CREATE TABLE flyway_schema_history (
                     id INT PRIMARY KEY,
@@ -70,16 +90,7 @@ class FlywayExistingDatabaseIntegrationTest {
                 """);
         jdbcTemplate.update("INSERT INTO flyway_schema_history (id, marker) VALUES (1, ?)", LEGACY_HISTORY_MARKER);
 
-        Flyway flyway = Flyway.configure()
-                .dataSource(dataSource)
-                .locations("classpath:db/migration")
-                .table("integrated_schema_history")
-                .baselineOnMigrate(true)
-                .baselineVersion("1")
-                .baselineDescription("pre-flyway-mvp2-schema")
-                .validateOnMigrate(true)
-                .callbacks(new IntegratedSchemaBaselineGuard())
-                .load();
+        Flyway flyway = flyway(dataSource);
 
         flyway.migrate();
 
@@ -93,6 +104,33 @@ class FlywayExistingDatabaseIntegrationTest {
         assertThat(jdbcTemplate.queryForObject(
                 "SELECT marker FROM flyway_schema_history WHERE id = 1", String.class))
                 .isEqualTo(LEGACY_HISTORY_MARKER);
+        assertThat(jdbcTemplate.queryForObject(
+                "SELECT row_count FROM migration_legacy_stage_counts "
+                        + "WHERE migration_version = 'V3' AND source_table = 'system_check_items' "
+                        + "AND stage = 'ONLINE_PHONE'", Long.class)).isEqualTo(12L);
+        assertThat(jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM property_photos WHERE property_id = ? AND member_id = ?",
+                Long.class, propertyId, memberId)).isEqualTo(1L);
+        assertThat(jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM main_property_photos WHERE property_id = ? AND property_photos_id = ?",
+                Long.class, propertyId, photoId)).isEqualTo(1L);
+        assertThat(jdbcTemplate.queryForObject(
+                "SELECT name FROM user_checklists WHERE id = ?", String.class, userChecklistId))
+                .isEqualTo("현장 확인");
+        assertThat(jdbcTemplate.queryForObject(
+                "SELECT member_id FROM user_checklists WHERE id = ?", Long.class, userChecklistId))
+                .isEqualTo(memberId);
+        assertThat(jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM user_checklist_items WHERE user_checklist_id = ? AND question = ?",
+                Long.class, userChecklistId, "엘리베이터 확인")).isEqualTo(1L);
+        assertThat(jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM property_checklists WHERE property_id = ? AND user_checklist_id = ?",
+                Long.class, propertyId, userChecklistId)).isEqualTo(1L);
+        assertThat(jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM property_checklist_items AS item "
+                        + "JOIN property_checklists AS checklist ON checklist.id = item.property_checklist_id "
+                        + "WHERE checklist.property_id = ? AND item.memo = ?",
+                Long.class, propertyId, "창문 잠금 확인")).isEqualTo(1L);
 
         assertThat(jdbcTemplate.queryForObject(
                 "SELECT nickname FROM members WHERE id = ?", String.class, memberId))
@@ -138,7 +176,7 @@ class FlywayExistingDatabaseIntegrationTest {
         assertThat(jdbcTemplate.queryForObject(
                 "SELECT COUNT(*) FROM migration_backfill_failures "
                         + "WHERE migration_version = 'V4' AND target_column = 'maintenance_fee_amount'",
-                Long.class)).isEqualTo(2L);
+                Long.class)).isEqualTo(3L);
         assertThat(jdbcTemplate.queryForObject(
                 "SELECT COUNT(*) FROM migration_backfill_failures "
                         + "WHERE migration_version = 'V4' AND target_column = 'available_move_in_date'",
@@ -152,10 +190,38 @@ class FlywayExistingDatabaseIntegrationTest {
                 invalidPropertyId);
         assertThat(invalidDetails.get("available_move_in_date")).isNull();
         assertThat(invalidDetails.get("visit_scheduled_at")).isNull();
+        assertThat(jdbcTemplate.queryForObject(
+                "SELECT maintenance_fee_amount FROM property_details WHERE property_id = ?",
+                Long.class, overflowPropertyId)).isNull();
+        assertThat(jdbcTemplate.queryForObject(
+                "SELECT free_memo FROM property_memos WHERE property_id = ?", String.class, overflowPropertyId))
+                .isEqualTo("범위를 벗어난 관리비도 자유 메모는 보존한다");
+
+        JdbcTemplate freshJdbcTemplate = new JdbcTemplate(freshDataSource());
+        flyway(freshJdbcTemplate.getDataSource()).migrate();
+        assertThat(schemaSignature(jdbcTemplate)).isEqualTo(schemaSignature(freshJdbcTemplate));
     }
 
     private DataSource dataSource() {
         return new DriverManagerDataSource(MYSQL.getJdbcUrl(), MYSQL.getUsername(), MYSQL.getPassword());
+    }
+
+    private DataSource freshDataSource() {
+        return new DriverManagerDataSource(
+                FRESH_MYSQL.getJdbcUrl(), FRESH_MYSQL.getUsername(), FRESH_MYSQL.getPassword());
+    }
+
+    private Flyway flyway(DataSource dataSource) {
+        return Flyway.configure()
+                .dataSource(dataSource)
+                .locations("classpath:db/migration")
+                .table("integrated_schema_history")
+                .baselineOnMigrate(true)
+                .baselineVersion("1")
+                .baselineDescription("pre-flyway-mvp2-schema")
+                .validateOnMigrate(true)
+                .callbacks(new IntegratedSchemaBaselineGuard())
+                .load();
     }
 
     private long insertLegacyMember(JdbcTemplate jdbcTemplate, String email, String name) {
@@ -177,7 +243,55 @@ class FlywayExistingDatabaseIntegrationTest {
                 """, memberId, "레거시 매물", 10_000_000L, 550_000L, "", "서울 관악구 신림로 12길 3",
                 "서울 관악구 신림동 123-4", new BigDecimal("37.4841234"), new BigDecimal("126.9291234"),
                 timestamp, timestamp, timestamp);
-        return jdbcTemplate.queryForObject("SELECT id FROM properties WHERE member_id = ?", Long.class, memberId);
+        return jdbcTemplate.queryForObject(
+                "SELECT id FROM properties WHERE member_id = ? ORDER BY id DESC LIMIT 1", Long.class, memberId);
+    }
+
+    private long insertLegacyPhoto(JdbcTemplate jdbcTemplate, long propertyId, long memberId) {
+        jdbcTemplate.update("""
+                INSERT INTO property_photos (
+                    property_id, member_id, storage_key, content_type, size_bytes,
+                    checksum_sha256, created_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?)
+                """, propertyId, memberId, "legacy/property.jpg", "image/jpeg", 123L,
+                "a".repeat(64), timestamp());
+        long photoId = jdbcTemplate.queryForObject(
+                "SELECT id FROM property_photos WHERE storage_key = ?", Long.class, "legacy/property.jpg");
+        jdbcTemplate.update("INSERT INTO main_property_photos (property_id, property_photos_id) VALUES (?, ?)",
+                propertyId, photoId);
+        return photoId;
+    }
+
+    private long insertLegacyChecklist(JdbcTemplate jdbcTemplate, long memberId) {
+        jdbcTemplate.update("INSERT INTO user_checklists (member_id, name, stage) VALUES (?, ?, ?)",
+                memberId, "현장 확인", "ON_SITE");
+        return jdbcTemplate.queryForObject(
+                "SELECT id FROM user_checklists WHERE member_id = ? ORDER BY id DESC LIMIT 1", Long.class, memberId);
+    }
+
+    private void insertLegacyChecklistItems(JdbcTemplate jdbcTemplate, long userChecklistId) {
+        jdbcTemplate.update("""
+                INSERT INTO user_checklist_items (
+                    user_checklist_id, system_check_item_id, stage, item_type, question, display_order
+                ) VALUES (?, NULL, ?, ?, ?, ?)
+                """, userChecklistId, "ON_SITE", "CUSTOM", "엘리베이터 확인", 1);
+    }
+
+    private void insertLegacyPropertyChecklist(JdbcTemplate jdbcTemplate, long propertyId, long userChecklistId) {
+        jdbcTemplate.update("""
+                INSERT INTO property_checklists (
+                    property_id, user_checklist_id, checklist_name, stage
+                ) VALUES (?, ?, ?, ?)
+                """, propertyId, userChecklistId, "현장 확인", "ON_SITE");
+        long propertyChecklistId = jdbcTemplate.queryForObject(
+                "SELECT id FROM property_checklists WHERE property_id = ? AND stage = ?",
+                Long.class, propertyId, "ON_SITE");
+        jdbcTemplate.update("""
+                INSERT INTO property_checklist_items (
+                    property_checklist_id, system_check_item_id, display_order,
+                    status, memo, question
+                ) VALUES (?, NULL, ?, ?, ?, ?)
+                """, propertyChecklistId, 1, "UNCONFIRMED", "창문 잠금 확인", "창문 잠금 확인");
     }
 
     private void seedLegacyMemoItems(JdbcTemplate jdbcTemplate, long memoId) {
@@ -206,5 +320,43 @@ class FlywayExistingDatabaseIntegrationTest {
 
     private LocalDateTime timestamp() {
         return LocalDateTime.of(2026, 1, 2, 3, 4, 5);
+    }
+
+    private Set<String> schemaSignature(JdbcTemplate jdbcTemplate) {
+        Set<String> signature = new HashSet<>();
+        signature.addAll(jdbcTemplate.queryForList("""
+                SELECT CONCAT(
+                    'column|', table_name, '|', column_name, '|',
+                    REPLACE(LOWER(column_type), ' unsigned', ''), '|', is_nullable, '|',
+                    COALESCE(character_maximum_length, ''), '|', COALESCE(numeric_precision, ''), '|',
+                    COALESCE(numeric_scale, ''), '|', COALESCE(column_default, '<null>')
+                )
+                FROM information_schema.columns
+                WHERE table_schema = DATABASE()
+                  AND table_name NOT IN ('integrated_schema_history', 'flyway_schema_history')
+                ORDER BY table_name, ordinal_position
+                """, String.class));
+        signature.addAll(jdbcTemplate.queryForList("""
+                SELECT CONCAT(
+                    'index|', table_name, '|', index_name, '|', non_unique, '|', seq_in_index, '|',
+                    column_name, '|', COALESCE(collation, ''), '|', index_type
+                )
+                FROM information_schema.statistics
+                WHERE table_schema = DATABASE()
+                  AND table_name NOT IN ('integrated_schema_history', 'flyway_schema_history')
+                ORDER BY table_name, index_name, seq_in_index
+                """, String.class));
+        signature.addAll(jdbcTemplate.queryForList("""
+                SELECT CONCAT(
+                    'foreign-key|', table_name, '|', constraint_name, '|', column_name, '|',
+                    referenced_table_name, '|', referenced_column_name
+                )
+                FROM information_schema.key_column_usage
+                WHERE table_schema = DATABASE()
+                  AND referenced_table_name IS NOT NULL
+                  AND table_name NOT IN ('integrated_schema_history', 'flyway_schema_history')
+                ORDER BY table_name, constraint_name, ordinal_position
+                """, String.class));
+        return signature;
     }
 }

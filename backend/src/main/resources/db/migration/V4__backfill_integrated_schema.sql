@@ -57,18 +57,74 @@ JOIN properties AS property ON property.id = detail.property_id
 SET detail.discovery_source = property.discovery_source
 WHERE detail.discovery_source IS NULL;
 
+CREATE TEMPORARY TABLE v4_legacy_maintenance_candidates
+(
+    property_id      BIGINT UNSIGNED NOT NULL,
+    raw_value        VARCHAR(2000)   NOT NULL,
+    normalized_value VARCHAR(2000)   NULL,
+    parsed_value     BIGINT UNSIGNED NULL,
+    PRIMARY KEY (property_id)
+);
+
 SET @v4_sql = IF(
     EXISTS(
         SELECT 1
         FROM information_schema.columns
         WHERE table_schema = DATABASE() AND table_name = 'property_details' AND column_name = 'maintenance_amount'
     ),
-    'UPDATE property_details SET maintenance_fee_amount = CAST(maintenance_amount AS UNSIGNED) WHERE maintenance_fee_amount IS NULL AND maintenance_amount IS NOT NULL',
+    'INSERT INTO v4_legacy_maintenance_candidates (property_id, raw_value) SELECT property_id, CAST(maintenance_amount AS CHAR(2000)) FROM property_details WHERE maintenance_amount IS NOT NULL',
     'SELECT 1'
 );
 PREPARE v4_statement FROM @v4_sql;
 EXECUTE v4_statement;
 DEALLOCATE PREPARE v4_statement;
+
+UPDATE v4_legacy_maintenance_candidates
+SET normalized_value = COALESCE(NULLIF(TRIM(LEADING '0' FROM REGEXP_REPLACE(TRIM(raw_value), ',', '')), ''), '0')
+WHERE TRIM(raw_value) REGEXP '^[0-9][0-9,]*$';
+
+UPDATE v4_legacy_maintenance_candidates
+SET parsed_value = CAST(normalized_value AS UNSIGNED)
+WHERE normalized_value IS NOT NULL
+  AND (
+      CHAR_LENGTH(normalized_value) < 20
+      OR (CHAR_LENGTH(normalized_value) = 20 AND normalized_value <= '18446744073709551615')
+  );
+
+UPDATE property_details AS detail
+JOIN v4_legacy_maintenance_candidates AS candidate ON candidate.property_id = detail.property_id
+SET detail.maintenance_fee_amount = candidate.parsed_value
+WHERE detail.maintenance_fee_amount IS NULL
+  AND candidate.parsed_value IS NOT NULL;
+
+INSERT INTO migration_backfill_failures (
+    migration_version,
+    source_table,
+    source_id,
+    target_table,
+    target_column,
+    raw_value,
+    reason,
+    created_at
+)
+SELECT 'V4',
+       'property_details',
+       detail.property_id,
+       'property_details',
+       'maintenance_fee_amount',
+       candidate.raw_value,
+       'unparseable amount',
+       CURRENT_TIMESTAMP(6)
+FROM property_details AS detail
+JOIN v4_legacy_maintenance_candidates AS candidate ON candidate.property_id = detail.property_id
+WHERE detail.maintenance_fee_amount IS NULL
+  AND candidate.parsed_value IS NULL
+ON DUPLICATE KEY UPDATE
+    raw_value = VALUES(raw_value),
+    reason = VALUES(reason),
+    created_at = VALUES(created_at);
+
+DROP TEMPORARY TABLE v4_legacy_maintenance_candidates;
 
 UPDATE property_details AS detail
 JOIN property_memos AS memo ON memo.property_id = detail.property_id
@@ -176,21 +232,58 @@ ON DUPLICATE KEY UPDATE
 
 DROP TEMPORARY TABLE v4_date_candidates;
 
-UPDATE property_details AS detail
-JOIN property_memos AS memo ON memo.property_id = detail.property_id
+CREATE TEMPORARY TABLE v4_amount_candidates
+(
+    item_id          BIGINT UNSIGNED NOT NULL,
+    property_id      BIGINT UNSIGNED NOT NULL,
+    raw_value        VARCHAR(200)    NOT NULL,
+    multiplier       SMALLINT UNSIGNED NOT NULL,
+    normalized_value VARCHAR(200)    NULL,
+    parsed_value     BIGINT UNSIGNED NULL,
+    PRIMARY KEY (item_id)
+);
+
+INSERT INTO v4_amount_candidates (item_id, property_id, raw_value, multiplier, normalized_value)
+SELECT item.id,
+       memo.property_id,
+       item.content,
+       CASE
+           WHEN item.content REGEXP '^[[:space:]]*[0-9][0-9,]*[[:space:]]*(만원|만)[[:space:]]*$' THEN 10000
+           ELSE 1
+       END,
+       CASE
+           WHEN item.content REGEXP '^[[:space:]]*[0-9][0-9,]*[[:space:]]*(만원|만)[[:space:]]*$'
+               THEN COALESCE(NULLIF(TRIM(LEADING '0' FROM REGEXP_REPLACE(TRIM(item.content), '[^0-9]', '')), ''), '0')
+           WHEN item.content REGEXP '^[[:space:]]*[0-9][0-9,]*[[:space:]]*원[[:space:]]*$'
+               THEN COALESCE(NULLIF(TRIM(LEADING '0' FROM REGEXP_REPLACE(TRIM(item.content), '[^0-9]', '')), ''), '0')
+           WHEN item.content REGEXP '^[[:space:]]*[0-9][0-9,]*[[:space:]]*$'
+               THEN COALESCE(NULLIF(TRIM(LEADING '0' FROM REGEXP_REPLACE(TRIM(item.content), '[^0-9]', '')), ''), '0')
+           ELSE NULL
+       END
+FROM property_memos AS memo
 JOIN property_memo_items AS item
   ON item.property_memo_id = memo.id AND item.system_memo_item_id = 3
-SET detail.maintenance_fee_amount = CASE
-    WHEN item.content REGEXP '^[[:space:]]*[0-9][0-9,]*[[:space:]]*(만원|만)[[:space:]]*$'
-        THEN CAST(REGEXP_REPLACE(TRIM(item.content), '[^0-9]', '') AS UNSIGNED) * 10000
-    WHEN item.content REGEXP '^[[:space:]]*[0-9][0-9,]*[[:space:]]*원[[:space:]]*$'
-        THEN CAST(REGEXP_REPLACE(TRIM(item.content), '[^0-9]', '') AS UNSIGNED)
-    WHEN item.content REGEXP '^[[:space:]]*[0-9][0-9,]*[[:space:]]*$'
-        THEN CAST(REGEXP_REPLACE(TRIM(item.content), '[^0-9]', '') AS UNSIGNED)
-    ELSE detail.maintenance_fee_amount
-END
+WHERE TRIM(item.content) <> '';
+
+UPDATE v4_amount_candidates
+SET parsed_value = CAST(normalized_value AS UNSIGNED) * multiplier
+WHERE normalized_value IS NOT NULL
+  AND (
+      (multiplier = 1 AND (
+          CHAR_LENGTH(normalized_value) < 20
+          OR (CHAR_LENGTH(normalized_value) = 20 AND normalized_value <= '18446744073709551615')
+      ))
+      OR (multiplier = 10000 AND (
+          CHAR_LENGTH(normalized_value) < 16
+          OR (CHAR_LENGTH(normalized_value) = 16 AND normalized_value <= '1844674407370955')
+      ))
+  );
+
+UPDATE property_details AS detail
+JOIN v4_amount_candidates AS candidate ON candidate.property_id = detail.property_id
+SET detail.maintenance_fee_amount = candidate.parsed_value
 WHERE detail.maintenance_fee_amount IS NULL
-  AND TRIM(item.content) <> '';
+  AND candidate.parsed_value IS NOT NULL;
 
 INSERT INTO migration_backfill_failures (
     migration_version,
@@ -214,12 +307,16 @@ FROM property_memos AS memo
 JOIN property_memo_items AS item
   ON item.property_memo_id = memo.id AND item.system_memo_item_id = 3
 JOIN property_details AS detail ON detail.property_id = memo.property_id
+JOIN v4_amount_candidates AS candidate ON candidate.item_id = item.id
 WHERE detail.maintenance_fee_amount IS NULL
   AND TRIM(item.content) <> ''
+  AND candidate.parsed_value IS NULL
 ON DUPLICATE KEY UPDATE
     raw_value = VALUES(raw_value),
     reason = VALUES(reason),
     created_at = VALUES(created_at);
+
+DROP TEMPORARY TABLE v4_amount_candidates;
 
 CREATE TEMPORARY TABLE v4_datetime_candidates
 (
