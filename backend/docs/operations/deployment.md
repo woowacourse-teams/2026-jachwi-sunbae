@@ -150,12 +150,12 @@ sudo systemctl start jachwi-sunbae.service
    WHERE main_photo.property_id <> photo.property_id;
    ```
 
-3. dev 애플리케이션 DB 계정에 이번 additive upgrade에 필요한 `ALTER`, `CREATE`, `INDEX`, `SELECT`, `INSERT`, `UPDATE` 권한이 있는지 확인한다.
+3. dev 애플리케이션 DB 계정에 이번 additive upgrade에 필요한 `ALTER`, `CREATE`, `INDEX`, `REFERENCES`, `SELECT`, `INSERT`, `UPDATE` 권한이 있는지 확인한다.
 4. `/etc/jachwi-sunbae/app.env`에 dev DB·JWT·CORS·선택한 지도 공급자 인증 정보·S3 접두사를 [환경변수](../guides/environment-variables.md)의 dev 값으로 설정한다. 정적 AWS 키는 두지 않는다.
 5. 버스정류소 API 승인이 끝나지 않았다면 `BUS_STOP_PROVIDER=none`으로 둔다.
 6. 프론트 dev `Commands` 액션에 `API_BASE_URL=https://dev-api.jachwi-sunbae.kr`, `MAP_PROVIDER_MODE`와 선택한 지도 공급자의 공개 키를 주입한다.
 
-첫 기동 전에 Flyway가 `db/migration/V1__`부터 순서대로 실행한다. 기존 테이블이 있는 DB에서는 `integrated_schema_history`에 버전 1 기준선을 기록한 뒤 V2 이후를 적용한다. 마이그레이션이 하나라도 실패하면 애플리케이션은 요청을 받지 않고 배포 검증이 실패하므로 스키마를 수동으로 일부만 적용하지 말고 로그와 [데이터베이스 초기화](../guides/database-initialization.md)를 확인한다.
+첫 기동 전에 Flyway가 `db/migration/V1__`부터 순서대로 실행한다. 기존 테이블이 있는 DB에서는 기준선 콜백이 예상한 MVP1 테이블·컬럼·`BIGINT` 식별자 타입을 확인한 뒤 `integrated_schema_history`에 버전 1 기준선을 기록하고 V2 이후를 적용한다. 미확인 비어 있지 않은 스키마는 자동 기준선을 만들지 않는다. 마이그레이션이 하나라도 실패하면 애플리케이션은 요청을 받지 않고 배포 검증이 실패하므로 스키마를 수동으로 일부만 적용하지 말고 로그와 [데이터베이스 초기화](../guides/database-initialization.md)를 확인한다.
 
 ## 빌드를 CodeBuild가 아니라 Commands로 하는 이유
 

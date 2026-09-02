@@ -119,9 +119,9 @@ erDiagram
 | 부모 | 자식 | 정책 |
 | --- | --- | --- |
 | `members` | 레거시 닉네임 자격정보·선호 기록 | `ON DELETE CASCADE` |
-| `properties` | 사진·대표 사진·메모·매물 체크리스트·부가정보·옵션 | 물리 삭제 시 `ON DELETE CASCADE`, API 삭제는 `deleted_at` 논리 삭제 |
+| `properties` | 사진·대표 사진·메모·매물 체크리스트·부가정보·옵션 | 물리 삭제 시 `ON DELETE CASCADE`, API cutover 후 `deleted_at` 논리 삭제 |
 | `property_memos` | 메모 항목 | `ON DELETE CASCADE` |
-| `user_checklists` | 사용자 항목 | 물리 삭제 시 `ON DELETE CASCADE`, API 삭제는 `deleted_at` 논리 삭제 |
+| `user_checklists` | 사용자 항목 | 물리 삭제 시 `ON DELETE CASCADE`, API cutover 후 `deleted_at` 논리 삭제 |
 | `user_checklists` | 매물 체크리스트 출처 | `ON DELETE SET NULL` |
 | `property_checklists` | 매물 체크 항목 | `ON DELETE CASCADE` |
 
@@ -129,7 +129,7 @@ erDiagram
 
 ## 목록 정렬과 삭제 조회
 
-목록 기본 정렬은 `properties.created_at DESC, properties.id DESC`다. 모든 매물 조회·개수·소유권 검사는 `deleted_at IS NULL`을 기본 조건으로 사용한다. 삭제 요청은 `deleted_at`만 기록하고 사진 객체와 종속 행은 후속 정리 정책에 따라 보존한다.
+통합 API의 목록 기본 정렬은 `properties.created_at DESC, properties.id DESC`다. API cutover가 끝나면 모든 매물 조회·개수·소유권 검사에 `deleted_at IS NULL`을 기본 조건으로 사용한다. 현재 마이그레이션 브랜치는 컬럼과 인덱스만 추가하며 기존 API의 물리 삭제·레거시 정렬은 후속 cutover 작업에서 전환한다. 전환 후 삭제 요청은 `deleted_at`만 기록하고 사진 객체와 종속 행은 후속 정리 정책에 따라 보존한다.
 
 ## 유지하는 스냅샷
 

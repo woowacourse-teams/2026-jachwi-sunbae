@@ -16,7 +16,7 @@
 | `db/migration/V5__align_property_address_length.sql` | 통합 주소 컬럼을 500자로 확장 |
 | `db/init/`, `db/upgrade/` | 이전 실행 경로와 테스트 호환을 위한 보관 파일. 기본 프로필에서는 실행하지 않음 |
 
-Flyway 이력 테이블은 `integrated_schema_history`를 사용한다. 팀 RDS에 남아 있는 과거 `flyway_schema_history`는 변경하지 않는다. 이미 애플리케이션 테이블이 있는 DB에서 첫 기동하면 `baseline-on-migrate`가 버전 1을 기준선으로 기록하고 V2 이후를 적용한다.
+Flyway 이력 테이블은 `integrated_schema_history`를 사용한다. 팀 RDS에 남아 있는 과거 `flyway_schema_history`는 변경하지 않는다. 이미 애플리케이션 테이블이 있는 DB에서 첫 기동하면 `baseline-on-migrate`가 버전 1을 기준선으로 기록하고 V2 이후를 적용한다. 기준선 콜백은 `members`, `properties`, 메모·자격정보 테이블과 지원하는 `BIGINT` 식별자 타입을 확인한다. 알 수 없는 비어 있지 않은 스키마는 자동 기준선을 만들지 않고 기동을 중단한다.
 
 ## 로컬 새 DB 초기화
 
@@ -42,7 +42,7 @@ V3은 기존 코드가 읽는 레거시 컬럼을 즉시 제거하지 않고 통
 - 회원 자격정보가 이미 있으면 닉네임·식별 key·BCrypt hash를 그대로 `members`에 복사한다. 자격정보가 없는 회원을 비밀번호 없는 계정으로 자동 전환하지 않는다.
 - 주소는 기존 도로명 주소를 우선하고, 없으면 지번 주소를 `properties.address`에 복사한다.
 - 매물마다 `property_details` 행을 만들고 입주 가능일·관리비·방문 일정·확인한 곳을 구조화한다. 방 옵션과 포함 공과금은 허용된 코드만 연결 테이블에 저장한다.
-- 변환할 수 없는 구조화 메모 값은 NULL로 두고 `migration_backfill_failures`에 원문과 사유를 남긴다. 자유 메모는 기존 `property_memos.free_memo`를 그대로 유지한다.
+- 변환할 수 없는 구조화 메모 값은 NULL로 두고 `migration_backfill_failures`에 원문과 사유를 남긴다. 숫자 형식이지만 유효하지 않은 날짜·시각도 같은 방식으로 기록한다. 실패 기록은 중복 키 갱신으로 보존하며 삽입 오류를 무시하지 않는다. 자유 메모는 기존 `property_memos.free_memo`를 그대로 유지한다.
 
 `LEGACY_DATABASE_UPGRADE_ENABLED=true`를 명시한 테스트에서만 이전 `DatabaseUpgradeInitializer`를 실행할 수 있다. 운영과 기본 테스트 프로필에서는 이 호환 경로가 등록되지 않는다.
 
@@ -51,11 +51,11 @@ V3은 기존 코드가 읽는 레거시 컬럼을 즉시 제거하지 않고 통
 1. 새 버전 파일을 `db/migration/V<번호>__<설명>.sql` 형식으로 추가한다. 이미 배포한 파일은 수정·삭제·이름 변경하지 않는다.
 2. 새 DB와 기준선 이후의 기존 DB 모두에서 적용될 수 있도록 DDL과 backfill 경계를 분리한다.
 3. 운영 적용 전에 논리 백업과 복원 리허설을 수행하고, 실패 시 애플리케이션 기동이 중단되는지 확인한다.
-4. Testcontainers MySQL에서 전체 버전 적용, 재기동 시 pending 없음, 기존 데이터 backfill과 실패 목록을 검증한다.
+4. Testcontainers MySQL에서 전체 버전 적용, 재기동 시 pending 없음, 기존 데이터 baseline·backfill과 실패 목록을 검증한다.
 5. 백엔드 테스트와 `python3 .github/scripts/check_docs.py`를 실행한다.
 
-테스트 프로필은 빈 Testcontainers MySQL에 Flyway V1~V5를 적용한다. 별도 호환 테스트만 `LEGACY_DATABASE_UPGRADE_ENABLED=true`를 켜서 이전 `DatabaseUpgradeInitializer`를 검증하며, 기본 데이터베이스 테스트는 Flyway 이력과 pending 상태를 확인한다.
+테스트 프로필은 빈 Testcontainers MySQL에 Flyway V1~V5를 적용한다. `FlywayExistingDatabaseIntegrationTest`는 레거시 테이블·과거 이력·정상 및 변환 실패 메모를 먼저 만들고 기준선 이후 V2~V5와 데이터 보존을 검증한다. 별도 호환 테스트만 `LEGACY_DATABASE_UPGRADE_ENABLED=true`를 켜서 이전 `DatabaseUpgradeInitializer`를 검증하며, 기본 데이터베이스 테스트는 Flyway 이력과 pending 상태를 확인한다.
 
 ## 운영 주의사항
 
-운영 데이터가 있는 DB에서 `docker compose down -v`, `flyway clean`, init SQL 재실행을 하지 않는다. 마이그레이션은 순방향으로만 진행하며 컬럼·테이블 제거는 API 전환과 데이터 검증이 끝난 별도 버전에서 수행한다. 여러 인스턴스가 동시에 기동해도 Flyway 잠금이 한 번만 적용하도록 보장하지만, 장시간 DDL은 배포 전에 실행 시간을 측정한다.
+운영 데이터가 있는 DB에서 `docker compose down -v`, `flyway clean`, init SQL 재실행을 하지 않는다. 첫 적용 전에 실제 테이블·식별자 타입·과거 이력 테이블을 확인하고 논리 백업을 남긴다. 마이그레이션은 순방향으로만 진행하며 컬럼·테이블 제거는 API 전환과 데이터 검증이 끝난 별도 버전에서 수행한다. 여러 인스턴스가 동시에 기동해도 Flyway 잠금이 한 번만 적용하도록 보장하지만, 장시간 DDL은 배포 전에 실행 시간을 측정한다.

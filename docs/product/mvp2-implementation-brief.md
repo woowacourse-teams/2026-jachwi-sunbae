@@ -29,7 +29,7 @@ MVP2 전체는 로컬과 공개 환경에서 직접 사용할 수 있는 상태�
 
 ### 2. DB와 공통 실행 모드
 
-- [MVP2 데이터 모델](../../backend/docs/architecture/mvp2-data-model.md)에 맞춰 `001-schema.sql`과 seed를 갱신합니다.
+- [MVP2 데이터 모델](../../backend/docs/architecture/mvp2-data-model.md)에 맞춰 `backend/src/main/resources/db/migration`의 Flyway 버전·seed를 갱신합니다. `db/init/`은 호환 테스트 보관 경로이므로 운영 스키마 정본으로 직접 수정하지 않습니다.
 - `demo`·`live` 인증 및 지도 adapter 경계를 만듭니다.
 - 외부 키 없이 실행되는 데모 회원·매물·체크·장소 데이터를 준비합니다.
 - `.env.example`과 환경변수 문서를 실제 설정에 맞춰 같은 PR에서 갱신합니다.
