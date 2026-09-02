@@ -1,14 +1,9 @@
-import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { ApiError } from '../apis/apiClient';
 import { getChecklistErrorMessage } from '../apis/checklistErrorMessages';
-import { checklistQueryKeys } from './checklistQueryKeys';
-import { queryClient } from './queryClient';
 import ChecklistEditor from '../components/ChecklistEditor';
-import ConfirmDialog from '../components/ConfirmDialog';
 import TopNavigation from '../components/ui/TopNavigation';
-import TopNavigationMenu from '../components/ui/TopNavigationMenu';
-import { useRemoveChecklist, useUpdateChecklist } from '../hooks/query/useChecklistMutations';
+import { useUpdateChecklist } from '../hooks/query/useChecklistMutations';
 import { useChecklistDetail } from '../hooks/query/useChecklists';
 import useDelayedLoading from '../hooks/ui/useDelayedLoading';
 import { checklistItemToEditorItem } from '../types/ChecklistEditor';
@@ -41,20 +36,6 @@ const ResolvedChecklistDetail = ({ config, checklistId }: { config: PublicConfig
   const isLoadingVisible = useDelayedLoading(detail.isPending);
   const isLoading = detail.isPending || isLoadingVisible;
   const update = useUpdateChecklist(config, checklistId);
-  const remove = useRemoveChecklist(config, checklistId);
-  const [isDeleteOpen, setIsDeleteOpen] = useState(false);
-  const deleteRef = useRef<HTMLButtonElement>(null);
-  const deleteSucceededRef = useRef(false);
-
-  useEffect(
-    () => () => {
-      if (deleteSucceededRef.current) {
-        queryClient.removeQueries({ queryKey: checklistQueryKeys.detail(checklistId), exact: true });
-      }
-    },
-    [checklistId],
-  );
-
   if (isLoading)
     return (
       <main className="property-page">
@@ -84,16 +65,6 @@ const ResolvedChecklistDetail = ({ config, checklistId }: { config: PublicConfig
 
   const checklist = detail.data;
   const isAddingItems = searchParams.get('mode') === 'add-items';
-  const deleteChecklist = async () => {
-    try {
-      await remove.mutateAsync();
-      deleteSucceededRef.current = true;
-      navigate('/checklists', { replace: true, state: { focusHeading: true } });
-    } catch {
-      /* Keep the dialog open for retry. */
-    }
-  };
-
   return (
     <main className={`property-page checklist-page checklist-editor-page ${styles.page}`}>
       <div className={`page-container page-container--form ${styles.container}`}>
@@ -103,15 +74,6 @@ const ResolvedChecklistDetail = ({ config, checklistId }: { config: PublicConfig
           backLabel={isAddingItems ? '체크리스트 편집으로 돌아가기' : '체크리스트 목록으로 돌아가기'}
           navigationIcon="arrow-left"
           {...(isAddingItems ? { onBack: () => setSearchParams({}, { replace: true }) } : { backTo: '/checklists' })}
-          {...(!isAddingItems && {
-            endSlot: (
-              <TopNavigationMenu label="체크리스트 메뉴 열기">
-                <button ref={deleteRef} type="button" data-tone="danger" onClick={() => setIsDeleteOpen(true)}>
-                  삭제
-                </button>
-              </TopNavigationMenu>
-            ),
-          })}
         />
         <h1 className="sr-only">{checklist.name}</h1>
         <ChecklistEditor
@@ -134,29 +96,6 @@ const ResolvedChecklistDetail = ({ config, checklistId }: { config: PublicConfig
             return saved;
           }}
         />
-        <ConfirmDialog
-          isOpen={isDeleteOpen}
-          title={`${checklist.name}을 삭제할까요?`}
-          description={
-            <>
-              <p>
-                {checklist.itemCount}개 항목과 매물 {checklist.assignedPropertyCount}곳의 활성 연결이 함께 삭제됩니다.
-              </p>
-              <p>매물에 적용된 체크 결과는 유지됩니다.</p>
-            </>
-          }
-          confirmLabel="체크리스트 삭제"
-          isConfirming={remove.isPending}
-          returnFocusRef={deleteRef}
-          onCancel={() => setIsDeleteOpen(false)}
-          onConfirm={() => void deleteChecklist()}
-        >
-          {remove.isError && (
-            <p className="form-error" role="alert">
-              {getChecklistErrorMessage(remove.error)} 체크리스트는 그대로 유지됩니다.
-            </p>
-          )}
-        </ConfirmDialog>
       </div>
     </main>
   );

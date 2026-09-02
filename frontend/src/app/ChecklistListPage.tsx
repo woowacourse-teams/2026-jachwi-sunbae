@@ -1,7 +1,6 @@
 import { getChecklistErrorMessage } from '../apis/checklistErrorMessages';
 import ChecklistListCard from '../components/ChecklistListCard';
-import AddItemAction from '../components/ui/AddItemAction';
-import { Button } from '../components/ui/Button';
+import { Button, ButtonLink } from '../components/ui/Button';
 import TopNavigation from '../components/ui/TopNavigation';
 import { USER_CHECKLIST_STAGE } from '../constants/checklist';
 import { useChecklistList } from '../hooks/query/useChecklists';
@@ -48,7 +47,9 @@ const ChecklistListPage = ({ config }: { config: PublicConfig }) => {
         )}
         {!isLoading && !list.isError && (
           <div className={styles.createCard}>
-            <AddItemAction to="/checklists/new">새 체크리스트 만들기</AddItemAction>
+            <ButtonLink variant="secondary" fullWidth to="/checklists/new">
+              새 체크리스트 만들기
+            </ButtonLink>
           </div>
         )}
 

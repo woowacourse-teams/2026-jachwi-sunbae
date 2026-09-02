@@ -305,7 +305,7 @@ describe('매물 체크리스트 연결과 자동 저장', () => {
     const sectionHeading = await screen.findByRole('heading', { name: '체크리스트' });
     const section = sectionHeading.closest('section');
     expect(section).not.toBeNull();
-    expect(within(section as HTMLElement).getByRole('button', { name: /체크리스트 확인하기/ })).toBeInTheDocument();
+    expect(within(section as HTMLElement).getByRole('button', { name: /^체크리스트$/ })).toBeInTheDocument();
   });
 
   it('내 체크리스트가 없어도 시작 방식 선택 없이 새 체크리스트 만들기만 제공한다', async () => {
