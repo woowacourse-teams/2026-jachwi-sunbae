@@ -28,7 +28,11 @@ module.exports = (_env, argv) => {
   const apiBaseUrl = process.env.API_BASE_URL ?? (isMockingEnabled ? 'http://127.0.0.1:3000' : 'http://localhost:8080');
 
   const naverMapClientId = process.env.NAVER_MAP_CLIENT_ID ?? '';
-  const mapProviderMode = process.env.MAP_PROVIDER_MODE ?? (naverMapClientId === '' ? 'demo' : 'naver');
+  // 배포 빌드는 항상 실제 Naver 지도를 사용한다. 키가 없으면 앱 설정 오류를 보여 주고
+  // 데모 지도로 조용히 대체하지 않아 배포 설정 누락을 바로 발견할 수 있게 한다.
+  const mapProviderMode = isProduction
+    ? 'naver'
+    : (process.env.MAP_PROVIDER_MODE ?? (naverMapClientId === '' ? 'demo' : 'naver'));
   const metaPixelId = process.env.META_PIXEL_ID ?? '';
   const posthogProjectToken = process.env.POSTHOG_PROJECT_TOKEN ?? '';
   const posthogHost = process.env.POSTHOG_HOST ?? '';

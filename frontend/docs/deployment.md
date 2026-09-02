@@ -57,7 +57,7 @@ prod → /main.8a49163cbe52bf996d07.js
 
 ## 환경변수는 빌드 타임에 박힌다
 
-`webpack.config.js`의 `DefinePlugin`이 `API_BASE_URL`·`MAP_PROVIDER_MODE`·`NAVER_MAP_CLIENT_ID`·`META_PIXEL_ID`·`POSTHOG_PROJECT_TOKEN`·`POSTHOG_HOST`를 번들에 박아넣는다. 런타임 설정이 아니므로 **값을 바꾸면 재빌드·재배포해야 한다.**
+`webpack.config.js`의 `DefinePlugin`이 `API_BASE_URL`·`MAP_PROVIDER_MODE`·`NAVER_MAP_CLIENT_ID`·`META_PIXEL_ID`·`POSTHOG_PROJECT_TOKEN`·`POSTHOG_HOST`를 번들에 박아넣는다. 런타임 설정이 아니므로 **값을 바꾸면 재빌드·재배포해야 한다.** 배포 빌드는 `MAP_PROVIDER_MODE`가 비어 있어도 항상 Naver 지도를 선택하며, Client ID가 없으면 데모 지도로 대체하지 않고 설정 오류를 표시한다. 로컬 개발에서만 키 없이 MSW와 데모 지도를 사용할 수 있다.
 
 | 환경변수                | prod                           | dev                                |
 | ----------------------- | ------------------------------ | ---------------------------------- |

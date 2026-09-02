@@ -4,7 +4,6 @@ import { getPropertyErrorMessage } from '../apis/propertyErrorMessages';
 import BottomActionArea from '../components/ui/BottomActionArea';
 import { Button } from '../components/ui/Button';
 import InlineNotice from '../components/ui/InlineNotice';
-import TextAreaField from '../components/ui/TextAreaField';
 import TextField from '../components/ui/TextField';
 import TopNavigation from '../components/ui/TopNavigation';
 import { usePropertyDetail, usePropertyMemo } from '../hooks/query/useProperties';
@@ -34,16 +33,14 @@ const ResolvedPropertyMemoPage = ({ config, propertyId }: { config: PublicConfig
   const memo = usePropertyMemo(config, propertyId);
   const saveMemo = useSavePropertyMemoDocument(config, propertyId);
   const [itemValues, setItemValues] = useState<Record<number, string>>({});
-  const [freeMemo, setFreeMemo] = useState('');
 
   useEffect(() => {
     if (memo.data === undefined) return;
     setItemValues(Object.fromEntries(memo.data.items.map((item) => [item.systemMemoItemId, item.content])));
-    setFreeMemo(memo.data.freeMemo);
   }, [memo.data]);
 
   if (property.isPending || memo.isPending) {
-    return <ContentState page={false} loading title="메모를 불러오는 중이에요." />;
+    return <ContentState page={false} loading title="부가 정보를 불러오는 중이에요." />;
   }
   if (property.isError || memo.isError) {
     const error = property.error ?? memo.error;
@@ -52,7 +49,7 @@ const ResolvedPropertyMemoPage = ({ config, propertyId }: { config: PublicConfig
         <ContentState
           page={false}
           tone="error"
-          title="메모를 불러오지 못했어요."
+          title="부가 정보를 불러오지 못했어요."
           description={getPropertyErrorMessage(error)}
           onRetry={() => {
             void property.refetch();
@@ -66,7 +63,7 @@ const ResolvedPropertyMemoPage = ({ config, propertyId }: { config: PublicConfig
   return (
     <main className={styles.page}>
       <TopNavigation
-        title={`${property.data.name} 메모`}
+        title={`${property.data.name} 부가 정보`}
         backTo={`/properties/${propertyId}`}
         backLabel="매물 상세로 돌아가기"
       />
@@ -80,7 +77,7 @@ const ResolvedPropertyMemoPage = ({ config, propertyId }: { config: PublicConfig
                 systemMemoItemId: item.systemMemoItemId,
                 content: itemValues[item.systemMemoItemId]?.trim() ?? '',
               })),
-              freeMemo: freeMemo.trim(),
+              freeMemo: memo.data.freeMemo,
             })
             .then(() => navigate(`/properties/${propertyId}`, { replace: true }))
             .catch(() => undefined);
@@ -88,7 +85,7 @@ const ResolvedPropertyMemoPage = ({ config, propertyId }: { config: PublicConfig
       >
         <p className={styles.description}>필요한 항목만 적어도 됩니다.</p>
         <section className={styles.memoFields} aria-labelledby="structured-memo-heading">
-          <h1 id="structured-memo-heading">기본 메모 양식</h1>
+          <h1 id="structured-memo-heading">부가 정보</h1>
           {memo.data.items.map((item) => (
             <TextField
               key={item.systemMemoItemId}
@@ -102,21 +99,12 @@ const ResolvedPropertyMemoPage = ({ config, propertyId }: { config: PublicConfig
             />
           ))}
         </section>
-        <section className={styles.freeMemo}>
-          <TextAreaField
-            label="추가 메모"
-            value={freeMemo}
-            rows={5}
-            maxLength={2_000}
-            placeholder="그 외 내용을 자유롭게 적어보세요."
-            helpText={`${Array.from(freeMemo).length.toLocaleString('ko-KR')} / 2,000`}
-            onChange={(event) => setFreeMemo(event.target.value)}
-          />
-        </section>
-        {saveMemo.isError && <InlineNotice tone="error">메모를 저장하지 못했어요. 다시 시도해 주세요.</InlineNotice>}
+        {saveMemo.isError && (
+          <InlineNotice tone="error">부가 정보를 저장하지 못했어요. 다시 시도해 주세요.</InlineNotice>
+        )}
         <BottomActionArea>
           <Button type="submit" variant="soft" fullWidth isLoading={saveMemo.isPending} loadingLabel="저장 중…">
-            메모 저장
+            부가 정보 저장
           </Button>
         </BottomActionArea>
       </form>

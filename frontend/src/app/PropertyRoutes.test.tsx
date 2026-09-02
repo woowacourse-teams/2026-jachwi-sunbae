@@ -388,7 +388,7 @@ describe('FE-2 등록·수정·메모', () => {
     expect(screen.getByText('입주 가능일')).toBeInTheDocument();
   });
 
-  it('별도 메모 화면에서 기본 양식과 자유 메모를 저장한 뒤 상세로 이동한다', async () => {
+  it('부가 정보 화면에서 기본 양식만 저장한 뒤 상세로 이동한다', async () => {
     let requestBody: unknown;
     server.use(
       http.get(`${config.apiBaseUrl}/api/properties/10`, () => HttpResponse.json(successEnvelope(detailWithoutPhotos))),
@@ -428,8 +428,7 @@ describe('FE-2 등록·수정·메모', () => {
     renderAuthenticated('/properties/10/memo');
 
     await user.type(await screen.findByRole('textbox', { name: '집 주소' }), '관악구 신림로 12길');
-    await user.type(screen.getByRole('textbox', { name: '추가 메모' }), '채광을 다시 확인하기');
-    await user.click(screen.getByRole('button', { name: '메모 저장' }));
+    await user.click(screen.getByRole('button', { name: '부가 정보 저장' }));
 
     expect(await screen.findAllByRole('heading', { name: '신림역 원룸', level: 1 })).toHaveLength(2);
     expect(requestBody).toEqual({
@@ -437,11 +436,11 @@ describe('FE-2 등록·수정·메모', () => {
         { systemMemoItemId: 1, content: '관악구 신림로 12길' },
         { systemMemoItemId: 2, content: '' },
       ],
-      freeMemo: '채광을 다시 확인하기',
+      freeMemo: '',
     });
   });
 
-  it('메모 저장 실패 시 작성 내용을 유지해 다시 저장할 수 있다', async () => {
+  it('부가 정보 저장 실패 시 작성 내용을 유지해 다시 저장할 수 있다', async () => {
     let saveAttempts = 0;
     server.use(
       http.get(`${config.apiBaseUrl}/api/properties/10`, () => HttpResponse.json(successEnvelope(detailWithoutPhotos))),
@@ -478,13 +477,13 @@ describe('FE-2 등록·수정·메모', () => {
     );
     const user = userEvent.setup();
     renderAuthenticated('/properties/10/memo');
-    const memo = await screen.findByRole('textbox', { name: '추가 메모' });
+    const memo = await screen.findByRole('textbox', { name: '집 주소' });
 
     await user.type(memo, '작성 중인 내용');
-    await user.click(screen.getByRole('button', { name: '메모 저장' }));
-    expect(await screen.findByText(/메모를 저장하지 못했어요/)).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: '부가 정보 저장' }));
+    expect(await screen.findByText(/부가 정보를 저장하지 못했어요/)).toBeInTheDocument();
     expect(memo).toHaveValue('작성 중인 내용');
-    await user.click(screen.getByRole('button', { name: '메모 저장' }));
+    await user.click(screen.getByRole('button', { name: '부가 정보 저장' }));
     expect(await screen.findAllByRole('heading', { name: '신림역 원룸', level: 1 })).toHaveLength(2);
     expect(saveAttempts).toBe(2);
   });
