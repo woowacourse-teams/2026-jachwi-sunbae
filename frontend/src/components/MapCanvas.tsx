@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { CSSProperties } from 'react';
 import type { MapCategory } from '../types/Map';
+import { SOUTH_KOREA_BOUNDS, clampToSouthKorea } from '../utils/mapLocation';
 import type { PublicConfig } from '../types/PublicConfig';
 import MapCategoryIcon, { createMapCategoryIconElement } from './MapCategoryIcon';
 import StatusPanel from './StatusPanel';
@@ -48,7 +49,9 @@ const clamp = (value: number, min: number, max: number): number => Math.min(Math
 
 /** 앱의 확대 단계는 1이 가장 확대된 상태이고 Naver zoom은 21이 가장 확대된 상태다. */
 const NAVER_ZOOM_BASE = 20;
-const toNaverZoom = (level: number): number => clamp(NAVER_ZOOM_BASE - level, 6, 21);
+/** 더 줄이면 남한 밖까지 한 화면에 들어온다. */
+const MIN_NAVER_ZOOM = 6;
+const toNaverZoom = (level: number): number => clamp(NAVER_ZOOM_BASE - level, MIN_NAVER_ZOOM, 21);
 const toMapLevel = (zoom: number): number => clamp(NAVER_ZOOM_BASE - zoom, 1, 14);
 
 let naverSdkPromise: Promise<void> | null = null;
@@ -114,11 +117,19 @@ type LiveOverlay = NaverOverlay;
 const naverEngine = (clientId: string): LiveEngine => ({
   label: 'Naver 지도',
   load: () => loadNaverSdk(clientId),
-  createMap: (container, center, level) =>
-    new window.naver!.maps.Map(container, {
-      center: new window.naver!.maps.LatLng(center.latitude, center.longitude),
+  createMap: (container, center, level) => {
+    const start = clampToSouthKorea(center);
+    return new window.naver!.maps.Map(container, {
+      center: new window.naver!.maps.LatLng(start.latitude, start.longitude),
       zoom: toNaverZoom(level),
-    }),
+      // 남한 밖으로는 옮기지도 줄이지도 못하게 막는다.
+      minZoom: MIN_NAVER_ZOOM,
+      maxBounds: new window.naver!.maps.LatLngBounds(
+        new window.naver!.maps.LatLng(SOUTH_KOREA_BOUNDS.south, SOUTH_KOREA_BOUNDS.west),
+        new window.naver!.maps.LatLng(SOUTH_KOREA_BOUNDS.north, SOUTH_KOREA_BOUNDS.east),
+      ),
+    });
+  },
   latLng: (latitude, longitude) => new window.naver!.maps.LatLng(latitude, longitude),
   getCenter: (map) => {
     const center = (map as NaverMap).getCenter();
@@ -309,6 +320,8 @@ const MapCanvas = ({
   const callbackRef = useRef({ onSelectLocation, onCenterChange, onLevelChange, onSelectMarker });
   const [mapReady, setMapReady] = useState(false);
   const [sdkError, setSdkError] = useState(false);
+  // 남한 밖 좌표를 받아도 지도는 남한 안만 비춘다.
+  const boundedCenter = useMemo(() => clampToSouthKorea(center), [center.latitude, center.longitude]);
   const engine = useMemo(() => naverEngine(config.naverMapClientId ?? ''), [config.naverMapClientId]);
   const liveMode = config.mapProviderMode === 'naver' && (config.naverMapClientId ?? '') !== '';
 
@@ -325,7 +338,7 @@ const MapCanvas = ({
       .load()
       .then(() => {
         if (disposed || containerRef.current === null) return;
-        map = engine.createMap(containerRef.current, center, level);
+        map = engine.createMap(containerRef.current, boundedCenter, level);
         mapRef.current = map;
         engine.addListener(map, 'click', (latitude, longitude) => {
           if (latitude !== undefined && longitude !== undefined)
@@ -357,12 +370,12 @@ const MapCanvas = ({
     if (!liveMode || !mapReady || mapRef.current === null) return;
     const current = engine.getCenter(mapRef.current);
     if (
-      Math.abs(current.latitude - center.latitude) < 0.0000001 &&
-      Math.abs(current.longitude - center.longitude) < 0.0000001
+      Math.abs(current.latitude - boundedCenter.latitude) < 0.0000001 &&
+      Math.abs(current.longitude - boundedCenter.longitude) < 0.0000001
     )
       return;
-    engine.setCenter(mapRef.current, engine.latLng(center.latitude, center.longitude));
-  }, [center.latitude, center.longitude, engine, liveMode, mapReady]);
+    engine.setCenter(mapRef.current, engine.latLng(boundedCenter.latitude, boundedCenter.longitude));
+  }, [boundedCenter, engine, liveMode, mapReady]);
 
   useEffect(() => {
     if (
@@ -379,7 +392,7 @@ const MapCanvas = ({
     });
     observer.observe(containerRef.current);
     return () => observer.disconnect();
-  }, [center.latitude, center.longitude, engine, liveMode, mapReady]);
+  }, [boundedCenter, engine, liveMode, mapReady]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -439,9 +452,11 @@ const MapCanvas = ({
       onClick={(event) => {
         if (liveMode || !interactive || onSelectLocation === undefined) return;
         const rect = event.currentTarget.getBoundingClientRect();
-        const latitude = center.latitude + (0.5 - (event.clientY - rect.top) / rect.height) * 0.018;
-        const longitude = center.longitude + ((event.clientX - rect.left) / rect.width - 0.5) * 0.024;
-        onSelectLocation(latitude, longitude);
+        const picked = clampToSouthKorea({
+          latitude: boundedCenter.latitude + (0.5 - (event.clientY - rect.top) / rect.height) * 0.018,
+          longitude: boundedCenter.longitude + ((event.clientX - rect.left) / rect.width - 0.5) * 0.024,
+        });
+        onSelectLocation(picked.latitude, picked.longitude);
       }}
     >
       {liveMode && (
@@ -488,7 +503,7 @@ const MapCanvas = ({
                 className={`${styles.demoMarkerPosition} ${className}`}
                 data-tone={marker.tone ?? 'property'}
                 data-category={marker.category}
-                style={demoMarkerStyle(marker, center)}
+                style={demoMarkerStyle(marker, boundedCenter)}
                 role="img"
                 aria-label={marker.label}
               >
@@ -501,7 +516,7 @@ const MapCanvas = ({
                 className={`${styles.demoMarkerPosition} ${className}`}
                 data-tone={marker.tone ?? 'property'}
                 data-category={marker.category}
-                style={demoMarkerStyle(marker, center)}
+                style={demoMarkerStyle(marker, boundedCenter)}
                 aria-label={marker.label}
                 onClick={(event) => {
                   event.stopPropagation();

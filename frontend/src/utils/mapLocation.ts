@@ -7,6 +7,30 @@ export const SEOUL_MAP_CENTER: MapCoordinate = { latitude: 37.5665, longitude: 1
 export const PANGYO_MAP_CENTER: MapCoordinate = { latitude: 37.3948, longitude: 127.1119 };
 export const DEFAULT_MAP_CENTER: MapCoordinate = PANGYO_MAP_CENTER;
 
+/**
+ * 서비스가 다루는 범위는 남한뿐이다. 마라도(남)·백령도(서)·독도(동)·고성(북)을 담고 여유를 조금 뒀다.
+ * 지도를 이 밖으로 옮기거나, 이 밖의 좌표를 지도 중심으로 삼지 않는다.
+ */
+export const SOUTH_KOREA_BOUNDS = {
+  south: 32.9,
+  west: 124.5,
+  north: 38.65,
+  east: 132.0,
+} as const;
+
+export const isInSouthKorea = (coordinate: MapCoordinate): boolean =>
+  coordinate.latitude >= SOUTH_KOREA_BOUNDS.south &&
+  coordinate.latitude <= SOUTH_KOREA_BOUNDS.north &&
+  coordinate.longitude >= SOUTH_KOREA_BOUNDS.west &&
+  coordinate.longitude <= SOUTH_KOREA_BOUNDS.east;
+
+const clampNumber = (value: number, min: number, max: number): number => Math.min(Math.max(value, min), max);
+
+export const clampToSouthKorea = (coordinate: MapCoordinate): MapCoordinate => ({
+  latitude: clampNumber(coordinate.latitude, SOUTH_KOREA_BOUNDS.south, SOUTH_KOREA_BOUNDS.north),
+  longitude: clampNumber(coordinate.longitude, SOUTH_KOREA_BOUNDS.west, SOUTH_KOREA_BOUNDS.east),
+});
+
 const LAST_MAP_CENTER_KEY = 'jachwi-sunbae.lastMapCenter';
 
 const isCoordinate = (value: unknown): value is MapCoordinate => {
@@ -29,7 +53,8 @@ export const readLastMapCenter = (storage: Storage = window.sessionStorage): Map
     const stored = storage.getItem(LAST_MAP_CENTER_KEY);
     if (stored === null) return null;
     const parsed: unknown = JSON.parse(stored);
-    return isCoordinate(parsed) ? parsed : null;
+    // 남한 밖 좌표가 저장돼 있으면 기본 중심으로 돌아가도록 없는 값처럼 다룬다.
+    return isCoordinate(parsed) && isInSouthKorea(parsed) ? parsed : null;
   } catch {
     return null;
   }
@@ -79,8 +104,15 @@ export const requestCurrentMapLocation = (): Promise<MapCoordinate> =>
       return;
     }
 
-    const succeed = (position: GeolocationPosition) =>
-      resolve({ latitude: position.coords.latitude, longitude: position.coords.longitude });
+    const succeed = (position: GeolocationPosition) => {
+      const coordinate = { latitude: position.coords.latitude, longitude: position.coords.longitude };
+      // 남한 밖에서는 보여 줄 매물도 지도도 없다. 위치를 못 받은 것과 같게 다룬다.
+      if (!isInSouthKorea(coordinate)) {
+        reject(new MapLocationError('unavailable', '남한 안에서만 현재 위치를 쓸 수 있습니다.'));
+        return;
+      }
+      resolve(coordinate);
+    };
     const toFailure = (error: GeolocationPositionError): MapLocationFailure =>
       error.code === error.PERMISSION_DENIED ? 'denied' : 'unavailable';
 
