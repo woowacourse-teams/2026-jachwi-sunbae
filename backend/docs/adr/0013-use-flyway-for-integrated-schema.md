@@ -16,6 +16,7 @@ MVP2가 기능을 확장하면서 회원 인증 정보 병합, 매물 주소 통
 - 이미 테이블이 있는 DB는 `baseline-on-migrate=true`, 기준선 버전 1로 등록한 뒤 V2 이후를 적용한다. 빈 DB는 V1부터 전체 버전을 적용한다.
 - 기준선 콜백은 예상한 MVP1 테이블·컬럼과 `BIGINT` 식별자 타입을 확인한다. 비어 있지 않은 미확인 스키마는 자동 기준선을 만들지 않고 운영자가 먼저 구조를 확인하도록 중단한다.
 - V1은 현재 MVP2 기준 스키마, V2는 기준 데이터, V3은 통합 구조 확장, V4는 데이터 backfill과 변환 실패 기록, V5는 주소 길이 보정을 담당한다.
+- V3은 `ONLINE_PHONE`을 다른 단계로 변환하지 않고 `migration_legacy_stage_counts`에 제거 전 보존 건수를 기록한다. API 전환과 검증 뒤 별도 Contract 버전에서 건수를 확인하고 제거한다.
 - V3·V4에서는 레거시 컬럼과 `nickname_credentials`를 즉시 삭제하지 않는다. API 전환과 데이터 검증이 끝난 뒤 별도 순방향 버전에서 정리한다.
 - `DatabaseUpgradeInitializer`는 호환 테스트에서만 명시적으로 활성화할 수 있고 운영 기본값은 비활성화한다.
 
@@ -48,7 +49,8 @@ MVP2가 기능을 확장하면서 회원 인증 정보 병합, 매물 주소 통
 - Testcontainers MySQL 8.4에서 V1~V5 적용 후 `integrated_schema_history`의 성공 버전과 pending 0건을 확인한다.
 - 기존 테이블과 과거 `flyway_schema_history`가 있는 DB에서 기준선 등록 후 V2~V5만 적용되는지 확인한다.
 - 기준선 콜백이 raw V11 등 예상하지 않은 비어 있지 않은 스키마를 거부하는지 확인한다.
-- 회원 hash 보존, 주소 우선순위, 다섯 가지 부가정보, 옵션·공과금 alias, 자유 메모 보존과 변환 실패 목록을 검증한다.
+- 회원 hash 보존, 주소 우선순위, 다섯 가지 부가정보, 옵션·공과금 alias, 사진·체크리스트 소유 관계, 자유 메모 보존과 변환 실패 목록을 검증한다.
+- `migration_legacy_stage_counts`의 `ONLINE_PHONE` 건수를 후속 Contract 정리의 입력으로 보존하는지 검증한다.
 - 애플리케이션 전체 테스트와 문서 정합성 검사를 통과시킨다.
 
 ## 재검토 조건

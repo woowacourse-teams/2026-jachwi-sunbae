@@ -150,7 +150,7 @@ sudo systemctl start jachwi-sunbae.service
    WHERE main_photo.property_id <> photo.property_id;
    ```
 
-3. dev 애플리케이션 DB 계정에 이번 additive upgrade에 필요한 `ALTER`, `CREATE`, `INDEX`, `REFERENCES`, `SELECT`, `INSERT`, `UPDATE` 권한이 있는지 확인한다.
+3. dev 애플리케이션 DB 계정에 이번 additive upgrade에 필요한 `ALTER`, `CREATE`, `CREATE TEMPORARY TABLES`, `INDEX`, `REFERENCES`, `SELECT`, `INSERT`, `UPDATE` 권한이 있는지 확인한다. V4는 변환 후보를 임시 테이블에 저장한다.
 4. `/etc/jachwi-sunbae/app.env`에 dev DB·JWT·CORS·선택한 지도 공급자 인증 정보·S3 접두사를 [환경변수](../guides/environment-variables.md)의 dev 값으로 설정한다. 정적 AWS 키는 두지 않는다.
 5. 버스정류소 API 승인이 끝나지 않았다면 `BUS_STOP_PROVIDER=none`으로 둔다.
 6. 프론트 dev `Commands` 액션에 `API_BASE_URL=https://dev-api.jachwi-sunbae.kr`, `MAP_PROVIDER_MODE`와 선택한 지도 공급자의 공개 키를 주입한다.

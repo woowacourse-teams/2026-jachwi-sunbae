@@ -79,7 +79,7 @@ DB 접속값과 `JWT_SECRET_BASE64`, Naver Maps·NAVER API HUB 인증 정보는 
 
 AWS S3는 EC2 `ec2-project` instance role로 접근하므로 `PHOTO_STORAGE_ENDPOINT`, `PHOTO_STORAGE_ACCESS_KEY`, `PHOTO_STORAGE_SECRET_KEY`를 EC2에 두지 않는다. 이 세 값은 로컬 MinIO에만 사용한다. 프론트엔드에는 공개 Naver Maps Client ID만 빌드 타임에 주입한다.
 
-첫 MVP2 기동부터 Flyway가 `db/migration/`의 통합 스키마 마이그레이션을 실행하고 `integrated_schema_history`에 적용 이력을 기록한다. 기존 팀 DB에서는 버전 1 기준선을 먼저 기록하므로 과거 `flyway_schema_history`를 삭제하거나 갱신하지 않는다. 애플리케이션 DB 계정은 마이그레이션에 필요한 `ALTER`, `CREATE`, `INDEX`, `REFERENCES`, `SELECT`, `INSERT`, `UPDATE` 권한을 가져야 하며, 전환 전에 자동 백업의 최신 복구 지점을 확인한다. 알 수 없는 비어 있지 않은 스키마는 기준선을 만들지 않고 기동을 중단한다. 세부 절차와 백필 실패 확인 방법은 [데이터베이스 초기화](database-initialization.md)를 따른다.
+첫 MVP2 기동부터 Flyway가 `db/migration/`의 통합 스키마 마이그레이션을 실행하고 `integrated_schema_history`에 적용 이력을 기록한다. 기존 팀 DB에서는 버전 1 기준선을 먼저 기록하므로 과거 `flyway_schema_history`를 삭제하거나 갱신하지 않는다. 애플리케이션 DB 계정은 마이그레이션에 필요한 `ALTER`, `CREATE`, `CREATE TEMPORARY TABLES`, `INDEX`, `REFERENCES`, `SELECT`, `INSERT`, `UPDATE` 권한을 가져야 하며, 전환 전에 자동 백업의 최신 복구 지점을 확인한다. 알 수 없는 비어 있지 않은 스키마는 기준선을 만들지 않고 기동을 중단한다. 세부 절차와 백필 실패 확인 방법은 [데이터베이스 초기화](database-initialization.md)를 따른다.
 
 새 환경변수를 도입할 때 [배포 아키텍처](../../../docs/operations/deployment-architecture.md)와 [백엔드 배포](../operations/deployment.md)를 함께 갱신한다.
 

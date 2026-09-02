@@ -92,6 +92,8 @@ erDiagram
 
 `member_checklist_preferences`는 회원이 단계별로 마지막에 선택한 사용자 체크리스트를 append-only로 기록한다. 매물 생성 트랜잭션은 `ON_SITE`, `PRE_CONTRACT` 각각의 최신 행을 조회하고, 없으면 시스템 기본 체크리스트를 적용한다. `ONLINE_PHONE`은 새 preference 행에 저장하지 않는다.
 
+V3은 기존 `system_check_items`의 `ONLINE_PHONE` 행을 `migration_legacy_stage_counts`에 건수로 스냅샷한다. 다른 단계로 자동 변환하거나 지금 삭제하지 않으며, API 전환·검증 뒤 별도 Contract 마이그레이션에서 스냅샷과 대조한 후 제거한다.
+
 ## 비교 화면 진입 이벤트
 
 `property_comparison_view_events`는 비교 화면을 연 회원과 시각, 그 시점의 보유 매물 수를 사실 기록으로 남긴다. 매물 수를 이벤트에 스냅샷하므로 사용자가 뒤에 매물을 삭제해도 `2개 이상 매물을 등록한 뒤 비교 화면에 도달`한 여부가 바뀌지 않는다.
@@ -150,4 +152,5 @@ V4는 기존 구조화 메모에서 변환 가능한 값을 `property_details`�
 - `V4__backfill_integrated_schema.sql`: 기존 주소·인증·구조화 메모 backfill과 변환 실패 기록
 - `V5__align_property_address_length.sql`: 통합 주소 컬럼을 500자로 확장
 - `integrated_schema_history`: 새 Flyway 이력 테이블. 과거 `flyway_schema_history`는 보존한다.
+- `migration_legacy_stage_counts`: 후속 Contract에서 정리할 레거시 단계의 사전 보존 건수.
 - 데모 회원·매물·진행 결과는 `DEMO_SEED_ENABLED=true`일 때만 만들며 운영 시드에 섞지 않는다.
