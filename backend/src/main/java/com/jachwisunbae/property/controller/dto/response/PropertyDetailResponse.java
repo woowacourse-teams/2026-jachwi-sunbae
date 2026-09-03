@@ -4,6 +4,8 @@ import com.jachwisunbae.property.entity.Property;
 import com.jachwisunbae.property.entity.PropertyPhoto;
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.List;
 
@@ -16,6 +18,11 @@ public record PropertyDetailResponse(
     String address,
     BigDecimal latitude,
     BigDecimal longitude,
+    LocalDate availableMoveInDate,
+    Long maintenanceFeeAmount,
+    LocalDateTime visitScheduledAt,
+    List<String> roomOptions,
+    List<String> utilityOptions,
     int photoCount,
     List<PropertyDetailPhoto> photos,
     PropertyRepresentativePhoto representativePhoto,
@@ -41,6 +48,11 @@ public record PropertyDetailResponse(
             property.getAddress(),
             property.getLatitude(),
             property.getLongitude(),
+            property.getAvailableMoveInDate(),
+            property.getMaintenanceFeeAmount(),
+            property.getVisitScheduledAt(),
+            property.getRoomOptions().stream().sorted().map(Enum::name).toList(),
+            property.getUtilityOptions().stream().sorted().map(Enum::name).toList(),
             photos.size(),
             photos.stream()
                 .map(photo -> PropertyDetailPhoto.from(photo, photo.getId().equals(representativePhotoId)))

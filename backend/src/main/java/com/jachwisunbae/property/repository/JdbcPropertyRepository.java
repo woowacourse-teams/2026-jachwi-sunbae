@@ -2,12 +2,19 @@ package com.jachwisunbae.property.repository;
 
 import com.jachwisunbae.property.entity.Property;
 import com.jachwisunbae.property.repository.query.PropertyListItemQuery;
-import java.math.BigDecimal;
+import com.jachwisunbae.property.type.RoomOption;
+import com.jachwisunbae.property.type.UtilityOption;
+import java.sql.Date;
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.sql.Statement;
-import java.time.LocalDateTime;
+import java.sql.Timestamp;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.support.GeneratedKeyHolder;
@@ -112,6 +119,10 @@ public class JdbcPropertyRepository implements PropertyRepository {
         }, keyHolder);
 
         long generatedId = keyHolder.getKey().longValue();
+        insertPropertyDetails(generatedId, property);
+        replaceRoomOptions(generatedId, property.getRoomOptions());
+        replaceUtilityOptions(generatedId, property.getUtilityOptions());
+
         return Property.reconstruct(
             generatedId,
             property.getMemberId(),
@@ -122,6 +133,11 @@ public class JdbcPropertyRepository implements PropertyRepository {
             property.getAddress(),
             property.getLatitude(),
             property.getLongitude(),
+            property.getAvailableMoveInDate(),
+            property.getMaintenanceFeeAmount(),
+            property.getVisitScheduledAt(),
+            property.getRoomOptions(),
+            property.getUtilityOptions(),
             property.getCreatedAt(),
             property.getUpdatedAt()
         );
@@ -129,27 +145,9 @@ public class JdbcPropertyRepository implements PropertyRepository {
 
     @Override
     public Optional<Property> findByIdAndMemberId(final long propertyId, final long memberId) {
-        String sql = """
-                SELECT p.id, p.member_id, p.name, p.deposit_amount, p.monthly_rent_amount,
-                       p.address, p.latitude, p.longitude, p.created_at,
-                       pd.discovery_source, pd.updated_at
-                FROM properties p
-                LEFT JOIN property_details pd ON pd.property_id = p.id
-                WHERE p.id = ? AND p.member_id = ? AND p.deleted_at IS NULL
-                """;
-        return jdbcTemplate.query(sql, (rs, row) -> Property.reconstruct(
-            rs.getLong("id"),
-            rs.getLong("member_id"),
-            rs.getString("name"),
-            rs.getObject("deposit_amount", Long.class),
-            rs.getObject("monthly_rent_amount", Long.class),
-            rs.getString("discovery_source"),
-            rs.getString("address"),
-            rs.getBigDecimal("latitude"),
-            rs.getBigDecimal("longitude"),
-            rs.getTimestamp("created_at").toLocalDateTime(),
-            rs.getTimestamp("updated_at") == null ? rs.getTimestamp("created_at").toLocalDateTime() : rs.getTimestamp("updated_at").toLocalDateTime()
-        ), propertyId, memberId).stream().findFirst();
+        return jdbcTemplate.query(findByIdSql(), this::mapPropertyRow, propertyId, memberId)
+            .stream()
+            .findFirst();
     }
 
     @Override
@@ -162,28 +160,9 @@ public class JdbcPropertyRepository implements PropertyRepository {
 
     @Override
     public Optional<Property> findByIdAndMemberIdForUpdate(final long propertyId, final long memberId) {
-        String sql = """
-                SELECT p.id, p.member_id, p.name, p.deposit_amount, p.monthly_rent_amount,
-                       p.address, p.latitude, p.longitude, p.created_at,
-                       pd.discovery_source, pd.updated_at
-                FROM properties p
-                LEFT JOIN property_details pd ON pd.property_id = p.id
-                WHERE p.id = ? AND p.member_id = ? AND p.deleted_at IS NULL
-                FOR UPDATE
-                """;
-        return jdbcTemplate.query(sql, (rs, row) -> Property.reconstruct(
-            rs.getLong("id"),
-            rs.getLong("member_id"),
-            rs.getString("name"),
-            rs.getObject("deposit_amount", Long.class),
-            rs.getObject("monthly_rent_amount", Long.class),
-            rs.getString("discovery_source"),
-            rs.getString("address"),
-            rs.getBigDecimal("latitude"),
-            rs.getBigDecimal("longitude"),
-            rs.getTimestamp("created_at").toLocalDateTime(),
-            rs.getTimestamp("updated_at") == null ? rs.getTimestamp("created_at").toLocalDateTime() : rs.getTimestamp("updated_at").toLocalDateTime()
-        ), propertyId, memberId).stream().findFirst();
+        return jdbcTemplate.query(findByIdSql() + " FOR UPDATE", this::mapPropertyRow, propertyId, memberId)
+            .stream()
+            .findFirst();
     }
 
     @Override
@@ -204,11 +183,132 @@ public class JdbcPropertyRepository implements PropertyRepository {
             property.getId(),
             property.getMemberId()
         );
+        upsertPropertyDetails(property);
+        replaceRoomOptions(property.getId(), property.getRoomOptions());
+        replaceUtilityOptions(property.getId(), property.getUtilityOptions());
         return property;
     }
 
     @Override
     public void deleteById(final long propertyId) {
         jdbcTemplate.update("UPDATE properties SET deleted_at = NOW() WHERE id = ? AND deleted_at IS NULL", propertyId);
+    }
+
+    private String findByIdSql() {
+        return """
+                SELECT p.id, p.member_id, p.name, p.deposit_amount, p.monthly_rent_amount,
+                       p.address, p.latitude, p.longitude, p.created_at,
+                       pd.discovery_source, pd.available_move_in_date, pd.maintenance_fee_amount,
+                       pd.visit_scheduled_at, pd.updated_at
+                FROM properties p
+                LEFT JOIN property_details pd ON pd.property_id = p.id
+                WHERE p.id = ? AND p.member_id = ? AND p.deleted_at IS NULL
+                """;
+    }
+
+    private Property mapPropertyRow(final ResultSet rs, final int rowNum) throws SQLException {
+        long propertyId = rs.getLong("id");
+        Date availableMoveInDate = rs.getDate("available_move_in_date");
+        Timestamp visitScheduledAt = rs.getTimestamp("visit_scheduled_at");
+        Timestamp createdAt = rs.getTimestamp("created_at");
+        Timestamp updatedAt = rs.getTimestamp("updated_at");
+        return Property.reconstruct(
+            propertyId,
+            rs.getLong("member_id"),
+            rs.getString("name"),
+            rs.getObject("deposit_amount", Long.class),
+            rs.getObject("monthly_rent_amount", Long.class),
+            rs.getString("discovery_source"),
+            rs.getString("address"),
+            rs.getBigDecimal("latitude"),
+            rs.getBigDecimal("longitude"),
+            availableMoveInDate == null ? null : availableMoveInDate.toLocalDate(),
+            rs.getObject("maintenance_fee_amount", Long.class),
+            visitScheduledAt == null ? null : visitScheduledAt.toLocalDateTime(),
+            findRoomOptions(propertyId),
+            findUtilityOptions(propertyId),
+            createdAt.toLocalDateTime(),
+            updatedAt == null ? createdAt.toLocalDateTime() : updatedAt.toLocalDateTime()
+        );
+    }
+
+    private void insertPropertyDetails(final long propertyId, final Property property) {
+        jdbcTemplate.update("""
+                INSERT INTO property_details
+                    (property_id, available_move_in_date, maintenance_fee_amount, visit_scheduled_at,
+                     discovery_source, created_at, updated_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+                """,
+            propertyId,
+            toSqlDate(property.getAvailableMoveInDate()),
+            property.getMaintenanceFeeAmount(),
+            property.getVisitScheduledAt(),
+            property.getDiscoverySource(),
+            property.getCreatedAt(),
+            property.getUpdatedAt());
+    }
+
+    private void upsertPropertyDetails(final Property property) {
+        int updated = jdbcTemplate.update("""
+                UPDATE property_details
+                SET available_move_in_date = ?, maintenance_fee_amount = ?, visit_scheduled_at = ?,
+                    discovery_source = ?, updated_at = ?
+                WHERE property_id = ?
+                """,
+            toSqlDate(property.getAvailableMoveInDate()),
+            property.getMaintenanceFeeAmount(),
+            property.getVisitScheduledAt(),
+            property.getDiscoverySource(),
+            property.getUpdatedAt(),
+            property.getId());
+        if (updated == 0) {
+            jdbcTemplate.update("""
+                    INSERT INTO property_details
+                        (property_id, available_move_in_date, maintenance_fee_amount, visit_scheduled_at,
+                         discovery_source, created_at, updated_at)
+                    VALUES (?, ?, ?, ?, ?, ?, ?)
+                    """,
+                property.getId(),
+                toSqlDate(property.getAvailableMoveInDate()),
+                property.getMaintenanceFeeAmount(),
+                property.getVisitScheduledAt(),
+                property.getDiscoverySource(),
+                property.getUpdatedAt(),
+                property.getUpdatedAt());
+        }
+    }
+
+    private void replaceRoomOptions(final long propertyId, final Set<RoomOption> roomOptions) {
+        jdbcTemplate.update("DELETE FROM property_room_options WHERE property_id = ?", propertyId);
+        if (roomOptions == null || roomOptions.isEmpty()) {
+            return;
+        }
+        jdbcTemplate.batchUpdate("INSERT INTO property_room_options (property_id, option_code) VALUES (?, ?)",
+            roomOptions.stream().map(option -> new Object[]{propertyId, option.name()}).toList());
+    }
+
+    private void replaceUtilityOptions(final long propertyId, final Set<UtilityOption> utilityOptions) {
+        jdbcTemplate.update("DELETE FROM property_utility_options WHERE property_id = ?", propertyId);
+        if (utilityOptions == null || utilityOptions.isEmpty()) {
+            return;
+        }
+        jdbcTemplate.batchUpdate("INSERT INTO property_utility_options (property_id, utility_code) VALUES (?, ?)",
+            utilityOptions.stream().map(option -> new Object[]{propertyId, option.name()}).toList());
+    }
+
+    private Set<RoomOption> findRoomOptions(final long propertyId) {
+        List<String> codes = jdbcTemplate.queryForList(
+            "SELECT option_code FROM property_room_options WHERE property_id = ?", String.class, propertyId);
+        return codes.stream().map(RoomOption::valueOf).collect(Collectors.toUnmodifiableSet());
+    }
+
+    private Set<UtilityOption> findUtilityOptions(final long propertyId) {
+        List<String> codes = jdbcTemplate.queryForList(
+            "SELECT utility_code FROM property_utility_options WHERE property_id = ?", String.class, propertyId);
+        return codes.stream().map(UtilityOption::valueOf).collect(Collectors.toUnmodifiableSet());
+    }
+
+    private Date toSqlDate(final LocalDate date) {
+        return date == null ? null : Date.valueOf(date);
     }
 }

@@ -3,7 +3,10 @@ package com.jachwisunbae.property.controller.dto.response;
 import com.jachwisunbae.property.entity.Property;
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.ZoneOffset;
+import java.util.List;
 
 public record UpdatePropertyResponse(
     Long id,
@@ -14,6 +17,11 @@ public record UpdatePropertyResponse(
     String address,
     BigDecimal latitude,
     BigDecimal longitude,
+    LocalDate availableMoveInDate,
+    Long maintenanceFeeAmount,
+    LocalDateTime visitScheduledAt,
+    List<String> roomOptions,
+    List<String> utilityOptions,
     Instant updatedAt
 ) {
     public static UpdatePropertyResponse from(final Property property) {
@@ -26,6 +34,11 @@ public record UpdatePropertyResponse(
             property.getAddress(),
             property.getLatitude(),
             property.getLongitude(),
+            property.getAvailableMoveInDate(),
+            property.getMaintenanceFeeAmount(),
+            property.getVisitScheduledAt(),
+            property.getRoomOptions().stream().sorted().map(Enum::name).toList(),
+            property.getUtilityOptions().stream().sorted().map(Enum::name).toList(),
             property.getUpdatedAt().toInstant(ZoneOffset.UTC)
         );
     }
