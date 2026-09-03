@@ -27,4 +27,8 @@ public interface PropertyChecklistRepository {
 
     Optional<PropertyChecklistItemQuery> findItem(long memberId, long propertyId,
                                                    long propertyChecklistId, long itemId);
+
+    Optional<Long> findPreferredUserChecklistId(long memberId, CheckStage stage);
+
+    void savePreference(long memberId, CheckStage stage, Long userChecklistId);
 }

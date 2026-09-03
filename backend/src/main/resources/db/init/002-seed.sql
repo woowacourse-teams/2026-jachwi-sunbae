@@ -1,76 +1,27 @@
--- 로컬 개발과 테스트에서 사용하는 시스템 기본 항목이다.
--- 고정 ID를 사용해 스크립트를 다시 실행해도 중복 생성하지 않는다.
+-- 기존 데이터 정리
+DELETE FROM property_checklist_items;
+DELETE FROM property_checklists;
+DELETE FROM user_checklist_items;
+DELETE FROM user_checklists;
+DELETE FROM member_checklist_preferences;
+DELETE FROM system_check_items;
 
-SET NAMES utf8mb4 COLLATE utf8mb4_0900_ai_ci;
+-- ON_SITE (방문 확인) 시스템 항목 Seed
+INSERT INTO system_check_items (id, stage, item_type, question, display_order, created_at, deleted_at) VALUES
+(101, 'ON_SITE', 'CORE', '수압(싱크대, 세면대, 샤워기, 변기)이 충분히 강한가요?', 1, NOW(), NULL),
+(102, 'ON_SITE', 'CORE', '배수가 원활하고 역류나 악취가 없나요?', 2, NOW(), NULL),
+(103, 'ON_SITE', 'CORE', '벽지나 천장에 누수 흔적이나 곰팡이가 없나요?', 3, NOW(), NULL),
+(104, 'ON_SITE', 'CORE', '창문 방음과 닫힘 상태가 양호하며 외풍이 없나요?', 4, NOW(), NULL),
+(105, 'ON_SITE', 'OPTIONAL', '기본 옵션 가전제품(에어컨, 세탁기, 냉장고 등)이 정상 작동하나요?', 5, NOW(), NULL),
+(106, 'ON_SITE', 'OPTIONAL', '방 안 채광과 통풍이 원활한가요?', 6, NOW(), NULL),
+(107, 'ON_SITE', 'OPTIONAL', '건물 현관 도어락, CCTV 등 보안 시설이 잘 갖춰져 있나요?', 7, NOW(), NULL),
+(108, 'ON_SITE', 'OPTIONAL', '주변 소음(도로, 상가, 층간소음 등)이 심하지 않나요?', 8, NOW(), NULL);
 
-INSERT INTO system_check_items (id, stage, item_type, question, deleted_at)
-VALUES
-    (101, 'ONLINE_PHONE', 'CORE', '보증금과 월세, 관리비는 어떤가요?', NULL),
-    (102, 'ONLINE_PHONE', 'CORE', '관리비에 어떤 항목이 포함되는가? (인터넷, 수도세, 전기세, 가스비)', NULL),
-    (103, 'ONLINE_PHONE', 'CORE', '입주 가능일을 확인했는가?', NULL),
-    (104, 'ONLINE_PHONE', 'CORE', '위치와 통학 및 통근 시간이 괜찮은가? (대중교통 편의성)', NULL),
-    (105, 'ONLINE_PHONE', 'CORE', '옵션에는 무엇이 포함되어 있는가?', NULL),
-    (106, 'ONLINE_PHONE', 'CORE', '전입신고가 가능한가?', NULL),
-    (107, 'ONLINE_PHONE', 'OPTIONAL', '주변에 편의 시설은 어떤가? (편의점, 마트 등등)', NULL),
-    (108, 'ONLINE_PHONE', 'OPTIONAL', '주변에 소음 시설은 어떤가? (유흥주점, 배달전문점, 대로변)', NULL),
-    (109, 'ONLINE_PHONE', 'OPTIONAL', '밤 시간 귀가 동선이 안전한지, 골목 조명과 유동인구는 어떤가?', NULL),
-    (110, 'ONLINE_PHONE', 'OPTIONAL', '오르막이나 언덕은 어떤가?', NULL),
-    (111, 'ONLINE_PHONE', 'OPTIONAL', '가계약금이나 예약금은 어떤가?', NULL),
-    (112, 'ONLINE_PHONE', 'OPTIONAL', '정부 주거 지원금은 어떠한가?', NULL),
-    (113, 'ON_SITE', 'CORE', '가구 배치시 방구조가 어떤가?', NULL),
-    (114, 'ON_SITE', 'CORE', '햇빛이 들어오는건 어떤가?', NULL),
-    (115, 'ON_SITE', 'CORE', '방충망/방범창 이상 없고 괜찮은가?', NULL),
-    (116, 'ON_SITE', 'CORE', '환기는 어떤가?', NULL),
-    (117, 'ON_SITE', 'CORE', '싱크대/세면대/샤워기 물 잘 나오는가?', NULL),
-    (118, 'ON_SITE', 'CORE', '변기 물 잘 내려가는가?', NULL),
-    (119, 'ON_SITE', 'CORE', '옵션 가구 종류 확인했는가?', NULL),
-    (120, 'ON_SITE', 'CORE', '쓰레기 배출 장소 방법은 어떤가?', NULL),
-    (121, 'ON_SITE', 'OPTIONAL', '어플 사진과 실제와 차이는 어떤가?', NULL),
-    (122, 'ON_SITE', 'OPTIONAL', 'CCTV는 어떤가?', NULL),
-    (123, 'ON_SITE', 'OPTIONAL', '싱크대/화장실 배수구 잘 내려가는가?', NULL),
-    (124, 'ON_SITE', 'OPTIONAL', '온수 잘 나오는지, 난방 잘 되는가?', NULL),
-    (125, 'ON_SITE', 'OPTIONAL', '화장실 내부에 창문 있는가?', NULL),
-    (126, 'ON_SITE', 'OPTIONAL', '세면대 있는가?', NULL),
-    (127, 'ON_SITE', 'OPTIONAL', '배수구 냄새 괜찮은가?', NULL),
-    (128, 'ON_SITE', 'OPTIONAL', '샤워 여유 공간은 괜찮은가?', NULL),
-    (129, 'ON_SITE', 'OPTIONAL', '에어컨/냉장고 작동 괜찮은가?', NULL),
-    (130, 'ON_SITE', 'OPTIONAL', '화구 종류 체크했는가?', NULL),
-    (131, 'ON_SITE', 'OPTIONAL', '옵션 가구 필요 없다면 치워줄 수 있는지 확인했는가?', NULL),
-    (132, 'ON_SITE', 'OPTIONAL', '수납 공간 충분한가?', NULL),
-    (133, 'ON_SITE', 'OPTIONAL', '곰팡이, 결로, 누수 흔적은 어떤가?', NULL),
-    (134, 'ON_SITE', 'OPTIONAL', '벌레 흔적은 어땠는가?', NULL),
-    (135, 'ON_SITE', 'OPTIONAL', '콘센트 개수 충분했는가?', NULL),
-    (136, 'ON_SITE', 'OPTIONAL', '방음은 어떤가?', NULL),
-    (137, 'ON_SITE', 'OPTIONAL', '최근 방이나 건물에 수리한 내역은 어떤가?', NULL),
-    (138, 'ON_SITE', 'OPTIONAL', '주차 공간은 어떤가?', NULL),
-    (139, 'ON_SITE', 'OPTIONAL', '인터넷 설치가 되어있는가?', NULL),
-    (140, 'PRE_CONTRACT', 'CORE', '신분증과 도장을 준비했는가?', NULL),
-    (141, 'PRE_CONTRACT', 'CORE', '보증금이 준비 되었는가?', NULL),
-    (142, 'PRE_CONTRACT', 'CORE', '보증금, 월세, 관리비를 확인했는가?', NULL),
-    (143, 'PRE_CONTRACT', 'CORE', '계약 시작, 종료, 입주, 퇴거일과 같은 계약 기간을 확인했는가?', NULL),
-    (144, 'PRE_CONTRACT', 'CORE', '관리비(전기, 수도, 인터넷 등 포함 여부) 및 추가 별도 공과금을 확인했는가?', NULL),
-    (145, 'PRE_CONTRACT', 'CORE', '파손 및 손해배상 조건을 확인했는가?', NULL),
-    (146, 'PRE_CONTRACT', 'CORE', '전입신고와 확정일자 발급이 가능한지 확인했는가?', NULL),
-    (147, 'PRE_CONTRACT', 'OPTIONAL', '퇴거 시 청소비 및 수리비 조건을 확인했는가?', NULL),
-    (148, 'PRE_CONTRACT', 'OPTIONAL', '계약 해지 및 위약금 규정 확인을 했는가?', NULL),
-    (149, 'PRE_CONTRACT', 'OPTIONAL', '집주인(임대인)의 신분이 등기부등본 소유자와 일치하는지 확인했는가?', NULL),
-    (150, 'PRE_CONTRACT', 'OPTIONAL', '소유자와 계약자가 동일한지 확인했는가?', NULL),
-    (151, 'PRE_CONTRACT', 'OPTIONAL', '대리인 계약이면 위임장, 인감증명서, 신분증 사본 등 원본 증빙을 확인했는가?', NULL),
-    (152, 'PRE_CONTRACT', 'OPTIONAL', '근저당권, 전세권, 가압류, 압류가 있는지 확인했는가?', NULL),
-    (153, 'PRE_CONTRACT', 'OPTIONAL', '가처분, 가압류 등 분쟁 기록이 없는지 확인했는가?', NULL) AS new
-ON DUPLICATE KEY UPDATE
-    stage = new.stage,
-    item_type = new.item_type,
-    question = new.question,
-    deleted_at = new.deleted_at;
-
-INSERT INTO system_memo_items (id, label, display_order, deleted_at)
-VALUES
-    (1, '입주 가능일', 1, NULL),
-    (2, '방 옵션', 2, NULL),
-    (3, '관리비 및 공과금', 3, NULL),
-    (4, '방문 일정', 4, NULL) AS new
-ON DUPLICATE KEY UPDATE
-    label = new.label,
-    display_order = new.display_order,
-    deleted_at = new.deleted_at;
+-- PRE_CONTRACT (계약 전 확인) 시스템 항목 Seed
+INSERT INTO system_check_items (id, stage, item_type, question, display_order, created_at, deleted_at) VALUES
+(201, 'PRE_CONTRACT', 'CORE', '등기부등본상 소유자와 임대인이 일치하나요?', 1, NOW(), NULL),
+(202, 'PRE_CONTRACT', 'CORE', '근저당권(융자) 및 선순위 보증금 규모가 위험하지 않은 수준인가요?', 2, NOW(), NULL),
+(203, 'PRE_CONTRACT', 'CORE', '건축물대장상 위반건축물 표시가 없나요?', 3, NOW(), NULL),
+(204, 'PRE_CONTRACT', 'OPTIONAL', '관리비에 포함된 항목과 실제 부과 내역을 확인했나요?', 4, NOW(), NULL),
+(205, 'PRE_CONTRACT', 'OPTIONAL', '특약사항(전세보증보험 가입 불가 시 계약 해제 등)이 명시되어 있나요?', 5, NOW(), NULL),
+(206, 'PRE_CONTRACT', 'OPTIONAL', '중개대상물 확인·설명서 내용에 이상이 없나요?', 6, NOW(), NULL);

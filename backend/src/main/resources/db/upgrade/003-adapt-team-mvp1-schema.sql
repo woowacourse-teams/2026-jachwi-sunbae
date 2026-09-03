@@ -11,7 +11,7 @@ SET @mvp2_add_last_login_at = (
               AND column_name = 'last_login_at'
         ),
         'SELECT 1',
-        'ALTER TABLE members ADD COLUMN last_login_at DATETIME(6) NULL AFTER name'
+        'ALTER TABLE members ADD COLUMN last_login_at DATETIME(6) NULL'
     )
 );
 PREPARE mvp2_add_last_login_at_statement FROM @mvp2_add_last_login_at;
@@ -22,8 +22,9 @@ UPDATE members
 SET last_login_at = COALESCE(last_login_at, updated_at, created_at, CURRENT_TIMESTAMP(6))
 WHERE last_login_at IS NULL;
 
-ALTER TABLE members
-    MODIFY COLUMN last_login_at DATETIME(6) NOT NULL;
+-- last_login_at은 members.nickname/password_hash 기반의 현재 AuthService가 쓰지 않는
+-- 레거시 컬럼이라 NOT NULL로 강제하지 않는다. NOT NULL로 강제하면 이 컬럼을 채우지 않는
+-- 현재 INSERT(JdbcMemberRepository.save)가 기본 스키마·팀 RDS 양쪽에서 실패한다.
 
 SET @mvp2_add_road_address = (
     SELECT IF(
@@ -35,7 +36,7 @@ SET @mvp2_add_road_address = (
               AND column_name = 'road_address'
         ),
         'SELECT 1',
-        'ALTER TABLE properties ADD COLUMN road_address VARCHAR(255) NULL AFTER discovery_source'
+        'ALTER TABLE properties ADD COLUMN road_address VARCHAR(255) NULL'
     )
 );
 PREPARE mvp2_add_road_address_statement FROM @mvp2_add_road_address;
@@ -52,7 +53,7 @@ SET @mvp2_add_jibun_address = (
               AND column_name = 'jibun_address'
         ),
         'SELECT 1',
-        'ALTER TABLE properties ADD COLUMN jibun_address VARCHAR(255) NULL AFTER road_address'
+        'ALTER TABLE properties ADD COLUMN jibun_address VARCHAR(255) NULL'
     )
 );
 PREPARE mvp2_add_jibun_address_statement FROM @mvp2_add_jibun_address;
@@ -69,7 +70,7 @@ SET @mvp2_add_latitude = (
               AND column_name = 'latitude'
         ),
         'SELECT 1',
-        'ALTER TABLE properties ADD COLUMN latitude DECIMAL(10, 7) NULL AFTER jibun_address'
+        'ALTER TABLE properties ADD COLUMN latitude DECIMAL(10, 7) NULL'
     )
 );
 PREPARE mvp2_add_latitude_statement FROM @mvp2_add_latitude;
@@ -86,12 +87,70 @@ SET @mvp2_add_longitude = (
               AND column_name = 'longitude'
         ),
         'SELECT 1',
-        'ALTER TABLE properties ADD COLUMN longitude DECIMAL(11, 7) NULL AFTER latitude'
+        'ALTER TABLE properties ADD COLUMN longitude DECIMAL(11, 7) NULL'
     )
 );
 PREPARE mvp2_add_longitude_statement FROM @mvp2_add_longitude;
 EXECUTE mvp2_add_longitude_statement;
 DEALLOCATE PREPARE mvp2_add_longitude_statement;
+
+SET @mvp2_add_discovery_source = (
+    SELECT IF(
+        EXISTS(
+            SELECT 1
+            FROM information_schema.columns
+            WHERE table_schema = DATABASE()
+              AND table_name = 'properties'
+              AND column_name = 'discovery_source'
+        ),
+        'SELECT 1',
+        'ALTER TABLE properties ADD COLUMN discovery_source VARCHAR(500) NULL'
+    )
+);
+PREPARE mvp2_add_discovery_source_statement FROM @mvp2_add_discovery_source;
+EXECUTE mvp2_add_discovery_source_statement;
+DEALLOCATE PREPARE mvp2_add_discovery_source_statement;
+
+-- 신규 통합 스키마는 discovery_source를 properties가 아니라 property_details에 둔다(007 참고).
+-- 위 가드는 팀 Flyway V11 RDS처럼 properties.discovery_source가 이미 있던 환경과의 호환을 위한 것이다.
+
+SET @mvp2_add_updated_at = (
+    SELECT IF(
+        EXISTS(
+            SELECT 1
+            FROM information_schema.columns
+            WHERE table_schema = DATABASE()
+              AND table_name = 'properties'
+              AND column_name = 'updated_at'
+        ),
+        'SELECT 1',
+        'ALTER TABLE properties ADD COLUMN updated_at DATETIME(6) NULL'
+    )
+);
+PREPARE mvp2_add_updated_at_statement FROM @mvp2_add_updated_at;
+EXECUTE mvp2_add_updated_at_statement;
+DEALLOCATE PREPARE mvp2_add_updated_at_statement;
+
+SET @mvp2_add_last_activity_at = (
+    SELECT IF(
+        EXISTS(
+            SELECT 1
+            FROM information_schema.columns
+            WHERE table_schema = DATABASE()
+              AND table_name = 'properties'
+              AND column_name = 'last_activity_at'
+        ),
+        'SELECT 1',
+        'ALTER TABLE properties ADD COLUMN last_activity_at DATETIME(6) NULL'
+    )
+);
+PREPARE mvp2_add_last_activity_at_statement FROM @mvp2_add_last_activity_at;
+EXECUTE mvp2_add_last_activity_at_statement;
+DEALLOCATE PREPARE mvp2_add_last_activity_at_statement;
+
+-- 새 통합 스키마(001-schema.sql)는 properties.updated_at/last_activity_at을 두지 않는다.
+-- 위 가드는 팀 Flyway V11 RDS처럼 이미 두 컬럼이 있던 환경과의 호환을 위한 것이며,
+-- 신규 통합 스키마에서는 이 두 컬럼이 추가만 되고 애플리케이션 코드는 더 이상 참조하지 않는다.
 
 UPDATE properties
 SET deposit_amount = COALESCE(deposit_amount, 0),
@@ -101,13 +160,13 @@ SET deposit_amount = COALESCE(deposit_amount, 0),
     updated_at = COALESCE(updated_at, created_at, CURRENT_TIMESTAMP(6)),
     last_activity_at = COALESCE(last_activity_at, updated_at, created_at, CURRENT_TIMESTAMP(6));
 
+-- updated_at·last_activity_at은 JdbcPropertyRepository가 쓰지 않는 레거시 컬럼이라
+-- NOT NULL로 강제하지 않는다(위 last_login_at과 같은 이유).
 ALTER TABLE properties
-    MODIFY COLUMN deposit_amount BIGINT NOT NULL DEFAULT 0,
-    MODIFY COLUMN monthly_rent_amount BIGINT NOT NULL DEFAULT 0,
+    MODIFY COLUMN deposit_amount BIGINT UNSIGNED NOT NULL DEFAULT 0,
+    MODIFY COLUMN monthly_rent_amount BIGINT UNSIGNED NOT NULL DEFAULT 0,
     MODIFY COLUMN discovery_source VARCHAR(500) NOT NULL DEFAULT '',
-    MODIFY COLUMN created_at DATETIME(6) NOT NULL,
-    MODIFY COLUMN updated_at DATETIME(6) NOT NULL,
-    MODIFY COLUMN last_activity_at DATETIME(6) NOT NULL;
+    MODIFY COLUMN created_at DATETIME(6) NOT NULL;
 
 SET @mvp2_rename_memo_column = (
     SELECT IF(
@@ -136,20 +195,40 @@ PREPARE mvp2_rename_memo_column_statement FROM @mvp2_rename_memo_column;
 EXECUTE mvp2_rename_memo_column_statement;
 DEALLOCATE PREPARE mvp2_rename_memo_column_statement;
 
-INSERT INTO system_memo_items (id, label, display_order, deleted_at)
-VALUES
-    (1, '입주 가능일', 1, NULL),
-    (2, '방 옵션', 2, NULL),
-    (3, '관리비 및 공과금', 3, NULL),
-    (4, '방문 일정', 4, NULL) AS new
-ON DUPLICATE KEY UPDATE
-    label = new.label,
-    display_order = new.display_order,
-    deleted_at = NULL;
+-- 신규 통합 스키마는 system_memo_items 테이블 자체를 만들지 않는다(구조화 메모 폐기, 006 참고).
+-- 팀 Flyway V11 RDS처럼 이 테이블이 아직 있는 환경에서만 시드를 보강한다.
 
-UPDATE system_memo_items
-SET deleted_at = COALESCE(deleted_at, CURRENT_TIMESTAMP(6))
-WHERE id NOT IN (1, 2, 3, 4);
+SET @mvp2_seed_system_memo_items = (
+    SELECT IF(
+        EXISTS(
+            SELECT 1
+            FROM information_schema.tables
+            WHERE table_schema = DATABASE()
+              AND table_name = 'system_memo_items'
+        ),
+        "INSERT INTO system_memo_items (id, label, display_order, deleted_at) VALUES (1, '입주 가능일', 1, NULL), (2, '방 옵션', 2, NULL), (3, '관리비 및 공과금', 3, NULL), (4, '방문 일정', 4, NULL) AS new ON DUPLICATE KEY UPDATE label = new.label, display_order = new.display_order, deleted_at = NULL",
+        'SELECT 1'
+    )
+);
+PREPARE mvp2_seed_system_memo_items_statement FROM @mvp2_seed_system_memo_items;
+EXECUTE mvp2_seed_system_memo_items_statement;
+DEALLOCATE PREPARE mvp2_seed_system_memo_items_statement;
+
+SET @mvp2_deactivate_system_memo_items = (
+    SELECT IF(
+        EXISTS(
+            SELECT 1
+            FROM information_schema.tables
+            WHERE table_schema = DATABASE()
+              AND table_name = 'system_memo_items'
+        ),
+        'UPDATE system_memo_items SET deleted_at = COALESCE(deleted_at, CURRENT_TIMESTAMP(6)) WHERE id NOT IN (1, 2, 3, 4)',
+        'SELECT 1'
+    )
+);
+PREPARE mvp2_deactivate_system_memo_items_statement FROM @mvp2_deactivate_system_memo_items;
+EXECUTE mvp2_deactivate_system_memo_items_statement;
+DEALLOCATE PREPARE mvp2_deactivate_system_memo_items_statement;
 
 SET @mvp2_add_property_photo_pair_unique = (
     SELECT IF(

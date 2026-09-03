@@ -25,7 +25,7 @@ import com.jachwisunbae.property.controller.dto.response.PropertyPhotoResponse;
 import com.jachwisunbae.property.controller.dto.response.UpdatePropertyResponse;
 import com.jachwisunbae.property.repository.query.PropertyPhotosQuery;
 import com.jachwisunbae.property.service.PropertyChecklistService;
-import com.jachwisunbae.property.service.PropertyCreationResult;
+import com.jachwisunbae.property.entity.Property;
 import com.jachwisunbae.property.service.PropertyCsvService;
 import com.jachwisunbae.property.service.PropertyComparisonPdfService;
 import com.jachwisunbae.property.service.PropertyComparisonViewService;
@@ -105,7 +105,7 @@ public class PropertyController {
 
     @PostMapping(value = "/export.pdf", produces = MediaType.APPLICATION_PDF_VALUE)
     @Operation(summary = "선택 매물 기록 비교 PDF",
-            description = "소유한 매물 2~5개를 선택해 기본 정보, 사진, 메모와 세 단계 체크 기록을 PDF로 내려받습니다."
+            description = "소유한 매물 2~5개를 선택해 기본 정보, 사진, 메모와 두 단계 체크 기록을 PDF로 내려받습니다."
                     + " 점수나 추천은 생성하지 않습니다.")
     public ResponseEntity<byte[]> exportPdf(
             @AuthenticatedMemberId final Long memberId,
@@ -127,15 +127,13 @@ public class PropertyController {
 
     @PostMapping
     @Operation(summary = "매물 생성",
-            description = "후보 매물을 생성합니다. 회원당 최대 30개까지 등록할 수 있으며, 응답의 firstProperty는 "
-                    + "현재 회원이 첫 매물을 만든 경우에만 true입니다.")
+            description = "후보 매물을 생성합니다. 회원당 최대 30개까지 등록할 수 있습니다.")
     public ResponseEntity<ApiResponse<CreatePropertyResponse>> create(
             @AuthenticatedMemberId final Long memberId,
             @Valid @RequestBody final CreatePropertyRequest request) {
-        PropertyCreationResult result = propertyService.create(memberId, request);
-        return ResponseEntity.created(URI.create("/api/properties/" + result.property().getId()))
-                .body(ApiResponse.of("매물을 등록했습니다.",
-                        CreatePropertyResponse.from(result.property(), result.firstProperty())));
+        Property property = propertyService.create(memberId, request);
+        return ResponseEntity.created(URI.create("/api/properties/" + property.getId()))
+                .body(ApiResponse.of("매물을 등록했습니다.", CreatePropertyResponse.from(property)));
     }
 
     @GetMapping("/{propertyId}")
@@ -227,7 +225,7 @@ public class PropertyController {
     }
 
     @GetMapping("/{propertyId}/checklists")
-    @Operation(summary = "매물 체크 현황 조회", description = "세 단계의 적용 여부와 단계별·전체 진행 현황을 조회합니다.")
+    @Operation(summary = "매물 체크 현황 조회", description = "두 단계(ON_SITE, PRE_CONTRACT)의 적용 여부와 단계별·전체 진행 현황을 조회합니다.")
     public ApiResponse<PropertyChecklistOverviewResponse> findChecklistOverview(
             @AuthenticatedMemberId final Long memberId,
             @PathVariable final Long propertyId) {
@@ -289,31 +287,21 @@ public class PropertyController {
     }
 
     @GetMapping("/{propertyId}/memo")
-    @Operation(summary = "매물 메모 조회", description = "구조화 메모 항목과 자유 메모를 조회합니다.")
+    @Operation(summary = "자유 메모 조회", description = "매물의 자유 메모를 조회합니다.")
     public ApiResponse<PropertyMemoResponse> findMemo(
-            @AuthenticatedMemberId final Long memberId,
-            @PathVariable final Long propertyId) {
-        return ApiResponse.of("매물 메모를 조회했습니다.",
-                PropertyMemoResponse.from(propertyMemoService.find(memberId, propertyId)));
-    }
-
-    @PostMapping("/{propertyId}/memo")
-    @Operation(summary = "매물 메모 초기 생성", description = "활성 시스템 메모 항목을 빈 내용의 스냅샷으로 생성합니다.")
-    public ApiResponse<PropertyMemoResponse> initializeMemo(
-            @AuthenticatedMemberId final Long memberId,
-            @PathVariable final Long propertyId) {
-        return ApiResponse.of("매물 메모를 생성했습니다.",
-                PropertyMemoResponse.from(propertyMemoService.initialize(memberId, propertyId)));
+        @AuthenticatedMemberId final Long memberId,
+        @PathVariable final Long propertyId) {
+        return ApiResponse.of("자유 메모를 조회했습니다.",
+            PropertyMemoResponse.from(propertyMemoService.find(memberId, propertyId)));
     }
 
     @PutMapping("/{propertyId}/memo")
-    @Operation(summary = "매물 메모 저장", description = "구조화 메모 내용과 자유 메모를 하나의 트랜잭션으로 저장합니다.")
+    @Operation(summary = "자유 메모 전체 교체 및 생성", description = "자유 메모를 전체 교체합니다. 메모 행이 없으면 생성합니다.")
     public ApiResponse<PropertyMemoResponse> updateMemo(
-            @AuthenticatedMemberId final Long memberId,
-            @PathVariable final Long propertyId,
-            @Valid @RequestBody final UpdatePropertyMemoRequest request) {
-        return ApiResponse.of("매물 메모를 저장했습니다.",
-                PropertyMemoResponse.from(propertyMemoService.update(memberId, propertyId, request)));
+        @AuthenticatedMemberId final Long memberId,
+        @PathVariable final Long propertyId,
+        @Valid @RequestBody final UpdatePropertyMemoRequest request) {
+        return ApiResponse.of("자유 메모를 저장했습니다.",
+            PropertyMemoResponse.from(propertyMemoService.update(memberId, propertyId, request)));
     }
-
 }

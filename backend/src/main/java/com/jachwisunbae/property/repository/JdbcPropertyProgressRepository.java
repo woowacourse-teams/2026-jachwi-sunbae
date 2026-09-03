@@ -1,19 +1,26 @@
 package com.jachwisunbae.property.repository;
 
-import com.jachwisunbae.property.repository.query.PropertyProgressSummary;
-import com.jachwisunbae.property.repository.query.PropertyChecklistProgressQuery;
 import com.jachwisunbae.checklist.type.CheckStage;
+import com.jachwisunbae.property.repository.query.PropertyChecklistProgressQuery;
+import com.jachwisunbae.property.repository.query.PropertyProgressSummary;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Repository;
+
 import java.util.List;
 
 @Repository
 public class JdbcPropertyProgressRepository implements PropertyProgressRepository {
     private final JdbcTemplate jdbcTemplate;
     private final RowMapper<PropertyProgressSummary> rowMapper = (rs, row) ->
-            new PropertyProgressSummary(rs.getLong("property_id"), rs.getInt("total_count"), rs.getInt("completed_count"),
-                    rs.getInt("good_count"), rs.getInt("caution_count"), rs.getInt("unconfirmed_count"));
+        new PropertyProgressSummary(
+            rs.getLong("property_id"),
+            rs.getInt("total_count"),
+            rs.getInt("completed_count"),
+            rs.getInt("good_count"),
+            rs.getInt("caution_count"),
+            rs.getInt("unconfirmed_count")
+        );
 
     public JdbcPropertyProgressRepository(final JdbcTemplate jdbcTemplate) {
         this.jdbcTemplate = jdbcTemplate;
@@ -29,7 +36,7 @@ public class JdbcPropertyProgressRepository implements PropertyProgressRepositor
                        COALESCE(SUM(pci.status = 'UNCONFIRMED'), 0) AS unconfirmed_count
                 FROM property_checklists pc
                 LEFT JOIN property_checklist_items pci ON pci.property_checklist_id = pc.id
-                WHERE pc.property_id = ?
+                WHERE pc.property_id = ? AND pc.stage IN ('ON_SITE', 'PRE_CONTRACT')
                 """;
         return jdbcTemplate.queryForObject(sql, rowMapper, propertyId, propertyId);
     }
@@ -46,15 +53,23 @@ public class JdbcPropertyProgressRepository implements PropertyProgressRepositor
                        COALESCE(SUM(pci.status = 'UNCONFIRMED'), 0) AS unconfirmed_count
                 FROM property_checklists pc
                 LEFT JOIN property_checklist_items pci ON pci.property_checklist_id = pc.id
-                WHERE pc.property_id = ?
+                WHERE pc.property_id = ? AND pc.stage IN ('ON_SITE', 'PRE_CONTRACT')
                 GROUP BY pc.stage, pc.id, pc.checklist_name, pc.user_checklist_id
+                ORDER BY CASE pc.stage WHEN 'ON_SITE' THEN 1 WHEN 'PRE_CONTRACT' THEN 2 ELSE 3 END, pc.id ASC
                 """;
         return jdbcTemplate.query(sql, (rs, row) -> new PropertyChecklistProgressQuery(
-                CheckStage.valueOf(rs.getString("stage")),
-                rs.getLong("property_checklist_id"), rs.getString("checklist_name"),
-                rs.getObject("source_checklist_id", Long.class),
-                new PropertyProgressSummary(propertyId, rs.getInt("total_count"),
-                        rs.getInt("completed_count"), rs.getInt("good_count"),
-                        rs.getInt("caution_count"), rs.getInt("unconfirmed_count"))), propertyId);
+            CheckStage.valueOf(rs.getString("stage")),
+            rs.getLong("property_checklist_id"),
+            rs.getString("checklist_name"),
+            rs.getObject("source_checklist_id", Long.class),
+            new PropertyProgressSummary(
+                propertyId,
+                rs.getInt("total_count"),
+                rs.getInt("completed_count"),
+                rs.getInt("good_count"),
+                rs.getInt("caution_count"),
+                rs.getInt("unconfirmed_count")
+            )
+        ), propertyId);
     }
 }

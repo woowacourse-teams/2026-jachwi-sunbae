@@ -54,17 +54,17 @@ public class PropertyPhotoService {
     public PropertyPhotosQuery find(final Long memberId, final Long propertyId) {
         findOwnedProperty(memberId, propertyId);
         return new PropertyPhotosQuery(propertyId, propertyPhotoRepository.findByPropertyId(propertyId),
-                propertyPhotoRepository.findRepresentativePhotoId(propertyId).orElse(null));
+            propertyPhotoRepository.findRepresentativePhotoId(propertyId).orElse(null));
     }
 
     @Transactional
     public PropertyPhoto upload(final Long memberId, final Long propertyId, final MultipartFile file) {
         propertyRepository.findByIdAndMemberIdForUpdate(propertyId, memberId)
-                .orElseThrow(() -> new BusinessException(DomainErrorCode.PROPERTY_NOT_FOUND,
-                        "매물을 찾을 수 없습니다."));
+            .orElseThrow(() -> new BusinessException(DomainErrorCode.PROPERTY_NOT_FOUND,
+                "매물을 찾을 수 없습니다."));
         if (propertyPhotoRepository.countByPropertyId(propertyId) >= 30) {
             throw new BusinessException(DomainErrorCode.PHOTO_LIMIT_EXCEEDED,
-                    "매물당 사진은 30장까지 업로드할 수 있습니다.");
+                "매물당 사진은 30장까지 업로드할 수 있습니다.");
         }
         byte[] bytes = readBytes(file);
         String contentType = validateContentType(file.getContentType());
@@ -74,10 +74,9 @@ public class PropertyPhotoService {
         photoStorage.upload(storageKey, bytes, contentType);
         try {
             PropertyPhoto saved = propertyPhotoRepository.save(memberId,
-                    PropertyPhoto.create(propertyId, storageKey, contentType, (long) bytes.length,
-                            LocalDateTime.now(clock)), checksum(bytes));
+                PropertyPhoto.create(propertyId, storageKey, contentType, (long) bytes.length,
+                    LocalDateTime.now(clock)), checksum(bytes));
             propertyPhotoRepository.ensureRepresentative(propertyId);
-            propertyRepository.touch(propertyId, LocalDateTime.now(clock));
             return saved;
         } catch (RuntimeException exception) {
             try {
@@ -102,17 +101,15 @@ public class PropertyPhotoService {
         photoStorage.delete(photo.getStorageKey());
         propertyPhotoRepository.deleteById(photoId);
         propertyPhotoRepository.ensureRepresentative(propertyId);
-        propertyRepository.touch(propertyId, LocalDateTime.now(clock));
     }
 
     @Transactional
     public void designateRepresentative(final Long memberId, final Long propertyId, final Long photoId) {
         findOwnedProperty(memberId, propertyId);
         propertyPhotoRepository.findByIdAndPropertyId(photoId, propertyId)
-                .orElseThrow(() -> new BusinessException(DomainErrorCode.PHOTO_NOT_FOUND,
-                        "사진을 찾을 수 없습니다."));
+            .orElseThrow(() -> new BusinessException(DomainErrorCode.PHOTO_NOT_FOUND,
+                "사진을 찾을 수 없습니다."));
         propertyPhotoRepository.setRepresentative(propertyId, photoId);
-        propertyRepository.touch(propertyId, LocalDateTime.now(clock));
     }
 
     private void findOwnedProperty(final Long memberId, final Long propertyId) {
@@ -123,8 +120,8 @@ public class PropertyPhotoService {
 
     private PropertyPhoto findPhoto(final Long propertyId, final Long photoId) {
         return propertyPhotoRepository.findByIdAndPropertyId(photoId, propertyId)
-                .orElseThrow(() -> new BusinessException(DomainErrorCode.PHOTO_NOT_FOUND,
-                        "사진을 찾을 수 없습니다."));
+            .orElseThrow(() -> new BusinessException(DomainErrorCode.PHOTO_NOT_FOUND,
+                "사진을 찾을 수 없습니다."));
     }
 
     private byte[] readBytes(final MultipartFile file) {
@@ -132,7 +129,7 @@ public class PropertyPhotoService {
             return file.getBytes();
         } catch (IOException exception) {
             throw new BusinessException(DomainErrorCode.PHOTO_STORAGE_FAILURE,
-                    "업로드 사진을 읽을 수 없습니다.", exception);
+                "업로드 사진을 읽을 수 없습니다.", exception);
         }
     }
 
@@ -140,7 +137,7 @@ public class PropertyPhotoService {
         String contentType = value == null ? "" : value.toLowerCase(Locale.ROOT);
         if (!SUPPORTED_TYPES.contains(contentType)) {
             throw new BusinessException(DomainErrorCode.PHOTO_CONTENT_TYPE_UNSUPPORTED,
-                    "JPEG, PNG, WebP 사진만 업로드할 수 있습니다.");
+                "JPEG, PNG, WebP 사진만 업로드할 수 있습니다.");
         }
         return contentType;
     }
@@ -148,14 +145,14 @@ public class PropertyPhotoService {
     private void validateSize(final int size) {
         if (size <= 0 || size > MAX_SIZE_BYTES) {
             throw new BusinessException(DomainErrorCode.PHOTO_SIZE_EXCEEDED,
-                    "사진은 1바이트 이상 5MiB 이하여야 합니다.");
+                "사진은 1바이트 이상 5MiB 이하여야 합니다.");
         }
     }
 
     private void validateImageFormat(final byte[] bytes, final String contentType) {
         try (ImageInputStream input = ImageIO.createImageInputStream(new ByteArrayInputStream(bytes))) {
             Iterator<ImageReader> readers = input == null ? java.util.Collections.emptyIterator()
-                    : ImageIO.getImageReaders(input);
+                : ImageIO.getImageReaders(input);
             if (!readers.hasNext()) {
                 throw invalidPhotoFormat();
             }
@@ -176,13 +173,13 @@ public class PropertyPhotoService {
             }
         } catch (IOException exception) {
             throw new BusinessException(DomainErrorCode.PHOTO_CONTENT_TYPE_UNSUPPORTED,
-                    "손상되었거나 지원하지 않는 사진입니다.", exception);
+                "손상되었거나 지원하지 않는 사진입니다.", exception);
         }
     }
 
     private BusinessException invalidPhotoFormat() {
         return new BusinessException(DomainErrorCode.PHOTO_CONTENT_TYPE_UNSUPPORTED,
-                "파일 내용과 사진 형식이 일치하지 않습니다.");
+            "파일 내용과 사진 형식이 일치하지 않습니다.");
     }
 
     private String createStorageKey(final Long memberId, final Long propertyId, final String contentType) {
@@ -193,7 +190,7 @@ public class PropertyPhotoService {
             default -> "";
         };
         return keyPrefix + "members/" + memberId + "/properties/" + propertyId + "/"
-                + UUID.randomUUID() + extension;
+            + UUID.randomUUID() + extension;
     }
 
     private String checksum(final byte[] bytes) {

@@ -25,25 +25,34 @@ public class JdbcPropertyChecklistRepository implements PropertyChecklistReposit
     @Override
     public void deleteByPropertyId(final long propertyId) {
         jdbcTemplate.update("DELETE FROM property_checklist_items WHERE property_checklist_id IN "
-                + "(SELECT id FROM property_checklists WHERE property_id = ?)", propertyId);
+            + "(SELECT id FROM property_checklists WHERE property_id = ?)", propertyId);
         jdbcTemplate.update("DELETE FROM property_checklists WHERE property_id = ?", propertyId);
     }
 
     @Override
     public List<PropertyChecklistItemStateQuery> findCurrentItems(final long propertyId, final CheckStage stage) {
-        return jdbcTemplate.query("SELECT pci.system_check_item_id, pci.question, pci.display_order, pci.status, pci.memo "
-                        + "FROM property_checklists pc JOIN property_checklist_items pci "
-                        + "ON pci.property_checklist_id = pc.id WHERE pc.property_id = ? AND pc.stage = ?",
-                (rs, rowNum) -> new PropertyChecklistItemStateQuery(rs.getObject("system_check_item_id", Long.class),
-                        rs.getString("question"), rs.getInt("display_order"),
-                        CheckStatus.valueOf(rs.getString("status")), rs.getString("memo")),
-                propertyId, stage.name());
+        String sql = """
+                SELECT pci.system_check_item_id, pci.question, pci.display_order, pci.status, pci.memo
+                FROM property_checklists pc
+                JOIN property_checklist_items pci ON pci.property_checklist_id = pc.id
+                WHERE pc.property_id = ? AND pc.stage = ?
+                ORDER BY pci.display_order ASC, pci.id ASC
+                """;
+        return jdbcTemplate.query(sql,
+            (rs, rowNum) -> new PropertyChecklistItemStateQuery(
+                rs.getLong("system_check_item_id"),
+                rs.getString("question"),
+                rs.getInt("display_order"),
+                CheckStatus.valueOf(rs.getString("status")),
+                rs.getString("memo")
+            ),
+            propertyId, stage.name());
     }
 
     @Override
     public void deleteByPropertyAndStage(final long propertyId, final CheckStage stage) {
         jdbcTemplate.update("DELETE FROM property_checklist_items WHERE property_checklist_id IN "
-                + "(SELECT id FROM property_checklists WHERE property_id = ? AND stage = ?)", propertyId, stage.name());
+            + "(SELECT id FROM property_checklists WHERE property_id = ? AND stage = ?)", propertyId, stage.name());
         jdbcTemplate.update("DELETE FROM property_checklists WHERE property_id = ? AND stage = ?", propertyId, stage.name());
     }
 
@@ -51,10 +60,12 @@ public class JdbcPropertyChecklistRepository implements PropertyChecklistReposit
     public long save(final long propertyId, final Long sourceChecklistId, final String checklistName,
                      final CheckStage stage) {
         KeyHolder keyHolder = new GeneratedKeyHolder();
+        String sql = """
+                INSERT INTO property_checklists (property_id, user_checklist_id, checklist_name, stage, created_at, updated_at)
+                VALUES (?, ?, ?, ?, NOW(6), NOW(6))
+                """;
         jdbcTemplate.update(connection -> {
-            PreparedStatement statement = connection.prepareStatement(
-                    "INSERT INTO property_checklists (property_id, user_checklist_id, checklist_name, stage) VALUES (?, ?, ?, ?)",
-                    Statement.RETURN_GENERATED_KEYS);
+            PreparedStatement statement = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
             statement.setLong(1, propertyId);
             statement.setObject(2, sourceChecklistId);
             statement.setString(3, checklistName);
@@ -66,77 +77,137 @@ public class JdbcPropertyChecklistRepository implements PropertyChecklistReposit
 
     @Override
     public void saveItems(final long propertyChecklistId, final List<PropertyChecklistItemStateQuery> items) {
-        String sql = "INSERT INTO property_checklist_items "
-                + "(property_checklist_id, system_check_item_id, display_order, status, memo, question) VALUES (?, ?, ?, ?, ?, ?)";
-        List<Object[]> params = items.stream().map(item -> {
-            return new Object[]{propertyChecklistId, item.systemCheckItemId(), item.displayOrder(),
-                    item.status().name(), item.memo(), item.question()};
+        String sql = """
+                INSERT INTO property_checklist_items
+                (property_checklist_id, system_check_item_id, display_order, status, memo, question, created_at)
+                VALUES (?, ?, ?, ?, ?, ?, NOW(6))
+                """;
+        List<Object[]> params = items.stream().map(item -> new Object[]{
+            propertyChecklistId,
+            item.systemCheckItemId(),
+            item.displayOrder(),
+            item.status().name(),
+            item.memo(),
+            item.question()
         }).toList();
         jdbcTemplate.batchUpdate(sql, params);
     }
 
     @Override
     public Optional<PropertyChecklistApplicationQuery> findApplication(final long memberId, final long propertyId,
-                                                                        final long propertyChecklistId) {
+                                                                       final long propertyChecklistId) {
+        String sqlChecklist = """
+                SELECT pc.id, pc.property_id, pc.user_checklist_id, pc.checklist_name, pc.stage
+                FROM property_checklists pc
+                JOIN properties p ON p.id = pc.property_id
+                WHERE p.id = ? AND p.member_id = ? AND pc.id = ?
+                """;
         Optional<PropertyChecklistApplicationQuery> checklist = jdbcTemplate.query(
-                        "SELECT pc.id, pc.property_id, pc.user_checklist_id, pc.checklist_name, pc.stage "
-                                + "FROM property_checklists pc "
-                                + "JOIN properties p ON p.id = pc.property_id "
-                                + "WHERE p.id = ? AND p.member_id = ? AND pc.id = ?",
-                        (rs, row) -> new PropertyChecklistApplicationQuery(rs.getLong("id"),
-                                rs.getLong("property_id"), rs.getObject("user_checklist_id", Long.class),
-                                rs.getString("checklist_name"), CheckStage.valueOf(rs.getString("stage")), List.of()),
-                        propertyId, memberId, propertyChecklistId)
-                .stream().findFirst();
+            sqlChecklist,
+            (rs, row) -> new PropertyChecklistApplicationQuery(
+                rs.getLong("id"),
+                rs.getLong("property_id"),
+                rs.getObject("user_checklist_id", Long.class),
+                rs.getString("checklist_name"),
+                CheckStage.valueOf(rs.getString("stage")),
+                List.of()
+            ),
+            propertyId, memberId, propertyChecklistId
+        ).stream().findFirst();
+
         if (checklist.isEmpty()) {
             return Optional.empty();
         }
+
+        String sqlItems = """
+                SELECT id, system_check_item_id, question, display_order, status, memo
+                FROM property_checklist_items
+                WHERE property_checklist_id = ?
+                ORDER BY display_order ASC, id ASC
+                """;
         List<PropertyChecklistItemQuery> savedItems = jdbcTemplate.query(
-                "SELECT id, system_check_item_id, question, display_order, status, memo "
-                        + "FROM property_checklist_items WHERE property_checklist_id = ? ORDER BY display_order ASC, id ASC",
-                (rs, row) -> new PropertyChecklistItemQuery(rs.getLong("id"),
-                        rs.getObject("system_check_item_id", Long.class),
-                        rs.getString("question"), rs.getInt("display_order"),
-                        CheckStatus.valueOf(rs.getString("status")), rs.getString("memo")), propertyChecklistId);
+            sqlItems,
+            (rs, row) -> new PropertyChecklistItemQuery(
+                rs.getLong("id"),
+                rs.getLong("system_check_item_id"),
+                rs.getString("question"),
+                rs.getInt("display_order"),
+                CheckStatus.valueOf(rs.getString("status")),
+                rs.getString("memo")
+            ),
+            propertyChecklistId);
+
         PropertyChecklistApplicationQuery root = checklist.get();
-        return Optional.of(new PropertyChecklistApplicationQuery(root.id(), root.propertyId(), root.sourceChecklistId(),
-                root.checklistName(), root.stage(), savedItems));
+        return Optional.of(new PropertyChecklistApplicationQuery(
+            root.id(), root.propertyId(), root.sourceChecklistId(),
+            root.checklistName(), root.stage(), savedItems));
     }
 
     @Override
     public int updateStatus(final long memberId, final long propertyId, final long propertyChecklistId,
                             final long itemId, final String status) {
-        return jdbcTemplate.update("UPDATE property_checklist_items pci "
-                        + "JOIN property_checklists pc ON pc.id = pci.property_checklist_id "
-                        + "JOIN properties p ON p.id = pc.property_id "
-                        + "SET pci.status = ? WHERE p.id = ? AND p.member_id = ? "
-                        + "AND pc.id = ? AND pci.id = ?",
-                status, propertyId, memberId, propertyChecklistId, itemId);
+        return jdbcTemplate.update("""
+                UPDATE property_checklist_items pci
+                JOIN property_checklists pc ON pc.id = pci.property_checklist_id
+                JOIN properties p ON p.id = pc.property_id
+                SET pci.status = ?
+                WHERE p.id = ? AND p.member_id = ? AND pc.id = ? AND pci.id = ?
+                """, status, propertyId, memberId, propertyChecklistId, itemId);
     }
 
     @Override
     public int updateMemo(final long memberId, final long propertyId, final long propertyChecklistId,
                           final long itemId, final String memo) {
-        return jdbcTemplate.update("UPDATE property_checklist_items pci "
-                        + "JOIN property_checklists pc ON pc.id = pci.property_checklist_id "
-                        + "JOIN properties p ON p.id = pc.property_id "
-                        + "SET pci.memo = ? WHERE p.id = ? AND p.member_id = ? "
-                        + "AND pc.id = ? AND pci.id = ?",
-                memo, propertyId, memberId, propertyChecklistId, itemId);
+        return jdbcTemplate.update("""
+                UPDATE property_checklist_items pci
+                JOIN property_checklists pc ON pc.id = pci.property_checklist_id
+                JOIN properties p ON p.id = pc.property_id
+                SET pci.memo = ?
+                WHERE p.id = ? AND p.member_id = ? AND pc.id = ? AND pci.id = ?
+                """, memo, propertyId, memberId, propertyChecklistId, itemId);
     }
 
     @Override
     public Optional<PropertyChecklistItemQuery> findItem(final long memberId, final long propertyId,
                                                          final long propertyChecklistId, final long itemId) {
-        return jdbcTemplate.query("SELECT pci.id, pci.system_check_item_id, pci.question, pci.display_order, "
-                        + "pci.status, pci.memo FROM property_checklist_items pci "
-                        + "JOIN property_checklists pc ON pc.id = pci.property_checklist_id "
-                        + "JOIN properties p ON p.id = pc.property_id "
-                        + "WHERE p.id = ? AND p.member_id = ? AND pc.id = ? AND pci.id = ?",
-                (rs, row) -> new PropertyChecklistItemQuery(rs.getLong("id"),
-                        rs.getObject("system_check_item_id", Long.class), rs.getString("question"),
-                        rs.getInt("display_order"), CheckStatus.valueOf(rs.getString("status")),
-                        rs.getString("memo")), propertyId, memberId, propertyChecklistId, itemId)
-                .stream().findFirst();
+        String sql = """
+                SELECT pci.id, pci.system_check_item_id, pci.question, pci.display_order, pci.status, pci.memo
+                FROM property_checklist_items pci
+                JOIN property_checklists pc ON pc.id = pci.property_checklist_id
+                JOIN properties p ON p.id = pc.property_id
+                WHERE p.id = ? AND p.member_id = ? AND pc.id = ? AND pci.id = ?
+                """;
+        return jdbcTemplate.query(sql,
+            (rs, row) -> new PropertyChecklistItemQuery(
+                rs.getLong("id"),
+                rs.getLong("system_check_item_id"),
+                rs.getString("question"),
+                rs.getInt("display_order"),
+                CheckStatus.valueOf(rs.getString("status")),
+                rs.getString("memo")
+            ),
+            propertyId, memberId, propertyChecklistId, itemId).stream().findFirst();
     }
+
+    @Override
+    public Optional<Long> findPreferredUserChecklistId(final long memberId, final CheckStage stage) {
+        String sql = """
+                SELECT user_checklist_id
+                FROM member_checklist_preferences
+                WHERE member_id = ? AND stage = ?
+                """;
+        return jdbcTemplate.query(sql, (rs, rowNum) -> rs.getObject("user_checklist_id", Long.class),
+            memberId, stage.name()).stream().findFirst();
+    }
+
+    @Override
+    public void savePreference(final long memberId, final CheckStage stage, final Long userChecklistId) {
+        String sql = """
+                INSERT INTO member_checklist_preferences (member_id, stage, user_checklist_id, updated_at)
+                VALUES (?, ?, ?, NOW(6))
+                ON DUPLICATE KEY UPDATE user_checklist_id = VALUES(user_checklist_id), updated_at = NOW(6)
+                """;
+        jdbcTemplate.update(sql, memberId, stage.name(), userChecklistId);
+    }
+
 }

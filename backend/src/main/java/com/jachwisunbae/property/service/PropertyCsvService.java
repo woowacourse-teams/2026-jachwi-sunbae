@@ -15,17 +15,16 @@ public class PropertyCsvService {
     }
 
     public byte[] export(Long memberId) {
-        StringBuilder csv = new StringBuilder("이름,주소,보증금(원),월세(원),사진 수,체크 완료,체크 전체,진행률(%),최근 활동\r\n");
+        StringBuilder csv = new StringBuilder("이름,주소,보증금(만원),월세(만원),사진 수,체크 완료,체크 전체,진행률(%)\r\n");
         for (PropertyListItemResponse item : propertyService.findList(memberId).items()) {
             csv.append(escape(item.name())).append(',')
-                    .append(escape(item.address())).append(',')
-                    .append(item.depositAmount()).append(',')
-                    .append(item.monthlyRentAmount()).append(',')
-                    .append(item.photoCount()).append(',')
-                    .append(item.overallProgress().completedCount()).append(',')
-                    .append(item.overallProgress().totalCount()).append(',')
-                    .append(item.overallProgress().progressRate()).append(',')
-                    .append(escape(item.lastActivityAt().toString())).append("\r\n");
+                .append(escape(item.address())).append(',')
+                .append(item.depositAmount()).append(',')
+                .append(item.monthlyRentAmount()).append(',')
+                .append(item.photoCount()).append(',')
+                .append(item.overallProgress().completedCount()).append(',')
+                .append(item.overallProgress().totalCount()).append(',')
+                .append(item.overallProgress().progressRate()).append("\r\n");
         }
         byte[] content = csv.toString().getBytes(StandardCharsets.UTF_8);
         byte[] result = new byte[UTF8_BOM.length + content.length];

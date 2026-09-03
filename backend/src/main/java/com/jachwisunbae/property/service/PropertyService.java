@@ -1,30 +1,25 @@
 package com.jachwisunbae.property.service;
 
-import com.jachwisunbae.property.controller.dto.request.UpdatePropertyRequest;
-import com.jachwisunbae.property.controller.dto.response.PropertyListResponse;
-import com.jachwisunbae.property.controller.dto.response.PropertyDetailResponse;
-import com.jachwisunbae.property.controller.dto.response.PropertyProgress;
-import com.jachwisunbae.property.controller.dto.response.PropertyListItemResponse;
-import com.jachwisunbae.property.controller.dto.response.PropertyChecklistOverviewResponse;
-import com.jachwisunbae.property.controller.dto.response.PropertyRepresentativePhoto;
-import com.jachwisunbae.property.controller.dto.request.CreatePropertyRequest;
-import com.jachwisunbae.property.entity.Property;
-import com.jachwisunbae.property.repository.PropertyRepository;
-import com.jachwisunbae.property.repository.PropertyPhotoRepository;
-import com.jachwisunbae.property.repository.PropertyProgressRepository;
-import com.jachwisunbae.member.repository.MemberRepository;
-import com.jachwisunbae.member.entity.Member;
 import com.jachwisunbae.common.exception.BusinessException;
 import com.jachwisunbae.common.exception.DomainErrorCode;
-import com.jachwisunbae.property.repository.query.PropertyListItemQuery;
-import com.jachwisunbae.property.repository.query.PropertyProgressSummary;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
+import com.jachwisunbae.member.repository.MemberRepository;
+import com.jachwisunbae.property.controller.dto.request.CreatePropertyRequest;
+import com.jachwisunbae.property.controller.dto.request.UpdatePropertyRequest;
+import com.jachwisunbae.property.controller.dto.response.PropertyChecklistOverviewResponse;
+import com.jachwisunbae.property.controller.dto.response.PropertyDetailResponse;
+import com.jachwisunbae.property.controller.dto.response.PropertyListItemResponse;
+import com.jachwisunbae.property.controller.dto.response.PropertyListResponse;
+import com.jachwisunbae.property.controller.dto.response.PropertyProgress;
+import com.jachwisunbae.property.controller.dto.response.PropertyRepresentativePhoto;
+import com.jachwisunbae.property.entity.Property;
+import com.jachwisunbae.property.repository.PropertyPhotoRepository;
+import com.jachwisunbae.property.repository.PropertyProgressRepository;
+import com.jachwisunbae.property.repository.PropertyRepository;
 import java.time.Clock;
 import java.time.LocalDateTime;
+import java.util.List;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @Transactional(readOnly = true)
@@ -33,16 +28,20 @@ public class PropertyService {
     private final MemberRepository memberRepository;
     private final PropertyPhotoRepository propertyPhotoRepository;
     private final PropertyProgressRepository propertyProgressRepository;
+    private final PropertyChecklistService propertyChecklistService;
     private final Clock clock;
 
-    public PropertyService(final PropertyRepository propertyRepository, final MemberRepository memberRepository,
+    public PropertyService(final PropertyRepository propertyRepository,
+                           final MemberRepository memberRepository,
                            final PropertyPhotoRepository propertyPhotoRepository,
                            final PropertyProgressRepository propertyProgressRepository,
+                           final PropertyChecklistService propertyChecklistService,
                            final Clock clock) {
         this.propertyRepository = propertyRepository;
         this.memberRepository = memberRepository;
         this.propertyPhotoRepository = propertyPhotoRepository;
         this.propertyProgressRepository = propertyProgressRepository;
+        this.propertyChecklistService = propertyChecklistService;
         this.clock = clock;
     }
 
@@ -71,21 +70,25 @@ public class PropertyService {
     }
 
     @Transactional
-    public PropertyCreationResult create(final Long memberId, final CreatePropertyRequest request) {
-        Member member = memberRepository.findByIdForUpdate(memberId).orElseThrow(() -> new BusinessException(
-                DomainErrorCode.MEMBER_NOT_FOUND, "회원을 찾을 수 없습니다."));
+    public Property create(final Long memberId, final CreatePropertyRequest request) {
+        memberRepository.findByIdForUpdate(memberId)
+            .orElseThrow(() -> new BusinessException(DomainErrorCode.MEMBER_NOT_FOUND, "회원을 찾을 수 없습니다."));
+
         int propertyCount = propertyRepository.countByMemberId(memberId);
         validatePropertyCount(propertyCount);
 
         LocalDateTime now = LocalDateTime.now(clock);
-        Property property = propertyRepository.save(Property.create(memberId, request.name(), request.depositAmount(),
-                request.monthlyRentAmount(), request.discoverySource(), request.roadAddress(), request.jibunAddress(),
-                request.latitude(), request.longitude(), now));
-        boolean firstProperty = member.recordFirstProperty(now);
-        if (firstProperty) {
-            memberRepository.update(member);
-        }
-        return new PropertyCreationResult(property, firstProperty);
+        Property property = propertyRepository.save(Property.create(
+            memberId, request.name(), request.depositAmount(), request.monthlyRentAmount(),
+            request.discoverySource(), request.address(),
+            request.latitude(), request.longitude(),
+            request.availableMoveInDate(), request.maintenanceFeeAmount(), request.visitScheduledAt(),
+            request.roomOptions(), request.utilityOptions(), now));
+
+        // 매물 생성 트랜잭션 내에서 2단계 체크리스트 스냅샷 자동 생성
+        propertyChecklistService.applyInitialChecklists(memberId, property.getId());
+
+        return property;
     }
 
     private void validatePropertyCount(final int propertyCount) {
@@ -101,8 +104,10 @@ public class PropertyService {
                 .orElseThrow(() -> new BusinessException(DomainErrorCode.PROPERTY_NOT_FOUND,
                         "매물을 찾을 수 없습니다."));
         property.replaceBasicInfo(request.name(), request.depositAmount(),
-                request.monthlyRentAmount(), request.discoverySource(), request.roadAddress(), request.jibunAddress(),
-                request.latitude(), request.longitude(), LocalDateTime.now(clock));
+                request.monthlyRentAmount(), request.discoverySource(), request.address(),
+                request.latitude(), request.longitude(),
+                request.availableMoveInDate(), request.maintenanceFeeAmount(), request.visitScheduledAt(),
+                request.roomOptions(), request.utilityOptions(), LocalDateTime.now(clock));
         return propertyRepository.update(property);
     }
 

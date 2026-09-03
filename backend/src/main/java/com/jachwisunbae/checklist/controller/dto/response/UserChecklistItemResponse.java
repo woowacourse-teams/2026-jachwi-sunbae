@@ -26,8 +26,9 @@ public record UserChecklistItemResponse(
     }
 
     public static UserChecklistItemResponse from(final UserChecklistItem item) {
-        return new UserChecklistItemResponse(item.getId(),
-                item.isCustom() ? ChecklistItemOrigin.CUSTOM : ChecklistItemOrigin.PROVIDED,
+        return new UserChecklistItemResponse(
+                item.getId(),
+                ChecklistItemOrigin.PROVIDED,
                 item.getSystemCheckItemId(), item.getItemType(),
                 item.getQuestion(), item.getDisplayOrder(), true);
     }

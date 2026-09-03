@@ -11,62 +11,32 @@ import java.time.LocalDateTime;
 public class Member extends BaseTimeEntity {
 
     private final Long id;
-    private String email;
-    private String name;
-    private LocalDateTime lastLoginAt;
-    private LocalDateTime firstPropertyCreatedAt;
+    private String nickname;
+    private String passwordHash;
 
-    private Member(final Long id, final String email, final String name,
-                   final LocalDateTime lastLoginAt,
-                   final LocalDateTime firstPropertyCreatedAt,
-                   final LocalDateTime createdAt,
-                   final LocalDateTime updatedAt) {
+    private Member(final Long id, final String nickname, final String passwordHash,
+                   final LocalDateTime createdAt, final LocalDateTime updatedAt) {
         super(createdAt, updatedAt);
         this.id = id;
-        this.email = email;
-        this.name = name;
-        this.lastLoginAt = lastLoginAt;
-        this.firstPropertyCreatedAt = firstPropertyCreatedAt;
+        this.nickname = validateNickname(nickname);
+        this.passwordHash = passwordHash;
     }
 
-    public static Member create(final String email, final String name, final LocalDateTime now) {
-        return new Member(null, validateEmail(email), validateName(name), now, null, now, now);
+    public static Member create(final String nickname, final String passwordHash, final LocalDateTime now) {
+        return new Member(null, nickname, passwordHash, now, now);
     }
 
-    public static Member reconstruct(final Long id, final String email, final String name,
-                                     final LocalDateTime lastLoginAt,
-                                     final LocalDateTime firstPropertyCreatedAt,
-                                     final LocalDateTime createdAt,
-                                     final LocalDateTime updatedAt) {
-        return new Member(id, validateEmail(email), validateName(name), lastLoginAt, firstPropertyCreatedAt,
-                createdAt, updatedAt);
+    public static Member reconstruct(final Long id, final String nickname, final String passwordHash,
+                                     final LocalDateTime createdAt, final LocalDateTime updatedAt) {
+        return new Member(id, nickname, passwordHash, createdAt, updatedAt);
     }
 
-    public void recordNicknameLogin(final String name, final LocalDateTime loginAt) {
-        this.name = validateName(name);
-        this.lastLoginAt = DomainPreconditions.requireNonNull(loginAt, DomainErrorCode.MEMBER_NAME_INVALID,
-                "최근 로그인 시각은 필수입니다.");
-        updateUpdatedAt(loginAt);
+    public boolean isPasswordProtected() {
+        return passwordHash != null;
     }
 
-    public boolean recordFirstProperty(final LocalDateTime createdAt) {
-        if (firstPropertyCreatedAt != null) {
-            return false;
-        }
-        this.firstPropertyCreatedAt = DomainPreconditions.requireNonNull(createdAt,
-                DomainErrorCode.MEMBER_FIRST_PROPERTY_CREATED_AT_REQUIRED, "첫 매물 등록 시각은 필수입니다.");
-        updateUpdatedAt(createdAt);
-        return true;
+    private static String validateNickname(final String nickname) {
+        return DomainPreconditions.requireTrimmed(nickname, 1, 50, DomainErrorCode.NICKNAME_INVALID,
+            "닉네임은 trim 후 1자 이상 50자 이하여야 합니다.");
     }
-
-    private static String validateEmail(final String email) {
-        return DomainPreconditions.requireNonBlank(email, DomainErrorCode.MEMBER_EMAIL_INVALID,
-                "이메일은 필수입니다.");
-    }
-
-    private static String validateName(final String name) {
-        return DomainPreconditions.requireTrimmed(name, 1, 100, DomainErrorCode.MEMBER_NAME_INVALID,
-                "회원 이름은 trim 후 1자 이상 100자 이하여야 합니다.");
-    }
-
 }
