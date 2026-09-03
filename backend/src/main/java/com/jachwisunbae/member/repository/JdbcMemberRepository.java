@@ -23,20 +23,17 @@ public class JdbcMemberRepository implements MemberRepository {
     @Override
     public Optional<Member> findById(final Long memberId) {
         String sql = """
-                SELECT id, email, name, last_login_at, first_property_created_at, created_at, updated_at
+                SELECT id, nickname, password_hash, created_at, updated_at
                 FROM members
                 WHERE id = ?
                 """;
-
-        return jdbcTemplate.query(sql, memberRowMapper(), memberId)
-                .stream()
-                .findFirst();
+        return jdbcTemplate.query(sql, memberRowMapper(), memberId).stream().findFirst();
     }
 
     @Override
     public Optional<Member> findByIdForUpdate(final Long memberId) {
         String sql = """
-                SELECT id, email, name, last_login_at, first_property_created_at, created_at, updated_at
+                SELECT id, nickname, password_hash, created_at, updated_at
                 FROM members
                 WHERE id = ?
                 FOR UPDATE
@@ -45,47 +42,50 @@ public class JdbcMemberRepository implements MemberRepository {
     }
 
     @Override
+    public Optional<Member> findByNickname(final String nickname) {
+        String sql = """
+                SELECT id, nickname, password_hash, created_at, updated_at
+                FROM members
+                WHERE nickname = ?
+                """;
+        return jdbcTemplate.query(sql, memberRowMapper(), nickname).stream().findFirst();
+    }
+
+    @Override
     public Member save(final Member member) {
         String sql = """
-                INSERT INTO members (
-                    email, name, last_login_at,
-                    created_at, updated_at
-                ) VALUES (?, ?, ?, ?, ?)
+                INSERT INTO members (nickname, password_hash, created_at, updated_at)
+                VALUES (?, ?, ?, ?)
                 """;
         KeyHolder keyHolder = new GeneratedKeyHolder();
         jdbcTemplate.update(connection -> {
             PreparedStatement statement = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
-            statement.setString(1, member.getEmail());
-            statement.setString(2, member.getName());
-            statement.setObject(3, member.getLastLoginAt());
-            statement.setObject(4, member.getCreatedAt());
-            statement.setObject(5, member.getUpdatedAt());
+            statement.setString(1, member.getNickname());
+            statement.setString(2, member.getPasswordHash());
+            statement.setObject(3, member.getCreatedAt());
+            statement.setObject(4, member.getUpdatedAt());
             return statement;
         }, keyHolder);
-        return Member.reconstruct(keyHolder.getKey().longValue(), member.getEmail(), member.getName(),
-                member.getLastLoginAt(), member.getFirstPropertyCreatedAt(), member.getCreatedAt(),
-                member.getUpdatedAt());
+        return Member.reconstruct(keyHolder.getKey().longValue(), member.getNickname(), member.getPasswordHash(),
+                member.getCreatedAt(), member.getUpdatedAt());
     }
 
     @Override
     public void update(final Member member) {
         String sql = """
                 UPDATE members
-                SET email = ?, name = ?, last_login_at = ?, first_property_created_at = ?, updated_at = ?
+                SET nickname = ?, password_hash = ?, updated_at = ?
                 WHERE id = ?
                 """;
-        jdbcTemplate.update(sql, member.getEmail(), member.getName(), member.getLastLoginAt(),
-                member.getFirstPropertyCreatedAt(), member.getUpdatedAt(), member.getId());
+        jdbcTemplate.update(sql, member.getNickname(), member.getPasswordHash(), member.getUpdatedAt(),
+                member.getId());
     }
 
     private RowMapper<Member> memberRowMapper() {
         return (resultSet, rowNumber) -> Member.reconstruct(
                 resultSet.getLong("id"),
-                resultSet.getString("email"),
-                resultSet.getString("name"),
-                resultSet.getTimestamp("last_login_at").toLocalDateTime(),
-                resultSet.getTimestamp("first_property_created_at") == null ? null
-                        : resultSet.getTimestamp("first_property_created_at").toLocalDateTime(),
+                resultSet.getString("nickname"),
+                resultSet.getString("password_hash"),
                 resultSet.getTimestamp("created_at").toLocalDateTime(),
                 resultSet.getTimestamp("updated_at").toLocalDateTime()
         );

@@ -7,7 +7,7 @@ public record MemberDetailResponse(
 ) {
 
     public static MemberDetailResponse from(MemberProfile profile) {
-        return new MemberDetailResponse(profile.member().getId(), profile.member().getName(),
+        return new MemberDetailResponse(profile.member().getId(), profile.member().getNickname(),
                 profile.passwordProtected());
     }
 }
