@@ -85,9 +85,9 @@ erDiagram
 | `maintenance_fee_amount` | BIGINT UNSIGNED | NOT NULL, DEFAULT 0 | 관리비 |
 | `visit_scheduled_at` | DATETIME(6) | NULL | 방문 예정 시각 |
 | `discovery_source` | VARCHAR(500) | NULL | 확인한 곳(URL·앱·중개사 등 발견 경로) |
-| `created_at`, `updated_at` | DATETIME(6) | NOT NULL | 생성·수정 시각 |
+| `created_at` | DATETIME(6) | NOT NULL | 생성 시각 |
 
-매물과 최대 1:1 관계다.
+매물과 최대 1:1 관계다. 부가정보 수정 시각을 별도로 추적할 필요가 없어 `updated_at`은 두지 않는다.
 
 ### `property_room_options` / `property_utility_options` — 방 옵션·관리비 포함 공과금 (M:N)
 

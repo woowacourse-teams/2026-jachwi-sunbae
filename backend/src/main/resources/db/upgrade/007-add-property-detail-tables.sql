@@ -10,7 +10,6 @@ CREATE TABLE IF NOT EXISTS property_details (
     visit_scheduled_at DATETIME(6) NULL,
     discovery_source VARCHAR(500) NULL,
     created_at DATETIME(6) NOT NULL,
-    updated_at DATETIME(6) NOT NULL,
     CONSTRAINT fk_property_details_property FOREIGN KEY (property_id) REFERENCES properties (id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 

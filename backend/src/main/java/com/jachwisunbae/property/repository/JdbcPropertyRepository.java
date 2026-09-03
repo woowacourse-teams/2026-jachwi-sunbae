@@ -199,7 +199,7 @@ public class JdbcPropertyRepository implements PropertyRepository {
                 SELECT p.id, p.member_id, p.name, p.deposit_amount, p.monthly_rent_amount,
                        p.address, p.latitude, p.longitude, p.created_at,
                        pd.discovery_source, pd.available_move_in_date, pd.maintenance_fee_amount,
-                       pd.visit_scheduled_at, pd.updated_at
+                       pd.visit_scheduled_at
                 FROM properties p
                 LEFT JOIN property_details pd ON pd.property_id = p.id
                 WHERE p.id = ? AND p.member_id = ? AND p.deleted_at IS NULL
@@ -211,7 +211,6 @@ public class JdbcPropertyRepository implements PropertyRepository {
         Date availableMoveInDate = rs.getDate("available_move_in_date");
         Timestamp visitScheduledAt = rs.getTimestamp("visit_scheduled_at");
         Timestamp createdAt = rs.getTimestamp("created_at");
-        Timestamp updatedAt = rs.getTimestamp("updated_at");
         return Property.reconstruct(
             propertyId,
             rs.getLong("member_id"),
@@ -228,7 +227,7 @@ public class JdbcPropertyRepository implements PropertyRepository {
             findRoomOptions(propertyId),
             findUtilityOptions(propertyId),
             createdAt.toLocalDateTime(),
-            updatedAt == null ? createdAt.toLocalDateTime() : updatedAt.toLocalDateTime()
+            createdAt.toLocalDateTime()
         );
     }
 
@@ -236,44 +235,41 @@ public class JdbcPropertyRepository implements PropertyRepository {
         jdbcTemplate.update("""
                 INSERT INTO property_details
                     (property_id, available_move_in_date, maintenance_fee_amount, visit_scheduled_at,
-                     discovery_source, created_at, updated_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?)
+                     discovery_source, created_at)
+                VALUES (?, ?, ?, ?, ?, ?)
                 """,
             propertyId,
             toSqlDate(property.getAvailableMoveInDate()),
             property.getMaintenanceFeeAmount(),
             property.getVisitScheduledAt(),
             property.getDiscoverySource(),
-            property.getCreatedAt(),
-            property.getUpdatedAt());
+            property.getCreatedAt());
     }
 
     private void upsertPropertyDetails(final Property property) {
         int updated = jdbcTemplate.update("""
                 UPDATE property_details
                 SET available_move_in_date = ?, maintenance_fee_amount = ?, visit_scheduled_at = ?,
-                    discovery_source = ?, updated_at = ?
+                    discovery_source = ?
                 WHERE property_id = ?
                 """,
             toSqlDate(property.getAvailableMoveInDate()),
             property.getMaintenanceFeeAmount(),
             property.getVisitScheduledAt(),
             property.getDiscoverySource(),
-            property.getUpdatedAt(),
             property.getId());
         if (updated == 0) {
             jdbcTemplate.update("""
                     INSERT INTO property_details
                         (property_id, available_move_in_date, maintenance_fee_amount, visit_scheduled_at,
-                         discovery_source, created_at, updated_at)
-                    VALUES (?, ?, ?, ?, ?, ?, ?)
+                         discovery_source, created_at)
+                    VALUES (?, ?, ?, ?, ?, ?)
                     """,
                 property.getId(),
                 toSqlDate(property.getAvailableMoveInDate()),
                 property.getMaintenanceFeeAmount(),
                 property.getVisitScheduledAt(),
                 property.getDiscoverySource(),
-                property.getUpdatedAt(),
                 property.getUpdatedAt());
         }
     }
