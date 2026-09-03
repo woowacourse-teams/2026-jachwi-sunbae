@@ -28,13 +28,13 @@
 }
 ```
 
-로그인 응답은 `accessToken`, `tokenType`, `expiresIn`, `newMember`와 `member.memberId`, `member.name`, `member.passwordProtected`를 제공한다. `newMember`는 이번 요청에서 닉네임 회원을 새로 만든 경우에만 `true`이고, 기존 닉네임 로그인은 `false`다. `/api/members/me`도 `memberId`, `displayName`, `passwordProtected`만 반환하며 내부 식별용 이메일은 노출하지 않는다.
+로그인 응답은 `accessToken`, `tokenType`, `expiresIn`, `newMember`와 `member.memberId`, `member.name`, `member.passwordProtected`를 제공한다. `newMember`는 이번 요청에서 닉네임 회원을 새로 만든 경우에만 `true`이고, 기존 닉네임 로그인은 `false`다. `/api/members/me`는 `id`, `name`, `passwordProtected`만 반환하며 내부 식별용 이메일은 노출하지 않는다.
 
 ## 매물
 
 | 메서드 | 경로 | 설명 |
 | --- | --- | --- |
-| `GET` | `/api/properties` | 최근 활동순 목록과 대표 사진·사진 수·1·2·3단계별 진행 현황 |
+| `GET` | `/api/properties` | `id DESC` 목록과 대표 사진·사진 수·단계별(`ON_SITE`, `PRE_CONTRACT`) 진행 현황 |
 | `GET` | `/api/properties/export.csv` | 호환용 UTF-8 BOM 매물 요약 다운로드 |
 | `POST` | `/api/properties/export.pdf` | 선택한 2~5개 매물의 전체 기록 PDF 다운로드 |
 | `POST` | `/api/properties/comparison-views` | 비교 화면 진입 시각과 현재 보유 매물 수 기록 |
@@ -43,24 +43,30 @@
 | `PUT` | `/api/properties/{propertyId}` | 기본 정보 전체 교체 |
 | `DELETE` | `/api/properties/{propertyId}` | 종속 데이터와 객체 사진 삭제 |
 
-생성·수정 요청의 목표 필드는 다음과 같다.
+생성·수정 요청은 기본 정보와 부가정보를 한 번에 받는다.
 
 ```json
 {
   "name": "신림역 원룸",
-  "roadAddress": "서울 관악구 신림로 12길 3",
-  "jibunAddress": "서울 관악구 신림동 123-4",
+  "address": "서울 관악구 신림로 12길 3",
   "latitude": 37.4841234,
   "longitude": 126.9291234,
   "depositAmount": 10000000,
   "monthlyRentAmount": 550000,
-  "discoverySource": "https://example.com/property/1"
+  "discoverySource": "https://example.com/property/1",
+  "availableMoveInDate": "2026-10-01",
+  "maintenanceFeeAmount": 70000,
+  "visitScheduledAt": "2026-09-10T14:00:00",
+  "roomOptions": ["AIR_CONDITIONER", "REFRIGERATOR"],
+  "utilityOptions": ["WATER", "INTERNET"]
 }
 ```
 
+`address`는 도로명·지번 구분 없는 단일 필드다. **구현 참고**: 이 문서 갱신 시점 기준으로 `availableMoveInDate`, `maintenanceFeeAmount`, `visitScheduledAt`, `roomOptions`, `utilityOptions`는 요청 DTO가 받아도 서비스·저장 계층이 `property_details`·`property_room_options`·`property_utility_options`에 연결돼 있지 않아 저장되지 않는다. 스키마 상세는 [MVP2 데이터 모델](../architecture/mvp2-data-model.md)을 따른다.
+
 매물 생성 응답은 생성된 매물 필드와 `firstProperty`를 제공한다. `firstProperty`는 회원 행의 최초 등록 시각을 잠금 안에서 기록해 생애 첫 매물인 경우에만 `true`다. 첫 매물을 삭제한 뒤 다시 등록해도 `false`다.
 
-목록·상세 응답은 `address`, `roadAddress`, `jibunAddress`, `latitude`, `longitude`, `photoCount`, `representativePhoto`, `overallProgress`, `lastActivityAt`을 제공한다. 목록은 추가로 `stages`에 `ONLINE_PHONE`, `ON_SITE`, `PRE_CONTRACT` 순서의 `applied`와 단계별 `progress`를 제공한다. `address`는 도로명 주소가 있으면 그 값을, 없으면 지번 주소를 담는 표시용 파생 필드다.
+목록·상세 응답은 `address`, `latitude`, `longitude`, `photoCount`, `representativePhoto`, `overallProgress`를 제공한다. 목록은 추가로 `stages`에 `ON_SITE`, `PRE_CONTRACT` 순서의 `applied`와 단계별 `progress`를 제공한다. 응답에 `lastActivityAt`은 없으며 목록 정렬은 `id DESC`다.
 
 비교 PDF 요청은 서로 다른 소유 매물 ID 2~5개를 선택 순서로 보낸다.
 
@@ -70,7 +76,7 @@
 }
 ```
 
-성공은 `application/pdf`와 attachment 파일을 반환한다. PDF의 첫 페이지는 나란한 기본 정보·단계 집계이고, 이후는 매물별 기본 정보·모든 사진·구조화 메모·자유 메모·적용한 모든 체크 질문과 상태·항목 메모를 담는다. PDF에 넣는 사진은 메모리와 파일 크기를 제한하도록 긴 변 1,200px 이하 JPEG로 변환하며 객체 저장소의 원본은 변경하지 않는다. 2~5개 범위나 중복 위반은 400, 소유하지 않은 매물은 404다.
+성공은 `application/pdf`와 attachment 파일을 반환한다. PDF의 첫 페이지는 나란한 기본 정보·단계 집계이고, 이후는 매물별 기본 정보·모든 사진·자유 메모·적용한 모든 체크 질문과 상태·항목 메모를 담는다. PDF에 넣는 사진은 메모리와 파일 크기를 제한하도록 긴 변 1,200px 이하 JPEG로 변환하며 객체 저장소의 원본은 변경하지 않는다. 2~5개 범위나 중복 위반은 400, 소유하지 않은 매물은 404다.
 
 `POST /api/properties/comparison-views`는 요청 본문 없이 현재 회원의 진입 시각과 그 시점의 보유 매물 수를 저장하고 `204 No Content`를 반환한다. 화면은 진입할 때마다 한 번 요청하고, 집계는 `property_count >= 2`인 서로 다른 `member_id`를 기준으로 한다. 이 실험 기록 실패도 비교 화면과 PDF 이용은 계속한다.
 
@@ -89,14 +95,13 @@
 
 ## 메모
 
-기존 `GET`, `POST`, `PUT /api/properties/{propertyId}/memo` 계약을 유지한다. `POST`는 최초 스냅샷 초기화, `PUT`은 전체 저장이다.
+`GET`, `PUT /api/properties/{propertyId}/memo`는 자유 메모(`freeMemo`, 최대 2,000자) 하나만 다룬다. `PUT`이 전체 값을 교체한다. 구조화 메모 endpoint는 없다.
 
 ## 시스템·사용자 체크리스트
 
 | 메서드 | 경로 | 설명 |
 | --- | --- | --- |
 | `GET` | `/api/check-items?stage=&query=` | 공개 시스템 체크 항목 검색 |
-| `GET` | `/api/system-memo-items` | 활성 시스템 메모 항목 |
 | `GET` | `/api/checklists?stage=` | 내 체크리스트 목록 |
 | `POST` | `/api/checklists` | 생성 |
 | `GET` | `/api/checklists/{checklistId}` | 상세 |

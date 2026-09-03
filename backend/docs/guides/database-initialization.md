@@ -57,6 +57,12 @@ Spring Boot의 `DatabaseUpgradeInitializer`는 요청을 받기 전에 `db/upgra
 - 매물당 대표 사진 하나, 대표 사진의 소유 매물 일치와 위도·경도 범위 제약을 DB에서 보장한다. 기존 관계가 이 계약을 위반하면 행을 자동 삭제하지 않고 기동을 실패시킨다.
 - 기존 회원·매물·사진·메모·체크 상태와 `flyway_schema_history`는 삭제하지 않는다.
 
+2단계 체크리스트 개편의 `006-remove-online-phone-and-structured-memos.sql`은 다음을 수행한다.
+
+- `ONLINE_PHONE` 단계의 매물 체크 항목·매물 체크리스트·사용자 체크 항목·사용자 체크리스트·회원 최근 선택·시스템 체크 항목을 삭제한다. `002-custom-checklist-items.sql`이 매번 3단계 문항 53개를 다시 upsert하므로, 이 스크립트가 그 뒤 번호로 실행되어 `ONLINE_PHONE` 문항을 매 시작마다 다시 제거한다.
+- 더 이상 쓰지 않는 `property_memo_items`, `system_memo_items` 테이블을 DROP한다.
+- `system_check_items`, `user_checklists`, `member_checklist_preferences`, `property_checklists`의 단계 CHECK 제약을 `ON_SITE`, `PRE_CONTRACT` 둘로 축소한다.
+
 ## 스키마 변경 절차
 
 1. 새 DB용 `001-schema.sql`을 코드가 기대하는 최종 상태로 수정한다.
