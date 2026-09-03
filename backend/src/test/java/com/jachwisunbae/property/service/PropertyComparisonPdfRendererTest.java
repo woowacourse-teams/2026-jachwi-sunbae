@@ -9,7 +9,6 @@ import com.jachwisunbae.property.controller.dto.response.PropertyProgress;
 import com.jachwisunbae.property.entity.Property;
 import com.jachwisunbae.property.repository.query.PropertyChecklistApplicationQuery;
 import com.jachwisunbae.property.repository.query.PropertyChecklistItemQuery;
-import com.jachwisunbae.property.repository.query.PropertyMemoItemQuery;
 import com.jachwisunbae.property.repository.query.PropertyMemoQuery;
 import java.awt.Color;
 import java.awt.Graphics2D;

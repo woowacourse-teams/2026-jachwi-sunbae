@@ -289,31 +289,21 @@ public class PropertyController {
     }
 
     @GetMapping("/{propertyId}/memo")
-    @Operation(summary = "매물 메모 조회", description = "구조화 메모 항목과 자유 메모를 조회합니다.")
+    @Operation(summary = "자유 메모 조회", description = "매물의 자유 메모를 조회합니다.")
     public ApiResponse<PropertyMemoResponse> findMemo(
-            @AuthenticatedMemberId final Long memberId,
-            @PathVariable final Long propertyId) {
-        return ApiResponse.of("매물 메모를 조회했습니다.",
-                PropertyMemoResponse.from(propertyMemoService.find(memberId, propertyId)));
-    }
-
-    @PostMapping("/{propertyId}/memo")
-    @Operation(summary = "매물 메모 초기 생성", description = "활성 시스템 메모 항목을 빈 내용의 스냅샷으로 생성합니다.")
-    public ApiResponse<PropertyMemoResponse> initializeMemo(
-            @AuthenticatedMemberId final Long memberId,
-            @PathVariable final Long propertyId) {
-        return ApiResponse.of("매물 메모를 생성했습니다.",
-                PropertyMemoResponse.from(propertyMemoService.initialize(memberId, propertyId)));
+        @AuthenticatedMemberId final Long memberId,
+        @PathVariable final Long propertyId) {
+        return ApiResponse.of("자유 메모를 조회했습니다.",
+            PropertyMemoResponse.from(propertyMemoService.find(memberId, propertyId)));
     }
 
     @PutMapping("/{propertyId}/memo")
-    @Operation(summary = "매물 메모 저장", description = "구조화 메모 내용과 자유 메모를 하나의 트랜잭션으로 저장합니다.")
+    @Operation(summary = "자유 메모 전체 교체 및 생성", description = "자유 메모를 전체 교체합니다. 메모 행이 없으면 생성합니다.")
     public ApiResponse<PropertyMemoResponse> updateMemo(
-            @AuthenticatedMemberId final Long memberId,
-            @PathVariable final Long propertyId,
-            @Valid @RequestBody final UpdatePropertyMemoRequest request) {
-        return ApiResponse.of("매물 메모를 저장했습니다.",
-                PropertyMemoResponse.from(propertyMemoService.update(memberId, propertyId, request)));
+        @AuthenticatedMemberId final Long memberId,
+        @PathVariable final Long propertyId,
+        @Valid @RequestBody final UpdatePropertyMemoRequest request) {
+        return ApiResponse.of("자유 메모를 저장했습니다.",
+            PropertyMemoResponse.from(propertyMemoService.update(memberId, propertyId, request)));
     }
-
 }
