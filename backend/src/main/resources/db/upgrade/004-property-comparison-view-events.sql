@@ -4,7 +4,7 @@
 CREATE TABLE IF NOT EXISTS property_comparison_view_events
 (
     id             BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    member_id      BIGINT            NOT NULL,
+    member_id      BIGINT UNSIGNED   NOT NULL,
     property_count SMALLINT UNSIGNED NOT NULL,
     viewed_at      DATETIME(6)       NOT NULL,
     CONSTRAINT fk_property_comparison_view_events_member

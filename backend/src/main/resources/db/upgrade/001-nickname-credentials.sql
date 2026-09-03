@@ -3,7 +3,7 @@
 
 CREATE TABLE IF NOT EXISTS nickname_credentials
 (
-    member_id     BIGINT       NOT NULL,
+    member_id     BIGINT UNSIGNED NOT NULL,
     nickname      VARCHAR(100) NOT NULL,
     nickname_key  VARCHAR(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL,
     password_hash VARCHAR(100) CHARACTER SET ascii COLLATE ascii_bin NULL,
