@@ -85,7 +85,7 @@ public class PropertyService {
         LocalDateTime now = LocalDateTime.now(clock);
         Property property = propertyRepository.save(Property.create(
             memberId, request.name(), request.depositAmount(), request.monthlyRentAmount(),
-            request.discoverySource(), request.roadAddress(), request.jibunAddress(),
+            request.discoverySource(), request.address(),
             request.latitude(), request.longitude(), now));
 
         // 매물 생성 트랜잭션 내에서 2단계 체크리스트 스냅샷 자동 생성
@@ -111,7 +111,7 @@ public class PropertyService {
                 .orElseThrow(() -> new BusinessException(DomainErrorCode.PROPERTY_NOT_FOUND,
                         "매물을 찾을 수 없습니다."));
         property.replaceBasicInfo(request.name(), request.depositAmount(),
-                request.monthlyRentAmount(), request.discoverySource(), request.roadAddress(), request.jibunAddress(),
+                request.monthlyRentAmount(), request.discoverySource(), request.address(),
                 request.latitude(), request.longitude(), LocalDateTime.now(clock));
         return propertyRepository.update(property);
     }

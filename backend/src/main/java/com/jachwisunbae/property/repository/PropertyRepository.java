@@ -20,8 +20,6 @@ public interface PropertyRepository {
 
     Property update(Property property);
 
-    void touch(long propertyId, LocalDateTime now);
-
     void deleteById(long propertyId);
 
 }

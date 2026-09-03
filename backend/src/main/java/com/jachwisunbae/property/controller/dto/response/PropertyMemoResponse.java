@@ -7,9 +7,6 @@ public record PropertyMemoResponse(
     String freeMemo
 ) {
     public static PropertyMemoResponse from(final PropertyMemo memo) {
-        return new PropertyMemoResponse(
-            memo.getPropertyId(),
-            memo.getFreeMemo() == null ? "" : memo.getFreeMemo()
-        );
+        return new PropertyMemoResponse(memo.getPropertyId(), memo.getFreeMemo());
     }
 }
