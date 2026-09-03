@@ -62,11 +62,11 @@
 }
 ```
 
-`address`는 도로명·지번 구분 없는 단일 필드다. **구현 참고**: 이 문서 갱신 시점 기준으로 `availableMoveInDate`, `maintenanceFeeAmount`, `visitScheduledAt`, `roomOptions`, `utilityOptions`는 요청 DTO가 받아도 서비스·저장 계층이 `property_details`·`property_room_options`·`property_utility_options`에 연결돼 있지 않아 저장되지 않는다. 스키마 상세는 [MVP2 데이터 모델](../architecture/mvp2-data-model.md)을 따른다.
+`address`는 도로명·지번 구분 없는 단일 필드다. `availableMoveInDate`, `maintenanceFeeAmount`, `visitScheduledAt`, `roomOptions`, `utilityOptions`는 `property_details`·`property_room_options`·`property_utility_options`에 저장되며 생성·수정·상세 응답에 그대로 돌아온다. 목록 응답에는 포함하지 않는다. 스키마 상세는 [MVP2 데이터 모델](../architecture/mvp2-data-model.md)을 따른다.
 
-매물 생성 응답은 생성된 매물 필드와 `firstProperty`를 제공한다. `firstProperty`는 회원 행의 최초 등록 시각을 잠금 안에서 기록해 생애 첫 매물인 경우에만 `true`다. 첫 매물을 삭제한 뒤 다시 등록해도 `false`다.
+매물 생성 응답은 생성된 매물 필드를 제공한다. `members` 테이블에 생애 첫 매물 시각을 저장할 컬럼이 없어 `firstProperty` 필드는 제공하지 않는다.
 
-목록·상세 응답은 `address`, `latitude`, `longitude`, `photoCount`, `representativePhoto`, `overallProgress`를 제공한다. 목록은 추가로 `stages`에 `ON_SITE`, `PRE_CONTRACT` 순서의 `applied`와 단계별 `progress`를 제공한다. 응답에 `lastActivityAt`은 없으며 목록 정렬은 `id DESC`다.
+목록·상세 응답은 `address`, `latitude`, `longitude`, `photoCount`, `representativePhoto`, `overallProgress`를 제공한다. 목록은 추가로 `stages`에 `ON_SITE`, `PRE_CONTRACT` 순서의 `applied`와 단계별 `progress`를 제공한다. 상세 응답은 부가정보(`availableMoveInDate`, `maintenanceFeeAmount`, `visitScheduledAt`, `roomOptions`, `utilityOptions`)도 포함하지만 목록 응답에는 없다. 응답에 `lastActivityAt`은 없으며 목록 정렬은 `id DESC`다.
 
 비교 PDF 요청은 서로 다른 소유 매물 ID 2~5개를 선택 순서로 보낸다.
 

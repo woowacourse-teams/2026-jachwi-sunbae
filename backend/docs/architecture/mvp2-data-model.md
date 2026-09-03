@@ -98,7 +98,7 @@ erDiagram
 
 두 테이블 모두 `property_id`가 `properties.id`를 참조하는 매핑 테이블이다.
 
-> **구현 참고**: 이 문서 갱신 시점 기준으로 `PropertyService`의 생성·수정 로직과 `JdbcPropertyRepository`는 `property_details`·`property_room_options`·`property_utility_options`에 INSERT/UPDATE하지 않는다. 요청 DTO는 이 필드들을 받지만 저장 계층에 연결돼 있지 않아 값이 저장되지 않는 구현 공백이 있다. 이 문서는 스키마 계약을 설명하며, 저장 로직 연결은 별도 구현 작업이 필요하다.
+`PropertyService`의 생성·수정 로직과 `JdbcPropertyRepository`가 이 세 테이블에 INSERT/UPDATE하며, 매물 생성·수정·조회 응답의 `availableMoveInDate`, `maintenanceFeeAmount`, `visitScheduledAt`, `roomOptions`, `utilityOptions` 필드와 왕복한다.
 
 ## 사진
 
@@ -240,7 +240,9 @@ FK에 `ON DELETE`를 두지 않아 DB 레벨 CASCADE·SET NULL은 없다. 매물
 
 ## 운영 DB 전용 보강
 
-`db/upgrade/001-nickname-credentials.sql`, `003-adapt-team-mvp1-schema.sql`, `005-member-first-property-created-at.sql`은 팀 운영 RDS에 남아 있던 MVP1(Google 계정, Flyway V11) 데이터를 위 스키마와 호환시키려고 `nickname_credentials`, `members.last_login_at`, `properties.road_address`/`jibun_address`, `members.first_property_created_at`, `property_comparison_view_events` 같은 레거시 컬럼·테이블을 존재 여부 기준으로 추가한다. 이 스크립트는 [ADR-0011](../adr/0011-apply-idempotent-database-upgrades.md)에 따라 새 DB를 포함한 모든 환경에서 매 시작마다 실행되므로, 실제 런타임 스키마는 위에서 설명한 기본 스키마에 이 보강분이 더해진 상태다. 새로운 도메인 설계는 이 문서의 기본 스키마를 기준으로 하고, 레거시 보강 컬럼은 팀 RDS 호환을 위한 이력으로만 취급한다.
+`db/upgrade/001-nickname-credentials.sql`, `003-adapt-team-mvp1-schema.sql`, `005-member-first-property-created-at.sql`은 팀 운영 RDS에 남아 있던 MVP1(Google 계정, Flyway V11) 데이터를 위 스키마와 호환시키려고 `nickname_credentials`, `members.last_login_at`, `properties.road_address`/`jibun_address`, `members.first_property_created_at`, `property_comparison_view_events` 같은 레거시 컬럼·테이블을 존재 여부 기준으로 추가한다. 이 스크립트는 [ADR-0011](../adr/0011-apply-idempotent-database-upgrades.md)에 따라 새 DB를 포함한 모든 환경에서 매 시작마다 실행되므로, 실제 런타임 스키마는 위에서 설명한 기본 스키마에 이 보강분이 더해진 상태다.
+
+`Member`·`JdbcMemberRepository`·`AuthService`는 `members.nickname`·`members.password_hash`만 읽고 쓴다. `nickname_credentials` 테이블과 `members.email`·`members.name`·`members.last_login_at`·`members.first_property_created_at` 컬럼은 이제 애플리케이션 코드가 읽거나 쓰지 않는다. 위 세 upgrade 스크립트는 [ADR-0011](../adr/0011-apply-idempotent-database-upgrades.md)의 "배포된 upgrade SQL은 수정하지 않는다" 원칙에 따라 그대로 두지만, 이 테이블·컬럼은 팀 RDS의 과거 데이터를 보존하는 이력일 뿐 현재 도메인 모델의 일부가 아니다. 생애 첫 매물 표시(`firstProperty`)처럼 `first_property_created_at`에 의존하던 기능은 컬럼이 기본 스키마에 없어 현재 제공하지 않는다. 새로운 도메인 설계는 이 문서의 기본 스키마를 기준으로 한다.
 
 ## 초기화와 시드
 
@@ -252,5 +254,6 @@ FK에 `ON DELETE`를 두지 않아 DB 레벨 CASCADE·SET NULL은 없다. 매물
   - `003-adapt-team-mvp1-schema.sql`: 팀 RDS의 Flyway V11 형태를 데이터 손실 없이 보강
   - `004-property-comparison-view-events.sql`: 비교 화면 진입 이벤트 테이블을 멱등 추가
   - `005-member-first-property-created-at.sql`: 회원의 최초 매물 생성 시각을 보강
-  - `006-remove-online-phone-and-structured-memos.sql`: `ONLINE_PHONE` 단계와 구조화 메모(`property_memo_items`, `system_memo_items`) 데이터·테이블을 제거하고 단계 CHECK 제약을 `ON_SITE`, `PRE_CONTRACT` 둘로 축소
+  - `006-remove-online-phone-and-structured-memos.sql`: `ONLINE_PHONE` 단계와 구조화 메모(`property_memo_items`, `system_memo_items`) 데이터·테이블을 제거하고 단계 CHECK 제약을 `ON_SITE`, `PRE_CONTRACT` 둘로 축소. 리팩터링 이전 볼륨에는 없는 `member_checklist_preferences`를 먼저 `CREATE TABLE IF NOT EXISTS`로 보장한다.
+  - `007-add-property-detail-tables.sql`: 리팩터링 이전 볼륨·RDS에 `property_details`, `property_room_options`, `property_utility_options`를 `001-schema.sql`과 동일한 정의로 보강
 - 데모 회원·매물·진행 결과는 `DEMO_SEED_ENABLED=true`일 때만 만들며 운영 시드에 섞지 않는다.
