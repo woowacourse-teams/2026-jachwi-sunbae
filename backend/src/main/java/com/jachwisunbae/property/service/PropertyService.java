@@ -33,16 +33,20 @@ public class PropertyService {
     private final MemberRepository memberRepository;
     private final PropertyPhotoRepository propertyPhotoRepository;
     private final PropertyProgressRepository propertyProgressRepository;
+    private final PropertyChecklistService propertyChecklistService;
     private final Clock clock;
 
-    public PropertyService(final PropertyRepository propertyRepository, final MemberRepository memberRepository,
+    public PropertyService(final PropertyRepository propertyRepository,
+                           final MemberRepository memberRepository,
                            final PropertyPhotoRepository propertyPhotoRepository,
                            final PropertyProgressRepository propertyProgressRepository,
+                           final PropertyChecklistService propertyChecklistService,
                            final Clock clock) {
         this.propertyRepository = propertyRepository;
         this.memberRepository = memberRepository;
         this.propertyPhotoRepository = propertyPhotoRepository;
         this.propertyProgressRepository = propertyProgressRepository;
+        this.propertyChecklistService = propertyChecklistService;
         this.clock = clock;
     }
 
@@ -72,15 +76,21 @@ public class PropertyService {
 
     @Transactional
     public PropertyCreationResult create(final Long memberId, final CreatePropertyRequest request) {
-        Member member = memberRepository.findByIdForUpdate(memberId).orElseThrow(() -> new BusinessException(
-                DomainErrorCode.MEMBER_NOT_FOUND, "회원을 찾을 수 없습니다."));
+        Member member = memberRepository.findByIdForUpdate(memberId)
+            .orElseThrow(() -> new BusinessException(DomainErrorCode.MEMBER_NOT_FOUND, "회원을 찾을 수 없습니다."));
+
         int propertyCount = propertyRepository.countByMemberId(memberId);
         validatePropertyCount(propertyCount);
 
         LocalDateTime now = LocalDateTime.now(clock);
-        Property property = propertyRepository.save(Property.create(memberId, request.name(), request.depositAmount(),
-                request.monthlyRentAmount(), request.discoverySource(), request.roadAddress(), request.jibunAddress(),
-                request.latitude(), request.longitude(), now));
+        Property property = propertyRepository.save(Property.create(
+            memberId, request.name(), request.depositAmount(), request.monthlyRentAmount(),
+            request.discoverySource(), request.roadAddress(), request.jibunAddress(),
+            request.latitude(), request.longitude(), now));
+
+        // 매물 생성 트랜잭션 내에서 2단계 체크리스트 스냅샷 자동 생성
+        propertyChecklistService.applyInitialChecklists(memberId, property.getId());
+
         boolean firstProperty = member.recordFirstProperty(now);
         if (firstProperty) {
             memberRepository.update(member);

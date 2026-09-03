@@ -227,7 +227,7 @@ public class PropertyController {
     }
 
     @GetMapping("/{propertyId}/checklists")
-    @Operation(summary = "매물 체크 현황 조회", description = "세 단계의 적용 여부와 단계별·전체 진행 현황을 조회합니다.")
+    @Operation(summary = "매물 체크 현황 조회", description = "두 단계(ON_SITE, PRE_CONTRACT)의 적용 여부와 단계별·전체 진행 현황을 조회합니다.")
     public ApiResponse<PropertyChecklistOverviewResponse> findChecklistOverview(
             @AuthenticatedMemberId final Long memberId,
             @PathVariable final Long propertyId) {
