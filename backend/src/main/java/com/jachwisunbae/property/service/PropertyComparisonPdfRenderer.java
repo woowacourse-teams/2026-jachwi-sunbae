@@ -57,7 +57,7 @@ public class PropertyComparisonPdfRenderer {
             return output.toByteArray();
         } catch (IOException exception) {
             throw new BusinessException(DomainErrorCode.PROPERTY_COMPARISON_EXPORT_FAILED,
-                    "매물 비교 PDF를 생성하지 못했습니다.", exception);
+                "매물 비교 PDF를 생성하지 못했습니다.", exception);
         }
     }
 
@@ -67,27 +67,25 @@ public class PropertyComparisonPdfRenderer {
         writer.newPage(landscape);
         writer.heading("매물 비교 기록", 22);
         writer.text("선택한 매물에 저장된 사실을 나란히 정리했습니다. 점수, 추천, 자동 판단은 포함하지 않습니다.",
-                9, DocumentWriter.INK_SOFT, 15);
+            9, DocumentWriter.INK_SOFT, 15);
         writer.spacer(8);
 
         List<String> names = records.stream().map(record -> record.property().getName()).toList();
         writer.tableRow("구분", names, true);
         writer.tableRow("주소", records.stream()
-                .map(record -> display(record.property().getAddress())).toList(), false);
+            .map(record -> display(record.property().getAddress())).toList(), false);
         writer.tableRow("보증금", records.stream()
-                .map(record -> money(record.property().getDepositAmount())).toList(), false);
+            .map(record -> money(record.property().getDepositAmount())).toList(), false);
         writer.tableRow("월세", records.stream()
-                .map(record -> money(record.property().getMonthlyRentAmount())).toList(), false);
+            .map(record -> money(record.property().getMonthlyRentAmount())).toList(), false);
         writer.tableRow("발견 경로", records.stream()
-                .map(record -> abbreviate(display(record.property().getDiscoverySource()), 70)).toList(), false);
+            .map(record -> abbreviate(display(record.property().getDiscoverySource()), 70)).toList(), false);
         writer.tableRow("사진", records.stream()
-                .map(record -> record.photos().size() + "장").toList(), false);
+            .map(record -> record.photos().size() + "장").toList(), false);
         for (CheckStage stage : CheckStage.values()) {
             writer.tableRow(stageLabel(stage), records.stream()
-                    .map(record -> stageSummary(record, stage)).toList(), false);
+                .map(record -> stageSummary(record, stage)).toList(), false);
         }
-        writer.tableRow("최근 활동", records.stream()
-                .map(record -> format(record.property().getLastActivityAt())).toList(), false);
     }
 
     private void drawPropertyDetail(final DocumentWriter writer,
@@ -104,13 +102,9 @@ public class PropertyComparisonPdfRenderer {
         writer.keyValue("보증금", money(property.getDepositAmount()));
         writer.keyValue("월세", money(property.getMonthlyRentAmount()));
         writer.keyValue("발견 경로", display(property.getDiscoverySource()));
-        writer.keyValue("표시 주소", display(property.getAddress()));
-        writer.keyValue("도로명 주소", display(property.getRoadAddress()));
-        writer.keyValue("지번 주소", display(property.getJibunAddress()));
+        writer.keyValue("주소", display(property.getAddress()));
         writer.keyValue("좌표", coordinates(property.getLatitude(), property.getLongitude()));
         writer.keyValue("등록 시각", format(property.getCreatedAt()));
-        writer.keyValue("수정 시각", format(property.getUpdatedAt()));
-        writer.keyValue("최근 활동", format(property.getLastActivityAt()));
 
         writer.keep(record.photos().isEmpty() ? 80 : 275);
         writer.section("사진 " + record.photos().size() + "장");
@@ -120,23 +114,21 @@ public class PropertyComparisonPdfRenderer {
             for (int photoIndex = 0; photoIndex < record.photos().size(); photoIndex++) {
                 var photo = record.photos().get(photoIndex);
                 writer.photo(photo.bytes(), "사진 " + (photoIndex + 1)
-                        + (photo.representative() ? " · 대표 사진" : ""));
+                    + (photo.representative() ? " · 대표 사진" : ""));
             }
         }
 
         writer.keep(100);
-        writer.section("메모");
-        if (record.memo().items().isEmpty()) {
-            writer.empty("저장된 구조화 메모 항목이 없습니다.");
+        writer.section("자유 메모");
+        if (record.memo() == null || record.memo().getFreeMemo() == null || record.memo().getFreeMemo().isBlank()) {
+            writer.empty("저장된 자유 메모가 없습니다.");
         } else {
-            for (var item : record.memo().items()) {
-                writer.note(item.label(), display(item.content()));
-            }
+            writer.note("메모 내용", display(record.memo().getFreeMemo()));
         }
-        writer.note("자유 메모", display(record.memo().freeMemo()));
+
 
         writer.keep(110);
-        writer.section("3단계 체크리스트");
+        writer.section("체크리스트");
         for (int stageIndex = 0; stageIndex < record.stages().size(); stageIndex++) {
             drawStage(writer, record.stages().get(stageIndex), stageIndex + 1);
         }
@@ -164,7 +156,7 @@ public class PropertyComparisonPdfRenderer {
         for (int index = 0; index < total; index++) {
             PDPage page = document.getPage(index);
             try (PDPageContentStream stream = new PDPageContentStream(document, page,
-                    PDPageContentStream.AppendMode.APPEND, true, true)) {
+                PDPageContentStream.AppendMode.APPEND, true, true)) {
                 String label = "자취선배 매물 비교 기록  ·  " + (index + 1) + " / " + total;
                 float width = font.getStringWidth(label) / 1000f * 7.5f;
                 stream.beginText();
@@ -187,26 +179,25 @@ public class PropertyComparisonPdfRenderer {
 
     private static String stageSummary(final PropertyComparisonRecord record, final CheckStage stage) {
         return record.stages().stream()
-                .filter(candidate -> candidate.summary().stage() == stage)
-                .findFirst()
-                .map(candidate -> candidate.summary().applied()
-                        ? progressText(candidate.summary().progress())
-                        : "미적용")
-                .orElse("미적용");
+            .filter(candidate -> candidate.summary().stage() == stage)
+            .findFirst()
+            .map(candidate -> candidate.summary().applied()
+                ? progressText(candidate.summary().progress())
+                : "미적용")
+            .orElse("미적용");
     }
 
     private static String progressText(final PropertyProgress progress) {
         return progress.completedCount() + "/" + progress.totalCount()
-                + " · 괜찮음 " + progress.goodCount()
-                + " · 주의 " + progress.cautionCount()
-                + " · 미확인 " + progress.unconfirmedCount();
+            + " · 괜찮음 " + progress.goodCount()
+            + " · 주의 " + progress.cautionCount()
+            + " · 미확인 " + progress.unconfirmedCount();
     }
 
     private static String stageLabel(final CheckStage stage) {
         return switch (stage) {
-            case ONLINE_PHONE -> "온라인·전화";
-            case ON_SITE -> "집에서 확인";
-            case PRE_CONTRACT -> "계약 전";
+            case ON_SITE -> "현장 확인";
+            case PRE_CONTRACT -> "계약 전 확인";
         };
     }
 
@@ -310,7 +301,7 @@ public class PropertyComparisonPdfRenderer {
         private void text(final String value, final float size, final java.awt.Color color,
                           final float lineHeight) throws IOException {
             List<String> lines = wrap(safe(value, regular), regular, size,
-                    pageSize.getWidth() - MARGIN * 2);
+                pageSize.getWidth() - MARGIN * 2);
             ensure(lines.size() * lineHeight);
             for (String line : lines) {
                 drawText(line, MARGIN, y - size, regular, size, color);
@@ -359,7 +350,7 @@ public class PropertyComparisonPdfRenderer {
             float width = pageSize.getWidth() - MARGIN * 2 - 20;
             List<String> questionLines = wrap(safe(question, bold), bold, 9.5f, width - 55);
             List<String> memoLines = "입력 없음".equals(memo) ? List.of()
-                    : wrap(safe("메모: " + memo, regular), regular, 8.3f, width);
+                : wrap(safe("메모: " + memo, regular), regular, 8.3f, width);
             float height = 24 + questionLines.size() * 13 + memoLines.size() * 12;
             ensure(height + 5);
             stream.setStrokingColor(BORDER);
@@ -414,8 +405,8 @@ public class PropertyComparisonPdfRenderer {
             float fontSize = heading ? 8.5f : 7.6f;
             PDFont valueFont = heading ? bold : regular;
             List<List<String>> wrapped = values.stream()
-                    .map(value -> wrap(safe(value, valueFont), valueFont, fontSize, cellWidth - 10))
-                    .toList();
+                .map(value -> wrap(safe(value, valueFont), valueFont, fontSize, cellWidth - 10))
+                .toList();
             int maxLines = wrapped.stream().mapToInt(List::size).max().orElse(1);
             float height = Math.max(29, maxLines * 11 + 12);
             ensure(height);
