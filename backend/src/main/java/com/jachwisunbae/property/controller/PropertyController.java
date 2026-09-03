@@ -105,7 +105,7 @@ public class PropertyController {
 
     @PostMapping(value = "/export.pdf", produces = MediaType.APPLICATION_PDF_VALUE)
     @Operation(summary = "선택 매물 기록 비교 PDF",
-            description = "소유한 매물 2~5개를 선택해 기본 정보, 사진, 메모와 세 단계 체크 기록을 PDF로 내려받습니다."
+            description = "소유한 매물 2~5개를 선택해 기본 정보, 사진, 메모와 두 단계 체크 기록을 PDF로 내려받습니다."
                     + " 점수나 추천은 생성하지 않습니다.")
     public ResponseEntity<byte[]> exportPdf(
             @AuthenticatedMemberId final Long memberId,
@@ -127,8 +127,7 @@ public class PropertyController {
 
     @PostMapping
     @Operation(summary = "매물 생성",
-            description = "후보 매물을 생성합니다. 회원당 최대 30개까지 등록할 수 있으며, 응답의 firstProperty는 "
-                    + "현재 회원이 첫 매물을 만든 경우에만 true입니다.")
+            description = "후보 매물을 생성합니다. 회원당 최대 30개까지 등록할 수 있습니다.")
     public ResponseEntity<ApiResponse<CreatePropertyResponse>> create(
             @AuthenticatedMemberId final Long memberId,
             @Valid @RequestBody final CreatePropertyRequest request) {
