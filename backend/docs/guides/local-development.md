@@ -1,8 +1,5 @@
 # 로컬 개발
 
-- 문서 성격: 파생
-- 대조 대상: `backend/compose.yaml`, `backend/build.gradle`, `frontend/package.json`, 실행 설정
-
 ## 1. 준비물
 
 | 항목 | 기준 |
@@ -23,7 +20,7 @@ Gradle은 별도로 설치하지 않는다. 저장소의 Gradle Wrapper를 사�
 cp .env.example .env
 ```
 
-기본 예시는 외부 키가 필요 없는 닉네임 인증·`demo` 지도와 로컬 MinIO 값을 포함한다. `.env`는 Git에 커밋하지 않는다. 전체 목록은 [환경변수](environment-variables.md)를 따른다.
+기본 예시는 외부 키가 필요 없는 닉네임 인증·`demo` 지도와 로컬 MinIO 값을 포함한다. `.env`는 Git에 커밋하지 않는다.
 
 ## 3. 로컬 인프라 실행
 
@@ -34,7 +31,7 @@ docker compose up -d
 docker compose ps
 ```
 
-MySQL과 MinIO가 healthy여야 한다. 빈 MySQL 볼륨은 현재 스키마와 기본 데이터로 자동 초기화된다. SQL을 바꾼 뒤 기존 볼륨을 다시 만드는 절차와 데이터 삭제 주의사항은 [데이터베이스 초기화](database-initialization.md)를 따른다.
+MySQL과 MinIO가 healthy여야 한다. 빈 MySQL 볼륨은 [초기화 SQL](../../src/main/resources/db/init/)로 자동 초기화된다. 초기화 SQL은 기존 볼륨에 다시 적용되지 않으며, 볼륨을 삭제하면 로컬 데이터도 사라진다.
 
 ## 4. 백엔드 실행
 
@@ -60,7 +57,7 @@ curl --fail http://localhost:8080/actuator/health
 curl --fail http://localhost:8080/v3/api-docs
 ```
 
-두 요청이 성공해야 한다. 실제 실행 계약은 구현에서 생성되는 Swagger/OpenAPI이며 [MVP2 API 계약](../api/mvp2-api-contract.md)은 endpoint 대응과 핵심 불변식만 요약한다.
+두 요청이 성공해야 한다. 실제 API 계약은 구현에서 생성되는 Swagger/OpenAPI로 확인한다.
 
 ## 5. 프론트엔드 실행
 
@@ -77,7 +74,7 @@ npm run dev
 
 브라우저에서 `http://localhost:3000`을 열고 닉네임을 입력한다. 비밀번호를 비우면 같은 닉네임을 입력한 사람이 기록을 함께 사용할 수 있고, 처음 사용할 때 비밀번호를 입력하면 이후 같은 비밀번호가 필요하다. `이자취`는 비밀번호 없는 데모 데이터와 연결되며 백엔드가 최초 실행 시 멱등하게 만든다.
 
-실제 네이버를 확인할 때만 양쪽 `.env`의 지도 adapter 모드를 바꾸고 [지도 외부 연동](map-integration.md)을 따른다.
+실제 네이버 지도를 확인할 때는 백엔드와 프론트엔드의 지도 공급자 모드를 `naver`로 바꾸고 인증 정보를 설정한다. Client Secret은 백엔드에만 설정한다.
 
 ## 6. 검사
 
@@ -85,7 +82,7 @@ npm run dev
 ./gradlew test --no-daemon
 ```
 
-프론트엔드는 변경 범위에 맞춰 `npm run build`를 실행한다. 전체 타입·린트·포맷·테스트가 필요할 때는 `frontend/README.md`의 검사 명령을 따른다.
+프론트엔드는 변경 범위에 맞춰 `npm run build`를 실행하고, 필요에 따라 타입·린트·포맷·테스트를 확인한다.
 
 ## 7. 확인 목록
 

@@ -1,8 +1,6 @@
 # 모니터링
 
 - 상태: 애플리케이션·배포 설정 구현, AWS 적용 전
-- 문서 성격: 파생
-- 대조 대상: `backend/src/main/resources/logback-spring.xml`, `backend/deploy/`, 실제 CloudWatch 설정
 
 현재 예산에서는 구조화 로그로 장애 발생 시각과 원인을 찾는 것을 우선한다. CPU·메모리 대시보드와 알림은 로그 수집을 확인한 뒤 추가한다.
 
@@ -43,7 +41,7 @@ dev와 prod EC2는 모두 Spring의 `prod` 프로필을 사용한다. `DEPLOYMEN
 
 ## EC2 적용 전 준비
 
-`/etc/jachwi-sunbae/app.env`에 [환경변수](../guides/environment-variables.md#devprod-프로필)의 `DEPLOYMENT_ENVIRONMENT`와 `LOG_PATH`를 환경에 맞게 추가한다.
+`/etc/jachwi-sunbae/app.env`에 `DEPLOYMENT_ENVIRONMENT`와 `LOG_PATH`를 환경에 맞게 추가한다.
 
 배포의 `AfterInstall`이 로그 디렉터리와 `jachwi` 사용자의 쓰기 권한을 만든다. 배포 후 다음을 확인한다.
 
@@ -224,7 +222,5 @@ curl -fsS https://dev-api.jachwi-sunbae.kr/actuator/health
 100만 요청을 즉시 보내지 않는다. 별도 부하 발생기에서 1천, 1만, 10만 순서로 올리며 오류율과 지연시간을 확인한 뒤 다음 단계로 진행한다. 실제 데이터 변경 API, 로그인 API와 공유 RDS를 집중 호출하지 않는다. 최종 100만 요청 시나리오와 도구는 후속 이슈에서 결정한다.
 
 ## 자동 복구 범위
-
-Java 프로세스의 비정상 종료와 재시작 제한 해제는 [배포의 프로세스 자동 재시작](deployment.md#프로세스-자동-재시작)을 따른다.
 
 systemd는 EC2 자체가 중지되거나 AWS 호스트에 장애가 발생한 경우 복구할 수 없다. `t4g`는 CloudWatch action based recovery 지원 대상이다. 로그 수집을 확인한 뒤 EC2 콘솔에서 각 인스턴스의 `StatusCheckFailed_System`이 1분 간격으로 2회 실패하면 `Recover this instance`를 실행하는 Alarm을 설정한다. 이 복구는 시스템 status check 장애만 대상으로 하며 애플리케이션 오류나 `StatusCheckFailed_Instance`를 복구하지 않는다.

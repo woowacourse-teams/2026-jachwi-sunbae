@@ -1,14 +1,14 @@
 # 매물 메모 명세
 
 - 상태: 구현 기준 v1
-- 관련 화면: `03`, `03-2`
+- 관련 화면: 매물 상세, 매물 메모
 
 ## 요구사항
 
 - `REQ-MEMO-001`: 매물마다 자유 메모를 하나 제공합니다.
 - `REQ-MEMO-002`: 상세 화면은 저장된 자유 메모 값을 보여주고 전체 교체로 저장합니다.
 
-이전에 있던 구조화된 기본 메모 양식(입주 가능일, 방 옵션, 관리비 포함 공과금, 방문 일정을 다루던 시스템 메모 항목)은 폐기했습니다. 해당 값은 메모가 아니라 [매물 부가정보](property.md)(`availableMoveInDate`, 방 옵션, 관리비 포함 공과금, `visitScheduledAt`)로 관리합니다. 이전 스냅샷 테이블(`property_memo_items`, `system_memo_items`)은 `db/upgrade/006-remove-online-phone-and-structured-memos.sql`로 제거했습니다.
+이전에 있던 구조화된 기본 메모 양식(입주 가능일, 방 옵션, 관리비 포함 공과금, 방문 일정을 다루던 시스템 메모 항목)은 폐기했습니다. 해당 값은 매물 부가정보로 관리합니다. 이전 스냅샷 테이블(`property_memo_items`, `system_memo_items`)은 `db/upgrade/006-remove-online-phone-and-structured-memos.sql`로 제거했습니다.
 
 ## 정책
 
