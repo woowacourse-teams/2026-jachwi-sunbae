@@ -16,7 +16,7 @@
 
 모든 문서를 이 셋으로 정확히 나누지는 않는다. 지금은 **확실한 시점 고정**과 **확실한 파생**만 문서 머리말에 표시하고, 나머지는 표시하지 않는다.
 
-아직 코드가 없어 계획에 가까운 문서는 파생으로 둔다. 예를 들어 [백엔드 패키지 구조](../../backend/docs/architecture/backend-package-structure.md)는 실제 코드가 생기면 규범으로 옮긴다.
+아직 코드가 없어 계획에 가까운 문서는 파생으로 둔다. 예를 들어 [백엔드 패키지 구조](../../backend/docs/conventions/backend-package-structure.md)는 실제 코드가 생기면 규범으로 옮긴다.
 
 ## 머리말 표기
 
@@ -67,7 +67,7 @@ ADR은 전체를 동결하지 않는다. [ADR 작성 규칙](../../backend/docs/
 | [`README.md`](../../README.md) | 최상위 디렉터리와 `docs/` 하위 디렉터리 | B-1 |
 | [환경변수](../../backend/docs/guides/environment-variables.md) | `backend/.env.example` | B-2 |
 | [로컬 개발](../../backend/docs/guides/local-development.md) | `compose.yaml`, `build.gradle`, 실행 URL | 사람 |
-| [백엔드 패키지 구조](../../backend/docs/architecture/backend-package-structure.md) | `build.gradle`의 `group`, `backend/src` 구조 | 사람 |
+| [백엔드 패키지 구조](../../backend/docs/conventions/backend-package-structure.md) | `build.gradle`의 `group`, `backend/src` 구조 | 사람 |
 | [시스템 개요](../../backend/docs/architecture/system-overview.md) | 실제 구성 요소 | 사람 |
 | [배포](../../backend/docs/operations/deployment.md) | `backend/deploy/`, 실제 AWS 파이프라인 구성 | 사람 |
 | [롤백](../../backend/docs/operations/rollback.md) | 실제 CodeDeploy 배포 그룹 설정 | 사람 |

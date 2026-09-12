@@ -46,7 +46,7 @@ Skill은 규칙이 아니라 **검토하는 방법과 순서**를 담는다. 컨
 | Skill | 만드는 시점 | 담을 내용 |
 | --- | --- | --- |
 | `api-design` | **첫 Controller를 구현할 때** | 계약 합의 → 프론트엔드 검토 → 구현 → Swagger 동기화 절차와, [API 컨벤션](../../backend/docs/conventions/api-convention.md)·[예외 컨벤션](../../backend/docs/conventions/exception-convention.md)을 오가는 순서 |
-| `new-domain` | **첫 도메인 패키지를 만들 때** | [패키지 구조](../../backend/docs/architecture/backend-package-structure.md)·레이어 책임·DTO·예외를 한 번에 훑는 순서 |
+| `new-domain` | **첫 도메인 패키지를 만들 때** | [패키지 구조](../../backend/docs/conventions/backend-package-structure.md)·레이어 책임·DTO·예외를 한 번에 훑는 순서 |
 
 ### 만들지 않는 Skill
 

@@ -2,7 +2,7 @@
 
 ## 핵심 원칙
 
-- 패키지 구조, 의존 방향과 패키지별 책임은 [백엔드 패키지 구조](../architecture/backend-package-structure.md)를 따른다.
+- 패키지 구조, 의존 방향과 패키지별 책임은 [백엔드 패키지 구조](backend-package-structure.md)를 따른다.
 - 1차 MVP는 `JdbcTemplate`과 레이어드 구조를 사용하며 JPA와 헥사고날 아키텍처는 도메인 복잡도가 확인될 때 재검토한다.
 - 실제 기능이 생길 때만 패키지와 추상화를 추가한다.
 

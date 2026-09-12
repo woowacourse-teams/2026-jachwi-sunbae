@@ -137,4 +137,4 @@ Domain 객체는 getter와 setter만 가진 데이터 묶음으로 만들지 않
 
 특정 Domain의 규칙은 `common`에 두지 않는다. `common`을 이름을 정하기 어려운 코드의 임시 보관소로 사용하지 않는다.
 
-`common/exception`의 예외 클래스 구조와 HTTP 변환 규칙은 [예외 컨벤션](../conventions/exception-convention.md)을 따른다.
+`common/exception`의 예외 클래스 구조와 HTTP 변환 규칙은 [예외 컨벤션](exception-convention.md)을 따른다.
