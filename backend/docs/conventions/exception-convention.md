@@ -91,7 +91,3 @@ common/exception
 ## Swagger 문서화
 
 Swagger에는 요청, 성공 응답, 검증 오류와 대표 비즈니스 오류를 문서화한다.
-
----
-
-응답 형식 전반은 [API 컨벤션](api-convention.md), 패키지 위치는 [백엔드 패키지 구조](../architecture/backend-package-structure.md)를 따른다.

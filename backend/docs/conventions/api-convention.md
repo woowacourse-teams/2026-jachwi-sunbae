@@ -107,8 +107,6 @@ API마다 전용 Request/Response DTO를 사용하고 Domain 객체를 직접 �
 - `errors`는 입력값 검증 오류에만 사용하고 일반 비즈니스 오류에서는 빈 배열을 사용한다.
 - `204 No Content`는 응답 본문을 반환하지 않는다.
 
-예외 설계와 오류 코드 부여 규칙은 [예외 컨벤션](exception-convention.md)을 따른다.
-
 ## 계층 책임
 
 - Service는 HTTP 상태, `ResponseEntity`와 Controller DTO를 알지 않는다.

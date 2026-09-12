@@ -2,10 +2,8 @@
 
 - 상태: 동작 중
 - 현재 배포 환경: prod `https://www.jachwi-sunbae.kr`, dev `https://dev.jachwi-sunbae.kr`
-- 문서 성격: 파생
-- 대조 대상: `frontend/webpack.config.js`, 실제 CloudFront·S3·파이프라인 구성
 
-전체 구성과 선택 근거는 [배포 아키텍처 설계](../../docs/operations/deployment-architecture.md)에 있다. 백엔드 배포는 [배포](../../backend/docs/operations/deployment.md)를 참고한다.
+이 문서는 프론트엔드 배포 구성과 절차를 적는다.
 
 ## 배포 경로
 
@@ -105,8 +103,6 @@ assets/jachwi-sunbae-logo.2e4dac46707736dbc407.png
 ./frontend/deploy/verify-deployment.sh frontend/dist/index.html https://www.jachwi-sunbae.kr/index.html
 ```
 
-2026-08-20 dev 환경에서 현재 develop 빌드와 실제 `index.html`의 번들 파일명이 일치하는 것을 확인했다. 관측값은 [CI/CD 배포 검증 기록](../../docs/operations/2026-08-20-cicd-deployment-validation.md)에 남긴다.
-
 ## SPA 폴백
 
 react-router의 클라이언트 라우팅을 쓴다. `/intro`, `/properties/1`, `/map` 같은 경로는 S3에 실제 객체가 없으므로, CloudFront에서 403·404 응답을 `/index.html`(상태 200)로 매핑해야 한다.
@@ -117,7 +113,7 @@ react-router의 클라이언트 라우팅을 쓴다. `/intro`, `/properties/1`, 
 
 **origin path를 반드시 지정한다.** prod는 `/jachwi-sunbae/web`, dev는 `/jachwi-sunbae/web-dev`다.
 
-버킷 `techcourse-project-2026`은 여러 팀이 공유하고, 같은 버킷의 `jachwi-sunbae/` 아래에 **비공개 사진 객체**도 있다([ADR-0006](../../backend/docs/adr/0006-use-private-s3-compatible-photo-storage.md)). origin path를 비워 두면 CloudFront가 버킷 전체를 공개하게 되어 사진이 인증 없이 노출된다.
+버킷 `techcourse-project-2026`은 여러 팀이 공유하고, 같은 버킷의 `jachwi-sunbae/` 아래에 **비공개 사진 객체**도 있다. origin path를 비워 두면 CloudFront가 버킷 전체를 공개하게 되어 사진이 인증 없이 노출된다.
 
 ## 확인
 

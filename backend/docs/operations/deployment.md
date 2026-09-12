@@ -2,10 +2,8 @@
 
 - 상태: 동작 중
 - 현재 배포 환경: prod `https://api.jachwi-sunbae.kr`, dev `https://dev-api.jachwi-sunbae.kr`
-- 문서 성격: 파생
-- 대조 대상: `backend/deploy/`, 실제 AWS 파이프라인 구성
 
-전체 구성과 선택 근거는 [배포 아키텍처 설계](../../../docs/operations/deployment-architecture.md)에 있다. 이 문서는 백엔드를 실제로 배포하는 절차와 그 절차가 의존하는 서버 상태를 적는다.
+이 문서는 백엔드 배포 구성, 실제 배포 절차와 그 절차가 의존하는 서버 상태를 적는다.
 
 ## 배포 경로
 
@@ -59,7 +57,7 @@ CodeDeploy 배포 그룹이 **EC2 태그**로 대상을 고른다.
 
 ## 빌드 검증
 
-배포 빌드는 `clean bootJar -x test`로 실행 가능한 JAR를 만든다. GitHub Actions는 PR과 `main`·`develop` push에서 `clean build`를 실행한다. 두 브랜치는 [브랜치와 커밋](../../../docs/convention/branch-and-commit.md)의 보호 규칙에 따라 필수 검사를 통과하지 않으면 병합할 수 없으므로 CodePipeline이 받는 커밋은 이미 전체 단위·통합 테스트를 통과한 상태다.
+배포 빌드는 `clean bootJar -x test`로 실행 가능한 JAR를 만든다. GitHub Actions는 PR과 `main`·`develop` push에서 `clean build`를 실행한다. 두 브랜치는 보호 규칙에 따라 필수 검사를 통과하지 않으면 병합할 수 없으므로 CodePipeline이 받는 커밋은 이미 전체 단위·통합 테스트를 통과한 상태다.
 
 ## 배포 훅
 
@@ -71,13 +69,13 @@ CodeDeploy 배포 그룹이 **EC2 태그**로 대상을 고른다.
 | `ApplicationStart` | 서비스를 **재시작**한다. 실제 프로세스 교체를 보장하는 단계다 |
 | `ValidateService` | `/actuator/health`가 `UP`이고 `/actuator/info`의 `build.commit`이 이번 배포 SHA와 같은지 확인한다. 실패하면 배포를 중단하고 최근 로그를 남긴다 |
 
-`AfterInstall`은 `/var/log/jachwi-sunbae`와 archive 디렉터리를 만들고 `jachwi` 사용자에게만 쓰기 권한을 준다. 로그 형식·보존·CloudWatch 적용 방법은 [모니터링](monitoring.md)에 있다.
+`AfterInstall`은 `/var/log/jachwi-sunbae`와 archive 디렉터리를 만들고 `jachwi` 사용자에게만 쓰기 권한을 준다.
 
 ## 프로세스 자동 재시작
 
 systemd는 Java 프로세스가 비정상 종료되면 5초 뒤 재시작한다. 5분 동안 5번 연속 기동에 실패하면 무한 재시작으로 장애 원인을 덮지 않도록 멈춘다. `ExecStopPost`는 종료 결과와 exit status를 `/var/log/jachwi-sunbae/service-events.log`에 JSON으로 기록한다.
 
-정상 배포의 SIGTERM은 실패가 아니므로 자동 재시작하지 않는다. 배포의 `ApplicationStart`가 새 리비전을 명시적으로 시작한다. EC2 자체의 중지나 AWS 호스트 장애는 systemd가 복구할 수 없으며 [모니터링의 자동 복구 범위](monitoring.md#자동-복구-범위)를 따른다.
+정상 배포의 SIGTERM은 실패가 아니므로 자동 재시작하지 않는다. 배포의 `ApplicationStart`가 새 리비전을 명시적으로 시작한다. EC2 자체의 중지나 AWS 호스트 장애는 systemd가 복구할 수 없다.
 
 지속 장애의 원인을 해결한 뒤 재시작 제한 상태를 해제한다.
 
@@ -128,7 +126,7 @@ sudo systemctl start jachwi-sunbae.service
 
 **환경변수 파일은 배포 산출물에 넣지 않는다.** CodeDeploy가 덮어쓰는 경로 밖에 두어 배포마다 값이 사라지지 않게 한다. systemd가 `EnvironmentFile`로 root 권한에서 읽은 뒤 `jachwi`로 내려가므로 애플리케이션 계정에 읽기 권한을 주지 않는다.
 
-애플리케이션은 CORS 허용 Origin과 인증·저장소 설정을 환경변수로 사용한다. 배포 전에 [환경변수](../guides/environment-variables.md)에 정의된 값을 환경변수 파일에 채우고, 새 환경변수를 도입할 때 배포 환경도 함께 갱신한다.
+애플리케이션은 CORS 허용 Origin과 인증·저장소 설정을 환경변수로 사용한다. 배포 전에 필요한 값을 환경변수 파일에 채우고, 새 환경변수를 도입할 때 배포 환경도 함께 갱신한다.
 
 `SPRING_PROFILES_ACTIVE`는 dev와 prod 모두 `prod`로 둔다. 이 프로필은 애플리케이션이 80 포트를 사용하게 한다.
 
@@ -151,11 +149,11 @@ sudo systemctl start jachwi-sunbae.service
    ```
 
 3. dev 애플리케이션 DB 계정에 이번 additive upgrade에 필요한 `ALTER`, `CREATE`, `INDEX`, `SELECT`, `INSERT`, `UPDATE` 권한이 있는지 확인한다.
-4. `/etc/jachwi-sunbae/app.env`에 dev DB·JWT·CORS·선택한 지도 공급자 인증 정보·S3 접두사를 [환경변수](../guides/environment-variables.md)의 dev 값으로 설정한다. 정적 AWS 키는 두지 않는다.
+4. `/etc/jachwi-sunbae/app.env`에 dev DB·JWT·CORS·선택한 지도 공급자 인증 정보·S3 접두사를 dev 환경에 맞게 설정한다. 정적 AWS 키는 두지 않는다.
 5. 버스정류소 API 승인이 끝나지 않았다면 `BUS_STOP_PROVIDER=none`으로 둔다.
 6. 프론트 dev `Commands` 액션에 `API_BASE_URL=https://dev-api.jachwi-sunbae.kr`, `MAP_PROVIDER_MODE`와 선택한 지도 공급자의 공개 키를 주입한다.
 
-첫 기동의 `db/upgrade/*.sql` 중 하나라도 실패하면 애플리케이션은 요청을 받지 않고 배포 검증이 실패한다. 스키마를 수동으로 일부만 적용하지 말고 로그와 [데이터베이스 초기화](../guides/database-initialization.md)를 확인한다.
+첫 기동의 `db/upgrade/*.sql` 중 하나라도 실패하면 애플리케이션은 요청을 받지 않고 배포 검증이 실패한다. 스키마를 수동으로 일부만 적용하지 말고 로그와 [스키마 업그레이드 SQL](../../src/main/resources/db/upgrade/)을 확인한다.
 
 ## 빌드를 CodeBuild가 아니라 Commands로 하는 이유
 
@@ -201,7 +199,5 @@ sudo tail -f /var/log/jachwi-sunbae/service-events.log
 ```
 
 배포 자체가 실패했다면 EC2의 `/opt/codedeploy-agent/deployment-root/deployment-logs/`를 함께 본다.
-
-장애 시점 조회와 CloudWatch Logs Insights 쿼리는 [모니터링](monitoring.md)을 따른다.
 
 배포 결과는 관련 GitHub 이슈 또는 PR에 기록한다.

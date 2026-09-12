@@ -1,8 +1,5 @@
 # 환경변수
 
-- 문서 성격: 파생
-- 대조 대상: `backend/.env.example`
-
 ## 관리 원칙
 
 Spring Boot 애플리케이션은 CORS 허용 Origin과 인증·저장소 설정을 환경변수로 주입받는다. 아래 값 중 로컬 인프라용 값은 Docker Compose에서 사용하고, 애플리케이션 설정에 연결된 값은 실행 환경에 맞게 제공한다.
@@ -81,7 +78,7 @@ AWS S3는 EC2 `ec2-project` instance role로 접근하므로 `PHOTO_STORAGE_ENDP
 
 첫 MVP2 기동은 기존 팀 DB에 `db/upgrade/*.sql`을 적용한다. 애플리케이션 DB 계정은 이 전환 동안 필요한 `ALTER`, `CREATE`, `INDEX`, `SELECT`, `INSERT`, `UPDATE` 권한을 가져야 한다. 전환 전에 자동 백업의 최신 복구 지점을 확인한다.
 
-새 환경변수를 도입할 때 [배포 아키텍처](../../../docs/operations/deployment-architecture.md)와 [백엔드 배포](../operations/deployment.md)를 함께 갱신한다.
+새 환경변수를 도입하면 서버의 환경변수 파일도 함께 갱신한다.
 
 닉네임 인증은 외부 키가 필요 없다. 지도 기본 모드를 `demo`로 두면 외부 키 없이 전체 로컬 흐름을 실행할 수 있다.
 
