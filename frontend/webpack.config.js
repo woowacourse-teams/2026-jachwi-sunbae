@@ -138,6 +138,8 @@ module.exports = (_env, argv) => {
       extensions: ['.tsx', '.ts', '.js'],
     },
     performance: {
+      hints: isProduction ? 'error' : false,
+      assetFilter: (assetFilename) => /\.(?:js|css)$/.test(assetFilename),
       maxAssetSize: 350 * 1024,
       maxEntrypointSize: 350 * 1024,
     },
