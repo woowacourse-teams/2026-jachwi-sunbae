@@ -213,14 +213,14 @@ const MapLocationSelectPage = ({ config }: { config: PublicConfig }) => {
                 void createProperty
                   .mutateAsync({
                     ...registrationDraft,
-                    roadAddress: selected.roadAddress,
-                    jibunAddress: selected.jibunAddress,
+                    address: selected.roadAddress ?? selected.jibunAddress ?? selected.address,
                     latitude: selected.latitude,
                     longitude: selected.longitude,
                   })
                   .then((created) => {
-                    if (created.firstProperty) trackMetaPixelFirstPropertyRecorded();
-                    trackPostHogEvent('property_created', { first_property: created.firstProperty });
+                    const firstProperty = (properties.data?.pages[0]?.totalElements ?? 0) === 0;
+                    if (firstProperty) trackMetaPixelFirstPropertyRecorded();
+                    trackPostHogEvent('property_created', { first_property: firstProperty });
                     navigate(`/properties/${created.propertyId}`, { replace: true });
                   })
                   .catch(() => undefined);
@@ -229,8 +229,7 @@ const MapLocationSelectPage = ({ config }: { config: PublicConfig }) => {
               navigate(returnTo, {
                 replace: true,
                 state: {
-                  roadAddress: selected.roadAddress ?? '',
-                  jibunAddress: selected.jibunAddress ?? '',
+                  address: selected.roadAddress ?? selected.jibunAddress ?? selected.address ?? '',
                   latitude: selected.latitude,
                   longitude: selected.longitude,
                 },
