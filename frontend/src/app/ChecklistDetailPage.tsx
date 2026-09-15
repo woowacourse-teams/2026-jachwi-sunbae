@@ -8,7 +8,7 @@ import { useChecklistDetail } from '../hooks/query/useChecklists';
 import useDelayedLoading from '../hooks/ui/useDelayedLoading';
 import { checklistItemToEditorItem } from '../types/ChecklistEditor';
 import type { PublicConfig } from '../types/PublicConfig';
-import { toChecklistItemInputs } from '../utils/checklistEditor';
+import { toProvidedChecklistItemInputs } from '../utils/checklistEditor';
 import { parsePositiveId } from '../utils/propertyFormat';
 import styles from './ChecklistDetailPage.module.css';
 import ContentState from '../components/ui/ContentState';
@@ -91,7 +91,7 @@ const ResolvedChecklistDetail = ({ config, checklistId }: { config: PublicConfig
             setSearchParams(mode === 'ADD_ITEMS' ? { mode: 'add-items' } : {}, { replace: mode === 'EDIT' })
           }
           onSubmit={async ({ name, items }) => {
-            const saved = await update.mutateAsync({ name, items: toChecklistItemInputs(items) });
+            const saved = await update.mutateAsync({ name, items: toProvidedChecklistItemInputs(items) });
             navigate('/checklists', { replace: true, state: { focusHeading: true } });
             return saved;
           }}

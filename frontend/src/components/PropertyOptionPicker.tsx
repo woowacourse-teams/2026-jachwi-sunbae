@@ -36,7 +36,7 @@ const PropertyOptionPicker = ({
     {children !== undefined && <div className={styles.pickerContent}>{children}</div>}
     <div className={variant === 'icon' ? styles.grid : styles.badges}>
       {options.map((option) => {
-        const checked = selected.includes(option.label);
+        const checked = selected.includes(option.key);
         return (
           <SelectionControl
             key={option.key}
@@ -44,7 +44,7 @@ const PropertyOptionPicker = ({
             checked={checked}
             disabled={disabled}
             onSelect={() =>
-              onChange(checked ? selected.filter((item) => item !== option.label) : [...selected, option.label])
+              onChange(checked ? selected.filter((item) => item !== option.key) : [...selected, option.key])
             }
           >
             {variant === 'icon' && (

@@ -67,7 +67,7 @@ prod → /main.8a49163cbe52bf996d07.js
 | `POSTHOG_PROJECT_TOKEN` | PostHog 프로젝트 토큰          | PostHog 프로젝트 토큰              |
 | `POSTHOG_HOST`          | `https://us.i.posthog.com`     | `https://us.i.posthog.com`         |
 
-값은 CodePipeline Commands 빌드 액션의 환경변수로 전달한다. Naver Maps Client ID, Meta Pixel ID, PostHog 프로젝트 토큰은 브라우저 번들에 포함되는 공개 식별자이며 REST API 키나 Client Secret 등 비밀값을 넣지 않는다. Naver Maps Application에 `https://www.jachwi-sunbae.kr`과 `https://dev.jachwi-sunbae.kr`을 Web 서비스 URL로 등록한다. `META_PIXEL_ID`를 비우면 Pixel과 동의 고지를 함께 비활성화하며, 값을 설정해도 사용자가 동의하기 전에는 Meta 스크립트를 불러오지 않는다. PostHog는 세션 녹화와 유저 식별 없이 익명 페이지뷰 및 제품 분석 모드로 동작한다.
+값은 CodePipeline Commands 빌드 액션의 환경변수로 전달한다. Naver Maps Client ID, Meta Pixel ID, PostHog 프로젝트 토큰은 브라우저 번들에 포함되는 공개 식별자이며 REST API 키나 Client Secret 등 비밀값을 넣지 않는다. Naver Maps Application에 `https://www.jachwi-sunbae.kr`과 `https://dev.jachwi-sunbae.kr`을 Web 서비스 URL로 등록한다. `META_PIXEL_ID`를 비우면 Pixel과 동의 고지를 함께 비활성화하며, 값을 설정해도 사용자가 동의하기 전에는 Meta 스크립트를 불러오지 않는다. PostHog 설정이 유효할 때만 SDK 청크를 불러오며, 세션 녹화와 로그인 회원 식별, 페이지뷰 및 제품 이벤트를 수집한다. 세션 녹화에서는 텍스트와 요소 속성을 마스킹한다.
 
 `API_BASE_URL`이 비거나 올바른 HTTP(S) URL이 아니면 시작 시 예외가 발생한다. `MAP_PROVIDER_MODE=naver`에서 Naver Client ID가 비어도 같은 방식으로 실패한다. 잘못된 값으로 조용히 demo 지도를 제공하지 않는다.
 

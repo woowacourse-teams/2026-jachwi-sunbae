@@ -5,7 +5,6 @@ import type {
   UpdatePropertyRequestDto,
 } from '../../apis/dtos/PropertyDto';
 import { removePropertyPhoto, setRepresentativePropertyPhoto, uploadPropertyPhoto } from '../../apis/photoApi';
-import { assignActiveChecklist } from '../../apis/checklistApi';
 import {
   createProperty,
   recordPropertyComparisonView,
@@ -21,14 +20,8 @@ import type { PropertyBasicInfo, PropertyDetail } from '../../types/Property';
 export const useCreateProperty = (config: PublicConfig) =>
   useMutation({
     mutationFn: (request: PropertyInputDto) => createProperty(config, request),
-    onSuccess: async (created) => {
-      await Promise.all([
-        assignActiveChecklist(config, created.propertyId, 'ON_SITE', {
-          sourceType: 'SYSTEM_DEFAULT',
-          checklistId: null,
-        }),
-        queryClient.invalidateQueries({ queryKey: propertyQueryKeys.lists() }),
-      ]);
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: propertyQueryKeys.lists() });
     },
   });
 
@@ -51,8 +44,12 @@ export const useUpdateProperty = (config: PublicConfig, propertyId: number) =>
               monthlyRentAmount: updated.monthlyRentAmount,
               discoverySource: updated.discoverySource,
               location: updated.location,
+              availableMoveInDate: updated.availableMoveInDate,
+              maintenanceFeeAmount: updated.maintenanceFeeAmount,
+              visitScheduledAt: updated.visitScheduledAt,
+              roomOptions: updated.roomOptions,
+              utilityOptions: updated.utilityOptions,
               updatedAt: updated.updatedAt ?? current.updatedAt,
-              lastActivityAt: updated.lastActivityAt ?? updated.updatedAt ?? current.lastActivityAt,
             },
       );
       await queryClient.invalidateQueries({ queryKey: propertyQueryKeys.lists() });

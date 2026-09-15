@@ -2,36 +2,39 @@ import { Link } from 'react-router-dom';
 import { InfoRow, InfoSection } from './ui/InfoSection';
 import Icon from './ui/Icon';
 import infoStyles from './ui/InfoSection.module.css';
-import type { PropertyMemoDocument } from '../types/Property';
-import type { PublicConfig } from '../types/PublicConfig';
-import { propertyMemoDisplayLabel } from '../constants/propertyOptions';
+import type { PropertyDetail } from '../types/Property';
+import { roomOptionLabels, utilityOptionLabels } from '../constants/propertyOptions';
+import { formatManwon } from '../utils/propertyFormat';
 
 type PropertyAdditionalInfoSectionProps = {
-  config: PublicConfig;
-  propertyId: number;
-  memo: PropertyMemoDocument;
-  /** 매물에 저장된 값이라 메모 항목과 별개로 받는다. */
-  discoverySource: string;
+  property: PropertyDetail;
 };
 
-/**
- * 값은 보여 주기만 하고, 고치는 일은 편집 화면이 맡는다.
- * 항목과 순서는 서버가 준 그대로 쓴다. 화면마다 목록을 따로 들고 있으면 편집 화면과 순서가 어긋난다.
- */
-const PropertyAdditionalInfoSection = ({ propertyId, memo, discoverySource }: PropertyAdditionalInfoSectionProps) => (
+const formatDate = (value: string | null): string => value?.replace(/-/g, '.') ?? '';
+// LocalDateTime은 초가 0이면 초 자리를 생략해서 온다. 초가 붙어 온 경우에만 잘라낸다.
+const formatDateTime = (value: string | null): string =>
+  value === null ? '' : value.replace('T', ' ').replace(/(\d{2}:\d{2}):\d{2}(?:\.\d+)?$/, '$1');
+
+/** 새 매물 API가 돌려준 부가 정보를 그대로 표시하고, 편집은 한 화면에서 전체 PUT으로 저장한다. */
+const PropertyAdditionalInfoSection = ({ property }: PropertyAdditionalInfoSectionProps) => (
   <InfoSection
     title="부가 정보"
     label="매물 부가 정보"
     action={
-      <Link className={infoStyles.sectionAction} to={`/properties/${propertyId}/memo`}>
+      <Link className={infoStyles.sectionAction} to={`/properties/${property.propertyId}/memo`}>
         <Icon name="edit" size={14} /> 편집
       </Link>
     }
   >
-    {memo.items.map((item) => (
-      <InfoRow key={item.systemMemoItemId} label={propertyMemoDisplayLabel(item.label)} value={item.content} />
-    ))}
-    <InfoRow label="링크" value={discoverySource} />
+    <InfoRow label="입주 가능일" value={formatDate(property.availableMoveInDate)} />
+    <InfoRow
+      label="관리비"
+      value={property.maintenanceFeeAmount === null ? '' : formatManwon(property.maintenanceFeeAmount)}
+    />
+    <InfoRow label="관리비 포함 공과금" value={utilityOptionLabels(property.utilityOptions)} />
+    <InfoRow label="방 옵션" value={roomOptionLabels(property.roomOptions)} />
+    <InfoRow label="방문 일정" value={formatDateTime(property.visitScheduledAt)} />
+    <InfoRow label="확인한 곳" value={property.discoverySource.value} />
   </InfoSection>
 );
 
