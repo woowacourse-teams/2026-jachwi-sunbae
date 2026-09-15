@@ -26,7 +26,7 @@ npm run dev
 
 기본 `.env.example`은 외부 키가 필요 없는 닉네임 인증·데모 지도 모드입니다. `.env.example`을 `.env.local`로 복사하면 Webpack이 빌드 시작에 그 값을 읽습니다(`.env.local`은 저장소에 올라가지 않으며, 이미 설정된 셸 환경변수를 덮어쓰지 않습니다). `http://localhost:3000`에서 닉네임과 선택 비밀번호로 바로 시작합니다.
 
-백엔드 없이 UI fixture만 확인하려면 `npm run dev:mock`을 사용합니다. 기본적으로 MSW는 개발 빌드에서만 켜지지만, API 개발 중 dev 배포에서 fixture가 필요하면 CodePipeline 빌드 환경변수에 `ENABLE_MSW=true`를 지정해 선택적으로 켤 수 있습니다. 운영은 이 값을 지정하지 않아 MSW가 꺼집니다.
+`npm run dev`는 실제 백엔드 API에 연결합니다. 백엔드 없이 UI fixture만 확인할 때에만 `npm run dev:mock`을 사용합니다. dev 배포에서 fixture가 꼭 필요한 경우에는 CodePipeline 빌드 환경변수에 `ENABLE_MSW=true`를 지정할 수 있으며, 운영에서는 이 값을 사용하지 않습니다.
 
 ## 공개 빌드 설정
 
@@ -35,7 +35,7 @@ npm run dev
 | `API_BASE_URL`        | `http://localhost:8080` | 백엔드 기준 URL                       |
 | `MAP_PROVIDER_MODE`   | 키가 있으면 `naver`     | `demo` 또는 `naver`                   |
 | `NAVER_MAP_CLIENT_ID` | 비움                    | `naver` 모드의 공개 Maps Client ID    |
-| `ENABLE_MSW`          | 개발 빌드에서 활성화    | dev fixture가 필요할 때만 `true`      |
+| `ENABLE_MSW`          | `false`                 | dev fixture가 필요할 때만 `true`      |
 | `META_PIXEL_ID`       | 비움                    | 동의 기반 Meta Pixel 공개 데이터셋 ID |
 
 JWT secret, 지도 Client Secret, S3 자격증명은 프론트에 넣지 않습니다. `META_PIXEL_ID`가 비면 광고 측정 고지와 Pixel을 모두 비활성화합니다.
