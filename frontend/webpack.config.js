@@ -24,9 +24,10 @@ const isBrowserTestHarness = process.env.BROWSER_TEST_HARNESS === 'true';
 
 module.exports = (_env, argv) => {
   const isProduction = argv.mode === 'production';
-  // 실제 API가 기본 경로다. MSW는 npm run dev:mock 또는 ENABLE_MSW=true로 명시한 경우에만 켠다.
-  const isMockingEnabled = process.env.ENABLE_MSW === 'true';
-  const apiBaseUrl = process.env.API_BASE_URL ?? 'http://localhost:8080';
+  // 기본값은 로컬 개발에서만 MSW를 사용한다. 배포 dev에서 fixture가 필요할 때는
+  // ENABLE_MSW=true를 빌드 환경에 명시해 선택적으로 켤 수 있다.
+  const isMockingEnabled = process.env.ENABLE_MSW === 'true' || (!isProduction && process.env.ENABLE_MSW !== 'false');
+  const apiBaseUrl = process.env.API_BASE_URL ?? (isMockingEnabled ? 'http://127.0.0.1:3000' : 'http://localhost:8080');
 
   const naverMapClientId = process.env.NAVER_MAP_CLIENT_ID ?? '';
   // 배포 빌드는 항상 실제 Naver 지도를 사용한다. 키가 없으면 앱 설정 오류를 보여 주고

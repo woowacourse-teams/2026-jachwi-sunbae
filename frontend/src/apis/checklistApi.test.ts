@@ -23,14 +23,14 @@ const config: PublicConfig = {
 const authenticate = () => setAuthentication({ accessToken: 'memory-token', tokenType: 'Bearer', expiresIn: 60 });
 
 const checkItemsResponse = [
-  { id: 101, stage: 'ON_SITE', itemType: 'CORE', question: '관리비를 확인했나요?' },
-  { id: 102, stage: 'ON_SITE', itemType: 'OPTIONAL', question: '입주일을 확인했나요?' },
+  { id: 101, stage: 'ONLINE_PHONE', itemType: 'CORE', question: '관리비를 확인했나요?' },
+  { id: 102, stage: 'ONLINE_PHONE', itemType: 'OPTIONAL', question: '입주일을 확인했나요?' },
 ];
 
 const checklistDetailResponse = {
   id: 7,
   name: '전화 문의 기본 목록',
-  stage: 'ON_SITE',
+  stage: 'ONLINE_PHONE',
   itemCount: 2,
   items: [
     {
@@ -59,13 +59,15 @@ describe('최종 체크리스트 API 계약', () => {
     server.use(
       http.get(`${config.apiBaseUrl}/api/check-items`, ({ request }) => {
         const url = new URL(request.url);
-        expect(Object.fromEntries(url.searchParams)).toEqual({ stage: 'ON_SITE', query: '관리비' });
+        expect(Object.fromEntries(url.searchParams)).toEqual({ stage: 'ONLINE_PHONE', query: '관리비' });
         expect(request.headers.get('Authorization')).toBeNull();
         return HttpResponse.json(successEnvelope([checkItemsResponse[0]]));
       }),
     );
 
-    await expect(fetchCheckItems(config, { stage: 'ON_SITE', query: '  관리비  ', page: 3 })).resolves.toMatchObject({
+    await expect(
+      fetchCheckItems(config, { stage: 'ONLINE_PHONE', query: '  관리비  ', page: 3 }),
+    ).resolves.toMatchObject({
       content: [{ checkItemId: 101, itemType: 'CORE' }],
       hasNext: false,
     });
@@ -76,7 +78,7 @@ describe('최종 체크리스트 API 계약', () => {
       http.get(`${config.apiBaseUrl}/api/check-items`, () => HttpResponse.json(successEnvelope(checkItemsResponse))),
     );
 
-    const result = await fetchChecklistPreset(config, 'ON_SITE', 'ONE_ROOM');
+    const result = await fetchChecklistPreset(config, 'ONLINE_PHONE', 'ONE_ROOM');
     expect(result.items).toMatchObject([{ checkItemId: 101, itemType: 'CORE', order: 0 }]);
   });
 
@@ -84,17 +86,17 @@ describe('최종 체크리스트 API 계약', () => {
     authenticate();
     server.use(
       http.get(`${config.apiBaseUrl}/api/checklists`, ({ request }) => {
-        expect(new URL(request.url).searchParams.toString()).toBe('stage=ON_SITE');
+        expect(new URL(request.url).searchParams.toString()).toBe('stage=ONLINE_PHONE');
         return HttpResponse.json(
           successEnvelope({
             totalCount: 1,
-            items: [{ id: 7, name: '전화 문의 기본 목록', stage: 'ON_SITE', itemCount: 2 }],
+            items: [{ id: 7, name: '전화 문의 기본 목록', stage: 'ONLINE_PHONE', itemCount: 2 }],
           }),
         );
       }),
     );
 
-    await expect(fetchChecklists(config, { stage: 'ON_SITE' })).resolves.toMatchObject({
+    await expect(fetchChecklists(config, { stage: 'ONLINE_PHONE' })).resolves.toMatchObject({
       content: [{ checklistId: 7 }],
       totalElements: 1,
     });
@@ -112,12 +114,12 @@ describe('최종 체크리스트 API 계약', () => {
 
     await createChecklistV11(config, {
       name: '전화 문의 기본 목록',
-      stage: 'ON_SITE',
+      stage: 'ONLINE_PHONE',
       items: [{ systemCheckItemId: 101 }],
     });
     expect(body).toEqual({
       name: '전화 문의 기본 목록',
-      stage: 'ON_SITE',
+      stage: 'ONLINE_PHONE',
       items: [{ systemCheckItemId: 101 }],
     });
   });
@@ -162,7 +164,7 @@ describe('최종 체크리스트 API 계약', () => {
     authenticate();
     let body: unknown;
     server.use(
-      http.put(`${config.apiBaseUrl}/api/properties/10/checklists/ON_SITE`, async ({ request }) => {
+      http.put(`${config.apiBaseUrl}/api/properties/10/checklists/ONLINE_PHONE`, async ({ request }) => {
         body = await request.json();
         return HttpResponse.json(
           successEnvelope({
@@ -170,7 +172,7 @@ describe('최종 체크리스트 API 계약', () => {
             propertyId: 10,
             sourceChecklistId: 7,
             checklistName: '전화 문의 기본 목록',
-            stage: 'ON_SITE',
+            stage: 'ONLINE_PHONE',
             items: [
               {
                 id: 501,
@@ -186,7 +188,7 @@ describe('최종 체크리스트 API 계약', () => {
       }),
     );
 
-    await expect(assignActiveChecklist(config, 10, 'ON_SITE', { checklistId: 7 })).resolves.toMatchObject({
+    await expect(assignActiveChecklist(config, 10, 'ONLINE_PHONE', { checklistId: 7 })).resolves.toMatchObject({
       propertyChecklistId: 31,
       propertyId: 10,
       checklistId: 7,

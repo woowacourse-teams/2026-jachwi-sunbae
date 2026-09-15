@@ -37,8 +37,6 @@ describe('매물 입력 검증', () => {
       }),
     ).toEqual({
       name: expect.any(String),
-      depositAmount: expect.any(String),
-      monthlyRentAmount: expect.any(String),
     });
     expect(
       validatePropertyForm({
@@ -64,7 +62,7 @@ describe('매물 입력 검증', () => {
     expect(toPropertyInputDto({ ...base, discoverySource: '' })?.monthlyRentAmount).toBe(550_000);
   });
 
-  it('비어 있는 금액은 저장 전 검증하고 DTO 기본값은 새 API 필드를 모두 포함한다', () => {
+  it('선택 금액이 비어 있으면 요청에서 제외한다', () => {
     expect(
       toPropertyInputDto({
         name: '매물',
@@ -72,19 +70,6 @@ describe('매물 입력 검증', () => {
         monthlyRentAmount: '',
         discoverySource: '',
       }),
-    ).toEqual({
-      name: '매물',
-      depositAmount: 0,
-      monthlyRentAmount: 0,
-      discoverySource: null,
-      address: null,
-      latitude: null,
-      longitude: null,
-      availableMoveInDate: null,
-      maintenanceFeeAmount: null,
-      visitScheduledAt: null,
-      roomOptions: [],
-      utilityOptions: [],
-    });
+    ).toEqual({ name: '매물', discoverySource: null });
   });
 });

@@ -214,14 +214,6 @@ describe('FE-2 등록·수정·메모', () => {
             depositAmount: 0,
             monthlyRentAmount: 550_000,
             discoverySource: '중개사 추천',
-            address: '서울 관악구 신림로 12길 3',
-            latitude: 37.3948,
-            longitude: 127.1119,
-            availableMoveInDate: null,
-            maintenanceFeeAmount: null,
-            visitScheduledAt: null,
-            roomOptions: [],
-            utilityOptions: [],
             photos: [],
             overallProgress: {
               totalCount: 0,
@@ -321,7 +313,7 @@ describe('FE-2 등록·수정·메모', () => {
         name: '신림역 원룸',
         depositAmount: 10_000_000,
         monthlyRentAmount: 550_000,
-        address: '서울 관악구 신림로 12길 3',
+        roadAddress: '서울 관악구 신림로 12길 3',
       });
     } finally {
       Object.defineProperty(navigator, 'geolocation', { configurable: true, value: originalGeolocation });
@@ -336,7 +328,15 @@ describe('FE-2 등록·수정·메모', () => {
       http.put(`${config.apiBaseUrl}/api/properties/10`, async ({ request }) => {
         updateCalls += 1;
         updateBody = await request.json();
-        return HttpResponse.json(successEnvelope({ id: 10, ...(updateBody as object), monthlyRentAmount: 530_000 }));
+        return HttpResponse.json(
+          successEnvelope({
+            id: 10,
+            name: propertyDetailFixture.name,
+            depositAmount: propertyDetailFixture.depositAmount,
+            monthlyRentAmount: 530_000,
+            discoverySource: propertyDetailFixture.discoverySource.value,
+          }),
+        );
       }),
     );
     const user = userEvent.setup();
@@ -350,102 +350,179 @@ describe('FE-2 등록·수정·메모', () => {
       depositAmount: propertyDetailFixture.depositAmount,
       monthlyRentAmount: propertyDetailFixture.monthlyRentAmount,
       discoverySource: propertyDetailFixture.discoverySource.value,
-      address: propertyDetailFixture.location.address,
-      latitude: propertyDetailFixture.location.latitude,
-      longitude: propertyDetailFixture.location.longitude,
-      availableMoveInDate: propertyDetailFixture.availableMoveInDate,
-      maintenanceFeeAmount: propertyDetailFixture.maintenanceFeeAmount,
-      visitScheduledAt: propertyDetailFixture.visitScheduledAt,
-      roomOptions: [...propertyDetailFixture.roomOptions],
-      utilityOptions: [...propertyDetailFixture.utilityOptions],
     });
   });
 
-  it('상세 부가 정보는 메모가 아니라 매물 상세 응답으로 채운다', async () => {
+  it('상세에서는 메모 입력 없이 작성된 항목만 강조해 링크한다', async () => {
     server.use(
       http.get(`${config.apiBaseUrl}/api/properties/10`, () => HttpResponse.json(successEnvelope(detailWithoutPhotos))),
       http.get(`${config.apiBaseUrl}/api/properties/10/memo`, () =>
-        HttpResponse.json(successEnvelope({ propertyId: 10, freeMemo: '' })),
+        HttpResponse.json(
+          successEnvelope({
+            propertyId: 10,
+            items: [
+              {
+                propertyMemoItemId: 101,
+                systemMemoItemId: 1,
+                label: '관리비·포함 항목',
+                displayOrder: 1,
+                content: '10만원 (수도, 인터넷)',
+              },
+              {
+                propertyMemoItemId: 102,
+                systemMemoItemId: 2,
+                label: '입주 가능일',
+                displayOrder: 2,
+                content: '즉시 입주',
+              },
+            ],
+            freeMemo: '',
+          }),
+        ),
       ),
     );
     renderAuthenticated('/properties/10');
 
-    const section = within(await screen.findByRole('region', { name: '매물 부가 정보' }));
-    expect(section.getByText('2026.09.01')).toBeInTheDocument();
-    expect(section.getByText('7만원')).toBeInTheDocument();
-    expect(section.getByText('수도세, 인터넷')).toBeInTheDocument();
-    expect(section.getByText('에어컨, 냉장고')).toBeInTheDocument();
-    expect(section.getByText('2026-08-20 14:00')).toBeInTheDocument();
-    expect(section.getByRole('link', { name: '편집' })).toHaveAttribute('href', '/properties/10/memo');
+    expect(await screen.findByRole('region', { name: '매물 부가 정보' })).toBeInTheDocument();
+    expect(screen.getByText('관리비 포함 공과금')).toBeInTheDocument();
+    expect(screen.getByText('입주 가능일')).toBeInTheDocument();
   });
 
-  it('부가 정보 화면은 상세 값을 채워 두고 바뀐 값만 전체 수정으로 보낸다', async () => {
+  it('부가 정보 화면에서 기본 양식만 저장한 뒤 상세로 이동한다', async () => {
     let requestBody: unknown;
+    let propertyRequestBody: unknown;
     server.use(
       http.get(`${config.apiBaseUrl}/api/properties/10`, () => HttpResponse.json(successEnvelope(detailWithoutPhotos))),
-      http.put(`${config.apiBaseUrl}/api/properties/10`, async ({ request }) => {
+      http.get(`${config.apiBaseUrl}/api/properties/10/memo`, () =>
+        HttpResponse.json(
+          successEnvelope({
+            propertyId: 10,
+            items: [
+              { propertyMemoItemId: 101, systemMemoItemId: 1, label: '집 주소', displayOrder: 1, content: '' },
+              { propertyMemoItemId: 102, systemMemoItemId: 2, label: '입주 가능일', displayOrder: 2, content: '' },
+              {
+                propertyMemoItemId: 103,
+                systemMemoItemId: 3,
+                label: '관리비 및 공과금',
+                displayOrder: 3,
+                content: '8만원 (수도)',
+              },
+              {
+                propertyMemoItemId: 104,
+                systemMemoItemId: 4,
+                label: '방문 일정',
+                displayOrder: 4,
+                content: '',
+              },
+            ],
+            freeMemo: '',
+          }),
+        ),
+      ),
+      http.put(`${config.apiBaseUrl}/api/properties/10/memo`, async ({ request }) => {
         requestBody = await request.json();
-        return HttpResponse.json(successEnvelope({ id: 10, ...(requestBody as object) }));
+        const body = requestBody as {
+          items: Array<{ systemMemoItemId: number; content: string }>;
+          freeMemo: string;
+        };
+        return HttpResponse.json(
+          successEnvelope({
+            propertyId: 10,
+            items: body.items.map((item, index) => ({
+              ...item,
+              systemMemoItemId: index + 1,
+              label:
+                index === 0 ? '집 주소' : index === 1 ? '입주 가능일' : index === 2 ? '관리비 및 공과금' : '방문 일정',
+              displayOrder: index + 1,
+            })),
+            freeMemo: body.freeMemo,
+          }),
+        );
+      }),
+      http.put(`${config.apiBaseUrl}/api/properties/10`, async ({ request }) => {
+        propertyRequestBody = await request.json();
+        return HttpResponse.json(successEnvelope({ id: 10, ...(propertyRequestBody as object) }));
       }),
     );
     const user = userEvent.setup();
     renderAuthenticated('/properties/10/memo');
 
-    // 상세에서 받은 부가 정보가 그대로 채워져 있다.
-    expect(await screen.findByLabelText('입주 가능일')).toHaveValue('2026-09-01');
-    expect(screen.getByLabelText('방문 일정')).toHaveValue('2026-08-20T14:00');
+    await user.type(await screen.findByRole('textbox', { name: '집 주소' }), '관악구 신림로 12길');
+    const maintenanceTotal = screen.getByRole('textbox', { name: '총 관리비' });
+    expect(maintenanceTotal).toHaveValue('8만원');
     expect(screen.getByRole('checkbox', { name: '수도세' })).toBeChecked();
-    expect(screen.getByRole('checkbox', { name: '인터넷' })).toBeChecked();
-    expect(screen.getByRole('checkbox', { name: '에어컨' })).toBeChecked();
-    const maintenanceTotal = screen.getByLabelText('총 관리비');
-    expect(maintenanceTotal).toHaveValue('7');
-
     await user.clear(maintenanceTotal);
-    await user.type(maintenanceTotal, '12');
-    await user.click(screen.getByRole('checkbox', { name: '가스비' }));
-    await user.click(screen.getByRole('checkbox', { name: '책상' }));
-    const discoverySource = screen.getByLabelText('확인한 곳');
-    await user.clear(discoverySource);
-    await user.type(discoverySource, 'https://new.example.com/listing');
+    await user.type(maintenanceTotal, '12만원');
+    await user.click(screen.getByRole('checkbox', { name: '인터넷' }));
+    const visitSchedule = screen.getByRole('textbox', { name: '방문 일정' });
+    expect(visitSchedule).toHaveProperty('type', 'text');
+    expect(visitSchedule).toHaveAttribute('placeholder', '예: 9월 5일 오후 2시');
+    await user.type(visitSchedule, '9월 5일 오후 2시');
+    const link = screen.getByRole('textbox', { name: '링크' });
+    await user.clear(link);
+    await user.type(link, 'https://new.example.com/listing');
     await user.click(screen.getByRole('button', { name: '부가 정보 저장' }));
 
     expect(await screen.findAllByRole('heading', { name: '신림역 원룸', level: 1 })).toHaveLength(2);
     expect(requestBody).toEqual({
-      name: propertyDetailFixture.name,
-      depositAmount: propertyDetailFixture.depositAmount,
-      monthlyRentAmount: propertyDetailFixture.monthlyRentAmount,
-      address: propertyDetailFixture.location.address,
-      latitude: propertyDetailFixture.location.latitude,
-      longitude: propertyDetailFixture.location.longitude,
-      availableMoveInDate: '2026-09-01',
-      maintenanceFeeAmount: 120_000,
-      visitScheduledAt: '2026-08-20T14:00',
-      discoverySource: 'https://new.example.com/listing',
-      roomOptions: ['AIR_CONDITIONER', 'REFRIGERATOR', 'DESK'],
-      utilityOptions: ['WATER', 'INTERNET', 'GAS'],
+      items: [
+        { systemMemoItemId: 1, content: '관악구 신림로 12길' },
+        { systemMemoItemId: 2, content: '' },
+        { systemMemoItemId: 3, content: '12만원 (수도세, 인터넷)' },
+        { systemMemoItemId: 4, content: '9월 5일 오후 2시' },
+      ],
+      freeMemo: '',
     });
+    expect(propertyRequestBody).toMatchObject({ discoverySource: 'https://new.example.com/listing' });
   });
 
   it('부가 정보 저장 실패 시 작성 내용을 유지해 다시 저장할 수 있다', async () => {
     let saveAttempts = 0;
     server.use(
       http.get(`${config.apiBaseUrl}/api/properties/10`, () => HttpResponse.json(successEnvelope(detailWithoutPhotos))),
-      http.put(`${config.apiBaseUrl}/api/properties/10`, async ({ request }) => {
+      http.get(`${config.apiBaseUrl}/api/properties/10/memo`, () =>
+        HttpResponse.json(
+          successEnvelope({
+            propertyId: 10,
+            items: [{ propertyMemoItemId: 101, systemMemoItemId: 1, label: '집 주소', displayOrder: 1, content: '' }],
+            freeMemo: '',
+          }),
+        ),
+      ),
+      http.put(`${config.apiBaseUrl}/api/properties/10/memo`, async ({ request }) => {
         saveAttempts += 1;
-        const body = (await request.json()) as object;
+        const body = await request.json();
         if (saveAttempts === 1) return HttpResponse.json(errorEnvelope('INTERNAL_SERVER_ERROR'), { status: 500 });
+        const memoBody = body as {
+          items: Array<{ systemMemoItemId: number; content: string }>;
+          freeMemo: string;
+        };
+        return HttpResponse.json(
+          successEnvelope({
+            propertyId: 10,
+            items: memoBody.items.map((item) => ({
+              ...item,
+              systemMemoItemId: 1,
+              label: '집 주소',
+              displayOrder: 1,
+            })),
+            freeMemo: memoBody.freeMemo,
+          }),
+        );
+      }),
+      http.put(`${config.apiBaseUrl}/api/properties/10`, async ({ request }) => {
+        const body = (await request.json()) as object;
         return HttpResponse.json(successEnvelope({ id: 10, ...body }));
       }),
     );
     const user = userEvent.setup();
     renderAuthenticated('/properties/10/memo');
-    const discoverySource = await screen.findByLabelText('확인한 곳');
+    const memo = await screen.findByRole('textbox', { name: '집 주소' });
 
-    await user.clear(discoverySource);
-    await user.type(discoverySource, '작성 중인 내용');
+    await user.type(memo, '작성 중인 내용');
     await user.click(screen.getByRole('button', { name: '부가 정보 저장' }));
     expect(await screen.findByText(/부가 정보를 저장하지 못했어요/)).toBeInTheDocument();
-    expect(discoverySource).toHaveValue('작성 중인 내용');
+    expect(memo).toHaveValue('작성 중인 내용');
     await user.click(screen.getByRole('button', { name: '부가 정보 저장' }));
     expect(await screen.findAllByRole('heading', { name: '신림역 원룸', level: 1 })).toHaveLength(2);
     expect(saveAttempts).toBe(2);

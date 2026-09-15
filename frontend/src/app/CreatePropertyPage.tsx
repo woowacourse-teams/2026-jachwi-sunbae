@@ -42,12 +42,9 @@ const draftToValues = (draft: PropertyInputDto | undefined): PropertyFormValues 
     ? emptyValues
     : {
         name: draft.name,
-        depositAmount: formatAmountForInput(draft.depositAmount),
-        monthlyRentAmount: formatAmountForInput(draft.monthlyRentAmount),
+        depositAmount: draft.depositAmount === undefined ? '' : formatAmountForInput(draft.depositAmount),
+        monthlyRentAmount: draft.monthlyRentAmount === undefined ? '' : formatAmountForInput(draft.monthlyRentAmount),
         discoverySource: draft.discoverySource ?? '',
-        address: draft.address ?? '',
-        latitude: draft.latitude,
-        longitude: draft.longitude,
       };
 
 /**
@@ -67,7 +64,8 @@ const CreatePropertyPage = ({ config }: { config: PublicConfig }) => {
       ? draft
       : {
           ...draft,
-          address: selectedLocation.roadAddress ?? selectedLocation.jibunAddress ?? selectedLocation.address ?? '',
+          roadAddress: selectedLocation.roadAddress ?? undefined,
+          jibunAddress: selectedLocation.jibunAddress ?? undefined,
           latitude: selectedLocation.latitude,
           longitude: selectedLocation.longitude,
         };
@@ -153,7 +151,7 @@ const CreatePropertyPage = ({ config }: { config: PublicConfig }) => {
   );
 
   const submitProperty = async () => {
-    const validationErrors = validatePropertyForm(values);
+    const validationErrors = validatePropertyForm(values, 'registration');
     setErrors(validationErrors);
     if (Object.keys(validationErrors).length > 0 || locationStatus !== 'ready') return;
     const input = toPropertyInputDto(values);
@@ -162,7 +160,8 @@ const CreatePropertyPage = ({ config }: { config: PublicConfig }) => {
     try {
       const created = await createProperty.mutateAsync({
         ...input,
-        address: selectedLocation.roadAddress ?? selectedLocation.jibunAddress ?? selectedLocation.address,
+        roadAddress: selectedLocation.roadAddress,
+        jibunAddress: selectedLocation.jibunAddress,
         latitude: selectedLocation.latitude,
         longitude: selectedLocation.longitude,
       });

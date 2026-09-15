@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { checkItemToEditorItem, checklistItemToEditorItem } from '../types/ChecklistEditor';
-import { editorItemsFingerprint, moveEditorItem, toProvidedChecklistItemInputs } from './checklistEditor';
+import { editorItemsFingerprint, moveEditorItem, toChecklistItemInputs } from './checklistEditor';
 import {
   customChecklistItemFixture,
   onlineItemFixture,
@@ -14,13 +14,13 @@ describe('체크리스트 편집 상태와 DTO 변환', () => {
   const anotherOptionalItem = checkItemToEditorItem(secondOnlineItemFixture as CheckItem);
   const existingItem = checklistItemToEditorItem(providedChecklistItemFixture as ChecklistItem);
 
-  it('새 API에는 시스템 제공 항목 ID만 순서대로 보낸다', () => {
+  it('이전 직접 질문은 수정하지 않고 제공 항목과 함께 순서를 보존한다', () => {
     const customItem = checklistItemToEditorItem(customChecklistItemFixture as ChecklistItem);
-    expect(toProvidedChecklistItemInputs([anotherOptionalItem, existingItem])).toEqual([
+    expect(toChecklistItemInputs([anotherOptionalItem, customItem, existingItem])).toEqual([
       { systemCheckItemId: anotherOptionalItem.sourceCheckItemId },
+      { systemCheckItemId: null, question: customChecklistItemFixture.question },
       { systemCheckItemId: existingItem.sourceCheckItemId },
     ]);
-    expect(() => toProvidedChecklistItemInputs([customItem])).toThrow('제공 항목만');
   });
 
   it('항목 식별자와 순서가 달라지면 편집 지문도 달라진다', () => {

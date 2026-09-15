@@ -48,7 +48,7 @@ const secondOnSiteItemFixture = { ...secondOnlineItemFixture, stage: 'ON_SITE' }
 const finalChecklistDetail = (overrides: Record<string, unknown> = {}) => ({
   id: 7,
   name: '전화 문의 기본 목록',
-  stage: 'ON_SITE',
+  stage: 'ONLINE_PHONE',
   itemCount: 2,
   items: [
     {
@@ -270,14 +270,32 @@ describe('매물 체크리스트 연결과 자동 저장', () => {
           successEnvelope({
             propertyId: 10,
             overallProgress: {
-              totalCount: 0,
-              completedCount: 0,
-              goodCount: 0,
+              totalCount: 2,
+              completedCount: 1,
+              goodCount: 1,
               cautionCount: 0,
-              unconfirmedCount: 0,
-              progressRate: 0,
+              unconfirmedCount: 1,
+              progressRate: 50,
             },
-            stages: [emptyStageProgress('ON_SITE'), emptyStageProgress('PRE_CONTRACT')],
+            stages: [
+              {
+                stage: 'ONLINE_PHONE',
+                applied: true,
+                propertyChecklistId: 47,
+                checklistName: '전화 문의 기본 목록',
+                sourceChecklistId: 7,
+                progress: {
+                  totalCount: 2,
+                  completedCount: 1,
+                  goodCount: 1,
+                  cautionCount: 0,
+                  unconfirmedCount: 1,
+                  progressRate: 50,
+                },
+              },
+              emptyStageProgress('ON_SITE'),
+              emptyStageProgress('PRE_CONTRACT'),
+            ],
           }),
         ),
       ),
@@ -309,7 +327,7 @@ describe('매물 체크리스트 연결과 자동 저장', () => {
             },
             stages: [
               {
-                stage: 'ON_SITE',
+                stage: 'ONLINE_PHONE',
                 applied: false,
                 propertyChecklistId: null,
                 checklistName: null,
@@ -333,7 +351,7 @@ describe('매물 체크리스트 연결과 자동 저장', () => {
         HttpResponse.json(successEnvelope(checklistPageFixture([]))),
       ),
     );
-    renderAuthenticated('/properties/10/active-checklists/ON_SITE?from=property-detail');
+    renderAuthenticated('/properties/10/active-checklists/ONLINE_PHONE?from=property-detail');
 
     expect(await screen.findByRole('checkbox', { name: /자취선배 기본 체크리스트/ })).toBeInTheDocument();
     expect(screen.queryByRole('link', { name: '새 체크리스트 만들기' })).not.toBeInTheDocument();
@@ -361,7 +379,7 @@ describe('매물 체크리스트 연결과 자동 저장', () => {
             },
             stages: [
               {
-                stage: 'ON_SITE',
+                stage: 'ONLINE_PHONE',
                 applied: false,
                 propertyChecklistId: null,
                 checklistName: null,
@@ -384,7 +402,7 @@ describe('매물 체크리스트 연결과 자동 저장', () => {
       http.get(`${config.apiBaseUrl}/api/checklists`, () =>
         HttpResponse.json(successEnvelope(checklistPageFixture([checklistSummaryFixture]))),
       ),
-      http.put(`${config.apiBaseUrl}/api/properties/10/checklists/ON_SITE`, async ({ request }) => {
+      http.put(`${config.apiBaseUrl}/api/properties/10/checklists/ONLINE_PHONE`, async ({ request }) => {
         requestBody = await request.json();
         return HttpResponse.json(
           successEnvelope({
@@ -392,7 +410,7 @@ describe('매물 체크리스트 연결과 자동 저장', () => {
             propertyId: 10,
             sourceChecklistId: 7,
             checklistName: '전화 문의 기본 목록',
-            stage: 'ON_SITE',
+            stage: 'ONLINE_PHONE',
             items: [],
           }),
         );
@@ -404,7 +422,7 @@ describe('매물 체크리스트 연결과 자동 저장', () => {
             propertyId: 10,
             sourceChecklistId: 7,
             checklistName: '전화 문의 기본 목록',
-            stage: 'ON_SITE',
+            stage: 'ONLINE_PHONE',
             items: [],
           }),
         ),
@@ -423,7 +441,7 @@ describe('매물 체크리스트 연결과 자동 저장', () => {
             },
             stages: [
               {
-                stage: 'ON_SITE',
+                stage: 'ONLINE_PHONE',
                 applied: true,
                 propertyChecklistId: 47,
                 checklistName: '전화 문의 기본 목록',
@@ -445,7 +463,7 @@ describe('매물 체크리스트 연결과 자동 저장', () => {
       ),
     );
     const user = userEvent.setup();
-    renderAuthenticated('/properties/10/active-checklists/ON_SITE?mode=replace');
+    renderAuthenticated('/properties/10/active-checklists/ONLINE_PHONE?mode=replace');
 
     expect(await screen.findByRole('checkbox', { name: /전화 문의 기본 목록/ })).toBeInTheDocument();
 
@@ -478,7 +496,7 @@ describe('매물 체크리스트 연결과 자동 저장', () => {
             },
             stages: [
               {
-                stage: 'ON_SITE',
+                stage: 'ONLINE_PHONE',
                 applied: true,
                 propertyChecklistId: 47,
                 checklistName: '전화 문의 기본 목록',
@@ -492,6 +510,7 @@ describe('매물 체크리스트 연결과 자동 저장', () => {
                   progressRate: 50,
                 },
               },
+              emptyStageProgress('ON_SITE'),
               emptyStageProgress('PRE_CONTRACT'),
             ],
           }),
@@ -504,7 +523,7 @@ describe('매물 체크리스트 연결과 자동 저장', () => {
       ),
     );
     const user = userEvent.setup();
-    renderAuthenticated('/properties/10/active-checklists/ON_SITE?from=property-detail&mode=replace');
+    renderAuthenticated('/properties/10/active-checklists/ONLINE_PHONE?from=property-detail&mode=replace');
 
     const current = await screen.findByRole('checkbox', { name: /전화 문의 기본 목록/ });
     expect(current).toBeChecked();
@@ -564,7 +583,7 @@ describe('매물 체크리스트 연결과 자동 저장', () => {
             },
             stages: [
               {
-                stage: 'ON_SITE',
+                stage: 'ONLINE_PHONE',
                 applied: true,
                 propertyChecklistId: 47,
                 checklistName: '전화 문의 기본 목록',

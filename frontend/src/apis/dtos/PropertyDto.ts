@@ -1,22 +1,20 @@
-import type { RoomOption, UtilityOption } from '../../types/Property';
-
 export type PropertyInputDto = {
   name: string;
-  depositAmount: number;
-  monthlyRentAmount: number;
+  depositAmount?: number;
+  monthlyRentAmount?: number;
   discoverySource: string | null;
-  address: string | null;
-  latitude: number | null;
-  longitude: number | null;
-  availableMoveInDate: string | null;
-  maintenanceFeeAmount: number | null;
-  visitScheduledAt: string | null;
-  roomOptions: RoomOption[];
-  utilityOptions: UtilityOption[];
+  roadAddress?: string | null;
+  jibunAddress?: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
 };
 
 export type UpdatePropertyRequestDto = PropertyInputDto;
 
 export type SavePropertyMemoDocumentRequestDto = {
+  items: Array<{
+    systemMemoItemId: number;
+    content: string;
+  }>;
   freeMemo: string;
 };

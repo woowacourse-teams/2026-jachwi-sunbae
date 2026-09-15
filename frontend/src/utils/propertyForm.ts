@@ -8,7 +8,8 @@ export type PropertyFormValues = {
   depositAmount: string;
   monthlyRentAmount: string;
   discoverySource: string;
-  address?: string;
+  roadAddress?: string;
+  jibunAddress?: string;
   latitude?: number | null;
   longitude?: number | null;
 };
@@ -57,8 +58,10 @@ const toWon = (manwon: number): number | null => {
   return Number.isSafeInteger(amount) && amount <= MAX_PROPERTY_AMOUNT ? amount : null;
 };
 
-/** 주소·좌표는 지도에서 고르므로 여기서는 검증하지 않는다. 등록·수정 모드 차이도 없다. */
-export const validatePropertyForm = (values: PropertyFormValues): PropertyFormErrors => {
+export const validatePropertyForm = (
+  values: PropertyFormValues,
+  mode: PropertyFormMode = 'default',
+): PropertyFormErrors => {
   const errors: PropertyFormErrors = {};
   const name = values.name.trim();
   const discoverySource = values.discoverySource.trim();
@@ -69,13 +72,13 @@ export const validatePropertyForm = (values: PropertyFormValues): PropertyFormEr
     errors.name = '이름은 30자 이하로 입력해 주세요.';
   }
 
-  if (values.depositAmount === '') {
+  if (mode === 'registration' && values.depositAmount === '') {
     errors.depositAmount = '보증금을 입력해 주세요.';
   } else if (values.depositAmount !== '' && parseMoneyInput(values.depositAmount) === null) {
     errors.depositAmount = '보증금은 0 이상 최대 안전 정수 이하의 정수로 입력해 주세요.';
   }
 
-  if (values.monthlyRentAmount === '') {
+  if (mode === 'registration' && values.monthlyRentAmount === '') {
     errors.monthlyRentAmount = '월세를 입력해 주세요.';
   } else if (values.monthlyRentAmount !== '' && parseMoneyInput(values.monthlyRentAmount) === null) {
     errors.monthlyRentAmount = '월세는 0 이상 최대 안전 정수 이하의 정수로 입력해 주세요.';
@@ -93,7 +96,9 @@ export const toPropertyInputDto = (values: PropertyFormValues): PropertyInputDto
   const monthlyRentInput = parseMoneyInput(values.monthlyRentAmount);
   const depositAmount = depositInput === null ? undefined : toWon(depositInput);
   const monthlyRentAmount = monthlyRentInput === null ? undefined : toWon(monthlyRentInput);
-  const address = values.address?.trim() ?? '';
+  const roadAddress = values.roadAddress?.trim() ?? '';
+  const jibunAddress = values.jibunAddress?.trim() ?? '';
+  const hasLocation = roadAddress !== '' || jibunAddress !== '' || values.latitude != null || values.longitude != null;
 
   if (depositAmount === null || monthlyRentAmount === null) {
     return null;
@@ -101,17 +106,17 @@ export const toPropertyInputDto = (values: PropertyFormValues): PropertyInputDto
 
   return {
     name: values.name.trim(),
-    depositAmount: depositAmount ?? 0,
-    monthlyRentAmount: monthlyRentAmount ?? 0,
+    ...(depositAmount === undefined ? {} : { depositAmount }),
+    ...(monthlyRentAmount === undefined ? {} : { monthlyRentAmount }),
     discoverySource: values.discoverySource.trim() || null,
-    address: address || null,
-    latitude: values.latitude ?? null,
-    longitude: values.longitude ?? null,
-    availableMoveInDate: null,
-    maintenanceFeeAmount: null,
-    visitScheduledAt: null,
-    roomOptions: [],
-    utilityOptions: [],
+    ...(hasLocation
+      ? {
+          roadAddress: roadAddress || null,
+          jibunAddress: jibunAddress || null,
+          latitude: values.latitude ?? null,
+          longitude: values.longitude ?? null,
+        }
+      : {}),
   };
 };
 
@@ -121,7 +126,8 @@ export const propertyFieldErrorMessage = (field: PropertyFormField): string => {
     depositAmount: '서버에서 보증금 값을 확인하지 못했습니다.',
     monthlyRentAmount: '서버에서 월세 값을 확인하지 못했습니다.',
     discoverySource: '서버에서 확인한 곳을 확인하지 못했습니다.',
-    address: '주소를 확인해 주세요.',
+    roadAddress: '도로명 주소를 확인해 주세요.',
+    jibunAddress: '지번 주소를 확인해 주세요.',
     latitude: '선택한 위치의 위도를 확인해 주세요.',
     longitude: '선택한 위치의 경도를 확인해 주세요.',
   };

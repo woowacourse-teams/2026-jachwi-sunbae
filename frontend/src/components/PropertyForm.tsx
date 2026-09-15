@@ -35,7 +35,14 @@ type PropertyFormProps = {
   onSelectLocation?: () => void;
 };
 
-const fields: PropertyFormField[] = ['name', 'depositAmount', 'monthlyRentAmount', 'discoverySource', 'address'];
+const fields: PropertyFormField[] = [
+  'name',
+  'depositAmount',
+  'monthlyRentAmount',
+  'discoverySource',
+  'roadAddress',
+  'jibunAddress',
+];
 
 const PropertyForm = ({
   initialValues,
@@ -71,7 +78,7 @@ const PropertyForm = ({
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    const nextErrors = validatePropertyForm(values);
+    const nextErrors = validatePropertyForm(values, mode);
     setErrors(nextErrors);
 
     if (Object.keys(nextErrors).length > 0) return;
@@ -104,18 +111,32 @@ const PropertyForm = ({
       {mode !== 'registration' && (
         <div className={styles.locationFields}>
           <TextField
-            id="property-address"
-            name="address"
+            id="property-road-address"
+            name="roadAddress"
             label="주소"
             requirement="선택"
-            value={values.address ?? ''}
+            value={values.roadAddress ?? ''}
             maxLength={255}
             autoComplete="street-address"
-            placeholder="주소"
+            placeholder="도로명 주소"
             fieldClassName={variant === 'detail' ? styles.detailField : styles.defaultField}
             className={variant === 'detail' ? styles.detailInput : styles.defaultInput}
-            error={displayedErrors.address}
-            onChange={(event) => setValue('address', event.target.value)}
+            error={displayedErrors.roadAddress}
+            onChange={(event) => setValue('roadAddress', event.target.value)}
+          />
+          <TextField
+            id="property-jibun-address"
+            name="jibunAddress"
+            label="지번 주소"
+            requirement="선택"
+            value={values.jibunAddress ?? ''}
+            maxLength={255}
+            autoComplete="off"
+            placeholder="지번 주소"
+            fieldClassName={variant === 'detail' ? styles.detailField : styles.defaultField}
+            className={variant === 'detail' ? styles.detailInput : styles.defaultInput}
+            error={displayedErrors.jibunAddress}
+            onChange={(event) => setValue('jibunAddress', event.target.value)}
           />
           {onSelectLocation !== undefined && (
             <Button type="button" variant="secondary" fullWidth onClick={onSelectLocation}>
