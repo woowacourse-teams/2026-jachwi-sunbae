@@ -182,7 +182,22 @@ const ResolvedPropertyDetailPage = ({ config, propertyId }: { config: PublicConf
         <PageHeading title={detail.name} variant="overlap" />
         <PropertyBasicInfoSection config={config} property={detail} />
 
-        <PropertyAdditionalInfoSection property={detail} />
+        {memo.isPending ? (
+          <section className={styles.sectionStateCard} aria-label="매물 부가 정보">
+            매물 부가 정보를 불러오는 중이에요.
+          </section>
+        ) : memo.isError ? (
+          <button className={styles.sectionRetryCard} type="button" onClick={() => void memo.refetch()}>
+            매물 부가 정보를 불러오지 못했어요. 다시 시도
+          </button>
+        ) : (
+          <PropertyAdditionalInfoSection
+            config={config}
+            propertyId={propertyId}
+            memo={memo.data}
+            discoverySource={detail.discoverySource.value}
+          />
+        )}
 
         {memo.isPending ? (
           <section className={styles.memoSection} aria-label="매물 메모">
@@ -234,9 +249,14 @@ const ResolvedPropertyDetailPage = ({ config, propertyId }: { config: PublicConf
           <form
             onSubmit={(event) => {
               event.preventDefault();
-              if (memo.data === undefined) return;
+              const memoDocument = memo.data;
+              if (memoDocument === undefined) return;
               void saveMemo
                 .mutateAsync({
+                  items: memoDocument.items.map((item) => ({
+                    systemMemoItemId: item.systemMemoItemId,
+                    content: item.content,
+                  })),
                   freeMemo: quickMemoDraft.trim(),
                 })
                 .then(() => setIsQuickMemoOpen(false))

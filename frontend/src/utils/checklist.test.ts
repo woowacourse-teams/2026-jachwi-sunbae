@@ -12,10 +12,10 @@ describe('체크리스트 편집 규칙', () => {
 
   it('같은 단계의 중복되지 않은 항목이 한 개 이상이어야 한다', () => {
     const items = [onlineItemFixture, secondOnlineItemFixture] as CheckItem[];
-    expect(hasUniqueSameStageItems(items, 'ON_SITE')).toBe(true);
-    expect(hasUniqueSameStageItems([], 'ON_SITE')).toBe(false);
-    expect(hasUniqueSameStageItems([items[0], items[0]], 'ON_SITE')).toBe(false);
-    expect(hasUniqueSameStageItems(items, 'PRE_CONTRACT')).toBe(false);
+    expect(hasUniqueSameStageItems(items, 'ONLINE_PHONE')).toBe(true);
+    expect(hasUniqueSameStageItems([], 'ONLINE_PHONE')).toBe(false);
+    expect(hasUniqueSameStageItems([items[0], items[0]], 'ONLINE_PHONE')).toBe(false);
+    expect(hasUniqueSameStageItems(items, 'ON_SITE')).toBe(false);
   });
 
   it('순서를 불변 배열로 이동하고 경계 밖 이동은 원본을 유지한다', () => {
@@ -25,18 +25,18 @@ describe('체크리스트 편집 규칙', () => {
   });
 
   it('정확한 매물 활성 체크리스트 내부 경로만 returnTo로 허용한다', () => {
-    expect(parseChecklistReturnTo('/properties/10/active-checklists/ON_SITE')).toEqual({
+    expect(parseChecklistReturnTo('/properties/10/active-checklists/ONLINE_PHONE')).toEqual({
       propertyId: 10,
-      stage: 'ON_SITE',
-      path: '/properties/10/active-checklists/ON_SITE',
+      stage: 'ONLINE_PHONE',
+      path: '/properties/10/active-checklists/ONLINE_PHONE',
     });
     expect(parseChecklistReturnTo('/properties/10/active-checklists/ON_SITE?from=property-detail')).toEqual({
       propertyId: 10,
       stage: 'ON_SITE',
       path: '/properties/10/active-checklists/ON_SITE?from=property-detail',
     });
-    expect(parseChecklistReturnTo('https://evil.example/properties/10/active-checklists/ON_SITE')).toBeNull();
+    expect(parseChecklistReturnTo('https://evil.example/properties/10/active-checklists/ONLINE_PHONE')).toBeNull();
     expect(parseChecklistReturnTo('//evil.example')).toBeNull();
-    expect(parseChecklistReturnTo('/properties/0/active-checklists/ON_SITE')).toBeNull();
+    expect(parseChecklistReturnTo('/properties/0/active-checklists/ONLINE_PHONE')).toBeNull();
   });
 });

@@ -1,7 +1,7 @@
 export const onlineItemFixture = {
   id: 101,
   checkItemId: 101,
-  stage: 'ON_SITE',
+  stage: 'ONLINE_PHONE',
   itemType: 'CORE' as const,
   question: '관리비에 포함된 항목은 무엇인가요?',
   guide: '수도, 인터넷과 공용 전기 포함 여부를 확인해요.',
@@ -10,7 +10,7 @@ export const onlineItemFixture = {
 export const secondOnlineItemFixture = {
   id: 102,
   checkItemId: 102,
-  stage: 'ON_SITE',
+  stage: 'ONLINE_PHONE',
   itemType: 'OPTIONAL' as const,
   question: '입주 가능한 날짜는 언제인가요?',
   guide: '계약 시작일과 실제 입주 가능일을 함께 확인해요.',
@@ -20,7 +20,7 @@ export const checkItemPageFixture = (content: unknown[]) => content;
 
 export const presetFixture = {
   presetType: 'ONE_ROOM',
-  stage: 'ON_SITE',
+  stage: 'ONLINE_PHONE',
   items: [
     { ...onlineItemFixture, order: 0 },
     { ...secondOnlineItemFixture, order: 1 },
@@ -31,7 +31,7 @@ export const checklistSummaryFixture = {
   id: 7,
   checklistId: 7,
   name: '전화 문의 기본 목록',
-  stage: 'ON_SITE',
+  stage: 'ONLINE_PHONE',
   itemCount: 2,
   assignedPropertyCount: 1,
   updatedAt: '2026-08-11T05:00:00Z',

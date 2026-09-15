@@ -5,35 +5,12 @@ export type DiscoverySource = {
   value: string;
 };
 
-/** 새 API는 도로명·지번 구분 없는 단일 주소만 내려준다. 지도 검색 결과(MapAddress)와는 별개다. */
 export type PropertyLocation = {
   address: string | null;
+  roadAddress: string | null;
+  jibunAddress: string | null;
   latitude: number | null;
   longitude: number | null;
-};
-
-export type RoomOption =
-  | 'AIR_CONDITIONER'
-  | 'REFRIGERATOR'
-  | 'WASHING_MACHINE'
-  | 'SINK'
-  | 'GAS_STOVE'
-  | 'MICROWAVE'
-  | 'SHOE_CABINET'
-  | 'WARDROBE'
-  | 'BED'
-  | 'DESK'
-  | 'TV'
-  | 'INDUCTION';
-
-export type UtilityOption = 'WATER' | 'ELECTRICITY' | 'GAS' | 'INTERNET';
-
-export type PropertyAdditionalInfo = {
-  availableMoveInDate: string | null;
-  maintenanceFeeAmount: number | null;
-  visitScheduledAt: string | null;
-  roomOptions: RoomOption[];
-  utilityOptions: UtilityOption[];
 };
 
 export type PropertySummary = {
@@ -57,6 +34,7 @@ export type PropertySummary = {
   progress: PropertyChecklistProgress;
   stages: PropertyChecklistStageSummary[];
   photoCount: number;
+  lastActivityAt: string;
 };
 
 export type PropertyPage = {
@@ -74,7 +52,7 @@ export type PropertyPhotoPreview = {
   createdAt: string;
 };
 
-export type PropertyDetail = PropertyAdditionalInfo & {
+export type PropertyDetail = {
   propertyId: number;
   name: string;
   depositAmount: number;
@@ -87,9 +65,10 @@ export type PropertyDetail = PropertyAdditionalInfo & {
   };
   createdAt: string;
   updatedAt: string;
+  lastActivityAt: string;
 };
 
-export type PropertyBasicInfo = PropertyAdditionalInfo & {
+export type PropertyBasicInfo = {
   propertyId: number;
   name: string;
   depositAmount: number;
@@ -97,9 +76,12 @@ export type PropertyBasicInfo = PropertyAdditionalInfo & {
   discoverySource: DiscoverySource;
   location: PropertyLocation;
   updatedAt: string | null;
+  lastActivityAt: string | null;
 };
 
-export type CreatedProperty = PropertyBasicInfo;
+export type CreatedProperty = PropertyBasicInfo & {
+  firstProperty: boolean;
+};
 
 export type PropertyPhoto = {
   photoId: number;
@@ -115,8 +97,18 @@ export type PropertyPhotoList = {
   totalCount: number;
 };
 
+export type PropertyMemoItem = {
+  /** GET /memo returns the system items before a property memo row exists. */
+  propertyMemoItemId?: number;
+  systemMemoItemId: number;
+  label: string;
+  displayOrder: number;
+  content: string;
+};
+
 export type PropertyMemoDocument = {
   propertyId: number;
+  items: PropertyMemoItem[];
   freeMemo: string;
 };
 

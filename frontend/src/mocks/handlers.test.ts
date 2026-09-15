@@ -24,22 +24,14 @@ describe('최종 API 명세 MSW handlers', () => {
     });
   });
 
-  it('매물 메모는 자유 메모만 전체 교체한다', async () => {
-    const response = await fetch(apiUrl('/api/properties/10/memo'), {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ freeMemo: '계약 전에 결로 자국 다시 보기' }),
-    });
+  it('초기 메모 생성 응답에 매물 메모 항목 ID를 포함한다', async () => {
+    const response = await fetch(apiUrl('/api/properties/10/memo'), { method: 'POST' });
     const body = await readJson(response);
 
     expect(response.status).toBe(200);
-    expect(body).toMatchObject({
-      code: 'SUCCESS',
-      data: { propertyId: 10, freeMemo: '계약 전에 결로 자국 다시 보기' },
-    });
-
-    const reread = await readJson(await fetch(apiUrl('/api/properties/10/memo')));
-    expect(reread.data).toEqual({ propertyId: 10, freeMemo: '계약 전에 결로 자국 다시 보기' });
+    expect(body).toMatchObject({ code: 'SUCCESS', data: { propertyId: 10 } });
+    const data = body.data as { items: Array<Record<string, unknown>> };
+    expect(data.items[0]).toMatchObject({ propertyMemoItemId: 1001, systemMemoItemId: 1 });
   });
 
   it('사용자 직접 질문을 보낸 항목은 거절한다', async () => {
@@ -48,7 +40,7 @@ describe('최종 API 명세 MSW handlers', () => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         name: '잘못된 체크리스트',
-        stage: 'ON_SITE',
+        stage: 'ONLINE_PHONE',
         items: [{ systemCheckItemId: null, question: '직접 질문' }],
       }),
     });
@@ -130,7 +122,7 @@ describe('최종 API 명세 MSW handlers', () => {
   it.each([
     ['POST', '/api/properties/10/photos', 501, 'NOT_IMPLEMENTED'],
     ['GET', '/api/checklist-presets', 410, 'API_CONTRACT_REMOVED'],
-    ['GET', '/api/properties/10/active-checklists/ON_SITE', 410, 'API_CONTRACT_REMOVED'],
+    ['GET', '/api/properties/10/active-checklists/ONLINE_PHONE', 410, 'API_CONTRACT_REMOVED'],
   ])('%s %s는 성공 응답으로 위장하지 않는다', async (method, path, status, code) => {
     const response = await fetch(apiUrl(path), { method });
     const body = await readJson(response);

@@ -1,4 +1,4 @@
-import type { ProvidedChecklistItemInputDto } from '../apis/dtos/ChecklistDto';
+import type { ChecklistItemInputDto, ProvidedChecklistItemInputDto } from '../apis/dtos/ChecklistDto';
 import type { ChecklistEditorItem } from '../types/ChecklistEditor';
 import { moveItem } from './moveItem';
 
@@ -12,6 +12,13 @@ export const editorItemsFingerprint = (items: ChecklistEditorItem[]): string =>
         ? ['PROVIDED', item.checklistItemId, item.sourceCheckItemId]
         : ['CUSTOM', item.checklistItemId, item.question],
     ),
+  );
+
+export const toChecklistItemInputs = (items: ChecklistEditorItem[]): ChecklistItemInputDto[] =>
+  items.map((item) =>
+    item.origin === 'PROVIDED'
+      ? { systemCheckItemId: item.sourceCheckItemId }
+      : { systemCheckItemId: null, question: item.question.trim() },
   );
 
 export const toProvidedChecklistItemInputs = (items: ChecklistEditorItem[]): ProvidedChecklistItemInputDto[] =>

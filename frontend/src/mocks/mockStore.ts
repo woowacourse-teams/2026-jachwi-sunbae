@@ -31,9 +31,9 @@ export type MockCheckItem = {
 };
 
 export const checkItems: MockCheckItem[] = [
-  { id: 101, stage: 'ON_SITE', itemType: 'CORE', question: '관리비에 포함된 항목은 무엇인가요?' },
-  { id: 102, stage: 'ON_SITE', itemType: 'CORE', question: '입주 가능한 날짜는 언제인가요?' },
-  { id: 103, stage: 'ON_SITE', itemType: 'OPTIONAL', question: '주차가 가능한가요?' },
+  { id: 101, stage: 'ONLINE_PHONE', itemType: 'CORE', question: '관리비에 포함된 항목은 무엇인가요?' },
+  { id: 102, stage: 'ONLINE_PHONE', itemType: 'CORE', question: '입주 가능한 날짜는 언제인가요?' },
+  { id: 103, stage: 'ONLINE_PHONE', itemType: 'OPTIONAL', question: '주차가 가능한가요?' },
   { id: 201, stage: 'ON_SITE', itemType: 'CORE', question: '수압이 충분한가요?' },
   { id: 202, stage: 'ON_SITE', itemType: 'CORE', question: '방음 상태는 괜찮은가요?' },
   { id: 203, stage: 'ON_SITE', itemType: 'OPTIONAL', question: '채광이 충분한가요?' },
@@ -78,8 +78,8 @@ let checklists: MockChecklist[] = [
   {
     id: 7,
     name: '전화 문의 기본 목록',
-    stage: 'ON_SITE',
-    items: checklistItemsFor('ON_SITE', [101, 102, 103]),
+    stage: 'ONLINE_PHONE',
+    items: checklistItemsFor('ONLINE_PHONE', [101, 102, 103]),
   },
   {
     id: 8,
@@ -119,14 +119,10 @@ export type MockProperty = {
   depositAmount: number;
   monthlyRentAmount: number;
   discoverySource: string | null;
-  address: string | null;
+  roadAddress: string | null;
+  jibunAddress: string | null;
   latitude: number | null;
   longitude: number | null;
-  availableMoveInDate: string | null;
-  maintenanceFeeAmount: number | null;
-  visitScheduledAt: string | null;
-  roomOptions: string[];
-  utilityOptions: string[];
 };
 
 let properties: MockProperty[] = [
@@ -136,14 +132,10 @@ let properties: MockProperty[] = [
     depositAmount: 10_000_000,
     monthlyRentAmount: 550_000,
     discoverySource: 'https://example.com/listings/10',
-    address: '서울 관악구 신림로 12길 3',
+    roadAddress: '서울 관악구 신림로 12길 3',
+    jibunAddress: '서울 관악구 신림동 1433-12',
     latitude: 37.4841234,
     longitude: 126.9291234,
-    availableMoveInDate: '2026-09-01',
-    maintenanceFeeAmount: 70_000,
-    visitScheduledAt: '2026-08-20T14:00',
-    roomOptions: ['AIR_CONDITIONER', 'REFRIGERATOR'],
-    utilityOptions: ['WATER', 'INTERNET'],
   },
   {
     id: 11,
@@ -151,14 +143,10 @@ let properties: MockProperty[] = [
     depositAmount: 30_000_000,
     monthlyRentAmount: 750_000,
     discoverySource: null,
-    address: '서울 마포구 월드컵로 10길 12',
+    roadAddress: '서울 마포구 월드컵로 10길 12',
+    jibunAddress: '서울 마포구 서교동 12-3',
     latitude: 37.5551234,
     longitude: 126.9101234,
-    availableMoveInDate: null,
-    maintenanceFeeAmount: null,
-    visitScheduledAt: null,
-    roomOptions: [],
-    utilityOptions: [],
   },
 ];
 
@@ -211,13 +199,13 @@ let appliedByProperty = new Map<number, Map<ChecklistStage, MockAppliedChecklist
     10,
     new Map([
       [
-        'ON_SITE',
+        'ONLINE_PHONE',
         {
           id: 51,
           propertyId: 10,
           sourceChecklistId: 7,
           checklistName: '전화 문의 기본 목록',
-          stage: 'ON_SITE',
+          stage: 'ONLINE_PHONE',
           items: [
             {
               id: 801,
@@ -272,9 +260,11 @@ export const propertyResponse = (property: MockProperty) => {
   const applied = appliedByProperty.get(property.id) ?? new Map();
   return {
     ...property,
+    address: property.roadAddress ?? property.jibunAddress,
     photoCount: photos.length,
     createdAt: now,
     updatedAt: now,
+    lastActivityAt: now,
     photos,
     representativePhoto: photos.find((photo) => photo.representative) ?? null,
     overallProgress: propertyProgress(property.id),
@@ -292,13 +282,47 @@ export const propertyResponse = (property: MockProperty) => {
   };
 };
 
+export const systemMemoItems = [
+  { id: 1, label: '입주 가능일', displayOrder: 1 },
+  { id: 2, label: '방 옵션', displayOrder: 2 },
+  { id: 3, label: '관리비 및 공과금', displayOrder: 3 },
+  { id: 4, label: '방문 일정', displayOrder: 4 },
+];
+
 export type MockMemo = {
   propertyId: number;
+  items: Array<{
+    propertyMemoItemId: number;
+    systemMemoItemId: number;
+    label: string;
+    displayOrder: number;
+    content: string;
+  }>;
   freeMemo: string;
 };
 
+export const emptyMemo = (propertyId: number): MockMemo => ({
+  propertyId,
+  items: systemMemoItems.map(({ id, ...item }, index) => ({
+    propertyMemoItemId: propertyId * 100 + index + 1,
+    systemMemoItemId: id,
+    ...item,
+    content: '',
+  })),
+  freeMemo: '',
+});
+
 let memoByProperty = new Map<number, MockMemo>([
-  [10, { propertyId: 10, freeMemo: '관리비 포함 항목을 다시 확인하기' }],
+  [
+    10,
+    {
+      ...emptyMemo(10),
+      items: emptyMemo(10).items.map((item) =>
+        item.systemMemoItemId === 1 ? { ...item, content: '관악구 신림로 12길 3, 302호' } : item,
+      ),
+      freeMemo: '관리비 포함 항목을 다시 확인하기',
+    },
+  ],
 ]);
 
 export const readPositiveInteger = (value: string | readonly string[] | undefined) => {
