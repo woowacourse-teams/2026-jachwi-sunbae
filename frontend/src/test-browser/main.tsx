@@ -48,13 +48,13 @@ const routeByScenario: Record<string, string> = {
   'photo-read-failure': '/properties/10/photos',
   'photo-delete': '/properties/10/photos',
   'checklist-home': '/checklists',
-  'checklist-list': '/checklists/ONLINE_PHONE',
-  'checklist-create': '/checklists/new?stage=ONLINE_PHONE',
+  'checklist-list': '/checklists/ON_SITE',
+  'checklist-create': '/checklists/new?stage=ON_SITE',
   'checklist-detail': '/checklists/7',
   'checklist-detail-inactive': '/checklists/7',
   'checklist-detail-many': '/checklists/7',
   'checklist-save-failure': '/checklists/7',
-  'active-checklist': '/properties/10/active-checklists/ONLINE_PHONE',
+  'active-checklist': '/properties/10/active-checklists/ON_SITE',
   my: '/me',
   'todo-compare': '/compare',
   'todo-export': '/export',
@@ -188,7 +188,7 @@ type PropertyChecklistWire = {
   propertyId: number;
   sourceChecklistId: number;
   checklistName: string;
-  stage: 'ONLINE_PHONE' | 'ON_SITE' | 'PRE_CONTRACT';
+  stage: 'ON_SITE' | 'PRE_CONTRACT';
   items: Array<{
     id: number;
     systemCheckItemId: number;
@@ -204,7 +204,7 @@ let propertyChecklist: PropertyChecklistWire = {
   propertyId: 10,
   sourceChecklistId: 7,
   checklistName: checklistSummaryFixture.name,
-  stage: 'ONLINE_PHONE' as const,
+  stage: 'ON_SITE' as const,
   items: [
     {
       id: 711,
@@ -264,6 +264,14 @@ const browserTestFetch: typeof fetch = async (input, init) => {
         depositAmount: 10_000_000,
         monthlyRentAmount: 550_000,
         discoverySource: '동네 중개사 추천',
+        address: '서울 관악구 신림로 12',
+        latitude: 37.484,
+        longitude: 126.929,
+        availableMoveInDate: null,
+        maintenanceFeeAmount: null,
+        visitScheduledAt: null,
+        roomOptions: [],
+        utilityOptions: [],
         photos: [],
         overallProgress: {
           totalCount: 0,
@@ -293,26 +301,9 @@ const browserTestFetch: typeof fetch = async (input, init) => {
   }
 
   if (path === '/api/properties/10/memo' && request.method === 'GET') {
-    const contents = scenario === 'memo-empty' ? ['', ''] : ['관악구 신림로 12길', '9월 1일부터'];
     return jsonResponse(
       successEnvelope({
         propertyId: 10,
-        items: [
-          {
-            propertyMemoItemId: 1001,
-            systemMemoItemId: 1,
-            label: '집 주소',
-            displayOrder: 1,
-            content: contents[0],
-          },
-          {
-            propertyMemoItemId: 1002,
-            systemMemoItemId: 2,
-            label: '입주 가능일',
-            displayOrder: 2,
-            content: contents[1],
-          },
-        ],
         freeMemo: scenario === 'memo-empty' ? '' : '채광 다시 확인',
       }),
     );
@@ -320,22 +311,8 @@ const browserTestFetch: typeof fetch = async (input, init) => {
 
   if (path === '/api/properties/10/memo' && request.method === 'PUT') {
     if (scenario === 'memo-failure') return jsonResponse(errorEnvelope('INTERNAL_SERVER_ERROR'), 500);
-    const body = (await request.json()) as {
-      items: Array<{ propertyMemoItemId: number; content: string }>;
-      freeMemo: string;
-    };
-    return jsonResponse(
-      successEnvelope({
-        propertyId: 10,
-        items: body.items.map((item, index) => ({
-          ...item,
-          systemMemoItemId: index + 1,
-          label: index === 0 ? '집 주소' : '입주 가능일',
-          displayOrder: index + 1,
-        })),
-        freeMemo: body.freeMemo,
-      }),
-    );
+    const body = (await request.json()) as { freeMemo: string };
+    return jsonResponse(successEnvelope({ propertyId: 10, freeMemo: body.freeMemo }));
   }
 
   if (path === '/api/check-items' && request.method === 'GET') {
@@ -368,7 +345,7 @@ const browserTestFetch: typeof fetch = async (input, init) => {
     const response = {
       id: 9,
       name: typeof body.name === 'string' ? body.name : '브라우저 생성 체크리스트',
-      stage: 'ONLINE_PHONE' as const,
+      stage: 'ON_SITE' as const,
       itemCount: responseItems.length,
       items: responseItems,
     };
@@ -475,7 +452,7 @@ const browserTestFetch: typeof fetch = async (input, init) => {
       successEnvelope({
         id: 7,
         name: typeof body.name === 'string' ? body.name : mixedChecklistDetailFixture.name,
-        stage: 'ONLINE_PHONE',
+        stage: 'ON_SITE',
         items,
         itemCount: items.length,
       }),
@@ -486,7 +463,7 @@ const browserTestFetch: typeof fetch = async (input, init) => {
     return new Response(null, { status: 200 });
   }
 
-  if (path === '/api/properties/10/checklists/ONLINE_PHONE' && request.method === 'PUT') {
+  if (path === '/api/properties/10/checklists/ON_SITE' && request.method === 'PUT') {
     const body = (await request.json()) as { checklistId?: unknown };
     const sourceChecklistId = typeof body.checklistId === 'number' ? body.checklistId : 7;
     propertyChecklist = {
@@ -520,7 +497,7 @@ const browserTestFetch: typeof fetch = async (input, init) => {
         overallProgress: progress,
         stages: [
           {
-            stage: 'ONLINE_PHONE',
+            stage: 'ON_SITE',
             applied: true,
             propertyChecklistId: propertyChecklist.id,
             checklistName: propertyChecklist.checklistName,

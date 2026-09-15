@@ -1,7 +1,6 @@
 import { http, HttpResponse } from 'msw';
 import {
   createMockPhotoBytes,
-  emptyMemo,
   getMockMemosByProperty,
   getMockPhotosByProperty,
   getMockProperties,
@@ -14,11 +13,39 @@ import {
   setMockProperties,
   success,
   failure,
-  systemMemoItems,
 } from '../mockStore';
 
+type PropertyWriteRequest = {
+  name: string;
+  depositAmount?: number;
+  monthlyRentAmount?: number;
+  discoverySource?: string | null;
+  address?: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
+  availableMoveInDate?: string | null;
+  maintenanceFeeAmount?: number | null;
+  visitScheduledAt?: string | null;
+  roomOptions?: string[];
+  utilityOptions?: string[];
+};
+
+const propertyFromRequest = (body: PropertyWriteRequest) => ({
+  name: body.name,
+  depositAmount: body.depositAmount ?? 0,
+  monthlyRentAmount: body.monthlyRentAmount ?? 0,
+  discoverySource: body.discoverySource ?? null,
+  address: body.address ?? null,
+  latitude: body.latitude ?? null,
+  longitude: body.longitude ?? null,
+  availableMoveInDate: body.availableMoveInDate ?? null,
+  maintenanceFeeAmount: body.maintenanceFeeAmount ?? null,
+  visitScheduledAt: body.visitScheduledAt ?? null,
+  roomOptions: body.roomOptions ?? [],
+  utilityOptions: body.utilityOptions ?? [],
+});
+
 export const propertyHandlers = [
-  http.get('*/api/system-memo-items', () => success(systemMemoItems)),
   http.get('*/api/properties', () =>
     success({
       totalCount: getMockProperties().length,
@@ -36,28 +63,9 @@ export const propertyHandlers = [
   }),
   http.post('*/api/properties/comparison-views', () => new HttpResponse(null, { status: 204 })),
   http.post('*/api/properties', async ({ request }) => {
-    const body = (await request.json()) as {
-      name: string;
-      depositAmount?: number;
-      monthlyRentAmount?: number;
-      discoverySource?: string;
-      roadAddress?: string;
-      jibunAddress?: string;
-      latitude?: number;
-      longitude?: number;
-    };
+    const body = (await request.json()) as PropertyWriteRequest;
     const id = Math.max(0, ...getMockProperties().map((property) => property.id)) + 1;
-    const property = {
-      id,
-      name: body.name,
-      depositAmount: body.depositAmount ?? 0,
-      monthlyRentAmount: body.monthlyRentAmount ?? 0,
-      discoverySource: body.discoverySource ?? null,
-      roadAddress: body.roadAddress ?? null,
-      jibunAddress: body.jibunAddress ?? null,
-      latitude: body.latitude ?? null,
-      longitude: body.longitude ?? null,
-    };
+    const property = { id, ...propertyFromRequest(body) };
     setMockProperties([...getMockProperties(), property]);
     setMockPhotosByProperty(new Map(getMockPhotosByProperty()).set(id, []));
     return success(propertyResponse(property), 201);
@@ -69,27 +77,8 @@ export const propertyHandlers = [
   http.put('*/api/properties/:propertyId', async ({ params, request }) => {
     const property = getProperty(params.propertyId);
     if (property === undefined) return failure('PROPERTY_NOT_FOUND', 404);
-    const body = (await request.json()) as {
-      name: string;
-      depositAmount?: number;
-      monthlyRentAmount?: number;
-      discoverySource?: string;
-      roadAddress?: string;
-      jibunAddress?: string;
-      latitude?: number;
-      longitude?: number;
-    };
-    const updated = {
-      ...property,
-      name: body.name,
-      depositAmount: body.depositAmount ?? 0,
-      monthlyRentAmount: body.monthlyRentAmount ?? 0,
-      discoverySource: body.discoverySource ?? null,
-      roadAddress: body.roadAddress ?? null,
-      jibunAddress: body.jibunAddress ?? null,
-      latitude: body.latitude ?? null,
-      longitude: body.longitude ?? null,
-    };
+    const body = (await request.json()) as PropertyWriteRequest;
+    const updated = { ...property, ...propertyFromRequest(body) };
     setMockProperties(getMockProperties().map((candidate) => (candidate.id === updated.id ? updated : candidate)));
     return success(updated);
   }),
@@ -105,29 +94,11 @@ export const propertyHandlers = [
     const memo = getMockMemosByProperty().get(property.id);
     return memo === undefined ? failure('MEMO_NOT_FOUND', 404) : success(memo);
   }),
-  http.post('*/api/properties/:propertyId/memo', ({ params }) => {
-    const property = getProperty(params.propertyId);
-    if (property === undefined) return failure('PROPERTY_NOT_FOUND', 404);
-    const memo = getMockMemosByProperty().get(property.id) ?? emptyMemo(property.id);
-    setMockMemosByProperty(new Map(getMockMemosByProperty()).set(property.id, memo));
-    return success(memo);
-  }),
   http.put('*/api/properties/:propertyId/memo', async ({ params, request }) => {
     const property = getProperty(params.propertyId);
     if (property === undefined) return failure('PROPERTY_NOT_FOUND', 404);
-    const body = (await request.json()) as {
-      items?: Array<{ systemMemoItemId: number; content: string }>;
-      freeMemo?: string;
-    };
-    const current = getMockMemosByProperty().get(property.id) ?? emptyMemo(property.id);
-    const requestedContent = new Map(body.items?.map((item) => [item.systemMemoItemId, item.content]) ?? []);
-    const memo = {
-      propertyId: property.id,
-      items: current.items
-        .filter((item) => requestedContent.has(item.systemMemoItemId))
-        .map((item) => ({ ...item, content: requestedContent.get(item.systemMemoItemId) ?? '' })),
-      freeMemo: body.freeMemo ?? '',
-    };
+    const body = (await request.json()) as { freeMemo?: string };
+    const memo = { propertyId: property.id, freeMemo: body.freeMemo ?? '' };
     setMockMemosByProperty(new Map(getMockMemosByProperty()).set(property.id, memo));
     return success(memo);
   }),
