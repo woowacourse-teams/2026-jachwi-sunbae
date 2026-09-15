@@ -30,7 +30,14 @@ fi
 
 export AWS_PAGER=""
 
-aws s3 sync "${DIST_DIR}/" "${S3_URI}" --delete
+aws s3 sync "${DIST_DIR}/" "${S3_URI}" \
+    --delete \
+    --exclude 'index.html' \
+    --cache-control 'public,max-age=31536000,immutable'
+
+aws s3 cp "${LOCAL_INDEX}" "${S3_URI}index.html" \
+    --cache-control 'no-cache,max-age=0,must-revalidate' \
+    --content-type 'text/html; charset=utf-8'
 
 INVALIDATION_ID="$(aws cloudfront create-invalidation \
     --distribution-id "${DISTRIBUTION_ID}" \
