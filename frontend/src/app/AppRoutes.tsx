@@ -6,12 +6,12 @@ import PropertyAppLayout from '../components/PropertyAppLayout';
 import { useAuthentication } from '../hooks/useAuthentication';
 import { isChecklistStage } from '../constants/checklist';
 import type { PublicConfig } from '../types/PublicConfig';
-import IntroPage from './IntroPage';
 import LoginPage from './LoginPage';
-import NotFoundPage from './NotFoundPage';
-import PrivacyPage from './PrivacyPage';
 import ProtectedRoute from './ProtectedRoute';
 
+const IntroPage = lazy(() => import('./IntroPage'));
+const PrivacyPage = lazy(() => import('./PrivacyPage'));
+const NotFoundPage = lazy(() => import('./NotFoundPage'));
 const PropertyListPage = lazy(() => import('./PropertyListPage'));
 const CreatePropertyPage = lazy(() => import('./CreatePropertyPage'));
 const PropertyDetailPage = lazy(() => import('./PropertyDetailPage'));
@@ -57,8 +57,8 @@ const LoginRoute = ({ config }: AppRoutesProps) => {
 
 const AppRoutes = ({ config }: AppRoutesProps) => (
   <Routes>
-    <Route path="/intro" element={<IntroPage />} />
-    <Route path="/privacy" element={<PrivacyPage />} />
+    <Route path="/intro" element={lazyPage(<IntroPage />)} />
+    <Route path="/privacy" element={lazyPage(<PrivacyPage />)} />
     <Route path="/login" element={<LoginRoute config={config} />} />
     <Route element={<ProtectedRoute config={config} />}>
       <Route element={<PropertyAppLayout />}>
@@ -90,7 +90,7 @@ const AppRoutes = ({ config }: AppRoutesProps) => (
         <Route path="/tips" element={lazyPage(<UpcomingFeaturePage feature="tips" />)} />
       </Route>
     </Route>
-    <Route path="*" element={<NotFoundPage />} />
+    <Route path="*" element={lazyPage(<NotFoundPage />)} />
   </Routes>
 );
 
