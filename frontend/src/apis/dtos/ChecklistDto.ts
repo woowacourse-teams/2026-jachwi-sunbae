@@ -1,6 +1,5 @@
 import type { ChecklistStage } from '../../types/Checklist';
 
-export type ChecklistItemInputDto = { systemCheckItemId: number } | { systemCheckItemId: null; question: string };
 export type ProvidedChecklistItemInputDto = { systemCheckItemId: number };
 
 export type CreateChecklistV11RequestDto = {
@@ -11,7 +10,7 @@ export type CreateChecklistV11RequestDto = {
 
 export type UpdateChecklistV11RequestDto = {
   name: string;
-  items: ChecklistItemInputDto[];
+  items: ProvidedChecklistItemInputDto[];
 };
 
 /** @deprecated 최종 API 요청 이름으로 전환하기 전 화면 호환 타입이다. */

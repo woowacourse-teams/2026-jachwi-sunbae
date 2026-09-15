@@ -9,12 +9,6 @@ export const server = setupServer(
   http.get('*/api/properties/:propertyId/memo', ({ params }) =>
     success({
       propertyId: Number(params.propertyId),
-      items: [
-        { propertyMemoItemId: 101, systemMemoItemId: 1, label: '입주 가능일', displayOrder: 1, content: '' },
-        { propertyMemoItemId: 102, systemMemoItemId: 2, label: '방 옵션', displayOrder: 2, content: '' },
-        { propertyMemoItemId: 103, systemMemoItemId: 3, label: '관리비 및 공과금', displayOrder: 3, content: '' },
-        { propertyMemoItemId: 104, systemMemoItemId: 4, label: '방문 일정', displayOrder: 4, content: '' },
-      ],
       freeMemo: '',
     }),
   ),
@@ -29,7 +23,7 @@ export const server = setupServer(
         unconfirmedCount: 0,
         progressRate: 0,
       },
-      stages: ['ONLINE_PHONE', 'ON_SITE', 'PRE_CONTRACT'].map((stage) => ({
+      stages: ['ON_SITE', 'PRE_CONTRACT'].map((stage) => ({
         stage,
         applied: false,
         propertyChecklistId: null,
@@ -44,6 +38,17 @@ export const server = setupServer(
           progressRate: 0,
         },
       })),
+    }),
+  ),
+  // 상세 화면은 단계가 비어 있으면 제공 체크리스트를 자동으로 적용한다.
+  http.put('*/api/properties/:propertyId/checklists/:stage', ({ params }) =>
+    success({
+      id: 51,
+      propertyId: Number(params.propertyId),
+      sourceChecklistId: null,
+      checklistName: '제공 체크리스트',
+      stage: params.stage,
+      items: [],
     }),
   ),
   http.get(
