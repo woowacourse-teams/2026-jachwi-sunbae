@@ -13,7 +13,8 @@ develop 병합                          main 병합
     → Commands 액션                       → Commands 액션
         npm ci && npm run build               npm ci && npm run build
         publish.sh dev                       publish.sh prod
-          → S3 sync                            → S3 sync
+          → 정적 자산 장기 캐시 업로드             → 정적 자산 장기 캐시 업로드
+          → index.html 재검증 업로드              → index.html 재검증 업로드
           → index.html 무효화·완료 대기         → index.html 무효화·완료 대기
           → 실제 번들 파일명 확인               → 실제 번들 파일명 확인
   → dev CloudFront                      → prod CloudFront
@@ -84,6 +85,8 @@ assets/jachwi-sunbae-logo.2e4dac46707736dbc407.png
 
 **`index.html`만 무효화한다.** 이 파일은 이름이 고정이고 안에 해시가 붙은 파일명을 담고 있어, 이것만 새로 받으면 나머지는 자동으로 새 파일을 가리킨다.
 
+`publish.sh`는 해시가 붙은 JS·CSS·이미지에 `Cache-Control: public,max-age=31536000,immutable`을 설정한다. 내용이 바뀌면 URL도 바뀌므로 1년 동안 다시 검증하지 않아도 이전 버전과 충돌하지 않는다. 반면 `index.html`은 `Cache-Control: no-cache,max-age=0,must-revalidate`로 올려 매번 최신 해시 파일명을 재검증한다.
+
 개발 빌드에는 해시를 붙이지 않는다. 파일명이 매번 바뀌면 dev-server의 HMR이 불편하다.
 
 ## 배포 성공 판정
@@ -91,10 +94,11 @@ assets/jachwi-sunbae-logo.2e4dac46707736dbc407.png
 `aws cloudfront create-invalidation`이 성공한 것만으로 배포 성공을 판정하지 않는다. `publish.sh`는 다음 순서를 모두 통과해야 성공한다.
 
 1. 빌드된 `dist/index.html`이 있는지 확인한다.
-2. S3의 환경별 경로에 `sync --delete`로 업로드한다.
-3. `/index.html` 무효화를 만들고 `invalidation-completed`까지 기다린다.
-4. 서비스 URL에서 `index.html`을 다시 받는다.
-5. 로컬 `dist/index.html`이 참조하는 모든 JS·CSS 파일명이 서비스 응답에도 있는지 비교한다.
+2. `index.html`을 제외한 정적 자산을 1년 장기 캐시로 `sync --delete`한다.
+3. `index.html`을 재검증 캐시 정책으로 별도 업로드한다.
+4. `/index.html` 무효화를 만들고 `invalidation-completed`까지 기다린다.
+5. 서비스 URL에서 `index.html`을 다시 받는다.
+6. 로컬 `dist/index.html`이 참조하는 모든 JS·CSS 파일명이 서비스 응답에도 있는지 비교한다.
 
 옛 `index.html`이 응답하면 새 번들 파일명이 없으므로 Commands 액션이 실패한다. 검증만 다시 실행할 때는 다음 명령을 쓴다.
 
