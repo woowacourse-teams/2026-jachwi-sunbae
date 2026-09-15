@@ -33,17 +33,27 @@ const property = {
   monthlyRentAmount: 550_000,
   discoverySource: '데모 지도',
   address: '서울 관악구 신림로 12길 3',
-  roadAddress: '서울 관악구 신림로 12길 3',
-  jibunAddress: '서울 관악구 신림동 1433-12',
   latitude: 37.48412,
   longitude: 126.92912,
+  availableMoveInDate: null,
+  maintenanceFeeAmount: null,
+  visitScheduledAt: null,
+  roomOptions: [],
+  utilityOptions: [],
   photoCount: 0,
   photos: [],
   representativePhoto: null,
   overallProgress: progress,
   createdAt: '2026-08-10T07:30:00Z',
   updatedAt: '2026-08-10T07:40:00Z',
-  lastActivityAt: '2026-08-10T07:40:00Z',
+};
+
+/** 지도 API는 매물 API와 달리 도로명·지번 주소를 그대로 내려준다. */
+const mapAddress = {
+  roadAddress: '서울 관악구 신림로 12길 3',
+  jibunAddress: '서울 관악구 신림동 1433-12',
+  latitude: property.latitude,
+  longitude: property.longitude,
 };
 
 const nearbyResult = (radius: number) => ({
@@ -154,10 +164,10 @@ describe('MVP2 지도 화면', () => {
       http.get(`${config.apiBaseUrl}/api/maps/reverse-geocode`, () =>
         HttpResponse.json(
           successEnvelope({
-            roadAddress: property.roadAddress,
-            jibunAddress: property.jibunAddress,
-            latitude: property.latitude,
-            longitude: property.longitude,
+            roadAddress: mapAddress.roadAddress,
+            jibunAddress: mapAddress.jibunAddress,
+            latitude: mapAddress.latitude,
+            longitude: mapAddress.longitude,
           }),
         ),
       ),
@@ -166,10 +176,10 @@ describe('MVP2 지도 화면', () => {
         return HttpResponse.json(
           successEnvelope([
             {
-              roadAddress: property.roadAddress,
-              jibunAddress: property.jibunAddress,
-              latitude: property.latitude,
-              longitude: property.longitude,
+              roadAddress: mapAddress.roadAddress,
+              jibunAddress: mapAddress.jibunAddress,
+              latitude: mapAddress.latitude,
+              longitude: mapAddress.longitude,
             },
           ]),
         );
@@ -186,8 +196,8 @@ describe('MVP2 지도 화면', () => {
     await user.click(screen.getByRole('button', { name: '검색' }));
 
     const results = await screen.findByRole('list', { name: '주소 검색 결과' });
-    expect(within(results).getByText(property.roadAddress)).toBeInTheDocument();
-    expect(within(results).getByText(property.jibunAddress)).toBeInTheDocument();
+    expect(within(results).getByText(mapAddress.roadAddress)).toBeInTheDocument();
+    expect(within(results).getByText(mapAddress.jibunAddress)).toBeInTheDocument();
     await user.click(within(results).getByRole('button'));
     expect(screen.getByRole('button', { name: '이 위치로 매물 등록하기' })).toBeEnabled();
   });

@@ -57,8 +57,7 @@ const ResolvedEditPropertyPage = ({ config, propertyId }: { config: PublicConfig
   const mutationError = updateMutation.error instanceof ApiError ? updateMutation.error : null;
   const selectedLocation =
     (location.state as {
-      roadAddress?: string;
-      jibunAddress?: string;
+      address?: string;
       latitude?: number;
       longitude?: number;
     } | null) ?? {};
@@ -79,8 +78,7 @@ const ResolvedEditPropertyPage = ({ config, propertyId }: { config: PublicConfig
             depositAmount: formatAmountForInput(initial.depositAmount),
             monthlyRentAmount: formatAmountForInput(initial.monthlyRentAmount),
             discoverySource: initial.discoverySource.value,
-            roadAddress: selectedLocation.roadAddress ?? initial.location.roadAddress ?? '',
-            jibunAddress: selectedLocation.jibunAddress ?? initial.location.jibunAddress ?? '',
+            address: selectedLocation.address ?? initial.location.address ?? '',
             latitude: selectedLocation.latitude ?? initial.location.latitude,
             longitude: selectedLocation.longitude ?? initial.location.longitude,
           }}
@@ -98,8 +96,8 @@ const ResolvedEditPropertyPage = ({ config, propertyId }: { config: PublicConfig
                     ? undefined
                     : {
                         address: initial.location.address,
-                        roadAddress: initial.location.roadAddress,
-                        jibunAddress: initial.location.jibunAddress,
+                        roadAddress: null,
+                        jibunAddress: null,
                         latitude: initial.location.latitude,
                         longitude: initial.location.longitude,
                       },
@@ -107,7 +105,14 @@ const ResolvedEditPropertyPage = ({ config, propertyId }: { config: PublicConfig
             })
           }
           onSubmit={(input) => {
-            const changes: UpdatePropertyRequestDto = input;
+            const changes: UpdatePropertyRequestDto = {
+              ...input,
+              availableMoveInDate: initial.availableMoveInDate,
+              maintenanceFeeAmount: initial.maintenanceFeeAmount,
+              visitScheduledAt: initial.visitScheduledAt,
+              roomOptions: initial.roomOptions,
+              utilityOptions: initial.utilityOptions,
+            };
             setFormNotice(null);
             void updateMutation
               .mutateAsync(changes)
