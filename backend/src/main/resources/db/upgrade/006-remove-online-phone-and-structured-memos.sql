@@ -64,6 +64,11 @@ WHERE property_checklist_id IN (
 );
 DELETE FROM property_checklists WHERE stage = 'ONLINE_PHONE';
 
+UPDATE property_checklists pc
+JOIN user_checklists uc ON uc.id = pc.user_checklist_id
+SET pc.user_checklist_id = NULL
+WHERE uc.stage = 'ONLINE_PHONE';
+
 DELETE FROM user_checklist_items
 WHERE user_checklist_id IN (
     SELECT id FROM user_checklists WHERE stage = 'ONLINE_PHONE'
