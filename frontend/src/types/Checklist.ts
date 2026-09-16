@@ -1,4 +1,4 @@
-export const CHECKLIST_STAGES = ['ONLINE_PHONE', 'ON_SITE', 'PRE_CONTRACT'] as const;
+export const CHECKLIST_STAGES = ['ON_SITE', 'PRE_CONTRACT'] as const;
 
 export type ChecklistStage = (typeof CHECKLIST_STAGES)[number];
 
