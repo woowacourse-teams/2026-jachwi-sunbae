@@ -15,6 +15,9 @@ import type {
   PropertyPhotoPreview,
   PropertySummary,
   PropertyLocation,
+  PropertyAdditionalInfo,
+  RoomOption,
+  UtilityOption,
 } from '../types/Property';
 import {
   readArray,
@@ -67,12 +70,72 @@ const parsePropertyLocation = (record: Record<string, unknown>): PropertyLocatio
   };
   return {
     address: nullableText('address'),
-    roadAddress: nullableText('roadAddress'),
-    jibunAddress: nullableText('jibunAddress'),
     latitude: nullableCoordinate('latitude'),
     longitude: nullableCoordinate('longitude'),
   };
 };
+
+const ROOM_OPTIONS: RoomOption[] = [
+  'AIR_CONDITIONER',
+  'REFRIGERATOR',
+  'WASHING_MACHINE',
+  'SINK',
+  'GAS_STOVE',
+  'MICROWAVE',
+  'SHOE_CABINET',
+  'WARDROBE',
+  'BED',
+  'DESK',
+  'TV',
+  'INDUCTION',
+];
+const UTILITY_OPTIONS: UtilityOption[] = ['WATER', 'ELECTRICITY', 'GAS', 'INTERNET'];
+
+const readNullableNumber = (record: Record<string, unknown>, key: string): number | null => {
+  const value = record[key];
+  if (value === null) return null;
+  if (typeof value !== 'number' || !Number.isSafeInteger(value) || value < 0)
+    throw new Error(`${key} 값이 올바르지 않습니다.`);
+  return value;
+};
+
+const readNullableDate = (record: Record<string, unknown>, key: string): string | null => {
+  const value = record[key];
+  if (value === null) return null;
+  if (
+    typeof value !== 'string' ||
+    !/^\d{4}-\d{2}-\d{2}$/.test(value) ||
+    Number.isNaN(Date.parse(`${value}T00:00:00Z`))
+  ) {
+    throw new Error(`${key} 날짜 응답이 올바르지 않습니다.`);
+  }
+  return value;
+};
+
+const readNullableLocalDateTime = (record: Record<string, unknown>, key: string): string | null => {
+  const value = record[key];
+  if (value === null) return null;
+  if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2}(?:\.\d{1,9})?)?$/.test(value)) {
+    throw new Error(`${key} 일시 응답이 올바르지 않습니다.`);
+  }
+  return value;
+};
+
+const readEnumArray = <T extends string>(record: Record<string, unknown>, key: string, values: T[]): T[] => {
+  const input = record[key];
+  if (!Array.isArray(input) || input.some((value) => typeof value !== 'string' || !values.includes(value as T))) {
+    throw new Error(`${key} 목록 응답이 올바르지 않습니다.`);
+  }
+  return input as T[];
+};
+
+const parsePropertyAdditionalInfo = (record: Record<string, unknown>): PropertyAdditionalInfo => ({
+  availableMoveInDate: readNullableDate(record, 'availableMoveInDate'),
+  maintenanceFeeAmount: readNullableNumber(record, 'maintenanceFeeAmount'),
+  visitScheduledAt: readNullableLocalDateTime(record, 'visitScheduledAt'),
+  roomOptions: readEnumArray(record, 'roomOptions', ROOM_OPTIONS),
+  utilityOptions: readEnumArray(record, 'utilityOptions', UTILITY_OPTIONS),
+});
 
 const readOptionalUtcDateTime = (record: Record<string, unknown>, key: string): string =>
   typeof record[key] === 'string' ? readUtcDateTime(record, key) : '1970-01-01T00:00:00Z';
@@ -130,7 +193,6 @@ const parsePropertySummary = (value: unknown): PropertySummary => {
     progress: parsePropertyChecklistProgress(record.overallProgress),
     stages: Array.isArray(record.stages) ? record.stages.map(parsePropertyChecklistStageSummary) : [],
     photoCount: typeof record.photoCount === 'number' ? readInteger(record, 'photoCount') : 0,
-    lastActivityAt: readOptionalUtcDateTime(record, 'lastActivityAt'),
   };
 };
 
@@ -166,13 +228,13 @@ export const parsePropertyDetail = (value: unknown): PropertyDetail => {
     monthlyRentAmount: readDetailInteger(record, 'monthlyRentAmount'),
     discoverySource: parseDiscoverySource(record.discoverySource),
     location: parsePropertyLocation(record),
+    ...parsePropertyAdditionalInfo(record),
     photoPreview: {
       totalCount: typeof record.photoCount === 'number' ? readInteger(record, 'photoCount') : photos.length,
       photos,
     },
     createdAt: readOptionalUtcDateTime(record, 'createdAt'),
     updatedAt: readOptionalUtcDateTime(record, 'updatedAt'),
-    lastActivityAt: readOptionalUtcDateTime(record, 'lastActivityAt'),
   };
 };
 
@@ -186,42 +248,25 @@ export const parsePropertyBasicInfo = (value: unknown): PropertyBasicInfo => {
     monthlyRentAmount: readInteger(record, 'monthlyRentAmount'),
     discoverySource: parseDiscoverySource(record.discoverySource),
     location: parsePropertyLocation(record),
+    ...parsePropertyAdditionalInfo(record),
     updatedAt:
       typeof record.updatedAt === 'string'
         ? readUtcDateTime(record, 'updatedAt')
         : typeof record.createdAt === 'string'
           ? readUtcDateTime(record, 'createdAt')
           : null,
-    lastActivityAt: typeof record.lastActivityAt === 'string' ? readUtcDateTime(record, 'lastActivityAt') : null,
   };
 };
 
 export const parseCreatedProperty = (value: unknown): CreatedProperty => {
   const record = readRecord(value);
-  return {
-    ...parsePropertyBasicInfo(record),
-    firstProperty: typeof record.firstProperty === 'boolean' ? record.firstProperty : false,
-  };
+  return parsePropertyBasicInfo(record);
 };
 
 export const parsePropertyMemoDocument = (value: unknown): PropertyMemoDocument => {
   const record = readRecord(value);
   return {
     propertyId: readInteger(record, 'propertyId', 1),
-    items: readArray(record, 'items')
-      .map((item) => {
-        const itemRecord = readRecord(item);
-        return {
-          ...(itemRecord.propertyMemoItemId === undefined
-            ? {}
-            : { propertyMemoItemId: readInteger(itemRecord, 'propertyMemoItemId', 1) }),
-          systemMemoItemId: readInteger(itemRecord, 'systemMemoItemId', 1),
-          label: readString(itemRecord, 'label'),
-          displayOrder: readInteger(itemRecord, 'displayOrder', 1),
-          content: readString(itemRecord, 'content', { allowEmpty: true, maximumCodePoints: 100 }),
-        };
-      })
-      .sort((a, b) => a.displayOrder - b.displayOrder),
     freeMemo: readString(record, 'freeMemo', { allowEmpty: true, maximumCodePoints: 2_000 }),
   };
 };
@@ -241,7 +286,7 @@ const parsePropertyChecklistProgress = (value: unknown): PropertyChecklistProgre
 const parsePropertyChecklistStageSummary = (value: unknown): PropertyChecklistStageSummary => {
   const stageRecord = readRecord(value);
   const stage = readString(stageRecord, 'stage');
-  if (stage !== 'ONLINE_PHONE' && stage !== 'ON_SITE' && stage !== 'PRE_CONTRACT') {
+  if (stage !== 'ON_SITE' && stage !== 'PRE_CONTRACT') {
     throw new Error('체크리스트 단계가 올바르지 않습니다.');
   }
   return {
@@ -273,7 +318,7 @@ const parsePropertyChecklistItemStatus = (value: unknown): PropertyChecklistItem
 export const parsePropertyChecklistDetail = (value: unknown): PropertyChecklistDetail => {
   const record = readRecord(value);
   const stage = readString(record, 'stage');
-  if (stage !== 'ONLINE_PHONE' && stage !== 'ON_SITE' && stage !== 'PRE_CONTRACT') {
+  if (stage !== 'ON_SITE' && stage !== 'PRE_CONTRACT') {
     throw new Error('체크리스트 단계가 올바르지 않습니다.');
   }
   return {

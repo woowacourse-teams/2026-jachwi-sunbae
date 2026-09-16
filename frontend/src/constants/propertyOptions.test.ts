@@ -1,17 +1,14 @@
 import { describe, expect, it } from 'vitest';
-import { parseMaintenanceContent, propertyMemoDisplayLabel, serializeMaintenanceContent } from './propertyOptions';
+import { roomOptionLabels, utilityOptionLabels } from './propertyOptions';
 
-describe('관리비 부가 정보', () => {
-  it('이전 관리비 문구와 공과금 명칭을 현재 편집 형식으로 바꾼다', () => {
-    expect(propertyMemoDisplayLabel('관리비 및 공과금')).toBe('관리비 포함 공과금');
-    expect(parseMaintenanceContent('10만원 (수도, 인터넷)')).toEqual({
-      total: '10만원',
-      selected: ['수도세', '인터넷'],
-    });
+describe('매물 부가 정보 표시', () => {
+  it('Swagger enum 값을 화면 표시 순서의 한글 이름으로 바꾼다', () => {
+    expect(roomOptionLabels(['REFRIGERATOR', 'AIR_CONDITIONER'])).toBe('에어컨, 냉장고');
+    expect(utilityOptionLabels(['INTERNET', 'WATER'])).toBe('수도세, 인터넷');
   });
 
-  it('총 관리비와 포함 공과금을 읽기 쉬운 한 문장으로 저장한다', () => {
-    expect(serializeMaintenanceContent(' 12만원 ', ['인터넷', '수도세'])).toBe('12만원 (수도세, 인터넷)');
-    expect(serializeMaintenanceContent('', ['가스비'])).toBe('가스비');
+  it('선택값이 없으면 빈 문자열을 반환한다', () => {
+    expect(roomOptionLabels([])).toBe('');
+    expect(utilityOptionLabels([])).toBe('');
   });
 });
