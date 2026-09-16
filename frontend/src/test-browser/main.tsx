@@ -120,10 +120,12 @@ const createPlaceholderPhoto = (photoId: number) => {
 const photos = Array.from({ length: 8 }, (_, index) => ({
   ...photoFixture,
   photoId: 81 + index,
-  contentUrl: `/api/properties/10/photos/${81 + index}/content`,
+  contentUrl: `/api/properties/10/photos/${81 + index}`,
   createdAt: `2026-08-10T07:${String(35 + index).padStart(2, '0')}:00Z`,
 }));
 const photoResponses = photos.map((photo) => propertyPhotoResponseFixture(photo));
+// 매물 상세의 photos 는 사진 목록과 달리 propertyId 를 갖지 않는다.
+const detailPhotoResponses = photoResponses.map(({ propertyId: _propertyId, ...photo }) => photo);
 
 let checklistSaveAttempts = 0;
 let createdChecklist = {
@@ -272,6 +274,8 @@ const browserTestFetch: typeof fetch = async (input, init) => {
         visitScheduledAt: null,
         roomOptions: [],
         utilityOptions: [],
+        createdAt: '2026-08-10T07:30:00Z',
+        updatedAt: '2026-08-10T07:30:00Z',
         photos: [],
         overallProgress: {
           totalCount: 0,
@@ -295,7 +299,7 @@ const browserTestFetch: typeof fetch = async (input, init) => {
         depositAmount: Number.MAX_SAFE_INTEGER,
         discoverySource:
           '동네를 걷다가 발견한 중개사에서 소개받은 매우 긴 발견 경로 설명입니다. 화면 밖으로 넘치지 않아야 합니다.',
-        photos: scenario === 'photos-empty' ? [] : photoResponses.slice(0, 5),
+        photos: scenario === 'photos-empty' ? [] : detailPhotoResponses.slice(0, 5),
       }),
     );
   }
@@ -568,9 +572,9 @@ const browserTestFetch: typeof fetch = async (input, init) => {
     return jsonResponse(errorEnvelope('API_CONTRACT_NOT_IMPLEMENTED'), 501);
   }
 
-  if (/^\/api\/properties\/10\/photos\/\d+\/content$/.test(path) && request.method === 'GET') {
+  if (/^\/api\/properties\/10\/photos\/\d+$/.test(path) && request.method === 'GET') {
     if (scenario === 'photo-read-failure') return jsonResponse(errorEnvelope('PHOTO_READ_FAILED'), 500);
-    const photoId = Number(path.match(/photos\/(\d+)\/content$/)?.[1] ?? 81);
+    const photoId = Number(path.match(/photos\/(\d+)$/)?.[1] ?? 81);
     return new Response(await createPlaceholderPhoto(photoId), { headers: { 'Content-Type': 'image/png' } });
   }
 

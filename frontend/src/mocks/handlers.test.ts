@@ -131,6 +131,7 @@ describe('최종 API 명세 MSW handlers', () => {
     ['POST', '/api/properties/10/photos', 501, 'NOT_IMPLEMENTED'],
     ['GET', '/api/checklist-presets', 410, 'API_CONTRACT_REMOVED'],
     ['GET', '/api/properties/10/active-checklists/ON_SITE', 410, 'API_CONTRACT_REMOVED'],
+    ['GET', '/api/properties/10/photos/81/content', 410, 'API_CONTRACT_REMOVED'],
   ])('%s %s는 성공 응답으로 위장하지 않는다', async (method, path, status, code) => {
     const response = await fetch(apiUrl(path), { method });
     const body = await readJson(response);

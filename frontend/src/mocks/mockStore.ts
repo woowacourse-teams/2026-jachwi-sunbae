@@ -141,7 +141,7 @@ let properties: MockProperty[] = [
     longitude: 126.9291234,
     availableMoveInDate: '2026-09-01',
     maintenanceFeeAmount: 70_000,
-    visitScheduledAt: '2026-08-20T14:00',
+    visitScheduledAt: '2026-08-20T14:00:00',
     roomOptions: ['AIR_CONDITIONER', 'REFRIGERATOR'],
     utilityOptions: ['WATER', 'INTERNET'],
   },
@@ -267,30 +267,106 @@ export const propertyProgress = (propertyId: number) => {
   return progressFromItems(items);
 };
 
-export const propertyResponse = (property: MockProperty) => {
+// 서버는 매물을 네 가지 응답으로 나눠 내려준다. 목이 하나의 넉넉한 응답을 공유하면
+// 화면이 실제로는 없는 필드를 읽어도 목 뒤에서는 드러나지 않는다. 그래서 응답마다 따로 만든다.
+
+/** 네 응답이 공통으로 갖는 필드. 서버는 discoverySource 를 null 대신 빈 문자열로 내려준다. */
+const propertyIdentity = (property: MockProperty) => ({
+  id: property.id,
+  name: property.name,
+  depositAmount: property.depositAmount,
+  monthlyRentAmount: property.monthlyRentAmount,
+  discoverySource: property.discoverySource ?? '',
+  address: property.address,
+  latitude: property.latitude,
+  longitude: property.longitude,
+});
+
+/** 매물 목록에는 없고 생성·상세·수정 응답에만 있는 부가 정보. 관리비도 null 대신 0으로 내려준다. */
+const propertyAdditionalInfo = (property: MockProperty) => ({
+  availableMoveInDate: property.availableMoveInDate,
+  maintenanceFeeAmount: property.maintenanceFeeAmount ?? 0,
+  visitScheduledAt: property.visitScheduledAt,
+  roomOptions: property.roomOptions,
+  utilityOptions: property.utilityOptions,
+});
+
+/** 매물 상세에 실리는 사진은 사진 목록 항목과 달리 propertyId 를 갖지 않는다. */
+const detailPhotoResponse = (photo: MockPhoto) => ({
+  id: photo.id,
+  url: photo.url,
+  contentType: photo.contentType,
+  sizeBytes: photo.sizeBytes,
+  representative: photo.representative,
+  createdAt: photo.createdAt,
+});
+
+/** 대표 사진은 사진 목록 항목과 달리 세 필드만 내려준다. */
+const representativePhotoResponse = (photos: MockPhoto[]) => {
+  const representative = photos.find((photo) => photo.representative);
+  return representative === undefined
+    ? null
+    : { id: representative.id, url: representative.url, contentType: representative.contentType };
+};
+
+const propertyStages = (propertyId: number) => {
+  const applied = appliedByProperty.get(propertyId) ?? new Map();
+  return CHECKLIST_STAGES.map((stage) => {
+    const checklist = applied.get(stage);
+    return {
+      stage,
+      applied: checklist !== undefined,
+      propertyChecklistId: checklist?.id ?? null,
+      checklistName: checklist?.checklistName ?? null,
+      sourceChecklistId: checklist?.sourceChecklistId ?? null,
+      progress: checklist === undefined ? emptyProgress : progressFromItems(checklist.items),
+    };
+  });
+};
+
+/** GET /api/properties 의 items. 부가 정보와 사진 목록은 들어 있지 않다. */
+export const propertyListItemResponse = (property: MockProperty) => {
   const photos = photosByProperty.get(property.id) ?? [];
-  const applied = appliedByProperty.get(property.id) ?? new Map();
   return {
-    ...property,
+    ...propertyIdentity(property),
     photoCount: photos.length,
-    createdAt: now,
-    updatedAt: now,
-    photos,
-    representativePhoto: photos.find((photo) => photo.representative) ?? null,
+    representativePhoto: representativePhotoResponse(photos),
     overallProgress: propertyProgress(property.id),
-    stages: CHECKLIST_STAGES.map((stage) => {
-      const checklist = applied.get(stage);
-      return {
-        stage,
-        applied: checklist !== undefined,
-        propertyChecklistId: checklist?.id ?? null,
-        checklistName: checklist?.checklistName ?? null,
-        sourceChecklistId: checklist?.sourceChecklistId ?? null,
-        progress: checklist === undefined ? emptyProgress : progressFromItems(checklist.items),
-      };
-    }),
+    stages: propertyStages(property.id),
   };
 };
+
+/** POST /api/properties. 단계 요약과 photoCount 가 없고, updatedAt 은 항상 createdAt 과 같다. */
+export const createPropertyResponse = (property: MockProperty) => ({
+  ...propertyIdentity(property),
+  ...propertyAdditionalInfo(property),
+  createdAt: now,
+  updatedAt: now,
+  photos: (photosByProperty.get(property.id) ?? []).map(detailPhotoResponse),
+  overallProgress: propertyProgress(property.id),
+});
+
+/** GET /api/properties/{id}. 단계 요약이 없다. 단계는 체크리스트 현황 API 가 따로 내려준다. */
+export const propertyDetailResponse = (property: MockProperty) => {
+  const photos = photosByProperty.get(property.id) ?? [];
+  return {
+    ...propertyIdentity(property),
+    ...propertyAdditionalInfo(property),
+    photoCount: photos.length,
+    photos: photos.map(detailPhotoResponse),
+    representativePhoto: representativePhotoResponse(photos),
+    overallProgress: propertyProgress(property.id),
+    createdAt: now,
+    updatedAt: now,
+  };
+};
+
+/** PUT /api/properties/{id}. 사진·진행률·createdAt 없이 updatedAt 만 붙는다. */
+export const updatePropertyResponse = (property: MockProperty) => ({
+  ...propertyIdentity(property),
+  ...propertyAdditionalInfo(property),
+  updatedAt: now,
+});
 
 export type MockMemo = {
   propertyId: number;

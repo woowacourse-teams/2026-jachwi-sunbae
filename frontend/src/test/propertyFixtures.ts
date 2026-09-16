@@ -18,7 +18,7 @@ export const propertySummaryFixture = {
   photoCount: 2,
   representativePhoto: {
     photoId: 81,
-    contentUrl: '/api/properties/10/photos/81/content',
+    contentUrl: '/api/properties/10/photos/81',
     contentType: 'image/jpeg' as const,
   },
   progress: {
@@ -98,7 +98,7 @@ export const propertyDetailFixture = {
   ...propertySummaryFixture,
   availableMoveInDate: '2026-09-01',
   maintenanceFeeAmount: 70_000,
-  visitScheduledAt: '2026-08-20T14:00',
+  visitScheduledAt: '2026-08-20T14:00:00',
   roomOptions: ['AIR_CONDITIONER', 'REFRIGERATOR'] as const,
   utilityOptions: ['WATER', 'INTERNET'] as const,
   photoPreview: {
@@ -106,7 +106,7 @@ export const propertyDetailFixture = {
     photos: [
       {
         photoId: 81,
-        contentUrl: '/api/properties/10/photos/81/content',
+        contentUrl: '/api/properties/10/photos/81',
         createdAt: '2026-08-10T07:35:00Z',
       },
     ],
@@ -117,7 +117,7 @@ export const propertyDetailFixture = {
 
 export const photoFixture = {
   photoId: 81,
-  contentUrl: '/api/properties/10/photos/81/content',
+  contentUrl: '/api/properties/10/photos/81',
   contentType: 'image/jpeg',
   sizeBytes: 245_760,
   createdAt: '2026-08-10T07:35:00Z',

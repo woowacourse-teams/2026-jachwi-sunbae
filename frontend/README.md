@@ -28,6 +28,8 @@ npm run dev
 
 `npm run dev`는 실제 백엔드 API에 연결합니다. 백엔드 없이 UI fixture만 확인할 때에만 `npm run dev:mock`을 사용합니다. dev 배포에서 fixture가 꼭 필요한 경우에는 CodePipeline 빌드 환경변수에 `ENABLE_MSW=true`를 지정할 수 있으며, 운영에서는 이 값을 사용하지 않습니다.
 
+목(MSW)은 배포된 dev 백엔드와 같은 필드만 내려줘야 합니다. 목이 계약보다 넉넉하면 화면이 실제로는 없는 필드를 읽어도 목 뒤에서는 드러나지 않습니다. `src/mocks/contractShape.test.ts`가 응답별 필드 집합을 정확히 비교해 이를 막으므로, API 계약이 바뀌면 그 표를 먼저 고치고 목을 맞춥니다.
+
 ## 공개 빌드 설정
 
 ### dev API 연동 확인
