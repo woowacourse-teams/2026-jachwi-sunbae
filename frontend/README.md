@@ -1,6 +1,6 @@
 # 자취선배 프론트엔드
 
-- 상태: MVP2 구현 완료
+- 상태: MVP1 구현 완료
 
 React 19·TypeScript 6·Webpack 5 기반 모바일 우선 SPA입니다.
 

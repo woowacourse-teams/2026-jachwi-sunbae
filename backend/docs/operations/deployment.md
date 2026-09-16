@@ -130,7 +130,7 @@ sudo systemctl start jachwi-sunbae.service
 
 `SPRING_PROFILES_ACTIVE`는 dev와 prod 모두 `prod`로 둔다. 이 프로필은 애플리케이션이 80 포트를 사용하게 한다.
 
-### MVP2 첫 dev 배포 전 확인
+### MVP1 첫 dev 배포 전 확인
 
 1. RDS 자동 백업의 최신 복구 지점을 확인한다. 기존 `flyway_schema_history`나 사용자 데이터를 삭제하지 않는다.
 2. 아래 사전 점검 쿼리를 dev DB에서 실행한다. 두 쿼리 모두 결과가 없어야 한다. 결과가 있으면 행을 임의로 지우지 말고 사진 관계를 먼저 확인한다.

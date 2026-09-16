@@ -76,7 +76,7 @@ DB 접속값과 `JWT_SECRET_BASE64`, Naver Maps·NAVER API HUB 인증 정보는 
 
 AWS S3는 EC2 `ec2-project` instance role로 접근하므로 `PHOTO_STORAGE_ENDPOINT`, `PHOTO_STORAGE_ACCESS_KEY`, `PHOTO_STORAGE_SECRET_KEY`를 EC2에 두지 않는다. 이 세 값은 로컬 MinIO에만 사용한다. 프론트엔드에는 공개 Naver Maps Client ID만 빌드 타임에 주입한다.
 
-첫 MVP2 기동은 기존 팀 DB에 `db/upgrade/*.sql`을 적용한다. 애플리케이션 DB 계정은 이 전환 동안 필요한 `ALTER`, `CREATE`, `INDEX`, `SELECT`, `INSERT`, `UPDATE` 권한을 가져야 한다. 전환 전에 자동 백업의 최신 복구 지점을 확인한다.
+첫 MVP1 기동은 기존 팀 DB에 `db/upgrade/*.sql`을 적용한다. 애플리케이션 DB 계정은 이 전환 동안 필요한 `ALTER`, `CREATE`, `INDEX`, `SELECT`, `INSERT`, `UPDATE` 권한을 가져야 한다. 전환 전에 자동 백업의 최신 복구 지점을 확인한다.
 
 새 환경변수를 도입하면 서버의 환경변수 파일도 함께 갱신한다.
 
