@@ -163,6 +163,8 @@ ORDER BY script_name;
 
 #176 스키마에서 제거된 `ONLINE_PHONE` 체크리스트와 구조화 메모 원본은 `legacy_online_phone_*`, `legacy_property_memo_items`, `legacy_system_memo_items` 테이블에 보관된다. 자유 메모에는 기존 구조화 메모의 사람이 읽을 수 있는 사본도 추가된다.
 
+prod 전환은 dev 전환과 보관 데이터 확인이 끝난 뒤에만 진행한다. prod DB에서도 배포 직전에 최신 자동 백업 복구 지점을 확인하고, 복구 지점 식별자와 확인 시각을 배포 이슈에 남긴다.
+
 ## 빌드를 CodeBuild가 아니라 Commands로 하는 이유
 
 별도 CodeBuild 프로젝트를 두지 않고 CodePipeline의 `Commands` 액션을 쓴다. 같은 계정의 다른 팀이 CodeBuild 경로에서 막혔기 때문이다. `codebuild-project` 서비스 role에 파이프라인 `SourceArtifact`를 읽을 `s3:GetObject` 권한이 없어 빌드 입력을 내려받지 못했고, 팀은 role 정책을 바꿀 수 없다.

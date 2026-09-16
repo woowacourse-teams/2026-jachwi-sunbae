@@ -13,6 +13,10 @@ CREATE TABLE IF NOT EXISTS member_checklist_preferences (
 
 
 -- 1. ONLINE_PHONE 데이터는 현재 enum에서 제거됐지만 운영 데이터는 보관 테이블에 남긴다.
+CREATE TABLE IF NOT EXISTS legacy_online_phone_member_checklist_preferences LIKE member_checklist_preferences;
+INSERT IGNORE INTO legacy_online_phone_member_checklist_preferences
+SELECT * FROM member_checklist_preferences WHERE stage = 'ONLINE_PHONE';
+
 CREATE TABLE IF NOT EXISTS legacy_online_phone_system_check_items LIKE system_check_items;
 INSERT IGNORE INTO legacy_online_phone_system_check_items
 SELECT * FROM system_check_items WHERE stage = 'ONLINE_PHONE';
