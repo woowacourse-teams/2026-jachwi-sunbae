@@ -13,6 +13,7 @@ import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.datasource.init.ResourceDatabasePopulator;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 @Component
 @Order(Ordered.HIGHEST_PRECEDENCE)
@@ -20,6 +21,8 @@ import org.springframework.stereotype.Component;
 public class DatabaseUpgradeInitializer implements ApplicationRunner {
 
     private static final String UPGRADE_SCRIPT_PATTERN = "classpath*:db/upgrade/*.sql";
+    private static final String UPGRADE_LOCK_NAME = "jachwi-sunbae-schema-upgrade";
+    private static final int UPGRADE_LOCK_TIMEOUT_SECONDS = 300;
 
     private final DataSource dataSource;
     private final JdbcTemplate jdbcTemplate;
@@ -32,12 +35,22 @@ public class DatabaseUpgradeInitializer implements ApplicationRunner {
     }
 
     @Override
+    @Transactional
     public void run(final ApplicationArguments args) throws IOException {
-        createUpgradeHistory();
-        Resource[] resources = resourceResolver.getResources(UPGRADE_SCRIPT_PATTERN);
-        Arrays.sort(resources, (left, right) -> left.getFilename().compareTo(right.getFilename()));
-        for (Resource resource : resources) {
-            applyOnce(resource);
+        Integer lockAcquired = jdbcTemplate.queryForObject(
+                "SELECT GET_LOCK(?, ?)", Integer.class, UPGRADE_LOCK_NAME, UPGRADE_LOCK_TIMEOUT_SECONDS);
+        if (!Integer.valueOf(1).equals(lockAcquired)) {
+            throw new IllegalStateException("데이터베이스 업그레이드 잠금을 획득하지 못했습니다.");
+        }
+        try {
+            createUpgradeHistory();
+            Resource[] resources = resourceResolver.getResources(UPGRADE_SCRIPT_PATTERN);
+            Arrays.sort(resources, (left, right) -> left.getFilename().compareTo(right.getFilename()));
+            for (Resource resource : resources) {
+                applyOnce(resource);
+            }
+        } finally {
+            jdbcTemplate.queryForObject("SELECT RELEASE_LOCK(?)", Integer.class, UPGRADE_LOCK_NAME);
         }
     }
 
