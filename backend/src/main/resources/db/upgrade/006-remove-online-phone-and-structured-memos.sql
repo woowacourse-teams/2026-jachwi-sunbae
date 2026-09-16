@@ -26,7 +26,10 @@ INSERT IGNORE INTO legacy_online_phone_user_checklist_items
 SELECT uci.*
 FROM user_checklist_items uci
 JOIN user_checklists uc ON uc.id = uci.user_checklist_id
-WHERE uc.stage = 'ONLINE_PHONE';
+LEFT JOIN system_check_items sci ON sci.id = uci.system_check_item_id
+-- 이전 스키마에는 체크리스트 단계와 시스템 항목 단계를 일치시키는 제약이 없었다.
+-- 따라서 이후 삭제 대상인 ONLINE_PHONE 시스템 항목을 참조하는 교차 단계 행도 함께 보관한다.
+WHERE uc.stage = 'ONLINE_PHONE' OR sci.stage = 'ONLINE_PHONE';
 
 CREATE TABLE IF NOT EXISTS legacy_online_phone_property_checklists LIKE property_checklists;
 INSERT IGNORE INTO legacy_online_phone_property_checklists
@@ -37,7 +40,8 @@ INSERT IGNORE INTO legacy_online_phone_property_checklist_items
 SELECT pci.*
 FROM property_checklist_items pci
 JOIN property_checklists pc ON pc.id = pci.property_checklist_id
-WHERE pc.stage = 'ONLINE_PHONE';
+LEFT JOIN system_check_items sci ON sci.id = pci.system_check_item_id
+WHERE pc.stage = 'ONLINE_PHONE' OR sci.stage = 'ONLINE_PHONE';
 
 DELETE FROM member_checklist_preferences WHERE stage = 'ONLINE_PHONE';
 
