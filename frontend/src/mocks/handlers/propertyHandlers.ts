@@ -8,6 +8,7 @@ import {
   notImplemented,
   createPropertyResponse,
   propertyDetailResponse,
+  propertyProgress,
   propertyListItemResponse,
   updatePropertyResponse,
   readPositiveInteger,
@@ -55,6 +56,29 @@ export const propertyHandlers = [
       items: [...getMockProperties()].sort((a, b) => b.id - a.id).map(propertyListItemResponse),
     }),
   ),
+  // 서버는 UTF-8 BOM 을 붙인 text/csv 를 내려준다. BOM 이 없으면 엑셀에서 한글이 깨진다.
+  http.get('*/api/properties/export.csv', () => {
+    const rows = [...getMockProperties()]
+      .sort((a, b) => b.id - a.id)
+      .map((property) => {
+        const photos = getMockPhotosByProperty().get(property.id) ?? [];
+        const progress = propertyProgress(property.id);
+        return [
+          `"${property.name}"`,
+          `"${property.address ?? ''}"`,
+          property.depositAmount,
+          property.monthlyRentAmount,
+          photos.length,
+          progress.completedCount,
+          progress.totalCount,
+          progress.progressRate,
+        ].join(',');
+      });
+    const csv = ['이름,주소,보증금(만원),월세(만원),사진 수,체크 완료,체크 전체,진행률(%)', ...rows].join('\n');
+    return new HttpResponse(new TextEncoder().encode(`\uFEFF${csv}\n`), {
+      headers: { 'Content-Type': 'text/csv;charset=UTF-8' },
+    });
+  }),
   http.post('*/api/properties/export.pdf', async ({ request }) => {
     const body = (await request.json()) as { propertyIds?: number[] };
     if (!Array.isArray(body.propertyIds) || body.propertyIds.length < 2 || body.propertyIds.length > 5) {
