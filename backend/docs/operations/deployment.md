@@ -130,7 +130,7 @@ sudo systemctl start jachwi-sunbae.service
 
 `SPRING_PROFILES_ACTIVE`는 dev와 prod 모두 `prod`로 둔다. 이 프로필은 애플리케이션이 80 포트를 사용하게 한다.
 
-### MVP2 첫 dev 배포 전 확인
+### MVP1 첫 dev 배포 전 확인
 
 1. RDS 자동 백업의 최신 복구 지점을 확인한다. 기존 `flyway_schema_history`나 사용자 데이터를 삭제하지 않는다.
 2. 아래 사전 점검 쿼리를 dev DB에서 실행한다. 두 쿼리 모두 결과가 없어야 한다. 결과가 있으면 행을 임의로 지우지 말고 사진 관계를 먼저 확인한다.
@@ -148,12 +148,20 @@ sudo systemctl start jachwi-sunbae.service
    WHERE main_photo.property_id <> photo.property_id;
    ```
 
-3. dev 애플리케이션 DB 계정에 이번 additive upgrade에 필요한 `ALTER`, `CREATE`, `INDEX`, `SELECT`, `INSERT`, `UPDATE` 권한이 있는지 확인한다.
+3. dev 애플리케이션 DB 계정에 이번 upgrade에 필요한 `ALTER`, `CREATE`, `DROP`, `INDEX`, `REFERENCES`, `SELECT`, `INSERT`, `UPDATE`, `DELETE` 권한이 있는지 확인한다.
 4. `/etc/jachwi-sunbae/app.env`에 dev DB·JWT·CORS·선택한 지도 공급자 인증 정보·S3 접두사를 dev 환경에 맞게 설정한다. 정적 AWS 키는 두지 않는다.
 5. 버스정류소 API 승인이 끝나지 않았다면 `BUS_STOP_PROVIDER=none`으로 둔다.
 6. 프론트 dev `Commands` 액션에 `API_BASE_URL=https://dev-api.jachwi-sunbae.kr`, `MAP_PROVIDER_MODE`와 선택한 지도 공급자의 공개 키를 주입한다.
 
-첫 기동의 `db/upgrade/*.sql` 중 하나라도 실패하면 애플리케이션은 요청을 받지 않고 배포 검증이 실패한다. 스키마를 수동으로 일부만 적용하지 말고 로그와 [스키마 업그레이드 SQL](../../src/main/resources/db/upgrade/)을 확인한다.
+첫 기동의 `db/upgrade/*.sql` 중 하나라도 실패하면 애플리케이션은 요청을 받지 않고 배포 검증이 실패한다. 성공한 파일은 `schema_upgrade_history`에 기록되며 재기동 때 건너뛴다. 스키마나 이력을 수동으로 일부만 맞추지 말고 로그, 아래 조회 결과와 [스키마 업그레이드 SQL](../../src/main/resources/db/upgrade/)을 함께 확인한다.
+
+```sql
+SELECT script_name, applied_at
+FROM schema_upgrade_history
+ORDER BY script_name;
+```
+
+#176 스키마에서 제거된 `ONLINE_PHONE` 체크리스트와 구조화 메모 원본은 `legacy_online_phone_*`, `legacy_property_memo_items`, `legacy_system_memo_items` 테이블에 보관된다. 자유 메모에는 기존 구조화 메모의 사람이 읽을 수 있는 사본도 추가된다.
 
 ## 빌드를 CodeBuild가 아니라 Commands로 하는 이유
 
