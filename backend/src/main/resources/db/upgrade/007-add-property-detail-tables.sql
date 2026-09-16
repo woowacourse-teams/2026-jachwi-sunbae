@@ -4,7 +4,7 @@
 -- 정의는 db/init/001-schema.sql과 동일하게 유지한다.
 
 CREATE TABLE IF NOT EXISTS property_details (
-    property_id BIGINT UNSIGNED PRIMARY KEY,
+    property_id BIGINT PRIMARY KEY,
     available_move_in_date DATE NULL,
     maintenance_fee_amount BIGINT UNSIGNED NOT NULL DEFAULT 0,
     visit_scheduled_at DATETIME(6) NULL,
@@ -14,15 +14,21 @@ CREATE TABLE IF NOT EXISTS property_details (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS property_room_options (
-    property_id BIGINT UNSIGNED NOT NULL,
+    property_id BIGINT NOT NULL,
     option_code VARCHAR(30) NOT NULL,
     PRIMARY KEY (property_id, option_code),
     CONSTRAINT fk_property_room_options_property FOREIGN KEY (property_id) REFERENCES properties (id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS property_utility_options (
-    property_id BIGINT UNSIGNED NOT NULL,
+    property_id BIGINT NOT NULL,
     utility_code VARCHAR(30) NOT NULL,
     PRIMARY KEY (property_id, utility_code),
     CONSTRAINT fk_property_utility_options_property FOREIGN KEY (property_id) REFERENCES properties (id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 레거시 properties에 있던 발견 경로를 새 1:1 상세 테이블로 옮긴다.
+INSERT IGNORE INTO property_details
+    (property_id, available_move_in_date, maintenance_fee_amount, visit_scheduled_at, discovery_source, created_at)
+SELECT id, NULL, 0, NULL, NULLIF(discovery_source, ''), created_at
+FROM properties;

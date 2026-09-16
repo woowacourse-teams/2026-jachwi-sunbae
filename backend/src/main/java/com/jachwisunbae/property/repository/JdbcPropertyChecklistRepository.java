@@ -40,7 +40,7 @@ public class JdbcPropertyChecklistRepository implements PropertyChecklistReposit
                 """;
         return jdbcTemplate.query(sql,
             (rs, rowNum) -> new PropertyChecklistItemStateQuery(
-                rs.getLong("system_check_item_id"),
+                rs.getObject("system_check_item_id", Long.class),
                 rs.getString("question"),
                 rs.getInt("display_order"),
                 CheckStatus.valueOf(rs.getString("status")),
@@ -129,7 +129,7 @@ public class JdbcPropertyChecklistRepository implements PropertyChecklistReposit
             sqlItems,
             (rs, row) -> new PropertyChecklistItemQuery(
                 rs.getLong("id"),
-                rs.getLong("system_check_item_id"),
+                rs.getObject("system_check_item_id", Long.class),
                 rs.getString("question"),
                 rs.getInt("display_order"),
                 CheckStatus.valueOf(rs.getString("status")),
@@ -180,7 +180,7 @@ public class JdbcPropertyChecklistRepository implements PropertyChecklistReposit
         return jdbcTemplate.query(sql,
             (rs, row) -> new PropertyChecklistItemQuery(
                 rs.getLong("id"),
-                rs.getLong("system_check_item_id"),
+                rs.getObject("system_check_item_id", Long.class),
                 rs.getString("question"),
                 rs.getInt("display_order"),
                 CheckStatus.valueOf(rs.getString("status")),

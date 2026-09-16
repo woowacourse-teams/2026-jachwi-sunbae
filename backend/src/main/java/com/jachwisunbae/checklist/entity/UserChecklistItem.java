@@ -49,7 +49,7 @@ public class UserChecklistItem {
         return new UserChecklistItem(
             id,
             validateId(userChecklistId),
-            validateId(systemCheckItemId),
+            systemCheckItemId,
             DomainPreconditions.requireNonNull(stage, DomainErrorCode.USER_CHECKLIST_STAGE_REQUIRED,
                 "체크리스트 단계는 필수입니다."),
             DomainPreconditions.requireNonNull(itemType, DomainErrorCode.CHECKLIST_ITEMS_INVALID,
