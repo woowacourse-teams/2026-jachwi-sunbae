@@ -15,7 +15,10 @@ CREATE TABLE IF NOT EXISTS member_checklist_preferences (
 -- 1. ONLINE_PHONE 데이터는 현재 enum에서 제거됐지만 운영 데이터는 보관 테이블에 남긴다.
 CREATE TABLE IF NOT EXISTS legacy_online_phone_member_checklist_preferences LIKE member_checklist_preferences;
 INSERT IGNORE INTO legacy_online_phone_member_checklist_preferences
-SELECT * FROM member_checklist_preferences WHERE stage = 'ONLINE_PHONE';
+SELECT mcp.*
+FROM member_checklist_preferences mcp
+LEFT JOIN user_checklists uc ON uc.id = mcp.user_checklist_id
+WHERE mcp.stage = 'ONLINE_PHONE' OR uc.stage = 'ONLINE_PHONE';
 
 CREATE TABLE IF NOT EXISTS legacy_online_phone_system_check_items LIKE system_check_items;
 INSERT IGNORE INTO legacy_online_phone_system_check_items
@@ -47,7 +50,10 @@ JOIN property_checklists pc ON pc.id = pci.property_checklist_id
 LEFT JOIN system_check_items sci ON sci.id = pci.system_check_item_id
 WHERE pc.stage = 'ONLINE_PHONE' OR sci.stage = 'ONLINE_PHONE';
 
-DELETE FROM member_checklist_preferences WHERE stage = 'ONLINE_PHONE';
+DELETE mcp
+FROM member_checklist_preferences mcp
+LEFT JOIN user_checklists uc ON uc.id = mcp.user_checklist_id
+WHERE mcp.stage = 'ONLINE_PHONE' OR uc.stage = 'ONLINE_PHONE';
 
 DELETE FROM property_checklist_items
 WHERE property_checklist_id IN (
