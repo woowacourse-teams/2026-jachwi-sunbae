@@ -31,7 +31,7 @@ public class JdbcUserChecklistRepository implements UserChecklistRepository {
     private final RowMapper<UserChecklistItem> itemRowMapper = (rs, row) -> UserChecklistItem.reconstruct(
         rs.getLong("id"),
         rs.getLong("user_checklist_id"),
-        rs.getLong("system_check_item_id"),
+        rs.getObject("system_check_item_id", Long.class),
         CheckStage.valueOf(rs.getString("stage")),
         CheckItemType.valueOf(rs.getString("item_type")),
         rs.getString("question"),
@@ -42,7 +42,7 @@ public class JdbcUserChecklistRepository implements UserChecklistRepository {
         new UserChecklistItemDetail(UserChecklistItem.reconstruct(
             rs.getLong("id"),
             rs.getLong("user_checklist_id"),
-            rs.getLong("system_check_item_id"),
+            rs.getObject("system_check_item_id", Long.class),
             CheckStage.valueOf(rs.getString("stage")),
             CheckItemType.valueOf(rs.getString("item_type")),
             rs.getString("question"),
@@ -76,13 +76,17 @@ public class JdbcUserChecklistRepository implements UserChecklistRepository {
     @Override
     public void saveItems(final long checklistId, final List<UserChecklistItem> items) {
         String sql = """
-                INSERT INTO user_checklist_items (user_checklist_id, system_check_item_id, display_order)
-                VALUES (?, ?, ?)
+                INSERT INTO user_checklist_items
+                    (user_checklist_id, system_check_item_id, stage, item_type, question, display_order)
+                VALUES (?, ?, ?, ?, ?, ?)
                 """;
         List<Object[]> parameters = items.stream()
             .map(item -> new Object[]{
                 checklistId,
                 item.getSystemCheckItemId(),
+                item.getStage().name(),
+                item.getItemType().name(),
+                item.getQuestion(),
                 item.getDisplayOrder()
             })
             .toList();
@@ -137,9 +141,12 @@ public class JdbcUserChecklistRepository implements UserChecklistRepository {
     public List<UserChecklistItem> findItems(final long checklistId) {
         String sql = """
                 SELECT uci.id, uci.user_checklist_id, uci.system_check_item_id,
-                       sci.stage, sci.item_type, sci.question, uci.display_order
+                       COALESCE(uci.stage, sci.stage) AS stage,
+                       COALESCE(uci.item_type, sci.item_type) AS item_type,
+                       COALESCE(uci.question, sci.question) AS question,
+                       uci.display_order
                 FROM user_checklist_items uci
-                JOIN system_check_items sci ON sci.id = uci.system_check_item_id
+                LEFT JOIN system_check_items sci ON sci.id = uci.system_check_item_id
                 WHERE uci.user_checklist_id = ?
                 ORDER BY uci.display_order ASC, uci.id ASC
                 """;
@@ -150,9 +157,12 @@ public class JdbcUserChecklistRepository implements UserChecklistRepository {
     public List<UserChecklistItemDetail> findItemDetails(final long checklistId) {
         String sql = """
                 SELECT uci.id, uci.user_checklist_id, uci.system_check_item_id,
-                       sci.stage, sci.item_type, sci.question, uci.display_order
+                       COALESCE(uci.stage, sci.stage) AS stage,
+                       COALESCE(uci.item_type, sci.item_type) AS item_type,
+                       COALESCE(uci.question, sci.question) AS question,
+                       uci.display_order
                 FROM user_checklist_items uci
-                JOIN system_check_items sci ON sci.id = uci.system_check_item_id
+                LEFT JOIN system_check_items sci ON sci.id = uci.system_check_item_id
                 WHERE uci.user_checklist_id = ?
                 ORDER BY uci.display_order ASC, uci.id ASC
                 """;

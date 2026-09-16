@@ -108,8 +108,9 @@ public class DemoDataInitializer implements ApplicationRunner {
                     Long.class, stage);
             for (int index = 0; index < itemIds.size(); index++) {
                 jdbcTemplate.update("INSERT INTO user_checklist_items "
-                                + "(user_checklist_id, system_check_item_id, display_order) VALUES (?, ?, ?)",
-                        checklistId, itemIds.get(index), index + 1);
+                                + "(user_checklist_id, system_check_item_id, stage, item_type, question, display_order) "
+                                + "SELECT ?, id, stage, item_type, question, ? FROM system_check_items WHERE id = ?",
+                        checklistId, index + 1, itemIds.get(index));
             }
             jdbcTemplate.update("INSERT INTO property_checklists "
                             + "(property_id, user_checklist_id, checklist_name, stage, created_at, updated_at) "

@@ -3,7 +3,7 @@
 
 CREATE TABLE IF NOT EXISTS nickname_credentials
 (
-    member_id     BIGINT UNSIGNED NOT NULL,
+    member_id     BIGINT NOT NULL,
     nickname      VARCHAR(100) NOT NULL,
     nickname_key  VARCHAR(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL,
     password_hash VARCHAR(100) CHARACTER SET ascii COLLATE ascii_bin NULL,
@@ -16,3 +16,11 @@ CREATE TABLE IF NOT EXISTS nickname_credentials
 ) ENGINE = InnoDB
   DEFAULT CHARACTER SET = utf8mb4
   COLLATE = utf8mb4_0900_ai_ci;
+
+-- 현재 members가 먼저 만들어진 환경도 이전 버전으로 롤백했을 때 인증할 수 있게 이중 기록한다.
+INSERT INTO nickname_credentials
+    (member_id, nickname, nickname_key, password_hash, created_at, updated_at)
+SELECT m.id, m.nickname, m.nickname_key, m.password_hash, m.created_at, m.updated_at
+FROM members m
+LEFT JOIN nickname_credentials nc ON nc.member_id = m.id
+WHERE nc.member_id IS NULL;
