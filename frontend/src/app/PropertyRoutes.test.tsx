@@ -510,7 +510,7 @@ describe('FE-2 사진과 삭제 확인', () => {
               propertyPhotoResponseFixture({
                 ...photoFixture,
                 photoId: 82,
-                contentUrl: '/api/properties/10/photos/82/content',
+                contentUrl: '/api/properties/10/photos/82',
               }),
             ],
             totalCount: 2,
@@ -518,11 +518,11 @@ describe('FE-2 사진과 삭제 확인', () => {
         ),
       ),
       http.get(
-        `${config.apiBaseUrl}/api/properties/10/photos/81/content`,
+        `${config.apiBaseUrl}/api/properties/10/photos/81`,
         () => new HttpResponse(new Uint8Array([255, 216, 255]), { headers: { 'Content-Type': 'image/jpeg' } }),
       ),
       http.get(
-        `${config.apiBaseUrl}/api/properties/10/photos/82/content`,
+        `${config.apiBaseUrl}/api/properties/10/photos/82`,
         () => new HttpResponse(new Uint8Array([255, 216, 254]), { headers: { 'Content-Type': 'image/jpeg' } }),
       ),
     );
@@ -638,7 +638,7 @@ describe('FE-2 사진과 삭제 확인', () => {
         ),
       ),
       http.get(
-        `${config.apiBaseUrl}/api/properties/10/photos/81/content`,
+        `${config.apiBaseUrl}/api/properties/10/photos/81`,
         () => new HttpResponse(new Uint8Array([255, 216, 255]), { headers: { 'Content-Type': 'image/jpeg' } }),
       ),
       http.delete(`${config.apiBaseUrl}/api/properties/10/photos/81`, () => {
@@ -680,7 +680,7 @@ describe('FE-2 사진과 삭제 확인', () => {
       {
         ...photoFixture,
         photoId: 82,
-        contentUrl: '/api/properties/10/photos/82/content',
+        contentUrl: '/api/properties/10/photos/82',
         representative: false,
       },
     ];
@@ -700,7 +700,7 @@ describe('FE-2 사진과 삭제 확인', () => {
         ),
       ),
       http.get(
-        `${config.apiBaseUrl}/api/properties/10/photos/:photoId/content`,
+        `${config.apiBaseUrl}/api/properties/10/photos/:photoId`,
         () => new HttpResponse(new Uint8Array([255, 216, 255]), { headers: { 'Content-Type': 'image/jpeg' } }),
       ),
       http.put(`${config.apiBaseUrl}/api/properties/10/photos/82/representative`, () => {
@@ -728,7 +728,7 @@ describe('FE-2 사진과 삭제 확인', () => {
         HttpResponse.json(successEnvelope({ propertyId: 10, items: [propertyPhotoResponseFixture()], totalCount: 1 })),
       ),
       http.get(
-        `${config.apiBaseUrl}/api/properties/10/photos/81/content`,
+        `${config.apiBaseUrl}/api/properties/10/photos/81`,
         () => new HttpResponse(new Uint8Array([255, 216, 255]), { headers: { 'Content-Type': 'image/jpeg' } }),
       ),
       http.delete(`${config.apiBaseUrl}/api/properties/10/photos/81`, () =>

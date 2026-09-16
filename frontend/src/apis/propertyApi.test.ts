@@ -157,7 +157,7 @@ describe('FE-2 API 경계', () => {
             latitude: 37.484,
             longitude: 126.929,
             ...propertyAdditionalResponse,
-            photos: [{ id: 81, url: '/api/properties/10/photos/81/content', createdAt: '2026-08-10T07:35:00Z' }],
+            photos: [{ id: 81, url: '/api/properties/10/photos/81', createdAt: '2026-08-10T07:35:00Z' }],
             createdAt: '2026-08-10T07:30:00Z',
             updatedAt: '2026-08-10T07:40:00Z',
             overallProgress: {
@@ -229,7 +229,7 @@ describe('FE-2 API 경계', () => {
             roomOptions: [],
             utilityOptions: [],
             photos: [
-              { id: 81, url: '/api/properties/10/photos/81/content' },
+              { id: 81, url: '/api/properties/10/photos/81' },
               { id: null, url: null },
             ],
           }),
@@ -367,16 +367,16 @@ describe('FE-2 API 경계', () => {
     authenticate();
     let requestedUrl = '';
     server.use(
-      http.get(`${config.apiBaseUrl}/api/properties/10/photos/81/content`, ({ request }) => {
+      http.get(`${config.apiBaseUrl}/api/properties/10/photos/81`, ({ request }) => {
         requestedUrl = request.url;
         expect(request.headers.get('Authorization')).toBe('Bearer memory-token');
         return new HttpResponse(new Uint8Array([255, 216, 255]), { headers: { 'Content-Type': 'image/jpeg' } });
       }),
     );
 
-    const blob = await fetchPropertyPhotoContent(config, '/api/properties/10/photos/81/content');
+    const blob = await fetchPropertyPhotoContent(config, '/api/properties/10/photos/81');
     expect(blob.type).toBe('image/jpeg');
-    expect(requestedUrl).toBe('http://localhost:8080/api/properties/10/photos/81/content');
+    expect(requestedUrl).toBe('http://localhost:8080/api/properties/10/photos/81');
     expect(requestedUrl).not.toContain('memory-token');
   });
 

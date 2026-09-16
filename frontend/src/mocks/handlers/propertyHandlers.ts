@@ -6,6 +6,7 @@ import {
   getMockProperties,
   getProperty,
   notImplemented,
+  obsoleteEndpoint,
   createPropertyResponse,
   propertyDetailResponse,
   propertyProgress,
@@ -159,10 +160,7 @@ export const propertyHandlers = [
     setMockPhotosByProperty(new Map(getMockPhotosByProperty()).set(property.id, updated));
     return new HttpResponse(null, { status: 200 });
   }),
-  http.get('*/api/properties/:propertyId/photos/:photoId/content', ({ params }) => {
-    const photoId = readPositiveInteger(params.photoId) ?? 81;
-    return new HttpResponse(createMockPhotoBytes(photoId), { headers: { 'Content-Type': 'image/png' } });
-  }),
+  http.get('*/api/properties/:propertyId/photos/:photoId/content', obsoleteEndpoint),
   http.get('*/api/properties/:propertyId/photos/:photoId', ({ params }) => {
     const photoId = readPositiveInteger(params.photoId) ?? 81;
     return new HttpResponse(createMockPhotoBytes(photoId), { headers: { 'Content-Type': 'image/png' } });
