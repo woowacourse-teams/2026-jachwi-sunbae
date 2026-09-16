@@ -6,7 +6,10 @@ import {
   getMockProperties,
   getProperty,
   notImplemented,
-  propertyResponse,
+  createPropertyResponse,
+  propertyDetailResponse,
+  propertyListItemResponse,
+  updatePropertyResponse,
   readPositiveInteger,
   setMockMemosByProperty,
   setMockPhotosByProperty,
@@ -49,7 +52,7 @@ export const propertyHandlers = [
   http.get('*/api/properties', () =>
     success({
       totalCount: getMockProperties().length,
-      items: [...getMockProperties()].sort((a, b) => b.id - a.id).map(propertyResponse),
+      items: [...getMockProperties()].sort((a, b) => b.id - a.id).map(propertyListItemResponse),
     }),
   ),
   http.post('*/api/properties/export.pdf', async ({ request }) => {
@@ -68,11 +71,11 @@ export const propertyHandlers = [
     const property = { id, ...propertyFromRequest(body) };
     setMockProperties([...getMockProperties(), property]);
     setMockPhotosByProperty(new Map(getMockPhotosByProperty()).set(id, []));
-    return success(propertyResponse(property), 201);
+    return success(createPropertyResponse(property), 201);
   }),
   http.get('*/api/properties/:propertyId', ({ params }) => {
     const property = getProperty(params.propertyId);
-    return property === undefined ? failure('PROPERTY_NOT_FOUND', 404) : success(propertyResponse(property));
+    return property === undefined ? failure('PROPERTY_NOT_FOUND', 404) : success(propertyDetailResponse(property));
   }),
   http.put('*/api/properties/:propertyId', async ({ params, request }) => {
     const property = getProperty(params.propertyId);
@@ -80,7 +83,7 @@ export const propertyHandlers = [
     const body = (await request.json()) as PropertyWriteRequest;
     const updated = { ...property, ...propertyFromRequest(body) };
     setMockProperties(getMockProperties().map((candidate) => (candidate.id === updated.id ? updated : candidate)));
-    return success(updated);
+    return success(updatePropertyResponse(updated));
   }),
   http.delete('*/api/properties/:propertyId', ({ params }) => {
     const property = getProperty(params.propertyId);
