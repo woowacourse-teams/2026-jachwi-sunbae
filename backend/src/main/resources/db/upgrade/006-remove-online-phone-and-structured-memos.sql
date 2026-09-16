@@ -40,7 +40,10 @@ WHERE uc.stage = 'ONLINE_PHONE' OR sci.stage = 'ONLINE_PHONE';
 
 CREATE TABLE IF NOT EXISTS legacy_online_phone_property_checklists LIKE property_checklists;
 INSERT IGNORE INTO legacy_online_phone_property_checklists
-SELECT * FROM property_checklists WHERE stage = 'ONLINE_PHONE';
+SELECT pc.*
+FROM property_checklists pc
+LEFT JOIN user_checklists uc ON uc.id = pc.user_checklist_id
+WHERE pc.stage = 'ONLINE_PHONE' OR uc.stage = 'ONLINE_PHONE';
 
 CREATE TABLE IF NOT EXISTS legacy_online_phone_property_checklist_items LIKE property_checklist_items;
 INSERT IGNORE INTO legacy_online_phone_property_checklist_items
