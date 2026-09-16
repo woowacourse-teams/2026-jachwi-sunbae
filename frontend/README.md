@@ -30,6 +30,27 @@ npm run dev
 
 ## 공개 빌드 설정
 
+### dev API 연동 확인
+
+로컬에서 dev 백엔드를 사용할 때는 `.env.local`에 아래 값을 설정하고 개발 서버를 다시 실행합니다.
+
+```dotenv
+API_BASE_URL=https://dev-api.jachwi-sunbae.kr
+DEV_API_PROXY_TARGET=https://dev-api.jachwi-sunbae.kr
+ENABLE_MSW=false
+```
+
+dev API는 localhost Origin을 허용하지 않으므로 로컬에서는 `http://localhost:3000/api`를 개발 서버가 dev API로 중계합니다. 중계 시 브라우저의 Origin 헤더만 제거하고 인증 헤더는 유지합니다. 개발 서버 프록시는 `/api`에만 적용하고 TLS 인증서 검증은 유지합니다. `DEV_API_PROXY_TARGET`은 배포 빌드에서 무시됩니다. 배포에서는 `API_BASE_URL`과 `ENABLE_MSW=false`로 재빌드해 서버를 직접 호출합니다. `npm run dev:mock`은 프록시 없이 테스트 데이터를 사용합니다.
+
+API 변경 작업 전에는 [실행 리비전](https://dev-api.jachwi-sunbae.kr/actuator/info)과 [배포된 Swagger](https://dev-api.jachwi-sunbae.kr/v3/api-docs)를 함께 확인합니다. Git 커밋 날짜만으로 배포 여부를 판단하지 않습니다.
+
+- 부가정보는 `GET /api/properties/{id}`로 조회하고 `PUT /api/properties/{id}`로 저장합니다. 전체 교체이므로 기본정보 수정 시에도 기존 입주일·관리비·방문일정·방 옵션·공과금을 보존합니다.
+- `/api/properties/{id}/memo`는 자유 메모의 GET·PUT만 사용합니다. 구조화 메모 `items`와 POST 초기화는 사용하지 않습니다.
+- 매물 주소는 `address`로 전송합니다. 지도 검색 API의 `roadAddress`·`jibunAddress`와 구분합니다.
+- 체크리스트 단계는 `ON_SITE`와 `PRE_CONTRACT`이며, 매물 생성 시 서버가 자동 적용하므로 생성 직후 재적용하지 않습니다.
+
+### 환경변수
+
 | 환경변수              | 데모 기본               | 설명                                  |
 | --------------------- | ----------------------- | ------------------------------------- |
 | `API_BASE_URL`        | `http://localhost:8080` | 백엔드 기준 URL                       |

@@ -26,7 +26,9 @@ module.exports = (_env, argv) => {
   const isProduction = argv.mode === 'production';
   // 실제 API가 기본 경로다. MSW는 npm run dev:mock 또는 ENABLE_MSW=true로 명시한 경우에만 켠다.
   const isMockingEnabled = process.env.ENABLE_MSW === 'true';
-  const apiBaseUrl = process.env.API_BASE_URL ?? 'http://localhost:8080';
+  // 프록시는 로컬 개발에서만 사용한다. 배포 번들은 API_BASE_URL로 직접 연결한다.
+  const proxyTarget = !isProduction && !isMockingEnabled ? process.env.DEV_API_PROXY_TARGET : undefined;
+  const apiBaseUrl = proxyTarget ? 'http://localhost:3000' : (process.env.API_BASE_URL ?? 'http://localhost:8080');
 
   const naverMapClientId = process.env.NAVER_MAP_CLIENT_ID ?? '';
   // 배포 빌드는 항상 실제 Naver 지도를 사용한다. 키가 없으면 앱 설정 오류를 보여 주고
@@ -144,6 +146,18 @@ module.exports = (_env, argv) => {
       maxEntrypointSize: 350 * 1024,
     },
     devServer: {
+      proxy: proxyTarget
+        ? [
+            {
+              context: ['/api'],
+              target: proxyTarget,
+              changeOrigin: true,
+              on: {
+                proxyReq: (proxyReq) => proxyReq.removeHeader('origin'),
+              },
+            },
+          ]
+        : [],
       static: {
         directory: path.join(__dirname, 'public'),
       },
