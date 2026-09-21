@@ -31,8 +31,8 @@ import org.springframework.web.util.UriBuilder;
 @ConditionalOnProperty(name = "map.provider.mode", havingValue = "naver")
 public class NaverMapProvider implements MapProvider {
 
-    private static final String MAPS_BASE_URL = "https://naveropenapi.apigw.ntruss.com";
-    private static final String SEARCH_BASE_URL = "https://naverapihub.apigw.ntruss.com";
+    private static final String MAPS_BASE_URL = "https://maps.apigw.ntruss.com";
+    private static final String SEARCH_BASE_URL = "https://maps.apigw.ntruss.com";
     private static final int SEARCH_DISPLAY = 5;
     private static final List<String> REGION_AREAS = List.of("area1", "area2", "area3", "area4");
     private static final BigDecimal COORDINATE_SCALE = BigDecimal.valueOf(10_000_000L);
