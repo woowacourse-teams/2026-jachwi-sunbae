@@ -126,6 +126,8 @@ const CreatePropertyPage = ({ config }: { config: PublicConfig }) => {
         if (geocodeSequence.current !== sequence) return;
         setSelectedLocation(address);
         setLocationStatus('ready');
+        // 위치를 못 잡아 띄웠던 안내는 주소를 찾은 순간 치운다.
+        setCreateError(null);
       } catch {
         if (geocodeSequence.current !== sequence) return;
         setSelectedLocation((current) => ({ ...current, address: null, roadAddress: null, jibunAddress: null }));
@@ -155,7 +157,17 @@ const CreatePropertyPage = ({ config }: { config: PublicConfig }) => {
   const submitProperty = async () => {
     const validationErrors = validatePropertyForm(values);
     setErrors(validationErrors);
-    if (Object.keys(validationErrors).length > 0 || locationStatus !== 'ready') return;
+    if (Object.keys(validationErrors).length > 0) return;
+    // 주소를 확인하는 중이거나 확인하지 못한 상태에서 눌렀다면 까닭을 알려 준다.
+    // 조용히 돌아가면 등록 버튼이 고장 난 것처럼 보인다.
+    if (locationStatus !== 'ready') {
+      setCreateError(
+        locationStatus === 'loading'
+          ? '주소를 확인하는 중이에요. 잠시 뒤에 다시 눌러 주세요.'
+          : '주소를 확인하지 못했어요. 지도를 움직이거나 주소를 검색해 위치를 다시 선택해 주세요.',
+      );
+      return;
+    }
     const input = toPropertyInputDto(values);
     if (input === null) return;
     setCreateError(null);
@@ -310,6 +322,7 @@ const CreatePropertyPage = ({ config }: { config: PublicConfig }) => {
                             geocodeSequence.current += 1;
                             setSelectedLocation(result);
                             setLocationStatus('ready');
+                            setCreateError(null);
                             setSearchResults([]);
                             setSearchQuery(result.roadAddress ?? result.jibunAddress ?? result.address ?? '');
                           }}
