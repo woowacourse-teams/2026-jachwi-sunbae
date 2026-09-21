@@ -328,6 +328,47 @@ describe('FE-2 등록·수정·메모', () => {
     }
   });
 
+  it('주소를 확인하지 못하면 등록을 요청하지 않고 까닭을 안내한다', async () => {
+    let createCalls = 0;
+    server.use(
+      http.get(`${config.apiBaseUrl}/api/maps/reverse-geocode`, () => HttpResponse.error()),
+      http.post(`${config.apiBaseUrl}/api/properties`, () => {
+        createCalls += 1;
+        return HttpResponse.json(successEnvelope({ id: 11 }), { status: 201 });
+      }),
+    );
+
+    const originalGeolocation = navigator.geolocation;
+    Object.defineProperty(navigator, 'geolocation', {
+      configurable: true,
+      value: {
+        getCurrentPosition: vi.fn((_success: PositionCallback, failure?: PositionErrorCallback) =>
+          failure?.({ code: 1, message: '', PERMISSION_DENIED: 1, POSITION_UNAVAILABLE: 2, TIMEOUT: 3 }),
+        ),
+      },
+    });
+
+    try {
+      const user = userEvent.setup();
+      renderAuthenticated('/properties/new');
+
+      await user.type(await screen.findByLabelText('보증금 (만원)'), '1000');
+      await user.click(screen.getByRole('button', { name: '다음' }));
+      await user.type(screen.getByLabelText('월세 (만원)'), '55');
+      await user.click(screen.getByRole('button', { name: '다음' }));
+      expect(await screen.findByRole('region', { name: '매물 위치 선택' })).toBeInTheDocument();
+      await user.click(screen.getByRole('button', { name: '다음' }));
+      await user.type(screen.getByLabelText('매물 이름'), '신림역 원룸');
+
+      await user.click(await screen.findByRole('button', { name: '매물 등록' }));
+
+      expect(await screen.findByRole('alert')).toHaveTextContent('주소를 확인하지 못했어요.');
+      expect(createCalls).toBe(0);
+    } finally {
+      Object.defineProperty(navigator, 'geolocation', { configurable: true, value: originalGeolocation });
+    }
+  });
+
   it('수정은 변경이 없어도 전체 필드를 보내고 상세 화면으로 돌아간다', async () => {
     let updateCalls = 0;
     let updateBody: unknown;

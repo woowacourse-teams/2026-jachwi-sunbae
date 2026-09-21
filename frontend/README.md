@@ -44,6 +44,8 @@ ENABLE_MSW=false
 
 dev API는 localhost Origin을 허용하지 않으므로 로컬에서는 `http://localhost:3000/api`를 개발 서버가 dev API로 중계합니다. 중계 시 브라우저의 Origin 헤더만 제거하고 인증 헤더는 유지합니다. 개발 서버 프록시는 `/api`에만 적용하고 TLS 인증서 검증은 유지합니다. `DEV_API_PROXY_TARGET`은 배포 빌드에서 무시됩니다. 배포에서는 `API_BASE_URL`과 `ENABLE_MSW=false`로 재빌드해 서버를 직접 호출합니다. `npm run dev:mock`은 프록시 없이 테스트 데이터를 사용합니다.
 
+프록시를 쓰면 API 주소가 개발 서버 자신이 되므로, 3000번을 다른 프로그램이 쓰고 있으면 개발 서버가 뜨지 않습니다(`EADDRINUSE`). 이때는 `PORT=3001 npm run dev`처럼 포트를 옮기면 프록시 주소도 함께 따라갑니다. 포트를 옮기지 않은 채 다른 앱이 3000번을 잡고 있으면 API 호출이 그 앱의 HTML을 받아 "요청을 처리하지 못했습니다"로 끝나므로, 먼저 `lsof -i :3000`으로 누가 쓰고 있는지 확인합니다.
+
 API 변경 작업 전에는 [실행 리비전](https://dev-api.jachwi-sunbae.kr/actuator/info)과 [배포된 Swagger](https://dev-api.jachwi-sunbae.kr/v3/api-docs)를 함께 확인합니다. Git 커밋 날짜만으로 배포 여부를 판단하지 않습니다.
 
 - 부가정보는 `GET /api/properties/{id}`로 조회하고 `PUT /api/properties/{id}`로 저장합니다. 전체 교체이므로 기본정보 수정 시에도 기존 입주일·관리비·방문일정·방 옵션·공과금을 보존합니다.
