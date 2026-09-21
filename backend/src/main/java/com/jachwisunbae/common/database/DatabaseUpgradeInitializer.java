@@ -48,6 +48,7 @@ public class DatabaseUpgradeInitializer implements ApplicationRunner {
                 for (Resource resource : resources) {
                     applyOnce(connection, resource);
                 }
+                LegacyMemberNicknameUpgrade.apply(connection);
             } finally {
                 releaseUpgradeLock(connection);
             }
@@ -93,11 +94,7 @@ public class DatabaseUpgradeInitializer implements ApplicationRunner {
             return;
         }
         new ResourceDatabasePopulator(resource).populate(connection);
-        try (PreparedStatement statement = connection.prepareStatement(
-                "INSERT INTO schema_upgrade_history (script_name) VALUES (?)")) {
-            statement.setString(1, filename);
-            statement.executeUpdate();
-        }
+        recordApplied(connection, filename);
     }
 
     private boolean isApplied(final Connection connection, final String filename) throws SQLException {
@@ -109,4 +106,13 @@ public class DatabaseUpgradeInitializer implements ApplicationRunner {
             }
         }
     }
+
+    private void recordApplied(final Connection connection, final String scriptName) throws SQLException {
+        try (PreparedStatement statement = connection.prepareStatement(
+                "INSERT INTO schema_upgrade_history (script_name) VALUES (?)")) {
+            statement.setString(1, scriptName);
+            statement.executeUpdate();
+        }
+    }
+
 }
