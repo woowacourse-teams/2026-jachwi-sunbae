@@ -1,0 +1,70 @@
+.root {
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto;
+  width: min(100%, var(--app-max-width));
+  height: 100dvh;
+  margin: 0 auto;
+  overflow: hidden;
+  background: var(--color-canvas);
+}
+
+.root[data-full-screen='true'] {
+  grid-template-rows: minmax(0, 1fr);
+}
+
+.content {
+  position: relative;
+  z-index: 0;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  /* 상단에서 당기는 모바일 새로고침이 내부 스크롤러에 막히지 않게 한다. */
+  overscroll-behavior-y: auto;
+  scrollbar-width: none;
+}
+
+.content::-webkit-scrollbar {
+  display: none;
+}
+
+.bottomNavigation {
+  position: relative;
+  z-index: 100;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  width: calc(100% - 1.25rem);
+  min-height: var(--bottom-navigation-height);
+  margin: 0.45rem auto calc(0.45rem + env(safe-area-inset-bottom));
+  padding: 0.18rem;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  background: var(--color-navigation-surface);
+}
+
+.bottomNavigation a {
+  display: grid;
+  min-height: calc(var(--bottom-navigation-height) - 0.36rem);
+  place-items: center;
+  align-content: center;
+  gap: 0.08rem;
+  margin: 0;
+  border-radius: 999px;
+  color: var(--color-muted);
+  font-size: 0.55rem;
+  font-weight: 800;
+  text-decoration: none;
+  transition:
+    color 180ms ease-out,
+    background-color 180ms ease-out;
+}
+
+.bottomNavigation a[aria-current='page'] {
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+}
+
+@media (min-width: 431px) {
+  .root {
+    box-shadow: 0 0 2rem rgb(59 52 36 / 8%);
+  }
+}

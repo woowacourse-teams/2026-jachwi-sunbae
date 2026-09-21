@@ -10,15 +10,13 @@ import AuthenticatedPhoto from './AuthenticatedPhoto';
 
 const config: PublicConfig = {
   apiBaseUrl: 'http://localhost:8080',
-  googleClientId: 'test-client',
-  googleRedirectUri: 'http://localhost:3000/oauth/google/callback',
 };
 
 describe('인증 사진 표시', () => {
   it('Bearer로 Blob을 읽어 Object URL로 표시하고 unmount에서 해제한다', async () => {
     setAuthentication({ accessToken: 'photo-token', tokenType: 'Bearer', expiresIn: 60 });
     server.use(
-      http.get(`${config.apiBaseUrl}/api/properties/10/photos/81/content`, ({ request }) => {
+      http.get(`${config.apiBaseUrl}/api/properties/10/photos/81`, ({ request }) => {
         expect(request.headers.get('Authorization')).toBe('Bearer photo-token');
         return new HttpResponse(new Uint8Array([255, 216, 255]), { headers: { 'Content-Type': 'image/jpeg' } });
       }),
@@ -30,7 +28,7 @@ describe('인증 사진 표시', () => {
           config={config}
           propertyId={10}
           photoId={81}
-          contentUrl="/api/properties/10/photos/81/content"
+          contentUrl="/api/properties/10/photos/81"
           alt="업로드 순 1번째 사진"
         />
       </QueryClientProvider>,
@@ -39,7 +37,7 @@ describe('인증 사진 표시', () => {
     const image = await screen.findByRole('img', { name: '업로드 순 1번째 사진' });
     expect(image).toHaveAttribute('src', expect.stringMatching(/^blob:test-photo-/));
     expect(document.body.innerHTML).not.toContain('photo-token');
-    expect(document.body.innerHTML).not.toContain('/api/properties/10/photos/81/content');
+    expect(document.body.innerHTML).not.toContain('/api/properties/10/photos/81');
 
     rendered.unmount();
     await waitFor(() => expect(URL.revokeObjectURL).toHaveBeenCalled());
@@ -50,7 +48,7 @@ describe('인증 사진 표시', () => {
     setAuthentication({ accessToken: 'photo-token', tokenType: 'Bearer', expiresIn: 60 });
     let attempts = 0;
     server.use(
-      http.get(`${config.apiBaseUrl}/api/properties/10/photos/81/content`, () => {
+      http.get(`${config.apiBaseUrl}/api/properties/10/photos/81`, () => {
         attempts += 1;
         return attempts === 1
           ? HttpResponse.json({ code: 'PHOTO_READ_FAILED', message: 'internal', errors: [] }, { status: 500 })
@@ -64,7 +62,7 @@ describe('인증 사진 표시', () => {
           config={config}
           propertyId={10}
           photoId={81}
-          contentUrl="/api/properties/10/photos/81/content"
+          contentUrl="/api/properties/10/photos/81"
           alt="업로드 순 1번째 사진"
         />
       </QueryClientProvider>,

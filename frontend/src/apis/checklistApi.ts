@@ -1,14 +1,14 @@
 import type { PublicConfig } from '../types/PublicConfig';
 import type { ChecklistPresetType, ChecklistStage, LegacyChecklistDetail } from '../types/Checklist';
-import { ApiError, apiRequest } from './apiClient';
+import { apiRequest } from './apiClient';
 import {
   parseActiveChecklist,
   parseCheckItemPage,
   parseChecklistDetail,
   parseChecklistPage,
-  parseChecklistPreset,
   parseCreatedChecklist,
   parseNoChecklistContent,
+  toChecklistPreset,
 } from './checklistParsers';
 import type {
   AssignActiveChecklistRequestDto,
@@ -18,66 +18,54 @@ import type {
   UpdateChecklistRequestDto,
 } from './dtos/ChecklistDto';
 
-const toLegacyChecklistDetail = (detail: Awaited<ReturnType<typeof fetchChecklistDetail>>): LegacyChecklistDetail => {
-  const items = detail.items.map((item) => {
-    if (item.origin !== 'PROVIDED' || item.guide === null) {
-      throw new ApiError({ kind: 'invalid-response' });
-    }
-    return {
-      checkItemId: item.sourceCheckItemId,
-      stage: detail.stage,
-      question: item.question,
-      guide: item.guide,
-    };
-  });
-  return { ...detail, items };
-};
+const toLegacyChecklistDetail = (detail: Awaited<ReturnType<typeof fetchChecklistDetail>>): LegacyChecklistDetail => ({
+  ...detail,
+  items: detail.items.map((item) => ({
+    checkItemId: item.sourceCheckItemId ?? item.checklistItemId,
+    stage: detail.stage,
+    itemType: item.itemType,
+    question: item.question,
+    guide: null,
+  })),
+});
 
 export const fetchCheckItems = (
   config: PublicConfig,
-  input: { stage: ChecklistStage; query: string; page: number; size?: number },
+  input: { stage: ChecklistStage; query: string; page?: number; size?: number },
   signal?: AbortSignal,
 ) => {
-  const search = new URLSearchParams({ stage: input.stage, page: String(input.page), size: String(input.size ?? 20) });
+  const search = new URLSearchParams({ stage: input.stage });
   const query = input.query.trim();
   if (query.length > 0) search.set('query', query);
   return apiRequest({
     config,
     path: `/api/check-items?${search}`,
     signal,
+    requiresAuthentication: false,
     parseData: (value) => {
-      const result = parseCheckItemPage(value);
+      const result = parseCheckItemPage(value, input.stage);
       if (result.content.some((item) => item.stage !== input.stage)) throw new Error('stage');
       return result;
     },
   });
 };
 
-export const fetchChecklistPreset = (
+export const fetchChecklistPreset = async (
   config: PublicConfig,
   stage: ChecklistStage,
   selectedPreset: ChecklistPresetType,
   signal?: AbortSignal,
 ) => {
-  const search = new URLSearchParams({ stage, presetType: selectedPreset });
-  return apiRequest({
-    config,
-    path: `/api/checklist-presets?${search}`,
-    signal,
-    parseData: (value) => {
-      const result = parseChecklistPreset(value);
-      if (result.stage !== stage || result.presetType !== selectedPreset) throw new Error('preset');
-      return result;
-    },
-  });
+  const result = await fetchCheckItems(config, { stage, query: '' }, signal);
+  return { ...toChecklistPreset(stage, result.content), presetType: selectedPreset };
 };
 
 export const fetchChecklists = (
   config: PublicConfig,
-  input: { stage: ChecklistStage; page: number; size?: number },
+  input: { stage: ChecklistStage; page?: number; size?: number },
   signal?: AbortSignal,
 ) => {
-  const search = new URLSearchParams({ stage: input.stage, page: String(input.page), size: String(input.size ?? 20) });
+  const search = new URLSearchParams({ stage: input.stage });
   return apiRequest({
     config,
     path: `/api/checklists?${search}`,
@@ -103,18 +91,12 @@ export const createChecklistV11 = (config: PublicConfig, body: CreateChecklistV1
     },
   });
 
-/** @deprecated PROVIDED 전용 v1.0 화면 호환 요청이다. */
+/** @deprecated 최종 API 요청 이름으로 전환하기 전 화면 호환 함수다. */
 export const createChecklist = (config: PublicConfig, body: CreateChecklistRequestDto) =>
-  apiRequest({
-    config,
-    path: '/api/checklists',
-    method: 'POST',
-    body,
-    parseData: (value) => {
-      const result = parseCreatedChecklist(value);
-      if (result.stage !== body.stage) throw new Error('stage');
-      return result;
-    },
+  createChecklistV11(config, {
+    name: body.name,
+    stage: body.stage,
+    items: body.checkItemIds.map((systemCheckItemId) => ({ systemCheckItemId })),
   });
 
 export const fetchChecklistDetail = (config: PublicConfig, checklistId: number, signal?: AbortSignal) =>
@@ -129,15 +111,11 @@ export const fetchChecklistDetail = (config: PublicConfig, checklistId: number, 
     },
   });
 
-/** @deprecated PROVIDED 전용 v1.0 편집 화면에서만 사용한다. CUSTOM은 무손실로 표현할 수 없어 거부한다. */
 export const fetchLegacyChecklistDetail = async (
   config: PublicConfig,
   checklistId: number,
   signal?: AbortSignal,
-): Promise<LegacyChecklistDetail> => {
-  const detail = await fetchChecklistDetail(config, checklistId, signal);
-  return toLegacyChecklistDetail(detail);
-};
+): Promise<LegacyChecklistDetail> => toLegacyChecklistDetail(await fetchChecklistDetail(config, checklistId, signal));
 
 export const updateChecklistV11 = (config: PublicConfig, checklistId: number, body: UpdateChecklistV11RequestDto) =>
   apiRequest({
@@ -152,25 +130,18 @@ export const updateChecklistV11 = (config: PublicConfig, checklistId: number, bo
     },
   });
 
-/** @deprecated PROVIDED 전용 v1.0 화면 호환 요청이다. */
+/** @deprecated 최종 API 요청 이름으로 전환하기 전 화면 호환 함수다. */
 export const updateChecklist = async (
   config: PublicConfig,
   checklistId: number,
   body: UpdateChecklistRequestDto,
-): Promise<LegacyChecklistDetail> => {
-  const detail = await apiRequest({
-    config,
-    path: `/api/checklists/${checklistId}`,
-    method: 'PUT',
-    body,
-    parseData: (value) => {
-      const result = parseChecklistDetail(value);
-      if (result.checklistId !== checklistId) throw new Error('checklistId');
-      return result;
-    },
-  });
-  return toLegacyChecklistDetail(detail);
-};
+): Promise<LegacyChecklistDetail> =>
+  toLegacyChecklistDetail(
+    await updateChecklistV11(config, checklistId, {
+      name: body.name,
+      items: body.checkItemIds.map((systemCheckItemId) => ({ systemCheckItemId })),
+    }),
+  );
 
 export const removeChecklist = (config: PublicConfig, checklistId: number) =>
   apiRequest({
@@ -188,22 +159,19 @@ export const assignActiveChecklist = (
 ) =>
   apiRequest({
     config,
-    path: `/api/properties/${propertyId}/active-checklists/${stage}`,
+    path: `/api/properties/${propertyId}/checklists/${stage}`,
     method: 'PUT',
-    body,
+    body: body.sourceType === 'SYSTEM_DEFAULT' ? body : { sourceType: 'USER', checklistId: body.checklistId },
     parseData: (value) => {
       const result = parseActiveChecklist(value);
-      if (result.propertyId !== propertyId || result.stage !== stage || result.checklistId !== body.checklistId) {
+      if (
+        result.propertyId !== propertyId ||
+        result.stage !== stage ||
+        (body.sourceType !== 'SYSTEM_DEFAULT' && result.checklistId !== body.checklistId) ||
+        (body.sourceType === 'SYSTEM_DEFAULT' && result.checklistId !== null)
+      ) {
         throw new Error('active-checklist');
       }
       return result;
     },
-  });
-
-export const removeActiveChecklist = (config: PublicConfig, propertyId: number, stage: ChecklistStage) =>
-  apiRequest({
-    config,
-    path: `/api/properties/${propertyId}/active-checklists/${stage}`,
-    method: 'DELETE',
-    parseData: parseNoChecklistContent,
   });

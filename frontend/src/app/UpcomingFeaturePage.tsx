@@ -1,14 +1,10 @@
-import { Link } from 'react-router-dom';
 import PageHeading from '../components/PageHeading';
+import { ButtonLink } from '../components/ui/Button';
+import './UpcomingFeaturePage.css';
 
-type UpcomingFeature = 'compare' | 'export' | 'tips';
+type UpcomingFeature = 'export' | 'tips';
 
 const featureContent: Record<UpcomingFeature, { eyebrow: string; title: string; description: string }> = {
-  compare: {
-    eyebrow: '비교표',
-    title: '매물 비교는 준비 중이에요',
-    description: '여러 매물의 조건과 방문 결과를 한눈에 비교하는 기능을 다음 범위에서 제공할 예정이에요.',
-  },
   export: {
     eyebrow: '내보내기',
     title: '기록 내보내기는 준비 중이에요',
@@ -29,16 +25,13 @@ const UpcomingFeaturePage = ({ feature }: { feature: UpcomingFeature }) => {
       <div className="page-container page-container--form">
         <PageHeading title={content.title} backTo="/me" backLabel="마이페이지" focusOnMount />
         <section className="upcoming-feature-card" aria-labelledby="upcoming-feature-heading">
-          <p className="section-eyebrow">{content.eyebrow}</p>
           <h2 id="upcoming-feature-heading">1차 MVP에서는 안내만 제공해요</h2>
           <p>{content.description}</p>
           <div className="upcoming-feature-card__actions">
-            <Link className="primary-link" to="/properties">
-              내 매물 보기
-            </Link>
-            <Link className="secondary-link" to="/checklists">
+            <ButtonLink to="/properties">내 매물 보기</ButtonLink>
+            <ButtonLink variant="secondary" to="/checklists">
               체크리스트 보기
-            </Link>
+            </ButtonLink>
           </div>
         </section>
       </div>

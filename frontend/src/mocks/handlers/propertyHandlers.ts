@@ -1,0 +1,168 @@
+import { http, HttpResponse } from 'msw';
+import {
+  createMockPhotoBytes,
+  getMockMemosByProperty,
+  getMockPhotosByProperty,
+  getMockProperties,
+  getProperty,
+  notImplemented,
+  obsoleteEndpoint,
+  createPropertyResponse,
+  propertyDetailResponse,
+  propertyProgress,
+  propertyListItemResponse,
+  updatePropertyResponse,
+  readPositiveInteger,
+  setMockMemosByProperty,
+  setMockPhotosByProperty,
+  setMockProperties,
+  success,
+  failure,
+} from '../mockStore';
+
+type PropertyWriteRequest = {
+  name: string;
+  depositAmount?: number;
+  monthlyRentAmount?: number;
+  discoverySource?: string | null;
+  address?: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
+  availableMoveInDate?: string | null;
+  maintenanceFeeAmount?: number | null;
+  visitScheduledAt?: string | null;
+  roomOptions?: string[];
+  utilityOptions?: string[];
+};
+
+const propertyFromRequest = (body: PropertyWriteRequest) => ({
+  name: body.name,
+  depositAmount: body.depositAmount ?? 0,
+  monthlyRentAmount: body.monthlyRentAmount ?? 0,
+  discoverySource: body.discoverySource ?? null,
+  address: body.address ?? null,
+  latitude: body.latitude ?? null,
+  longitude: body.longitude ?? null,
+  availableMoveInDate: body.availableMoveInDate ?? null,
+  maintenanceFeeAmount: body.maintenanceFeeAmount ?? null,
+  visitScheduledAt: body.visitScheduledAt ?? null,
+  roomOptions: body.roomOptions ?? [],
+  utilityOptions: body.utilityOptions ?? [],
+});
+
+export const propertyHandlers = [
+  http.get('*/api/properties', () =>
+    success({
+      totalCount: getMockProperties().length,
+      items: [...getMockProperties()].sort((a, b) => b.id - a.id).map(propertyListItemResponse),
+    }),
+  ),
+  // 서버는 UTF-8 BOM 을 붙인 text/csv 를 내려준다. BOM 이 없으면 엑셀에서 한글이 깨진다.
+  http.get('*/api/properties/export.csv', () => {
+    const rows = [...getMockProperties()]
+      .sort((a, b) => b.id - a.id)
+      .map((property) => {
+        const photos = getMockPhotosByProperty().get(property.id) ?? [];
+        const progress = propertyProgress(property.id);
+        return [
+          `"${property.name}"`,
+          `"${property.address ?? ''}"`,
+          property.depositAmount,
+          property.monthlyRentAmount,
+          photos.length,
+          progress.completedCount,
+          progress.totalCount,
+          progress.progressRate,
+        ].join(',');
+      });
+    const csv = ['이름,주소,보증금(만원),월세(만원),사진 수,체크 완료,체크 전체,진행률(%)', ...rows].join('\n');
+    return new HttpResponse(new TextEncoder().encode(`\uFEFF${csv}\n`), {
+      headers: { 'Content-Type': 'text/csv;charset=UTF-8' },
+    });
+  }),
+  http.post('*/api/properties/export.pdf', async ({ request }) => {
+    const body = (await request.json()) as { propertyIds?: number[] };
+    if (!Array.isArray(body.propertyIds) || body.propertyIds.length < 2 || body.propertyIds.length > 5) {
+      return failure('PROPERTY_INPUT_INVALID', 400);
+    }
+    return new HttpResponse(new TextEncoder().encode('%PDF-1.7\n% mock comparison\n%%EOF'), {
+      headers: { 'Content-Type': 'application/pdf' },
+    });
+  }),
+  http.post('*/api/properties/comparison-views', () => new HttpResponse(null, { status: 204 })),
+  http.post('*/api/properties', async ({ request }) => {
+    const body = (await request.json()) as PropertyWriteRequest;
+    const id = Math.max(0, ...getMockProperties().map((property) => property.id)) + 1;
+    const property = { id, ...propertyFromRequest(body) };
+    setMockProperties([...getMockProperties(), property]);
+    setMockPhotosByProperty(new Map(getMockPhotosByProperty()).set(id, []));
+    return success(createPropertyResponse(property), 201);
+  }),
+  http.get('*/api/properties/:propertyId', ({ params }) => {
+    const property = getProperty(params.propertyId);
+    return property === undefined ? failure('PROPERTY_NOT_FOUND', 404) : success(propertyDetailResponse(property));
+  }),
+  http.put('*/api/properties/:propertyId', async ({ params, request }) => {
+    const property = getProperty(params.propertyId);
+    if (property === undefined) return failure('PROPERTY_NOT_FOUND', 404);
+    const body = (await request.json()) as PropertyWriteRequest;
+    const updated = { ...property, ...propertyFromRequest(body) };
+    setMockProperties(getMockProperties().map((candidate) => (candidate.id === updated.id ? updated : candidate)));
+    return success(updatePropertyResponse(updated));
+  }),
+  http.delete('*/api/properties/:propertyId', ({ params }) => {
+    const property = getProperty(params.propertyId);
+    if (property === undefined) return failure('PROPERTY_NOT_FOUND', 404);
+    setMockProperties(getMockProperties().filter((candidate) => candidate.id !== property.id));
+    return new HttpResponse(null, { status: 200 });
+  }),
+  http.get('*/api/properties/:propertyId/memo', ({ params }) => {
+    const property = getProperty(params.propertyId);
+    if (property === undefined) return failure('PROPERTY_NOT_FOUND', 404);
+    const memo = getMockMemosByProperty().get(property.id);
+    return memo === undefined ? failure('MEMO_NOT_FOUND', 404) : success(memo);
+  }),
+  http.put('*/api/properties/:propertyId/memo', async ({ params, request }) => {
+    const property = getProperty(params.propertyId);
+    if (property === undefined) return failure('PROPERTY_NOT_FOUND', 404);
+    const body = (await request.json()) as { freeMemo?: string };
+    const memo = { propertyId: property.id, freeMemo: body.freeMemo ?? '' };
+    setMockMemosByProperty(new Map(getMockMemosByProperty()).set(property.id, memo));
+    return success(memo);
+  }),
+  http.get('*/api/properties/:propertyId/photos', ({ params }) => {
+    const property = getProperty(params.propertyId);
+    if (property === undefined) return failure('PROPERTY_NOT_FOUND', 404);
+    const items = getMockPhotosByProperty().get(property.id) ?? [];
+    return success({ propertyId: property.id, totalCount: items.length, items });
+  }),
+  http.post('*/api/properties/:propertyId/photos', notImplemented),
+  http.delete('*/api/properties/:propertyId/photos/:photoId', ({ params }) => {
+    const property = getProperty(params.propertyId);
+    const photoId = readPositiveInteger(params.photoId);
+    if (property === undefined || photoId === null) return failure('PHOTO_NOT_FOUND', 404);
+    const current = getMockPhotosByProperty().get(property.id) ?? [];
+    if (!current.some((photo) => photo.id === photoId)) return failure('PHOTO_NOT_FOUND', 404);
+    const remaining = current.filter((photo) => photo.id !== photoId);
+    if (remaining.length > 0 && !remaining.some((photo) => photo.representative)) {
+      remaining[0] = { ...remaining[0], representative: true };
+    }
+    setMockPhotosByProperty(new Map(getMockPhotosByProperty()).set(property.id, remaining));
+    return new HttpResponse(null, { status: 200 });
+  }),
+  http.put('*/api/properties/:propertyId/photos/:photoId/representative', ({ params }) => {
+    const property = getProperty(params.propertyId);
+    const photoId = readPositiveInteger(params.photoId);
+    if (property === undefined || photoId === null) return failure('PHOTO_NOT_FOUND', 404);
+    const current = getMockPhotosByProperty().get(property.id) ?? [];
+    if (!current.some((photo) => photo.id === photoId)) return failure('PHOTO_NOT_FOUND', 404);
+    const updated = current.map((photo) => ({ ...photo, representative: photo.id === photoId }));
+    setMockPhotosByProperty(new Map(getMockPhotosByProperty()).set(property.id, updated));
+    return new HttpResponse(null, { status: 200 });
+  }),
+  http.get('*/api/properties/:propertyId/photos/:photoId/content', obsoleteEndpoint),
+  http.get('*/api/properties/:propertyId/photos/:photoId', ({ params }) => {
+    const photoId = readPositiveInteger(params.photoId) ?? 81;
+    return new HttpResponse(createMockPhotoBytes(photoId), { headers: { 'Content-Type': 'image/png' } });
+  }),
+];

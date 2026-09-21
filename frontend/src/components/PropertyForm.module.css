@@ -1,0 +1,122 @@
+.form {
+  display: flex;
+  min-height: calc(100dvh - var(--bottom-navigation-height) - var(--app-bar-height) - 4.5rem);
+  flex-direction: column;
+  gap: 0.8rem;
+  padding-bottom: 1rem;
+}
+
+.form > :last-child {
+  margin-top: auto;
+}
+
+.defaultField {
+  gap: 0.3rem;
+}
+
+.defaultField > label {
+  font-size: 0.78rem;
+}
+
+.form .defaultInput {
+  min-height: 2.55rem;
+  padding: 0.55rem 0.7rem;
+  font-size: 0.78rem;
+}
+
+.form textarea.defaultInput {
+  min-height: 4.75rem;
+}
+
+.moneyFields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.65rem;
+}
+
+.locationFields {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.locationCoordinates {
+  margin: 0;
+  color: var(--color-muted);
+  font-size: 0.72rem;
+  text-align: center;
+}
+
+.detailForm .locationFields {
+  margin: 0.75rem 0;
+}
+
+.detailMoneyFields {
+  display: contents;
+}
+
+.detailForm {
+  gap: 0;
+}
+
+.detailField {
+  grid-template-columns: 5.25rem minmax(0, 1fr);
+  align-items: start;
+  gap: 0.25rem 0.75rem;
+  padding: 0.65rem 0;
+}
+
+.detailField > label {
+  padding-top: 0.75rem;
+  color: var(--color-muted);
+  font-size: 0.78rem;
+}
+
+.detailField > div {
+  min-width: 0;
+}
+
+.detailField > p {
+  grid-column: 2;
+}
+
+.detailForm .detailInput {
+  min-height: 2.15rem;
+  padding: 0.35rem 0.55rem;
+  border-color: transparent;
+  background: var(--color-surface);
+  font-size: 0.76rem;
+  font-weight: 650;
+}
+
+.detailForm textarea.detailInput {
+  min-height: 5.5rem;
+  font-size: 0.82rem;
+  font-weight: 650;
+}
+
+.detailForm .detailInput:hover {
+  background: var(--color-surface-neutral);
+}
+
+.detailForm .detailInput:focus,
+.detailForm .detailInput:focus-visible {
+  border: 1px solid var(--color-primary);
+  border-color: var(--color-primary);
+  background: var(--color-surface);
+  outline: 0 !important;
+  box-shadow: none;
+}
+
+@media (max-width: 340px) {
+  .detailField {
+    grid-template-columns: 1fr;
+  }
+
+  .detailField > label {
+    padding-top: 0;
+  }
+
+  .detailField > p {
+    grid-column: 1;
+  }
+}

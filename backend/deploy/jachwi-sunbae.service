@@ -2,6 +2,8 @@
 Description=Jachwi Sunbae backend
 After=network-online.target
 Wants=network-online.target
+StartLimitIntervalSec=300
+StartLimitBurst=5
 
 [Service]
 Type=simple
@@ -17,12 +19,14 @@ AmbientCapabilities=CAP_NET_BIND_SERVICE
 CapabilityBoundingSet=CAP_NET_BIND_SERVICE
 
 ExecStart=/usr/bin/java -XX:MaxRAMPercentage=50.0 -jar /opt/jachwi-sunbae/app.jar
+# 종료 이벤트 기록 실패가 애플리케이션의 종료 결과를 바꾸지 않도록 실패를 무시한다.
+ExecStopPost=-/opt/jachwi-sunbae/scripts/log_service_exit.sh
 WorkingDirectory=/opt/jachwi-sunbae
 
 # Spring Boot는 SIGTERM 종료 시 143을 반환한다. 실패로 보지 않는다.
 SuccessExitStatus=143
 Restart=on-failure
-RestartSec=10
+RestartSec=5
 
 [Install]
 WantedBy=multi-user.target

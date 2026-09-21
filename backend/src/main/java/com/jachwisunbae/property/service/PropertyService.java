@@ -1,0 +1,114 @@
+package com.jachwisunbae.property.service;
+
+import com.jachwisunbae.common.exception.BusinessException;
+import com.jachwisunbae.common.exception.DomainErrorCode;
+import com.jachwisunbae.member.repository.MemberRepository;
+import com.jachwisunbae.property.controller.dto.request.CreatePropertyRequest;
+import com.jachwisunbae.property.controller.dto.request.UpdatePropertyRequest;
+import com.jachwisunbae.property.controller.dto.response.PropertyChecklistOverviewResponse;
+import com.jachwisunbae.property.controller.dto.response.PropertyDetailResponse;
+import com.jachwisunbae.property.controller.dto.response.PropertyListItemResponse;
+import com.jachwisunbae.property.controller.dto.response.PropertyListResponse;
+import com.jachwisunbae.property.controller.dto.response.PropertyProgress;
+import com.jachwisunbae.property.controller.dto.response.PropertyRepresentativePhoto;
+import com.jachwisunbae.property.entity.Property;
+import com.jachwisunbae.property.repository.PropertyPhotoRepository;
+import com.jachwisunbae.property.repository.PropertyProgressRepository;
+import com.jachwisunbae.property.repository.PropertyRepository;
+import java.time.Clock;
+import java.time.LocalDateTime;
+import java.util.List;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+@Service
+@Transactional(readOnly = true)
+public class PropertyService {
+    private final PropertyRepository propertyRepository;
+    private final MemberRepository memberRepository;
+    private final PropertyPhotoRepository propertyPhotoRepository;
+    private final PropertyProgressRepository propertyProgressRepository;
+    private final PropertyChecklistService propertyChecklistService;
+    private final Clock clock;
+
+    public PropertyService(final PropertyRepository propertyRepository,
+                           final MemberRepository memberRepository,
+                           final PropertyPhotoRepository propertyPhotoRepository,
+                           final PropertyProgressRepository propertyProgressRepository,
+                           final PropertyChecklistService propertyChecklistService,
+                           final Clock clock) {
+        this.propertyRepository = propertyRepository;
+        this.memberRepository = memberRepository;
+        this.propertyPhotoRepository = propertyPhotoRepository;
+        this.propertyProgressRepository = propertyProgressRepository;
+        this.propertyChecklistService = propertyChecklistService;
+        this.clock = clock;
+    }
+
+    public PropertyListResponse findList(final Long memberId) {
+        List<PropertyListItemResponse> items = propertyRepository.findListByMemberId(memberId).stream()
+                .map(row -> {
+                    PropertyRepresentativePhoto photo = row.photoId() == null ? null
+                            : new PropertyRepresentativePhoto(row.photoId(),
+                            "/api/properties/" + row.propertyId() + "/photos/" + row.photoId(),
+                            row.photoContentType());
+                    PropertyChecklistOverviewResponse overview = PropertyChecklistOverviewResponse.from(
+                            row.propertyId(), propertyProgressRepository.findByPropertyIdAndStage(row.propertyId()));
+                    return PropertyListItemResponse.from(row, photo, overview.overallProgress(), overview.stages());
+                })
+                .toList();
+        return new PropertyListResponse(items.size(), items);
+    }
+
+    public PropertyDetailResponse findDetail(final Long memberId, final Long propertyId) {
+        Property property = propertyRepository.findByIdAndMemberId(propertyId, memberId)
+                .orElseThrow(() -> new BusinessException(DomainErrorCode.PROPERTY_NOT_FOUND,
+                        "매물을 찾을 수 없습니다."));
+        return PropertyDetailResponse.from(property, propertyPhotoRepository.findByPropertyId(propertyId),
+                propertyPhotoRepository.findRepresentativePhotoId(propertyId).orElse(null),
+                PropertyProgress.from(propertyProgressRepository.findByPropertyId(propertyId)));
+    }
+
+    @Transactional
+    public Property create(final Long memberId, final CreatePropertyRequest request) {
+        memberRepository.findByIdForUpdate(memberId)
+            .orElseThrow(() -> new BusinessException(DomainErrorCode.MEMBER_NOT_FOUND, "회원을 찾을 수 없습니다."));
+
+        int propertyCount = propertyRepository.countByMemberId(memberId);
+        validatePropertyCount(propertyCount);
+
+        LocalDateTime now = LocalDateTime.now(clock);
+        Property property = propertyRepository.save(Property.create(
+            memberId, request.name(), request.depositAmount(), request.monthlyRentAmount(),
+            request.discoverySource(), request.address(),
+            request.latitude(), request.longitude(),
+            request.availableMoveInDate(), request.maintenanceFeeAmount(), request.visitScheduledAt(),
+            request.roomOptions(), request.utilityOptions(), now));
+
+        // 매물 생성 트랜잭션 내에서 2단계 체크리스트 스냅샷 자동 생성
+        propertyChecklistService.applyInitialChecklists(memberId, property.getId());
+
+        return property;
+    }
+
+    private void validatePropertyCount(final int propertyCount) {
+        if (propertyCount >= 30) {
+            throw new BusinessException(DomainErrorCode.PROPERTY_LIMIT_EXCEEDED,
+                    "회원당 매물은 30개까지 등록할 수 있습니다.");
+        }
+    }
+
+    @Transactional
+    public Property update(final Long memberId, final Long propertyId, final UpdatePropertyRequest request) {
+        Property property = propertyRepository.findByIdAndMemberId(propertyId, memberId)
+                .orElseThrow(() -> new BusinessException(DomainErrorCode.PROPERTY_NOT_FOUND,
+                        "매물을 찾을 수 없습니다."));
+        property.replaceBasicInfo(request.name(), request.depositAmount(),
+                request.monthlyRentAmount(), request.discoverySource(), request.address(),
+                request.latitude(), request.longitude(),
+                request.availableMoveInDate(), request.maintenanceFeeAmount(), request.visitScheduledAt(),
+                request.roomOptions(), request.utilityOptions(), LocalDateTime.now(clock));
+        return propertyRepository.update(property);
+    }
+
+}

@@ -9,8 +9,6 @@ import { apiRequest } from './apiClient';
 
 const config: PublicConfig = {
   apiBaseUrl: 'http://localhost:8080',
-  googleClientId: 'test-client.apps.googleusercontent.com',
-  googleRedirectUri: 'http://localhost:3000/oauth/google/callback',
 };
 
 describe('API 클라이언트', () => {
@@ -162,7 +160,7 @@ describe('API 클라이언트', () => {
       releaseResponse = resolve;
     });
     server.use(
-      http.patch(`${config.apiBaseUrl}/api/visits/31/items/501`, async () => {
+      http.patch(`${config.apiBaseUrl}/api/properties/10/checklists/20/items/501/status`, async () => {
         markResponseStarted?.();
         await responseGate;
         return HttpResponse.error();
@@ -171,7 +169,7 @@ describe('API 클라이언트', () => {
 
     const request = apiRequest({
       config,
-      path: '/api/visits/31/items/501',
+      path: '/api/properties/10/checklists/20/items/501/status',
       method: 'PATCH',
       body: { status: 'GOOD', expectedVersion: 0 },
       parseData: (value) => value,

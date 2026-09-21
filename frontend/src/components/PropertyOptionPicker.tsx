@@ -1,0 +1,61 @@
+import type { ReactNode } from 'react';
+import type { PropertyOptionKey } from '../constants/propertyOptions';
+import PropertyOptionIcon from './PropertyOptionIcon';
+import SelectionControl from './ui/SelectionControl';
+import styles from './PropertyOptionPicker.module.css';
+
+type PickerOption = { key: string; label: string };
+
+type PropertyOptionPickerProps = {
+  label: string;
+  options: readonly PickerOption[];
+  selected: string[];
+  disabled?: boolean;
+  /** 아이콘 타일로 보일지, 글자 뱃지로 보일지. */
+  variant?: 'icon' | 'badge';
+  /** 선택지와 같은 필드셋 안에 먼저 보여 줄 입력 영역. */
+  children?: ReactNode;
+  onChange: (selected: string[]) => void;
+};
+
+/** 값을 글로 적는 대신 골라서 넣는다. 여러 개를 켤 수 있다. */
+const PropertyOptionPicker = ({
+  label,
+  options,
+  selected,
+  disabled,
+  variant = 'icon',
+  children,
+  onChange,
+}: PropertyOptionPickerProps) => (
+  <fieldset className={styles.picker}>
+    <legend className={styles.legend}>
+      {label}
+      <span className={styles.count}>{selected.length}개</span>
+    </legend>
+    {children !== undefined && <div className={styles.pickerContent}>{children}</div>}
+    <div className={variant === 'icon' ? styles.grid : styles.badges}>
+      {options.map((option) => {
+        const checked = selected.includes(option.key);
+        return (
+          <SelectionControl
+            key={option.key}
+            className={variant === 'icon' ? styles.option : styles.badge}
+            checked={checked}
+            disabled={disabled}
+            onSelect={() =>
+              onChange(checked ? selected.filter((item) => item !== option.key) : [...selected, option.key])
+            }
+          >
+            {variant === 'icon' && (
+              <PropertyOptionIcon option={option.key as PropertyOptionKey} className={styles.icon} />
+            )}
+            <span className={styles.optionLabel}>{option.label}</span>
+          </SelectionControl>
+        );
+      })}
+    </div>
+  </fieldset>
+);
+
+export default PropertyOptionPicker;

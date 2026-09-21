@@ -1,68 +1,78 @@
 import { Link, useOutletContext } from 'react-router-dom';
 import { clearAuthentication } from './authStore';
+import { Button } from '../components/ui/Button';
+import Icon from '../components/ui/Icon';
+import TopNavigation from '../components/ui/TopNavigation';
 import type { Member } from '../types/Member';
+import type { PublicConfig } from '../types/PublicConfig';
+import styles from './MyPage.module.css';
 
-const MyPage = () => {
+const MyPage = ({ config }: { config: PublicConfig }) => {
   const member = useOutletContext<Member>();
+  const displayInitial = member.displayName.trim().slice(0, 1) || '자';
+
   return (
-    <main className="property-page my-page">
-      <div className="page-container page-container--form">
-        <p className="section-eyebrow">내 정보</p>
-        <h1>마이페이지</h1>
-        <section className="detail-section" aria-labelledby="member-heading">
-          <h2 id="member-heading">회원 정보</h2>
-          <dl className="member-summary">
-            <div>
-              <dt>이름</dt>
-              <dd>{member.displayName}</dd>
-            </div>
-            <div>
-              <dt>이메일</dt>
-              <dd>{member.email}</dd>
-            </div>
-            <div>
-              <dt>로그인</dt>
-              <dd>Google 계정으로 로그인됨</dd>
-            </div>
-          </dl>
+    <main className={styles.page}>
+      <div className={styles.container}>
+        <TopNavigation title="마이" backTo="/properties" backLabel="홈으로 돌아가기" />
+        <section className={styles.profileCard} aria-labelledby="member-heading">
+          <span className={styles.avatar} aria-hidden="true">
+            {displayInitial}
+          </span>
+          <div className={styles.memberInfo}>
+            <h2 id="member-heading">{member.displayName}</h2>
+            <p>
+              {member.passwordProtected ? '비밀번호로 기록을 보호하고 있어요.' : '비밀번호 없는 공유 닉네임이에요.'}
+            </p>
+            <small>브라우저를 닫으면 다시 닉네임으로 시작합니다.</small>
+          </div>
         </section>
-        <nav className="my-page__links" aria-label="내 기록 바로가기">
+        <nav className={styles.menu} aria-label="내 기록">
           <Link to="/properties">
-            <strong>내 매물</strong>
-            <span>매물과 방문 기록을 확인해요.</span>
+            <span className={styles.menuIcon}>
+              <Icon name="home" size={15} />
+            </span>
+            <strong>내 매물 관리</strong>
+            <Icon name="arrow-right" size={15} />
           </Link>
           <Link to="/checklists">
-            <strong>내 체크리스트</strong>
-            <span>단계별 확인 질문을 관리해요.</span>
+            <span className={styles.menuIcon}>
+              <Icon name="checklist" size={15} />
+            </span>
+            <strong>내 체크리스트 관리</strong>
+            <Icon name="arrow-right" size={15} />
+          </Link>
+          <Link to="/map">
+            <span className={styles.menuIcon}>
+              <Icon name="map" size={15} />
+            </span>
+            <strong>지도와 주변 시설</strong>
+            <Icon name="arrow-right" size={15} />
+          </Link>
+          <Link to="/compare">
+            <span className={styles.menuIcon}>
+              <Icon name="external-link" size={15} />
+            </span>
+            <strong>매물 비교 PDF</strong>
+            <Icon name="arrow-right" size={15} />
           </Link>
         </nav>
-        <section className="detail-section" aria-labelledby="upcoming-heading">
-          <h2 id="upcoming-heading">준비 중인 기능</h2>
-          <p className="section-note">1차 MVP에서는 안내 화면만 제공하며 실제 기능은 다음 범위에서 만나요.</p>
-          <nav className="my-page__links my-page__links--compact" aria-label="준비 중인 기능">
-            <Link to="/compare">
-              <strong>비교표</strong>
-              <span>여러 매물을 한눈에 비교해요.</span>
-            </Link>
-            <Link to="/export">
-              <strong>내보내기</strong>
-              <span>저장한 기록을 파일로 내려받아요.</span>
-            </Link>
-            <Link to="/tips">
-              <strong>선배 팁</strong>
-              <span>상황별 자취 경험을 확인해요.</span>
-            </Link>
-          </nav>
-        </section>
-        <section className="detail-section" aria-labelledby="session-heading">
-          <h2 id="session-heading">현재 로그인</h2>
-          <p className="section-note">
-            보안을 위해 인증 정보는 이 탭의 메모리에만 있으며 새로고침하면 다시 로그인해야 합니다.
-          </p>
-          <button className="danger-outline-button" type="button" onClick={() => clearAuthentication('logout')}>
+        <Link className={styles.notice} to="/tips">
+          <span className={styles.noticeIcon}>
+            <Icon name="info" size={16} />
+          </span>
+          <span>
+            <strong>선배팁 · 계약 전 꼭 확인할 7가지</strong>
+            <small>먼저 자취한 선배들이 남긴 정보를 확인해요.</small>
+          </span>
+          <Icon name="arrow-right" size={15} />
+        </Link>
+        <footer className={styles.footer}>
+          <span>자취선배 MVP2 · {config.mapProviderMode === 'demo' ? 'DEMO MAP' : 'LIVE MAP'}</span>
+          <Button variant="text" className={styles.logoutButton} onClick={() => clearAuthentication('logout')}>
             로그아웃
-          </button>
-        </section>
+          </Button>
+        </footer>
       </div>
     </main>
   );

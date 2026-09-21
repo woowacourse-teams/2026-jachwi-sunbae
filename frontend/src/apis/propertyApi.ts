@@ -1,25 +1,31 @@
 import type { PublicConfig } from '../types/PublicConfig';
 import type {
+  CreatedProperty,
   PropertyBasicInfo,
   PropertyDetail,
-  PropertyMemo,
+  PropertyChecklistOverview,
+  PropertyChecklistDetail,
+  PropertyChecklistItemStatus,
+  PropertyMemoDocument,
   PropertyPage,
-  PropertyPreVisitMemo,
 } from '../types/Property';
-import { apiRequest } from './apiClient';
+import { apiBlobRequest, apiRequest } from './apiClient';
 import type {
   PropertyInputDto,
-  SavePropertyMemoRequestDto,
-  SavePropertyPreVisitMemoRequestDto,
+  SavePropertyMemoDocumentRequestDto,
   UpdatePropertyRequestDto,
 } from './dtos/PropertyDto';
 import {
+  parseCreatedProperty,
   parseNoContent,
   parsePropertyBasicInfo,
   parsePropertyDetail,
-  parsePropertyMemoResponse,
+  parsePropertyChecklistOverview,
+  parsePropertyChecklistDetail,
+  parsePropertyMemoDocument,
   parsePropertyPage,
 } from './propertyParsers';
+import { readInteger, readRecord, readString } from './responseParsers';
 
 export type PropertySearch = {
   query: string;
@@ -29,21 +35,56 @@ export type PropertySearch = {
 
 export const fetchProperties = (
   config: PublicConfig,
-  { query, page, size = 20 }: PropertySearch,
+  { query }: PropertySearch,
   signal?: AbortSignal,
 ): Promise<PropertyPage> => {
-  const search = new URLSearchParams({ page: String(page), size: String(size) });
   const trimmedQuery = query.trim();
-
-  if (trimmedQuery.length > 0) {
-    search.set('query', trimmedQuery);
-  }
-
-  return apiRequest({ config, path: `/api/properties?${search.toString()}`, signal, parseData: parsePropertyPage });
+  return apiRequest({ config, path: '/api/properties', signal, parseData: parsePropertyPage }).then((result) => {
+    if (trimmedQuery.length === 0) return result;
+    const content = result.content.filter((property) => property.name.includes(trimmedQuery));
+    return {
+      ...result,
+      content,
+      size: Math.max(1, content.length),
+      totalElements: content.length,
+      totalPages: content.length === 0 ? 0 : 1,
+    };
+  });
 };
 
-export const createProperty = (config: PublicConfig, request: PropertyInputDto): Promise<PropertyBasicInfo> =>
-  apiRequest({ config, path: '/api/properties', method: 'POST', body: request, parseData: parsePropertyBasicInfo });
+export const fetchPropertyCsv = (config: PublicConfig, signal?: AbortSignal): Promise<Blob> =>
+  apiBlobRequest({ config, path: '/api/properties/export.csv', acceptedContentTypes: ['text/csv'], signal });
+
+export const fetchPropertyComparisonPdf = (
+  config: PublicConfig,
+  propertyIds: number[],
+  signal?: AbortSignal,
+): Promise<Blob> =>
+  apiBlobRequest({
+    config,
+    path: '/api/properties/export.pdf',
+    method: 'POST',
+    body: { propertyIds },
+    acceptedContentTypes: ['application/pdf'],
+    signal,
+  });
+
+export const recordPropertyComparisonView = (config: PublicConfig): Promise<undefined> =>
+  apiRequest({
+    config,
+    path: '/api/properties/comparison-views',
+    method: 'POST',
+    parseData: parseNoContent,
+  });
+
+export const createProperty = (config: PublicConfig, request: PropertyInputDto): Promise<CreatedProperty> =>
+  apiRequest({
+    config,
+    path: '/api/properties',
+    method: 'POST',
+    body: request,
+    parseData: parseCreatedProperty,
+  });
 
 export const fetchPropertyDetail = (
   config: PublicConfig,
@@ -60,9 +101,110 @@ export const updateProperty = (
   apiRequest({
     config,
     path: `/api/properties/${propertyId}`,
-    method: 'PATCH',
+    method: 'PUT',
     body: request,
     parseData: parsePropertyBasicInfo,
+  });
+
+export const fetchPropertyMemo = (
+  config: PublicConfig,
+  propertyId: number,
+  signal?: AbortSignal,
+): Promise<PropertyMemoDocument> =>
+  apiRequest({
+    config,
+    path: `/api/properties/${propertyId}/memo`,
+    signal,
+    parseData: parsePropertyMemoDocument,
+  });
+
+export const savePropertyMemoDocument = (
+  config: PublicConfig,
+  propertyId: number,
+  request: SavePropertyMemoDocumentRequestDto,
+): Promise<PropertyMemoDocument> =>
+  apiRequest({
+    config,
+    path: `/api/properties/${propertyId}/memo`,
+    method: 'PUT',
+    body: request,
+    parseData: parsePropertyMemoDocument,
+  });
+
+export const fetchPropertyChecklistOverview = (
+  config: PublicConfig,
+  propertyId: number,
+  signal?: AbortSignal,
+): Promise<PropertyChecklistOverview> =>
+  apiRequest({
+    config,
+    path: `/api/properties/${propertyId}/checklists`,
+    signal,
+    parseData: parsePropertyChecklistOverview,
+  });
+
+export const fetchPropertyChecklistDetail = (
+  config: PublicConfig,
+  propertyId: number,
+  propertyChecklistId: number,
+  signal?: AbortSignal,
+): Promise<PropertyChecklistDetail> =>
+  apiRequest({
+    config,
+    path: `/api/properties/${propertyId}/checklists/${propertyChecklistId}`,
+    signal,
+    parseData: (value) => {
+      const result = parsePropertyChecklistDetail(value);
+      if (result.propertyId !== propertyId || result.propertyChecklistId !== propertyChecklistId) {
+        throw new Error('매물 체크리스트 응답이 요청과 다릅니다.');
+      }
+      return result;
+    },
+  });
+
+export const updatePropertyChecklistItemStatus = (
+  config: PublicConfig,
+  propertyId: number,
+  propertyChecklistId: number,
+  itemId: number,
+  status: PropertyChecklistItemStatus,
+): Promise<{ itemId: number; status: PropertyChecklistItemStatus }> =>
+  apiRequest({
+    config,
+    path: `/api/properties/${propertyId}/checklists/${propertyChecklistId}/items/${itemId}/status`,
+    method: 'PATCH',
+    body: { status },
+    parseData: (value) => {
+      const record = readRecord(value);
+      const item = readRecord(record.item);
+      const resultStatus = readString(item, 'status');
+      if (resultStatus !== 'UNCONFIRMED' && resultStatus !== 'GOOD' && resultStatus !== 'CAUTION') {
+        throw new Error('체크리스트 항목 상태 응답이 올바르지 않습니다.');
+      }
+      return { itemId: readInteger(item, 'id', 1), status: resultStatus };
+    },
+  });
+
+export const updatePropertyChecklistItemMemo = (
+  config: PublicConfig,
+  propertyId: number,
+  propertyChecklistId: number,
+  itemId: number,
+  memo: string,
+): Promise<{ itemId: number; memo: string }> =>
+  apiRequest({
+    config,
+    path: `/api/properties/${propertyId}/checklists/${propertyChecklistId}/items/${itemId}/memo`,
+    method: 'PATCH',
+    body: { memo },
+    parseData: (value) => {
+      const record = readRecord(value);
+      const item = readRecord(record.item);
+      return {
+        itemId: readInteger(item, 'id', 1),
+        memo: readString(item, 'memo', { allowEmpty: true, maximumCodePoints: 500 }),
+      };
+    },
   });
 
 export const removeProperty = (config: PublicConfig, propertyId: number): Promise<undefined> =>
@@ -71,31 +213,4 @@ export const removeProperty = (config: PublicConfig, propertyId: number): Promis
     path: `/api/properties/${propertyId}`,
     method: 'DELETE',
     parseData: parseNoContent,
-  });
-
-export const savePropertyPreVisitMemo = (
-  config: PublicConfig,
-  propertyId: number,
-  request: SavePropertyPreVisitMemoRequestDto,
-): Promise<PropertyPreVisitMemo> =>
-  apiRequest({
-    config,
-    path: `/api/properties/${propertyId}/memo`,
-    method: 'PUT',
-    body: request,
-    parseData: parsePropertyMemoResponse,
-  });
-
-/** @deprecated v1.0 화면 호환 전용이다. 신규 코드는 savePropertyPreVisitMemo를 사용한다. */
-export const savePropertyMemo = (
-  config: PublicConfig,
-  propertyId: number,
-  request: SavePropertyMemoRequestDto,
-): Promise<PropertyMemo> =>
-  apiRequest({
-    config,
-    path: `/api/properties/${propertyId}/memo`,
-    method: 'PUT',
-    body: request,
-    parseData: parsePropertyMemoResponse,
   });

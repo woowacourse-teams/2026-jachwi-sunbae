@@ -1,7 +1,8 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
+import { MemoryRouter } from 'react-router-dom';
 import App from '../App';
-import { setAuthentication } from '../app/authStore';
+import { clearAuthentication, setAuthentication } from '../app/authStore';
 import {
   checkItemPageFixture,
   checklistPageFixture,
@@ -17,18 +18,20 @@ import {
   errorEnvelope,
   memberFixture,
   photoFixture,
-  propertyDetailFixture,
+  propertyDetailResponseFixture,
   propertyPageFixture,
+  propertyPhotoResponseFixture,
   propertySummaryFixture,
   secondPropertySummaryFixture,
   successEnvelope,
 } from '../test/propertyFixtures';
-import { visitDetailFixture, visitPageFixture } from '../test/visitFixtures';
 import type { ChecklistDetail } from '../types/Checklist';
+import ComponentCatalog from './ComponentCatalog';
 
 const scenario = new URLSearchParams(window.location.search).get('scenario') ?? 'list-two';
 
 const routeByScenario: Record<string, string> = {
+  components: '/',
   login: '/login',
   unauthorized: '/properties',
   'not-found': '/does-not-exist',
@@ -45,20 +48,13 @@ const routeByScenario: Record<string, string> = {
   'photo-read-failure': '/properties/10/photos',
   'photo-delete': '/properties/10/photos',
   'checklist-home': '/checklists',
-  'checklist-list': '/checklists/ONLINE_PHONE',
-  'checklist-create': '/checklists/new?stage=ONLINE_PHONE',
+  'checklist-list': '/checklists/ON_SITE',
+  'checklist-create': '/checklists/new?stage=ON_SITE',
   'checklist-detail': '/checklists/7',
   'checklist-detail-inactive': '/checklists/7',
   'checklist-detail-many': '/checklists/7',
   'checklist-save-failure': '/checklists/7',
-  'active-checklist': '/properties/10/active-checklists/ONLINE_PHONE',
-  'visit-list': '/properties/10/visits',
-  'visit-detail': '/visits/31',
-  'visit-completed': '/visits/31',
-  'visit-conflict': '/visits/31',
-  'visit-memo-conflict': '/visits/31',
-  'visit-save-failure': '/visits/31',
-  'visit-completion-failure': '/visits/31',
+  'active-checklist': '/properties/10/active-checklists/ON_SITE',
   my: '/me',
   'todo-compare': '/compare',
   'todo-export': '/export',
@@ -66,113 +62,191 @@ const routeByScenario: Record<string, string> = {
 };
 
 window.history.replaceState(null, '', routeByScenario[scenario] ?? '/properties');
-if (scenario !== 'login') {
+if (scenario === 'login') {
+  clearAuthentication(null);
+} else if (scenario !== 'components') {
   setAuthentication({ accessToken: 'browser-test-memory-token', tokenType: 'Bearer', expiresIn: 60 * 60 });
 }
 
 const jsonResponse = (data: unknown, status = 200) =>
   new Response(JSON.stringify(data), { status, headers: { 'Content-Type': 'application/json' } });
 
-const pngBytes = Uint8Array.from(
-  atob('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9Wl2nLkAAAAASUVORK5CYII='),
-  (character) => character.charCodeAt(0),
-);
+const createPlaceholderPhoto = (photoId: number) => {
+  const palettes = [
+    ['#c8d4b4', '#73875c'],
+    ['#e4d5b8', '#9b805c'],
+    ['#c9d6d8', '#6d8588'],
+    ['#d8c7c2', '#8b6d64'],
+    ['#d5d1bd', '#79735c'],
+  ];
+  const [start, end] = palettes[photoId % palettes.length];
+  const canvas = document.createElement('canvas');
+  canvas.width = 480;
+  canvas.height = 480;
+  const context = canvas.getContext('2d');
+
+  if (context === null) return Promise.resolve(new Blob([], { type: 'image/png' }));
+
+  const gradient = context.createLinearGradient(0, 0, 480, 480);
+  gradient.addColorStop(0, start);
+  gradient.addColorStop(1, end);
+  context.fillStyle = gradient;
+  context.fillRect(0, 0, 480, 480);
+  context.strokeStyle = 'rgba(255,255,255,.72)';
+  context.lineWidth = 18;
+  context.lineCap = 'round';
+  context.lineJoin = 'round';
+  context.beginPath();
+  context.moveTo(70, 345);
+  context.lineTo(180, 225);
+  context.lineTo(252, 295);
+  context.lineTo(300, 250);
+  context.lineTo(410, 345);
+  context.stroke();
+  context.fillStyle = 'rgba(255,255,255,.72)';
+  context.beginPath();
+  context.arc(165, 150, 38, 0, Math.PI * 2);
+  context.fill();
+  context.fillStyle = 'rgba(255,255,255,.9)';
+  context.font = '28px sans-serif';
+  context.textAlign = 'center';
+  context.fillText(`PHOTO ${photoId - 80}`, 240, 420);
+
+  return new Promise<Blob>((resolve) => {
+    canvas.toBlob((blob) => resolve(blob ?? new Blob([], { type: 'image/png' })), 'image/png');
+  });
+};
 
 const photos = Array.from({ length: 8 }, (_, index) => ({
   ...photoFixture,
   photoId: 81 + index,
-  contentUrl: `/api/properties/10/photos/${81 + index}/content`,
+  contentUrl: `/api/properties/10/photos/${81 + index}`,
   createdAt: `2026-08-10T07:${String(35 + index).padStart(2, '0')}:00Z`,
 }));
+const photoResponses = photos.map((photo) => propertyPhotoResponseFixture(photo));
+// 매물 상세의 photos 는 사진 목록과 달리 propertyId 를 갖지 않는다.
+const detailPhotoResponses = photoResponses.map(({ propertyId: _propertyId, ...photo }) => photo);
 
-let conflictReturned = false;
-let memoConflictReturned = false;
-let statusSaveAttempts = 0;
-let memoSaveAttempts = 0;
 let checklistSaveAttempts = 0;
-const browserRequests: string[] = [];
-Object.assign(window, { __browserTestRequests: browserRequests });
 let createdChecklist = {
   ...mixedChecklistDetailFixture,
   checklistId: 9,
   name: '브라우저 생성 체크리스트',
 } as ChecklistDetail;
 
-const conflictVisitFixture = {
-  ...visitDetailFixture,
-  stages: visitDetailFixture.stages.map((stage) =>
-    stage.stage !== 'ONLINE_PHONE'
-      ? stage
-      : {
-          ...stage,
-          items: stage.items.map((item) =>
-            item.visitItemId === 501
-              ? {
-                  ...item,
-                  status: 'CAUTION',
-                  statusVersion: 1,
-                  statusSavedAt: '2026-08-11T04:02:00Z',
-                  version: 1,
-                  savedAt: '2026-08-11T04:02:00Z',
-                }
-              : item,
-          ),
-          summary: { totalCount: 1, checkedCount: 1, goodCount: 0, cautionCount: 1, unconfirmedCount: 0 },
-        },
-  ),
-  summary: { totalCount: 3, checkedCount: 2, goodCount: 1, cautionCount: 1, unconfirmedCount: 1 },
+const systemCheckItems = presetFixture.items.map(({ id, stage, itemType, question }) => ({
+  id,
+  stage,
+  itemType,
+  question,
+}));
+
+type BrowserChecklistItemInput = { systemCheckItemId?: unknown; question?: unknown };
+type BrowserChecklistResponseItem = {
+  id: number;
+  origin: 'PROVIDED' | 'CUSTOM';
+  systemCheckItemId: number | null;
+  itemType: 'CORE' | 'OPTIONAL';
+  question: string;
+  displayOrder: number;
+  active: boolean;
 };
 
-const completedVisitFixture = {
-  ...visitDetailFixture,
-  status: 'COMPLETED',
-  completedAt: '2026-08-11T04:05:00Z',
-  updatedAt: '2026-08-11T04:05:00Z',
+const toChecklistResponseItems = (inputs: BrowserChecklistItemInput[]): BrowserChecklistResponseItem[] => {
+  const result: BrowserChecklistResponseItem[] = [];
+  inputs.forEach((input, index) => {
+    if (typeof input.systemCheckItemId === 'number') {
+      const item = systemCheckItems.find((candidate) => candidate.id === input.systemCheckItemId);
+      if (item !== undefined) {
+        result.push({
+          id: 700 + index,
+          origin: 'PROVIDED',
+          systemCheckItemId: item.id,
+          itemType: item.itemType,
+          question: item.question,
+          displayOrder: index + 1,
+          active: true,
+        });
+      }
+      return;
+    }
+    if (input.systemCheckItemId === null && typeof input.question === 'string' && input.question.trim().length > 0) {
+      result.push({
+        id: 700 + index,
+        origin: 'CUSTOM',
+        systemCheckItemId: null,
+        itemType: 'OPTIONAL',
+        question: input.question.trim(),
+        displayOrder: index + 1,
+        active: true,
+      });
+    }
+  });
+  return result;
 };
 
-const browserVisitFixture = {
-  ...visitDetailFixture,
-  stages: visitDetailFixture.stages.map((stage) => ({
-    ...stage,
-    items: stage.items.map((item) =>
-      item.visitItemId === 501
-        ? {
-            ...item,
-            question: '관리비 포함 항목과 계절별 추가 비용, 납부 방식, 장기 부재 시 정산 기준까지 모두 확인했나요?',
-          }
-        : item.visitItemId === 502
-          ? {
-              ...item,
-              inlineMemo: '🏠'.repeat(200),
-              memoVersion: 2,
-              memoSavedAt: '2026-08-11T04:02:30Z',
-            }
-          : { ...item, inlineMemo: '  공백 포함 메모  ', memoVersion: 1, memoSavedAt: '2026-08-11T04:02:30Z' },
-    ),
-  })),
+type PropertyChecklistWire = {
+  id: number;
+  propertyId: number;
+  sourceChecklistId: number;
+  checklistName: string;
+  stage: 'ON_SITE' | 'PRE_CONTRACT';
+  items: Array<{
+    id: number;
+    systemCheckItemId: number;
+    question: string;
+    displayOrder: number;
+    status: 'UNCONFIRMED' | 'GOOD' | 'CAUTION';
+    memo: string;
+  }>;
 };
 
-const memoConflictVisitFixture = {
-  ...browserVisitFixture,
-  stages: browserVisitFixture.stages.map((stage) => ({
-    ...stage,
-    items: stage.items.map((item) =>
-      item.visitItemId === 501
-        ? {
-            ...item,
-            inlineMemo: '다른 기기에서 먼저 저장한 메모',
-            memoVersion: 1,
-            memoSavedAt: '2026-08-11T04:03:00Z',
-          }
-        : item,
-    ),
-  })),
+let propertyChecklist: PropertyChecklistWire = {
+  id: 71,
+  propertyId: 10,
+  sourceChecklistId: 7,
+  checklistName: checklistSummaryFixture.name,
+  stage: 'ON_SITE' as const,
+  items: [
+    {
+      id: 711,
+      systemCheckItemId: 101,
+      question: onlineItemFixture.question,
+      displayOrder: 1,
+      status: 'GOOD' as const,
+      memo: '수도 요금 포함',
+    },
+    {
+      id: 712,
+      systemCheckItemId: 102,
+      question: presetFixture.items[1]?.question ?? '입주 가능한 날짜는 언제인가요?',
+      displayOrder: 2,
+      status: 'CAUTION' as const,
+      memo: '날짜 재확인 필요',
+    },
+  ],
 };
 
 const browserTestFetch: typeof fetch = async (input, init) => {
   const request = new Request(input, init);
   const url = new URL(request.url);
   const path = url.pathname;
+
+  if (path === '/api/auth/nickname' && request.method === 'POST') {
+    const body = (await request.json()) as { nickname?: string; password?: string };
+    return jsonResponse(
+      successEnvelope({
+        accessToken: 'browser-test-nickname-token',
+        tokenType: 'Bearer',
+        expiresIn: 3_600,
+        member: {
+          memberId: 1,
+          name: body.nickname ?? '브라우저테스터',
+          passwordProtected: typeof body.password === 'string',
+        },
+      }),
+    );
+  }
 
   if (path === '/api/members/me' && request.method === 'GET') {
     if (scenario === 'unauthorized') return jsonResponse(errorEnvelope('ACCESS_TOKEN_EXPIRED'), 401);
@@ -187,190 +261,71 @@ const browserTestFetch: typeof fetch = async (input, init) => {
   if (path === '/api/properties' && request.method === 'POST') {
     return jsonResponse(
       successEnvelope({
-        propertyId: 10,
+        id: 10,
         name: '브라우저 등록 매물',
         depositAmount: 10_000_000,
         monthlyRentAmount: 550_000,
-        discoverySource: { type: 'TEXT', value: '동네 중개사 추천' },
-        createdAt: '2026-08-11T04:00:00Z',
+        discoverySource: '동네 중개사 추천',
+        address: '서울 관악구 신림로 12',
+        latitude: 37.484,
+        longitude: 126.929,
+        availableMoveInDate: null,
+        maintenanceFeeAmount: null,
+        visitScheduledAt: null,
+        roomOptions: [],
+        utilityOptions: [],
+        createdAt: '2026-08-10T07:30:00Z',
+        updatedAt: '2026-08-10T07:30:00Z',
+        photos: [],
+        overallProgress: {
+          totalCount: 0,
+          completedCount: 0,
+          goodCount: 0,
+          cautionCount: 0,
+          unconfirmedCount: 0,
+          progressRate: 0,
+        },
       }),
       201,
     );
   }
 
   if (path === '/api/properties/10' && request.method === 'GET') {
-    const memo =
-      scenario === 'memo-empty'
-        ? {
-            viewingSchedule: '',
-            moveInAvailability: '',
-            provisionalDeposit: '',
-            roomOptions: '',
-            maintenanceAndUtilities: '',
-            commuteTime: '',
-            governmentSupport: '',
-            additionalMemo: '',
-            content: '',
-            savedAt: null,
-          }
-        : propertyDetailFixture.memo;
+    const detail = propertyDetailResponseFixture();
     return jsonResponse(
       successEnvelope({
-        ...propertyDetailFixture,
-        memo,
+        ...detail,
         name: '긴 이름도 줄바꿈되는 신림역 근처 채광 좋은 원룸 매물',
         depositAmount: Number.MAX_SAFE_INTEGER,
-        discoverySource: {
-          type: 'TEXT',
-          value:
-            '동네를 걷다가 발견한 중개사에서 소개받은 매우 긴 발견 경로 설명입니다. 화면 밖으로 넘치지 않아야 합니다.',
-        },
-        photoPreview:
-          scenario.startsWith('photos-') || scenario.startsWith('photo-')
-            ? { totalCount: photos.length, photos: [photos[0]] }
-            : propertyDetailFixture.photoPreview,
+        discoverySource:
+          '동네를 걷다가 발견한 중개사에서 소개받은 매우 긴 발견 경로 설명입니다. 화면 밖으로 넘치지 않아야 합니다.',
+        photos: scenario === 'photos-empty' ? [] : detailPhotoResponses.slice(0, 5),
+      }),
+    );
+  }
+
+  if (path === '/api/properties/10/memo' && request.method === 'GET') {
+    return jsonResponse(
+      successEnvelope({
+        propertyId: 10,
+        freeMemo: scenario === 'memo-empty' ? '' : '채광 다시 확인',
       }),
     );
   }
 
   if (path === '/api/properties/10/memo' && request.method === 'PUT') {
     if (scenario === 'memo-failure') return jsonResponse(errorEnvelope('INTERNAL_SERVER_ERROR'), 500);
-    const body = (await request.json()) as Record<string, unknown>;
-    const readMemoField = (key: string) => (typeof body[key] === 'string' ? body[key] : '');
-    const additionalMemo = readMemoField('additionalMemo');
-    return jsonResponse(
-      successEnvelope({
-        viewingSchedule: readMemoField('viewingSchedule'),
-        moveInAvailability: readMemoField('moveInAvailability'),
-        provisionalDeposit: readMemoField('provisionalDeposit'),
-        roomOptions: readMemoField('roomOptions'),
-        maintenanceAndUtilities: readMemoField('maintenanceAndUtilities'),
-        commuteTime: readMemoField('commuteTime'),
-        governmentSupport: readMemoField('governmentSupport'),
-        additionalMemo,
-        content: additionalMemo,
-        savedAt: '2026-08-11T04:20:00Z',
-      }),
-    );
-  }
-
-  if (path === '/api/properties/10/visits' && request.method === 'GET') {
-    return jsonResponse(
-      successEnvelope(
-        visitPageFixture([
-          {
-            visitId: 31,
-            status: scenario === 'visit-completed' ? 'COMPLETED' : 'IN_PROGRESS',
-            startedAt: visitDetailFixture.startedAt,
-            completedAt: scenario === 'visit-completed' ? '2026-08-11T04:05:00Z' : null,
-            summary: visitDetailFixture.summary,
-          },
-          { ...propertyDetailFixture.recentVisit, visitId: 29 },
-        ]),
-      ),
-    );
-  }
-
-  if (path === '/api/properties/10/visits' && request.method === 'POST') {
-    return jsonResponse(successEnvelope(visitDetailFixture), 201);
-  }
-
-  if (path === '/api/visits/31' && request.method === 'GET') {
-    if (scenario === 'visit-conflict' && conflictReturned) return jsonResponse(successEnvelope(conflictVisitFixture));
-    if (scenario === 'visit-memo-conflict' && memoConflictReturned) {
-      return jsonResponse(successEnvelope(memoConflictVisitFixture));
-    }
-    return jsonResponse(successEnvelope(scenario === 'visit-completed' ? completedVisitFixture : browserVisitFixture));
-  }
-
-  if (/^\/api\/visits\/31\/items\/\d+$/.test(path) && request.method === 'PATCH') {
-    statusSaveAttempts += 1;
-    browserRequests.push(`status:${statusSaveAttempts}`);
-    if (scenario === 'visit-save-failure' && statusSaveAttempts === 1) {
-      return jsonResponse(errorEnvelope('INTERNAL_SERVER_ERROR'), 500);
-    }
-    if (scenario === 'visit-conflict' && !conflictReturned) {
-      conflictReturned = true;
-      return jsonResponse(errorEnvelope('VISIT_ITEM_STATUS_VERSION_CONFLICT'), 409);
-    }
-
-    const visitItemId = Number(path.split('/').at(-1));
-    const body: unknown = await request.json();
-    const status =
-      typeof body === 'object' && body !== null && 'status' in body && typeof body.status === 'string'
-        ? body.status
-        : 'UNCONFIRMED';
-    const version =
-      typeof body === 'object' &&
-      body !== null &&
-      'expectedStatusVersion' in body &&
-      typeof body.expectedStatusVersion === 'number'
-        ? body.expectedStatusVersion + 1
-        : 1;
-    return jsonResponse(
-      successEnvelope({
-        item: {
-          visitItemId,
-          status,
-          statusVersion: version,
-          statusSavedAt: '2026-08-11T04:08:00Z',
-          version,
-          savedAt: '2026-08-11T04:08:00Z',
-        },
-        stageSummary: {
-          totalCount: visitItemId === 501 ? 1 : 2,
-          checkedCount: 1,
-          goodCount: 1,
-          cautionCount: 0,
-          unconfirmedCount: visitItemId === 501 ? 0 : 1,
-        },
-        visitSummary: { totalCount: 3, checkedCount: 2, goodCount: 2, cautionCount: 0, unconfirmedCount: 1 },
-      }),
-    );
-  }
-
-  if (/^\/api\/visits\/31\/items\/\d+\/memo$/.test(path) && request.method === 'PATCH') {
-    memoSaveAttempts += 1;
-    browserRequests.push(`memo:${memoSaveAttempts}`);
-    if (scenario === 'visit-completion-failure') {
-      return jsonResponse(errorEnvelope('INTERNAL_SERVER_ERROR'), 500);
-    }
-    if (scenario === 'visit-save-failure' && memoSaveAttempts === 1) {
-      return jsonResponse(errorEnvelope('INTERNAL_SERVER_ERROR'), 500);
-    }
-    if (scenario === 'visit-memo-conflict' && !memoConflictReturned) {
-      memoConflictReturned = true;
-      return jsonResponse(errorEnvelope('VISIT_ITEM_MEMO_VERSION_CONFLICT'), 409);
-    }
-    const visitItemId = Number(path.split('/').at(-2));
-    const body = (await request.json()) as { memo?: unknown; expectedMemoVersion?: unknown };
-    const memo = typeof body.memo === 'string' ? body.memo : '';
-    const version = typeof body.expectedMemoVersion === 'number' ? body.expectedMemoVersion + 1 : 1;
-    return jsonResponse(
-      successEnvelope({
-        visitItemId,
-        memo,
-        memoVersion: version,
-        memoSavedAt: '2026-08-11T04:08:30Z',
-      }),
-    );
-  }
-
-  if (path === '/api/visits/31' && request.method === 'PATCH') {
-    browserRequests.push('completion');
-    return jsonResponse(
-      successEnvelope({
-        visitId: 31,
-        status: 'COMPLETED',
-        startedAt: visitDetailFixture.startedAt,
-        completedAt: '2026-08-11T04:05:00Z',
-        summary: visitDetailFixture.summary,
-      }),
-    );
+    const body = (await request.json()) as { freeMemo: string };
+    return jsonResponse(successEnvelope({ propertyId: 10, freeMemo: body.freeMemo }));
   }
 
   if (path === '/api/check-items' && request.method === 'GET') {
-    return jsonResponse(successEnvelope(checkItemPageFixture(presetFixture.items)));
+    const stage = url.searchParams.get('stage');
+    const query = url.searchParams.get('query')?.trim() ?? '';
+    const items = systemCheckItems.filter(
+      (item) => item.stage === stage && (query.length === 0 || item.question.includes(query)),
+    );
+    return jsonResponse(successEnvelope(checkItemPageFixture(items)));
   }
 
   if (path === '/api/checklist-presets' && request.method === 'GET') {
@@ -387,54 +342,76 @@ const browserTestFetch: typeof fetch = async (input, init) => {
     const body = (await request.json()) as {
       name?: unknown;
       stage?: unknown;
-      items?: { origin?: unknown; sourceCheckItemId?: unknown; question?: unknown }[];
+      items?: unknown;
     };
-    const items = (body.items ?? []).map((item, index) => {
-      if (item.origin === 'PROVIDED') {
-        const sourceCheckItemId = typeof item.sourceCheckItemId === 'number' ? item.sourceCheckItemId : 101;
-        return {
-          ...providedChecklistItemFixture,
-          origin: 'PROVIDED' as const,
-          checklistItemId: 901 + index,
-          sourceCheckItemId,
-          checkItemId: sourceCheckItemId,
-          question:
-            sourceCheckItemId === onlineItemFixture.checkItemId
-              ? onlineItemFixture.question
-              : presetFixture.items[1]?.question,
-          guide:
-            sourceCheckItemId === onlineItemFixture.checkItemId
-              ? onlineItemFixture.guide
-              : presetFixture.items[1]?.guide,
-          order: index + 1,
-        };
-      }
-      return {
-        ...customChecklistItemFixture,
-        origin: 'CUSTOM' as const,
-        checklistItemId: 901 + index,
-        question: typeof item.question === 'string' ? item.question : '',
-        order: index + 1,
-      };
-    });
+    const inputs = Array.isArray(body.items) ? (body.items as BrowserChecklistItemInput[]) : [];
+    const responseItems = toChecklistResponseItems(inputs);
+    const response = {
+      id: 9,
+      name: typeof body.name === 'string' ? body.name : '브라우저 생성 체크리스트',
+      stage: 'ON_SITE' as const,
+      itemCount: responseItems.length,
+      items: responseItems,
+    };
     createdChecklist = {
       ...mixedChecklistDetailFixture,
-      checklistId: 9,
-      name: typeof body.name === 'string' ? body.name : '브라우저 생성 체크리스트',
-      stage: body.stage === 'ONLINE_PHONE' ? body.stage : 'ONLINE_PHONE',
-      items,
-      itemCount: items.length,
+      checklistId: response.id,
+      name: response.name,
+      stage: response.stage,
+      itemCount: response.itemCount,
+      items: responseItems.map((item) =>
+        item.origin === 'PROVIDED' && item.systemCheckItemId !== null
+          ? {
+              checklistItemId: item.id,
+              origin: 'PROVIDED' as const,
+              sourceCheckItemId: item.systemCheckItemId,
+              checkItemId: item.systemCheckItemId,
+              itemType: item.itemType,
+              question: item.question,
+              guide: null,
+              order: item.displayOrder,
+              active: item.active,
+            }
+          : {
+              checklistItemId: item.id,
+              origin: 'CUSTOM' as const,
+              sourceCheckItemId: null,
+              checkItemId: null,
+              itemType: item.itemType,
+              question: item.question,
+              guide: null,
+              order: item.displayOrder,
+              active: item.active,
+            },
+      ),
     };
-    return jsonResponse(successEnvelope(createdChecklist), 201);
+    return jsonResponse(successEnvelope(response), 201);
   }
 
   if (path === '/api/checklists/9' && request.method === 'GET') {
-    return jsonResponse(successEnvelope(createdChecklist));
+    return jsonResponse(
+      successEnvelope({
+        id: createdChecklist.checklistId,
+        name: createdChecklist.name,
+        stage: createdChecklist.stage,
+        itemCount: createdChecklist.itemCount,
+        items: createdChecklist.items.map((item) => ({
+          id: item.checklistItemId,
+          origin: item.origin,
+          systemCheckItemId: item.sourceCheckItemId,
+          itemType: item.itemType,
+          question: item.question,
+          displayOrder: item.order,
+          active: item.active,
+        })),
+      }),
+    );
   }
 
   if (path === '/api/checklists/7' && request.method === 'GET') {
     const inactiveItem = {
       ...providedChecklistItemFixture,
+      id: 799,
       checklistItemId: 799,
       sourceCheckItemId: 999,
       checkItemId: 999,
@@ -443,6 +420,7 @@ const browserTestFetch: typeof fetch = async (input, init) => {
     };
     const manyCustomItems = Array.from({ length: 16 }, (_, index) => ({
       ...customChecklistItemFixture,
+      id: 800 + index,
       checklistItemId: 800 + index,
       question: index === 0 ? `🏠${'가'.repeat(199)}` : `직접 추가한 확인 질문 ${index + 1}`,
       order: index + 2,
@@ -470,75 +448,142 @@ const browserTestFetch: typeof fetch = async (input, init) => {
     }
     const body = (await request.json()) as {
       name?: unknown;
-      items?: { origin?: unknown; checklistItemId?: unknown; sourceCheckItemId?: unknown; question?: unknown }[];
+      items?: unknown;
     };
-    const items = (body.items ?? []).map((item, index) =>
-      item.origin === 'PROVIDED'
-        ? {
-            ...providedChecklistItemFixture,
-            checklistItemId: item.sourceCheckItemId === 101 ? 701 : 900 + index,
-            sourceCheckItemId: item.sourceCheckItemId,
-            checkItemId: item.sourceCheckItemId,
-            order: index + 1,
-          }
-        : {
-            ...customChecklistItemFixture,
-            checklistItemId: typeof item.checklistItemId === 'number' ? item.checklistItemId : 900 + index,
-            question: typeof item.question === 'string' ? item.question : '',
-            order: index + 1,
-          },
-    );
+    const inputs = Array.isArray(body.items) ? (body.items as BrowserChecklistItemInput[]) : [];
+    const items = toChecklistResponseItems(inputs);
     return jsonResponse(
       successEnvelope({
-        ...mixedChecklistDetailFixture,
+        id: 7,
         name: typeof body.name === 'string' ? body.name : mixedChecklistDetailFixture.name,
+        stage: 'ON_SITE',
         items,
         itemCount: items.length,
-        updatedAt: '2026-08-12T12:00:00Z',
       }),
     );
   }
 
   if (path === '/api/checklists/7' && request.method === 'DELETE') {
-    return new Response(null, { status: 204 });
+    return new Response(null, { status: 200 });
   }
 
-  if (path === '/api/properties/10/active-checklists/ONLINE_PHONE' && request.method === 'PUT') {
+  if (path === '/api/properties/10/checklists/ON_SITE' && request.method === 'PUT') {
+    const body = (await request.json()) as { checklistId?: unknown };
+    const sourceChecklistId = typeof body.checklistId === 'number' ? body.checklistId : 7;
+    propertyChecklist = {
+      ...propertyChecklist,
+      sourceChecklistId,
+      checklistName: sourceChecklistId === 8 ? secondChecklistSummaryFixture.name : checklistSummaryFixture.name,
+    };
+    return jsonResponse(successEnvelope(propertyChecklist));
+  }
+
+  if (path === '/api/properties/10/checklists' && request.method === 'GET') {
+    const progress = {
+      totalCount: propertyChecklist.items.length,
+      completedCount: propertyChecklist.items.filter((item) => item.status !== 'UNCONFIRMED').length,
+      goodCount: propertyChecklist.items.filter((item) => item.status === 'GOOD').length,
+      cautionCount: propertyChecklist.items.filter((item) => item.status === 'CAUTION').length,
+      unconfirmedCount: propertyChecklist.items.filter((item) => item.status === 'UNCONFIRMED').length,
+      progressRate: 100,
+    };
+    const emptyProgress = {
+      totalCount: 0,
+      completedCount: 0,
+      goodCount: 0,
+      cautionCount: 0,
+      unconfirmedCount: 0,
+      progressRate: 0,
+    };
     return jsonResponse(
       successEnvelope({
         propertyId: 10,
-        stage: 'ONLINE_PHONE',
-        checklistId: 7,
-        name: checklistSummaryFixture.name,
-        itemCount: checklistSummaryFixture.itemCount,
+        overallProgress: progress,
+        stages: [
+          {
+            stage: 'ON_SITE',
+            applied: true,
+            propertyChecklistId: propertyChecklist.id,
+            checklistName: propertyChecklist.checklistName,
+            sourceChecklistId: propertyChecklist.sourceChecklistId,
+            progress,
+          },
+          {
+            stage: 'ON_SITE',
+            applied: false,
+            propertyChecklistId: null,
+            checklistName: null,
+            sourceChecklistId: null,
+            progress: emptyProgress,
+          },
+          {
+            stage: 'PRE_CONTRACT',
+            applied: false,
+            propertyChecklistId: null,
+            checklistName: null,
+            sourceChecklistId: null,
+            progress: emptyProgress,
+          },
+        ],
       }),
     );
   }
 
-  if (path === '/api/properties/10/active-checklists/ONLINE_PHONE' && request.method === 'DELETE') {
-    return new Response(null, { status: 204 });
+  if (path === `/api/properties/10/checklists/${propertyChecklist.id}` && request.method === 'GET') {
+    return jsonResponse(successEnvelope(propertyChecklist));
+  }
+
+  if (/^\/api\/properties\/10\/checklists\/71\/items\/\d+\/status$/.test(path) && request.method === 'PATCH') {
+    const itemId = Number(path.split('/').at(-2));
+    const body = (await request.json()) as { status?: unknown };
+    if (body.status !== 'UNCONFIRMED' && body.status !== 'GOOD' && body.status !== 'CAUTION') {
+      return jsonResponse(errorEnvelope('INVALID_REQUEST'), 400);
+    }
+    const status = body.status;
+    propertyChecklist = {
+      ...propertyChecklist,
+      items: propertyChecklist.items.map((item) => (item.id === itemId ? { ...item, status } : item)),
+    };
+    return jsonResponse(successEnvelope({ item: { id: itemId, status } }));
+  }
+
+  if (/^\/api\/properties\/10\/checklists\/71\/items\/\d+\/memo$/.test(path) && request.method === 'PATCH') {
+    const itemId = Number(path.split('/').at(-2));
+    const body = (await request.json()) as { memo?: unknown };
+    if (typeof body.memo !== 'string') return jsonResponse(errorEnvelope('INVALID_REQUEST'), 400);
+    const memo = body.memo;
+    propertyChecklist = {
+      ...propertyChecklist,
+      items: propertyChecklist.items.map((item) => (item.id === itemId ? { ...item, memo } : item)),
+    };
+    return jsonResponse(successEnvelope({ item: { id: itemId, memo } }));
   }
 
   if (path === '/api/properties/10' && request.method === 'DELETE') {
-    return new Response(null, { status: 204 });
+    return new Response(null, { status: 200 });
   }
 
   if (path === '/api/properties/10/photos' && request.method === 'GET') {
-    const selectedPhotos = scenario === 'photos-empty' ? [] : photos;
-    return jsonResponse(successEnvelope({ photos: selectedPhotos, totalCount: selectedPhotos.length }));
+    const selectedPhotos = scenario === 'photos-empty' ? [] : photoResponses;
+    return jsonResponse(successEnvelope({ propertyId: 10, items: selectedPhotos, totalCount: selectedPhotos.length }));
   }
 
   if (path === '/api/properties/10/photos' && request.method === 'POST') {
-    return jsonResponse(successEnvelope(photos[0]), 201);
+    return jsonResponse(errorEnvelope('API_CONTRACT_NOT_IMPLEMENTED'), 501);
   }
 
-  if (/^\/api\/properties\/10\/photos\/\d+\/content$/.test(path) && request.method === 'GET') {
+  if (/^\/api\/properties\/10\/photos\/\d+$/.test(path) && request.method === 'GET') {
     if (scenario === 'photo-read-failure') return jsonResponse(errorEnvelope('PHOTO_READ_FAILED'), 500);
-    return new Response(pngBytes, { headers: { 'Content-Type': 'image/png' } });
+    const photoId = Number(path.match(/photos\/(\d+)$/)?.[1] ?? 81);
+    return new Response(await createPlaceholderPhoto(photoId), { headers: { 'Content-Type': 'image/png' } });
   }
 
   if (/^\/api\/properties\/10\/photos\/\d+$/.test(path) && request.method === 'DELETE') {
-    return new Response(null, { status: 204 });
+    return new Response(null, { status: 200 });
+  }
+
+  if (/^\/api\/properties\/10\/photos\/\d+\/representative$/.test(path) && request.method === 'PUT') {
+    return new Response(null, { status: 200 });
   }
 
   return jsonResponse(errorEnvelope('INTERNAL_SERVER_ERROR'), 500);
@@ -554,12 +599,16 @@ if (rootElement === null) {
 
 createRoot(rootElement).render(
   <StrictMode>
-    <App
-      config={{
-        apiBaseUrl: 'http://localhost:8080',
-        googleClientId: 'browser-test-client',
-        googleRedirectUri: 'http://localhost:3000/oauth/google/callback',
-      }}
-    />
+    {scenario === 'components' ? (
+      <MemoryRouter>
+        <ComponentCatalog />
+      </MemoryRouter>
+    ) : (
+      <App
+        config={{
+          apiBaseUrl: 'http://localhost:8080',
+        }}
+      />
+    )}
   </StrictMode>,
 );

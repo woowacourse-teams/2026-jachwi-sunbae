@@ -1,0 +1,108 @@
+.page {
+  display: grid;
+  min-height: 100svh;
+  place-items: stretch center;
+  background: var(--color-canvas);
+}
+
+.card {
+  display: flex;
+  width: min(100%, var(--app-max-width));
+  min-height: 100svh;
+  flex-direction: column;
+  justify-content: center;
+  padding: 2rem 1.25rem;
+  background: var(--color-canvas);
+}
+
+.heroLogo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 2rem;
+}
+
+.heroLogo img {
+  display: block;
+  width: auto;
+  height: 9.5rem;
+  max-width: 100%;
+  object-fit: contain;
+}
+
+.actions {
+  display: grid;
+  gap: 0.85rem;
+}
+
+/* 라벨을 입력칸 위가 아니라 왼쪽에 세운다. */
+.inlineField {
+  grid-template-columns: 7rem minmax(0, 1fr);
+  align-items: center;
+  column-gap: 0.75rem;
+  row-gap: 0.25rem;
+}
+
+.inlineField > label {
+  font-size: 0.82rem;
+}
+
+/* 도움말·오류는 입력칸 아래에만 붙인다. */
+.inlineField > p {
+  grid-column: 2;
+  margin: 0;
+}
+
+.sharedWarning {
+  margin: 0;
+  padding: 0.65rem 0.85rem;
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-muted);
+  color: var(--color-muted);
+  font-size: 0.78rem;
+  line-height: 1.45;
+  text-align: left;
+}
+
+.loginButton {
+  min-height: 3.2rem;
+  border-radius: var(--radius-md);
+  font-size: 0.88rem;
+  font-weight: 700;
+}
+
+.loginButton:hover:not(:disabled) {
+  transform: translateY(-1px);
+}
+
+.loginButton:disabled {
+  cursor: wait;
+  opacity: 0.68;
+}
+
+.agreement {
+  margin: 0.5rem auto 0;
+  color: var(--color-placeholder);
+  font-size: 0.75rem;
+  line-height: 1.5;
+  text-align: center;
+}
+
+.agreement a {
+  color: var(--color-primary-dark);
+  font-weight: 700;
+  text-decoration: underline;
+}
+
+@media (min-width: 700px) {
+  .page {
+    padding: 1.5rem 1rem;
+    place-items: center;
+  }
+
+  .card {
+    min-height: auto;
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-app-shell);
+  }
+}

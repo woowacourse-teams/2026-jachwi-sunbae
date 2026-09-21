@@ -1,3 +1,5 @@
+name: jachwi-sunbae-backend
+
 services:
   mysql:
     image: mysql:8.4.10
@@ -8,9 +10,10 @@ services:
       MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-local_root_password}
       TZ: UTC
     ports:
-      - "${DB_PORT:-3306}:3306"
+      - "127.0.0.1:${DB_PORT:-3306}:3306"
     volumes:
       - mysql-data:/var/lib/mysql
+      - ./src/main/resources/db/init:/docker-entrypoint-initdb.d:ro
     healthcheck:
       test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -u root -p$$MYSQL_ROOT_PASSWORD"]
       interval: 5s
@@ -25,8 +28,8 @@ services:
       MINIO_ROOT_USER: ${PHOTO_STORAGE_ACCESS_KEY:-local-photo-access-key}
       MINIO_ROOT_PASSWORD: ${PHOTO_STORAGE_SECRET_KEY:-local-photo-secret-key}
     ports:
-      - "${PHOTO_STORAGE_PORT:-9000}:9000"
-      - "${PHOTO_STORAGE_CONSOLE_PORT:-9001}:9001"
+      - "127.0.0.1:${PHOTO_STORAGE_PORT:-9000}:9000"
+      - "127.0.0.1:${PHOTO_STORAGE_CONSOLE_PORT:-9001}:9001"
     volumes:
       - minio-data:/data
     healthcheck:

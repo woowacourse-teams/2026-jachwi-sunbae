@@ -1,12 +1,10 @@
 package com.jachwisunbae.property.storage;
 
-import java.io.InputStream;
-
 public interface PhotoStorage {
 
-    void upload(String storageKey, byte[] content, String contentType);
+    void upload(String key, byte[] bytes, String contentType);
 
-    InputStream open(String storageKey);
+    byte[] download(String key);
 
-    void deleteIfExists(String storageKey);
+    void delete(String key);
 }

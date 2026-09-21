@@ -1,15 +1,17 @@
 import { useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { ApiError } from '../apis/apiClient';
 import type { UpdatePropertyRequestDto } from '../apis/dtos/PropertyDto';
 import { getPropertyErrorMessage } from '../apis/propertyErrorMessages';
-import PageHeading from '../components/PageHeading';
 import PropertyForm from '../components/PropertyForm';
+import TopNavigation from '../components/ui/TopNavigation';
 import { usePropertyDetail } from '../hooks/query/useProperties';
 import { useUpdateProperty } from '../hooks/query/usePropertyMutations';
 import type { PublicConfig } from '../types/PublicConfig';
 import { formatAmountForInput } from '../utils/propertyForm';
 import { parsePositiveId } from '../utils/propertyFormat';
+import styles from './EditPropertyPage.module.css';
+import ContentState from '../components/ui/ContentState';
 
 type EditPropertyPageProps = { config: PublicConfig };
 
@@ -19,14 +21,9 @@ const EditPropertyPage = ({ config }: EditPropertyPageProps) => {
 
   if (propertyId === null) {
     return (
-      <main className="property-page">
-        <div className="page-container">
-          <div className="content-state">
-            <strong>올바른 매물 주소가 아니에요.</strong>
-            <Link to="/properties">매물 목록으로 돌아가기</Link>
-          </div>
-        </div>
-      </main>
+      <ContentState title="올바른 매물 주소가 아니에요.">
+        <Link to="/properties">매물 목록으로 돌아가기</Link>
+      </ContentState>
     );
   }
 
@@ -35,75 +32,87 @@ const EditPropertyPage = ({ config }: EditPropertyPageProps) => {
 
 const ResolvedEditPropertyPage = ({ config, propertyId }: { config: PublicConfig; propertyId: number }) => {
   const navigate = useNavigate();
+  const location = useLocation();
   const property = usePropertyDetail(config, propertyId);
   const updateMutation = useUpdateProperty(config, propertyId);
   const [formNotice, setFormNotice] = useState<string | null>(null);
 
-  if (property.isPending)
-    return (
-      <main className="property-page">
-        <div className="page-container">
-          <div className="content-state" role="status">
-            <span className="spinner" />
-            매물 정보를 불러오는 중이에요.
-          </div>
-        </div>
-      </main>
-    );
+  if (property.isPending) return <ContentState loading title="매물 정보를 불러오는 중이에요." />;
   if (property.isError)
     return (
-      <main className="property-page">
-        <div className="page-container">
-          <div className="content-state content-state--error">
-            <strong>
-              {property.error instanceof ApiError && property.error.code === 'PROPERTY_NOT_FOUND'
-                ? '매물을 찾을 수 없어요.'
-                : '매물 정보를 불러오지 못했어요.'}
-            </strong>
-            <span>{getPropertyErrorMessage(property.error)}</span>
-            <Link to="/properties">매물 목록으로 돌아가기</Link>
-          </div>
-        </div>
-      </main>
+      <ContentState
+        tone="error"
+        title={
+          property.error instanceof ApiError && property.error.code === 'PROPERTY_NOT_FOUND'
+            ? '매물을 찾을 수 없어요.'
+            : '매물 정보를 불러오지 못했어요.'
+        }
+        description={getPropertyErrorMessage(property.error)}
+      >
+        <Link to="/properties">매물 목록으로 돌아가기</Link>
+      </ContentState>
     );
 
   const initial = property.data;
   const mutationError = updateMutation.error instanceof ApiError ? updateMutation.error : null;
+  const selectedLocation =
+    (location.state as {
+      address?: string;
+      latitude?: number;
+      longitude?: number;
+    } | null) ?? {};
 
   return (
-    <main className="property-page">
-      <div className="page-container page-container--form">
-        <PageHeading
-          title="매물 기본 정보 수정"
-          description="바뀐 정보만 안전하게 저장합니다."
+    <main className={styles.page}>
+      <div className={styles.container}>
+        <TopNavigation
+          title="매물 정보 수정"
           backTo={`/properties/${propertyId}`}
-          backLabel="매물 상세"
+          backLabel="매물 정보 수정 닫기"
+          navigationIcon="close"
         />
+        <h1 className={styles.heading}>매물 정보를 수정해주세요</h1>
         <PropertyForm
           initialValues={{
             name: initial.name,
             depositAmount: formatAmountForInput(initial.depositAmount),
             monthlyRentAmount: formatAmountForInput(initial.monthlyRentAmount),
             discoverySource: initial.discoverySource.value,
+            address: selectedLocation.address ?? initial.location.address ?? '',
+            latitude: selectedLocation.latitude ?? initial.location.latitude,
+            longitude: selectedLocation.longitude ?? initial.location.longitude,
           }}
           submitLabel="변경사항 저장"
           isSubmitting={updateMutation.isPending}
           mutationError={mutationError}
           formNotice={formNotice}
+          variant="detail"
+          onSelectLocation={() =>
+            navigate('/map/select-location', {
+              state: {
+                returnTo: `/properties/${propertyId}/edit`,
+                initialLocation:
+                  initial.location.latitude === null || initial.location.longitude === null
+                    ? undefined
+                    : {
+                        address: initial.location.address,
+                        roadAddress: null,
+                        jibunAddress: null,
+                        latitude: initial.location.latitude,
+                        longitude: initial.location.longitude,
+                      },
+              },
+            })
+          }
           onSubmit={(input) => {
-            const changes: UpdatePropertyRequestDto = {};
-            if (input.name !== initial.name) changes.name = input.name;
-            if (input.depositAmount !== initial.depositAmount) changes.depositAmount = input.depositAmount;
-            if (input.monthlyRentAmount !== initial.monthlyRentAmount)
-              changes.monthlyRentAmount = input.monthlyRentAmount;
-            if (input.discoverySource !== initial.discoverySource.value)
-              changes.discoverySource = input.discoverySource;
-
-            if (Object.keys(changes).length === 0) {
-              setFormNotice('변경된 내용이 없어 서버에 요청하지 않았어요.');
-              return;
-            }
-
+            const changes: UpdatePropertyRequestDto = {
+              ...input,
+              availableMoveInDate: initial.availableMoveInDate,
+              maintenanceFeeAmount: initial.maintenanceFeeAmount,
+              visitScheduledAt: initial.visitScheduledAt,
+              roomOptions: initial.roomOptions,
+              utilityOptions: initial.utilityOptions,
+            };
             setFormNotice(null);
             void updateMutation
               .mutateAsync(changes)

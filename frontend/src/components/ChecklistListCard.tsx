@@ -5,54 +5,61 @@ import { useRemoveChecklist } from '../hooks/query/useChecklistMutations';
 import type { ChecklistSummary } from '../types/Checklist';
 import type { PublicConfig } from '../types/PublicConfig';
 import ConfirmDialog from './ConfirmDialog';
+import Icon from './ui/Icon';
+import styles from './ChecklistListCard.module.css';
 
 const ChecklistListCard = ({ config, checklist }: { config: PublicConfig; checklist: ChecklistSummary }) => {
-  const [isOpen, setIsOpen] = useState(false);
-  const triggerRef = useRef<HTMLButtonElement>(null);
+  const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+  const deleteButtonRef = useRef<HTMLButtonElement>(null);
   const remove = useRemoveChecklist(config, checklist.checklistId);
 
-  const confirm = async () => {
+  const deleteChecklist = async () => {
     try {
       await remove.mutateAsync();
-      setIsOpen(false);
+      setIsDeleteOpen(false);
     } catch {
-      // Keep the item and dialog visible so the user can safely retry.
+      /* Keep the dialog open so the user can retry or cancel. */
     }
   };
 
   return (
-    <li className="checklist-list-card">
-      <Link className="checklist-list-card__main" to={`/checklists/${checklist.checklistId}`}>
-        <strong>{checklist.name}</strong>
-        <span>
-          {checklist.itemCount}개 항목 · 매물 {checklist.assignedPropertyCount}곳에서 사용
+    <li className={styles.card}>
+      <Link className={styles.main} to={`/checklists/${checklist.checklistId}`}>
+        <span className={styles.copy}>
+          <strong>{checklist.name}</strong>
+          <span>{checklist.itemCount}개 항목</span>
         </span>
       </Link>
-      <div className="checklist-list-card__actions">
-        <Link className="inline-link" to={`/checklists/${checklist.checklistId}`}>
-          편집
+      <div className={styles.actions}>
+        <Link className={styles.edit} to={`/checklists/${checklist.checklistId}`} aria-label={`${checklist.name} 편집`}>
+          <Icon name="edit" size={14} />
         </Link>
-        <button ref={triggerRef} type="button" className="text-danger-button" onClick={() => setIsOpen(true)}>
-          삭제
+        <button
+          ref={deleteButtonRef}
+          className={styles.delete}
+          type="button"
+          aria-label={`${checklist.name} 삭제`}
+          onClick={() => setIsDeleteOpen(true)}
+        >
+          <Icon name="trash" size={14} />
         </button>
       </div>
       <ConfirmDialog
-        isOpen={isOpen}
+        isOpen={isDeleteOpen}
         title={`${checklist.name}을 삭제할까요?`}
         description={
           <>
             <p>
-              {checklist.itemCount}개 항목과 현재 매물 {checklist.assignedPropertyCount}곳의 활성 연결이 함께
-              삭제됩니다.
+              {checklist.itemCount}개 항목과 매물 {checklist.assignedPropertyCount}곳의 활성 연결이 함께 삭제됩니다.
             </p>
-            <p>이미 완료한 방문의 스냅샷은 유지되며 삭제는 되돌릴 수 없습니다.</p>
+            <p>매물에 적용된 체크 결과는 유지됩니다.</p>
           </>
         }
         confirmLabel="체크리스트 삭제"
         isConfirming={remove.isPending}
-        returnFocusRef={triggerRef}
-        onCancel={() => setIsOpen(false)}
-        onConfirm={() => void confirm()}
+        returnFocusRef={deleteButtonRef}
+        onCancel={() => setIsDeleteOpen(false)}
+        onConfirm={() => void deleteChecklist()}
       >
         {remove.isError && (
           <p className="form-error" role="alert">

@@ -93,11 +93,14 @@ export default PostCard;
 - API 응답은 DTO 타입으로 받고, 화면에서 사용하는 타입과 필요하면 변환합니다.
 - 타입 단언(`as`)과 non-null assertion(`!`)은 근거가 있을 때만 사용합니다.
 - 공통 타입은 `src/types`, 특정 기능에서만 사용하는 타입은 해당 기능 폴더에 둡니다.
-- 타입 검사와 Babel 변환을 구분합니다. Babel은 타입을 검사하지 않으므로 `npm run typecheck`를 실행합니다.
+- 타입 검사와 Babel 변환을 구분합니다. Babel은 타입을 검사하지 않으므로 `npm run build`가 번들 생성 전에 `npm run typecheck`를 실행합니다. 개발 중 타입 오류만 빠르게 확인할 때는 `npm run typecheck`를 직접 실행합니다.
 
 ## 6. CSS
 
-- 클래스 이름은 `kebab-case`를 사용합니다.
+- 새로 작성하거나 수정하는 화면·컴포넌트의 종속 스타일은 같은 위치의 `*.module.css`에 두고 CSS Modules로 가져옵니다.
+- CSS Modules의 클래스 이름은 TypeScript에서 바로 읽을 수 있도록 `camelCase`를 사용합니다.
+- 디자인 토큰은 `src/styles/tokens.css`, 요소 기본값은 `src/styles/global.css`, 여러 화면에서 재사용하는 유틸리티 클래스는 `src/styles/utilities.css`에 둡니다.
+- 전역 클래스는 실제로 여러 화면에서 같은 의미와 형태로 재사용할 때만 추가합니다.
 - 스타일 목적으로 ID 선택자를 사용하지 않습니다.
 - 컴포넌트 스타일은 해당 컴포넌트와 가까운 위치에 둡니다.
 - `rem`: 폰트 크기와 주요 간격
@@ -111,6 +114,12 @@ export default PostCard;
   --space-md: 1rem;
   --radius-md: 0.5rem;
 }
+```
+
+```tsx
+import styles from './PostCard.module.css';
+
+const PostCard = () => <article className={styles.card}>...</article>;
 ```
 
 ## 7. API와 상태 처리
@@ -132,11 +141,10 @@ export default PostCard;
 ## 9. 검사 명령어
 
 ```bash
-npm run typecheck
 npm run lint
 npm run format:check
 npm run test
 npm run build
 ```
 
-코드를 제출하기 전에 타입 검사, 린트, 포맷 검사, 테스트, 빌드를 모두 통과시키는 것을 기준으로 합니다.
+`npm run build`가 타입 검사를 포함하므로 코드를 제출하기 전에 린트, 포맷 검사, 테스트, 빌드를 모두 통과시키는 것을 기준으로 합니다. 타입 오류만 빠르게 확인할 때는 `npm run typecheck`를 직접 실행합니다.

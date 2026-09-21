@@ -1,0 +1,9 @@
+.page {
+  min-height: 100%;
+  padding: 0 1rem 1.5rem;
+  background: var(--color-canvas);
+}
+
+.container {
+  padding: 0.45rem 0 2rem;
+}

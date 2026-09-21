@@ -2,47 +2,105 @@ import { HttpResponse, http } from 'msw';
 import { describe, expect, it } from 'vitest';
 import { setAuthentication } from '../app/authStore';
 import { server } from '../test/server';
-import {
-  errorEnvelope,
-  photoFixture,
-  propertyDetailFixture,
-  propertyPageFixture,
-  propertySummaryFixture,
-  successEnvelope,
-} from '../test/propertyFixtures';
+import { errorEnvelope, photoFixture, successEnvelope } from '../test/propertyFixtures';
 import type { PublicConfig } from '../types/PublicConfig';
+import type { PropertyInputDto } from './dtos/PropertyDto';
 import { getPropertyErrorMessage } from './propertyErrorMessages';
-import { fetchPropertyPhotoContent, fetchPropertyPhotos, removePropertyPhoto, uploadPropertyPhoto } from './photoApi';
+import {
+  fetchPropertyPhotoContent,
+  fetchPropertyPhotos,
+  removePropertyPhoto,
+  setRepresentativePropertyPhoto,
+  uploadPropertyPhoto,
+} from './photoApi';
 import {
   createProperty,
   fetchProperties,
   fetchPropertyDetail,
+  fetchPropertyMemo,
   removeProperty,
-  savePropertyMemo,
-  savePropertyPreVisitMemo,
+  savePropertyMemoDocument,
   updateProperty,
 } from './propertyApi';
 
 const config: PublicConfig = {
   apiBaseUrl: 'http://localhost:8080',
-  googleClientId: 'test-client',
-  googleRedirectUri: 'http://localhost:3000/oauth/google/callback',
 };
 
 const authenticate = () => setAuthentication({ accessToken: 'memory-token', tokenType: 'Bearer', expiresIn: 60 });
 
+const propertyInput = {
+  name: '신림역 원룸',
+  depositAmount: 0,
+  monthlyRentAmount: 550_000,
+  discoverySource: 'https://example.com/home',
+  address: '서울 관악구 신림로 12',
+  latitude: 37.484,
+  longitude: 126.929,
+  availableMoveInDate: '2026-10-01',
+  maintenanceFeeAmount: 70_000,
+  visitScheduledAt: '2026-09-20T14:00:00',
+  roomOptions: ['AIR_CONDITIONER', 'REFRIGERATOR'],
+  utilityOptions: ['WATER', 'INTERNET'],
+} satisfies PropertyInputDto;
+
+const propertyAdditionalResponse = {
+  availableMoveInDate: propertyInput.availableMoveInDate,
+  maintenanceFeeAmount: propertyInput.maintenanceFeeAmount,
+  visitScheduledAt: propertyInput.visitScheduledAt,
+  roomOptions: [...propertyInput.roomOptions],
+  utilityOptions: [...propertyInput.utilityOptions],
+};
+
 describe('FE-2 API 경계', () => {
-  it('API-101에 trim한 query와 page·size 및 Bearer 토큰을 보낸다', async () => {
+  it('매물 목록은 서버에 검색·페이지 쿼리를 보내지 않고 클라이언트에서 이름을 검색한다', async () => {
     authenticate();
     server.use(
       http.get(`${config.apiBaseUrl}/api/properties`, ({ request }) => {
         const url = new URL(request.url);
-        expect(url.searchParams.get('query')).toBe('신림');
-        expect(url.searchParams.get('page')).toBe('2');
-        expect(url.searchParams.get('size')).toBe('20');
-        expect(url.searchParams.has('memberId')).toBe(false);
+        expect(url.search).toBe('');
         expect(request.headers.get('Authorization')).toBe('Bearer memory-token');
-        return HttpResponse.json(successEnvelope(propertyPageFixture([propertySummaryFixture], 2)));
+        return HttpResponse.json(
+          successEnvelope({
+            totalCount: 2,
+            items: [
+              {
+                id: 10,
+                name: '신림역 원룸',
+                depositAmount: 10_000_000,
+                monthlyRentAmount: 550_000,
+                discoverySource: 'https://example.com/listings/10',
+                representativePhoto: null,
+                overallProgress: {
+                  totalCount: 0,
+                  completedCount: 0,
+                  goodCount: 0,
+                  cautionCount: 0,
+                  unconfirmedCount: 0,
+                  progressRate: 0,
+                },
+                stages: [],
+              },
+              {
+                id: 11,
+                name: '망원동 투룸',
+                depositAmount: 20_000_000,
+                monthlyRentAmount: 700_000,
+                discoverySource: null,
+                representativePhoto: null,
+                overallProgress: {
+                  totalCount: 0,
+                  completedCount: 0,
+                  goodCount: 0,
+                  cautionCount: 0,
+                  unconfirmedCount: 0,
+                  progressRate: 0,
+                },
+                stages: [],
+              },
+            ],
+          }),
+        );
       }),
     );
 
@@ -50,7 +108,7 @@ describe('FE-2 API 경계', () => {
     expect(result.content[0]?.name).toBe('신림역 원룸');
   });
 
-  it('API-102에 네 필수 필드를 보내고 서버의 URL 분류를 사용한다', async () => {
+  it('매물 생성은 Swagger에 정의된 필드만 보내고 서버의 URL 분류를 사용한다', async () => {
     authenticate();
     let requestBody: unknown;
     server.use(
@@ -58,215 +116,250 @@ describe('FE-2 API 경계', () => {
         requestBody = await request.json();
         return HttpResponse.json(
           successEnvelope({
-            propertyId: 10,
-            name: '신림역 원룸',
-            depositAmount: 0,
-            monthlyRentAmount: 550_000,
-            discoverySource: { type: 'URL', value: 'https://example.com/home' },
-            createdAt: '2026-08-10T07:30:00Z',
+            id: 10,
+            ...propertyInput,
+            photos: [],
+            createdAt: '2026-09-16T00:00:00Z',
+            updatedAt: '2026-09-16T00:00:00Z',
+            overallProgress: {
+              totalCount: 0,
+              completedCount: 0,
+              goodCount: 0,
+              cautionCount: 0,
+              unconfirmedCount: 0,
+              progressRate: 0,
+            },
           }),
           { status: 201 },
         );
       }),
     );
 
-    const result = await createProperty(config, {
-      name: '신림역 원룸',
-      depositAmount: 0,
-      monthlyRentAmount: 550_000,
-      discoverySource: 'https://example.com/home',
-    });
+    const result = await createProperty(config, propertyInput);
 
-    expect(requestBody).toEqual({
-      name: '신림역 원룸',
-      depositAmount: 0,
-      monthlyRentAmount: 550_000,
-      discoverySource: 'https://example.com/home',
-    });
+    expect(requestBody).toEqual(propertyInput);
     expect(result.discoverySource.type).toBe('URL');
+    expect(result.roomOptions).toEqual(['AIR_CONDITIONER', 'REFRIGERATOR']);
   });
 
-  it('API-103 상세 응답의 메모·요약·삭제 영향을 검증한다', async () => {
+  it('매물 상세 응답의 기본 정보·사진·전체 진행률을 읽는다', async () => {
     authenticate();
     server.use(
       http.get(`${config.apiBaseUrl}/api/properties/10`, () =>
-        HttpResponse.json(successEnvelope(propertyDetailFixture)),
+        HttpResponse.json(
+          successEnvelope({
+            id: 10,
+            name: '신림역 원룸',
+            depositAmount: 10_000_000,
+            monthlyRentAmount: 550_000,
+            discoverySource: 'https://example.com/listings/10',
+            address: '서울 관악구 신림로 12',
+            latitude: 37.484,
+            longitude: 126.929,
+            ...propertyAdditionalResponse,
+            photos: [{ id: 81, url: '/api/properties/10/photos/81', createdAt: '2026-08-10T07:35:00Z' }],
+            createdAt: '2026-08-10T07:30:00Z',
+            updatedAt: '2026-08-10T07:40:00Z',
+            overallProgress: {
+              totalCount: 3,
+              completedCount: 2,
+              goodCount: 1,
+              cautionCount: 1,
+              unconfirmedCount: 1,
+              progressRate: 67,
+            },
+          }),
+        ),
       ),
     );
 
     const detail = await fetchPropertyDetail(config, 10);
-    expect(detail.memo.content).toBe('채광 다시 확인');
-    expect(detail.memo.additionalMemo).toBe('채광 다시 확인');
-    expect(detail.memo.viewingSchedule).toBe('8월 20일 오후 2시 방문');
-    expect(detail.deletionImpact).toEqual({ visitCount: 2, photoCount: 2, activeChecklistCount: 1 });
+    expect(detail).toMatchObject({
+      propertyId: 10,
+      location: { address: '서울 관악구 신림로 12' },
+      maintenanceFeeAmount: 70_000,
+      photoPreview: { totalCount: 1, photos: [{ photoId: 81 }] },
+    });
   });
 
-  it('API-103은 nullable savedAt을 보존하고 content와 additionalMemo 불일치·필드 누락을 거부한다', async () => {
+  it('새 매물 상세 필드가 빠진 구버전 응답은 거부한다', async () => {
     authenticate();
-    let response: unknown = {
-      ...propertyDetailFixture,
-      memo: { ...propertyDetailFixture.memo, savedAt: null },
-    };
-    server.use(http.get(`${config.apiBaseUrl}/api/properties/10`, () => HttpResponse.json(successEnvelope(response))));
+    server.use(
+      http.get(`${config.apiBaseUrl}/api/properties/10`, () =>
+        HttpResponse.json(
+          successEnvelope({
+            id: 10,
+            name: '기존 매물',
+            depositAmount: 10_000_000,
+            monthlyRentAmount: 550_000,
+            discoverySource: null,
+            overallProgress: {
+              totalCount: 0,
+              completedCount: 0,
+              goodCount: 0,
+              cautionCount: 0,
+              unconfirmedCount: 0,
+              progressRate: 0,
+            },
+          }),
+        ),
+      ),
+    );
 
-    await expect(fetchPropertyDetail(config, 10)).resolves.toMatchObject({ memo: { savedAt: null } });
-
-    response = {
-      ...propertyDetailFixture,
-      memo: { ...propertyDetailFixture.memo, content: '다른 값', savedAt: null },
-    };
-    await expect(fetchPropertyDetail(config, 10)).rejects.toMatchObject({ kind: 'invalid-response' });
-
-    const memoWithoutRequiredField: Partial<typeof propertyDetailFixture.memo> = { ...propertyDetailFixture.memo };
-    delete memoWithoutRequiredField.viewingSchedule;
-    response = { ...propertyDetailFixture, memo: memoWithoutRequiredField };
     await expect(fetchPropertyDetail(config, 10)).rejects.toMatchObject({ kind: 'invalid-response' });
   });
 
-  it('API-104에는 실제 변경 필드만 보내고 null을 넣지 않는다', async () => {
+  it('매물 상세의 선택 데이터가 비어 있거나 일부 사진이 잘못되어도 기본 정보를 읽는다', async () => {
+    authenticate();
+    server.use(
+      http.get(`${config.apiBaseUrl}/api/properties/10`, () =>
+        HttpResponse.json(
+          successEnvelope({
+            id: 10,
+            name: '기존 매물',
+            depositAmount: 10_000_000,
+            monthlyRentAmount: 550_000,
+            discoverySource: undefined,
+            address: null,
+            latitude: null,
+            longitude: null,
+            availableMoveInDate: null,
+            maintenanceFeeAmount: null,
+            visitScheduledAt: null,
+            roomOptions: [],
+            utilityOptions: [],
+            photos: [
+              { id: 81, url: '/api/properties/10/photos/81' },
+              { id: null, url: null },
+            ],
+          }),
+        ),
+      ),
+    );
+
+    await expect(fetchPropertyDetail(config, 10)).resolves.toMatchObject({
+      propertyId: 10,
+      name: '기존 매물',
+      photoPreview: { totalCount: 1, photos: [{ photoId: 81 }] },
+    });
+  });
+
+  it('매물 수정은 Swagger에 정의된 전체 필드와 선택 필드의 null을 보낸다', async () => {
     authenticate();
     let requestBody: unknown;
     server.use(
-      http.patch(`${config.apiBaseUrl}/api/properties/10`, async ({ request }) => {
+      http.put(`${config.apiBaseUrl}/api/properties/10`, async ({ request }) => {
         requestBody = await request.json();
         return HttpResponse.json(
           successEnvelope({
-            propertyId: 10,
+            id: 10,
             name: '신림역 원룸',
             depositAmount: 10_000_000,
             monthlyRentAmount: 530_000,
-            discoverySource: { type: 'TEXT', value: '중개사 추천' },
-            updatedAt: '2026-08-11T01:00:00Z',
+            discoverySource: null,
+            address: null,
+            latitude: null,
+            longitude: null,
+            availableMoveInDate: null,
+            maintenanceFeeAmount: null,
+            visitScheduledAt: null,
+            roomOptions: [],
+            utilityOptions: [],
           }),
         );
       }),
     );
 
-    await updateProperty(config, 10, { monthlyRentAmount: 530_000 });
-    expect(requestBody).toEqual({ monthlyRentAmount: 530_000 });
+    const updateRequest = {
+      name: '신림역 원룸',
+      depositAmount: 10_000_000,
+      monthlyRentAmount: 530_000,
+      discoverySource: null,
+      address: null,
+      latitude: null,
+      longitude: null,
+      availableMoveInDate: null,
+      maintenanceFeeAmount: null,
+      visitScheduledAt: null,
+      roomOptions: [],
+      utilityOptions: [],
+    };
+    await updateProperty(config, 10, updateRequest);
+    expect(requestBody).toEqual(updateRequest);
   });
 
-  it('API-105와 API-204의 204 응답을 JSON으로 파싱하지 않는다', async () => {
+  it('매물과 사진 삭제의 200 빈 응답을 JSON으로 파싱하지 않는다', async () => {
     authenticate();
     server.use(
-      http.delete(`${config.apiBaseUrl}/api/properties/10`, () => new HttpResponse(null, { status: 204 })),
-      http.delete(`${config.apiBaseUrl}/api/properties/10/photos/81`, () => new HttpResponse(null, { status: 204 })),
+      http.delete(`${config.apiBaseUrl}/api/properties/10`, () => new HttpResponse(null, { status: 200 })),
+      http.delete(`${config.apiBaseUrl}/api/properties/10/photos/81`, () => new HttpResponse(null, { status: 200 })),
     );
 
     await expect(removeProperty(config, 10)).resolves.toBeUndefined();
     await expect(removePropertyPhoto(config, 10, 81)).resolves.toBeUndefined();
   });
 
-  it('API-106 메모 요청에 expectedVersion 없이 빈 문자열을 보낼 수 있다', async () => {
+  it('매물 메모는 자유 메모만 조회하고 저장한다', async () => {
     authenticate();
     let requestBody: unknown;
     server.use(
+      http.get(`${config.apiBaseUrl}/api/properties/10/memo`, () =>
+        HttpResponse.json(
+          successEnvelope({
+            propertyId: 10,
+            freeMemo: '',
+          }),
+        ),
+      ),
       http.put(`${config.apiBaseUrl}/api/properties/10/memo`, async ({ request }) => {
         requestBody = await request.json();
         return HttpResponse.json(
           successEnvelope({
-            ...propertyDetailFixture.memo,
-            additionalMemo: '',
-            content: '',
-            savedAt: '2026-08-11T01:00:00Z',
+            propertyId: 10,
+            freeMemo: '채광 확인',
           }),
         );
       }),
     );
 
-    const memo = await savePropertyMemo(config, 10, { content: '' });
-    expect(requestBody).toEqual({ content: '' });
-    expect(memo.content).toBe('');
+    await expect(fetchPropertyMemo(config, 10)).resolves.toEqual({ propertyId: 10, freeMemo: '' });
+    const memo = await savePropertyMemoDocument(config, 10, {
+      freeMemo: '채광 확인',
+    });
+    expect(requestBody).toEqual({ freeMemo: '채광 확인' });
+    expect(memo.freeMemo).toBe('채광 확인');
   });
 
-  it('API-106 v1.1은 여덟 구조화 필드만 전체 전송하고 Unicode 코드포인트 경계를 파싱한다', async () => {
+  it('구조화 메모 응답 없이 빈 자유 메모를 그대로 사용한다', async () => {
     authenticate();
-    let requestBody: unknown;
-    const request = {
-      viewingSchedule: '🏠'.repeat(200),
-      moveInAvailability: '',
-      provisionalDeposit: '',
-      roomOptions: '',
-      maintenanceAndUtilities: '',
-      commuteTime: '',
-      governmentSupport: '',
-      additionalMemo: '채광 확인',
-    };
     server.use(
-      http.put(`${config.apiBaseUrl}/api/properties/10/memo`, async ({ request: incoming }) => {
-        requestBody = await incoming.json();
-        return HttpResponse.json(
-          successEnvelope({
-            ...request,
-            content: request.additionalMemo,
-            savedAt: '2026-08-11T01:00:00Z',
-          }),
-        );
-      }),
+      http.get(`${config.apiBaseUrl}/api/properties/10/memo`, () =>
+        HttpResponse.json(successEnvelope({ propertyId: 10, freeMemo: '' })),
+      ),
     );
 
-    await expect(savePropertyPreVisitMemo(config, 10, request)).resolves.toMatchObject(request);
-    expect(requestBody).toEqual(request);
-    expect(requestBody).not.toHaveProperty('content');
-    expect(requestBody).not.toHaveProperty('expectedVersion');
+    await expect(fetchPropertyMemo(config, 10)).resolves.toEqual({ propertyId: 10, freeMemo: '' });
   });
 
-  it('API-106 응답의 구조화 필드가 코드포인트 제한을 넘거나 UTC가 아니면 거부한다', async () => {
-    authenticate();
-    let memo = {
-      ...propertyDetailFixture.memo,
-      viewingSchedule: '🏠'.repeat(201),
-      savedAt: '2026-08-11T10:00:00+09:00',
-    };
-    server.use(http.put(`${config.apiBaseUrl}/api/properties/10/memo`, () => HttpResponse.json(successEnvelope(memo))));
-
-    await expect(
-      savePropertyPreVisitMemo(config, 10, {
-        viewingSchedule: '',
-        moveInAvailability: '',
-        provisionalDeposit: '',
-        roomOptions: '',
-        maintenanceAndUtilities: '',
-        commuteTime: '',
-        governmentSupport: '',
-        additionalMemo: '',
-      }),
-    ).rejects.toMatchObject({ kind: 'invalid-response' });
-
-    memo = { ...propertyDetailFixture.memo, viewingSchedule: '', savedAt: '2026-08-11T10:00:00+09:00' };
-    await expect(
-      savePropertyPreVisitMemo(config, 10, {
-        viewingSchedule: '',
-        moveInAvailability: '',
-        provisionalDeposit: '',
-        roomOptions: '',
-        maintenanceAndUtilities: '',
-        commuteTime: '',
-        governmentSupport: '',
-        additionalMemo: '',
-      }),
-    ).rejects.toMatchObject({ kind: 'invalid-response' });
-  });
-
-  it('API-201과 API-202는 사진 DTO를 검증하고 file 파트 하나만 전송한다', async () => {
+  it('사진 조회는 사용하되 미구현 업로드는 실패를 그대로 드러낸다', async () => {
     authenticate();
     let formEntries: string[] = [];
     server.use(
       http.get(`${config.apiBaseUrl}/api/properties/10/photos`, () =>
-        HttpResponse.json(successEnvelope({ photos: [photoFixture], totalCount: 1 })),
+        HttpResponse.json(successEnvelope({ propertyId: 10, items: [photoFixture], totalCount: 1 })),
       ),
       http.post(`${config.apiBaseUrl}/api/properties/10/photos`, async ({ request }) => {
         expect(request.headers.get('Content-Type')).toContain('multipart/form-data; boundary=');
         const formData = await request.formData();
         formEntries = [...formData.keys()];
         expect(formData.get('file')).toMatchObject({ type: 'image/jpeg', size: expect.any(Number) });
-        return HttpResponse.json(successEnvelope(photoFixture), { status: 201 });
+        return HttpResponse.json(errorEnvelope('NOT_IMPLEMENTED'), { status: 501 });
       }),
     );
 
     await expect(fetchPropertyPhotos(config, 10)).resolves.toMatchObject({ totalCount: 1 });
     const file = new File([new Uint8Array([1, 2, 3])], 'local-only.jpg', { type: 'image/jpeg' });
-    await expect(uploadPropertyPhoto(config, 10, file)).resolves.toMatchObject({ photoId: 81 });
+    await expect(uploadPropertyPhoto(config, 10, file)).rejects.toMatchObject({ status: 501, code: 'NOT_IMPLEMENTED' });
     expect(formEntries).toEqual(['file']);
   });
 
@@ -274,17 +367,32 @@ describe('FE-2 API 경계', () => {
     authenticate();
     let requestedUrl = '';
     server.use(
-      http.get(`${config.apiBaseUrl}/api/properties/10/photos/81/content`, ({ request }) => {
+      http.get(`${config.apiBaseUrl}/api/properties/10/photos/81`, ({ request }) => {
         requestedUrl = request.url;
         expect(request.headers.get('Authorization')).toBe('Bearer memory-token');
         return new HttpResponse(new Uint8Array([255, 216, 255]), { headers: { 'Content-Type': 'image/jpeg' } });
       }),
     );
 
-    const blob = await fetchPropertyPhotoContent(config, '/api/properties/10/photos/81/content');
+    const blob = await fetchPropertyPhotoContent(config, '/api/properties/10/photos/81');
     expect(blob.type).toBe('image/jpeg');
-    expect(requestedUrl).toBe('http://localhost:8080/api/properties/10/photos/81/content');
+    expect(requestedUrl).toBe('http://localhost:8080/api/properties/10/photos/81');
     expect(requestedUrl).not.toContain('memory-token');
+  });
+
+  it('대표 사진 지정은 사진 식별자와 Bearer 헤더를 사용한다', async () => {
+    authenticate();
+    let requestedUrl = '';
+    server.use(
+      http.put(`${config.apiBaseUrl}/api/properties/10/photos/81/representative`, ({ request }) => {
+        requestedUrl = request.url;
+        expect(request.headers.get('Authorization')).toBe('Bearer memory-token');
+        return new HttpResponse(null, { status: 200 });
+      }),
+    );
+
+    await expect(setRepresentativePropertyPhoto(config, 10, 81)).resolves.toBeUndefined();
+    expect(requestedUrl).toBe('http://localhost:8080/api/properties/10/photos/81/representative');
   });
 
   it('공통 오류 code를 서버 message 대신 안전한 사용자 문구로 매핑한다', async () => {

@@ -2,11 +2,10 @@
 
 ## 설계와 문서화
 
-설계 시점과 변경 절차는 [API 문서](../api/README.md)를 따른다.
-
-- 구현 전에 [API 명세](../api/api-specification.md)에 경로, 요청, 응답과 대표 오류를 합의한다.
-- 구현 후 Swagger/OpenAPI에서 실제 계약을 확인한다.
-- 사전 명세와 구현이 다르면 같은 PR에서 코드 또는 문서를 수정한다.
+- 구현 전에 팀 협업 공간에서 경로, 요청, 응답과 대표 오류를 합의한다.
+- 합의한 계약을 구현하고 Swagger/OpenAPI에서 실제 결과를 확인한다.
+- 저장소에는 별도의 API 명세 Markdown 문서를 두지 않는다.
+- 합의한 계약과 구현이 다르면 같은 PR에서 코드와 Swagger를 수정한다.
 
 ## URL과 HTTP Method
 
@@ -108,8 +107,6 @@ API마다 전용 Request/Response DTO를 사용하고 Domain 객체를 직접 �
 - `errors`는 입력값 검증 오류에만 사용하고 일반 비즈니스 오류에서는 빈 배열을 사용한다.
 - `204 No Content`는 응답 본문을 반환하지 않는다.
 
-예외 설계와 오류 코드 부여 규칙은 [예외 컨벤션](exception-convention.md)을 따른다.
-
 ## 계층 책임
 
 - Service는 HTTP 상태, `ResponseEntity`와 Controller DTO를 알지 않는다.
@@ -134,4 +131,4 @@ Swagger에는 다음 내용을 작성한다.
 - URL, 필드명, 타입, 상태 코드 변경은 API 계약 변경으로 본다.
 - API 변경은 구현 전에 프론트엔드와 공유한다.
 - 기존 필드를 임의로 삭제하거나 의미를 변경하지 않는다.
-- API 변경 PR에는 설계서와 Swagger 변경을 함께 포함한다.
+- API 변경 PR에는 구현과 Swagger 변경을 함께 포함한다.

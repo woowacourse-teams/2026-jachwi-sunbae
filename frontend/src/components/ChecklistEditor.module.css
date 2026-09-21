@@ -1,0 +1,381 @@
+.sectionHeadingRow {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.checklistEditor {
+  container: checklist-editor / inline-size;
+}
+
+.fixedSubmitEditor {
+  padding-bottom: 5.8rem;
+}
+
+.editorSection,
+.itemPicker {
+  margin-top: 0.55rem;
+  padding: 0.6rem 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+.checklistEditor > .editorSection:first-child {
+  margin-top: 0.15rem;
+}
+
+.editorSection + .editorSection,
+.editorSection + .itemPicker,
+/* 화면 아래 고정 액션이 마지막 항목을 가리지 않도록 비워 둔다. */
+.itemPicker {
+  padding-bottom: calc(5rem + env(safe-area-inset-bottom));
+}
+
+.itemPicker + .editorSection {
+  border-top: 1px solid var(--color-border);
+}
+
+.editorSection h2,
+.itemPicker h2 {
+  margin: 0;
+  color: var(--color-ink);
+  font-size: 0.78rem;
+}
+
+.nameField > label,
+.checklistEditor .editorSection h2 {
+  margin: 0;
+  color: var(--color-ink);
+  font-size: 0.9rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.4;
+}
+
+/* 체크 항목 검색은 공용 SearchField의 입력 스타일을 그대로 사용한다. */
+.checklistEditor .checkItemSearch input {
+  min-height: 2.4rem;
+  padding: 0.55rem 0.5rem;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+.checklistEditor input,
+.checklistEditor textarea {
+  width: 100%;
+  min-height: 2.55rem;
+  padding: 0.6rem 0.7rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  color: var(--color-ink);
+  font: inherit;
+}
+
+.checklistEditor textarea {
+  min-height: 4.5rem;
+  resize: vertical;
+  line-height: 1.55;
+  overflow-wrap: anywhere;
+}
+
+.checklistEditor input[aria-invalid='true'],
+.checklistEditor textarea[aria-invalid='true'] {
+  border-color: var(--color-error);
+}
+
+.selectionCount {
+  flex: 0 0 auto;
+  color: var(--color-primary-dark);
+  font-size: 0.65rem;
+  font-weight: 800;
+}
+
+.selectedCheckItems,
+.checkItemSearchResults {
+  display: grid;
+  gap: 0.45rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.selectedCheckItems {
+  margin-top: 0.75rem;
+}
+
+.selectedCheckItems li {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.6rem;
+  min-height: 3.5rem;
+  padding: 0.55rem 0.65rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+}
+
+.dragHandle {
+  display: grid;
+  width: 1.6rem;
+  min-width: 1.6rem;
+  min-height: 2.25rem;
+  padding: 0;
+  appearance: none;
+  border: 0;
+  background: transparent;
+  color: var(--color-muted);
+  font: inherit;
+  font-size: 1.15rem;
+  cursor: grab;
+  place-items: center;
+  touch-action: none;
+}
+
+.dragHandle:active {
+  cursor: grabbing;
+}
+
+.dragHandle:focus-visible {
+  border-radius: 0.35rem;
+  outline: 2px solid var(--color-focus);
+  outline-offset: 1px;
+}
+
+.selectedCheckItems li[data-dragging='true'] {
+  opacity: 0.55;
+}
+
+.selectedCheckItems li[data-drag-over='true'] {
+  border-color: var(--color-primary);
+  background: var(--color-surface-brand);
+}
+
+.itemCopy {
+  min-width: 0;
+}
+
+.itemCopy strong,
+.itemCopy small {
+  display: block;
+  overflow-wrap: anywhere;
+}
+
+.itemCopy strong {
+  font-size: 0.78rem;
+  line-height: 1.45;
+}
+
+.itemCopy small {
+  margin-top: 0.2rem;
+  color: var(--color-muted);
+  font-size: 0.7rem;
+}
+
+.itemCopy .inactiveItemNote {
+  color: var(--color-error);
+  font-weight: 750;
+}
+
+.itemActions {
+  display: flex;
+  gap: 0.2rem;
+}
+
+.itemActions button {
+  min-width: 1.75rem;
+  min-height: 2.25rem;
+  padding: 0;
+  appearance: none;
+  border: 0;
+  background: transparent;
+  color: var(--color-primary-dark);
+  font-size: 1.1rem;
+  cursor: pointer;
+}
+
+.itemActions button:disabled {
+  cursor: not-allowed;
+  opacity: 0.35;
+}
+
+.itemActions .removeItemButton {
+  padding: 0;
+  color: var(--color-error);
+  font-size: 1.25rem;
+  line-height: 1;
+}
+
+.emptyItems,
+.compactState {
+  display: flex;
+  min-height: 4.5rem;
+  align-items: center;
+  justify-content: center;
+  gap: 0.55rem;
+  margin: 0.8rem 0 0;
+  padding: 0.8rem;
+  border-radius: var(--radius-md);
+  background: var(--color-surface-muted);
+  color: var(--color-ink-soft);
+  text-align: center;
+}
+
+.emptyItems {
+  min-height: auto;
+  justify-content: flex-start;
+  margin-top: 0.55rem;
+  padding: 0;
+  background: transparent;
+  color: var(--color-muted);
+  font-size: 0.7rem;
+  line-height: 1.5;
+  text-align: left;
+}
+
+.checkItemSearch {
+  margin-top: 0.45rem;
+}
+
+.checkItemSearchResults {
+  max-height: 25rem;
+  margin-top: 0.6rem;
+  overflow-y: auto;
+}
+
+.checkItemResults {
+  margin-top: 0.9rem;
+}
+
+.checkItemResults h3 {
+  margin: 0;
+  color: var(--color-ink);
+  font-size: 0.8rem;
+  font-weight: 800;
+}
+
+.checkItemSearchResults li {
+  position: relative;
+  min-height: 3.65rem;
+  padding: 0.72rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+}
+
+.checkItemSearchResults label {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 0.65rem;
+  cursor: pointer;
+}
+
+.resultControl {
+  display: grid;
+  width: 1.7rem;
+  height: 1.7rem;
+  border: 1px solid var(--color-border);
+  border-radius: 50%;
+  background: var(--color-surface);
+  color: var(--color-on-primary);
+  font-size: 0.8rem;
+  font-weight: 900;
+  place-items: center;
+}
+
+.resultControl[data-selected='true'] {
+  border-color: var(--color-primary);
+  background: var(--color-primary);
+}
+
+.checkItemSearchResults label:has(input:focus-visible) .resultControl {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+.checkItemSearchResults label:has(input:disabled) {
+  cursor: default;
+}
+
+.resultCopy {
+  min-width: 0;
+}
+
+.checkItemSearchResults strong,
+.checkItemSearchResults small {
+  display: block;
+}
+
+.checkItemSearchResults strong {
+  color: var(--color-ink);
+  font-size: 0.78rem;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.checkItemSearchResults small {
+  margin-top: 0.25rem;
+  color: var(--color-muted);
+  font-size: 0.72rem;
+  line-height: 1.45;
+}
+
+.checkItemSearchResults .alreadyAdded {
+  margin: 0.35rem 0 0 2.35rem;
+  color: var(--color-primary-dark);
+  font-weight: 750;
+}
+
+.compactButton,
+.pickerError {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.6rem;
+  margin-top: 0.8rem;
+  padding: 0.65rem 0;
+  color: var(--color-error);
+  font-size: 0.76rem;
+  line-height: 1.45;
+}
+
+.pickerRetry {
+  min-width: max-content;
+  min-height: 2.5rem;
+  padding: 0.4rem 0.5rem;
+  white-space: nowrap;
+}
+
+.checklistItemPickerView .itemPicker {
+  display: flex;
+  flex-direction: column;
+  min-height: calc(100dvh - var(--app-bar-height) - 8.5rem);
+  margin-top: 0.55rem;
+  padding: 0.65rem 0 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+/* 취소는 좁게, 추가는 넓게. 두 버튼의 무게를 다르게 둔다. */
+.pickerActions {
+  grid-template-columns: minmax(5rem, 0.42fr) minmax(0, 1fr);
+}
+
+.editorSaveStatus {
+  min-height: 1.5rem;
+  margin: 0.75rem 0 0;
+  color: var(--color-muted);
+  font-size: 0.78rem;
+}
+
+@container checklistEditor (max-width: 34rem) {
+  .selectedCheckItems li {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+  }
+}

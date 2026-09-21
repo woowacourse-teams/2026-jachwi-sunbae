@@ -1,81 +1,81 @@
 package com.jachwisunbae.property.controller.dto.response;
 
-import com.jachwisunbae.property.service.dto.result.ActiveChecklistResult;
-import com.jachwisunbae.property.service.dto.result.PropertyDetailResult;
+import com.jachwisunbae.property.entity.Property;
+import com.jachwisunbae.property.entity.PropertyPhoto;
+import io.swagger.v3.oas.annotations.media.ArraySchema;
 import io.swagger.v3.oas.annotations.media.Schema;
+import java.math.BigDecimal;
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.List;
 
 public record PropertyDetailResponse(
-        long propertyId,
-        String name,
-        long depositAmount,
-        long monthlyRentAmount,
-        DiscoverySourceResponse discoverySource,
-        PropertyMemoResponse memo,
-        List<PropertyActiveChecklistResponse> activeChecklists,
-        @Schema(nullable = true) PropertySummaryResponse.RecentVisitResponse recentVisit,
-        PhotoPreviewResponse photoPreview,
-        DeletionImpactResponse deletionImpact,
-        Instant createdAt,
-        Instant updatedAt,
-        Instant lastActivityAt
+    Long id,
+    String name,
+    Long depositAmount,
+    Long monthlyRentAmount,
+    String discoverySource,
+    String address,
+    BigDecimal latitude,
+    BigDecimal longitude,
+    LocalDate availableMoveInDate,
+    Long maintenanceFeeAmount,
+    LocalDateTime visitScheduledAt,
+
+    @ArraySchema(schema = @Schema(description = "방 옵션",
+        allowableValues = {"AIR_CONDITIONER", "REFRIGERATOR", "WASHING_MACHINE", "SINK", "GAS_STOVE",
+            "MICROWAVE", "SHOE_CABINET", "WARDROBE", "BED", "DESK", "TV", "INDUCTION"}))
+    List<String> roomOptions,
+
+    @ArraySchema(schema = @Schema(description = "관리비 포함 공과금",
+        allowableValues = {"WATER", "ELECTRICITY", "GAS", "INTERNET"}))
+    List<String> utilityOptions,
+
+    int photoCount,
+    List<PropertyDetailPhoto> photos,
+    PropertyRepresentativePhoto representativePhoto,
+    PropertyProgress overallProgress,
+    Instant createdAt,
+
+    @Schema(description = "created_at과 항상 같은 값. property_details는 별도 수정 시각을 두지 않는다")
+    Instant updatedAt
 ) {
+    public static PropertyDetailResponse from(final Property property,
+                                              final List<PropertyPhoto> photos,
+                                              final Long representativePhotoId,
+                                              final PropertyProgress progress) {
+        PropertyPhoto representative = photos.stream()
+            .filter(photo -> photo.getId().equals(representativePhotoId))
+            .findFirst()
+            .orElse(null);
 
-    public static PropertyDetailResponse from(final PropertyDetailResult result) {
         return new PropertyDetailResponse(
-                result.propertyId(),
-                result.name(),
-                result.depositAmount(),
-                result.monthlyRentAmount(),
-                DiscoverySourceResponse.from(result.discoverySource()),
-                PropertyMemoResponse.from(result.memo()),
-                result.activeChecklists().stream()
-                        .map(PropertyActiveChecklistResponse::from)
-                        .toList(),
-                PropertySummaryResponse.RecentVisitResponse.from(result.recentVisit()),
-                new PhotoPreviewResponse(
-                        result.photoCount(),
-                        result.photoPreview().stream()
-                                .map(photo -> new PhotoResponse(
-                                        photo.photoId(),
-                                        "/api/properties/%d/photos/%d/content".formatted(
-                                                result.propertyId(),
-                                                photo.photoId()
-                                        ),
-                                        photo.createdAt()
-                                ))
-                                .toList()
-                ),
-                new DeletionImpactResponse(
-                        result.visitCount(),
-                        result.photoCount(),
-                        result.activeChecklists().size()
-                ),
-                result.createdAt(),
-                result.updatedAt(),
-                result.lastActivityAt()
+            property.getId(),
+            property.getName(),
+            property.getDepositAmount(),
+            property.getMonthlyRentAmount(),
+            property.getDiscoverySource(),
+            property.getAddress(),
+            property.getLatitude(),
+            property.getLongitude(),
+            property.getAvailableMoveInDate(),
+            property.getMaintenanceFeeAmount(),
+            property.getVisitScheduledAt(),
+            property.getRoomOptions().stream().sorted().map(Enum::name).toList(),
+            property.getUtilityOptions().stream().sorted().map(Enum::name).toList(),
+            photos.size(),
+            photos.stream()
+                .map(photo -> PropertyDetailPhoto.from(photo, photo.getId().equals(representativePhotoId)))
+                .toList(),
+            representative == null ? null : new PropertyRepresentativePhoto(
+                representative.getId(),
+                "/api/properties/" + property.getId() + "/photos/" + representative.getId(),
+                representative.getContentType()),
+            progress,
+            property.getCreatedAt().toInstant(ZoneOffset.UTC),
+            property.getUpdatedAt().toInstant(ZoneOffset.UTC)
         );
-    }
-
-    public record PropertyActiveChecklistResponse(String stage, long checklistId, String name, int itemCount) {
-
-        static PropertyActiveChecklistResponse from(final ActiveChecklistResult result) {
-            return new PropertyActiveChecklistResponse(
-                    result.stage().name(),
-                    result.checklistId(),
-                    result.name(),
-                    result.itemCount()
-            );
-        }
-    }
-
-    public record PhotoPreviewResponse(int totalCount, List<PhotoResponse> photos) {
-    }
-
-    public record PhotoResponse(long photoId, String contentUrl, Instant createdAt) {
-    }
-
-    public record DeletionImpactResponse(int visitCount, int photoCount, int activeChecklistCount) {
     }
 }

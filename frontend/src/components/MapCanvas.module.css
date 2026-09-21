@@ -1,0 +1,420 @@
+.canvas {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-height: 20rem;
+  overflow: hidden;
+  background: #e9e5d8;
+  isolation: isolate;
+}
+
+.liveLayer {
+  position: absolute;
+  inset: 0;
+}
+
+/* Naver SDK가 지도 container에 position: relative를 인라인으로 덮어쓴다.
+   .liveLayer가 크기를 잡고 이 안쪽 div만 SDK에 넘겨 높이가 0으로 접히지 않게 한다. */
+.liveMap {
+  width: 100%;
+  height: 100%;
+}
+
+.demo {
+  background:
+    linear-gradient(28deg, transparent 45%, rgb(255 255 255 / 82%) 46% 51%, transparent 52%),
+    linear-gradient(102deg, transparent 43%, rgb(255 255 255 / 72%) 44% 50%, transparent 51%),
+    repeating-linear-gradient(0deg, transparent 0 52px, rgb(160 151 128 / 20%) 53px 54px),
+    repeating-linear-gradient(90deg, transparent 0 70px, rgb(160 151 128 / 18%) 71px 72px), #ece8dc;
+}
+
+.roadOne,
+.roadTwo {
+  position: absolute;
+  height: 8px;
+  border: 2px solid white;
+  background: #d6c9a4;
+  transform: rotate(-18deg);
+}
+
+.roadOne {
+  inset: 30% -15% auto -10%;
+}
+
+.roadTwo {
+  inset: 72% -15% auto -10%;
+  transform: rotate(12deg);
+}
+
+.park {
+  position: absolute;
+  top: 12%;
+  right: 7%;
+  padding: 1.1rem 0.7rem;
+  border-radius: 45% 55% 52% 48%;
+  background: #ced9ae;
+  color: #667a3e;
+  font-size: 0.48rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+}
+
+.demoMarkerPosition {
+  position: absolute;
+  z-index: 6;
+  transform: translate(-50%, -50%);
+}
+
+.marker {
+  position: relative;
+  display: grid;
+  width: 1.55rem;
+  height: 1.55rem;
+  padding: 0;
+  border: 2px solid white;
+  border-radius: 50%;
+  background: #64748b;
+  box-shadow: 0 0.28rem 0.8rem rgb(44 50 39 / 28%);
+  color: white;
+  cursor: default;
+  place-items: center;
+}
+
+.marker.demoMarkerPosition {
+  position: absolute;
+}
+
+.placeMarker.demoMarkerPosition {
+  z-index: 5;
+}
+
+.currentMarker.demoMarkerPosition {
+  z-index: 7;
+}
+
+.propertyMarker.demoMarkerPosition {
+  z-index: 8;
+}
+
+.selectedMarker.demoMarkerPosition {
+  z-index: 9;
+}
+
+button.marker {
+  cursor: pointer;
+}
+
+button.placeMarker::before,
+button.clusterMarker::before {
+  position: absolute;
+  inset: -0.55rem;
+  content: '';
+}
+
+/*
+ * 물방울 모양은 ::before만 회전해서 만든다.
+ * 마커 element 자체를 회전하면 live 지도에서 overlay가 거는 inline transform에 덮여
+ * 모양은 안 돌고 사진·캡션만 기울어진다.
+ */
+.propertyMarker {
+  width: 2.7rem;
+  height: 2.7rem;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  isolation: isolate;
+}
+
+.propertyMarker::before {
+  position: absolute;
+  z-index: 0;
+  inset: 0;
+  border: 2px solid white;
+  border-radius: 50% 50% 50% 0;
+  background: #f04444;
+  box-shadow: 0 0.28rem 0.8rem rgb(44 50 39 / 28%);
+  content: '';
+  transform: rotate(-45deg);
+}
+
+.propertyMarker > * {
+  z-index: 1;
+}
+
+/*
+ * 현재 위치는 지도 앱 관례대로 파란 점으로 그린다.
+ * 바라보는 방향 표시는 기기 방위가 필요해 네이티브 앱에서 추가한다.
+ */
+.currentMarker {
+  width: 1.15rem;
+  height: 1.15rem;
+  border: 3px solid white;
+  border-radius: 50%;
+  background: #1a73e8;
+  box-shadow:
+    0 0 0 0.45rem rgb(26 115 232 / 16%),
+    0 0.15rem 0.5rem rgb(20 60 120 / 38%);
+}
+
+.selectedMarker {
+  width: 3.35rem;
+  height: 3.35rem;
+  background: #f54242;
+}
+
+.activeMarker {
+  outline: 2px solid white;
+  outline-offset: 2px;
+  filter: saturate(1.15);
+  scale: 1.08;
+}
+
+/* 물방울 마커는 테두리를 element가 아니라 모양을 그리는 ::before에 두른다. */
+.propertyMarker.activeMarker {
+  outline: 0;
+}
+
+.propertyMarker.activeMarker::before {
+  outline: 2px solid white;
+  outline-offset: 2px;
+}
+
+.placeMarker[data-category='HOSPITAL'] {
+  background: #f06b57;
+}
+
+.placeMarker[data-category='TRANSPORT'] {
+  background: #7963e8;
+}
+
+.placeMarker[data-category='SCHOOL'] {
+  background: #f59e0b;
+}
+
+.placeMarker[data-category='CONVENIENCE'] {
+  background: #08a982;
+}
+
+.placeMarker[data-category='AGENCY'] {
+  background: #64748b;
+}
+
+/* 매물 군집은 물방울이 아니라 원으로 그려 하나의 매물과 구분한다. */
+.propertyClusterMarker {
+  width: 2.7rem;
+  height: 2.7rem;
+  border-radius: 50%;
+  background: #f04444;
+}
+
+.propertyClusterMarker .markerCount {
+  right: -0.3rem;
+  bottom: -0.3rem;
+  min-width: 1.2rem;
+  height: 1.2rem;
+  font-size: 0.62rem;
+  font-weight: 850;
+}
+
+.clusterMarker {
+  width: 1.95rem;
+  height: 1.95rem;
+  border-width: 2px;
+  background: rgb(52 116 236 / 90%);
+  box-shadow:
+    0 0 0 0.22rem rgb(52 116 236 / 18%),
+    0 0.3rem 0.9rem rgb(31 65 127 / 24%);
+}
+
+.clusterMarker[data-category='HOSPITAL'] {
+  background: rgb(240 107 87 / 92%);
+}
+
+.clusterMarker[data-category='TRANSPORT'] {
+  background: rgb(121 99 232 / 92%);
+}
+
+.clusterMarker[data-category='SCHOOL'] {
+  background: rgb(245 158 11 / 92%);
+}
+
+.clusterMarker[data-category='CONVENIENCE'] {
+  background: rgb(8 169 130 / 92%);
+}
+
+.clusterMarker[data-category='AGENCY'] {
+  background: rgb(100 116 139 / 92%);
+}
+
+.markerIcon {
+  font-size: 0.78rem;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.markerPhoto {
+  display: block;
+  width: 1.95rem;
+  height: 1.95rem;
+  border-radius: 50%;
+  background: var(--color-surface-muted, #f7f7f7);
+  object-fit: cover;
+  pointer-events: none;
+}
+
+.selectedMarker .markerPhoto {
+  width: 2.5rem;
+  height: 2.5rem;
+}
+
+.propertyClusterMarker .markerPhoto {
+  width: 2.1rem;
+  height: 2.1rem;
+}
+
+.categoryIcon {
+  font-size: 0.78rem;
+}
+
+.clusterMarker .categoryIcon {
+  font-size: 0.72rem;
+}
+
+.markerCount {
+  position: absolute;
+  right: -0.28rem;
+  bottom: -0.28rem;
+  display: grid;
+  min-width: 0.92rem;
+  height: 0.92rem;
+  padding: 0 0.2rem;
+  border: 2px solid white;
+  border-radius: 999px;
+  background: #252a23;
+  color: white;
+  font-size: 0.46rem;
+  place-items: center;
+}
+
+.markerCaption {
+  position: absolute;
+  top: calc(100% + 0.35rem);
+  left: 50%;
+  padding: 0.15rem 0.45rem;
+  border: 1px solid var(--color-border, #eaebed);
+  border-radius: var(--radius-sm, 0.35rem);
+  background: rgb(255 255 255 / 96%);
+  box-shadow: 0 0.15rem 0.5rem rgb(0 0 0 / 12%);
+  color: var(--color-ink, #212124);
+  font-size: 0.68rem;
+  font-weight: 750;
+  line-height: 1.25;
+  text-align: center;
+  white-space: nowrap;
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+.radiusCircle {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  aspect-ratio: 1;
+  border: 2px solid color-mix(in srgb, var(--color-primary) 58%, transparent);
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--color-primary) 8%, transparent);
+  transform: translate(-50%, -50%);
+}
+
+/*
+ * 어느 점을 고르는지 보이도록 매물 핀과 같은 물방울로 그린다.
+ * 모양은 ::before만 회전하고, 뾰족한 끝이 지도 중심에 오도록 위로 올린다.
+ * (2.8rem 상자를 -45도 돌리면 끝이 상자 아래로 반대각선-반높이 = 0.58rem 만큼 더 내려간다.)
+ */
+.fixedCenterPin {
+  position: absolute;
+  z-index: 9;
+  top: 50%;
+  left: 50%;
+  display: grid;
+  width: 2.8rem;
+  height: 2.8rem;
+  color: white;
+  place-items: center;
+  isolation: isolate;
+  transform: translate(-50%, calc(-100% - 0.58rem));
+}
+
+.fixedCenterPin::before {
+  position: absolute;
+  z-index: 0;
+  inset: 0;
+  border: 4px solid white;
+  border-radius: 50% 50% 50% 0;
+  background: var(--color-primary, #555);
+  box-shadow: 0 0.35rem 0.9rem rgb(32 35 30 / 30%);
+  content: '';
+  transform: rotate(-45deg);
+}
+
+.fixedCenterPin > span {
+  z-index: 1;
+  font-size: 1.5rem;
+  font-weight: 500;
+  line-height: 1;
+}
+
+.radiusLabels {
+  position: absolute;
+  z-index: 4;
+  top: 28%;
+  left: 8%;
+  display: grid;
+  gap: 2.6rem;
+  color: #2176ec;
+  font-size: 0.65rem;
+  font-weight: 900;
+  pointer-events: none;
+}
+
+.demoBadge {
+  position: absolute;
+  right: 0.6rem;
+  bottom: 0.6rem;
+  padding: 0.22rem 0.4rem;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 78%);
+  color: var(--color-muted);
+  font-size: 0.5rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+}
+
+.sdkError {
+  position: absolute;
+  z-index: 20;
+  top: 50%;
+  left: 50%;
+  width: min(16rem, calc(100% - 2rem));
+  padding: 0.75rem;
+  border-radius: 0.75rem;
+  background: rgb(255 241 238 / 96%);
+  color: var(--color-error);
+  font-size: 0.68rem;
+  font-weight: 750;
+  text-align: center;
+  transform: translate(-50%, -50%);
+}
+
+.mapError {
+  position: absolute;
+  z-index: 20;
+  inset: 0;
+  background: var(--color-canvas);
+}
+
+.mapError :global(.page) {
+  min-height: 100%;
+  padding: 1rem;
+}

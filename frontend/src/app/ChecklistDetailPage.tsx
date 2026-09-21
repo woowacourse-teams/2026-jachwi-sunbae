@@ -1,19 +1,17 @@
-import { useEffect, useRef, useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { ApiError } from '../apis/apiClient';
 import { getChecklistErrorMessage } from '../apis/checklistErrorMessages';
-import { checklistQueryKeys } from './checklistQueryKeys';
-import { queryClient } from './queryClient';
 import ChecklistEditor from '../components/ChecklistEditor';
-import ConfirmDialog from '../components/ConfirmDialog';
-import PageHeading from '../components/PageHeading';
-import { checklistStageMeta } from '../constants/checklist';
-import { useRemoveChecklist, useUpdateChecklist } from '../hooks/query/useChecklistMutations';
+import TopNavigation from '../components/ui/TopNavigation';
+import { useUpdateChecklist } from '../hooks/query/useChecklistMutations';
 import { useChecklistDetail } from '../hooks/query/useChecklists';
+import useDelayedLoading from '../hooks/ui/useDelayedLoading';
 import { checklistItemToEditorItem } from '../types/ChecklistEditor';
 import type { PublicConfig } from '../types/PublicConfig';
-import { toUpdateChecklistItems } from '../utils/checklistEditor';
+import { toProvidedChecklistItemInputs } from '../utils/checklistEditor';
 import { parsePositiveId } from '../utils/propertyFormat';
+import styles from './ChecklistDetailPage.module.css';
+import ContentState from '../components/ui/ContentState';
 
 const ChecklistDetailPage = ({ config }: { config: PublicConfig }) => {
   const checklistId = parsePositiveId(useParams().resource);
@@ -24,40 +22,25 @@ const ChecklistDetailPage = ({ config }: { config: PublicConfig }) => {
 const InvalidChecklist = () => (
   <main className="property-page">
     <div className="page-container">
-      <div className="content-state">
-        <strong>올바른 체크리스트 주소가 아니에요.</strong>
-        <Link to="/checklists">체크리스트 홈으로 돌아가기</Link>
-      </div>
+      <ContentState page={false} title="올바른 체크리스트 주소가 아니에요.">
+        <Link to="/checklists">내 체크리스트로 돌아가기</Link>
+      </ContentState>
     </div>
   </main>
 );
 
 const ResolvedChecklistDetail = ({ config, checklistId }: { config: PublicConfig; checklistId: number }) => {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const detail = useChecklistDetail(config, checklistId);
+  const isLoadingVisible = useDelayedLoading(detail.isPending);
+  const isLoading = detail.isPending || isLoadingVisible;
   const update = useUpdateChecklist(config, checklistId);
-  const remove = useRemoveChecklist(config, checklistId);
-  const [isDeleteOpen, setIsDeleteOpen] = useState(false);
-  const deleteRef = useRef<HTMLButtonElement>(null);
-  const deleteSucceededRef = useRef(false);
-
-  useEffect(
-    () => () => {
-      if (deleteSucceededRef.current) {
-        queryClient.removeQueries({ queryKey: checklistQueryKeys.detail(checklistId), exact: true });
-      }
-    },
-    [checklistId],
-  );
-
-  if (detail.isPending)
+  if (isLoading)
     return (
       <main className="property-page">
         <div className="page-container">
-          <div className="content-state" role="status">
-            <span className="spinner" />
-            체크리스트를 불러오는 중이에요.
-          </div>
+          {isLoadingVisible && <ContentState page={false} loading title="체크리스트를 불러오는 중이에요." />}
         </div>
       </main>
     );
@@ -66,46 +49,33 @@ const ResolvedChecklistDetail = ({ config, checklistId }: { config: PublicConfig
     return (
       <main className="property-page">
         <div className="page-container">
-          <div className="content-state content-state--error" role="alert">
-            <strong>{notFound ? '체크리스트를 찾을 수 없어요.' : '체크리스트를 불러오지 못했어요.'}</strong>
-            <span>{getChecklistErrorMessage(detail.error)}</span>
-            {!notFound && (
-              <button type="button" className="inline-button" onClick={() => void detail.refetch()}>
-                다시 시도
-              </button>
-            )}
-            <Link to="/checklists">체크리스트 홈으로 돌아가기</Link>
-          </div>
+          <ContentState
+            page={false}
+            tone="error"
+            title={notFound ? '체크리스트를 찾을 수 없어요.' : '체크리스트를 불러오지 못했어요.'}
+            description={getChecklistErrorMessage(detail.error)}
+            onRetry={notFound ? undefined : () => void detail.refetch()}
+          >
+            <Link to="/checklists">내 체크리스트로 돌아가기</Link>
+          </ContentState>
         </div>
       </main>
     );
   }
 
   const checklist = detail.data;
-  const deleteChecklist = async () => {
-    try {
-      await remove.mutateAsync();
-      deleteSucceededRef.current = true;
-      navigate(`/checklists/${checklist.stage}`, { replace: true, state: { focusHeading: true } });
-    } catch {
-      /* Keep the dialog open for retry. */
-    }
-  };
-
+  const isAddingItems = searchParams.get('mode') === 'add-items';
   return (
-    <main className="property-page checklist-page">
-      <div className="page-container page-container--form">
-        <PageHeading
-          title={checklist.name}
-          description={`${checklistStageMeta[checklist.stage].label} · 매물 ${checklist.assignedPropertyCount}곳에서 사용 중`}
-          backTo={`/checklists/${checklist.stage}`}
-          backLabel="목록"
+    <main className={`property-page checklist-page checklist-editor-page ${styles.page}`}>
+      <div className={`page-container page-container--form ${styles.container}`}>
+        <TopNavigation
+          className={styles.topNavigation}
+          title={isAddingItems ? '체크 항목 편집' : checklist.name}
+          backLabel={isAddingItems ? '체크리스트 편집으로 돌아가기' : '체크리스트 목록으로 돌아가기'}
+          navigationIcon="arrow-left"
+          {...(isAddingItems ? { onBack: () => setSearchParams({}, { replace: true }) } : { backTo: '/checklists' })}
         />
-        <div className="detail-actions">
-          <button ref={deleteRef} type="button" className="danger-outline-button" onClick={() => setIsDeleteOpen(true)}>
-            체크리스트 삭제
-          </button>
-        </div>
+        <h1 className="sr-only">{checklist.name}</h1>
         <ChecklistEditor
           key={checklist.checklistId}
           config={config}
@@ -113,35 +83,19 @@ const ResolvedChecklistDetail = ({ config, checklistId }: { config: PublicConfig
           initialName={checklist.name}
           initialItems={checklist.items.map(checklistItemToEditorItem)}
           submitLabel="변경 내용 저장"
+          fixedSubmitAction
           isSubmitting={update.isPending}
           serverError={update.isError ? getChecklistErrorMessage(update.error) : undefined}
+          viewMode={isAddingItems ? 'ADD_ITEMS' : 'EDIT'}
+          onViewModeChange={(mode) =>
+            setSearchParams(mode === 'ADD_ITEMS' ? { mode: 'add-items' } : {}, { replace: mode === 'EDIT' })
+          }
           onSubmit={async ({ name, items }) => {
-            return update.mutateAsync({ name, items: toUpdateChecklistItems(items) });
+            const saved = await update.mutateAsync({ name, items: toProvidedChecklistItemInputs(items) });
+            navigate('/checklists', { replace: true, state: { focusHeading: true } });
+            return saved;
           }}
         />
-        <ConfirmDialog
-          isOpen={isDeleteOpen}
-          title={`${checklist.name}을 삭제할까요?`}
-          description={
-            <>
-              <p>
-                {checklist.itemCount}개 항목과 매물 {checklist.assignedPropertyCount}곳의 활성 연결이 함께 삭제됩니다.
-              </p>
-              <p>완료한 방문 기록의 스냅샷은 유지됩니다.</p>
-            </>
-          }
-          confirmLabel="체크리스트 삭제"
-          isConfirming={remove.isPending}
-          returnFocusRef={deleteRef}
-          onCancel={() => setIsDeleteOpen(false)}
-          onConfirm={() => void deleteChecklist()}
-        >
-          {remove.isError && (
-            <p className="form-error" role="alert">
-              {getChecklistErrorMessage(remove.error)} 체크리스트는 그대로 유지됩니다.
-            </p>
-          )}
-        </ConfirmDialog>
       </div>
     </main>
   );

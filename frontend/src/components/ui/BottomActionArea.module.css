@@ -1,0 +1,47 @@
+.actions {
+  display: grid;
+  grid-auto-columns: minmax(0, 1fr);
+  grid-auto-flow: column;
+  gap: 0.55rem;
+  padding: 0.6rem 0;
+  background: var(--color-canvas);
+}
+
+.inline {
+  margin-top: 0.75rem;
+}
+
+/* 화면 맨 아래 고정. 폼을 길게 내려도 주요 액션이 늘 같은 자리에 있다. */
+.screen {
+  position: fixed;
+  right: 0;
+  bottom: 0;
+  left: 50%;
+  z-index: 100;
+  box-sizing: border-box;
+  width: min(100%, var(--app-max-width));
+  margin: 0;
+  padding: 0.5rem 1rem calc(0.75rem + env(safe-area-inset-bottom));
+  border-top: 1px solid var(--color-border);
+  background: color-mix(in srgb, var(--color-canvas) 96%, transparent);
+  box-shadow: 0 -0.35rem 1rem rgb(59 52 36 / 8%);
+  transform: translateX(-50%);
+}
+
+.sticky {
+  position: sticky;
+  z-index: 15;
+  bottom: 0;
+  margin: 0 -1rem -1rem;
+  padding: 0.75rem 1rem;
+  background: color-mix(in srgb, var(--color-canvas) 94%, transparent);
+  backdrop-filter: blur(12px);
+}
+
+.sticky[data-divider='true'] {
+  border-top: 1px solid var(--color-border);
+}
+
+.screen[data-divider='false'] {
+  border-top: 0;
+}

@@ -1,9 +1,13 @@
 import AppProviders from './app/AppProviders';
 import AppRoutes from './app/AppRoutes';
+import { TrackingConsentProvider } from './app/TrackingConsentContext';
 import { getPublicConfig } from './app/publicConfig';
+import PostHogTracker from './components/PostHogTracker';
 import StatusPanel from './components/StatusPanel';
 import type { PublicConfig } from './types/PublicConfig';
-import './style.css';
+import './styles/tokens.css';
+import './styles/global.css';
+import './styles/utilities.css';
 
 type AppProps = {
   config?: PublicConfig;
@@ -22,7 +26,10 @@ const App = ({ config }: AppProps) => {
 
   return (
     <AppProviders>
-      <AppRoutes config={resolvedConfig} />
+      <PostHogTracker config={resolvedConfig} />
+      <TrackingConsentProvider metaPixelId={resolvedConfig.metaPixelId}>
+        <AppRoutes config={resolvedConfig} />
+      </TrackingConsentProvider>
     </AppProviders>
   );
 };

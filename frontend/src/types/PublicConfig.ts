@@ -1,5 +1,8 @@
 export type PublicConfig = {
   apiBaseUrl: string;
-  googleClientId: string;
-  googleRedirectUri: string;
+  mapProviderMode?: 'demo' | 'naver';
+  naverMapClientId?: string;
+  metaPixelId?: string;
+  posthogProjectToken?: string;
+  posthogHost?: string;
 };

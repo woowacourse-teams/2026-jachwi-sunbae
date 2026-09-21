@@ -21,16 +21,22 @@ const requireHttpUrl = (value: string, variableName: string): string => {
 };
 
 export const getPublicConfig = (): PublicConfig => {
-  if (typeof __GOOGLE_CLIENT_ID__ !== 'string' || __GOOGLE_CLIENT_ID__.trim().length === 0) {
-    throw new Error('GOOGLE_CLIENT_ID 환경변수가 필요합니다.');
+  const mapProviderMode =
+    typeof __MAP_PROVIDER_MODE__ === 'string' && __MAP_PROVIDER_MODE__ === 'naver' ? 'naver' : 'demo';
+
+  if (
+    mapProviderMode === 'naver' &&
+    (typeof __NAVER_MAP_CLIENT_ID__ !== 'string' || __NAVER_MAP_CLIENT_ID__.trim().length === 0)
+  ) {
+    throw new Error('NAVER_MAP_CLIENT_ID 환경변수가 필요합니다.');
   }
 
   return {
     apiBaseUrl: requireHttpUrl(typeof __API_BASE_URL__ === 'string' ? __API_BASE_URL__ : '', 'API_BASE_URL'),
-    googleClientId: __GOOGLE_CLIENT_ID__.trim(),
-    googleRedirectUri: requireHttpUrl(
-      typeof __GOOGLE_REDIRECT_URI__ === 'string' ? __GOOGLE_REDIRECT_URI__ : '',
-      'GOOGLE_REDIRECT_URI',
-    ),
+    mapProviderMode,
+    naverMapClientId: typeof __NAVER_MAP_CLIENT_ID__ === 'string' ? __NAVER_MAP_CLIENT_ID__.trim() : '',
+    metaPixelId: typeof __META_PIXEL_ID__ === 'string' ? __META_PIXEL_ID__.trim() : '',
+    posthogProjectToken: typeof __POSTHOG_PROJECT_TOKEN__ === 'string' ? __POSTHOG_PROJECT_TOKEN__.trim() : '',
+    posthogHost: typeof __POSTHOG_HOST__ === 'string' ? __POSTHOG_HOST__.trim() : '',
   };
 };

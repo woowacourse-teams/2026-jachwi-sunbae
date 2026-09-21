@@ -1,0 +1,13 @@
+.page {
+  padding-right: 1rem;
+  padding-left: 1rem;
+  background: var(--color-canvas);
+}
+
+.container {
+  max-width: 42rem;
+}
+
+.topNavigation {
+  margin-bottom: 0;
+}

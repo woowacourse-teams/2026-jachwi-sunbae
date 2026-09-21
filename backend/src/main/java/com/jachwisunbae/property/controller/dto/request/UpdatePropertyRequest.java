@@ -1,94 +1,64 @@
 package com.jachwisunbae.property.controller.dto.request;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonSetter;
-import com.fasterxml.jackson.annotation.Nulls;
-import com.jachwisunbae.property.domain.Money;
-import com.jachwisunbae.property.service.dto.command.UpdatePropertyCommand;
+import io.swagger.v3.oas.annotations.media.ArraySchema;
 import io.swagger.v3.oas.annotations.media.Schema;
-import jakarta.validation.constraints.AssertTrue;
-import jakarta.validation.constraints.Max;
-import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.PositiveOrZero;
-import java.util.Optional;
-import org.hibernate.validator.constraints.CodePointLength;
+import jakarta.validation.constraints.Size;
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.List;
 
-public final class UpdatePropertyRequest {
+public record UpdatePropertyRequest(
+    @Schema(description = "매물 이름", example = "신림역 원룸")
+    @NotBlank
+    @Size(max = 30)
+    String name,
 
-    private String name;
-    private Long depositAmount;
-    private Long monthlyRentAmount;
-    private String discoverySource;
-    private boolean namePresent;
-    private boolean depositAmountPresent;
-    private boolean monthlyRentAmountPresent;
-    private boolean discoverySourcePresent;
+    @Schema(description = "보증금(원). 미확정이면 0", example = "10000000")
+    @NotNull
+    @PositiveOrZero
+    Long depositAmount,
 
-    @JsonSetter(value = "name", nulls = Nulls.FAIL)
-    public void setName(final String name) {
-        this.name = name.trim();
-        this.namePresent = true;
-    }
+    @Schema(description = "월세(원). 미확정이면 0", example = "550000")
+    @NotNull
+    @PositiveOrZero
+    Long monthlyRentAmount,
 
-    @JsonSetter(value = "depositAmount", nulls = Nulls.FAIL)
-    public void setDepositAmount(final Long depositAmount) {
-        this.depositAmount = depositAmount;
-        this.depositAmountPresent = true;
-    }
+    @Schema(description = "주소. 도로명·지번 구분 없는 단일 값. 비우면 좌표도 함께 제거된다",
+        example = "서울 관악구 신림로 12길 3")
+    @Size(max = 255)
+    String address,
 
-    @JsonSetter(value = "monthlyRentAmount", nulls = Nulls.FAIL)
-    public void setMonthlyRentAmount(final Long monthlyRentAmount) {
-        this.monthlyRentAmount = monthlyRentAmount;
-        this.monthlyRentAmountPresent = true;
-    }
+    @Schema(description = "위도. longitude와 함께 있거나 함께 없어야 한다", example = "37.4841234")
+    BigDecimal latitude,
 
-    @JsonSetter(value = "discoverySource", nulls = Nulls.FAIL)
-    public void setDiscoverySource(final String discoverySource) {
-        this.discoverySource = discoverySource.trim();
-        this.discoverySourcePresent = true;
-    }
+    @Schema(description = "경도. latitude와 함께 있거나 함께 없어야 한다", example = "126.9291234")
+    BigDecimal longitude,
 
-    @Schema(example = "신림역 원룸 2차 방문", maxLength = 50)
-    @Pattern(regexp = "(?s).*\\S.*", message = "공백을 제외하고 1자 이상 입력해야 합니다.")
-    @CodePointLength(max = 50, message = "50자 이하로 입력해야 합니다.")
-    public String getName() {
-        return name;
-    }
+    @Schema(description = "입주 가능일")
+    LocalDate availableMoveInDate,
 
-    @Schema(example = "10000000", minimum = "0", maximum = "9007199254740991")
-    @PositiveOrZero(message = "0 이상의 금액을 입력해야 합니다.")
-    @Max(value = Money.MAX_AMOUNT, message = "허용된 최대 금액 이하로 입력해야 합니다.")
-    public Long getDepositAmount() {
-        return depositAmount;
-    }
+    @Schema(description = "관리비(원)", example = "70000")
+    @PositiveOrZero
+    Long maintenanceFeeAmount,
 
-    @Schema(example = "530000", minimum = "0", maximum = "9007199254740991")
-    @PositiveOrZero(message = "0 이상의 금액을 입력해야 합니다.")
-    @Max(value = Money.MAX_AMOUNT, message = "허용된 최대 금액 이하로 입력해야 합니다.")
-    public Long getMonthlyRentAmount() {
-        return monthlyRentAmount;
-    }
+    @Schema(description = "방문 예정 시각")
+    LocalDateTime visitScheduledAt,
 
-    @Schema(example = "직방 앱에서 발견", maxLength = 500)
-    @Pattern(regexp = "(?s).*\\S.*", message = "공백을 제외하고 1자 이상 입력해야 합니다.")
-    @CodePointLength(max = 500, message = "500자 이하로 입력해야 합니다.")
-    public String getDiscoverySource() {
-        return discoverySource;
-    }
+    @Schema(description = "발견 경로(URL·중개사 연락처 등)", example = "https://example.com/rooms/123")
+    @Size(max = 500)
+    String discoverySource,
 
-    @JsonIgnore
-    @Schema(hidden = true)
-    @AssertTrue(message = "변경할 필드를 하나 이상 입력해야 합니다.")
-    public boolean isAnyFieldPresent() {
-        return namePresent || depositAmountPresent || monthlyRentAmountPresent || discoverySourcePresent;
-    }
+    @ArraySchema(schema = @Schema(description = "방 옵션",
+        allowableValues = {"AIR_CONDITIONER", "REFRIGERATOR", "WASHING_MACHINE", "SINK", "GAS_STOVE",
+            "MICROWAVE", "SHOE_CABINET", "WARDROBE", "BED", "DESK", "TV", "INDUCTION"}))
+    List<String> roomOptions,
 
-    public UpdatePropertyCommand toCommand() {
-        return new UpdatePropertyCommand(
-                namePresent ? Optional.of(name) : Optional.empty(),
-                depositAmountPresent ? Optional.of(depositAmount) : Optional.empty(),
-                monthlyRentAmountPresent ? Optional.of(monthlyRentAmount) : Optional.empty(),
-                discoverySourcePresent ? Optional.of(discoverySource) : Optional.empty()
-        );
-    }
+    @ArraySchema(schema = @Schema(description = "관리비 포함 공과금",
+        allowableValues = {"WATER", "ELECTRICITY", "GAS", "INTERNET"}))
+    List<String> utilityOptions
+) {
 }

@@ -1,9 +1,19 @@
 import { checklistStageMeta } from '../constants/checklist';
 import type { ChecklistStage } from '../types/Checklist';
-import { visitStatusLabel } from '../constants/visit';
-import type { VisitStatus } from '../types/Visit';
 
 export const formatWon = (amount: number): string => `${new Intl.NumberFormat('ko-KR').format(amount)}원`;
+
+export const formatManwon = (amount: number): string =>
+  `${new Intl.NumberFormat('ko-KR', { maximumFractionDigits: 2 }).format(amount / 10_000)}만원`;
+
+/** 지도 마커처럼 좁은 자리에 쓰는 짧은 시세 표기. 예: `1,000/55`, `전세 1억` */
+export const formatRentSummary = (depositAmount: number, monthlyRentAmount: number): string => {
+  const toManwon = (amount: number) =>
+    new Intl.NumberFormat('ko-KR', { maximumFractionDigits: 1 }).format(amount / 10_000);
+  return monthlyRentAmount === 0
+    ? `전세 ${toManwon(depositAmount)}`
+    : `${toManwon(depositAmount)}/${toManwon(monthlyRentAmount)}`;
+};
 
 export const formatDateTime = (value: string): string =>
   new Intl.DateTimeFormat('ko-KR', {
@@ -22,8 +32,6 @@ export const getSafeHttpUrl = (value: string): string | null => {
     return null;
   }
 };
-
-export const getVisitStatusLabel = (status: VisitStatus): string => visitStatusLabel[status];
 
 export const getChecklistStageLabel = (stage: ChecklistStage): string => checklistStageMeta[stage].label;
 
