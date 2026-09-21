@@ -128,6 +128,8 @@ public class PropertyController {
     @PostMapping
     @Operation(summary = "매물 생성",
             description = "후보 매물을 생성합니다. 회원당 최대 30개까지 등록할 수 있습니다.")
+    @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "201",
+            description = "매물을 등록하고 Location 헤더에 생성된 매물 경로를 담습니다.")
     public ResponseEntity<ApiResponse<CreatePropertyResponse>> create(
             @AuthenticatedMemberId final Long memberId,
             @Valid @RequestBody final CreatePropertyRequest request) {
