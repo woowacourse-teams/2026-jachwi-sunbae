@@ -7,6 +7,7 @@ import java.time.Clock;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Locale;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
@@ -35,12 +36,13 @@ public class DemoDataInitializer implements ApplicationRunner {
     public void run(ApplicationArguments args) {
         LocalDateTime now = LocalDateTime.now(clock);
 
-        // 비밀번호 없는 데모 닉네임을 멱등하게 만든다. nickname UNIQUE라 재실행해도 중복 생성되지 않는다.
-        jdbcTemplate.update("INSERT INTO members (nickname, password_hash, created_at, updated_at) "
-                        + "VALUES (?, NULL, ?, ?) ON DUPLICATE KEY UPDATE nickname = VALUES(nickname)",
-                demoNickname, now, now);
+        String nicknameKey = demoNickname.toLowerCase(Locale.ROOT);
+        // 비밀번호 없는 데모 닉네임을 멱등하게 만든다.
+        jdbcTemplate.update("INSERT INTO members (nickname, nickname_key, password_hash, created_at, updated_at) "
+                        + "VALUES (?, ?, NULL, ?, ?) ON DUPLICATE KEY UPDATE nickname = VALUES(nickname)",
+                demoNickname, nicknameKey, now, now);
         Long memberId = jdbcTemplate.queryForObject(
-                "SELECT id FROM members WHERE nickname = ?", Long.class, demoNickname);
+                "SELECT id FROM members WHERE nickname_key = ?", Long.class, nicknameKey);
         if (memberId == null || count("properties", "member_id", memberId) > 0) {
             return;
         }
