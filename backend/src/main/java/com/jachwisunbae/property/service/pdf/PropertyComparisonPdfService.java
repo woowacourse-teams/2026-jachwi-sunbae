@@ -1,10 +1,17 @@
-package com.jachwisunbae.property.service;
+package com.jachwisunbae.property.service.pdf;
 
 import com.jachwisunbae.common.exception.BusinessException;
 import com.jachwisunbae.common.exception.DomainErrorCode;
 import com.jachwisunbae.property.controller.dto.response.PropertyChecklistOverviewResponse;
 import com.jachwisunbae.property.entity.Property;
 import com.jachwisunbae.property.repository.PropertyRepository;
+import com.jachwisunbae.property.repository.query.PropertyPhotosQuery;
+import com.jachwisunbae.property.service.PropertyChecklistService;
+import com.jachwisunbae.property.service.PropertyMemoService;
+import com.jachwisunbae.property.service.PropertyPhotoService;
+import com.jachwisunbae.property.service.pdf.model.PropertyComparisonPhoto;
+import com.jachwisunbae.property.service.pdf.model.PropertyComparisonRecord;
+import com.jachwisunbae.property.service.pdf.model.PropertyComparisonStage;
 import com.jachwisunbae.property.storage.PhotoContent;
 import java.util.HashSet;
 import java.util.List;
@@ -48,19 +55,19 @@ public class PropertyComparisonPdfService {
         Property property = propertyRepository.findByIdAndMemberId(propertyId, memberId)
                 .orElseThrow(() -> new BusinessException(DomainErrorCode.PROPERTY_NOT_FOUND,
                         "비교할 매물을 찾을 수 없습니다."));
-        var photoQuery = propertyPhotoService.find(memberId, propertyId);
-        List<PropertyComparisonRecord.Photo> photos = photoQuery.photos().stream()
+        PropertyPhotosQuery photoQuery = propertyPhotoService.find(memberId, propertyId);
+        List<PropertyComparisonPhoto> photos = photoQuery.photos().stream()
                 .map(photo -> {
                     PhotoContent content = propertyPhotoService.findContent(memberId, propertyId, photo.getId());
-                    return new PropertyComparisonRecord.Photo(photo.getId(), photoOptimizer.optimize(content.bytes()),
+                    return new PropertyComparisonPhoto(photo.getId(), photoOptimizer.optimize(content.bytes()),
                             "image/jpeg",
                             photo.getId().equals(photoQuery.representativePhotoId()));
                 })
                 .toList();
-        var overview = PropertyChecklistOverviewResponse.from(propertyId,
+        PropertyChecklistOverviewResponse overview = PropertyChecklistOverviewResponse.from(propertyId,
                 propertyChecklistService.findOverview(memberId, propertyId));
-        List<PropertyComparisonRecord.Stage> stages = overview.stages().stream()
-                .map(stage -> new PropertyComparisonRecord.Stage(stage,
+        List<PropertyComparisonStage> stages = overview.stages().stream()
+                .map(stage -> new PropertyComparisonStage(stage,
                         stage.applied()
                                 ? propertyChecklistService.findApplication(memberId, propertyId,
                                 stage.propertyChecklistId())

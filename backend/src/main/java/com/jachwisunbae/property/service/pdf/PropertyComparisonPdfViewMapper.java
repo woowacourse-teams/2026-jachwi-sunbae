@@ -1,18 +1,21 @@
-package com.jachwisunbae.property.service;
+package com.jachwisunbae.property.service.pdf;
 
-import com.openhtmltopdf.outputdevice.helper.BaseRendererBuilder.FontStyle;
-import com.openhtmltopdf.pdfboxout.PdfRendererBuilder;
 import com.jachwisunbae.checklist.type.CheckStage;
 import com.jachwisunbae.checklist.type.CheckStatus;
-import com.jachwisunbae.common.exception.BusinessException;
-import com.jachwisunbae.common.exception.DomainErrorCode;
 import com.jachwisunbae.property.controller.dto.response.PropertyChecklistStageResponse;
 import com.jachwisunbae.property.controller.dto.response.PropertyProgress;
 import com.jachwisunbae.property.entity.Property;
 import com.jachwisunbae.property.repository.query.PropertyChecklistItemQuery;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
+import com.jachwisunbae.property.service.pdf.model.PropertyComparisonPhoto;
+import com.jachwisunbae.property.service.pdf.model.PropertyComparisonRecord;
+import com.jachwisunbae.property.service.pdf.model.PropertyComparisonStage;
+import com.jachwisunbae.property.service.pdf.view.CheckItemView;
+import com.jachwisunbae.property.service.pdf.view.KeyValue;
+import com.jachwisunbae.property.service.pdf.view.OverviewRow;
+import com.jachwisunbae.property.service.pdf.view.PhotoView;
+import com.jachwisunbae.property.service.pdf.view.PropertyComparisonPdfView;
+import com.jachwisunbae.property.service.pdf.view.PropertyView;
+import com.jachwisunbae.property.service.pdf.view.StageView;
 import java.math.BigDecimal;
 import java.text.NumberFormat;
 import java.time.LocalDateTime;
@@ -21,65 +24,46 @@ import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
 import java.util.Locale;
+import java.util.function.Function;
 import java.util.stream.IntStream;
 import org.springframework.stereotype.Component;
-import org.thymeleaf.TemplateEngine;
-import org.thymeleaf.context.Context;
 
 @Component
-public class PropertyComparisonPdfRenderer {
-
-    private static final String TEMPLATE = "property-comparison";
-    private static final String REGULAR_FONT = "/fonts/NanumGothic-Regular.ttf";
-    private static final String BOLD_FONT = "/fonts/NanumGothic-Bold.ttf";
+public class PropertyComparisonPdfViewMapper {
     private static final DateTimeFormatter DATE_TIME = DateTimeFormatter.ofPattern("yyyy.MM.dd HH:mm");
     private static final NumberFormat WON = NumberFormat.getIntegerInstance(Locale.KOREA);
 
-    private final TemplateEngine templateEngine;
-
-    public PropertyComparisonPdfRenderer(final TemplateEngine templateEngine) {
-        this.templateEngine = templateEngine;
-    }
-
-    public byte[] render(final List<PropertyComparisonRecord> records) {
-        Context context = new Context(Locale.KOREA);
-        context.setVariable("overviewRows", createOverviewRows(records));
-        context.setVariable("properties", createPropertyViews(records));
-
-        String html = templateEngine.process(TEMPLATE, context);
-        try (ByteArrayOutputStream output = new ByteArrayOutputStream()) {
-            PdfRendererBuilder builder = new PdfRendererBuilder();
-            builder.useFont(() -> requiredResource(REGULAR_FONT), "NanumGothic", 400, FontStyle.NORMAL, false);
-            builder.useFont(() -> requiredResource(BOLD_FONT), "NanumGothic", 700, FontStyle.NORMAL, false);
-            builder.withHtmlContent(html, null);
-            builder.toStream(output);
-            builder.run();
-            return output.toByteArray();
-        } catch (IOException | RuntimeException exception) {
-            throw new BusinessException(DomainErrorCode.PROPERTY_COMPARISON_EXPORT_FAILED,
-                "매물 비교 PDF를 생성하지 못했습니다.", exception);
-        }
+    public PropertyComparisonPdfView map(final List<PropertyComparisonRecord> records) {
+        return new PropertyComparisonPdfView(createOverviewRows(records), createPropertyViews(records));
     }
 
     private List<OverviewRow> createOverviewRows(final List<PropertyComparisonRecord> records) {
         List<OverviewRow> rows = new ArrayList<>();
-        rows.add(new OverviewRow("구분", records.stream()
-            .map(record -> record.property().getName()).toList(), true));
-        rows.add(new OverviewRow("주소", records.stream()
-            .map(record -> display(record.property().getAddress())).toList(), false));
-        rows.add(new OverviewRow("보증금", records.stream()
-            .map(record -> money(record.property().getDepositAmount())).toList(), false));
-        rows.add(new OverviewRow("월세", records.stream()
-            .map(record -> money(record.property().getMonthlyRentAmount())).toList(), false));
-        rows.add(new OverviewRow("발견 경로", records.stream()
-            .map(record -> abbreviate(display(record.property().getDiscoverySource()), 70)).toList(), false));
-        rows.add(new OverviewRow("사진", records.stream()
-            .map(record -> record.photos().size() + "장").toList(), false));
+        rows.add(overviewRow("구분", records, record -> record.property().getName(), true));
+        rows.add(overviewRow("주소", records, record -> display(record.property().getAddress())));
+        rows.add(overviewRow("보증금", records, record -> money(record.property().getDepositAmount())));
+        rows.add(overviewRow("월세", records, record -> money(record.property().getMonthlyRentAmount())));
+        rows.add(overviewRow("발견 경로", records,
+            record -> abbreviate(display(record.property().getDiscoverySource()), 70)));
+        rows.add(overviewRow("사진", records, record -> record.photos().size() + "장"));
+
         for (CheckStage stage : CheckStage.values()) {
-            rows.add(new OverviewRow(stageLabel(stage), records.stream()
-                .map(record -> stageSummary(record, stage)).toList(), false));
+            rows.add(overviewRow(stageLabel(stage), records, record -> stageSummary(record, stage)));
         }
         return List.copyOf(rows);
+    }
+
+    private OverviewRow overviewRow(final String label,
+                                    final List<PropertyComparisonRecord> records,
+                                    final Function<PropertyComparisonRecord, String> valueMapper) {
+        return overviewRow(label, records, valueMapper, false);
+    }
+
+    private OverviewRow overviewRow(final String label,
+                                    final List<PropertyComparisonRecord> records,
+                                    final Function<PropertyComparisonRecord, String> valueMapper,
+                                    final boolean heading) {
+        return new OverviewRow(label, records.stream().map(valueMapper).toList(), heading);
     }
 
     private List<PropertyView> createPropertyViews(final List<PropertyComparisonRecord> records) {
@@ -100,48 +84,48 @@ public class PropertyComparisonPdfRenderer {
             new KeyValue("좌표", coordinates(property.getLatitude(), property.getLongitude())),
             new KeyValue("등록 시각", format(property.getCreatedAt()))
         );
+
         List<PhotoView> photos = IntStream.range(0, record.photos().size())
             .mapToObj(photoIndex -> createPhotoView(record.photos().get(photoIndex), photoIndex + 1))
             .toList();
+
         List<StageView> stages = IntStream.range(0, record.stages().size())
             .mapToObj(stageIndex -> createStageView(record.stages().get(stageIndex), stageIndex + 1))
             .toList();
+
         String memo = record.memo() == null ? "" : blankToEmpty(record.memo().getFreeMemo());
         return new PropertyView(index, total, property.getName(), basics, photos, memo, stages);
     }
 
-    private PhotoView createPhotoView(final PropertyComparisonRecord.Photo photo, final int index) {
+    private PhotoView createPhotoView(final PropertyComparisonPhoto photo, final int index) {
         String contentType = photo.contentType() == null || photo.contentType().isBlank()
             ? "image/jpeg"
             : photo.contentType();
-        String dataUri = "data:" + contentType + ";base64," + Base64.getEncoder().encodeToString(photo.bytes());
+
+        String source = "data:" + contentType + ";base64,"
+            + Base64.getEncoder().encodeToString(photo.bytes());
+
         String label = "사진 " + index + (photo.representative() ? " · 대표 사진" : "");
-        return new PhotoView(dataUri, label);
+        return new PhotoView(source, label);
     }
 
-    private StageView createStageView(final PropertyComparisonRecord.Stage stage, final int index) {
+    private StageView createStageView(final PropertyComparisonStage stage, final int index) {
         PropertyChecklistStageResponse summary = stage.summary();
-        boolean applied = summary.applied() && stage.application() != null;
-        List<CheckItemView> items = applied ? stage.application().items().stream()
+        boolean hasApplication = summary.applied() && stage.application() != null;
+
+        List<CheckItemView> items = hasApplication ? stage.application().items().stream()
             .map(this::createCheckItemView)
             .toList() : List.of();
-        return new StageView(index, stageLabel(summary.stage()), applied,
-            applied ? display(summary.checklistName()) : "",
-            applied ? progressText(summary.progress()) : "",
+
+        return new StageView(index, stageLabel(summary.stage()), hasApplication,
+            hasApplication ? display(summary.checklistName()) : "",
+            hasApplication ? progressText(summary.progress()) : "",
             items);
     }
 
     private CheckItemView createCheckItemView(final PropertyChecklistItemQuery item) {
         return new CheckItemView(statusLabel(item.status()), statusClass(item.status()),
             item.question(), blankToEmpty(item.memo()));
-    }
-
-    private InputStream requiredResource(final String path) {
-        InputStream input = getClass().getResourceAsStream(path);
-        if (input == null) {
-            throw new IllegalStateException("PDF 글꼴 리소스를 찾을 수 없습니다: " + path);
-        }
-        return input;
     }
 
     private static String stageSummary(final PropertyComparisonRecord record, final CheckStage stage) {
@@ -209,25 +193,5 @@ public class PropertyComparisonPdfRenderer {
 
     private static String abbreviate(final String value, final int maxLength) {
         return value.length() <= maxLength ? value : value.substring(0, maxLength - 1) + "…";
-    }
-
-    public record OverviewRow(String label, List<String> values, boolean heading) {
-    }
-
-    public record KeyValue(String label, String value) {
-    }
-
-    public record PhotoView(String source, String label) {
-    }
-
-    public record CheckItemView(String status, String statusClass, String question, String memo) {
-    }
-
-    public record StageView(int index, String label, boolean applied, String checklistName,
-                            String progress, List<CheckItemView> items) {
-    }
-
-    public record PropertyView(int index, int total, String name, List<KeyValue> basics,
-                               List<PhotoView> photos, String memo, List<StageView> stages) {
     }
 }

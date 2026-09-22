@@ -1,4 +1,4 @@
-package com.jachwisunbae.property.service;
+package com.jachwisunbae.property.service.pdf;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -10,6 +10,9 @@ import com.jachwisunbae.property.entity.Property;
 import com.jachwisunbae.property.entity.PropertyMemo;
 import com.jachwisunbae.property.repository.query.PropertyChecklistApplicationQuery;
 import com.jachwisunbae.property.repository.query.PropertyChecklistItemQuery;
+import com.jachwisunbae.property.service.pdf.model.PropertyComparisonPhoto;
+import com.jachwisunbae.property.service.pdf.model.PropertyComparisonRecord;
+import com.jachwisunbae.property.service.pdf.model.PropertyComparisonStage;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -17,6 +20,7 @@ import java.util.Base64;
 import java.util.List;
 import java.util.Set;
 import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.text.PDFTextStripper;
 import org.junit.jupiter.api.Test;
 import org.thymeleaf.TemplateEngine;
 import org.thymeleaf.spring6.SpringTemplateEngine;
@@ -30,17 +34,20 @@ class PropertyComparisonPdfRendererTest {
 
     @Test
     void rendersComparisonAsPdfFromHtmlTemplate() throws Exception {
-        PropertyComparisonPdfRenderer renderer = new PropertyComparisonPdfRenderer(templateEngine());
+        PropertyComparisonPdfRenderer renderer = new PropertyComparisonPdfRenderer(
+            templateEngine(), new PropertyComparisonPdfViewMapper());
 
         byte[] pdf = renderer.render(List.of(sampleRecord()));
 
         assertThat(pdf).startsWith('%', 'P', 'D', 'F');
-        try (var document = PDDocument.load(pdf)) {
+        try (PDDocument document = PDDocument.load(pdf)) {
             assertThat(document.getNumberOfPages()).isGreaterThanOrEqualTo(2);
             assertThat(document.getPage(0).getMediaBox().getWidth())
                 .isGreaterThan(document.getPage(0).getMediaBox().getHeight());
             assertThat(document.getPage(1).getMediaBox().getHeight())
                 .isGreaterThan(document.getPage(1).getMediaBox().getWidth());
+            assertThat(new PDFTextStripper().getText(document))
+                .contains("햇살 좋은 원룸", "수압이 충분한가요?", "괜찮음", "미적용");
         }
     }
 
@@ -68,11 +75,11 @@ class PropertyComparisonPdfRendererTest {
             new PropertyProgress(0, 0, 0, 0, 0, 0));
         return new PropertyComparisonRecord(
             property,
-            List.of(new PropertyComparisonRecord.Photo(1L, SAMPLE_PNG, "image/png", true)),
+            List.of(new PropertyComparisonPhoto(1L, SAMPLE_PNG, "image/png", true)),
             PropertyMemo.reconstruct(1L, 1L, "채광이 좋고 주변이 조용했습니다.\n관리비 항목을 다시 확인해야 합니다."),
             List.of(
-                new PropertyComparisonRecord.Stage(summary, application),
-                new PropertyComparisonRecord.Stage(unapplied, null)
+                new PropertyComparisonStage(summary, application),
+                new PropertyComparisonStage(unapplied, null)
             ));
     }
 
