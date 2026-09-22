@@ -36,16 +36,12 @@ public class DemoDataInitializer implements ApplicationRunner {
     public void run(ApplicationArguments args) {
         LocalDateTime now = LocalDateTime.now(clock);
 
-        String nicknameKey = demoNickname.toLowerCase(Locale.ROOT);
-        // 비밀번호 없는 데모 닉네임을 멱등하게 만든다.
-        jdbcTemplate.update("INSERT INTO members (nickname, nickname_key, password_hash, created_at, updated_at) "
-                        + "VALUES (?, ?, NULL, ?, ?) ON DUPLICATE KEY UPDATE nickname = VALUES(nickname)",
-                demoNickname, nicknameKey, now, now);
+        // 비밀번호 없는 데모 닉네임을 멱등하게 만든다. nickname UNIQUE라 재실행해도 중복 생성되지 않는다.
+        jdbcTemplate.update("INSERT INTO members (nickname, password_hash, created_at, updated_at) "
+                + "VALUES (?, NULL, ?, ?) ON DUPLICATE KEY UPDATE nickname = VALUES(nickname)",
+            demoNickname, now, now);
         Long memberId = jdbcTemplate.queryForObject(
-                "SELECT id FROM members WHERE nickname_key = ?", Long.class, nicknameKey);
-        if (memberId == null || count("properties", "member_id", memberId) > 0) {
-            return;
-        }
+            "SELECT id FROM members WHERE nickname = ?", Long.class, demoNickname);
 
         long firstPropertyId = insertProperty(memberId, "신림역 원룸", 10_000_000L, 550_000L,
                 "서울 관악구 신림로 12길 3", "37.4841234", "126.9291234", now.minusHours(1));
