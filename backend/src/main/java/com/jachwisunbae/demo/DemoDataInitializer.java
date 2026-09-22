@@ -1,5 +1,7 @@
 package com.jachwisunbae.demo;
 
+import com.jachwisunbae.member.entity.Member;
+import com.jachwisunbae.member.repository.MemberRepository;
 import com.jachwisunbae.property.type.RoomOption;
 import com.jachwisunbae.property.type.UtilityOption;
 import java.sql.Date;
@@ -20,12 +22,14 @@ import org.springframework.transaction.annotation.Transactional;
 public class DemoDataInitializer implements ApplicationRunner {
 
     private final JdbcTemplate jdbcTemplate;
+    private final MemberRepository memberRepository;
     private final Clock clock;
     private final String demoNickname;
 
-    public DemoDataInitializer(JdbcTemplate jdbcTemplate, Clock clock,
+    public DemoDataInitializer(JdbcTemplate jdbcTemplate, MemberRepository memberRepository, Clock clock,
                                @Value("${demo.seed.nickname:이자취}") String demoNickname) {
         this.jdbcTemplate = jdbcTemplate;
+        this.memberRepository = memberRepository;
         this.clock = clock;
         this.demoNickname = demoNickname;
     }
@@ -35,13 +39,11 @@ public class DemoDataInitializer implements ApplicationRunner {
     public void run(ApplicationArguments args) {
         LocalDateTime now = LocalDateTime.now(clock);
 
-        // 비밀번호 없는 데모 닉네임을 멱등하게 만든다. nickname UNIQUE라 재실행해도 중복 생성되지 않는다.
-        jdbcTemplate.update("INSERT INTO members (nickname, password_hash, created_at, updated_at) "
-                        + "VALUES (?, NULL, ?, ?) ON DUPLICATE KEY UPDATE nickname = VALUES(nickname)",
-                demoNickname, now, now);
-        Long memberId = jdbcTemplate.queryForObject(
-                "SELECT id FROM members WHERE nickname = ?", Long.class, demoNickname);
-        if (memberId == null || count("properties", "member_id", memberId) > 0) {
+        // 비밀번호 없는 데모 회원을 일반 가입과 같은 저장 경로로 만든다. 이미 있으면 재사용한다.
+        Long memberId = memberRepository.findByNickname(demoNickname)
+                .orElseGet(() -> memberRepository.save(Member.create(demoNickname, null, now)))
+                .getId();
+        if (count("properties", "member_id", memberId) > 0) {
             return;
         }
 
