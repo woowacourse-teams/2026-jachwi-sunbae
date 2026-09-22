@@ -6,6 +6,7 @@ import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindException;
 import org.springframework.validation.FieldError;
@@ -151,7 +152,9 @@ public class GlobalExceptionHandler {
             final String code,
             final String message,
             final List<FieldErrorResponse> errors) {
-        return ResponseEntity.status(status).body(new DomainErrorResponse(code, message, errors));
+        return ResponseEntity.status(status)
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(new DomainErrorResponse(code, message, errors));
     }
 
     private String reasonOf(final String reason) {
