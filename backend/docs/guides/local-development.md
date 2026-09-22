@@ -44,6 +44,8 @@ set +a
 ./gradlew bootRun
 ```
 
+IntelliJ IDEA에서 애플리케이션이나 Gradle 작업을 직접 실행하면 `.env`가 자동으로 주입되지 않는다. 이 경우 Run Configuration의 환경변수에 `.env`와 같은 값을 설정하거나 위 터미널 명령으로 실행한다.
+
 로컬 CORS는 `CORS_ALLOWED_ORIGINS=http://localhost:3000`을 사용한다.
 
 | 확인 항목 | 주소 |

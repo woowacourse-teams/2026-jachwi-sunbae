@@ -52,6 +52,9 @@
 ```bash
 cd backend
 cp .env.example .env
+set -a
+source .env
+set +a
 docker compose up -d
 ./gradlew bootRun
 ```
