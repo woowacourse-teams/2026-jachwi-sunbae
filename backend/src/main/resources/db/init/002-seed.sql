@@ -1,3 +1,5 @@
+SET NAMES utf8mb4;
+
 -- 기존 데이터 정리
 DELETE FROM property_checklist_items;
 DELETE FROM property_checklists;
