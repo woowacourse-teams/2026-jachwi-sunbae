@@ -1,4 +1,4 @@
-package com.jachwisunbae.property.service;
+package com.jachwisunbae.property.service.pdf;
 
 import java.awt.Color;
 import java.awt.Graphics2D;
@@ -37,6 +37,7 @@ public class PropertyComparisonPhotoOptimizer {
                 int width = reader.getWidth(0);
                 int height = reader.getHeight(0);
                 int subsampling = Math.max(1, (int) Math.ceil(Math.max(width, height) / (double) MAX_DECODED_EDGE));
+
                 ImageReadParam parameter = reader.getDefaultReadParam();
                 parameter.setSourceSubsampling(subsampling, subsampling, 0, 0);
                 return encodeJpeg(resize(reader.read(0, parameter)));
@@ -54,6 +55,7 @@ public class PropertyComparisonPhotoOptimizer {
         int height = Math.max(1, (int) Math.round(source.getHeight() * scale));
         BufferedImage target = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
         Graphics2D graphics = target.createGraphics();
+
         try {
             graphics.setColor(Color.WHITE);
             graphics.fillRect(0, 0, width, height);
@@ -74,6 +76,7 @@ public class PropertyComparisonPhotoOptimizer {
             ImageWriteParam parameter = writer.getDefaultWriteParam();
             parameter.setCompressionMode(ImageWriteParam.MODE_EXPLICIT);
             parameter.setCompressionQuality(JPEG_QUALITY);
+
             writer.write(null, new IIOImage(image, null, null), parameter);
             imageOutput.flush();
             return output.toByteArray();
