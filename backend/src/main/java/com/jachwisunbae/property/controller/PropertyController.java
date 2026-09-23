@@ -2,6 +2,8 @@ package com.jachwisunbae.property.controller;
 
 import com.jachwisunbae.auth.web.AuthenticatedMemberId;
 import com.jachwisunbae.checklist.type.CheckStage;
+import com.jachwisunbae.common.exception.BusinessException;
+import com.jachwisunbae.common.exception.DomainErrorCode;
 import com.jachwisunbae.common.web.ApiResponse;
 import com.jachwisunbae.property.controller.dto.request.ApplyPropertyChecklistRequest;
 import com.jachwisunbae.property.controller.dto.request.CreatePropertyRequest;
@@ -32,12 +34,15 @@ import com.jachwisunbae.property.service.PropertyComparisonViewService;
 import com.jachwisunbae.property.service.PropertyDeletionService;
 import com.jachwisunbae.property.service.PropertyMemoService;
 import com.jachwisunbae.property.service.PropertyPhotoService;
+import com.jachwisunbae.property.service.dto.result.PropertyPhotoUploadResult;
+import com.jachwisunbae.property.storage.PhotoFile;
 import com.jachwisunbae.property.service.PropertyService;
 import com.jachwisunbae.property.storage.PhotoContent;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import java.io.IOException;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
@@ -184,11 +189,11 @@ public class PropertyController {
             @AuthenticatedMemberId final Long memberId,
             @PathVariable final Long propertyId,
             @RequestPart("file") final MultipartFile file) {
-        var photo = propertyPhotoService.upload(memberId, propertyId, file);
-        boolean representative = propertyPhotoService.find(memberId, propertyId)
-                .representativePhotoId().equals(photo.getId());
+        PropertyPhotoUploadResult result = propertyPhotoService.upload(memberId, propertyId, toPhotoFile(file));
+        var photo = result.photo();
         return ResponseEntity.created(URI.create("/api/properties/" + propertyId + "/photos/" + photo.getId()))
-                .body(ApiResponse.of("사진을 업로드했습니다.", PropertyPhotoResponse.from(photo, representative)));
+                .body(ApiResponse.of("사진을 업로드했습니다.",
+                        PropertyPhotoResponse.from(photo, result.representative())));
     }
 
     @GetMapping("/{propertyId}/photos/{photoId}")
@@ -222,6 +227,15 @@ public class PropertyController {
             @PathVariable final Long photoId) {
         propertyPhotoService.designateRepresentative(memberId, propertyId, photoId);
         return ResponseEntity.noContent().build();
+    }
+
+    private PhotoFile toPhotoFile(final MultipartFile file) {
+        try {
+            return new PhotoFile(file.getBytes(), file.getContentType());
+        } catch (IOException exception) {
+            throw new BusinessException(DomainErrorCode.PHOTO_STORAGE_FAILURE,
+                    "업로드 사진을 읽을 수 없습니다.", exception);
+        }
     }
 
     @GetMapping("/{propertyId}/checklists")

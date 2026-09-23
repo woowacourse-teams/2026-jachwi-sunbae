@@ -1,7 +1,6 @@
 package com.jachwisunbae.property.storage;
 
 import java.net.URI;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
@@ -15,22 +14,18 @@ import software.amazon.awssdk.services.s3.S3Configuration;
 public class PhotoStorageConfig {
 
     @Bean
-    public S3Client photoS3Client(
-            @Value("${photo.storage.region}") String region,
-            @Value("${photo.storage.endpoint:}") String endpoint,
-            @Value("${photo.storage.access-key:}") String accessKey,
-            @Value("${photo.storage.secret-key:}") String secretKey) {
+    public S3Client photoS3Client(final PhotoStorageProperties properties) {
         var builder = S3Client.builder()
-                .region(Region.of(region))
+                .region(Region.of(properties.region()))
                 .serviceConfiguration(S3Configuration.builder()
-                        .pathStyleAccessEnabled(endpoint != null && !endpoint.isBlank())
+                        .pathStyleAccessEnabled(!properties.endpoint().isBlank())
                         .build());
-        if (endpoint != null && !endpoint.isBlank()) {
-            builder.endpointOverride(URI.create(endpoint));
+        if (!properties.endpoint().isBlank()) {
+            builder.endpointOverride(URI.create(properties.endpoint()));
         }
-        if (accessKey != null && !accessKey.isBlank() && secretKey != null && !secretKey.isBlank()) {
+        if (!properties.accessKey().isBlank() && !properties.secretKey().isBlank()) {
             builder.credentialsProvider(StaticCredentialsProvider.create(
-                    AwsBasicCredentials.create(accessKey, secretKey)));
+                    AwsBasicCredentials.create(properties.accessKey(), properties.secretKey())));
         } else {
             builder.credentialsProvider(DefaultCredentialsProvider.builder().build());
         }
