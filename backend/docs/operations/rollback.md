@@ -43,8 +43,6 @@ curl -fsS https://dev-api.jachwi-sunbae.kr/actuator/info
 
 데이터 손실 가능성이 있는 작업은 즉시 실행하지 않고 영향 범위와 복구 가능성을 먼저 확인한다.
 
-## 데이터베이스 변경이 포함된 MVP1 롤백
+## 데이터베이스 변경이 포함된 롤백
 
-MVP1 upgrade는 애플리케이션 롤백 때 추가 컬럼·테이블·`schema_upgrade_history`를 자동으로 되돌리지 않는다. 회원 자격정보는 `members`와 `nickname_credentials`에 함께 기록되어 직전 버전 인증 경로를 유지한다. 제거된 `ONLINE_PHONE`과 구조화 메모 원본은 `legacy_online_phone_*`, `legacy_property_memo_items`, `legacy_system_memo_items`에 보관한다.
-
-우선 직전 정상 리비전을 재배포한다. 스키마 이력이나 보관 테이블을 수동으로 삭제하지 않는다. 데이터까지 시점 복원이 필요하면 자동 백업을 격리된 RDS에 복원해 영향 범위를 확인한 뒤 진행하며, 운영 DB에 역방향 SQL을 즉시 실행하지 않는다.
+애플리케이션은 기동 중 데이터베이스 스키마를 변경하지 않으므로 코드 롤백과 데이터 복구를 분리한다. 우선 직전 정상 리비전을 재배포한다. 데이터까지 시점 복원이 필요하면 자동 백업을 격리된 RDS에 복원해 영향 범위를 확인한 뒤 진행하며, 운영 DB를 즉시 덮어쓰지 않는다.

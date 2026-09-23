@@ -27,6 +27,19 @@ CREATE TABLE IF NOT EXISTS properties (
     CONSTRAINT chk_properties_longitude CHECK (longitude IS NULL OR (longitude BETWEEN -180 AND 180))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+CREATE TABLE IF NOT EXISTS property_comparison_view_events (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    member_id BIGINT NOT NULL,
+    property_count SMALLINT UNSIGNED NOT NULL,
+    viewed_at DATETIME(6) NOT NULL,
+    CONSTRAINT fk_property_comparison_view_events_member
+        FOREIGN KEY (member_id) REFERENCES members (id) ON DELETE CASCADE,
+    CONSTRAINT chk_property_comparison_view_events_property_count
+        CHECK (property_count BETWEEN 0 AND 30),
+    INDEX idx_property_comparison_view_events_member_viewed (member_id, viewed_at, id),
+    INDEX idx_property_comparison_view_events_count_viewed (property_count, viewed_at, id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 -- 매물 부가정보 (1:1)
 CREATE TABLE IF NOT EXISTS property_details (
     property_id BIGINT PRIMARY KEY,
