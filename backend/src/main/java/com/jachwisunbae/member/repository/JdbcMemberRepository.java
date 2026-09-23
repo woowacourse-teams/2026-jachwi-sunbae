@@ -68,7 +68,6 @@ public class JdbcMemberRepository implements MemberRepository {
             return statement;
         }, keyHolder);
         long memberId = keyHolder.getKey().longValue();
-        upsertLegacyCredential(memberId, member);
         return Member.reconstruct(memberId, member.getNickname(), member.getPasswordHash(),
                 member.getCreatedAt(), member.getUpdatedAt());
     }
@@ -82,22 +81,6 @@ public class JdbcMemberRepository implements MemberRepository {
                 """;
         jdbcTemplate.update(sql, member.getNickname(), nicknameKey(member.getNickname()), member.getPasswordHash(),
                 member.getUpdatedAt(), member.getId());
-        upsertLegacyCredential(member.getId(), member);
-    }
-
-    private void upsertLegacyCredential(final long memberId, final Member member) {
-        String sql = """
-                INSERT INTO nickname_credentials
-                    (member_id, nickname, nickname_key, password_hash, created_at, updated_at)
-                VALUES (?, ?, ?, ?, ?, ?)
-                ON DUPLICATE KEY UPDATE
-                    nickname = VALUES(nickname),
-                    nickname_key = VALUES(nickname_key),
-                    password_hash = VALUES(password_hash),
-                    updated_at = VALUES(updated_at)
-                """;
-        jdbcTemplate.update(sql, memberId, member.getNickname(), nicknameKey(member.getNickname()),
-                member.getPasswordHash(), member.getCreatedAt(), member.getUpdatedAt());
     }
 
     private String nicknameKey(final String nickname) {

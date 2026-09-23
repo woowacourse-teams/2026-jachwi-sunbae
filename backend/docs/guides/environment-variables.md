@@ -21,8 +21,6 @@ Spring Boot 애플리케이션은 CORS 허용 Origin과 인증·저장소 설정
 | `DB_ROOT_PASSWORD` | `local_root_password` | 로컬 MySQL root 비밀번호 |
 | `DB_SSL_MODE` | `DISABLED` | 운영 JDBC TLS 모드. 로컬 프로필은 별도 설정을 사용한다 |
 | `JWT_SECRET_BASE64` | Base64 인코딩한 32바이트 이상 값 | HS256 서명 비밀값. 운영에서는 환경별 무작위 값을 사용한다 |
-| `DEMO_MEMBER_NAME` | `이자취` | 데모 회원 표시 이름 |
-| `DEMO_SEED_ENABLED` | `true` | 데모 매물·메모·체크 상태 초기화 여부 |
 | `NICKNAME_AUTH_MAX_FAILURES` | `5` | 보호 닉네임의 제한 시간 내 최대 인증 실패 횟수 |
 | `NICKNAME_AUTH_FAILURE_WINDOW_SECONDS` | `600` | 닉네임별 인증 실패 제한 시간(초) |
 | `CORS_ALLOWED_ORIGINS` | `http://localhost:3000` | 쉼표로 구분한 프론트엔드 Origin 허용 목록 |
@@ -67,7 +65,6 @@ dev와 prod EC2는 모두 `SPRING_PROFILES_ACTIVE=prod`로 기동하며 `/etc/ja
 | `PHOTO_STORAGE_REGION` | `ap-northeast-2` | `ap-northeast-2` |
 | `PHOTO_STORAGE_BUCKET` | `techcourse-project-2026` | `techcourse-project-2026` |
 | `PHOTO_STORAGE_KEY_PREFIX` | `jachwi-sunbae/photos-dev/` | `jachwi-sunbae/photos/` |
-| `DEMO_SEED_ENABLED` | `false` | `false` |
 | `MAP_PROVIDER_MODE` | `naver` | `naver` |
 | `DEPLOYMENT_ENVIRONMENT` | `dev` | `prod` |
 | `LOG_PATH` | `/var/log/jachwi-sunbae` | `/var/log/jachwi-sunbae` |
@@ -76,7 +73,7 @@ DB 접속값과 `JWT_SECRET_BASE64`, Naver Maps·NAVER API HUB 인증 정보는 
 
 AWS S3는 EC2 `ec2-project` instance role로 접근하므로 `PHOTO_STORAGE_ENDPOINT`, `PHOTO_STORAGE_ACCESS_KEY`, `PHOTO_STORAGE_SECRET_KEY`를 EC2에 두지 않는다. 이 세 값은 로컬 MinIO에만 사용한다. 프론트엔드에는 공개 Naver Maps Client ID만 빌드 타임에 주입한다.
 
-첫 MVP1 기동은 기존 팀 DB에 `db/upgrade/*.sql`을 파일명 순서로 한 번씩 적용하고 `schema_upgrade_history`에 성공한 파일을 기록한다. 애플리케이션 DB 계정은 이 전환 동안 필요한 `ALTER`, `CREATE`, `DROP`, `INDEX`, `REFERENCES`, `SELECT`, `INSERT`, `UPDATE`, `DELETE` 권한을 가져야 한다. 전환 전에 자동 백업의 최신 복구 지점을 확인한다. 실패 후 재기동하면 이력에 없는 파일부터 다시 실행하므로 `schema_upgrade_history`를 수동으로 추가하거나 삭제하지 않는다.
+`db/init/001-schema.sql`과 `002-seed.sql`은 빈 로컬 MySQL 볼륨의 기준 스키마와 시스템 체크 항목을 만든다. 애플리케이션은 기동 중 스키마를 변경하지 않는다. dev·prod RDS를 이 기준선으로 전환할 때는 자동 백업의 최신 복구 지점을 먼저 확인하고, 별도의 데이터 이관 절차로 기존 회원·매물 데이터를 보존해야 한다.
 
 새 환경변수를 도입하면 서버의 환경변수 파일도 함께 갱신한다.
 
