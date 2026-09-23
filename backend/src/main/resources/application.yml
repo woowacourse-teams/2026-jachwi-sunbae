@@ -47,11 +47,6 @@ map:
   connect-timeout-millis: ${MAP_CONNECT_TIMEOUT_MILLIS:2000}
   read-timeout-millis: ${MAP_READ_TIMEOUT_MILLIS:5000}
 
-demo:
-  seed:
-    enabled: ${DEMO_SEED_ENABLED:true}
-    nickname: ${DEMO_MEMBER_NAME:이자취}
-
 management:
   endpoints:
     web:
