@@ -25,7 +25,7 @@ import java.util.function.Function;
 
 @Component
 @ConditionalOnProperty(name = "map.provider.mode", havingValue = "naver")
-public class NaverMapProvider implements MapProvider {
+public class NaverMapProvider implements AddressProvider, NearbyPlaceProvider {
 
     private static final String MAPS_BASE_URL = "https://maps.apigw.ntruss.com";
     private static final String SEARCH_BASE_URL = "https://naverapihub.apigw.ntruss.com";

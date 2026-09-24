@@ -19,14 +19,16 @@ import org.springframework.stereotype.Service;
 public class MapService {
 
     private static final Set<Integer> SUPPORTED_RADII = Set.of(500, 1000, 2000);
-    private final MapProvider provider;
+    private final AddressProvider addressProvider;
+    private final NearbyPlaceProvider nearbyPlaceProvider;
     private final Clock clock;
     private final long cacheTtlSeconds;
     private final Map<CacheKey, CacheEntry> nearbyCache = new ConcurrentHashMap<>();
 
-    public MapService(MapProvider provider, Clock clock,
+    public MapService(AddressProvider addressProvider, NearbyPlaceProvider nearbyPlaceProvider, Clock clock,
                       @Value("${map.cache-ttl-seconds:600}") long cacheTtlSeconds) {
-        this.provider = provider;
+        this.addressProvider = addressProvider;
+        this.nearbyPlaceProvider = nearbyPlaceProvider;
         this.clock = clock;
         this.cacheTtlSeconds = cacheTtlSeconds;
     }
@@ -35,12 +37,12 @@ public class MapService {
         if (query == null || query.isBlank() || query.length() > 200) {
             throw invalidQuery("주소 검색어는 1자 이상 200자 이하여야 합니다.");
         }
-        return provider.geocode(query.trim());
+        return addressProvider.geocode(query.trim());
     }
 
     public MapAddress reverseGeocode(BigDecimal latitude, BigDecimal longitude) {
         validateCoordinates(latitude, longitude);
-        return provider.reverseGeocode(latitude, longitude);
+        return addressProvider.reverseGeocode(latitude, longitude);
     }
 
     public NearbyResponse nearby(BigDecimal latitude, BigDecimal longitude, int radius,
@@ -59,7 +61,7 @@ public class MapService {
         if (cached != null && cached.expiresAt().isAfter(now)) {
             return cached.response();
         }
-        List<NearbyPlace> places = provider.nearby(latitude, longitude, radius, categories);
+        List<NearbyPlace> places = nearbyPlaceProvider.nearby(latitude, longitude, radius, categories);
         Map<MapCategory, Integer> counts = new EnumMap<>(MapCategory.class);
         for (MapCategory category : MapCategory.values()) {
             counts.put(category, 0);
