@@ -27,7 +27,6 @@ import com.jachwisunbae.property.repository.query.PropertyPhotosQuery;
 import com.jachwisunbae.property.service.PropertyChecklistService;
 import com.jachwisunbae.property.entity.Property;
 import com.jachwisunbae.property.service.pdf.PropertyComparisonPdfService;
-import com.jachwisunbae.property.service.PropertyComparisonViewService;
 import com.jachwisunbae.property.service.PropertyDeletionService;
 import com.jachwisunbae.property.service.PropertyMemoService;
 import com.jachwisunbae.property.service.PropertyPhotoService;
@@ -65,22 +64,19 @@ public class PropertyController {
     private final PropertyPhotoService propertyPhotoService;
     private final PropertyDeletionService propertyDeletionService;
     private final PropertyComparisonPdfService propertyComparisonPdfService;
-    private final PropertyComparisonViewService propertyComparisonViewService;
 
     public PropertyController(final PropertyService propertyService,
                               final PropertyMemoService propertyMemoService,
                               final PropertyChecklistService propertyChecklistService,
                               final PropertyPhotoService propertyPhotoService,
                               final PropertyDeletionService propertyDeletionService,
-                              final PropertyComparisonPdfService propertyComparisonPdfService,
-                              final PropertyComparisonViewService propertyComparisonViewService) {
+                              final PropertyComparisonPdfService propertyComparisonPdfService) {
         this.propertyService = propertyService;
         this.propertyMemoService = propertyMemoService;
         this.propertyChecklistService = propertyChecklistService;
         this.propertyPhotoService = propertyPhotoService;
         this.propertyDeletionService = propertyDeletionService;
         this.propertyComparisonPdfService = propertyComparisonPdfService;
-        this.propertyComparisonViewService = propertyComparisonViewService;
     }
 
     @GetMapping
@@ -107,7 +103,6 @@ public class PropertyController {
     @Operation(summary = "비교 화면 진입 기록",
             description = "현재 회원이 비교 화면을 연 시각과 그 시점의 보유 매물 수를 실험 이벤트로 저장합니다.")
     public ResponseEntity<Void> recordComparisonView(@AuthenticatedMemberId final Long memberId) {
-        propertyComparisonViewService.record(memberId);
         return ResponseEntity.noContent().build();
     }
 
