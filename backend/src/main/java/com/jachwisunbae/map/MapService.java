@@ -8,10 +8,14 @@ import java.time.Clock;
 import java.time.Instant;
 import java.util.EnumMap;
 import java.util.EnumSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -19,16 +23,20 @@ import org.springframework.stereotype.Service;
 public class MapService {
 
     private static final Set<Integer> SUPPORTED_RADII = Set.of(500, 1000, 2000);
+    private static final Logger LOG = LoggerFactory.getLogger(MapService.class);
     private final AddressProvider addressProvider;
     private final NearbyPlaceProvider nearbyPlaceProvider;
+    private final Optional<BusStopProvider> busStopProvider;
     private final Clock clock;
     private final long cacheTtlSeconds;
     private final Map<CacheKey, CacheEntry> nearbyCache = new ConcurrentHashMap<>();
 
-    public MapService(AddressProvider addressProvider, NearbyPlaceProvider nearbyPlaceProvider, Clock clock,
+    public MapService(AddressProvider addressProvider, NearbyPlaceProvider nearbyPlaceProvider,
+                      Optional<BusStopProvider> busStopProvider, Clock clock,
                       @Value("${map.cache-ttl-seconds:600}") long cacheTtlSeconds) {
         this.addressProvider = addressProvider;
         this.nearbyPlaceProvider = nearbyPlaceProvider;
+        this.busStopProvider = busStopProvider;
         this.clock = clock;
         this.cacheTtlSeconds = cacheTtlSeconds;
     }
@@ -61,7 +69,7 @@ public class MapService {
         if (cached != null && cached.expiresAt().isAfter(now)) {
             return cached.response();
         }
-        List<NearbyPlace> places = nearbyPlaceProvider.nearby(latitude, longitude, radius, categories);
+        List<NearbyPlace> places = findPlaces(latitude, longitude, radius, categories);
         Map<MapCategory, Integer> counts = new EnumMap<>(MapCategory.class);
         for (MapCategory category : MapCategory.values()) {
             counts.put(category, 0);
@@ -71,6 +79,23 @@ public class MapService {
                 Map.copyOf(counts), places);
         nearbyCache.put(key, new CacheEntry(response, now.plusSeconds(cacheTtlSeconds)));
         return response;
+    }
+
+    private List<NearbyPlace> findPlaces(BigDecimal latitude, BigDecimal longitude, int radius,
+                                         Set<MapCategory> categories) {
+        List<NearbyPlace> places = nearbyPlaceProvider.nearby(latitude, longitude, radius, categories);
+        if (!categories.contains(MapCategory.TRANSPORT) || busStopProvider.isEmpty()) {
+            return places;
+        }
+        Map<String, NearbyPlace> unique = new LinkedHashMap<>();
+        places.forEach(place -> unique.putIfAbsent(place.providerPlaceId(), place));
+        try {
+            busStopProvider.get().nearby(latitude, longitude, radius)
+                    .forEach(place -> unique.putIfAbsent(place.providerPlaceId(), place));
+        } catch (RuntimeException exception) {
+            LOG.warn("TAGO 버스정류소 조회에 실패해 주변 시설 검색 결과만 반환합니다.", exception);
+        }
+        return List.copyOf(unique.values());
     }
 
     private void validateCoordinates(BigDecimal latitude, BigDecimal longitude) {

@@ -4,8 +4,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.MissingNode;
 import com.jachwisunbae.common.exception.BusinessException;
 import com.jachwisunbae.common.exception.DomainErrorCode;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -34,11 +32,9 @@ public class NaverMapProvider implements AddressProvider, NearbyPlaceProvider {
     private static final BigDecimal COORDINATE_SCALE = BigDecimal.valueOf(10_000_000L);
     private static final BigDecimal COORDINATE_LIMIT = BigDecimal.valueOf(180);
     private static final double EARTH_RADIUS_METERS = 6_371_000d;
-    private static final Logger LOG = LoggerFactory.getLogger(NaverMapProvider.class);
 
     private final RestClient client;
     private final RestClient searchClient;
-    private final Optional<BusStopProvider> busStopProvider;
 
     @Autowired
     public NaverMapProvider(@Value("${map.naver.client-id}") String clientId,
@@ -46,29 +42,17 @@ public class NaverMapProvider implements AddressProvider, NearbyPlaceProvider {
                             @Value("${map.naver.search-client-id}") String searchClientId,
                             @Value("${map.naver.search-client-secret}") String searchClientSecret,
                             @Value("${map.connect-timeout-millis:2000}") long connectTimeoutMillis,
-                            @Value("${map.read-timeout-millis:5000}") long readTimeoutMillis,
-                            Optional<BusStopProvider> busStopProvider) {
+                            @Value("${map.read-timeout-millis:5000}") long readTimeoutMillis) {
         this(createClient(clientId, clientSecret, MAPS_BASE_URL, connectTimeoutMillis, readTimeoutMillis,
                 "naver 지도 모드에는 NAVER_MAP_CLIENT_ID와 NAVER_MAP_CLIENT_SECRET이 필요합니다."),
             createClient(searchClientId, searchClientSecret, SEARCH_BASE_URL, connectTimeoutMillis,
                 readTimeoutMillis,
-                "naver 지도 모드에는 NAVER_SEARCH_CLIENT_ID와 NAVER_SEARCH_CLIENT_SECRET이 필요합니다."),
-            busStopProvider);
+                "naver 지도 모드에는 NAVER_SEARCH_CLIENT_ID와 NAVER_SEARCH_CLIENT_SECRET이 필요합니다."));
     }
 
     NaverMapProvider(RestClient client, RestClient searchClient) {
-        this(client, searchClient, Optional.empty());
-    }
-
-    NaverMapProvider(RestClient client, RestClient searchClient, BusStopProvider busStopProvider) {
-        this(client, searchClient, Optional.of(busStopProvider));
-    }
-
-    private NaverMapProvider(RestClient client, RestClient searchClient,
-                             Optional<BusStopProvider> busStopProvider) {
         this.client = client;
         this.searchClient = searchClient;
-        this.busStopProvider = busStopProvider;
     }
 
     private static RestClient createClient(String clientId, String clientSecret, String baseUrl,
@@ -122,13 +106,11 @@ public class NaverMapProvider implements AddressProvider, NearbyPlaceProvider {
                                     Set<MapCategory> categories) {
         String centerAddress = reverseGeocode(latitude, longitude).address();
         Map<String, NearbyPlace> unique = new LinkedHashMap<>();
+        if (centerAddress == null || centerAddress.isBlank()) {
+            return List.of();
+        }
         for (MapCategory category : categories) {
-            if (centerAddress != null && !centerAddress.isBlank()) {
-                appendPlaces(unique, category, centerAddress, latitude, longitude, radius);
-            }
-            if (category == MapCategory.TRANSPORT) {
-                appendBusStops(unique, latitude, longitude, radius);
-            }
+            appendPlaces(unique, category, centerAddress, latitude, longitude, radius);
         }
         return List.copyOf(unique.values());
     }
@@ -154,18 +136,6 @@ public class NaverMapProvider implements AddressProvider, NearbyPlaceProvider {
                 firstNonBlank(text(item, "roadAddress"), text(item, "address")),
                 placeLatitude, placeLongitude, distance));
         }
-    }
-
-    private void appendBusStops(Map<String, NearbyPlace> unique, BigDecimal latitude, BigDecimal longitude,
-                                int radius) {
-        busStopProvider.ifPresent(provider -> {
-            try {
-                provider.nearby(latitude, longitude, radius)
-                    .forEach(place -> unique.putIfAbsent(place.providerPlaceId(), place));
-            } catch (RuntimeException exception) {
-                LOG.warn("TAGO 버스정류소 조회에 실패해 Naver 지역 검색 결과만 반환합니다.", exception);
-            }
-        });
     }
 
     private String searchKeyword(MapCategory category) {
