@@ -1,13 +1,10 @@
 package com.jachwisunbae.map;
 
-import com.jachwisunbae.common.exception.BusinessException;
-import com.jachwisunbae.common.exception.DomainErrorCode;
 import com.jachwisunbae.common.web.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import java.math.BigDecimal;
-import java.util.EnumSet;
 import java.util.List;
 import java.util.Set;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -52,23 +49,7 @@ public class MapController {
     public ApiResponse<NearbyResponse> nearby(@RequestParam BigDecimal latitude,
                                               @RequestParam BigDecimal longitude,
                                               @RequestParam int radius,
-                                              @RequestParam(required = false) String categories) {
-        return ApiResponse.of(mapService.nearby(latitude, longitude, radius, parseCategories(categories)));
-    }
-
-    private Set<MapCategory> parseCategories(String value) {
-        if (value == null || value.isBlank()) {
-            return EnumSet.allOf(MapCategory.class);
-        }
-        EnumSet<MapCategory> result = EnumSet.noneOf(MapCategory.class);
-        try {
-            for (String category : value.split(",")) {
-                result.add(MapCategory.valueOf(category.trim().toUpperCase()));
-            }
-        } catch (IllegalArgumentException exception) {
-            throw new BusinessException(DomainErrorCode.MAP_QUERY_INVALID,
-                    "지원하지 않는 지도 카테고리입니다.");
-        }
-        return result;
+                                              @RequestParam(required = false) Set<MapCategory> categories) {
+        return ApiResponse.of(mapService.nearby(latitude, longitude, radius, categories));
     }
 }

@@ -3,9 +3,12 @@ package com.jachwisunbae.map;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.EnumSet;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -74,6 +77,38 @@ class MapServiceTest {
         service.nearby(LATITUDE, LONGITUDE, 500, EnumSet.allOf(MapCategory.class));
 
         assertThat(nearbyCalls).hasValue(2);
+    }
+
+    @Test
+    @DisplayName("요청 카테고리가 없으면 전체 카테고리로 조회한다")
+    void requestsAllCategoriesWhenCategoriesAreMissing() {
+        List<Set<MapCategory>> requested = new ArrayList<>();
+        MapService service = new MapService(new DemoAddressProvider(), (latitude, longitude, radius, categories) -> {
+            requested.add(categories);
+            return List.of();
+        }, Optional.empty());
+
+        service.nearby(LATITUDE, LONGITUDE, 500, null);
+        service.nearby(LATITUDE, LONGITUDE, 500, Set.of());
+
+        assertThat(requested).containsExactly(EnumSet.allOf(MapCategory.class), EnumSet.allOf(MapCategory.class));
+    }
+
+    @Test
+    @DisplayName("요청 카테고리의 빈 값은 무시한다")
+    void ignoresNullCategories() {
+        List<Set<MapCategory>> requested = new ArrayList<>();
+        MapService service = new MapService(new DemoAddressProvider(), (latitude, longitude, radius, categories) -> {
+            requested.add(categories);
+            return List.of();
+        }, Optional.empty());
+        Set<MapCategory> categoriesWithNull = new HashSet<>();
+        categoriesWithNull.add(MapCategory.HOSPITAL);
+        categoriesWithNull.add(null);
+
+        service.nearby(LATITUDE, LONGITUDE, 500, categoriesWithNull);
+
+        assertThat(requested).containsExactly(EnumSet.of(MapCategory.HOSPITAL));
     }
 
     private MapService service(Optional<BusStopProvider> busStopProvider) {

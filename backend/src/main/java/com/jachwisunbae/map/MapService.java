@@ -8,6 +8,7 @@ import java.util.EnumSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import org.slf4j.Logger;
@@ -48,9 +49,7 @@ public class MapService {
         if (!SUPPORTED_RADII.contains(radius)) {
             throw invalidQuery("반경은 500m, 1km, 2km만 사용할 수 있습니다.");
         }
-        Set<MapCategory> categories = requestedCategories == null || requestedCategories.isEmpty()
-                ? EnumSet.allOf(MapCategory.class)
-                : EnumSet.copyOf(requestedCategories);
+        Set<MapCategory> categories = categories(requestedCategories);
         List<NearbyPlace> places = findPlaces(latitude, longitude, radius, categories);
         Map<MapCategory, Integer> counts = new EnumMap<>(MapCategory.class);
         for (MapCategory category : MapCategory.values()) {
@@ -59,6 +58,16 @@ public class MapService {
         places.forEach(place -> counts.computeIfPresent(place.category(), (category, count) -> count + 1));
         return new NearbyResponse(new NearbyResponse.Center(latitude, longitude), radius,
                 Map.copyOf(counts), places);
+    }
+
+    private Set<MapCategory> categories(Set<MapCategory> requestedCategories) {
+        EnumSet<MapCategory> categories = EnumSet.noneOf(MapCategory.class);
+        if (requestedCategories != null) {
+            requestedCategories.stream()
+                    .filter(Objects::nonNull)
+                    .forEach(categories::add);
+        }
+        return categories.isEmpty() ? EnumSet.allOf(MapCategory.class) : categories;
     }
 
     private List<NearbyPlace> findPlaces(BigDecimal latitude, BigDecimal longitude, int radius,
