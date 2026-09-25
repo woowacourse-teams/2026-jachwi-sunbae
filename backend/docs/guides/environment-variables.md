@@ -39,7 +39,6 @@ Spring Boot 애플리케이션은 CORS 허용 Origin과 인증·저장소 설정
 | `NAVER_SEARCH_CLIENT_SECRET` | 비움 | `naver` 모드의 NAVER API HUB Client Secret. 백엔드 전용으로 관리한다 |
 | `BUS_STOP_PROVIDER` | `none` | `none` 또는 `tago` 버스정류소 adapter 선택 |
 | `DATA_GO_KR_SERVICE_KEY` | 비움 | `tago` 모드의 공공데이터포털 일반 인증키(Decoding) |
-| `MAP_CACHE_TTL_SECONDS` | `600` | 주변 시설 응답 cache TTL(초) |
 | `MAP_CONNECT_TIMEOUT_MILLIS` | `2000` | 지도 외부 공급자 연결 제한 시간 |
 | `MAP_READ_TIMEOUT_MILLIS` | `5000` | 지도 외부 공급자 응답 제한 시간 |
 | `DEPLOYMENT_ENVIRONMENT` | `local` | 구조화 로그의 실행 환경. EC2에서는 `dev` 또는 `prod`를 사용한다 |

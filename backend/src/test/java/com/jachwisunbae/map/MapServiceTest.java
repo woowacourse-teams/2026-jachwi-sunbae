@@ -3,9 +3,6 @@ package com.jachwisunbae.map;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.math.BigDecimal;
-import java.time.Clock;
-import java.time.Instant;
-import java.time.ZoneOffset;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Optional;
@@ -17,7 +14,6 @@ class MapServiceTest {
 
     private static final BigDecimal LATITUDE = new BigDecimal("37.406");
     private static final BigDecimal LONGITUDE = new BigDecimal("127.088");
-    private static final Clock CLOCK = Clock.fixed(Instant.parse("2026-09-24T00:00:00Z"), ZoneOffset.UTC);
 
     private final NearbyPlace subway = place("kakao:1", "판교역", MapCategory.TRANSPORT);
     private final NearbyPlace hospital = place("kakao:2", "판교병원", MapCategory.HOSPITAL);
@@ -64,9 +60,25 @@ class MapServiceTest {
         assertThat(response.places()).containsExactly(subway, hospital);
     }
 
+    @Test
+    @DisplayName("같은 조건으로 다시 조회해도 저장된 결과 없이 공급자를 매번 호출한다")
+    void requestsNearbyProviderEveryTime() {
+        AtomicInteger nearbyCalls = new AtomicInteger();
+        NearbyPlaceProvider nearbyPlaceProvider = (latitude, longitude, radius, categories) -> {
+            nearbyCalls.incrementAndGet();
+            return List.of(hospital);
+        };
+        MapService service = new MapService(new DemoAddressProvider(), nearbyPlaceProvider, Optional.empty());
+
+        service.nearby(LATITUDE, LONGITUDE, 500, EnumSet.allOf(MapCategory.class));
+        service.nearby(LATITUDE, LONGITUDE, 500, EnumSet.allOf(MapCategory.class));
+
+        assertThat(nearbyCalls).hasValue(2);
+    }
+
     private MapService service(Optional<BusStopProvider> busStopProvider) {
         NearbyPlaceProvider nearbyPlaceProvider = (latitude, longitude, radius, categories) -> List.of(subway, hospital);
-        return new MapService(new DemoAddressProvider(), nearbyPlaceProvider, busStopProvider, CLOCK, 600);
+        return new MapService(new DemoAddressProvider(), nearbyPlaceProvider, busStopProvider);
     }
 
     private static NearbyPlace place(String id, String name, MapCategory category) {
