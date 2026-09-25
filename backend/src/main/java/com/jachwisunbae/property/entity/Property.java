@@ -21,39 +21,32 @@ public class Property extends BaseTimeEntity {
     private final Long memberId;
     private PropertyName propertyName;
     private PropertyCosts propertyCosts;
-    private String discoverySource;
-    private String address;
-    private BigDecimal latitude;
-    private BigDecimal longitude;
+    private PropertyLocation propertyLocation;
     private LocalDate availableMoveInDate;
     private Long maintenanceFeeAmount;
     private LocalDateTime visitScheduledAt;
     private Set<RoomOption> roomOptions;
     private Set<UtilityOption> utilityOptions;
+    private String discoverySource;
 
     private Property(final Long id, final Long memberId, final PropertyName propertyName,
-                     final PropertyCosts propertyCosts,
-                     final String discoverySource, final String address,
-                     final BigDecimal latitude, final BigDecimal longitude,
-                     final LocalDate availableMoveInDate, final Long maintenanceFeeAmount,
+                     final PropertyCosts propertyCosts, final PropertyLocation propertyLocation, final LocalDate availableMoveInDate, final Long maintenanceFeeAmount,
                      final LocalDateTime visitScheduledAt,
                      final Set<RoomOption> roomOptions, final Set<UtilityOption> utilityOptions,
+                     final String discoverySource,
                      final LocalDateTime createdAt, final LocalDateTime updatedAt) {
         super(createdAt, updatedAt);
         this.id = id;
         this.memberId = memberId;
         this.propertyName = propertyName;
         this.propertyCosts = propertyCosts;
-        this.discoverySource = discoverySource;
-        this.address = address;
-        validateLocation(latitude, longitude);
-        this.latitude = latitude;
-        this.longitude = longitude;
+        this.propertyLocation = propertyLocation;
         this.availableMoveInDate = availableMoveInDate;
         this.maintenanceFeeAmount = maintenanceFeeAmount;
         this.visitScheduledAt = visitScheduledAt;
         this.roomOptions = roomOptions;
         this.utilityOptions = utilityOptions;
+        this.discoverySource = discoverySource;
     }
 
     public static Property create(final Long memberId, final String name, final Long depositAmount,
@@ -64,9 +57,9 @@ public class Property extends BaseTimeEntity {
                                   final List<String> roomOptions, final List<String> utilityOptions,
                                   final LocalDateTime now) {
         return new Property(null, validateMemberId(memberId), PropertyName.from(name), PropertyCosts.from(depositAmount, monthlyRentAmount),
-            validateSource(discoverySource), validateAddress(address),
-            latitude, longitude, availableMoveInDate, validateAmount(maintenanceFeeAmount), visitScheduledAt,
-            parseRoomOptions(roomOptions), parseUtilityOptions(utilityOptions), now, now);
+            PropertyLocation.from(address, latitude, longitude),
+            availableMoveInDate, validateAmount(maintenanceFeeAmount), visitScheduledAt,
+            parseRoomOptions(roomOptions), parseUtilityOptions(utilityOptions), validateSource(discoverySource), now, now);
     }
 
     public static Property reconstruct(final Long id, final Long memberId, final String name,
@@ -77,9 +70,9 @@ public class Property extends BaseTimeEntity {
                                        final LocalDateTime visitScheduledAt,
                                        final Set<RoomOption> roomOptions, final Set<UtilityOption> utilityOptions,
                                        final LocalDateTime createdAt, final LocalDateTime updatedAt) {
-        return new Property(id, validateMemberId(memberId), PropertyName.from(name), PropertyCosts.from(depositAmount, monthlyRentAmount), validateSource(discoverySource), validateAddress(address),
-            latitude, longitude, availableMoveInDate, validateAmount(maintenanceFeeAmount), visitScheduledAt,
-            roomOptions == null ? Set.of() : roomOptions, utilityOptions == null ? Set.of() : utilityOptions,
+        return new Property(id, validateMemberId(memberId), PropertyName.from(name), PropertyCosts.from(depositAmount, monthlyRentAmount),
+            PropertyLocation.from(address, latitude, longitude), availableMoveInDate, validateAmount(maintenanceFeeAmount), visitScheduledAt,
+            roomOptions == null ? Set.of() : roomOptions, utilityOptions == null ? Set.of() : utilityOptions, validateSource(discoverySource),
             createdAt, updatedAt);
     }
 
@@ -93,10 +86,7 @@ public class Property extends BaseTimeEntity {
         this.propertyName = PropertyName.from(name);
         this.propertyCosts = PropertyCosts.from(depositAmount, monthlyRentAmount);
         this.discoverySource = validateSource(discoverySource);
-        validateLocation(latitude, longitude);
-        this.address = validateAddress(address);
-        this.latitude = latitude;
-        this.longitude = longitude;
+        this.propertyLocation = PropertyLocation.from(address, latitude, longitude);
         this.availableMoveInDate = availableMoveInDate;
         this.maintenanceFeeAmount = validateAmount(maintenanceFeeAmount);
         this.visitScheduledAt = visitScheduledAt;
@@ -118,6 +108,18 @@ public class Property extends BaseTimeEntity {
         return propertyCosts.monthlyRentAmount();
     }
 
+    public String getAddress() {
+        return propertyLocation.address();
+    }
+
+    public BigDecimal getLatitude() {
+        return propertyLocation.latitude();
+    }
+
+    public BigDecimal getLongitude() {
+        return propertyLocation.longitude();
+    }
+
     private static Long validateMemberId(final Long memberId) {
         return DomainPreconditions.requireNonNull(memberId, DomainErrorCode.PROPERTY_INPUT_INVALID,
             "매물 소유 회원은 필수입니다.");
@@ -130,29 +132,6 @@ public class Property extends BaseTimeEntity {
         DomainPreconditions.require(source.length() <= 500, DomainErrorCode.PROPERTY_INPUT_INVALID,
             "발견 경로는 500자 이하여야 합니다.");
         return source;
-    }
-
-    private static String validateAddress(final String address) {
-        if (address == null || address.isBlank()) {
-            return null;
-        }
-        DomainPreconditions.require(address.length() <= 255, DomainErrorCode.PROPERTY_INPUT_INVALID,
-            "주소는 255자 이하여야 합니다.");
-        return address;
-    }
-
-    private static void validateLocation(final BigDecimal latitude, final BigDecimal longitude) {
-        DomainPreconditions.require((latitude == null) == (longitude == null),
-            DomainErrorCode.PROPERTY_LOCATION_INVALID, "위도와 경도는 함께 입력해야 합니다.");
-        if (latitude == null) {
-            return;
-        }
-        DomainPreconditions.require(latitude.compareTo(BigDecimal.valueOf(-90)) >= 0
-                && latitude.compareTo(BigDecimal.valueOf(90)) <= 0,
-            DomainErrorCode.PROPERTY_LOCATION_INVALID, "위도 범위가 올바르지 않습니다.");
-        DomainPreconditions.require(longitude.compareTo(BigDecimal.valueOf(-180)) >= 0
-                && longitude.compareTo(BigDecimal.valueOf(180)) <= 0,
-            DomainErrorCode.PROPERTY_LOCATION_INVALID, "경도 범위가 올바르지 않습니다.");
     }
 
     private static Set<RoomOption> parseRoomOptions(final List<String> roomOptions) {
