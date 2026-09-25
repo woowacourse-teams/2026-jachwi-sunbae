@@ -6,11 +6,12 @@ import com.jachwisunbae.common.validation.DomainPreconditions;
 public record PropertyName(String value) {
 
     public static PropertyName from(final String value) {
-        return new PropertyName(value);
+        return new PropertyName(validateName(value));
     }
 
-    public PropertyName {
-        value = DomainPreconditions.requireTrimmed(value, 1, 30, DomainErrorCode.PROPERTY_INPUT_INVALID,
+    private static String validateName(String value) {
+        DomainPreconditions.requireTrimmed(value, 1, 30, DomainErrorCode.PROPERTY_INPUT_INVALID,
             "매물 이름은 trim 후 1자 이상 30자 이하여야 합니다.");
+        return value;
     }
 }
