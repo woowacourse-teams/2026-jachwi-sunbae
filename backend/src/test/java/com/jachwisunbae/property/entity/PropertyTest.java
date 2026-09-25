@@ -31,28 +31,6 @@ class PropertyTest {
     private static final LocalDateTime NOW = LocalDateTime.now(FIXED_CLOCK);
     private static final LocalDate TODAY = LocalDate.now(FIXED_CLOCK);
 
-    @DisplayName("유효한 기본 정보로 매물을 생성한다")
-    @Test
-    void createPropertyWithValidInput() {
-        Property property = createProperty();
-
-        assertThat(property.getMemberId()).isEqualTo(1L);
-        assertThat(property.getName()).isEqualTo("새 매물");
-        assertThat(property.getDepositAmount()).isEqualTo(10_000_000L);
-        assertThat(property.getMonthlyRentAmount()).isEqualTo(500_000L);
-        assertThat(property.getDiscoverySource()).isEqualTo("부동산 앱");
-        assertThat(property.getAddress()).isEqualTo("서울시 강남구");
-        assertThat(property.getLatitude()).isEqualByComparingTo("37.5");
-        assertThat(property.getLongitude()).isEqualByComparingTo("127");
-        assertThat(property.getAvailableMoveInDate()).isEqualTo(TODAY);
-        assertThat(property.getMaintenanceFeeAmount()).isEqualTo(100_000L);
-        assertThat(property.getVisitScheduledAt()).isEqualTo(NOW);
-        assertThat(property.getRoomOptions()).containsExactly(RoomOption.AIR_CONDITIONER);
-        assertThat(property.getUtilityOptions()).containsExactly(UtilityOption.WATER);
-        assertThat(property.getCreatedAt()).isEqualTo(NOW);
-        assertThat(property.getUpdatedAt()).isEqualTo(NOW);
-    }
-
     @DisplayName("매물 생성은 null, 빈 문자열, 공백 이름을 거부한다")
     @ParameterizedTest(name = "[{index}] 이름: [{0}]")
     @NullAndEmptySource

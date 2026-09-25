@@ -1,26 +1,25 @@
 package com.jachwisunbae.property.entity;
 
-import lombok.Getter;
 import com.jachwisunbae.common.entity.BaseTimeEntity;
 import com.jachwisunbae.common.exception.BusinessException;
 import com.jachwisunbae.common.exception.DomainErrorCode;
 import com.jachwisunbae.common.validation.DomainPreconditions;
 import com.jachwisunbae.property.type.RoomOption;
 import com.jachwisunbae.property.type.UtilityOption;
-
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
+import lombok.Getter;
 
 @Getter
 public class Property extends BaseTimeEntity {
 
     private final Long id;
     private final Long memberId;
-    private String name;
+    private PropertyName propertyName;
     private Long depositAmount;
     private Long monthlyRentAmount;
     private String discoverySource;
@@ -33,7 +32,7 @@ public class Property extends BaseTimeEntity {
     private Set<RoomOption> roomOptions;
     private Set<UtilityOption> utilityOptions;
 
-    private Property(final Long id, final Long memberId, final String name,
+    private Property(final Long id, final Long memberId, final PropertyName propertyName,
                      final Long depositAmount, final Long monthlyRentAmount,
                      final String discoverySource, final String address,
                      final BigDecimal latitude, final BigDecimal longitude,
@@ -44,7 +43,7 @@ public class Property extends BaseTimeEntity {
         super(createdAt, updatedAt);
         this.id = id;
         this.memberId = memberId;
-        this.name = name;
+        this.propertyName = propertyName;
         this.depositAmount = depositAmount;
         this.monthlyRentAmount = monthlyRentAmount;
         this.discoverySource = discoverySource;
@@ -66,7 +65,7 @@ public class Property extends BaseTimeEntity {
                                   final Long maintenanceFeeAmount, final LocalDateTime visitScheduledAt,
                                   final List<String> roomOptions, final List<String> utilityOptions,
                                   final LocalDateTime now) {
-        return new Property(null, validateMemberId(memberId), validateName(name), validateAmount(depositAmount),
+        return new Property(null, validateMemberId(memberId), PropertyName.from(name), validateAmount(depositAmount),
             validateAmount(monthlyRentAmount), validateSource(discoverySource), validateAddress(address),
             latitude, longitude, availableMoveInDate, validateAmount(maintenanceFeeAmount), visitScheduledAt,
             parseRoomOptions(roomOptions), parseUtilityOptions(utilityOptions), now, now);
@@ -80,7 +79,7 @@ public class Property extends BaseTimeEntity {
                                        final LocalDateTime visitScheduledAt,
                                        final Set<RoomOption> roomOptions, final Set<UtilityOption> utilityOptions,
                                        final LocalDateTime createdAt, final LocalDateTime updatedAt) {
-        return new Property(id, validateMemberId(memberId), validateName(name), validateAmount(depositAmount),
+        return new Property(id, validateMemberId(memberId), PropertyName.from(name), validateAmount(depositAmount),
             validateAmount(monthlyRentAmount), validateSource(discoverySource), validateAddress(address),
             latitude, longitude, availableMoveInDate, validateAmount(maintenanceFeeAmount), visitScheduledAt,
             roomOptions == null ? Set.of() : roomOptions, utilityOptions == null ? Set.of() : utilityOptions,
@@ -94,7 +93,7 @@ public class Property extends BaseTimeEntity {
                                  final LocalDateTime visitScheduledAt,
                                  final List<String> roomOptions, final List<String> utilityOptions,
                                  final LocalDateTime now) {
-        this.name = validateName(name);
+        this.propertyName = PropertyName.from(name);
         this.depositAmount = validateAmount(depositAmount);
         this.monthlyRentAmount = validateAmount(monthlyRentAmount);
         this.discoverySource = validateSource(discoverySource);
@@ -111,14 +110,13 @@ public class Property extends BaseTimeEntity {
             "변경 시각은 필수입니다."));
     }
 
+    public String getName() {
+        return propertyName.value();
+    }
+
     private static Long validateMemberId(final Long memberId) {
         return DomainPreconditions.requireNonNull(memberId, DomainErrorCode.PROPERTY_INPUT_INVALID,
             "매물 소유 회원은 필수입니다.");
-    }
-
-    private static String validateName(final String name) {
-        return DomainPreconditions.requireTrimmed(name, 1, 30, DomainErrorCode.PROPERTY_INPUT_INVALID,
-            "매물 이름은 trim 후 1자 이상 30자 이하여야 합니다.");
     }
 
     private static Long validateAmount(final Long amount) {
