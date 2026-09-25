@@ -100,6 +100,7 @@ public class PropertyController {
     }
 
     @PostMapping("/comparison-views")
+    @Deprecated(forRemoval = true)
     @Operation(summary = "비교 화면 진입 기록",
             description = "현재 회원이 비교 화면을 연 시각과 그 시점의 보유 매물 수를 실험 이벤트로 저장합니다.")
     public ResponseEntity<Void> recordComparisonView(@AuthenticatedMemberId final Long memberId) {
