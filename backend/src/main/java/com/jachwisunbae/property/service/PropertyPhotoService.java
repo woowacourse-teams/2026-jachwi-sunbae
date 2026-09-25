@@ -2,19 +2,21 @@ package com.jachwisunbae.property.service;
 
 import com.jachwisunbae.common.exception.BusinessException;
 import com.jachwisunbae.common.exception.DomainErrorCode;
-import com.jachwisunbae.property.entity.PropertyPhoto;
+import com.jachwisunbae.property.entity.photo.PropertyPhoto;
 import com.jachwisunbae.property.repository.PropertyPhotoRepository;
 import com.jachwisunbae.property.repository.PropertyRepository;
 import com.jachwisunbae.property.repository.query.PropertyPhotosQuery;
 import com.jachwisunbae.property.service.dto.result.PropertyPhotoUploadResult;
 import com.jachwisunbae.property.storage.PhotoContent;
-import com.jachwisunbae.property.storage.PhotoFile;
+import com.jachwisunbae.property.entity.photo.PhotoFile;
 import com.jachwisunbae.property.storage.PhotoStorage;
 import com.jachwisunbae.property.storage.PhotoStorageKeyGenerator;
+import java.io.IOException;
 import java.time.Clock;
 import java.time.LocalDateTime;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 @Service
 @Transactional(readOnly = true)
@@ -44,21 +46,24 @@ public class PropertyPhotoService {
     }
 
     @Transactional
-    public PropertyPhotoUploadResult upload(final Long memberId, final Long propertyId, final PhotoFile photoFile) {
+    public PropertyPhotoUploadResult upload(final Long memberId, final Long propertyId, final MultipartFile file) {
         validateOwnedPropertyForUpload(memberId, propertyId);
         validatePhotoLimit(propertyId);
 
+        PhotoFile photoFile = loadPhotoFile(file);
+
         String storageKey = storageKeyGenerator.generate(memberId, propertyId, photoFile);
-        photoStorage.upload(storageKey, photoFile.bytes(), photoFile.contentType());
+        photoStorage.upload(storageKey, photoFile.bytes(), photoFile.getContentType());
         try {
             PropertyPhoto saved = propertyPhotoRepository.save(memberId,
-                PropertyPhoto.create(propertyId, storageKey, photoFile.contentType(), photoFile.size(),
+                PropertyPhoto.create(propertyId, storageKey, photoFile.getContentType(), photoFile.size(),
                     LocalDateTime.now(clock)), photoFile.checksum());
 
             propertyPhotoRepository.ensureRepresentative(propertyId);
             boolean representative = propertyPhotoRepository.findRepresentativePhotoId(propertyId)
                 .map(saved.getId()::equals)
                 .orElse(false);
+
             return new PropertyPhotoUploadResult(saved, representative);
         } catch (RuntimeException exception) {
             try {
@@ -80,6 +85,15 @@ public class PropertyPhotoService {
         if (propertyPhotoRepository.countByPropertyId(propertyId) >= 30) {
             throw new BusinessException(DomainErrorCode.PHOTO_LIMIT_EXCEEDED,
                 "매물당 사진은 30장까지 업로드할 수 있습니다.");
+        }
+    }
+
+    private PhotoFile loadPhotoFile(final MultipartFile file) {
+        try {
+            return new PhotoFile(file.getBytes(), file.getContentType());
+        } catch (IOException exception) {
+            throw new BusinessException(DomainErrorCode.PHOTO_STORAGE_FAILURE,
+                "업로드 사진을 읽을 수 없습니다.", exception);
         }
     }
 

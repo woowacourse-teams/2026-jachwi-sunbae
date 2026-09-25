@@ -1,6 +1,6 @@
 package com.jachwisunbae.property.repository;
 
-import com.jachwisunbae.property.entity.PropertyPhoto;
+import com.jachwisunbae.property.entity.photo.PropertyPhoto;
 import java.util.List;
 import java.util.Optional;
 

@@ -1,4 +1,4 @@
-package com.jachwisunbae.property.entity;
+package com.jachwisunbae.property.entity.photo;
 
 import lombok.Getter;
 import com.jachwisunbae.common.exception.DomainErrorCode;
@@ -54,8 +54,8 @@ public class PropertyPhoto {
         String type = DomainPreconditions.requireNonBlank(value, DomainErrorCode.PROPERTY_INPUT_INVALID,
                 "사진 콘텐츠 타입은 필수입니다.").toLowerCase();
         DomainPreconditions.require(type.equals("image/jpeg") || type.equals("image/png")
-                        || type.equals("image/webp"),
-                DomainErrorCode.PHOTO_CONTENT_TYPE_UNSUPPORTED, "JPEG, PNG, WebP만 허용됩니다.");
+                        || type.equals("image/webp") || type.equals("image/heic") || type.equals("image/heif"),
+                DomainErrorCode.PHOTO_CONTENT_TYPE_UNSUPPORTED, "JPEG, PNG, WebP, HEIC, HEIF만 허용됩니다.");
         return type;
     }
 

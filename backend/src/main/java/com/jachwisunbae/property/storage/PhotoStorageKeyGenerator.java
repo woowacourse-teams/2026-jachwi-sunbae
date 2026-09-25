@@ -1,5 +1,6 @@
 package com.jachwisunbae.property.storage;
 
+import com.jachwisunbae.property.entity.photo.PhotoFile;
 import java.util.UUID;
 import org.springframework.stereotype.Component;
 
