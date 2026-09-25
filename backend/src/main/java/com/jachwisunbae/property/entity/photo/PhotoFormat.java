@@ -34,13 +34,14 @@ public enum PhotoFormat {
     }
 
     public static PhotoFormat from(final String value) {
-
-        String contentType = value == null ? "" : value.toLowerCase(Locale.ROOT);
+        if (value == null) {
+            throw unsupportedContentType();
+        }
+        String contentType = value.toLowerCase(Locale.ROOT);
         return Arrays.stream(values())
             .filter(format -> format.contentType.equals(contentType))
             .findFirst()
-            .orElseThrow(() -> new BusinessException(DomainErrorCode.PHOTO_CONTENT_TYPE_UNSUPPORTED,
-                "JPEG, PNG, WebP, HEIC, HEIF 사진만 업로드할 수 있습니다."));
+            .orElseThrow(PhotoFormat::unsupportedContentType);
     }
 
     public String contentType() {
@@ -61,9 +62,10 @@ public enum PhotoFormat {
 
     private void validateImageIoFormat(final byte[] bytes) {
         try (ImageInputStream input = ImageIO.createImageInputStream(new ByteArrayInputStream(bytes))) {
-            Iterator<ImageReader> readers = input == null
-                ? Collections.emptyIterator()
-                : ImageIO.getImageReaders(input);
+            Iterator<ImageReader> readers = Collections.emptyIterator();
+            if (input != null) {
+                readers = ImageIO.getImageReaders(input);
+            }
             if (!readers.hasNext()) {
                 throw invalidPhotoFormat();
             }
@@ -105,5 +107,10 @@ public enum PhotoFormat {
     private static BusinessException invalidPhotoFormat() {
         return new BusinessException(DomainErrorCode.PHOTO_CONTENT_TYPE_UNSUPPORTED,
             "파일 내용과 사진 형식이 일치하지 않습니다.");
+    }
+
+    private static BusinessException unsupportedContentType() {
+        return new BusinessException(DomainErrorCode.PHOTO_CONTENT_TYPE_UNSUPPORTED,
+            "JPEG, PNG, WebP, HEIC, HEIF 사진만 업로드할 수 있습니다.");
     }
 }

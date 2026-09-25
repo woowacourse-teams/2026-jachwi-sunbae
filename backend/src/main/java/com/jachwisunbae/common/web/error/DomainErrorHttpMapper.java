@@ -33,6 +33,7 @@ public class DomainErrorHttpMapper {
                     PHOTO_LIMIT_EXCEEDED,
                     PHOTO_CONTENT_TYPE_UNSUPPORTED,
                     PHOTO_SIZE_EXCEEDED,
+                    PHOTO_FILE_READ_FAILURE,
                     MAP_QUERY_INVALID -> HttpStatus.BAD_REQUEST;
             case MEMBER_NOT_FOUND,
                     CHECKLIST_NOT_FOUND,

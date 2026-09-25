@@ -19,13 +19,19 @@ public record PhotoStorageProperties(
     }
 
     private static String emptyIfNull(final String value) {
-        return value == null ? "" : value;
+        if (value == null) {
+            return "";
+        }
+        return value;
     }
 
     private static String normalizePrefix(final String prefix) {
         if (prefix == null || prefix.isBlank()) {
             return "";
         }
-        return prefix.endsWith("/") ? prefix : prefix + "/";
+        if (prefix.endsWith("/")) {
+            return prefix;
+        }
+        return prefix + "/";
     }
 }
