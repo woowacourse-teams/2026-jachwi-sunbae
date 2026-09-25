@@ -92,7 +92,7 @@ public class PropertyPhotoService {
         try {
             return new PhotoFile(file.getBytes(), file.getContentType());
         } catch (IOException exception) {
-            throw new BusinessException(DomainErrorCode.PHOTO_STORAGE_FAILURE,
+            throw new BusinessException(DomainErrorCode.PHOTO_FILE_READ_FAILURE,
                 "업로드 사진을 읽을 수 없습니다.", exception);
         }
     }
