@@ -10,7 +10,7 @@ class MapProviderSelectionTest {
 
     private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
             .withUserConfiguration(DemoAddressProvider.class, DemoNearbyPlaceProvider.class,
-                    NaverMapProvider.class, KakaoNearbyPlaceProvider.class);
+                    NaverMapProvider.class, KakaoPlaceClient.class, KakaoNearbyPlaceProvider.class);
 
     @Test
     @DisplayName("설정이 없으면 주소와 주변 시설 모두 demo 공급자를 사용한다")
