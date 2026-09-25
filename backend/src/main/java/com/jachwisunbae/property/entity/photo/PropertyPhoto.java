@@ -51,12 +51,7 @@ public class PropertyPhoto {
     }
 
     private static String validateContentType(final String value) {
-        String type = DomainPreconditions.requireNonBlank(value, DomainErrorCode.PROPERTY_INPUT_INVALID,
-                "사진 콘텐츠 타입은 필수입니다.").toLowerCase();
-        DomainPreconditions.require(type.equals("image/jpeg") || type.equals("image/png")
-                        || type.equals("image/webp") || type.equals("image/heic") || type.equals("image/heif"),
-                DomainErrorCode.PHOTO_CONTENT_TYPE_UNSUPPORTED, "JPEG, PNG, WebP, HEIC, HEIF만 허용됩니다.");
-        return type;
+        return PhotoFormat.from(value).contentType();
     }
 
     private static Long validateSize(final Long sizeBytes) {
