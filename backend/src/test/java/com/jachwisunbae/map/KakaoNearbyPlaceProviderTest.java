@@ -45,6 +45,32 @@ class KakaoNearbyPlaceProviderTest {
     }
 
     @Test
+    @DisplayName("필수 값이 없는 장소는 제외하고 나머지 장소를 반환한다")
+    void skipsDocumentsWithoutRequiredFields() {
+        client.respond("CS2", 1, true,
+                document("1", "도로명 1", "지번 1"),
+                new KakaoCategorySearchResponse.Document("2", null, "도로명 2", "지번 2",
+                        new BigDecimal("37.4064"), new BigDecimal("127.0888"), 100),
+                new KakaoCategorySearchResponse.Document("3", "좌표 없는 편의점", "도로명 3", "지번 3",
+                        null, null, 100),
+                document("4", "도로명 4", "지번 4"));
+
+        List<NearbyPlace> places = provider.nearby(LATITUDE, LONGITUDE, 500, EnumSet.of(MapCategory.CONVENIENCE));
+
+        assertThat(places).extracting(NearbyPlace::providerPlaceId).containsExactly("kakao:1", "kakao:4");
+    }
+
+    @Test
+    @DisplayName("도로명주소와 지번 주소가 모두 없으면 빈 주소로 반환한다")
+    void returnsEmptyAddressWhenBothAddressesAreMissing() {
+        client.respond("AG2", 1, true, document("1", null, null));
+
+        List<NearbyPlace> places = provider.nearby(LATITUDE, LONGITUDE, 500, EnumSet.of(MapCategory.AGENCY));
+
+        assertThat(places).extracting(NearbyPlace::address).containsExactly("");
+    }
+
+    @Test
     @DisplayName("마지막 페이지가 아니면 다음 페이지를 조회하고 마지막 페이지에서 멈춘다")
     void readsNextPageUntilLastPage() {
         client.respond("HP8", 1, false, document("1", "도로명 1", "지번 1"));
@@ -98,8 +124,8 @@ class KakaoNearbyPlaceProviderTest {
             super((RestClient) null);
         }
 
-        void respond(String categoryCode, int page, boolean end, KakaoCategorySearchResponse.Document document) {
-            responses.put(categoryCode + ":" + page, new KakaoCategorySearchResponse(List.of(document), end));
+        void respond(String categoryCode, int page, boolean end, KakaoCategorySearchResponse.Document... documents) {
+            responses.put(categoryCode + ":" + page, new KakaoCategorySearchResponse(List.of(documents), end));
         }
 
         List<String> requests() {
