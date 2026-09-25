@@ -44,7 +44,7 @@ public class PhotoFile {
 
     private static byte[] validateBytes(final byte[] bytes) {
         if (bytes == null || bytes.length == 0 || bytes.length > MAX_SIZE_BYTES) {
-            throw new BusinessException(DomainErrorCode.PHOTO_SIZE_EXCEEDED,
+            throw new BusinessException(DomainErrorCode.PHOTO_FILE_SIZE_INVALID,
                 "사진은 1바이트 이상 5MiB 이하여야 합니다.");
         }
         return bytes.clone();
