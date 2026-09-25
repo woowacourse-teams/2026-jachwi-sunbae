@@ -3,10 +3,15 @@ package com.jachwisunbae.property.entity;
 import com.jachwisunbae.common.exception.DomainErrorCode;
 import com.jachwisunbae.common.validation.DomainPreconditions;
 
-public record PropertyCosts(
+record PropertyCosts(
     Long depositAmount,
     Long monthlyRentAmount
 ) {
+
+    PropertyCosts {
+        depositAmount = validateAmount(depositAmount);
+        monthlyRentAmount = validateAmount(monthlyRentAmount);
+    }
 
     public static PropertyCosts from(Long depositAmount, Long monthlyRentAmount) {
         return new PropertyCosts(validateAmount(depositAmount), validateAmount(monthlyRentAmount));

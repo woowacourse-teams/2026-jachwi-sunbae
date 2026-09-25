@@ -4,15 +4,19 @@ import com.jachwisunbae.common.exception.DomainErrorCode;
 import com.jachwisunbae.common.validation.DomainPreconditions;
 import java.math.BigDecimal;
 
-public record PropertyLocation(
+record PropertyLocation(
     String address,
     BigDecimal latitude,
     BigDecimal longitude
 ) {
 
-    public static PropertyLocation from(String address, BigDecimal latitude, BigDecimal longitude) {
+    PropertyLocation {
+        address = validateAddress(address);
         validateLocation(latitude, longitude);
-        return new PropertyLocation(validateAddress(address), latitude, longitude);
+    }
+
+    public static PropertyLocation from(String address, BigDecimal latitude, BigDecimal longitude) {
+        return new PropertyLocation(address, latitude, longitude);
     }
 
     private static String validateAddress(final String address) {

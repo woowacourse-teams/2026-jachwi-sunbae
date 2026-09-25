@@ -12,10 +12,11 @@ import java.util.List;
 import java.util.Set;
 import lombok.Getter;
 
-@Getter
 public class Property extends BaseTimeEntity {
 
+    @Getter
     private final Long id;
+    @Getter
     private final Long memberId;
     private PropertyName propertyName;
     private PropertyCosts propertyCosts;

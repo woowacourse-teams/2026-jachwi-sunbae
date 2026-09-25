@@ -11,7 +11,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-public record PropertyOptions(
+record PropertyOptions(
     LocalDate availableMoveInDate,
     Long maintenanceFeeAmount,
     LocalDateTime visitScheduledAt,
@@ -19,6 +19,13 @@ public record PropertyOptions(
     Set<UtilityOption> utilityOptions,
     String discoverySource
 ) {
+
+    PropertyOptions {
+        maintenanceFeeAmount = validateAmount(maintenanceFeeAmount);
+        roomOptions = roomOptions == null ? Set.of() : Set.copyOf(roomOptions);
+        utilityOptions = utilityOptions == null ? Set.of() : Set.copyOf(utilityOptions);
+        discoverySource = validateSource(discoverySource);
+    }
 
     public static PropertyOptions of(
             LocalDate availableMoveInDate,
@@ -29,11 +36,11 @@ public record PropertyOptions(
             String discoverySource) {
         return new PropertyOptions(
             availableMoveInDate,
-            validateAmount(maintenanceFeeAmount),
+            maintenanceFeeAmount,
             visitScheduledAt,
             roomOptions,
             utilityOptions,
-            validateSource(discoverySource)
+            discoverySource
         );
     }
 
@@ -47,11 +54,11 @@ public record PropertyOptions(
     ) {
         return new PropertyOptions(
             availableMoveInDate,
-            validateAmount(maintenanceFeeAmount),
+            maintenanceFeeAmount,
             visitScheduledAt,
             parseRoomOptions(roomOptionCodes),
             parseUtilityOptions(utilityOptionCodes),
-            validateSource(discoverySource)
+            discoverySource
         );
     }
 

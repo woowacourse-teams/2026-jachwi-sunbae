@@ -3,10 +3,14 @@ package com.jachwisunbae.property.entity;
 import com.jachwisunbae.common.exception.DomainErrorCode;
 import com.jachwisunbae.common.validation.DomainPreconditions;
 
-public record PropertyName(String value) {
+record PropertyName(String value) {
 
-    public static PropertyName from(final String value) {
-        return new PropertyName(validateName(value));
+    PropertyName {
+        value = validateName(value);
+    }
+
+    static PropertyName from(String value) {
+        return new PropertyName(value);
     }
 
     private static String validateName(String value) {
