@@ -129,7 +129,6 @@ public class JdbcPropertyRepository implements PropertyRepository {
             property.getName(),
             property.getDepositAmount(),
             property.getMonthlyRentAmount(),
-            property.getDiscoverySource(),
             property.getAddress(),
             property.getLatitude(),
             property.getLongitude(),
@@ -138,6 +137,7 @@ public class JdbcPropertyRepository implements PropertyRepository {
             property.getVisitScheduledAt(),
             property.getRoomOptions(),
             property.getUtilityOptions(),
+            property.getDiscoverySource(),
             property.getCreatedAt(),
             property.getUpdatedAt()
         );
@@ -217,7 +217,6 @@ public class JdbcPropertyRepository implements PropertyRepository {
             rs.getString("name"),
             rs.getObject("deposit_amount", Long.class),
             rs.getObject("monthly_rent_amount", Long.class),
-            rs.getString("discovery_source"),
             rs.getString("address"),
             rs.getBigDecimal("latitude"),
             rs.getBigDecimal("longitude"),
@@ -226,6 +225,7 @@ public class JdbcPropertyRepository implements PropertyRepository {
             visitScheduledAt == null ? null : visitScheduledAt.toLocalDateTime(),
             findRoomOptions(propertyId),
             findUtilityOptions(propertyId),
+            rs.getString("discovery_source"),
             createdAt.toLocalDateTime(),
             createdAt.toLocalDateTime()
         );

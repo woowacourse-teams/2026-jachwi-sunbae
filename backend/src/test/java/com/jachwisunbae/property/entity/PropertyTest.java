@@ -27,7 +27,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 class PropertyTest {
 
     private static final Clock FIXED_CLOCK = Clock.fixed(
-            Instant.parse("2026-09-24T10:00:00Z"), ZoneOffset.UTC);
+        Instant.parse("2026-09-24T10:00:00Z"), ZoneOffset.UTC);
     private static final LocalDateTime NOW = LocalDateTime.now(FIXED_CLOCK);
     private static final LocalDate TODAY = LocalDate.now(FIXED_CLOCK);
 
@@ -37,7 +37,7 @@ class PropertyTest {
     @ValueSource(strings = {"   "})
     void createRejectsBlankName(String name) {
         assertPropertyError(() -> createProperty(input -> input.name = name),
-                DomainErrorCode.PROPERTY_INPUT_INVALID);
+            DomainErrorCode.PROPERTY_INPUT_INVALID);
     }
 
     @DisplayName("매물 생성은 1자와 30자 이름을 허용한다")
@@ -55,7 +55,7 @@ class PropertyTest {
     @Test
     void createRejectsThirtyOneCharacterName() {
         assertPropertyError(() -> createProperty(input -> input.name = "가".repeat(31)),
-                DomainErrorCode.PROPERTY_INPUT_INVALID);
+            DomainErrorCode.PROPERTY_INPUT_INVALID);
     }
 
     @DisplayName("매물 생성은 이름의 앞뒤 공백을 제거한다")
@@ -84,7 +84,7 @@ class PropertyTest {
         Property property = createProperty();
 
         assertPropertyError(() -> updateProperty(property, input -> input.name = name),
-                DomainErrorCode.PROPERTY_INPUT_INVALID);
+            DomainErrorCode.PROPERTY_INPUT_INVALID);
     }
 
     @DisplayName("매물 수정은 유효한 이름의 앞뒤 공백을 제거한다")
@@ -136,7 +136,7 @@ class PropertyTest {
     @Test
     void createRejectsNullMemberId() {
         assertPropertyError(() -> createProperty(input -> input.memberId = null),
-                DomainErrorCode.PROPERTY_INPUT_INVALID);
+            DomainErrorCode.PROPERTY_INPUT_INVALID);
     }
 
     @DisplayName("입력하지 않은 금액은 0으로 저장한다")
@@ -157,11 +157,11 @@ class PropertyTest {
     @Test
     void createRejectsNegativeAmounts() {
         assertPropertyError(() -> createProperty(input -> input.depositAmount = -1L),
-                DomainErrorCode.PROPERTY_INPUT_INVALID);
+            DomainErrorCode.PROPERTY_INPUT_INVALID);
         assertPropertyError(() -> createProperty(input -> input.monthlyRentAmount = -1L),
-                DomainErrorCode.PROPERTY_INPUT_INVALID);
+            DomainErrorCode.PROPERTY_INPUT_INVALID);
         assertPropertyError(() -> createProperty(input -> input.maintenanceFeeAmount = -1L),
-                DomainErrorCode.PROPERTY_INPUT_INVALID);
+            DomainErrorCode.PROPERTY_INPUT_INVALID);
     }
 
     @DisplayName("입력하지 않은 선택 정보는 빈 값으로 정규화한다")
@@ -184,27 +184,27 @@ class PropertyTest {
     @Test
     void createRejectsTextOverMaximumLength() {
         assertPropertyError(() -> createProperty(input -> input.discoverySource = "출".repeat(501)),
-                DomainErrorCode.PROPERTY_INPUT_INVALID);
+            DomainErrorCode.PROPERTY_INPUT_INVALID);
         assertPropertyError(() -> createProperty(input -> input.address = "주".repeat(256)),
-                DomainErrorCode.PROPERTY_INPUT_INVALID);
+            DomainErrorCode.PROPERTY_INPUT_INVALID);
     }
 
     @DisplayName("위도와 경도는 함께 입력해야 한다")
     @Test
     void createRejectsIncompleteLocationPair() {
         assertPropertyError(() -> createProperty(input -> input.longitude = null),
-                DomainErrorCode.PROPERTY_LOCATION_INVALID);
+            DomainErrorCode.PROPERTY_LOCATION_INVALID);
         assertPropertyError(() -> createProperty(input -> input.latitude = null),
-                DomainErrorCode.PROPERTY_LOCATION_INVALID);
+            DomainErrorCode.PROPERTY_LOCATION_INVALID);
     }
 
     @DisplayName("위도와 경도는 유효한 좌표 범위 안에 있어야 한다")
     @Test
     void createRejectsLocationOutsideRange() {
         assertPropertyError(() -> createProperty(input -> input.latitude = BigDecimal.valueOf(90.0000001)),
-                DomainErrorCode.PROPERTY_LOCATION_INVALID);
+            DomainErrorCode.PROPERTY_LOCATION_INVALID);
         assertPropertyError(() -> createProperty(input -> input.longitude = BigDecimal.valueOf(180.0000001)),
-                DomainErrorCode.PROPERTY_LOCATION_INVALID);
+            DomainErrorCode.PROPERTY_LOCATION_INVALID);
     }
 
     @DisplayName("지원하는 방 옵션과 공과금 옵션은 중복 없이 저장한다")
@@ -217,49 +217,48 @@ class PropertyTest {
 
         assertThat(property.getRoomOptions()).containsExactlyInAnyOrder(RoomOption.BED, RoomOption.DESK);
         assertThat(property.getUtilityOptions()).containsExactlyInAnyOrder(UtilityOption.WATER,
-                UtilityOption.INTERNET);
+            UtilityOption.INTERNET);
     }
 
     @DisplayName("지원하지 않는 방 옵션과 공과금 옵션은 거부한다")
     @Test
     void createRejectsUnknownOptions() {
         assertPropertyError(() -> createProperty(input -> input.roomOptions = List.of("UNKNOWN")),
-                DomainErrorCode.PROPERTY_INPUT_INVALID);
+            DomainErrorCode.PROPERTY_INPUT_INVALID);
         assertPropertyError(() -> createProperty(input -> input.utilityOptions = List.of("UNKNOWN")),
-                DomainErrorCode.PROPERTY_INPUT_INVALID);
+            DomainErrorCode.PROPERTY_INPUT_INVALID);
     }
 
     @DisplayName("매물 수정은 생성과 동일한 기본 정보 검증을 적용한다")
     @Test
     void updateAppliesSameBasicInfoValidationAsCreate() {
         assertUpdatePropertyError(input -> input.name = "가".repeat(31),
-                DomainErrorCode.PROPERTY_INPUT_INVALID);
+            DomainErrorCode.PROPERTY_INPUT_INVALID);
         assertUpdatePropertyError(input -> input.depositAmount = -1L,
-                DomainErrorCode.PROPERTY_INPUT_INVALID);
+            DomainErrorCode.PROPERTY_INPUT_INVALID);
         assertUpdatePropertyError(input -> input.longitude = null,
-                DomainErrorCode.PROPERTY_LOCATION_INVALID);
+            DomainErrorCode.PROPERTY_LOCATION_INVALID);
         assertUpdatePropertyError(input -> input.latitude = BigDecimal.valueOf(90.0000001),
-                DomainErrorCode.PROPERTY_LOCATION_INVALID);
+            DomainErrorCode.PROPERTY_LOCATION_INVALID);
         assertUpdatePropertyError(input -> input.roomOptions = List.of("UNKNOWN"),
-                DomainErrorCode.PROPERTY_INPUT_INVALID);
+            DomainErrorCode.PROPERTY_INPUT_INVALID);
         assertUpdatePropertyError(input -> input.utilityOptions = List.of("UNKNOWN"),
-                DomainErrorCode.PROPERTY_INPUT_INVALID);
+            DomainErrorCode.PROPERTY_INPUT_INVALID);
     }
 
     @DisplayName("매물 수정은 기본 정보와 수정 시각만 바꾸고 식별자와 생성 시각을 유지한다")
     @Test
     void updateReplacesBasicInfoAndPreservesIdentity() {
         LocalDateTime createdAt = NOW.minusDays(10);
-        Property property = Property.reconstruct(10L, 20L, "기존 매물", 1L, 2L, "기존 경로", "기존 주소",
-                BigDecimal.valueOf(37), BigDecimal.valueOf(127), TODAY, 3L, NOW,
-                Set.of(RoomOption.BED), Set.of(UtilityOption.WATER), createdAt, NOW.minusDays(1));
+        Property property = Property.reconstruct(10L, 20L, "기존 매물", 1L, 2L, "기존 주소",
+            BigDecimal.valueOf(37), BigDecimal.valueOf(127), TODAY, 3L, NOW,
+            Set.of(RoomOption.BED), Set.of(UtilityOption.WATER), "기존 경로", createdAt, NOW.minusDays(1));
         LocalDateTime updatedAt = NOW.plusHours(1);
 
         updateProperty(property, input -> {
             input.name = "수정 매물";
             input.depositAmount = 10L;
             input.monthlyRentAmount = 20L;
-            input.discoverySource = "수정 경로";
             input.address = "수정 주소";
             input.latitude = BigDecimal.valueOf(38);
             input.longitude = BigDecimal.valueOf(128);
@@ -268,6 +267,7 @@ class PropertyTest {
             input.visitScheduledAt = NOW.minusHours(1);
             input.roomOptions = List.of("DESK", "DESK");
             input.utilityOptions = List.of("INTERNET", "INTERNET");
+            input.discoverySource = "수정 경로";
             input.now = updatedAt;
         });
 
@@ -295,11 +295,12 @@ class PropertyTest {
         Property property = createProperty();
 
         assertPropertyError(() -> updateProperty(property, input -> input.now = null),
-                DomainErrorCode.PROPERTY_INPUT_INVALID);
+            DomainErrorCode.PROPERTY_INPUT_INVALID);
     }
 
     private static Property createProperty() {
-        return createProperty(input -> {});
+        return createProperty(input -> {
+        });
     }
 
     private static Property createProperty(Consumer<PropertyFixture> customization) {
@@ -316,8 +317,8 @@ class PropertyTest {
 
     private static void assertPropertyError(ThrowingCallable callable, DomainErrorCode expectedCode) {
         assertThatThrownBy(callable)
-                .isInstanceOfSatisfying(BusinessException.class,
-                        exception -> assertThat(exception.getCode()).isEqualTo(expectedCode));
+            .isInstanceOfSatisfying(BusinessException.class,
+                exception -> assertThat(exception.getCode()).isEqualTo(expectedCode));
     }
 
     private static void assertUpdatePropertyError(Consumer<PropertyFixture> customization,
@@ -332,7 +333,6 @@ class PropertyTest {
         private String name = "새 매물";
         private Long depositAmount = 10_000_000L;
         private Long monthlyRentAmount = 500_000L;
-        private String discoverySource = "부동산 앱";
         private String address = "서울시 강남구";
         private BigDecimal latitude = BigDecimal.valueOf(37.5);
         private BigDecimal longitude = BigDecimal.valueOf(127);
@@ -341,18 +341,19 @@ class PropertyTest {
         private LocalDateTime visitScheduledAt = NOW;
         private List<String> roomOptions = List.of("AIR_CONDITIONER");
         private List<String> utilityOptions = List.of("WATER");
+        private String discoverySource = "부동산 앱";
         private LocalDateTime now = NOW;
 
         private Property create() {
-            return Property.create(memberId, name, depositAmount, monthlyRentAmount, discoverySource, address,
-                    latitude, longitude, availableMoveInDate, maintenanceFeeAmount, visitScheduledAt,
-                    roomOptions, utilityOptions, now);
+            return Property.create(memberId, name, depositAmount, monthlyRentAmount, address,
+                latitude, longitude, availableMoveInDate, maintenanceFeeAmount, visitScheduledAt,
+                roomOptions, utilityOptions, discoverySource, now);
         }
 
         private void update(Property property) {
-            property.replaceBasicInfo(name, depositAmount, monthlyRentAmount, discoverySource, address,
-                    latitude, longitude, availableMoveInDate, maintenanceFeeAmount, visitScheduledAt,
-                    roomOptions, utilityOptions, now);
+            property.replaceBasicInfo(name, depositAmount, monthlyRentAmount, address,
+                latitude, longitude, availableMoveInDate, maintenanceFeeAmount, visitScheduledAt,
+                roomOptions, utilityOptions, discoverySource, now);
         }
     }
 }
