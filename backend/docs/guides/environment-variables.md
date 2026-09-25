@@ -2,7 +2,8 @@
 
 ## 관리 원칙
 
-Spring Boot 애플리케이션은 CORS 허용 Origin과 인증·저장소 설정을 환경변수로 주입받는다. 아래 값 중 로컬 인프라용 값은 Docker Compose에서 사용하고, 애플리케이션 설정에 연결된 값은 실행 환경에 맞게 제공한다.
+Spring Boot 애플리케이션은 CORS 허용 Origin과 인증·저장소 설정을 환경변수로 주입받는다. 아래 값 중 로컬 인프라용 값은 Docker Compose에서 사용하고, 애플리케이션 설정에 연결된 값은
+실행 환경에 맞게 제공한다.
 
 - 예시와 기본값은 `backend/.env.example`에 기록하고 Git에 커밋한다.
 - 개인 값은 `backend/.env`에 기록하며 Git에 커밋하지 않는다.
@@ -11,38 +12,38 @@ Spring Boot 애플리케이션은 CORS 허용 Origin과 인증·저장소 설정
 
 ## 로컬 인프라용 환경변수
 
-| 환경변수 | 로컬 기본값 | 용도 |
-| --- | --- | --- |
-| `DB_HOST` | `localhost` | MySQL 호스트 |
-| `DB_PORT` | `3306` | MySQL 포트 |
-| `DB_NAME` | `jachwi_sunbae` | 데이터베이스 이름 |
-| `DB_USERNAME` | `jachwi_sunbae` | 애플리케이션 계정 |
-| `DB_PASSWORD` | `local_password` | 애플리케이션 계정 비밀번호 |
-| `DB_ROOT_PASSWORD` | `local_root_password` | 로컬 MySQL root 비밀번호 |
-| `DB_SSL_MODE` | `DISABLED` | 운영 JDBC TLS 모드. 로컬 프로필은 별도 설정을 사용한다 |
-| `JWT_SECRET_BASE64` | Base64 인코딩한 32바이트 이상 값 | HS256 서명 비밀값. 운영에서는 환경별 무작위 값을 사용한다 |
-| `NICKNAME_AUTH_MAX_FAILURES` | `5` | 보호 닉네임의 제한 시간 내 최대 인증 실패 횟수 |
-| `NICKNAME_AUTH_FAILURE_WINDOW_SECONDS` | `600` | 닉네임별 인증 실패 제한 시간(초) |
-| `CORS_ALLOWED_ORIGINS` | `http://localhost:3000` | 쉼표로 구분한 프론트엔드 Origin 허용 목록 |
-| `PHOTO_STORAGE_ENDPOINT` | `http://localhost:9000` | S3 호환 객체 저장소 API endpoint. 정적 자격증명으로 접속하는 환경에서만 쓴다 |
-| `PHOTO_STORAGE_REGION` | `us-east-1` | S3 서명에 사용하는 region |
-| `PHOTO_STORAGE_BUCKET` | `jachwi-sunbae-photos` | 로컬 MinIO 사진 객체 bucket |
-| `PHOTO_STORAGE_KEY_PREFIX` | 비움 | 객체 key 앞에 붙일 경로. 버킷을 다른 팀과 공유할 때 사용하며 로컬은 전용 버킷이라 비운다 |
-| `PHOTO_STORAGE_ACCESS_KEY` | 로컬 전용 예시 값 | 객체 저장소 access key. 정적 자격증명으로 접속하는 환경에서만 쓴다 |
-| `PHOTO_STORAGE_SECRET_KEY` | 로컬 전용 예시 값 | 객체 저장소 secret key. 정적 자격증명으로 접속하는 환경에서만 쓴다 |
-| `PHOTO_STORAGE_PORT` | `9000` | 로컬 MinIO API 포트 |
-| `PHOTO_STORAGE_CONSOLE_PORT` | `9001` | 로컬 MinIO 관리 화면 포트 |
-| `MAP_PROVIDER_MODE` | `demo` | `demo` 또는 `naver` 지도·주소 adapter 선택 |
-| `NAVER_MAP_CLIENT_ID` | 비움 | `naver` 모드의 Maps Application Client ID |
-| `NAVER_MAP_CLIENT_SECRET` | 비움 | `naver` 모드의 Maps Application Client Secret. 백엔드 전용으로 관리한다 |
-| `NAVER_SEARCH_CLIENT_ID` | 비움 | `naver` 모드의 NAVER API HUB Client ID |
-| `NAVER_SEARCH_CLIENT_SECRET` | 비움 | `naver` 모드의 NAVER API HUB Client Secret. 백엔드 전용으로 관리한다 |
-| `BUS_STOP_PROVIDER` | `none` | `none` 또는 `tago` 버스정류소 adapter 선택 |
-| `DATA_GO_KR_SERVICE_KEY` | 비움 | `tago` 모드의 공공데이터포털 일반 인증키(Decoding) |
-| `MAP_CONNECT_TIMEOUT_MILLIS` | `2000` | 지도 외부 공급자 연결 제한 시간 |
-| `MAP_READ_TIMEOUT_MILLIS` | `5000` | 지도 외부 공급자 응답 제한 시간 |
-| `DEPLOYMENT_ENVIRONMENT` | `local` | 구조화 로그의 실행 환경. EC2에서는 `dev` 또는 `prod`를 사용한다 |
-| `LOG_PATH` | `./logs` | `prod` 프로필에서 JSON 로그 파일을 저장할 디렉터리 |
+| 환경변수                               | 로컬 기본값                      | 용도                                                                                     |
+|----------------------------------------|----------------------------------|------------------------------------------------------------------------------------------|
+| `DB_HOST`                              | `localhost`                      | MySQL 호스트                                                                             |
+| `DB_PORT`                              | `3306`                           | MySQL 포트                                                                               |
+| `DB_NAME`                              | `jachwi_sunbae`                  | 데이터베이스 이름                                                                        |
+| `DB_USERNAME`                          | `jachwi_sunbae`                  | 애플리케이션 계정                                                                        |
+| `DB_PASSWORD`                          | `local_password`                 | 애플리케이션 계정 비밀번호                                                               |
+| `DB_ROOT_PASSWORD`                     | `local_root_password`            | 로컬 MySQL root 비밀번호                                                                 |
+| `DB_SSL_MODE`                          | `DISABLED`                       | 운영 JDBC TLS 모드. 로컬 프로필은 별도 설정을 사용한다                                   |
+| `JWT_SECRET_BASE64`                    | Base64 인코딩한 32바이트 이상 값 | HS256 서명 비밀값. 운영에서는 환경별 무작위 값을 사용한다                                |
+| `NICKNAME_AUTH_MAX_FAILURES`           | `5`                              | 보호 닉네임의 제한 시간 내 최대 인증 실패 횟수                                           |
+| `NICKNAME_AUTH_FAILURE_WINDOW_SECONDS` | `600`                            | 닉네임별 인증 실패 제한 시간(초)                                                         |
+| `CORS_ALLOWED_ORIGINS`                 | `http://localhost:3000`          | 쉼표로 구분한 프론트엔드 Origin 허용 목록                                                |
+| `PHOTO_STORAGE_ENDPOINT`               | `http://localhost:9000`          | S3 호환 객체 저장소 API endpoint. 정적 자격증명으로 접속하는 환경에서만 쓴다             |
+| `PHOTO_STORAGE_REGION`                 | `us-east-1`                      | S3 서명에 사용하는 region                                                                |
+| `PHOTO_STORAGE_BUCKET`                 | `jachwi-sunbae-photos`           | 로컬 MinIO 사진 객체 bucket                                                              |
+| `PHOTO_STORAGE_KEY_PREFIX`             | 비움                             | 객체 key 앞에 붙일 경로. 버킷을 다른 팀과 공유할 때 사용하며 로컬은 전용 버킷이라 비운다 |
+| `PHOTO_STORAGE_ACCESS_KEY`             | 로컬 전용 예시 값                | 객체 저장소 access key. 정적 자격증명으로 접속하는 환경에서만 쓴다                       |
+| `PHOTO_STORAGE_SECRET_KEY`             | 로컬 전용 예시 값                | 객체 저장소 secret key. 정적 자격증명으로 접속하는 환경에서만 쓴다                       |
+| `PHOTO_STORAGE_PORT`                   | `9000`                           | 로컬 MinIO API 포트                                                                      |
+| `PHOTO_STORAGE_CONSOLE_PORT`           | `9001`                           | 로컬 MinIO 관리 화면 포트                                                                |
+| `MAP_PROVIDER_MODE`                    | `demo`                           | `demo` 또는 `naver` 주소 검색·역지오코딩 adapter 선택                                    |
+| `NAVER_MAP_CLIENT_ID`                  | 비움                             | `naver` 모드의 Maps Application Client ID                                                |
+| `NAVER_MAP_CLIENT_SECRET`              | 비움                             | `naver` 모드의 Maps Application Client Secret. 백엔드 전용으로 관리한다                  |
+| `MAP_NEARBY_PROVIDER`                  | `demo`                           | `demo` 또는 `kakao` 주변 시설 adapter 선택. 비우면 `demo`로 동작한다                     |
+| `KAKAO_REST_API_KEY`                   | 비움                             | `kakao` 모드의 Kakao Developers REST API 키. 백엔드 전용으로 관리한다                    |
+| `BUS_STOP_PROVIDER`                    | `none`                           | `none` 또는 `tago` 버스정류소 adapter 선택                                               |
+| `DATA_GO_KR_SERVICE_KEY`               | 비움                             | `tago` 모드의 공공데이터포털 일반 인증키(Decoding)                                       |
+| `MAP_CONNECT_TIMEOUT_MILLIS`           | `2000`                           | 지도 외부 공급자 연결 제한 시간                                                          |
+| `MAP_READ_TIMEOUT_MILLIS`              | `5000`                           | 지도 외부 공급자 응답 제한 시간                                                          |
+| `DEPLOYMENT_ENVIRONMENT`               | `local`                          | 구조화 로그의 실행 환경. EC2에서는 `dev` 또는 `prod`를 사용한다                          |
+| `LOG_PATH`                             | `./logs`                         | `prod` 프로필에서 JSON 로그 파일을 저장할 디렉터리                                       |
 
 ## 사용 방법
 
@@ -56,23 +57,33 @@ Docker Compose는 같은 디렉터리의 `.env`를 자동으로 읽는다. Sprin
 
 ## dev·prod 프로필
 
-dev와 prod EC2는 모두 `SPRING_PROFILES_ACTIVE=prod`로 기동하며 `/etc/jachwi-sunbae/app.env`에서 환경변수를 읽는다. 애플리케이션은 80 포트를 직접 사용한다. 실제 값은 환경마다 분리하고 파일 권한은 `root:root`, `0600`으로 유지한다.
+dev와 prod EC2는 모두 `SPRING_PROFILES_ACTIVE=prod`로 기동하며 `/etc/jachwi-sunbae/app.env`에서 환경변수를 읽는다. 애플리케이션은 80 포트를 직접 사용한다.
+실제 값은 환경마다 분리하고 파일 권한은 `root:root`, `0600`으로 유지한다.
 
-| 설정 | dev | prod |
-| --- | --- | --- |
-| `CORS_ALLOWED_ORIGINS` | `https://dev.jachwi-sunbae.kr` | `https://www.jachwi-sunbae.kr` |
-| `PHOTO_STORAGE_REGION` | `ap-northeast-2` | `ap-northeast-2` |
-| `PHOTO_STORAGE_BUCKET` | `techcourse-project-2026` | `techcourse-project-2026` |
-| `PHOTO_STORAGE_KEY_PREFIX` | `jachwi-sunbae/photos-dev/` | `jachwi-sunbae/photos/` |
-| `MAP_PROVIDER_MODE` | `naver` | `naver` |
-| `DEPLOYMENT_ENVIRONMENT` | `dev` | `prod` |
-| `LOG_PATH` | `/var/log/jachwi-sunbae` | `/var/log/jachwi-sunbae` |
+| 설정                       | dev                            | prod                           |
+|----------------------------|--------------------------------|--------------------------------|
+| `CORS_ALLOWED_ORIGINS`     | `https://dev.jachwi-sunbae.kr` | `https://www.jachwi-sunbae.kr` |
+| `PHOTO_STORAGE_REGION`     | `ap-northeast-2`               | `ap-northeast-2`               |
+| `PHOTO_STORAGE_BUCKET`     | `techcourse-project-2026`      | `techcourse-project-2026`      |
+| `PHOTO_STORAGE_KEY_PREFIX` | `jachwi-sunbae/photos-dev/`    | `jachwi-sunbae/photos/`        |
+| `MAP_PROVIDER_MODE`        | `naver`                        | `naver`                        |
+| `MAP_NEARBY_PROVIDER`      | `kakao`                        | `kakao`                        |
+| `DEPLOYMENT_ENVIRONMENT`   | `dev`                          | `prod`                         |
+| `LOG_PATH`                 | `/var/log/jachwi-sunbae`       | `/var/log/jachwi-sunbae`       |
 
-DB 접속값과 `JWT_SECRET_BASE64`, Naver Maps·NAVER API HUB 인증 정보는 환경별 실제 값이 필요하다. 버스정류소를 켜면 `BUS_STOP_PROVIDER=tago`와 공공데이터포털 일반 인증키의 Decoding 값인 `DATA_GO_KR_SERVICE_KEY`도 넣는다. 활용 승인이 끝나기 전에는 `BUS_STOP_PROVIDER=none`으로 배포해 병원·학교·편의점·중개업소와 지하철 결과를 먼저 사용한다.
+DB 접속값과 `JWT_SECRET_BASE64`, Naver Maps 인증 정보, `KAKAO_REST_API_KEY`는 환경별 실제 값이 필요하다.
 
-AWS S3는 EC2 `ec2-project` instance role로 접근하므로 `PHOTO_STORAGE_ENDPOINT`, `PHOTO_STORAGE_ACCESS_KEY`, `PHOTO_STORAGE_SECRET_KEY`를 EC2에 두지 않는다. 이 세 값은 로컬 MinIO에만 사용한다. 프론트엔드에는 공개 Naver Maps Client ID만 빌드 타임에 주입한다.
+`MAP_NEARBY_PROVIDER`를 빠뜨리면 오류 없이 `demo` 주변 시설 (가짜 데이터)로 동작하므로 dev·prod에는 반드시 `kakao`를 넣는다.
+Kakao Developers 앱에 허용 IP를 설정했다면 서버가 외부로 나가는 IP (VPC NAT 게이트웨이 IP)를 등록해야 한다.
 
-`db/init/001-schema.sql`과 `002-seed.sql`은 빈 로컬 MySQL 볼륨의 기준 스키마와 시스템 체크 항목을 만든다. 애플리케이션은 기동 중 스키마를 변경하지 않는다. dev·prod RDS를 이 기준선으로 전환할 때는 자동 백업의 최신 복구 지점을 먼저 확인하고, 별도의 데이터 이관 절차로 기존 회원·매물 데이터를 보존해야 한다.
+버스정류소를 켜면 `BUS_STOP_PROVIDER=tago`와 공공데이터포털 일반 인증키의 Decoding 값인 `DATA_GO_KR_SERVICE_KEY`도 넣는다.
+활용 승인이 끝나기 전에는 `BUS_STOP_PROVIDER=none`으로 배포해 병원·학교·편의점·중개업소와 지하철 결과를 먼저 사용한다.
+
+AWS S3는 EC2 `ec2-project` instance role로 접근하므로 `PHOTO_STORAGE_ENDPOINT`, `PHOTO_STORAGE_ACCESS_KEY`,
+`PHOTO_STORAGE_SECRET_KEY`를 EC2에 두지 않는다. 이 세 값은 로컬 MinIO에만 사용한다. 프론트엔드에는 공개 Naver Maps Client ID만 빌드 타임에 주입한다.
+
+`db/init/001-schema.sql`과 `002-seed.sql`은 빈 로컬 MySQL 볼륨의 기준 스키마와 시스템 체크 항목을 만든다. 애플리케이션은 기동 중 스키마를 변경하지 않는다. dev·prod
+RDS를 이 기준선으로 전환할 때는 자동 백업의 최신 복구 지점을 먼저 확인하고, 별도의 데이터 이관 절차로 기존 회원·매물 데이터를 보존해야 한다.
 
 새 환경변수를 도입하면 서버의 환경변수 파일도 함께 갱신한다.
 
