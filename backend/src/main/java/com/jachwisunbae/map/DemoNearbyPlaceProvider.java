@@ -7,7 +7,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 @Component
-@ConditionalOnProperty(name = "map.provider.mode", havingValue = "demo", matchIfMissing = true)
+@ConditionalOnProperty(name = "map.nearby.provider", havingValue = "demo", matchIfMissing = true)
 public class DemoNearbyPlaceProvider implements NearbyPlaceProvider {
 
     @Override
