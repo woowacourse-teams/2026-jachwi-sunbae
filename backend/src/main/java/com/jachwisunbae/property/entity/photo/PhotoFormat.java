@@ -16,7 +16,6 @@ import javax.imageio.stream.ImageInputStream;
 
 public enum PhotoFormat {
 
-    JPG("image/jpg", ".jpg", Set.of("jpg")),
     JPEG("image/jpeg", ".jpg", Set.of("jpeg", "jpg")),
     PNG("image/png", ".png", Set.of("png")),
     WEBP("image/webp", ".webp", Set.of("webp")),
