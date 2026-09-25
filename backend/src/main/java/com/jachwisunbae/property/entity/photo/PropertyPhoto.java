@@ -58,7 +58,7 @@ public class PropertyPhoto {
         return DomainPreconditions.requireAtMost(
                 DomainPreconditions.requireNonNegative(sizeBytes, DomainErrorCode.PROPERTY_INPUT_INVALID,
                         "사진 크기는 0 이상의 값이어야 합니다."),
-                5L * 1024 * 1024, DomainErrorCode.PHOTO_SIZE_EXCEEDED,
+                5L * 1024 * 1024, DomainErrorCode.PHOTO_FILE_SIZE_INVALID,
                 "사진 크기는 5MiB 이하여야 합니다.");
     }
 
