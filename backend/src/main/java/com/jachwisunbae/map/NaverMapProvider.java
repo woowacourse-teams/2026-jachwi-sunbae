@@ -4,17 +4,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.MissingNode;
 import com.jachwisunbae.common.exception.BusinessException;
 import com.jachwisunbae.common.exception.DomainErrorCode;
-import java.math.BigDecimal;
-import java.net.URI;
-import java.net.http.HttpClient;
-import java.time.Duration;
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
-import java.util.function.Function;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,12 +16,19 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.util.UriBuilder;
 
+import java.math.BigDecimal;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.time.Duration;
+import java.util.*;
+import java.util.function.Function;
+
 @Component
 @ConditionalOnProperty(name = "map.provider.mode", havingValue = "naver")
 public class NaverMapProvider implements MapProvider {
 
     private static final String MAPS_BASE_URL = "https://maps.apigw.ntruss.com";
-    private static final String SEARCH_BASE_URL = "https://maps.apigw.ntruss.com";
+    private static final String SEARCH_BASE_URL = "https://naverapihub.apigw.ntruss.com";
     private static final int SEARCH_DISPLAY = 5;
     private static final List<String> REGION_AREAS = List.of("area1", "area2", "area3", "area4");
     private static final BigDecimal COORDINATE_SCALE = BigDecimal.valueOf(10_000_000L);
@@ -53,11 +49,11 @@ public class NaverMapProvider implements MapProvider {
                             @Value("${map.read-timeout-millis:5000}") long readTimeoutMillis,
                             Optional<BusStopProvider> busStopProvider) {
         this(createClient(clientId, clientSecret, MAPS_BASE_URL, connectTimeoutMillis, readTimeoutMillis,
-                        "naver 지도 모드에는 NAVER_MAP_CLIENT_ID와 NAVER_MAP_CLIENT_SECRET이 필요합니다."),
-                createClient(searchClientId, searchClientSecret, SEARCH_BASE_URL, connectTimeoutMillis,
-                        readTimeoutMillis,
-                        "naver 지도 모드에는 NAVER_SEARCH_CLIENT_ID와 NAVER_SEARCH_CLIENT_SECRET이 필요합니다."),
-                busStopProvider);
+                "naver 지도 모드에는 NAVER_MAP_CLIENT_ID와 NAVER_MAP_CLIENT_SECRET이 필요합니다."),
+            createClient(searchClientId, searchClientSecret, SEARCH_BASE_URL, connectTimeoutMillis,
+                readTimeoutMillis,
+                "naver 지도 모드에는 NAVER_SEARCH_CLIENT_ID와 NAVER_SEARCH_CLIENT_SECRET이 필요합니다."),
+            busStopProvider);
     }
 
     NaverMapProvider(RestClient client, RestClient searchClient) {
@@ -81,29 +77,29 @@ public class NaverMapProvider implements MapProvider {
             throw new IllegalStateException(requirement);
         }
         HttpClient httpClient = HttpClient.newBuilder()
-                .connectTimeout(Duration.ofMillis(connectTimeoutMillis))
-                .build();
+            .connectTimeout(Duration.ofMillis(connectTimeoutMillis))
+            .build();
         JdkClientHttpRequestFactory requestFactory = new JdkClientHttpRequestFactory(httpClient);
         requestFactory.setReadTimeout(Duration.ofMillis(readTimeoutMillis));
         return RestClient.builder()
-                .baseUrl(baseUrl)
-                .defaultHeader("X-NCP-APIGW-API-KEY-ID", clientId)
-                .defaultHeader("X-NCP-APIGW-API-KEY", clientSecret)
-                .defaultHeader(HttpHeaders.ACCEPT, MediaType.APPLICATION_JSON_VALUE)
-                .requestFactory(requestFactory)
-                .build();
+            .baseUrl(baseUrl)
+            .defaultHeader("X-NCP-APIGW-API-KEY-ID", clientId)
+            .defaultHeader("X-NCP-APIGW-API-KEY", clientSecret)
+            .defaultHeader(HttpHeaders.ACCEPT, MediaType.APPLICATION_JSON_VALUE)
+            .requestFactory(requestFactory)
+            .build();
     }
 
     @Override
     public List<MapAddress> geocode(String query) {
         JsonNode root = request(client, uri -> uri.path("/map-geocode/v2/geocode")
-                .queryParam("query", query)
-                .queryParam("count", 10)
-                .build());
+            .queryParam("query", query)
+            .queryParam("count", 10)
+            .build());
         List<MapAddress> results = new ArrayList<>();
         for (JsonNode address : root.path("addresses")) {
             results.add(new MapAddress(text(address, "roadAddress"), text(address, "jibunAddress"),
-                    decimal(address, "y"), decimal(address, "x")));
+                decimal(address, "y"), decimal(address, "x")));
         }
         return results;
     }
@@ -111,14 +107,14 @@ public class NaverMapProvider implements MapProvider {
     @Override
     public MapAddress reverseGeocode(BigDecimal latitude, BigDecimal longitude) {
         JsonNode root = request(client, uri -> uri.path("/map-reversegeocode/v2/gc")
-                .queryParam("coords", longitude + "," + latitude)
-                .queryParam("sourcecrs", "epsg:4326")
-                .queryParam("orders", "addr,roadaddr")
-                .queryParam("output", "json")
-                .build());
+            .queryParam("coords", longitude + "," + latitude)
+            .queryParam("sourcecrs", "epsg:4326")
+            .queryParam("orders", "addr,roadaddr")
+            .queryParam("output", "json")
+            .build());
         JsonNode results = root.path("results");
         return new MapAddress(addressFromResult(results, "roadaddr"), addressFromResult(results, "addr"),
-                latitude, longitude);
+            latitude, longitude);
     }
 
     @Override
@@ -140,11 +136,11 @@ public class NaverMapProvider implements MapProvider {
     private void appendPlaces(Map<String, NearbyPlace> unique, MapCategory category, String centerAddress,
                               BigDecimal latitude, BigDecimal longitude, int radius) {
         JsonNode root = request(searchClient, uri -> uri.path("/search/v1/local")
-                .queryParam("query", centerAddress + " " + searchKeyword(category))
-                .queryParam("display", SEARCH_DISPLAY)
-                .queryParam("start", 1)
-                .queryParam("sort", "random")
-                .build());
+            .queryParam("query", centerAddress + " " + searchKeyword(category))
+            .queryParam("display", SEARCH_DISPLAY)
+            .queryParam("start", 1)
+            .queryParam("sort", "random")
+            .build());
         for (JsonNode item : root.path("items")) {
             BigDecimal placeLatitude = coordinate(item, "mapy");
             BigDecimal placeLongitude = coordinate(item, "mapx");
@@ -155,8 +151,8 @@ public class NaverMapProvider implements MapProvider {
             String name = stripHtml(text(item, "title"));
             String id = "naver:" + name + ":" + placeLatitude + ":" + placeLongitude;
             unique.putIfAbsent(id, new NearbyPlace(id, name, category,
-                    firstNonBlank(text(item, "roadAddress"), text(item, "address")),
-                    placeLatitude, placeLongitude, distance));
+                firstNonBlank(text(item, "roadAddress"), text(item, "address")),
+                placeLatitude, placeLongitude, distance));
         }
     }
 
@@ -165,7 +161,7 @@ public class NaverMapProvider implements MapProvider {
         busStopProvider.ifPresent(provider -> {
             try {
                 provider.nearby(latitude, longitude, radius)
-                        .forEach(place -> unique.putIfAbsent(place.providerPlaceId(), place));
+                    .forEach(place -> unique.putIfAbsent(place.providerPlaceId(), place));
             } catch (RuntimeException exception) {
                 LOG.warn("TAGO 버스정류소 조회에 실패해 Naver 지역 검색 결과만 반환합니다.", exception);
             }
@@ -227,7 +223,7 @@ public class NaverMapProvider implements MapProvider {
         double deltaLat = Math.toRadians(secondLatitude.subtract(firstLatitude).doubleValue());
         double deltaLng = Math.toRadians(secondLongitude.subtract(firstLongitude).doubleValue());
         double a = Math.sin(deltaLat / 2) * Math.sin(deltaLat / 2)
-                + Math.cos(lat1) * Math.cos(lat2) * Math.sin(deltaLng / 2) * Math.sin(deltaLng / 2);
+            + Math.cos(lat1) * Math.cos(lat2) * Math.sin(deltaLng / 2) * Math.sin(deltaLng / 2);
         return (int) Math.round(EARTH_RADIUS_METERS * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)));
     }
 
@@ -237,7 +233,7 @@ public class NaverMapProvider implements MapProvider {
             return result == null ? MissingNode.getInstance() : result;
         } catch (RuntimeException exception) {
             throw new BusinessException(DomainErrorCode.MAP_PROVIDER_UNAVAILABLE,
-                    "지도 공급자 요청에 실패했습니다.", exception);
+                "지도 공급자 요청에 실패했습니다.", exception);
         }
     }
 
