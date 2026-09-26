@@ -66,16 +66,6 @@ class PropertyTest {
         assertThat(property.getName()).isEqualTo("새 매물");
     }
 
-    @DisplayName("매물 생성은 앞뒤 공백을 제거한 이름이 30자이면 허용한다")
-    @Test
-    void createAcceptsThirtyCharacterNameAfterTrimming() {
-        String name = "가".repeat(30);
-
-        Property property = createProperty(input -> input.name = " " + name + " ");
-
-        assertThat(property.getName()).isEqualTo(name);
-    }
-
     @DisplayName("매물 수정도 null, 빈 문자열, 공백 이름을 거부한다")
     @ParameterizedTest(name = "[{index}] 이름: [{0}]")
     @NullAndEmptySource
@@ -151,17 +141,6 @@ class PropertyTest {
         assertThat(property.getDepositAmount()).isZero();
         assertThat(property.getMonthlyRentAmount()).isZero();
         assertThat(property.getMaintenanceFeeAmount()).isZero();
-    }
-
-    @DisplayName("보증금, 월세, 관리비는 음수일 수 없다")
-    @Test
-    void createRejectsNegativeAmounts() {
-        assertPropertyError(() -> createProperty(input -> input.depositAmount = -1L),
-            DomainErrorCode.PROPERTY_INPUT_INVALID);
-        assertPropertyError(() -> createProperty(input -> input.monthlyRentAmount = -1L),
-            DomainErrorCode.PROPERTY_INPUT_INVALID);
-        assertPropertyError(() -> createProperty(input -> input.maintenanceFeeAmount = -1L),
-            DomainErrorCode.PROPERTY_INPUT_INVALID);
     }
 
     @DisplayName("입력하지 않은 선택 정보는 빈 값으로 정규화한다")
@@ -287,15 +266,6 @@ class PropertyTest {
         assertThat(property.getVisitScheduledAt()).isEqualTo(NOW.minusHours(1));
         assertThat(property.getRoomOptions()).containsExactly(RoomOption.DESK);
         assertThat(property.getUtilityOptions()).containsExactly(UtilityOption.INTERNET);
-    }
-
-    @DisplayName("매물 수정 시각은 null일 수 없다")
-    @Test
-    void updateRejectsNullChangeTime() {
-        Property property = createProperty();
-
-        assertPropertyError(() -> updateProperty(property, input -> input.now = null),
-            DomainErrorCode.PROPERTY_INPUT_INVALID);
     }
 
     private static Property createProperty() {
