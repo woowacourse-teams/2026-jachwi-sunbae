@@ -1,8 +1,8 @@
 package com.jachwisunbae.map.controller;
 
 import com.jachwisunbae.common.web.ApiResponse;
+import com.jachwisunbae.map.controller.dto.response.MapAddressResponse;
 import com.jachwisunbae.map.controller.dto.response.NearbyResponse;
-import com.jachwisunbae.map.domain.MapAddress;
 import com.jachwisunbae.map.service.MapService;
 import com.jachwisunbae.map.type.MapCategory;
 import io.swagger.v3.oas.annotations.Operation;
@@ -30,8 +30,8 @@ public class MapController {
 
     @GetMapping("/geocode")
     @Operation(summary = "주소 검색", description = "주소 검색어를 WGS84 좌표 후보로 변환합니다.")
-    public ApiResponse<List<MapAddress>> geocode(@RequestParam String query) {
-        return ApiResponse.of(mapService.geocode(query));
+    public ApiResponse<List<MapAddressResponse>> geocode(@RequestParam String query) {
+        return ApiResponse.of(mapService.geocode(query).stream().map(MapAddressResponse::from).toList());
     }
 
     @GetMapping("/reverse-geocode")
@@ -39,9 +39,9 @@ public class MapController {
             summary = "역지오코딩",
             description = "WGS84 좌표의 도로명·지번 주소를 조회합니다."
     )
-    public ApiResponse<MapAddress> reverseGeocode(@RequestParam BigDecimal latitude,
-                                                  @RequestParam BigDecimal longitude) {
-        return ApiResponse.of(mapService.reverseGeocode(latitude, longitude));
+    public ApiResponse<MapAddressResponse> reverseGeocode(@RequestParam BigDecimal latitude,
+                                                          @RequestParam BigDecimal longitude) {
+        return ApiResponse.of(MapAddressResponse.from(mapService.reverseGeocode(latitude, longitude)));
     }
 
     @GetMapping("/nearby")
