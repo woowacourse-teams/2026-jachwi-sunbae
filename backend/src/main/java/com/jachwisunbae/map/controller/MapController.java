@@ -54,6 +54,6 @@ public class MapController {
                                               @RequestParam BigDecimal longitude,
                                               @RequestParam int radius,
                                               @RequestParam(required = false) Set<MapCategory> categories) {
-        return ApiResponse.of(mapService.nearby(latitude, longitude, radius, categories));
+        return ApiResponse.of(NearbyResponse.from(mapService.nearby(latitude, longitude, radius, categories)));
     }
 }

@@ -2,11 +2,11 @@ package com.jachwisunbae.map.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.jachwisunbae.map.controller.dto.response.NearbyResponse;
 import com.jachwisunbae.map.domain.NearbyPlace;
 import com.jachwisunbae.map.provider.BusStopProvider;
 import com.jachwisunbae.map.provider.NearbyPlaceProvider;
 import com.jachwisunbae.map.provider.demo.DemoAddressProvider;
+import com.jachwisunbae.map.service.dto.result.NearbyResult;
 import com.jachwisunbae.map.type.MapCategory;
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -33,7 +33,7 @@ class MapServiceTest {
     void transportSearchCombinesNearbyPlacesAndBusStops() {
         MapService service = service(Optional.of((latitude, longitude, radius) -> List.of(busStop, subway)));
 
-        NearbyResponse response = service.nearby(LATITUDE, LONGITUDE, 500, EnumSet.allOf(MapCategory.class));
+        NearbyResult response = service.nearby(LATITUDE, LONGITUDE, 500, EnumSet.allOf(MapCategory.class));
 
         assertThat(response.places()).containsExactly(subway, hospital, busStop);
         assertThat(response.counts())
@@ -51,7 +51,7 @@ class MapServiceTest {
             return List.of(busStop);
         }));
 
-        NearbyResponse response = service.nearby(LATITUDE, LONGITUDE, 500, EnumSet.of(MapCategory.HOSPITAL));
+        NearbyResult response = service.nearby(LATITUDE, LONGITUDE, 500, EnumSet.of(MapCategory.HOSPITAL));
 
         assertThat(busStopCalls).hasValue(0);
         assertThat(response.places()).doesNotContain(busStop);
@@ -64,7 +64,7 @@ class MapServiceTest {
             throw new IllegalStateException("TAGO 장애");
         }));
 
-        NearbyResponse response = service.nearby(LATITUDE, LONGITUDE, 500, EnumSet.allOf(MapCategory.class));
+        NearbyResult response = service.nearby(LATITUDE, LONGITUDE, 500, EnumSet.allOf(MapCategory.class));
 
         assertThat(response.places()).containsExactly(subway, hospital);
     }

@@ -2,12 +2,12 @@ package com.jachwisunbae.map.service;
 
 import com.jachwisunbae.common.exception.BusinessException;
 import com.jachwisunbae.common.exception.DomainErrorCode;
-import com.jachwisunbae.map.controller.dto.response.NearbyResponse;
 import com.jachwisunbae.map.domain.MapAddress;
 import com.jachwisunbae.map.domain.NearbyPlace;
 import com.jachwisunbae.map.provider.AddressProvider;
 import com.jachwisunbae.map.provider.BusStopProvider;
 import com.jachwisunbae.map.provider.NearbyPlaceProvider;
+import com.jachwisunbae.map.service.dto.result.NearbyResult;
 import com.jachwisunbae.map.type.MapCategory;
 import java.math.BigDecimal;
 import java.util.EnumMap;
@@ -50,8 +50,8 @@ public class MapService {
         return addressProvider.reverseGeocode(latitude, longitude);
     }
 
-    public NearbyResponse nearby(BigDecimal latitude, BigDecimal longitude, int radius,
-                                 Set<MapCategory> requestedCategories) {
+    public NearbyResult nearby(BigDecimal latitude, BigDecimal longitude, int radius,
+                               Set<MapCategory> requestedCategories) {
         validateCoordinates(latitude, longitude);
         if (!SUPPORTED_RADII.contains(radius)) {
             throw invalidQuery("반경은 500m, 1km, 2km만 사용할 수 있습니다.");
@@ -63,8 +63,7 @@ public class MapService {
             counts.put(category, 0);
         }
         places.forEach(place -> counts.computeIfPresent(place.category(), (category, count) -> count + 1));
-        return new NearbyResponse(new NearbyResponse.Center(latitude, longitude), radius,
-                Map.copyOf(counts), places);
+        return new NearbyResult(latitude, longitude, radius, Map.copyOf(counts), places);
     }
 
     private Set<MapCategory> categories(Set<MapCategory> requestedCategories) {
