@@ -79,7 +79,7 @@ class PropertyPhotoTest {
     void 사진_크기가_5MiB를_초과하면_예외가_발생한다() {
         assertErrorCode(
             () -> PropertyPhoto.create(1L, "photo.png", "image/png", MAX_SIZE_BYTES + 1, CREATED_AT),
-            DomainErrorCode.PHOTO_SIZE_EXCEEDED);
+            DomainErrorCode.PHOTO_LIMIT_EXCEEDED);
     }
 
     @Test
