@@ -1,13 +1,10 @@
 package com.jachwisunbae.map;
 
-import com.jachwisunbae.common.exception.BusinessException;
-import com.jachwisunbae.common.exception.DomainErrorCode;
 import com.jachwisunbae.common.web.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import java.math.BigDecimal;
-import java.util.EnumSet;
 import java.util.List;
 import java.util.Set;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -47,28 +44,12 @@ public class MapController {
     @Operation(
             summary = "주변 시설 조회",
             description = "반경과 카테고리에 맞는 실제 장소 좌표와 반환 장소 기준 집계를 조회합니다. "
-                    + "Naver 지역 검색을 사용하고 설정 시 TAGO의 중심 500m 실제 버스정류소를 합칩니다."
+                    + "Kakao 카테고리 검색을 사용하고 설정 시 TAGO의 중심 500m 실제 버스정류소를 합칩니다."
     )
     public ApiResponse<NearbyResponse> nearby(@RequestParam BigDecimal latitude,
                                               @RequestParam BigDecimal longitude,
                                               @RequestParam int radius,
-                                              @RequestParam(required = false) String categories) {
-        return ApiResponse.of(mapService.nearby(latitude, longitude, radius, parseCategories(categories)));
-    }
-
-    private Set<MapCategory> parseCategories(String value) {
-        if (value == null || value.isBlank()) {
-            return EnumSet.allOf(MapCategory.class);
-        }
-        EnumSet<MapCategory> result = EnumSet.noneOf(MapCategory.class);
-        try {
-            for (String category : value.split(",")) {
-                result.add(MapCategory.valueOf(category.trim().toUpperCase()));
-            }
-        } catch (IllegalArgumentException exception) {
-            throw new BusinessException(DomainErrorCode.MAP_QUERY_INVALID,
-                    "지원하지 않는 지도 카테고리입니다.");
-        }
-        return result;
+                                              @RequestParam(required = false) Set<MapCategory> categories) {
+        return ApiResponse.of(mapService.nearby(latitude, longitude, radius, categories));
     }
 }

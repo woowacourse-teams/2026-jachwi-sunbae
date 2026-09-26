@@ -34,16 +34,17 @@ photo:
 map:
   provider:
     mode: ${MAP_PROVIDER_MODE:demo}
+  nearby:
+    provider: ${MAP_NEARBY_PROVIDER:demo}
   naver:
     client-id: ${NAVER_MAP_CLIENT_ID:}
     client-secret: ${NAVER_MAP_CLIENT_SECRET:}
-    search-client-id: ${NAVER_SEARCH_CLIENT_ID:}
-    search-client-secret: ${NAVER_SEARCH_CLIENT_SECRET:}
+  kakao:
+    rest-api-key: ${KAKAO_REST_API_KEY:}
   bus-stops:
     provider: ${BUS_STOP_PROVIDER:none}
     tago:
       service-key: ${DATA_GO_KR_SERVICE_KEY:}
-  cache-ttl-seconds: ${MAP_CACHE_TTL_SECONDS:600}
   connect-timeout-millis: ${MAP_CONNECT_TIMEOUT_MILLIS:2000}
   read-timeout-millis: ${MAP_READ_TIMEOUT_MILLIS:5000}
 
