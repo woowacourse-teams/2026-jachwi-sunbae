@@ -12,7 +12,7 @@ class MapProviderSelectionTest {
     private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
             .withBean(Clock.class, Clock::systemUTC)
             .withUserConfiguration(DemoAddressProvider.class, DemoNearbyPlaceProvider.class,
-                    NaverMapProvider.class, JusoAddressClient.class, SgisAddressClient.class,
+                    JusoAddressClient.class, SgisAddressClient.class,
                     PublicDataAddressProvider.class, KakaoPlaceClient.class, KakaoNearbyPlaceProvider.class);
 
     @Test
@@ -29,42 +29,31 @@ class MapProviderSelectionTest {
     void selectsAddressAndNearbyProvidersIndependently() {
         contextRunner
                 .withPropertyValues(
-                        "map.provider.mode=naver",
-                        "map.naver.client-id=map-id",
-                        "map.naver.client-secret=map-secret",
+                        "map.provider.mode=public",
+                        "map.juso.confirm-key=juso-key",
+                        "map.sgis.consumer-key=sgis-key",
+                        "map.sgis.consumer-secret=sgis-secret",
                         "map.nearby.provider=kakao",
                         "map.kakao.rest-api-key=kakao-key")
                 .run(context -> {
-                    assertThat(context).getBean(AddressProvider.class).isInstanceOf(NaverMapProvider.class);
+                    assertThat(context).getBean(AddressProvider.class).isInstanceOf(PublicDataAddressProvider.class);
                     assertThat(context).getBean(NearbyPlaceProvider.class).isInstanceOf(KakaoNearbyPlaceProvider.class);
                 });
     }
 
     @Test
-    @DisplayName("주소 공급자만 naver로 바꾸면 주변 시설은 demo 공급자를 사용한다")
-    void keepsDemoNearbyProviderWhenOnlyAddressProviderIsNaver() {
-        contextRunner
-                .withPropertyValues(
-                        "map.provider.mode=naver",
-                        "map.naver.client-id=map-id",
-                        "map.naver.client-secret=map-secret")
-                .run(context -> {
-                    assertThat(context).getBean(AddressProvider.class).isInstanceOf(NaverMapProvider.class);
-                    assertThat(context).getBean(NearbyPlaceProvider.class).isInstanceOf(DemoNearbyPlaceProvider.class);
-                });
-    }
-
-    @Test
-    @DisplayName("public 모드면 공공데이터 주소 공급자를 사용한다")
-    void usesPublicDataAddressProviderWhenModeIsPublic() {
+    @DisplayName("주소 공급자만 public으로 바꾸면 주변 시설은 demo 공급자를 사용한다")
+    void keepsDemoNearbyProviderWhenOnlyAddressProviderIsPublic() {
         contextRunner
                 .withPropertyValues(
                         "map.provider.mode=public",
                         "map.juso.confirm-key=juso-key",
                         "map.sgis.consumer-key=sgis-key",
                         "map.sgis.consumer-secret=sgis-secret")
-                .run(context -> assertThat(context).getBean(AddressProvider.class)
-                        .isInstanceOf(PublicDataAddressProvider.class));
+                .run(context -> {
+                    assertThat(context).getBean(AddressProvider.class).isInstanceOf(PublicDataAddressProvider.class);
+                    assertThat(context).getBean(NearbyPlaceProvider.class).isInstanceOf(DemoNearbyPlaceProvider.class);
+                });
     }
 
     @Test

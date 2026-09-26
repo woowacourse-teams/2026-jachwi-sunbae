@@ -36,9 +36,6 @@ map:
     mode: ${MAP_PROVIDER_MODE:demo}
   nearby:
     provider: ${MAP_NEARBY_PROVIDER:demo}
-  naver:
-    client-id: ${NAVER_MAP_CLIENT_ID:}
-    client-secret: ${NAVER_MAP_CLIENT_SECRET:}
   juso:
     confirm-key: ${JUSO_CONFIRM_KEY:}
   sgis:
