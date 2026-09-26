@@ -2,6 +2,7 @@ package com.jachwisunbae.map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.time.Clock;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
@@ -9,8 +10,10 @@ import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 class MapProviderSelectionTest {
 
     private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
+            .withBean(Clock.class, Clock::systemUTC)
             .withUserConfiguration(DemoAddressProvider.class, DemoNearbyPlaceProvider.class,
-                    NaverMapProvider.class, KakaoPlaceClient.class, KakaoNearbyPlaceProvider.class);
+                    NaverMapProvider.class, JusoAddressClient.class, SgisAddressClient.class,
+                    PublicDataAddressProvider.class, KakaoPlaceClient.class, KakaoNearbyPlaceProvider.class);
 
     @Test
     @DisplayName("설정이 없으면 주소와 주변 시설 모두 demo 공급자를 사용한다")
@@ -49,6 +52,28 @@ class MapProviderSelectionTest {
                     assertThat(context).getBean(AddressProvider.class).isInstanceOf(NaverMapProvider.class);
                     assertThat(context).getBean(NearbyPlaceProvider.class).isInstanceOf(DemoNearbyPlaceProvider.class);
                 });
+    }
+
+    @Test
+    @DisplayName("public 모드면 공공데이터 주소 공급자를 사용한다")
+    void usesPublicDataAddressProviderWhenModeIsPublic() {
+        contextRunner
+                .withPropertyValues(
+                        "map.provider.mode=public",
+                        "map.juso.confirm-key=juso-key",
+                        "map.sgis.consumer-key=sgis-key",
+                        "map.sgis.consumer-secret=sgis-secret")
+                .run(context -> assertThat(context).getBean(AddressProvider.class)
+                        .isInstanceOf(PublicDataAddressProvider.class));
+    }
+
+    @Test
+    @DisplayName("public 모드에 공공데이터 키가 없으면 애플리케이션이 시작되지 않는다")
+    void failsToStartWithoutPublicDataKeys() {
+        contextRunner
+                .withPropertyValues("map.provider.mode=public", "map.juso.confirm-key=",
+                        "map.sgis.consumer-key=", "map.sgis.consumer-secret=")
+                .run(context -> assertThat(context).hasFailed());
     }
 
     @Test
