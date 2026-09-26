@@ -56,7 +56,7 @@ class PhotoFileTest {
         assertThatThrownBy(() -> new PhotoFile(bytes, "image/png"))
             .isInstanceOf(BusinessException.class)
             .extracting("code")
-            .isEqualTo(DomainErrorCode.PHOTO_SIZE_EXCEEDED);
+            .isEqualTo(DomainErrorCode.PHOTO_LIMIT_EXCEEDED);
     }
 
 }
