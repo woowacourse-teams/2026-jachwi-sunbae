@@ -25,9 +25,8 @@ import com.jachwisunbae.property.controller.dto.response.PropertyPhotoResponse;
 import com.jachwisunbae.property.controller.dto.response.UpdatePropertyResponse;
 import com.jachwisunbae.property.repository.query.PropertyPhotosQuery;
 import com.jachwisunbae.property.service.PropertyChecklistService;
+import com.jachwisunbae.property.service.pdf.PropertyComparisonPdfService;
 import com.jachwisunbae.property.entity.Property;
-import com.jachwisunbae.property.service.PropertyCsvService;
-import com.jachwisunbae.property.service.PropertyComparisonPdfService;
 import com.jachwisunbae.property.service.PropertyDeletionService;
 import com.jachwisunbae.property.service.PropertyMemoService;
 import com.jachwisunbae.property.service.PropertyPhotoService;
@@ -39,7 +38,6 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.net.URI;
-import java.nio.charset.StandardCharsets;
 import java.util.List;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -66,7 +64,6 @@ public class PropertyController {
     private final PropertyChecklistService propertyChecklistService;
     private final PropertyPhotoService propertyPhotoService;
     private final PropertyDeletionService propertyDeletionService;
-    private final PropertyCsvService propertyCsvService;
     private final PropertyComparisonPdfService propertyComparisonPdfService;
 
     public PropertyController(final PropertyService propertyService,
@@ -74,14 +71,12 @@ public class PropertyController {
                               final PropertyChecklistService propertyChecklistService,
                               final PropertyPhotoService propertyPhotoService,
                               final PropertyDeletionService propertyDeletionService,
-                              final PropertyCsvService propertyCsvService,
                               final PropertyComparisonPdfService propertyComparisonPdfService) {
         this.propertyService = propertyService;
         this.propertyMemoService = propertyMemoService;
         this.propertyChecklistService = propertyChecklistService;
         this.propertyPhotoService = propertyPhotoService;
         this.propertyDeletionService = propertyDeletionService;
-        this.propertyCsvService = propertyCsvService;
         this.propertyComparisonPdfService = propertyComparisonPdfService;
     }
 
@@ -89,15 +84,6 @@ public class PropertyController {
     @Operation(summary = "매물 목록 조회", description = "로그인 회원의 매물과 대표 사진 및 전체 체크 진행 현황을 조회합니다.")
     public ApiResponse<PropertyListResponse> findList(@AuthenticatedMemberId final Long memberId) {
         return ApiResponse.of("매물 목록을 조회했습니다.", propertyService.findList(memberId));
-    }
-
-    @GetMapping(value = "/export.csv", produces = "text/csv;charset=UTF-8")
-    @Operation(summary = "매물 비교표 CSV", description = "현재 회원의 매물 요약을 UTF-8 BOM CSV로 내려받습니다.")
-    public ResponseEntity<byte[]> exportCsv(@AuthenticatedMemberId final Long memberId) {
-        return ResponseEntity.ok()
-                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"jachwi-sunbae-properties.csv\"")
-                .contentType(new MediaType("text", "csv", StandardCharsets.UTF_8))
-                .body(propertyCsvService.export(memberId));
     }
 
     @PostMapping(value = "/export.pdf", produces = MediaType.APPLICATION_PDF_VALUE)
@@ -115,10 +101,10 @@ public class PropertyController {
     }
 
     @PostMapping("/comparison-views")
-    @Operation(summary = "비교 화면 진입 기록 호환 응답",
-            description = "기존 클라이언트와의 호환을 위해 요청을 수신하지만 이벤트는 저장하지 않습니다.",
-            deprecated = true)
-    public ResponseEntity<Void> recordComparisonView(@AuthenticatedMemberId final Long ignoredMemberId) {
+    @Deprecated(forRemoval = true)
+    @Operation(summary = "비교 화면 진입 기록",
+            description = "현재 회원이 비교 화면을 연 시각과 그 시점의 보유 매물 수를 실험 이벤트로 저장합니다.")
+    public ResponseEntity<Void> recordComparisonView(@AuthenticatedMemberId final Long memberId) {
         return ResponseEntity.noContent().build();
     }
 
