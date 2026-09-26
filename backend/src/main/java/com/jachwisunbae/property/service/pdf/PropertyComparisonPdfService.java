@@ -5,7 +5,7 @@ import com.jachwisunbae.common.exception.DomainErrorCode;
 import com.jachwisunbae.property.controller.dto.response.PropertyChecklistOverviewResponse;
 import com.jachwisunbae.property.controller.dto.response.PropertyChecklistStageResponse;
 import com.jachwisunbae.property.entity.Property;
-import com.jachwisunbae.property.entity.PropertyPhoto;
+import com.jachwisunbae.property.entity.photo.PropertyPhoto;
 import com.jachwisunbae.property.repository.PropertyRepository;
 import com.jachwisunbae.property.repository.query.PropertyPhotosQuery;
 import com.jachwisunbae.property.service.PropertyChecklistService;

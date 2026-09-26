@@ -30,6 +30,7 @@ import com.jachwisunbae.property.entity.Property;
 import com.jachwisunbae.property.service.PropertyDeletionService;
 import com.jachwisunbae.property.service.PropertyMemoService;
 import com.jachwisunbae.property.service.PropertyPhotoService;
+import com.jachwisunbae.property.service.dto.result.PropertyPhotoUploadResult;
 import com.jachwisunbae.property.service.PropertyService;
 import com.jachwisunbae.property.storage.PhotoContent;
 import io.swagger.v3.oas.annotations.Operation;
@@ -161,16 +162,16 @@ public class PropertyController {
     }
 
     @PostMapping(value = "/{propertyId}/photos", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    @Operation(summary = "매물 사진 업로드", description = "JPEG, PNG, WebP 사진 한 장을 비공개 객체 저장소에 업로드합니다.")
+    @Operation(summary = "매물 사진 업로드", description = "JPEG, PNG, WebP, HEIC, HEIF 사진 한 장을 비공개 객체 저장소에 업로드합니다.")
     public ResponseEntity<ApiResponse<PropertyPhotoResponse>> uploadPhoto(
             @AuthenticatedMemberId final Long memberId,
             @PathVariable final Long propertyId,
             @RequestPart("file") final MultipartFile file) {
-        var photo = propertyPhotoService.upload(memberId, propertyId, file);
-        boolean representative = propertyPhotoService.find(memberId, propertyId)
-                .representativePhotoId().equals(photo.getId());
+        PropertyPhotoUploadResult result = propertyPhotoService.upload(memberId, propertyId, file);
+        var photo = result.photo();
         return ResponseEntity.created(URI.create("/api/properties/" + propertyId + "/photos/" + photo.getId()))
-                .body(ApiResponse.of("사진을 업로드했습니다.", PropertyPhotoResponse.from(photo, representative)));
+                .body(ApiResponse.of("사진을 업로드했습니다.",
+                        PropertyPhotoResponse.from(photo, result.representative())));
     }
 
     @GetMapping("/{propertyId}/photos/{photoId}")
@@ -205,6 +206,7 @@ public class PropertyController {
         propertyPhotoService.designateRepresentative(memberId, propertyId, photoId);
         return ResponseEntity.noContent().build();
     }
+
 
     @GetMapping("/{propertyId}/checklists")
     @Operation(summary = "매물 체크 현황 조회", description = "두 단계(ON_SITE, PRE_CONTRACT)의 적용 여부와 단계별·전체 진행 현황을 조회합니다.")

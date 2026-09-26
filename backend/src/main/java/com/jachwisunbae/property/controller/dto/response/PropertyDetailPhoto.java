@@ -1,6 +1,6 @@
 package com.jachwisunbae.property.controller.dto.response;
 
-import com.jachwisunbae.property.entity.PropertyPhoto;
+import com.jachwisunbae.property.entity.photo.PropertyPhoto;
 
 import java.time.Instant;
 import java.time.ZoneOffset;

@@ -1,7 +1,7 @@
 package com.jachwisunbae.property.controller.dto.response;
 
 import com.jachwisunbae.property.entity.Property;
-import com.jachwisunbae.property.entity.PropertyPhoto;
+import com.jachwisunbae.property.entity.photo.PropertyPhoto;
 import io.swagger.v3.oas.annotations.media.ArraySchema;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.math.BigDecimal;
