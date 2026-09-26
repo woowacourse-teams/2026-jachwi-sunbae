@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="ko">
+<head>
+    <meta charset="UTF-8" />
+    <title>자취선배 매물 비교 기록</title>
+    <style>
+        @page {
+            size: A4 portrait;
+            margin: 15mm 15mm 18mm;
+            @bottom-right {
+                content: "자취선배 매물 비교 기록  ·  " counter(page) " / " counter(pages);
+                color: #7c8271;
+                font-family: NanumGothic, sans-serif;
+                font-size: 7.5pt;
+            }
+        }
+        @page overview-page { size: A4 landscape; }
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            color: #2b3223;
+            font-family: NanumGothic, sans-serif;
+            font-size: 9pt;
+            line-height: 1.55;
+        }
+        .overview { page: overview-page; page-break-after: always; }
+        .property { page-break-before: always; }
+        h1 { margin: 0 0 5mm; font-size: 21pt; line-height: 1.25; }
+        .overview h1 { font-size: 22pt; }
+        .description { margin: 0 0 6mm; color: #5b634f; }
+        .eyebrow { margin: 0 0 2mm; color: #5b7931; font-weight: 700; }
+        h2 {
+            margin: 8mm 0 4mm;
+            padding-top: 4mm;
+            border-top: 1px solid #dad3bc;
+            font-size: 14pt;
+            page-break-after: avoid;
+        }
+        h3 { margin: 6mm 0 3mm; color: #5b7931; font-size: 12pt; page-break-after: avoid; }
+        table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+        .comparison th, .comparison td {
+            border: 1px solid #dad3bc;
+            padding: 2.5mm;
+            word-wrap: break-word;
+            vertical-align: top;
+        }
+        .comparison th { width: 22mm; color: #5b634f; text-align: left; }
+        .comparison tr.heading { background: #eef2e6; font-weight: 700; }
+        .comparison tr.heading th { color: #5b7931; }
+        .basics th { width: 29mm; padding: 2mm 0; color: #5b634f; text-align: left; }
+        .basics td { padding: 2mm 0; }
+        .empty, .note { padding: 3mm; background: #faf8f1; color: #7c8271; }
+        .note { color: #2b3223; white-space: pre-wrap; }
+        .note-label { margin-bottom: 2mm; color: #5b7931; font-weight: 700; }
+        .photo { margin: 0 0 5mm; page-break-inside: avoid; }
+        .photo-frame {
+            height: 78mm;
+            padding: 3mm;
+            background: #faf8f1;
+            text-align: center;
+        }
+        .photo-frame img { max-width: 100%; max-height: 72mm; }
+        .photo-label { margin-top: 2mm; color: #5b634f; font-weight: 700; }
+        .stage { page-break-inside: avoid; }
+        .check-item {
+            margin-bottom: 2mm;
+            padding: 3mm;
+            border: 1px solid #dad3bc;
+            page-break-inside: avoid;
+        }
+        .status { display: inline-block; width: 18mm; font-size: 8pt; font-weight: 700; }
+        .status.good { color: #5b7931; }
+        .status.caution { color: #b97e14; }
+        .status.unconfirmed { color: #7c8271; }
+        .question { font-weight: 700; }
+        .memo { margin-top: 2mm; color: #5b634f; font-size: 8.3pt; white-space: pre-wrap; }
+    </style>
+</head>
+<body>
+<section class="overview">
+    <h1>매물 비교 기록</h1>
+    <p class="description">선택한 매물에 저장된 사실을 나란히 정리했습니다. 점수, 추천, 자동 판단은 포함하지 않습니다.</p>
+    <table class="comparison">
+        <tbody>
+        <tr th:each="row : ${overviewRows}" th:classappend="${row.heading} ? 'heading'">
+            <th th:text="${row.label}">구분</th>
+            <td th:each="value : ${row.values}" th:text="${value}">내용</td>
+        </tr>
+        </tbody>
+    </table>
+</section>
+
+<section class="property" th:each="property : ${properties}">
+    <p class="eyebrow" th:text="|매물 ${property.index} / ${property.total}|">매물 1 / 1</p>
+    <h1 th:text="${property.name}">매물 이름</h1>
+    <p class="description">아래 내용은 이 매물에 저장된 기록 전체입니다.</p>
+
+    <h2>기본 정보</h2>
+    <table class="basics">
+        <tbody>
+        <tr th:each="item : ${property.basics}">
+            <th th:text="${item.label}">항목</th>
+            <td th:text="${item.value}">내용</td>
+        </tr>
+        </tbody>
+    </table>
+
+    <h2 th:text="|사진 ${property.photos.size()}장|">사진</h2>
+    <div class="empty" th:if="${property.photos.empty}">저장된 사진이 없습니다.</div>
+    <div class="photo" th:each="photo : ${property.photos}">
+        <div class="photo-frame"><img th:src="${photo.source}" alt="매물 사진" /></div>
+        <div class="photo-label" th:text="${photo.label}">사진</div>
+    </div>
+
+    <h2>자유 메모</h2>
+    <div class="empty" th:if="${property.memo.empty}">저장된 자유 메모가 없습니다.</div>
+    <div class="note" th:unless="${property.memo.empty}">
+        <div class="note-label">메모 내용</div>
+        <div th:text="${property.memo}">메모</div>
+    </div>
+
+    <h2>체크리스트</h2>
+    <div class="stage" th:each="stage : ${property.stages}">
+        <h3 th:text="|${stage.index}단계 · ${stage.label}|">1단계</h3>
+        <div class="empty" th:unless="${stage.applied}">이 단계는 이 매물에 적용하지 않았습니다.</div>
+        <div th:if="${stage.applied}">
+            <table class="basics">
+                <tbody>
+                <tr><th>체크리스트</th><td th:text="${stage.checklistName}">이름</td></tr>
+                <tr><th>진행</th><td th:text="${stage.progress}">진행률</td></tr>
+                </tbody>
+            </table>
+            <div class="check-item" th:each="item : ${stage.items}">
+                <span class="status" th:classappend="${item.statusClass}" th:text="${item.status}">미확인</span>
+                <span class="question" th:text="${item.question}">질문</span>
+                <div class="memo" th:unless="${item.memo.empty}" th:text="|메모: ${item.memo}|">메모</div>
+            </div>
+        </div>
+    </div>
+</section>
+</body>
+</html>

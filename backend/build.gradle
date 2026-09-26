@@ -47,7 +47,8 @@ dependencies {
 	implementation platform('software.amazon.awssdk:bom:2.41.24')
 	implementation 'software.amazon.awssdk:s3'
 	implementation 'com.twelvemonkeys.imageio:imageio-webp:3.13.1'
-	implementation 'org.apache.pdfbox:pdfbox:3.0.8'
+	implementation 'org.springframework.boot:spring-boot-starter-thymeleaf'
+	implementation 'com.openhtmltopdf:openhtmltopdf-pdfbox:1.0.10'
 	runtimeOnly 'com.mysql:mysql-connector-j'
 	testImplementation 'org.springframework.boot:spring-boot-testcontainers'
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'

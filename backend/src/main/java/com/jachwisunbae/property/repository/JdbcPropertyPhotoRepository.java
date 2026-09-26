@@ -1,6 +1,6 @@
 package com.jachwisunbae.property.repository;
 
-import com.jachwisunbae.property.entity.PropertyPhoto;
+import com.jachwisunbae.property.entity.photo.PropertyPhoto;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Repository;
