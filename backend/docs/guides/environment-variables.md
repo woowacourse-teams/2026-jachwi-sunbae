@@ -21,8 +21,6 @@ Spring Boot 애플리케이션은 CORS 허용 Origin과 인증·저장소 설정
 | `DB_ROOT_PASSWORD` | `local_root_password` | 로컬 MySQL root 비밀번호 |
 | `DB_SSL_MODE` | `DISABLED` | 운영 JDBC TLS 모드. 로컬 프로필은 별도 설정을 사용한다 |
 | `JWT_SECRET_BASE64` | Base64 인코딩한 32바이트 이상 값 | HS256 서명 비밀값. 운영에서는 환경별 무작위 값을 사용한다 |
-| `DEMO_MEMBER_NAME` | `이자취` | 데모 회원 표시 이름 |
-| `DEMO_SEED_ENABLED` | `true` | 데모 매물·메모·체크 상태 초기화 여부 |
 | `NICKNAME_AUTH_MAX_FAILURES` | `5` | 보호 닉네임의 제한 시간 내 최대 인증 실패 횟수 |
 | `NICKNAME_AUTH_FAILURE_WINDOW_SECONDS` | `600` | 닉네임별 인증 실패 제한 시간(초) |
 | `CORS_ALLOWED_ORIGINS` | `http://localhost:3000` | 쉼표로 구분한 프론트엔드 Origin 허용 목록 |
@@ -67,7 +65,6 @@ dev와 prod EC2는 모두 `SPRING_PROFILES_ACTIVE=prod`로 기동하며 `/etc/ja
 | `PHOTO_STORAGE_REGION` | `ap-northeast-2` | `ap-northeast-2` |
 | `PHOTO_STORAGE_BUCKET` | `techcourse-project-2026` | `techcourse-project-2026` |
 | `PHOTO_STORAGE_KEY_PREFIX` | `jachwi-sunbae/photos-dev/` | `jachwi-sunbae/photos/` |
-| `DEMO_SEED_ENABLED` | `false` | `false` |
 | `MAP_PROVIDER_MODE` | `naver` | `naver` |
 | `DEPLOYMENT_ENVIRONMENT` | `dev` | `prod` |
 | `LOG_PATH` | `/var/log/jachwi-sunbae` | `/var/log/jachwi-sunbae` |

@@ -26,7 +26,6 @@ import com.jachwisunbae.property.controller.dto.response.UpdatePropertyResponse;
 import com.jachwisunbae.property.repository.query.PropertyPhotosQuery;
 import com.jachwisunbae.property.service.PropertyChecklistService;
 import com.jachwisunbae.property.entity.Property;
-import com.jachwisunbae.property.service.pdf.PropertyComparisonPdfService;
 import com.jachwisunbae.property.service.PropertyDeletionService;
 import com.jachwisunbae.property.service.PropertyMemoService;
 import com.jachwisunbae.property.service.PropertyPhotoService;
