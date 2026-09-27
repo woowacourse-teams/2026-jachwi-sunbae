@@ -9,18 +9,12 @@ import com.jachwisunbae.map.provider.BusStopProvider;
 import com.jachwisunbae.map.provider.NearbyPlaceProvider;
 import com.jachwisunbae.map.service.dto.result.NearbyResult;
 import com.jachwisunbae.map.type.MapCategory;
-import java.math.BigDecimal;
-import java.util.EnumMap;
-import java.util.EnumSet;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
+
+import java.math.BigDecimal;
+import java.util.*;
 
 @Service
 public class MapService {
@@ -50,13 +44,10 @@ public class MapService {
         return addressProvider.reverseGeocode(latitude, longitude);
     }
 
-    public NearbyResult nearby(BigDecimal latitude, BigDecimal longitude, int radius,
-                               Set<MapCategory> requestedCategories) {
-        validateCoordinates(latitude, longitude);
-        if (!SUPPORTED_RADII.contains(radius)) {
-            throw invalidQuery("반경은 500m, 1km, 2km만 사용할 수 있습니다.");
-        }
+    public NearbyResult nearby(BigDecimal latitude, BigDecimal longitude, int radius, Set<MapCategory> requestedCategories) {
+        validateNearbyQuery(latitude, longitude, radius);
         Set<MapCategory> categories = categories(requestedCategories);
+
         List<NearbyPlace> places = findPlaces(latitude, longitude, radius, categories);
         Map<MapCategory, Integer> counts = new EnumMap<>(MapCategory.class);
         for (MapCategory category : MapCategory.values()) {
@@ -70,14 +61,14 @@ public class MapService {
         EnumSet<MapCategory> categories = EnumSet.noneOf(MapCategory.class);
         if (requestedCategories != null) {
             requestedCategories.stream()
-                    .filter(Objects::nonNull)
-                    .forEach(categories::add);
+                .filter(Objects::nonNull)
+                .forEach(categories::add);
         }
         return categories.isEmpty() ? EnumSet.allOf(MapCategory.class) : categories;
     }
 
-    private List<NearbyPlace> findPlaces(BigDecimal latitude, BigDecimal longitude, int radius,
-                                         Set<MapCategory> categories) {
+    //TODO TAGO 실제 적용은 다음 이슈에서 진행
+    private List<NearbyPlace> findPlaces(BigDecimal latitude, BigDecimal longitude, int radius, Set<MapCategory> categories) {
         List<NearbyPlace> places = nearbyPlaceProvider.nearby(latitude, longitude, radius, categories);
         if (!categories.contains(MapCategory.TRANSPORT) || busStopProvider.isEmpty()) {
             return places;
@@ -86,19 +77,26 @@ public class MapService {
         places.forEach(place -> unique.putIfAbsent(place.providerPlaceId(), place));
         try {
             busStopProvider.get().nearby(latitude, longitude, radius)
-                    .forEach(place -> unique.putIfAbsent(place.providerPlaceId(), place));
+                .forEach(place -> unique.putIfAbsent(place.providerPlaceId(), place));
         } catch (RuntimeException exception) {
             LOG.warn("TAGO 버스정류소 조회에 실패해 주변 시설 검색 결과만 반환합니다.", exception);
         }
         return List.copyOf(unique.values());
     }
 
+    private void validateNearbyQuery(BigDecimal latitude, BigDecimal longitude, int radius) {
+        validateCoordinates(latitude, longitude);
+        if (!SUPPORTED_RADII.contains(radius)) {
+            throw invalidQuery("반경은 500m, 1km, 2km만 사용할 수 있습니다.");
+        }
+    }
+
     private void validateCoordinates(BigDecimal latitude, BigDecimal longitude) {
         if (latitude == null || longitude == null
-                || latitude.compareTo(BigDecimal.valueOf(-90)) < 0
-                || latitude.compareTo(BigDecimal.valueOf(90)) > 0
-                || longitude.compareTo(BigDecimal.valueOf(-180)) < 0
-                || longitude.compareTo(BigDecimal.valueOf(180)) > 0) {
+            || latitude.compareTo(BigDecimal.valueOf(-90)) < 0
+            || latitude.compareTo(BigDecimal.valueOf(90)) > 0
+            || longitude.compareTo(BigDecimal.valueOf(-180)) < 0
+            || longitude.compareTo(BigDecimal.valueOf(180)) > 0) {
             throw invalidQuery("위도와 경도 범위가 올바르지 않습니다.");
         }
     }
