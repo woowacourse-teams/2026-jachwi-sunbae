@@ -6,20 +6,26 @@ import com.jachwisunbae.map.provider.demo.DemoAddressProvider;
 import com.jachwisunbae.map.provider.demo.DemoNearbyPlaceProvider;
 import com.jachwisunbae.map.provider.kakao.KakaoNearbyPlaceProvider;
 import com.jachwisunbae.map.provider.kakao.KakaoPlaceClient;
-import com.jachwisunbae.map.provider.publicdata.JusoAddressClient;
 import com.jachwisunbae.map.provider.publicdata.PublicDataAddressProvider;
-import com.jachwisunbae.map.provider.publicdata.SgisAddressClient;
+import com.jachwisunbae.map.provider.publicdata.juso.JusoAddressClient;
+import com.jachwisunbae.map.provider.publicdata.sgis.SgisAddressClient;
+import com.jachwisunbae.map.provider.publicdata.sgis.SgisAuthClient;
+import com.jachwisunbae.map.provider.publicdata.sgis.SgisTokenProvider;
 import java.time.Clock;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
+import org.springframework.core.env.StandardEnvironment;
 
 class MapProviderSelectionTest {
 
+    // 로컬 .env를 불러온 셸의 환경변수(MAP_PROVIDER_MODE 등)가 설정으로 섞이지 않게 제외한다.
     private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
+            .withInitializer(context -> context.getEnvironment().getPropertySources()
+                    .remove(StandardEnvironment.SYSTEM_ENVIRONMENT_PROPERTY_SOURCE_NAME))
             .withBean(Clock.class, Clock::systemUTC)
             .withUserConfiguration(DemoAddressProvider.class, DemoNearbyPlaceProvider.class,
-                    JusoAddressClient.class, SgisAddressClient.class,
+                    JusoAddressClient.class, SgisAuthClient.class, SgisTokenProvider.class, SgisAddressClient.class,
                     PublicDataAddressProvider.class, KakaoPlaceClient.class, KakaoNearbyPlaceProvider.class);
 
     @Test

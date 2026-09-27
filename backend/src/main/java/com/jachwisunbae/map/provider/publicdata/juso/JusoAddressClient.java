@@ -1,10 +1,9 @@
-package com.jachwisunbae.map.provider.publicdata;
+package com.jachwisunbae.map.provider.publicdata.juso;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.MissingNode;
 import com.jachwisunbae.common.exception.BusinessException;
 import com.jachwisunbae.common.exception.DomainErrorCode;
-import com.jachwisunbae.map.provider.publicdata.juso.JusoErrorCode;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -36,7 +35,7 @@ public class JusoAddressClient {
         this(createClient(connectTimeoutMillis, readTimeoutMillis), confirmKey);
     }
 
-    JusoAddressClient(RestClient client, String confirmKey) {
+    protected JusoAddressClient(RestClient client, String confirmKey) {
         if (confirmKey == null || confirmKey.isBlank()) {
             throw new IllegalStateException("public 주소 모드에는 JUSO_CONFIRM_KEY가 필요합니다.");
         }

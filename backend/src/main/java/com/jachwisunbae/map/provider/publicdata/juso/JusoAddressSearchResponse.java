@@ -1,4 +1,4 @@
-package com.jachwisunbae.map.provider.publicdata;
+package com.jachwisunbae.map.provider.publicdata.juso;
 
 import java.util.List;
 

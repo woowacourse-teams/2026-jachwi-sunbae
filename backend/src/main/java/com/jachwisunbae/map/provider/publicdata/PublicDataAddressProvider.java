@@ -2,6 +2,10 @@ package com.jachwisunbae.map.provider.publicdata;
 
 import com.jachwisunbae.map.domain.MapAddress;
 import com.jachwisunbae.map.provider.AddressProvider;
+import com.jachwisunbae.map.provider.publicdata.juso.JusoAddressClient;
+import com.jachwisunbae.map.provider.publicdata.juso.JusoAddressSearchResponse;
+import com.jachwisunbae.map.provider.publicdata.sgis.SgisAddressClient;
+import com.jachwisunbae.map.provider.publicdata.sgis.SgisCoordinate;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
@@ -30,11 +34,18 @@ public class PublicDataAddressProvider implements AddressProvider {
             if (address.roadAddress() == null) {
                 continue;//도로명 주소를 기준 주소로 삼고, 지번 주소는 선택적인 보조 정보로 취급한다
             }
-            // 좌표를 찾지 못한 후보는 지도에 표시하거나 저장할 수 없으므로 제외한다.
-            sgisClient.geocode(address.roadAddress()).ifPresent(coordinate -> results.add(new MapAddress(
-                address.roadAddress(), address.jibunAddress(), coordinate.latitude(), coordinate.longitude())));
+
+            sgisClient.geocode(address.roadAddress())
+                .ifPresent(coordinate ->
+                    results.add(toMapAddress(address, coordinate))
+                );
         }
         return List.copyOf(results);
+    }
+
+    private MapAddress toMapAddress(JusoAddressSearchResponse.Address address, SgisCoordinate coordinate) {
+        return new MapAddress(address.roadAddress(), address.jibunAddress(),
+            coordinate.latitude(), coordinate.longitude());
     }
 
     @Override

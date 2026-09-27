@@ -3,8 +3,11 @@ package com.jachwisunbae.map.provider.publicdata;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.jachwisunbae.map.domain.MapAddress;
+import com.jachwisunbae.map.provider.publicdata.juso.JusoAddressClient;
+import com.jachwisunbae.map.provider.publicdata.juso.JusoAddressSearchResponse;
+import com.jachwisunbae.map.provider.publicdata.sgis.SgisAddressClient;
+import com.jachwisunbae.map.provider.publicdata.sgis.SgisCoordinate;
 import java.math.BigDecimal;
-import java.time.Clock;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -107,7 +110,7 @@ class PublicDataAddressProviderTest {
         private String roadAddress;
 
         FakeSgisAddressClient() {
-            super((RestClient) null, "test-key", "test-secret", Clock.systemUTC());
+            super((RestClient) null, null);
         }
 
         void coordinate(String address, BigDecimal latitude, BigDecimal longitude) {

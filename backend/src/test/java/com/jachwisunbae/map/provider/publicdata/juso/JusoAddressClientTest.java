@@ -1,4 +1,4 @@
-package com.jachwisunbae.map.provider.publicdata;
+package com.jachwisunbae.map.provider.publicdata.juso;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
