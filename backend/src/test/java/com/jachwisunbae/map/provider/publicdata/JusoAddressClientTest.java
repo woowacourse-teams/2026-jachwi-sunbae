@@ -89,6 +89,41 @@ class JusoAddressClientTest {
     }
 
     @Test
+    @DisplayName("검색어에 너무 긴 숫자가 들어 있는 오류도 사용자 입력 문제라 빈 목록을 반환한다")
+    void returnsEmptyWhenKeywordHasTooLongNumber() {
+        server.expect(requestTo(Matchers.containsString("/addrlink/addrLinkApi.do")))
+                .andRespond(withSuccess(response("E0011", "검색어에 너무 긴 숫자가 포함되어 있습니다.", "null"),
+                        MediaType.APPLICATION_JSON));
+
+        assertThat(client.search("판교역로 12345678901").addresses()).isEmpty();
+    }
+
+    @Test
+    @DisplayName("개발용 승인키가 만료되면 지도 공급자 오류로 변환한다")
+    void convertsExpiredKeyToProviderUnavailable() {
+        server.expect(requestTo(Matchers.containsString("/addrlink/addrLinkApi.do")))
+                .andRespond(withSuccess(response("E0014", "개발승인키 기간이 만료되어 서비스를 이용하실 수 없습니다.", "null"),
+                        MediaType.APPLICATION_JSON));
+
+        assertThatThrownBy(() -> client.search("판교역로 166"))
+                .isInstanceOfSatisfying(BusinessException.class, exception -> {
+                    assertThat(exception.getCode()).isEqualTo(DomainErrorCode.MAP_PROVIDER_UNAVAILABLE);
+                    assertThat(exception.getMessage()).contains("E0014");
+                });
+    }
+
+    @Test
+    @DisplayName("알 수 없는 오류 코드는 지도 공급자 오류로 변환한다")
+    void convertsUnknownErrorCodeToProviderUnavailable() {
+        server.expect(requestTo(Matchers.containsString("/addrlink/addrLinkApi.do")))
+                .andRespond(withSuccess(response("E9999", "새로운 오류", "null"), MediaType.APPLICATION_JSON));
+
+        assertThatThrownBy(() -> client.search("판교역로 166"))
+                .isInstanceOfSatisfying(BusinessException.class, exception ->
+                        assertThat(exception.getCode()).isEqualTo(DomainErrorCode.MAP_PROVIDER_UNAVAILABLE));
+    }
+
+    @Test
     @DisplayName("요청이 실패하면 지도 공급자 오류로 변환한다")
     void convertsRequestFailureToProviderUnavailable() {
         server.expect(requestTo(Matchers.containsString("/addrlink/addrLinkApi.do")))

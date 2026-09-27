@@ -4,11 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.MissingNode;
 import com.jachwisunbae.common.exception.BusinessException;
 import com.jachwisunbae.common.exception.DomainErrorCode;
-import java.net.http.HttpClient;
-import java.time.Duration;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Set;
+import com.jachwisunbae.map.provider.publicdata.juso.JusoErrorCode;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -18,16 +14,17 @@ import org.springframework.http.client.JdkClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 
+import java.net.http.HttpClient;
+import java.time.Duration;
+import java.util.ArrayList;
+import java.util.List;
+
 @Component
 @ConditionalOnProperty(name = "map.provider.mode", havingValue = "public")
 public class JusoAddressClient {
 
     private static final String BASE_URL = "https://business.juso.go.kr";
-    private static final int COUNT_PER_PAGE = 5;
-    private static final String SUCCESS = "0";
-    // 검색어 형식이 맞지 않을 때의 오류 코드다. 사용자 입력 문제라 검색 결과가 없는 것으로 처리한다.
-    private static final Set<String> INVALID_KEYWORD_CODES =
-            Set.of("E0005", "E0006", "E0008", "E0009", "E0010", "E0012", "E0013");
+    private static final int COUNT_PER_PAGE = 5;// 최대 주소 후보 개수
 
     private final RestClient client;
     private final String confirmKey;
@@ -48,48 +45,63 @@ public class JusoAddressClient {
     }
 
     private static RestClient createClient(long connectTimeoutMillis, long readTimeoutMillis) {
+        //TODO connection pool / keep-alive 설정 고려
         HttpClient httpClient = HttpClient.newBuilder()
-                .connectTimeout(Duration.ofMillis(connectTimeoutMillis))
-                .build();
+            .connectTimeout(Duration.ofMillis(connectTimeoutMillis))
+            .build();
+
         JdkClientHttpRequestFactory requestFactory = new JdkClientHttpRequestFactory(httpClient);
         requestFactory.setReadTimeout(Duration.ofMillis(readTimeoutMillis));
         return RestClient.builder()
-                .baseUrl(BASE_URL)
-                .defaultHeader(HttpHeaders.ACCEPT, MediaType.APPLICATION_JSON_VALUE)
-                .requestFactory(requestFactory)
-                .build();
+            .baseUrl(BASE_URL)
+            .defaultHeader(HttpHeaders.ACCEPT, MediaType.APPLICATION_JSON_VALUE)//json응답을 받고 싶다고 알림
+            .requestFactory(requestFactory)
+            .build();
     }
 
     public JusoAddressSearchResponse search(String keyword) {
         JsonNode results = request(keyword).path("results");
-        JsonNode common = results.path("common");
-        String errorCode = common.path("errorCode").asText("");
-        if (INVALID_KEYWORD_CODES.contains(errorCode)) {
+        if (!validateSearchResponse(results.path("common"))) {
             return new JusoAddressSearchResponse(List.of());
-        }
-        if (!SUCCESS.equals(errorCode)) {
-            throw new BusinessException(DomainErrorCode.MAP_PROVIDER_UNAVAILABLE,
-                    "행안부 주소 검색이 실패했습니다. errorCode=" + errorCode
-                            + ", errorMessage=" + common.path("errorMessage").asText(""));
         }
         return response(results.path("juso"));
     }
 
+    private boolean validateSearchResponse(JsonNode common) {
+        String errorCodeValue = common.path("errorCode").asText("");
+        JusoErrorCode errorCode = JusoErrorCode.from(errorCodeValue);
+
+        //행안부 API는 정상적으로 살아 있고 요청도 잘 받았는데, 사용자가 입력한 검색어로는 검색을 수행할 수 없음
+        if (errorCode.isInvalidKeyword()) {
+            return false;
+        }
+
+        //우리 서버가 정상적인 주소 검색 결과를 얻을 수 없는 문제 (인증키, 외부 시스템, 요청 자체의 문제 등)
+        if (!errorCode.isSuccess()) {
+            throw new BusinessException(DomainErrorCode.MAP_PROVIDER_UNAVAILABLE,
+                "행안부 주소 검색이 실패했습니다. errorCode=" + errorCodeValue
+                    + ", errorMessage=" + common.path("errorMessage").asText(""));
+        }
+        return true;
+    }
+
     private JsonNode request(String keyword) {
         try {
+            //외부 API 응답 전체를 필요한 것만 골라 쓰기 위한, JSON 데이터를 트리 형태로 다루는 Jackson 객체
+            // TODO 외부 API 응답 구조에 맞는 DTO를 미리 만들어 역직렬화 고려
             JsonNode root = client.get().uri(uri -> uri.path("/addrlink/addrLinkApi.do")
-                            .queryParam("confmKey", confirmKey)
-                            .queryParam("currentPage", 1)
-                            .queryParam("countPerPage", COUNT_PER_PAGE)
-                            .queryParam("keyword", keyword)
-                            .queryParam("resultType", "json")
-                            .build())
-                    .retrieve()
-                    .body(JsonNode.class);
+                    .queryParam("confmKey", confirmKey)
+                    .queryParam("currentPage", 1)
+                    .queryParam("countPerPage", COUNT_PER_PAGE)
+                    .queryParam("keyword", keyword)
+                    .queryParam("resultType", "json")
+                    .build())
+                .retrieve()//실제 요청 후 응답을 받는다.
+                .body(JsonNode.class);//response body의 JSON을 Jackson의 JsonNode 형태로 변환.
             return root == null ? MissingNode.getInstance() : root;
         } catch (RuntimeException exception) {
             throw new BusinessException(DomainErrorCode.MAP_PROVIDER_UNAVAILABLE,
-                    "행안부 주소 검색 요청에 실패했습니다.", exception);
+                "행안부 주소 검색 요청에 실패했습니다.", exception);
         }
     }
 
@@ -97,7 +109,8 @@ public class JusoAddressClient {
         List<JusoAddressSearchResponse.Address> addresses = new ArrayList<>();
         for (JsonNode address : juso) {
             addresses.add(new JusoAddressSearchResponse.Address(
-                    text(address, "roadAddrPart1"), text(address, "jibunAddr")));
+                // roadAddr는 참고항목(동, 건물명)이 붙어, SGIS 역지오코딩 결과와 형식이 달라져서 본체인 roadAddrPart1을 쓴다.
+                text(address, "roadAddrPart1"), text(address, "jibunAddr")));
         }
         return new JusoAddressSearchResponse(List.copyOf(addresses));
     }
