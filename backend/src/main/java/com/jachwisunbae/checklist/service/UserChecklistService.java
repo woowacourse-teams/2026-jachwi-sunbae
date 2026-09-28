@@ -15,6 +15,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -28,16 +29,13 @@ public class UserChecklistService {
 
     private final SystemCheckItemRepository systemCheckItemRepository;
     private final UserChecklistRepository userChecklistRepository;
-    private final UserChecklistValidator validator;
     private final MemberRepository memberRepository;
 
     public UserChecklistService(final SystemCheckItemRepository systemCheckItemRepository,
                                 final UserChecklistRepository userChecklistRepository,
-                                final UserChecklistValidator validator,
                                 final MemberRepository memberRepository) {
         this.systemCheckItemRepository = systemCheckItemRepository;
         this.userChecklistRepository = userChecklistRepository;
-        this.validator = validator;
         this.memberRepository = memberRepository;
     }
 
@@ -85,11 +83,11 @@ public class UserChecklistService {
 
     private List<SystemCheckItem> findCreatableSystemItems(final CheckStage stage,
                                                            final List<Long> systemCheckItemIds) {
-        validator.validateRequestedItems(systemCheckItemIds);
+        validateRequestedItems(systemCheckItemIds);
 
         List<Long> requestedIds = List.copyOf(systemCheckItemIds);
         List<SystemCheckItem> requestedItems = systemCheckItemRepository.findByIdsAndStageInOrder(stage, requestedIds);
-        validator.validateItemsExist(requestedIds, requestedItems);
+        validateItemsExist(requestedIds, requestedItems);
         requireActive(requestedItems);
         return requestedItems;
     }
@@ -105,7 +103,7 @@ public class UserChecklistService {
         requestedItems.stream()
             .filter(item -> !coreItemIds.contains(item.getId()))
             .forEach(finalSystemItems::add);
-        validator.validateFinalItemCount(finalSystemItems.size());
+        validateFinalItemCount(finalSystemItems.size());
         return finalSystemItems;
     }
 
@@ -124,19 +122,19 @@ public class UserChecklistService {
 
     private List<SystemCheckItem> findUpdatableSystemItems(final UserChecklist checklist,
                                                            final List<Long> systemCheckItemIds) {
-        validator.validateRequestedItems(systemCheckItemIds);
-        validator.validateFinalItemCount(systemCheckItemIds.size());
+        validateRequestedItems(systemCheckItemIds);
+        validateFinalItemCount(systemCheckItemIds.size());
 
         List<Long> requestedIds = List.copyOf(systemCheckItemIds);
         List<SystemCheckItem> requestedItems = systemCheckItemRepository.findByIdsAndStageInOrder(checklist.getStage(), requestedIds);
-        validator.validateItemsExist(requestedIds, requestedItems);
+        validateItemsExist(requestedIds, requestedItems);
         requireInactiveItemsAlreadyIncluded(checklist.getId(), requestedItems);
         return requestedItems;
     }
 
     private void replaceChecklistItems(final long checklistId, final List<SystemCheckItem> systemItems) {
         List<UserChecklistItem> items = createChecklistItems(checklistId, systemItems);
-        validator.validateUniqueQuestions(items);
+        validateUniqueQuestions(items);
         userChecklistRepository.deleteItems(checklistId);
         userChecklistRepository.saveItems(checklistId, items);
     }
@@ -177,6 +175,47 @@ public class UserChecklistService {
         if (items.stream().anyMatch(item -> item.getDeletedAt() != null && !existingSystemIds.contains(item.getId()))) {
             throw new BusinessException(DomainErrorCode.CHECKLIST_INACTIVE_ITEM_NOT_ALLOWED,
                 "기존 체크리스트에 포함되어 있지 않던 비활성 시스템 항목은 새로 추가할 수 없습니다.");
+        }
+    }
+
+    private void validateRequestedItems(final List<Long> systemCheckItemIds) {
+        if (systemCheckItemIds == null) {
+            throw new BusinessException(DomainErrorCode.CHECKLIST_ITEMS_INVALID,
+                "체크리스트 항목 목록은 null일 수 없습니다.");
+        }
+
+        Set<Long> systemIds = new HashSet<>();
+        for (Long systemCheckItemId : systemCheckItemIds) {
+            if (systemCheckItemId == null || systemCheckItemId <= 0) {
+                throw new BusinessException(DomainErrorCode.CHECKLIST_ITEMS_INVALID,
+                    "자취선배가 제공하는 올바른 체크 항목 ID가 필요합니다.");
+            }
+            if (!systemIds.add(systemCheckItemId)) {
+                throw new BusinessException(DomainErrorCode.DUPLICATE_CHECK_ITEM,
+                    "같은 체크 항목을 중복해서 추가할 수 없습니다.");
+            }
+        }
+    }
+
+    private void validateFinalItemCount(final int count) {
+        if (count < 1 || count > 30) {
+            throw new BusinessException(DomainErrorCode.CHECKLIST_ITEM_COUNT_OUT_OF_RANGE,
+                "체크리스트 항목은 1개 이상 30개 이하여야 합니다.");
+        }
+    }
+
+    private void validateItemsExist(final List<Long> requestedIds, final List<SystemCheckItem> items) {
+        if (requestedIds.size() != items.size()) {
+            throw new BusinessException(DomainErrorCode.INVALID_SYSTEM_CHECK_ITEM,
+                "존재하지 않거나 단계가 일치하지 않는 시스템 체크 항목이 포함되어 있습니다.");
+        }
+    }
+
+    private void validateUniqueQuestions(final List<UserChecklistItem> items) {
+        Set<String> questions = new HashSet<>();
+        if (items.stream().anyMatch(item -> !questions.add(item.getQuestion()))) {
+            throw new BusinessException(DomainErrorCode.DUPLICATE_CHECK_ITEM,
+                "같은 체크 항목을 중복해서 추가할 수 없습니다.");
         }
     }
 }
