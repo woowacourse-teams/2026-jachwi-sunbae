@@ -3,7 +3,6 @@ package com.jachwisunbae.member.repository;
 import com.jachwisunbae.member.entity.Member;
 import java.sql.PreparedStatement;
 import java.sql.Statement;
-import java.util.Locale;
 import java.util.Optional;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
@@ -42,29 +41,29 @@ public class JdbcMemberRepository implements MemberRepository {
     }
 
     @Override
-    public Optional<Member> findByNickname(final String nickname) {
+    public Optional<Member> findByNicknameAndPasswordProtected(final String nickname,
+                                                              final boolean passwordProtected) {
         String sql = """
                 SELECT id, nickname, password_hash, created_at, updated_at
                 FROM members
-                WHERE nickname_key = ?
+                WHERE nickname = ? AND password_protected = ?
                 """;
-        return jdbcTemplate.query(sql, memberRowMapper(), nicknameKey(nickname)).stream().findFirst();
+        return jdbcTemplate.query(sql, memberRowMapper(), nickname, passwordProtected).stream().findFirst();
     }
 
     @Override
     public Member save(final Member member) {
         String sql = """
-                INSERT INTO members (nickname, nickname_key, password_hash, created_at, updated_at)
-                VALUES (?, ?, ?, ?, ?)
+                INSERT INTO members (nickname, password_hash, created_at, updated_at)
+                VALUES (?, ?, ?, ?)
                 """;
         KeyHolder keyHolder = new GeneratedKeyHolder();
         jdbcTemplate.update(connection -> {
             PreparedStatement statement = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
             statement.setString(1, member.getNickname());
-            statement.setString(2, nicknameKey(member.getNickname()));
-            statement.setString(3, member.getPasswordHash());
-            statement.setObject(4, member.getCreatedAt());
-            statement.setObject(5, member.getUpdatedAt());
+            statement.setString(2, member.getPasswordHash());
+            statement.setObject(3, member.getCreatedAt());
+            statement.setObject(4, member.getUpdatedAt());
             return statement;
         }, keyHolder);
         long memberId = keyHolder.getKey().longValue();
@@ -76,15 +75,11 @@ public class JdbcMemberRepository implements MemberRepository {
     public void update(final Member member) {
         String sql = """
                 UPDATE members
-                SET nickname = ?, nickname_key = ?, password_hash = ?, updated_at = ?
+                SET nickname = ?, password_hash = ?, updated_at = ?
                 WHERE id = ?
                 """;
-        jdbcTemplate.update(sql, member.getNickname(), nicknameKey(member.getNickname()), member.getPasswordHash(),
-                member.getUpdatedAt(), member.getId());
-    }
-
-    private String nicknameKey(final String nickname) {
-        return nickname.toLowerCase(Locale.ROOT);
+        jdbcTemplate.update(sql, member.getNickname(), member.getPasswordHash(), member.getUpdatedAt(),
+                member.getId());
     }
 
     private RowMapper<Member> memberRowMapper() {

@@ -12,6 +12,7 @@ import com.jachwisunbae.member.entity.Nickname;
 import com.jachwisunbae.member.repository.MemberRepository;
 import java.time.Clock;
 import java.time.LocalDateTime;
+import java.util.Optional;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -46,36 +47,41 @@ public class AuthService {
         String nickname = Nickname.from(request.nickname()).value();
         String password = password(request.password());
 
-        Member existing = memberRepository.findByNickname(nickname).orElse(null);
-        if (existing == null) {
-            return createMember(nickname, password);
+        if (password == null) {
+            return loginSharedMember(nickname);
         }
-        return loginExisting(existing, password);
+        return loginProtectedMember(nickname, password);
     }
 
-    private LoginResponse createMember(String nickname, String password) {
+    // 비밀번호 없이 시작하면 그 닉네임의 공유 회원으로 시작하고, 없으면 만든다.
+    private LoginResponse loginSharedMember(String nickname) {
+        Optional<Member> sharedMember = memberRepository.findByNicknameAndPasswordProtected(nickname, false);
+        if (sharedMember.isPresent()) {
+            return createLoginResponse(sharedMember.get(), false);
+        }
+        return createMember(nickname, null);
+    }
+
+    // 비밀번호와 함께 시작하면 그 닉네임의 보호 회원으로 시작한다. 없으면 만들고, 있으면 비밀번호가 맞아야 한다.
+    private LoginResponse loginProtectedMember(String nickname, String password) {
+        Optional<Member> protectedMember = memberRepository.findByNicknameAndPasswordProtected(nickname, true);
+        if (protectedMember.isEmpty()) {
+            return createMember(nickname, passwordEncoder.encode(password));
+        }
+        if (!matches(password, protectedMember.get().getPasswordHash())) {
+            throw new BusinessException(DomainErrorCode.NICKNAME_AUTHENTICATION_FAILED,
+                    "닉네임 또는 비밀번호가 일치하지 않습니다.");
+        }
+        return createLoginResponse(protectedMember.get(), false);
+    }
+
+    private LoginResponse createMember(String nickname, String passwordHash) {
         LocalDateTime now = LocalDateTime.now(clock);
-        String passwordHash = password == null ? null : passwordEncoder.encode(password);
         Member member = memberRepository.save(Member.create(nickname, passwordHash, now));
         return createLoginResponse(member, true);
     }
 
-    private LoginResponse loginExisting(Member member, String password) {
-        if (!member.isPasswordProtected() && password != null) {
-            throw new BusinessException(DomainErrorCode.NICKNAME_PASSWORD_UNEXPECTED,
-                    "비밀번호 없이 사용하는 기존 닉네임에는 비밀번호를 입력할 수 없습니다.");
-        }
-        if (member.isPasswordProtected() && !matches(password, member.getPasswordHash())) {
-            throw new BusinessException(DomainErrorCode.NICKNAME_AUTHENTICATION_FAILED,
-                    "닉네임 또는 비밀번호가 일치하지 않습니다.");
-        }
-        return createLoginResponse(member, false);
-    }
-
     private boolean matches(String password, String passwordHash) {
-        if (password == null) {
-            return false;
-        }
         try {
             return passwordEncoder.matches(password, passwordHash);
         } catch (IllegalArgumentException exception) {

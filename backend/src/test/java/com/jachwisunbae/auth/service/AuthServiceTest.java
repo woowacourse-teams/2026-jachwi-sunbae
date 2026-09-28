@@ -149,6 +149,50 @@ class AuthServiceTest {
         assertThat(tokenProvider.parseMemberId(response.accessToken())).isEqualTo(response.member().memberId());
     }
 
+    @Test
+    @DisplayName("공유 회원이 있는 닉네임에 비밀번호와 함께 시작하면 별도의 보호 회원을 만든다")
+    void createsProtectedMemberBesideSharedMember() {
+        LoginResponse shared = login("11", null);
+        LoginResponse protectedMember = login("11", "1111");
+
+        assertThat(protectedMember.newMember()).isTrue();
+        assertThat(protectedMember.member().passwordProtected()).isTrue();
+        assertThat(protectedMember.member().memberId()).isNotEqualTo(shared.member().memberId());
+        assertThat(memberRepository.count()).isEqualTo(2);
+    }
+
+    @Test
+    @DisplayName("보호 회원이 있는 닉네임에 비밀번호 없이 시작하면 별도의 공유 회원을 만든다")
+    void createsSharedMemberBesideProtectedMember() {
+        LoginResponse protectedMember = login("11", "1111");
+        LoginResponse shared = login("11", null);
+
+        assertThat(shared.newMember()).isTrue();
+        assertThat(shared.member().passwordProtected()).isFalse();
+        assertThat(shared.member().memberId()).isNotEqualTo(protectedMember.member().memberId());
+        assertThat(memberRepository.count()).isEqualTo(2);
+    }
+
+    @Test
+    @DisplayName("공유 회원과 보호 회원이 모두 있으면 비밀번호 유무에 따라 각자의 회원으로 로그인한다")
+    void logsInEachMemberByPasswordPresence() {
+        LoginResponse shared = login("11", null);
+        LoginResponse protectedMember = login("11", "1111");
+
+        assertThat(login("11", null).member().memberId()).isEqualTo(shared.member().memberId());
+        assertThat(login("11", "1111").member().memberId()).isEqualTo(protectedMember.member().memberId());
+    }
+
+    @Test
+    @DisplayName("대소문자가 다른 닉네임은 다른 회원이다")
+    void distinguishesNicknameCase() {
+        LoginResponse upper = login("Lee", null);
+        LoginResponse lower = login("lee", null);
+
+        assertThat(lower.newMember()).isTrue();
+        assertThat(lower.member().memberId()).isNotEqualTo(upper.member().memberId());
+    }
+
     private LoginResponse login(String nickname, String password) {
         return authService.loginNickname(new NicknameLoginRequest(nickname, password));
     }
@@ -173,9 +217,10 @@ class AuthServiceTest {
         }
 
         @Override
-        public Optional<Member> findByNickname(String nickname) {
+        public Optional<Member> findByNicknameAndPasswordProtected(String nickname, boolean passwordProtected) {
             return members.values().stream()
                     .filter(member -> member.getNickname().equals(nickname))
+                    .filter(member -> member.isPasswordProtected() == passwordProtected)
                     .findFirst();
         }
 
