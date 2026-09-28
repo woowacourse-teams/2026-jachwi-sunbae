@@ -47,26 +47,26 @@ public class PropertyService {
 
     public PropertyListResponse findList(final Long memberId) {
         List<PropertyListItemResponse> items = propertyRepository.findListByMemberId(memberId).stream()
-                .map(row -> {
-                    PropertyRepresentativePhoto photo = row.photoId() == null ? null
-                            : new PropertyRepresentativePhoto(row.photoId(),
-                            "/api/properties/" + row.propertyId() + "/photos/" + row.photoId(),
-                            row.photoContentType());
-                    PropertyChecklistOverviewResponse overview = PropertyChecklistOverviewResponse.from(
-                            row.propertyId(), propertyProgressRepository.findByPropertyIdAndStage(row.propertyId()));
-                    return PropertyListItemResponse.from(row, photo, overview.overallProgress(), overview.stages());
-                })
-                .toList();
+            .map(row -> {
+                PropertyRepresentativePhoto photo = row.photoId() == null ? null
+                    : new PropertyRepresentativePhoto(row.photoId(),
+                        "/api/properties/" + row.propertyId() + "/photos/" + row.photoId(),
+                        row.photoContentType());
+                PropertyChecklistOverviewResponse overview = PropertyChecklistOverviewResponse.from(
+                    row.propertyId(), propertyProgressRepository.findByPropertyIdAndStage(row.propertyId()));
+                return PropertyListItemResponse.from(row, photo, overview.overallProgress(), overview.stages());
+            })
+            .toList();
         return new PropertyListResponse(items.size(), items);
     }
 
     public PropertyDetailResponse findDetail(final Long memberId, final Long propertyId) {
         Property property = propertyRepository.findByIdAndMemberId(propertyId, memberId)
-                .orElseThrow(() -> new BusinessException(DomainErrorCode.PROPERTY_NOT_FOUND,
-                        "매물을 찾을 수 없습니다."));
+            .orElseThrow(() -> new BusinessException(DomainErrorCode.PROPERTY_NOT_FOUND,
+                "매물을 찾을 수 없습니다."));
         return PropertyDetailResponse.from(property, propertyPhotoRepository.findByPropertyId(propertyId),
-                propertyPhotoRepository.findRepresentativePhotoId(propertyId).orElse(null),
-                PropertyProgress.from(propertyProgressRepository.findByPropertyId(propertyId)));
+            propertyPhotoRepository.findRepresentativePhotoId(propertyId).orElse(null),
+            PropertyProgress.from(propertyProgressRepository.findByPropertyId(propertyId)));
     }
 
     @Transactional
@@ -80,10 +80,9 @@ public class PropertyService {
         LocalDateTime now = LocalDateTime.now(clock);
         Property property = propertyRepository.save(Property.create(
             memberId, request.name(), request.depositAmount(), request.monthlyRentAmount(),
-            request.discoverySource(), request.address(),
-            request.latitude(), request.longitude(),
+            request.address(), request.latitude(), request.longitude(),
             request.availableMoveInDate(), request.maintenanceFeeAmount(), request.visitScheduledAt(),
-            request.roomOptions(), request.utilityOptions(), now));
+            request.roomOptions(), request.utilityOptions(), request.discoverySource(), now));
 
         // 매물 생성 트랜잭션 내에서 2단계 체크리스트 스냅샷 자동 생성
         propertyChecklistService.applyInitialChecklists(memberId, property.getId());
@@ -94,20 +93,20 @@ public class PropertyService {
     private void validatePropertyCount(final int propertyCount) {
         if (propertyCount >= 30) {
             throw new BusinessException(DomainErrorCode.PROPERTY_LIMIT_EXCEEDED,
-                    "회원당 매물은 30개까지 등록할 수 있습니다.");
+                "회원당 매물은 30개까지 등록할 수 있습니다.");
         }
     }
 
     @Transactional
     public Property update(final Long memberId, final Long propertyId, final UpdatePropertyRequest request) {
         Property property = propertyRepository.findByIdAndMemberId(propertyId, memberId)
-                .orElseThrow(() -> new BusinessException(DomainErrorCode.PROPERTY_NOT_FOUND,
-                        "매물을 찾을 수 없습니다."));
+            .orElseThrow(() -> new BusinessException(DomainErrorCode.PROPERTY_NOT_FOUND,
+                "매물을 찾을 수 없습니다."));
         property.replaceBasicInfo(request.name(), request.depositAmount(),
-                request.monthlyRentAmount(), request.discoverySource(), request.address(),
-                request.latitude(), request.longitude(),
-                request.availableMoveInDate(), request.maintenanceFeeAmount(), request.visitScheduledAt(),
-                request.roomOptions(), request.utilityOptions(), LocalDateTime.now(clock));
+            request.monthlyRentAmount(), request.address(),
+            request.latitude(), request.longitude(),
+            request.availableMoveInDate(), request.maintenanceFeeAmount(), request.visitScheduledAt(),
+            request.roomOptions(), request.utilityOptions(), request.discoverySource(), LocalDateTime.now(clock));
         return propertyRepository.update(property);
     }
 
