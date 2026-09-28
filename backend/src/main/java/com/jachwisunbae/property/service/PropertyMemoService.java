@@ -3,8 +3,7 @@ package com.jachwisunbae.property.service;
 import com.jachwisunbae.common.exception.BusinessException;
 import com.jachwisunbae.common.exception.DomainErrorCode;
 import com.jachwisunbae.property.controller.dto.request.UpdatePropertyMemoRequest;
-import com.jachwisunbae.property.entity.PropertyMemo;
-import com.jachwisunbae.property.repository.PropertyMemoRepository;
+import com.jachwisunbae.property.entity.Property;
 import com.jachwisunbae.property.repository.PropertyRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -14,38 +13,27 @@ import org.springframework.transaction.annotation.Transactional;
 public class PropertyMemoService {
 
     private final PropertyRepository propertyRepository;
-    private final PropertyMemoRepository propertyMemoRepository;
 
-    public PropertyMemoService(final PropertyRepository propertyRepository,
-                               final PropertyMemoRepository propertyMemoRepository) {
+    public PropertyMemoService(final PropertyRepository propertyRepository) {
         this.propertyRepository = propertyRepository;
-        this.propertyMemoRepository = propertyMemoRepository;
     }
 
-    public PropertyMemo find(final Long memberId, final Long propertyId) {
-        validateOwnedProperty(memberId, propertyId);
-
-        return propertyMemoRepository.findByPropertyId(propertyId)
-            .orElseGet(() -> PropertyMemo.create(propertyId, ""));
+    public String find(final Long memberId, final Long propertyId) {
+        return findOwnedProperty(memberId, propertyId).getMemo();
     }
 
     @Transactional
-    public PropertyMemo update(final Long memberId, final Long propertyId,
-                               final UpdatePropertyMemoRequest request) {
-        validateOwnedProperty(memberId, propertyId);
-
-        return propertyMemoRepository.findByPropertyId(propertyId)
-            .map(existingMemo -> {
-                existingMemo.replaceFreeMemo(request.freeMemo());
-                propertyMemoRepository.update(existingMemo);
-                return existingMemo;
-            })
-            .orElseGet(() -> propertyMemoRepository.save(PropertyMemo.create(propertyId, request.freeMemo())));
+    public String update(final Long memberId, final Long propertyId,
+                         final UpdatePropertyMemoRequest request) {
+        Property property = findOwnedProperty(memberId, propertyId);
+        property.replaceMemo(request.freeMemo());
+        propertyRepository.updateMemo(property);
+        return property.getMemo();
     }
 
-    private void validateOwnedProperty(final Long memberId, final Long propertyId) {
-        if (!propertyRepository.existsByIdAndMemberId(propertyId, memberId)) {
-            throw new BusinessException(DomainErrorCode.PROPERTY_NOT_FOUND, "매물을 찾을 수 없습니다.");
-        }
+    private Property findOwnedProperty(final Long memberId, final Long propertyId) {
+        return propertyRepository.findByIdAndMemberId(propertyId, memberId)
+            .orElseThrow(() -> new BusinessException(DomainErrorCode.PROPERTY_NOT_FOUND,
+                "매물을 찾을 수 없습니다."));
     }
 }

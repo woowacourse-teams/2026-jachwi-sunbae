@@ -106,16 +106,16 @@ public class PropertyController {
         @AuthenticatedMemberId final Long memberId,
         @PathVariable final Long propertyId) {
         return ApiResponse.of("자유 메모를 조회했습니다.",
-            PropertyMemoResponse.from(propertyMemoService.find(memberId, propertyId)));
+            PropertyMemoResponse.of(propertyId, propertyMemoService.find(memberId, propertyId)));
     }
 
     @PutMapping("/{propertyId}/memo")
-    @Operation(summary = "자유 메모 교체 및 생성", description = "자유 메모를 교체합니다. 메모 행이 없으면 생성합니다.")
+    @Operation(summary = "자유 메모 교체", description = "매물의 자유 메모를 교체합니다.")
     public ApiResponse<PropertyMemoResponse> updateMemo(
         @AuthenticatedMemberId final Long memberId,
         @PathVariable final Long propertyId,
         @Valid @RequestBody final UpdatePropertyMemoRequest request) {
         return ApiResponse.of("자유 메모를 저장했습니다.",
-            PropertyMemoResponse.from(propertyMemoService.update(memberId, propertyId, request)));
+            PropertyMemoResponse.of(propertyId, propertyMemoService.update(memberId, propertyId, request)));
     }
 }
