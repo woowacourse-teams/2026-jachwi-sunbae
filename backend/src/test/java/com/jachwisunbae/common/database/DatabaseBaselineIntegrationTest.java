@@ -2,22 +2,16 @@ package com.jachwisunbae.common.database;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.jachwisunbae.demo.DemoDataInitializer;
 import com.jachwisunbae.member.entity.Member;
 import com.jachwisunbae.member.repository.JdbcMemberRepository;
-import java.time.Clock;
-import java.time.Instant;
 import java.time.LocalDateTime;
-import java.time.ZoneOffset;
 import javax.sql.DataSource;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.datasource.DriverManagerDataSource;
-import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 import org.springframework.jdbc.datasource.init.ResourceDatabasePopulator;
-import org.springframework.transaction.support.TransactionTemplate;
 import org.testcontainers.containers.MySQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -43,10 +37,11 @@ class DatabaseBaselineIntegrationTest {
         execute("db/init/001-schema.sql");
         execute("db/init/002-seed.sql");
 
-        assertThat(tableExists("property_comparison_view_events")).isTrue();
+        assertThat(tableExists("property_comparison_view_events")).isFalse();
         assertThat(tableExists("nickname_credentials")).isFalse();
         assertThat(tableExists("schema_upgrade_history")).isFalse();
         assertThat(columnExists("members", "first_property_created_at")).isFalse();
+        assertThat(count("SELECT COUNT(*) FROM members")).isZero();
 
         JdbcMemberRepository memberRepository = new JdbcMemberRepository(jdbcTemplate);
         LocalDateTime now = LocalDateTime.parse("2026-09-22T00:00:00");
@@ -68,18 +63,6 @@ class DatabaseBaselineIntegrationTest {
         execute("db/init/002-seed.sql");
 
         assertThat(count("SELECT COUNT(*) FROM user_checklists WHERE id = 999")).isOne();
-
-        DemoDataInitializer initializer = new DemoDataInitializer(
-                jdbcTemplate,
-                Clock.fixed(Instant.parse("2026-09-22T00:00:00Z"), ZoneOffset.UTC),
-                "이자취"
-        );
-        new TransactionTemplate(new DataSourceTransactionManager(dataSource))
-                .executeWithoutResult(status -> initializer.run(null));
-
-        assertThat(count("SELECT COUNT(*) FROM members WHERE nickname = '이자취'")).isOne();
-        assertThat(count("SELECT COUNT(*) FROM properties WHERE member_id = "
-                + "(SELECT id FROM members WHERE nickname = '이자취')")).isEqualTo(2);
     }
 
     private void execute(String path) {

@@ -30,7 +30,3 @@ photo:
 map:
   provider:
     mode: demo
-
-demo:
-  seed:
-    enabled: false

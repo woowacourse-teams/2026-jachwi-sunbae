@@ -21,7 +21,3 @@ logging:
 auth:
   jwt:
     secret: ${JWT_SECRET_BASE64}
-
-demo:
-  seed:
-    enabled: false
