@@ -1,6 +1,5 @@
 package com.jachwisunbae.checklist.service;
 
-import com.jachwisunbae.checklist.controller.dto.request.UserChecklistItemRequest;
 import com.jachwisunbae.checklist.entity.SystemCheckItem;
 import com.jachwisunbae.checklist.entity.UserChecklistItem;
 import com.jachwisunbae.common.exception.BusinessException;
@@ -14,18 +13,18 @@ import java.util.Set;
 @Component
 public class UserChecklistValidator {
 
-    public void validateRequestedItems(final List<UserChecklistItemRequest> items) {
-        if (items == null) {
+    public void validateRequestedItems(final List<Long> systemCheckItemIds) {
+        if (systemCheckItemIds == null) {
             throw new BusinessException(DomainErrorCode.CHECKLIST_ITEMS_INVALID,
                 "체크리스트 항목 목록은 null일 수 없습니다.");
         }
         Set<Long> systemIds = new HashSet<>();
-        for (UserChecklistItemRequest item : items) {
-            if (item == null || item.systemCheckItemId() == null || item.systemCheckItemId() <= 0) {
+        for (Long systemCheckItemId : systemCheckItemIds) {
+            if (systemCheckItemId == null || systemCheckItemId <= 0) {
                 throw new BusinessException(DomainErrorCode.CHECKLIST_ITEMS_INVALID,
                     "자취선배가 제공하는 올바른 체크 항목 ID가 필요합니다.");
             }
-            if (!systemIds.add(item.systemCheckItemId())) {
+            if (!systemIds.add(systemCheckItemId)) {
                 throw new BusinessException(DomainErrorCode.DUPLICATE_CHECK_ITEM,
                     "같은 체크 항목을 중복해서 추가할 수 없습니다.");
             }

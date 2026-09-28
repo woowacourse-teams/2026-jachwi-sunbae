@@ -47,7 +47,11 @@ public class UserChecklistController {
     public ResponseEntity<ApiResponse<CreateUserChecklistResponse>> create(
             @AuthenticatedMemberId final Long memberId,
             @Valid @RequestBody final CreateUserChecklistRequest request) {
-        UserChecklist checklist = userChecklistService.create(memberId, request);
+        List<Long> systemCheckItemIds = request.items().stream()
+                .map(item -> item.systemCheckItemId())
+                .toList();
+        UserChecklist checklist = userChecklistService.create(
+                memberId, request.name(), request.stage(), systemCheckItemIds);
         CreateUserChecklistResponse response = toResponse(memberId, checklist);
         return ResponseEntity.created(URI.create("/api/checklists/" + response.id()))
                 .body(ApiResponse.of("체크리스트를 생성했습니다.", response));
@@ -59,8 +63,7 @@ public class UserChecklistController {
             @AuthenticatedMemberId final Long memberId,
             @RequestParam(required = false) final CheckStage stage) {
         List<UserChecklistSummaryResponse> summaries = userChecklistService.findAll(memberId, stage).stream()
-                .map(checklist -> UserChecklistSummaryResponse.from(
-                        checklist, userChecklistService.findItems(memberId, checklist.getId()).size()))
+                .map(UserChecklistSummaryResponse::from)
                 .toList();
         return ApiResponse.of("체크리스트 목록을 조회했습니다.",
                 new UserChecklistListResponse(summaries.size(), summaries));
@@ -72,7 +75,7 @@ public class UserChecklistController {
             @AuthenticatedMemberId final Long memberId,
             @PathVariable final long checklistId) {
         return ApiResponse.of("체크리스트를 조회했습니다.",
-                toResponse(memberId, userChecklistService.find(memberId, checklistId)));
+                toResponse(memberId, userChecklistService.findUserChecklistDetails(memberId, checklistId)));
     }
 
     @PutMapping("/{checklistId}")
@@ -82,7 +85,11 @@ public class UserChecklistController {
             @AuthenticatedMemberId final Long memberId,
             @PathVariable final long checklistId,
             @Valid @RequestBody final UpdateUserChecklistRequest request) {
-        UserChecklist checklist = userChecklistService.update(memberId, checklistId, request);
+        List<Long> systemCheckItemIds = request.items().stream()
+                .map(item -> item.systemCheckItemId())
+                .toList();
+        UserChecklist checklist = userChecklistService.update(
+                memberId, checklistId, request.name(), systemCheckItemIds);
         return ApiResponse.of("체크리스트를 수정했습니다.",
                 toResponse(memberId, checklist));
     }

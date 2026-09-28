@@ -3,6 +3,7 @@ package com.jachwisunbae.checklist.repository;
 import com.jachwisunbae.checklist.entity.UserChecklist;
 import com.jachwisunbae.checklist.entity.UserChecklistItem;
 import com.jachwisunbae.checklist.repository.query.UserChecklistItemDetail;
+import com.jachwisunbae.checklist.repository.query.UserChecklistSummaryQuery;
 import com.jachwisunbae.checklist.type.CheckItemType;
 import com.jachwisunbae.checklist.type.CheckStage;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -127,14 +128,21 @@ public class JdbcUserChecklistRepository implements UserChecklistRepository {
     }
 
     @Override
-    public List<UserChecklist> findByMemberId(final long memberId, final CheckStage stage) {
+    public List<UserChecklistSummaryQuery> findSummariesByMemberId(final long memberId, final CheckStage stage) {
         String sql = """
-                SELECT id, member_id, name, stage
-                FROM user_checklists
-                WHERE member_id = ? AND (? IS NULL OR stage = ?) AND deleted_at IS NULL
-                ORDER BY id DESC
+                SELECT uc.id, uc.name, uc.stage, COUNT(uci.id) AS item_count
+                FROM user_checklists uc
+                LEFT JOIN user_checklist_items uci ON uci.user_checklist_id = uc.id
+                WHERE uc.member_id = ? AND (? IS NULL OR uc.stage = ?) AND uc.deleted_at IS NULL
+                GROUP BY uc.id, uc.name, uc.stage
+                ORDER BY uc.id DESC
                 """;
-        return jdbcTemplate.query(sql, checklistRowMapper, memberId, stageName(stage), stageName(stage));
+        return jdbcTemplate.query(sql, (resultSet, rowNumber) -> new UserChecklistSummaryQuery(
+            resultSet.getLong("id"),
+            resultSet.getString("name"),
+            CheckStage.valueOf(resultSet.getString("stage")),
+            resultSet.getInt("item_count")
+        ), memberId, stageName(stage), stageName(stage));
     }
 
     @Override
