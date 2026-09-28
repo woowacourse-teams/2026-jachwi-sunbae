@@ -52,6 +52,14 @@ public class PropertyController {
         return ApiResponse.of("매물 목록을 조회했습니다.", propertyService.findList(memberId));
     }
 
+    @PostMapping("/comparison-views")
+    @Deprecated(forRemoval = true)
+    @Operation(summary = "비교 화면 진입 기록",
+            description = "현재 회원이 비교 화면을 연 시각과 그 시점의 보유 매물 수를 실험 이벤트로 저장합니다.")
+    public ResponseEntity<Void> recordComparisonView(@AuthenticatedMemberId final Long memberId) {
+        return ResponseEntity.noContent().build();
+    }
+
     @PostMapping
     @Operation(summary = "매물 생성",
             description = "후보 매물을 생성합니다. 회원당 최대 30개까지 등록할 수 있습니다.")
