@@ -143,6 +143,17 @@ class PropertyTest {
         assertThat(property.getMaintenanceFeeAmount()).isZero();
     }
 
+    @DisplayName("보증금, 월세, 관리비는 음수일 수 없다")
+    @Test
+    void createRejectsNegativeAmounts() {
+        assertPropertyError(() -> createProperty(input -> input.depositAmount = -1L),
+            DomainErrorCode.PROPERTY_INPUT_INVALID);
+        assertPropertyError(() -> createProperty(input -> input.monthlyRentAmount = -1L),
+            DomainErrorCode.PROPERTY_INPUT_INVALID);
+        assertPropertyError(() -> createProperty(input -> input.maintenanceFeeAmount = -1L),
+            DomainErrorCode.PROPERTY_INPUT_INVALID);
+    }
+
     @DisplayName("입력하지 않은 선택 정보는 빈 값으로 정규화한다")
     @Test
     void createNormalizesNullOptionalValues() {
