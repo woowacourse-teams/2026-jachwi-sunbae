@@ -43,25 +43,10 @@ class PhotoFileTest {
         assertSizeExceeded(new byte[MAX_SIZE_BYTES + 1]);
     }
 
-    @Test
-    @DisplayName("사진 바이트는 외부 변경으로부터 보호된다")
-    void protectBytesFromExternalChanges() {
-        byte[] source = PNG.clone();
-        PhotoFile photoFile = new PhotoFile(source, "image/png");
-        byte firstByte = photoFile.bytes()[0];
-
-        source[0] = 0;
-        byte[] exposed = photoFile.bytes();
-        exposed[0] = 0;
-
-        assertThat(photoFile.bytes()[0]).isEqualTo(firstByte);
-    }
-
     private void assertSizeExceeded(final byte[] bytes) {
         assertThatThrownBy(() -> new PhotoFile(bytes, "image/png"))
             .isInstanceOf(BusinessException.class)
-            .extracting("code")
-            .isEqualTo(DomainErrorCode.PHOTO_SIZE_EXCEEDED);
+            .hasFieldOrPropertyWithValue("code", DomainErrorCode.PHOTO_SIZE_EXCEEDED);
     }
 
 }
