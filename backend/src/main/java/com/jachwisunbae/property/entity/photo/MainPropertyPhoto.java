@@ -1,4 +1,4 @@
-package com.jachwisunbae.property.entity;
+package com.jachwisunbae.property.entity.photo;
 
 import lombok.Getter;
 import com.jachwisunbae.common.exception.DomainErrorCode;

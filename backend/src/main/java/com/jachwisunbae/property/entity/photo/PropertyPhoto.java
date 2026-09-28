@@ -1,4 +1,4 @@
-package com.jachwisunbae.property.entity;
+package com.jachwisunbae.property.entity.photo;
 
 import lombok.Getter;
 import com.jachwisunbae.common.exception.DomainErrorCode;
@@ -51,19 +51,14 @@ public class PropertyPhoto {
     }
 
     private static String validateContentType(final String value) {
-        String type = DomainPreconditions.requireNonBlank(value, DomainErrorCode.PROPERTY_INPUT_INVALID,
-                "사진 콘텐츠 타입은 필수입니다.").toLowerCase();
-        DomainPreconditions.require(type.equals("image/jpeg") || type.equals("image/png")
-                        || type.equals("image/webp"),
-                DomainErrorCode.PHOTO_CONTENT_TYPE_UNSUPPORTED, "JPEG, PNG, WebP만 허용됩니다.");
-        return type;
+        return PhotoFormat.from(value).contentType();
     }
 
     private static Long validateSize(final Long sizeBytes) {
         return DomainPreconditions.requireAtMost(
                 DomainPreconditions.requireNonNegative(sizeBytes, DomainErrorCode.PROPERTY_INPUT_INVALID,
                         "사진 크기는 0 이상의 값이어야 합니다."),
-                5L * 1024 * 1024, DomainErrorCode.PHOTO_SIZE_EXCEEDED,
+                5L * 1024 * 1024, DomainErrorCode.PHOTO_FILE_SIZE_INVALID,
                 "사진 크기는 5MiB 이하여야 합니다.");
     }
 
