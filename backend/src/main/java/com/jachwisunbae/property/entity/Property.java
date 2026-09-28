@@ -19,19 +19,19 @@ public class Property extends BaseTimeEntity {
     @Getter
     private final Long memberId;
     private PropertyName propertyName;
-    private PropertyCosts propertyCosts;
+    private PropertyRentalPrice propertyRentalPrice;
     private PropertyLocation propertyLocation;
     private PropertyOptions propertyOptions;
 
     private Property(final Long id, final Long memberId, final PropertyName propertyName,
-                     final PropertyCosts propertyCosts, final PropertyLocation propertyLocation,
+                     final PropertyRentalPrice propertyRentalPrice, final PropertyLocation propertyLocation,
                      final PropertyOptions propertyOptions,
                      final LocalDateTime createdAt, final LocalDateTime updatedAt) {
         super(createdAt, updatedAt);
         this.id = id;
         this.memberId = memberId;
         this.propertyName = propertyName;
-        this.propertyCosts = propertyCosts;
+        this.propertyRentalPrice = propertyRentalPrice;
         this.propertyLocation = propertyLocation;
         this.propertyOptions = propertyOptions;
     }
@@ -45,7 +45,7 @@ public class Property extends BaseTimeEntity {
                                   final String discoverySource,
                                   final LocalDateTime now) {
         return new Property(null, validateMemberId(memberId), PropertyName.from(name),
-            PropertyCosts.from(depositAmount, monthlyRentAmount),
+            PropertyRentalPrice.from(depositAmount, monthlyRentAmount),
             PropertyLocation.from(address, latitude, longitude),
             PropertyOptions.fromCodes(availableMoveInDate, maintenanceFeeAmount, visitScheduledAt, roomOptions,
                 utilityOptions, discoverySource),
@@ -62,7 +62,7 @@ public class Property extends BaseTimeEntity {
                                        final String discoverySource,
                                        final LocalDateTime createdAt, final LocalDateTime updatedAt) {
         return new Property(id, validateMemberId(memberId), PropertyName.from(name),
-            PropertyCosts.from(depositAmount, monthlyRentAmount),
+            PropertyRentalPrice.from(depositAmount, monthlyRentAmount),
             PropertyLocation.from(address, latitude, longitude),
             PropertyOptions.of(availableMoveInDate, maintenanceFeeAmount, visitScheduledAt, roomOptions, utilityOptions,
                 discoverySource),
@@ -78,7 +78,7 @@ public class Property extends BaseTimeEntity {
                                  final String discoverySource,
                                  final LocalDateTime now) {
         this.propertyName = PropertyName.from(name);
-        this.propertyCosts = PropertyCosts.from(depositAmount, monthlyRentAmount);
+        this.propertyRentalPrice = PropertyRentalPrice.from(depositAmount, monthlyRentAmount);
         this.propertyLocation = PropertyLocation.from(address, latitude, longitude);
         this.propertyOptions = PropertyOptions.fromCodes(availableMoveInDate, maintenanceFeeAmount, visitScheduledAt,
             roomOptions, utilityOptions, discoverySource);
@@ -91,11 +91,11 @@ public class Property extends BaseTimeEntity {
     }
 
     public Long getDepositAmount() {
-        return propertyCosts.depositAmount();
+        return propertyRentalPrice.depositAmount();
     }
 
     public Long getMonthlyRentAmount() {
-        return propertyCosts.monthlyRentAmount();
+        return propertyRentalPrice.monthlyRentAmount();
     }
 
     public String getAddress() {
