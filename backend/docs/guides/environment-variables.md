@@ -33,9 +33,10 @@ Spring Boot 애플리케이션은 CORS 허용 Origin과 인증·저장소 설정
 | `PHOTO_STORAGE_SECRET_KEY`             | 로컬 전용 예시 값                | 객체 저장소 secret key. 정적 자격증명으로 접속하는 환경에서만 쓴다                       |
 | `PHOTO_STORAGE_PORT`                   | `9000`                           | 로컬 MinIO API 포트                                                                      |
 | `PHOTO_STORAGE_CONSOLE_PORT`           | `9001`                           | 로컬 MinIO 관리 화면 포트                                                                |
-| `MAP_PROVIDER_MODE`                    | `demo`                           | `demo` 또는 `naver` 주소 검색·역지오코딩 adapter 선택                                    |
-| `NAVER_MAP_CLIENT_ID`                  | 비움                             | `naver` 모드의 Maps Application Client ID                                                |
-| `NAVER_MAP_CLIENT_SECRET`              | 비움                             | `naver` 모드의 Maps Application Client Secret. 백엔드 전용으로 관리한다                  |
+| `MAP_PROVIDER_MODE`                    | `demo`                           | `demo` 또는 `public` 주소 검색·역지오코딩 adapter 선택                                   |
+| `JUSO_CONFIRM_KEY`                     | 비움                             | `public` 모드의 행정안전부 도로명주소 검색 API 승인키                                    |
+| `SGIS_CONSUMER_KEY`                    | 비움                             | `public` 모드의 국가데이터처 SGIS 서비스 ID                                              |
+| `SGIS_CONSUMER_SECRET`                 | 비움                             | `public` 모드의 국가데이터처 SGIS 보안키. 백엔드 전용으로 관리한다                       |
 | `MAP_NEARBY_PROVIDER`                  | `demo`                           | `demo` 또는 `kakao` 주변 시설 adapter 선택. 비우면 `demo`로 동작한다                     |
 | `KAKAO_REST_API_KEY`                   | 비움                             | `kakao` 모드의 Kakao Developers REST API 키. 백엔드 전용으로 관리한다                    |
 | `BUS_STOP_PROVIDER`                    | `none`                           | `none` 또는 `tago` 버스정류소 adapter 선택                                               |
@@ -66,12 +67,17 @@ dev와 prod EC2는 모두 `SPRING_PROFILES_ACTIVE=prod`로 기동하며 `/etc/ja
 | `PHOTO_STORAGE_REGION`     | `ap-northeast-2`               | `ap-northeast-2`               |
 | `PHOTO_STORAGE_BUCKET`     | `techcourse-project-2026`      | `techcourse-project-2026`      |
 | `PHOTO_STORAGE_KEY_PREFIX` | `jachwi-sunbae/photos-dev/`    | `jachwi-sunbae/photos/`        |
-| `MAP_PROVIDER_MODE`        | `naver`                        | `naver`                        |
+| `MAP_PROVIDER_MODE`        | `public`                       | `public`                       |
 | `MAP_NEARBY_PROVIDER`      | `kakao`                        | `kakao`                        |
 | `DEPLOYMENT_ENVIRONMENT`   | `dev`                          | `prod`                         |
 | `LOG_PATH`                 | `/var/log/jachwi-sunbae`       | `/var/log/jachwi-sunbae`       |
 
-DB 접속값과 `JWT_SECRET_BASE64`, Naver Maps 인증 정보, `KAKAO_REST_API_KEY`는 환경별 실제 값이 필요하다.
+DB 접속값과 `JWT_SECRET_BASE64`, `JUSO_CONFIRM_KEY`, `SGIS_CONSUMER_KEY`, `SGIS_CONSUMER_SECRET`, `KAKAO_REST_API_KEY`는 환경별
+실제 값이 필요하다.
+
+`JUSO_CONFIRM_KEY`는 유효기간 90일 승인키이며 2026-12-25에 만료된다.
+
+`MAP_PROVIDER_MODE`는 `demo` 또는 `public`만 사용할 수 있다. `public` 모드에 행안부 및 SGIS 키가 없으면 애플리케이션이 시작되지 않는다.
 
 `MAP_NEARBY_PROVIDER`를 빠뜨리면 오류 없이 `demo` 주변 시설 (가짜 데이터)로 동작하므로 dev·prod에는 반드시 `kakao`를 넣는다.
 Kakao Developers 앱에 허용 IP를 설정했다면 서버가 외부로 나가는 IP (VPC NAT 게이트웨이 IP)를 등록해야 한다.
@@ -80,7 +86,8 @@ Kakao Developers 앱에 허용 IP를 설정했다면 서버가 외부로 나가�
 활용 승인이 끝나기 전에는 `BUS_STOP_PROVIDER=none`으로 배포해 병원·학교·편의점·중개업소와 지하철 결과를 먼저 사용한다.
 
 AWS S3는 EC2 `ec2-project` instance role로 접근하므로 `PHOTO_STORAGE_ENDPOINT`, `PHOTO_STORAGE_ACCESS_KEY`,
-`PHOTO_STORAGE_SECRET_KEY`를 EC2에 두지 않는다. 이 세 값은 로컬 MinIO에만 사용한다. 프론트엔드에는 공개 Naver Maps Client ID만 빌드 타임에 주입한다.
+`PHOTO_STORAGE_SECRET_KEY`를 EC2에 두지 않는다. 이 세 값은 로컬 MinIO에만 사용한다. 프론트엔드에는 지도 화면용 공개 Naver Maps Client ID만 빌드 타임에 주입한다.
+백엔드는 네이버 API를 사용하지 않는다.
 
 `db/init/001-schema.sql`과 `002-seed.sql`은 빈 로컬 MySQL 볼륨의 기준 스키마와 시스템 체크 항목을 만든다. 애플리케이션은 기동 중 스키마를 변경하지 않는다. dev·prod
 RDS를 이 기준선으로 전환할 때는 자동 백업의 최신 복구 지점을 먼저 확인하고, 별도의 데이터 이관 절차로 기존 회원·매물 데이터를 보존해야 한다.
