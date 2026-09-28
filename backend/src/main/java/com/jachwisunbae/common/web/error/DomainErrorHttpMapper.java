@@ -47,7 +47,6 @@ public class DomainErrorHttpMapper {
                     NICKNAME_AUTHENTICATION_FAILED -> HttpStatus.UNAUTHORIZED;
             case PROPERTY_LIMIT_EXCEEDED,
                     NICKNAME_PASSWORD_UNEXPECTED -> HttpStatus.CONFLICT;
-            case NICKNAME_AUTH_RATE_LIMITED -> HttpStatus.TOO_MANY_REQUESTS;
             case PHOTO_STORAGE_FAILURE,
                     PROPERTY_COMPARISON_EXPORT_FAILED,
                     MAP_PROVIDER_UNAVAILABLE -> HttpStatus.SERVICE_UNAVAILABLE;

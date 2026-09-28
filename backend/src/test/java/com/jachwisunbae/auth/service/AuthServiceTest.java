@@ -5,7 +5,6 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.jachwisunbae.auth.controller.dto.LoginResponse;
 import com.jachwisunbae.auth.controller.dto.NicknameLoginRequest;
-import com.jachwisunbae.auth.nickname.NicknameLoginAttemptLimiter;
 import com.jachwisunbae.auth.token.JwtTokenProvider;
 import com.jachwisunbae.common.exception.BusinessException;
 import com.jachwisunbae.common.exception.DomainErrorCode;
@@ -33,9 +32,8 @@ class AuthServiceTest {
     private final PasswordEncoder passwordEncoder = new BCryptPasswordEncoder(4);
     private final JwtTokenProvider tokenProvider = new JwtTokenProvider(SECRET, "jachwi-sunbae",
             "jachwi-sunbae-api", ACCESS_TOKEN_SECONDS, clock);
-    private final AuthService authService = new AuthService(memberRepository,
-            new NicknameLoginAttemptLimiter(clock, 5, 600), passwordEncoder, tokenProvider, clock,
-            ACCESS_TOKEN_SECONDS);
+    private final AuthService authService = new AuthService(memberRepository, passwordEncoder, tokenProvider,
+            clock, ACCESS_TOKEN_SECONDS);
 
     @Test
     @DisplayName("처음 보는 닉네임이면 비밀번호 없는 회원을 만든다")

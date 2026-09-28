@@ -22,8 +22,6 @@ Spring Boot 애플리케이션은 CORS 허용 Origin과 인증·저장소 설정
 | `DB_ROOT_PASSWORD`                     | `local_root_password`            | 로컬 MySQL root 비밀번호                                                                 |
 | `DB_SSL_MODE`                          | `DISABLED`                       | 운영 JDBC TLS 모드. 로컬 프로필은 별도 설정을 사용한다                                   |
 | `JWT_SECRET_BASE64`                    | Base64 인코딩한 32바이트 이상 값 | HS256 서명 비밀값. 운영에서는 환경별 무작위 값을 사용한다                                |
-| `NICKNAME_AUTH_MAX_FAILURES`           | `5`                              | 보호 닉네임의 제한 시간 내 최대 인증 실패 횟수                                           |
-| `NICKNAME_AUTH_FAILURE_WINDOW_SECONDS` | `600`                            | 닉네임별 인증 실패 제한 시간(초)                                                         |
 | `CORS_ALLOWED_ORIGINS`                 | `http://localhost:3000`          | 쉼표로 구분한 프론트엔드 Origin 허용 목록                                                |
 | `PHOTO_STORAGE_ENDPOINT`               | `http://localhost:9000`          | S3 호환 객체 저장소 API endpoint. 정적 자격증명으로 접속하는 환경에서만 쓴다             |
 | `PHOTO_STORAGE_REGION`                 | `us-east-1`                      | S3 서명에 사용하는 region                                                                |

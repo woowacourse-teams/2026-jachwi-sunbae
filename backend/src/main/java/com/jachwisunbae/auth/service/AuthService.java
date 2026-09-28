@@ -3,7 +3,6 @@ package com.jachwisunbae.auth.service;
 import com.jachwisunbae.auth.controller.dto.LoginMemberResponse;
 import com.jachwisunbae.auth.controller.dto.LoginResponse;
 import com.jachwisunbae.auth.controller.dto.NicknameLoginRequest;
-import com.jachwisunbae.auth.nickname.NicknameLoginAttemptLimiter;
 import com.jachwisunbae.auth.token.JwtTokenProvider;
 import com.jachwisunbae.common.exception.BusinessException;
 import com.jachwisunbae.common.exception.DomainErrorCode;
@@ -28,7 +27,6 @@ public class AuthService {
     private static final int MAX_NICKNAME_LENGTH = 50;
 
     private final MemberRepository memberRepository;
-    private final NicknameLoginAttemptLimiter attemptLimiter;
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider jwtProvider;
     private final Clock clock;
@@ -36,13 +34,11 @@ public class AuthService {
 
     public AuthService(
             MemberRepository memberRepository,
-            NicknameLoginAttemptLimiter attemptLimiter,
             PasswordEncoder passwordEncoder,
             JwtTokenProvider jwtProvider,
             Clock clock,
             @Value("${auth.jwt.access-token-seconds}") long accessTokenSeconds) {
         this.memberRepository = memberRepository;
-        this.attemptLimiter = attemptLimiter;
         this.passwordEncoder = passwordEncoder;
         this.jwtProvider = jwtProvider;
         this.clock = clock;
@@ -53,7 +49,6 @@ public class AuthService {
     public synchronized LoginResponse loginNickname(NicknameLoginRequest request) {
         String nickname = normalizeNickname(request.nickname());
         String password = normalizePassword(request.password());
-        attemptLimiter.checkAllowed(nickname);
 
         Member existing = memberRepository.findByNickname(nickname).orElse(null);
         if (existing == null) {
@@ -66,7 +61,6 @@ public class AuthService {
         LocalDateTime now = LocalDateTime.now(clock);
         String passwordHash = password == null ? null : passwordEncoder.encode(password);
         Member member = memberRepository.save(Member.create(nickname, passwordHash, now));
-        attemptLimiter.reset(nickname);
         return createLoginResponse(member, true);
     }
 
@@ -76,11 +70,9 @@ public class AuthService {
                     "비밀번호 없이 사용하는 기존 닉네임에는 비밀번호를 입력할 수 없습니다.");
         }
         if (member.isPasswordProtected() && !matches(password, member.getPasswordHash())) {
-            attemptLimiter.recordFailure(member.getNickname());
             throw new BusinessException(DomainErrorCode.NICKNAME_AUTHENTICATION_FAILED,
                     "닉네임 또는 비밀번호가 일치하지 않습니다.");
         }
-        attemptLimiter.reset(member.getNickname());
         return createLoginResponse(member, false);
     }
 
