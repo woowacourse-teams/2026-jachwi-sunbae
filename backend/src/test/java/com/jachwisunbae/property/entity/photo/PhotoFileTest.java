@@ -46,7 +46,8 @@ class PhotoFileTest {
     private void assertSizeExceeded(final byte[] bytes) {
         assertThatThrownBy(() -> new PhotoFile(bytes, "image/png"))
             .isInstanceOf(BusinessException.class)
-            .hasFieldOrPropertyWithValue("code", DomainErrorCode.PHOTO_SIZE_EXCEEDED);
+            .extracting("code")
+            .isEqualTo(DomainErrorCode.PHOTO_FILE_SIZE_EXCEEDED);
     }
 
 }

@@ -85,7 +85,7 @@ class PropertyPhotoTest {
     void rejectOversizedPhoto() {
         assertErrorCode(
             () -> PropertyPhoto.create(1L, "photo.png", "image/png", MAX_SIZE_BYTES + 1, CREATED_AT),
-            DomainErrorCode.PHOTO_SIZE_EXCEEDED);
+            DomainErrorCode.PHOTO_FILE_SIZE_EXCEEDED);
     }
 
     @Test
