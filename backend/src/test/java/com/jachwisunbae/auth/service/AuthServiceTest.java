@@ -12,12 +12,14 @@ import com.jachwisunbae.member.entity.Member;
 import com.jachwisunbae.member.repository.MemberRepository;
 import java.time.Clock;
 import java.time.Instant;
+import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Optional;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.crypto.password.Pbkdf2PasswordEncoder;
 import org.springframework.security.crypto.password.Pbkdf2PasswordEncoder.SecretKeyFactoryAlgorithm;
@@ -193,6 +195,29 @@ class AuthServiceTest {
         assertThat(lower.member().memberId()).isNotEqualTo(upper.member().memberId());
     }
 
+    @Test
+    @DisplayName("같은 닉네임으로 동시에 가입해 먼저 저장된 회원이 있으면 그 회원으로 로그인한다")
+    void logsInMemberSavedByConcurrentRequest() {
+        memberRepository.saveConcurrentlyBeforeNextSave(Member.create("자취초보", null, LocalDateTime.now(clock)));
+
+        LoginResponse response = login("자취초보", null);
+
+        assertThat(response.newMember()).isFalse();
+        assertThat(memberRepository.count()).isEqualTo(1);
+    }
+
+    @Test
+    @DisplayName("동시에 먼저 저장된 보호 회원과 비밀번호가 다르면 로그인에 실패한다")
+    void rejectsWhenConcurrentProtectedMemberHasOtherPassword() {
+        memberRepository.saveConcurrentlyBeforeNextSave(
+                Member.create("보호닉네임", passwordEncoder.encode("1234"), LocalDateTime.now(clock)));
+
+        assertThatThrownBy(() -> login("보호닉네임", "9999"))
+                .isInstanceOfSatisfying(BusinessException.class, exception ->
+                        assertThat(exception.getCode()).isEqualTo(DomainErrorCode.NICKNAME_AUTHENTICATION_FAILED));
+        assertThat(memberRepository.count()).isEqualTo(1);
+    }
+
     private LoginResponse login(String nickname, String password) {
         return authService.loginNickname(new NicknameLoginRequest(nickname, password));
     }
@@ -201,6 +226,12 @@ class AuthServiceTest {
 
         private final Map<Long, Member> members = new LinkedHashMap<>();
         private long sequence;
+        private Member concurrentMember;
+
+        // 다음 저장 직전에 다른 요청이 같은 회원을 먼저 저장한 상황을 흉내 낸다.
+        void saveConcurrentlyBeforeNextSave(Member member) {
+            this.concurrentMember = member;
+        }
 
         int count() {
             return members.size();
@@ -226,6 +257,15 @@ class AuthServiceTest {
 
         @Override
         public Member save(Member member) {
+            if (concurrentMember != null) {
+                store(concurrentMember);
+                concurrentMember = null;
+                throw new DuplicateKeyException("uk_members_nickname_protection");
+            }
+            return store(member);
+        }
+
+        private Member store(Member member) {
             Member saved = Member.reconstruct(++sequence, member.getNickname(), member.getPasswordHash(),
                     member.getCreatedAt(), member.getUpdatedAt());
             members.put(saved.getId(), saved);

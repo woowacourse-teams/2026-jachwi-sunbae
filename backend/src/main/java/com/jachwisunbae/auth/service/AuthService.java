@@ -14,14 +14,14 @@ import java.time.Clock;
 import java.time.LocalDateTime;
 import java.util.Optional;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
+// 조회와 저장을 트랜잭션으로 묶지 않는다. 동시 가입은 DB 유니크 제약이 막고, 충돌한 뒤 다시 조회할 때
+// 먼저 저장된 회원이 보여야 하기 때문이다. 트랜잭션 안에서는 MySQL이 처음 조회한 시점의 데이터를 계속 보여준다.
 @Service
-@Transactional(readOnly = true)
 public class AuthService {
-
 
     private final MemberRepository memberRepository;
     private final PasswordEncoder passwordEncoder;
@@ -42,11 +42,19 @@ public class AuthService {
         this.accessTokenSeconds = accessTokenSeconds;
     }
 
-    @Transactional
-    public synchronized LoginResponse loginNickname(NicknameLoginRequest request) {
+    public LoginResponse loginNickname(NicknameLoginRequest request) {
         String nickname = Nickname.from(request.nickname()).value();
         String password = password(request.password());
 
+        try {
+            return login(nickname, password);
+        } catch (DuplicateKeyException exception) {
+            // 같은 닉네임으로 동시에 가입하면 한 요청만 저장된다. 먼저 저장된 회원으로 다시 로그인한다.
+            return login(nickname, password);
+        }
+    }
+
+    private LoginResponse login(String nickname, String password) {
         if (password == null) {
             return loginSharedMember(nickname);
         }
