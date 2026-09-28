@@ -17,6 +17,7 @@ import java.net.http.HttpClient;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 @Component
 @ConditionalOnProperty(name = "map.provider.mode", havingValue = "public")
@@ -97,7 +98,7 @@ public class JusoAddressClient {
                     .build())
                 .retrieve()//실제 요청 후 응답을 받는다.
                 .body(JsonNode.class);//response body의 JSON을 Jackson의 JsonNode 형태로 변환.
-            return root == null ? MissingNode.getInstance() : root;
+            return Objects.requireNonNullElse(root, MissingNode.getInstance());
         } catch (RuntimeException exception) {
             throw new BusinessException(DomainErrorCode.MAP_PROVIDER_UNAVAILABLE,
                 "행안부 주소 검색 요청에 실패했습니다.", exception);
@@ -116,6 +117,9 @@ public class JusoAddressClient {
 
     private String text(JsonNode node, String name) {
         String value = node.path(name).asText("");
-        return value.isBlank() ? null : value;
+        if (value.isBlank()) {
+            return null;
+        }
+        return value;
     }
 }

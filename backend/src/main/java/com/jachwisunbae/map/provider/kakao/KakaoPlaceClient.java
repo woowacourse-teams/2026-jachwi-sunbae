@@ -18,6 +18,7 @@ import java.net.http.HttpClient;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 @Component
 @ConditionalOnProperty(name = "map.nearby.provider", havingValue = "kakao")
@@ -72,7 +73,7 @@ public class KakaoPlaceClient {
                     .build())
                 .retrieve()
                 .body(JsonNode.class);
-            return response(root == null ? MissingNode.getInstance() : root);
+            return response(Objects.requireNonNullElse(root, MissingNode.getInstance()));
         } catch (RuntimeException exception) {
             throw new BusinessException(DomainErrorCode.MAP_PROVIDER_UNAVAILABLE,
                 "주변 시설 공급자 요청에 실패했습니다.", exception);
@@ -95,18 +96,28 @@ public class KakaoPlaceClient {
             root.path("meta").path("is_end").asBoolean(true));
     }
 
+    // 값이 없는 필드는 null로 두고, 필수 값 검사는 KakaoNearbyPlaceProvider가 맡는다.
     private String text(JsonNode node, String name) {
         String value = node.path(name).asText("");
-        return value.isBlank() ? null : value;
+        if (value.isBlank()) {
+            return null;
+        }
+        return value;
     }
 
     private BigDecimal decimal(JsonNode node, String name) {
         String value = text(node, name);
-        return value == null ? null : new BigDecimal(value);
+        if (value == null) {
+            return null;
+        }
+        return new BigDecimal(value);
     }
 
     private Integer integer(JsonNode node, String name) {
         String value = text(node, name);
-        return value == null ? null : Integer.valueOf(value);
+        if (value == null) {
+            return null;
+        }
+        return Integer.valueOf(value);
     }
 }

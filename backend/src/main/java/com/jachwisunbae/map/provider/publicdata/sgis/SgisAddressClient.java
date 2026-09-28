@@ -16,6 +16,7 @@ import org.springframework.web.client.RestClient;
 import java.math.BigDecimal;
 import java.net.http.HttpClient;
 import java.time.Duration;
+import java.util.Objects;
 import java.util.Optional;
 
 // SGIS 주소 API와 통신해서 주소 ↔ 좌표 변환을 한다. 인증 토큰은 SgisTokenProvider에서 받는다.
@@ -97,7 +98,7 @@ public class SgisAddressClient {
                     .build())
                 .retrieve()
                 .body(JsonNode.class);
-            return root == null ? MissingNode.getInstance() : root;
+            return Objects.requireNonNullElse(root, MissingNode.getInstance());
         } catch (RuntimeException exception) {
             throw requestFailed(exception);
         }
@@ -114,7 +115,7 @@ public class SgisAddressClient {
                     .build())
                 .retrieve()
                 .body(JsonNode.class);
-            return root == null ? MissingNode.getInstance() : root;
+            return Objects.requireNonNullElse(root, MissingNode.getInstance());
         } catch (RuntimeException exception) {
             throw requestFailed(exception);
         }
@@ -151,6 +152,9 @@ public class SgisAddressClient {
 
     private Optional<String> text(JsonNode node, String name) {
         String value = node.path(name).asText("");
-        return value.isBlank() || "null".equals(value) ? Optional.empty() : Optional.of(value);
+        if (value.isBlank() || "null".equals(value)) {
+            return Optional.empty();
+        }
+        return Optional.of(value);
     }
 }

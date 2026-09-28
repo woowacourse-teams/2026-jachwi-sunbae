@@ -1,6 +1,7 @@
 package com.jachwisunbae.map.provider.tago;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.MissingNode;
 import com.jachwisunbae.common.exception.BusinessException;
 import com.jachwisunbae.common.exception.DomainErrorCode;
 import com.jachwisunbae.map.domain.NearbyPlace;
@@ -11,6 +12,7 @@ import java.net.http.HttpClient;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -86,7 +88,7 @@ public class TagoBusStopProvider implements BusStopProvider {
                     .queryParam("gpsLati", latitude)
                     .queryParam("gpsLong", longitude)
                     .build()).retrieve().body(JsonNode.class);
-            return result == null ? com.fasterxml.jackson.databind.node.MissingNode.getInstance() : result;
+            return Objects.requireNonNullElse(result, MissingNode.getInstance());
         } catch (RuntimeException exception) {
             throw unavailable("TAGO 버스정류소 요청에 실패했습니다.", exception);
         }

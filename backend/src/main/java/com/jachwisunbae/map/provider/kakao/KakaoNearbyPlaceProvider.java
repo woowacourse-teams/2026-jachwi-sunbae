@@ -70,11 +70,18 @@ public class KakaoNearbyPlaceProvider implements NearbyPlaceProvider {
         return new NearbyPlace("kakao:" + document.id(),
             document.placeName(),
             category,
-            //도로명 주소가 있으면 우선 사용
-            document.roadAddressName() == null ? document.addressName() : document.roadAddressName(),
+            address(document),
             document.latitude(),
             document.longitude(),
             document.distance());
+    }
+
+    //도로명 주소가 있으면 우선 사용
+    private String address(KakaoCategorySearchResponse.Document document) {
+        if (document.roadAddressName() == null) {
+            return document.addressName();
+        }
+        return document.roadAddressName();
     }
 
     private String categoryCode(MapCategory category) {

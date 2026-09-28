@@ -2,6 +2,7 @@ package com.jachwisunbae.map.domain;
 
 import com.jachwisunbae.map.type.MapCategory;
 import java.math.BigDecimal;
+import java.util.Objects;
 
 public record NearbyPlace(String providerPlaceId, String name, MapCategory category,
                           String address, BigDecimal latitude, BigDecimal longitude,
@@ -21,7 +22,7 @@ public record NearbyPlace(String providerPlaceId, String name, MapCategory categ
         if (distanceMeters < 0) {
             throw new IllegalArgumentException("주변 시설 거리는 0 이상이어야 합니다.");
         }
-        address = address == null ? "" : address;
+        address = Objects.requireNonNullElse(address, "");
     }
 
     private static void requireText(String value, String message) {

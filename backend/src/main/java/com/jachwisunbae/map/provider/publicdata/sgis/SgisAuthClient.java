@@ -7,6 +7,7 @@ import com.jachwisunbae.common.exception.DomainErrorCode;
 import java.net.http.HttpClient;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Objects;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -85,7 +86,7 @@ public class SgisAuthClient {
                             .build())
                     .retrieve()
                     .body(JsonNode.class);
-            return root == null ? MissingNode.getInstance() : root;
+            return Objects.requireNonNullElse(root, MissingNode.getInstance());
         } catch (RuntimeException exception) {
             throw new BusinessException(DomainErrorCode.MAP_PROVIDER_UNAVAILABLE,
                     "SGIS 토큰 발급 요청에 실패했습니다.", exception);
