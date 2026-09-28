@@ -77,13 +77,29 @@ public class Property extends BaseTimeEntity {
                                  final List<String> roomOptions, final List<String> utilityOptions,
                                  final String discoverySource,
                                  final LocalDateTime now) {
-        this.propertyName = PropertyName.from(name);
-        this.propertyRentalPrice = PropertyRentalPrice.from(depositAmount, monthlyRentAmount);
-        this.propertyLocation = PropertyLocation.from(address, latitude, longitude);
-        this.propertyOptions = PropertyOptions.fromCodes(availableMoveInDate, maintenanceFeeAmount, visitScheduledAt,
-            roomOptions, utilityOptions, discoverySource);
-        updateUpdatedAt(DomainPreconditions.requireNonNull(now, DomainErrorCode.PROPERTY_INPUT_INVALID,
-            "변경 시각은 필수입니다."));
+        PropertyName newPropertyName = PropertyName.from(name);
+        PropertyRentalPrice newPropertyRentalPrice = PropertyRentalPrice.from(depositAmount, monthlyRentAmount);
+        PropertyLocation newPropertyLocation = PropertyLocation.from(address, latitude, longitude);
+        PropertyOptions newPropertyOptions =
+            PropertyOptions.fromCodes(
+                availableMoveInDate,
+                maintenanceFeeAmount,
+                visitScheduledAt,
+                roomOptions,
+                utilityOptions,
+                discoverySource
+            );
+        LocalDateTime newUpdatedAt = DomainPreconditions.requireNonNull(
+            now,
+            DomainErrorCode.PROPERTY_INPUT_INVALID,
+            "변경 시각은 필수입니다."
+        );
+
+        this.propertyName = newPropertyName;
+        this.propertyRentalPrice = newPropertyRentalPrice;
+        this.propertyLocation = newPropertyLocation;
+        this.propertyOptions = newPropertyOptions;
+        updateUpdatedAt(newUpdatedAt);
     }
 
     public String getName() {
