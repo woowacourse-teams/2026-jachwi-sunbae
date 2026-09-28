@@ -36,7 +36,7 @@ public class MapController {
     }
 
     @GetMapping("/reverse-geocode")
-    @Operation(summary = "역지오코딩", description = "WGS84 좌표의 도로명·지번 주소를 조회합니다."
+    @Operation(summary = "역지오코딩", description = "WGS84 좌표의 도로명주소를 조회합니다. 도로명주소가 없는 좌표는 404 MAP_ADDRESS_NOT_FOUND로 응답합니다."
     )
     public ApiResponse<MapAddressResponse> reverseGeocode(@RequestParam BigDecimal latitude, @RequestParam BigDecimal longitude) {
         return ApiResponse.of(MapAddressResponse.from(mapService.reverseGeocode(latitude, longitude)));
