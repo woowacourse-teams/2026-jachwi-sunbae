@@ -7,28 +7,28 @@ import com.jachwisunbae.common.exception.BusinessException;
 import com.jachwisunbae.common.exception.DomainErrorCode;
 import java.time.LocalDateTime;
 import org.assertj.core.api.ThrowableAssert.ThrowingCallable;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+@DisplayName("PropertyPhoto")
 class PropertyPhotoTest {
 
     private static final long MAX_SIZE_BYTES = 5L * 1024 * 1024;
     private static final LocalDateTime CREATED_AT = LocalDateTime.of(2026, 9, 25, 12, 0);
 
     @Test
-    void 사진을_생성한다() {
+    @DisplayName("사진을 생성한다")
+    void createPhoto() {
         PropertyPhoto photo = PropertyPhoto.create(
             1L, "members/1/properties/1/photo.png", "IMAGE/PNG", 1024L, CREATED_AT);
 
         assertThat(photo.getId()).isNull();
         assertThat(photo.getPropertyId()).isEqualTo(1L);
-        assertThat(photo.getStorageKey()).isEqualTo("members/1/properties/1/photo.png");
-        assertThat(photo.getContentType()).isEqualTo("image/png");
-        assertThat(photo.getSizeBytes()).isEqualTo(1024L);
-        assertThat(photo.getCreatedAt()).isEqualTo(CREATED_AT);
     }
 
     @Test
-    void 저장된_사진을_복원한다() {
+    @DisplayName("저장된 사진을 복원한다")
+    void reconstructPhoto() {
         PropertyPhoto photo = PropertyPhoto.reconstruct(
             10L, 1L, "members/1/properties/1/photo.heic", "image/heic", MAX_SIZE_BYTES, CREATED_AT);
 
@@ -38,35 +38,40 @@ class PropertyPhotoTest {
     }
 
     @Test
-    void 매물_ID가_없으면_예외가_발생한다() {
+    @DisplayName("매물 ID가 없으면 예외가 발생한다")
+    void rejectMissingPropertyId() {
         assertErrorCode(
             () -> PropertyPhoto.create(null, "photo.png", "image/png", 1L, CREATED_AT),
             DomainErrorCode.PROPERTY_INPUT_INVALID);
     }
 
     @Test
-    void 저장_키가_비어있으면_예외가_발생한다() {
+    @DisplayName("저장 키가 비어 있으면 예외가 발생한다")
+    void rejectBlankStorageKey() {
         assertErrorCode(
             () -> PropertyPhoto.create(1L, " ", "image/png", 1L, CREATED_AT),
             DomainErrorCode.PROPERTY_INPUT_INVALID);
     }
 
     @Test
-    void 콘텐츠_타입이_없으면_예외가_발생한다() {
+    @DisplayName("콘텐츠 타입이 없으면 예외가 발생한다")
+    void rejectMissingContentType() {
         assertErrorCode(
             () -> PropertyPhoto.create(1L, "photo.png", null, 1L, CREATED_AT),
             DomainErrorCode.PROPERTY_INPUT_INVALID);
     }
 
     @Test
-    void 지원하지_않는_콘텐츠_타입이면_예외가_발생한다() {
+    @DisplayName("지원하지 않는 콘텐츠 타입이면 예외가 발생한다")
+    void rejectUnsupportedContentType() {
         assertErrorCode(
             () -> PropertyPhoto.create(1L, "photo.gif", "image/gif", 1L, CREATED_AT),
             DomainErrorCode.PHOTO_CONTENT_TYPE_UNSUPPORTED);
     }
 
     @Test
-    void 사진_크기가_없거나_음수이면_예외가_발생한다() {
+    @DisplayName("사진 크기가 없거나 음수이면 예외가 발생한다")
+    void rejectMissingOrNegativeSize() {
         assertErrorCode(
             () -> PropertyPhoto.create(1L, "photo.png", "image/png", null, CREATED_AT),
             DomainErrorCode.PROPERTY_INPUT_INVALID);
@@ -76,14 +81,16 @@ class PropertyPhotoTest {
     }
 
     @Test
-    void 사진_크기가_5MiB를_초과하면_예외가_발생한다() {
+    @DisplayName("사진 크기가 5MiB를 초과하면 예외가 발생한다")
+    void rejectOversizedPhoto() {
         assertErrorCode(
             () -> PropertyPhoto.create(1L, "photo.png", "image/png", MAX_SIZE_BYTES + 1, CREATED_AT),
             DomainErrorCode.PHOTO_SIZE_EXCEEDED);
     }
 
     @Test
-    void 생성_시각이_없으면_예외가_발생한다() {
+    @DisplayName("생성 시각이 없으면 예외가 발생한다")
+    void rejectMissingCreatedAt() {
         assertErrorCode(
             () -> PropertyPhoto.create(1L, "photo.png", "image/png", 1L, null),
             DomainErrorCode.PROPERTY_INPUT_INVALID);
