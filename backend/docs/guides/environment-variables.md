@@ -21,7 +21,7 @@ Spring Boot 애플리케이션은 CORS 허용 Origin과 인증·저장소 설정
 | `DB_PASSWORD`                          | `local_password`                 | 애플리케이션 계정 비밀번호                                                               |
 | `DB_ROOT_PASSWORD`                     | `local_root_password`            | 로컬 MySQL root 비밀번호                                                                 |
 | `DB_SSL_MODE`                          | `DISABLED`                       | 운영 JDBC TLS 모드. 로컬 프로필은 별도 설정을 사용한다                                   |
-| `JWT_SECRET_BASE64`                    | Base64 인코딩한 32바이트 이상 값 | HS256 서명 비밀값. 운영에서는 환경별 무작위 값을 사용한다                                |
+| `JWT_SECRET_BASE64`                    | Base64 인코딩한 32바이트 이상 값 | HS256 서명 비밀값. Base64로 디코딩해 키로 쓴다. 운영 값은 `openssl rand -base64 32`로 만든다 |
 | `CORS_ALLOWED_ORIGINS`                 | `http://localhost:3000`          | 쉼표로 구분한 프론트엔드 Origin 허용 목록                                                |
 | `PHOTO_STORAGE_ENDPOINT`               | `http://localhost:9000`          | S3 호환 객체 저장소 API endpoint. 정적 자격증명으로 접속하는 환경에서만 쓴다             |
 | `PHOTO_STORAGE_REGION`                 | `us-east-1`                      | S3 서명에 사용하는 region                                                                |
@@ -72,6 +72,9 @@ dev와 prod EC2는 모두 `SPRING_PROFILES_ACTIVE=prod`로 기동하며 `/etc/ja
 
 DB 접속값과 `JWT_SECRET_BASE64`, `JUSO_CONFIRM_KEY`, `SGIS_CONSUMER_KEY`, `SGIS_CONSUMER_SECRET`, `KAKAO_REST_API_KEY`는 환경별
 실제 값이 필요하다.
+
+`JWT_SECRET_BASE64`는 `openssl rand -base64 32`로 환경마다 새로 만든다. Base64가 아니거나 디코딩한 값이 32바이트보다 짧으면
+애플리케이션이 시작되지 않는다. 값을 바꾸면 이미 발급된 Access Token은 모두 무효가 되어 사용자가 다시 로그인해야 한다.
 
 `JUSO_CONFIRM_KEY`는 유효기간 90일 승인키이며 2026-12-25에 만료된다.
 

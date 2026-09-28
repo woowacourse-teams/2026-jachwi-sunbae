@@ -30,11 +30,6 @@ public class AuthConfig {
         };
     }
 
-    @Bean
-    public Clock clock() {
-        return Clock.systemUTC();
-    }
-
     // 새 비밀번호는 PBKDF2로 저장한다. BCrypt는 72바이트를 넘는 비밀번호를 받지 않아 한글 25자 이상을 쓸 수 없다.
     // 접두어가 없는 기존 BCrypt 해시도 계속 검증해 이미 비밀번호를 설정한 회원이 로그인할 수 있게 한다.
     @Bean
@@ -47,11 +42,11 @@ public class AuthConfig {
 
     @Bean
     public JwtTokenProvider jwtTokenProvider(
-            @Value("${auth.jwt.secret}") String secret,
+            @Value("${auth.jwt.secret}") String base64Secret,
             @Value("${auth.jwt.issuer}") String issuer,
             @Value("${auth.jwt.audience}") String audience,
             @Value("${auth.jwt.access-token-seconds}") long seconds,
             Clock clock) {
-        return new JwtTokenProvider(secret, issuer, audience, seconds, clock);
+        return new JwtTokenProvider(base64Secret, issuer, audience, seconds, clock);
     }
 }

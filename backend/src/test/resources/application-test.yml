@@ -7,7 +7,7 @@ spring:
 
 auth:
   jwt:
-    secret: test-jwt-secret-must-be-at-least-32-bytes
+    secret: amFjaHdpLXN1bmJhZS10ZXN0LWp3dC1zZWNyZXQtMzI=
     issuer: jachwi-sunbae
     audience: jachwi-sunbae-api
     access-token-seconds: 43200
