@@ -3,12 +3,13 @@ package com.jachwisunbae.auth.service;
 import com.jachwisunbae.auth.controller.dto.LoginMemberResponse;
 import com.jachwisunbae.auth.controller.dto.LoginResponse;
 import com.jachwisunbae.auth.controller.dto.NicknameLoginRequest;
+import com.jachwisunbae.auth.domain.Password;
 import com.jachwisunbae.auth.token.JwtTokenProvider;
 import com.jachwisunbae.common.exception.BusinessException;
 import com.jachwisunbae.common.exception.DomainErrorCode;
 import com.jachwisunbae.member.entity.Member;
+import com.jachwisunbae.member.entity.Nickname;
 import com.jachwisunbae.member.repository.MemberRepository;
-import java.nio.charset.StandardCharsets;
 import java.time.Clock;
 import java.time.LocalDateTime;
 import org.springframework.beans.factory.annotation.Value;
@@ -20,10 +21,6 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional(readOnly = true)
 public class AuthService {
 
-    private static final int MIN_PASSWORD_LENGTH = 4;
-    private static final int MAX_PASSWORD_LENGTH = 64;
-    private static final int BCRYPT_MAX_BYTES = 72;
-    private static final int MAX_NICKNAME_LENGTH = 50;
 
     private final MemberRepository memberRepository;
     private final PasswordEncoder passwordEncoder;
@@ -46,8 +43,8 @@ public class AuthService {
 
     @Transactional
     public synchronized LoginResponse loginNickname(NicknameLoginRequest request) {
-        String nickname = normalizeNickname(request.nickname());
-        String password = normalizePassword(request.password());
+        String nickname = Nickname.from(request.nickname()).value();
+        String password = password(request.password());
 
         Member existing = memberRepository.findByNickname(nickname).orElse(null);
         if (existing == null) {
@@ -86,34 +83,12 @@ public class AuthService {
         }
     }
 
-    private String normalizeNickname(String rawNickname) {
-        if (rawNickname == null) {
-            throw invalidNickname();
-        }
-        // 앞뒤 공백만 제거하고, 나머지는 입력한 그대로 닉네임으로 쓴다.
-        String nickname = rawNickname.trim();
-        if (nickname.isEmpty() || nickname.codePointCount(0, nickname.length()) > MAX_NICKNAME_LENGTH) {
-            throw invalidNickname();
-        }
-        return nickname;
-    }
-
-    private BusinessException invalidNickname() {
-        return new BusinessException(DomainErrorCode.NICKNAME_INVALID,
-                "닉네임은 앞뒤 공백을 제거한 뒤 1자 이상 50자 이하여야 합니다.");
-    }
-
-    private String normalizePassword(String rawPassword) {
-        if (rawPassword == null || rawPassword.isBlank()) {
+    // 비밀번호를 생략하거나 빈 값으로 보내면 비밀번호 없이 시작한다.
+    private String password(String rawPassword) {
+        if (rawPassword == null || rawPassword.isEmpty()) {
             return null;
         }
-        int length = rawPassword.codePointCount(0, rawPassword.length());
-        int bytes = rawPassword.getBytes(StandardCharsets.UTF_8).length;
-        if (length < MIN_PASSWORD_LENGTH || length > MAX_PASSWORD_LENGTH || bytes > BCRYPT_MAX_BYTES) {
-            throw new BusinessException(DomainErrorCode.NICKNAME_PASSWORD_INVALID,
-                    "비밀번호는 4자 이상 64자 이하이고 UTF-8 72바이트 이하여야 합니다.");
-        }
-        return rawPassword;
+        return Password.from(rawPassword).value();
     }
 
     private LoginResponse createLoginResponse(Member member, boolean newMember) {

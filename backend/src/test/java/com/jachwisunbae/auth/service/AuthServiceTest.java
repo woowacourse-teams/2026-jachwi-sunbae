@@ -76,6 +76,26 @@ class AuthServiceTest {
     }
 
     @Test
+    @DisplayName("비밀번호를 빈 값으로 보내면 비밀번호 없는 회원으로 시작한다")
+    void treatsEmptyPasswordAsNoPassword() {
+        LoginResponse response = login("자취초보", "");
+
+        assertThat(response.member().passwordProtected()).isFalse();
+    }
+
+    @Test
+    @DisplayName("닉네임이나 비밀번호가 규칙에 맞지 않으면 회원을 만들지 않는다")
+    void doesNotCreateMemberWhenInputIsInvalid() {
+        assertThatThrownBy(() -> login("가".repeat(31), null))
+                .isInstanceOfSatisfying(BusinessException.class, exception ->
+                        assertThat(exception.getCode()).isEqualTo(DomainErrorCode.NICKNAME_INVALID));
+        assertThatThrownBy(() -> login("자취초보", "123"))
+                .isInstanceOfSatisfying(BusinessException.class, exception ->
+                        assertThat(exception.getCode()).isEqualTo(DomainErrorCode.NICKNAME_PASSWORD_INVALID));
+        assertThat(memberRepository.count()).isZero();
+    }
+
+    @Test
     @DisplayName("비밀번호와 함께 시작하면 비밀번호를 해시로 저장한 보호 회원을 만든다")
     void createsProtectedMemberWithPasswordHash() {
         LoginResponse response = login("보호닉네임", "1234");
