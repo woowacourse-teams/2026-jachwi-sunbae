@@ -9,7 +9,6 @@ import com.jachwisunbae.common.exception.DomainErrorCode;
 import com.jachwisunbae.member.entity.Member;
 import com.jachwisunbae.member.repository.MemberRepository;
 import java.nio.charset.StandardCharsets;
-import java.text.Normalizer;
 import java.time.Clock;
 import java.time.LocalDateTime;
 import org.springframework.beans.factory.annotation.Value;
@@ -91,18 +90,17 @@ public class AuthService {
         if (rawNickname == null) {
             throw invalidNickname();
         }
-        String normalized = Normalizer.normalize(rawNickname, Normalizer.Form.NFKC).trim();
-        if (normalized.isEmpty()
-                || normalized.codePointCount(0, normalized.length()) > MAX_NICKNAME_LENGTH
-                || normalized.codePoints().anyMatch(Character::isISOControl)) {
+        // 앞뒤 공백만 제거하고, 나머지는 입력한 그대로 닉네임으로 쓴다.
+        String nickname = rawNickname.trim();
+        if (nickname.isEmpty() || nickname.codePointCount(0, nickname.length()) > MAX_NICKNAME_LENGTH) {
             throw invalidNickname();
         }
-        return normalized;
+        return nickname;
     }
 
     private BusinessException invalidNickname() {
         return new BusinessException(DomainErrorCode.NICKNAME_INVALID,
-                "닉네임은 trim 후 1자 이상 50자 이하이고 제어 문자를 포함하지 않아야 합니다.");
+                "닉네임은 앞뒤 공백을 제거한 뒤 1자 이상 50자 이하여야 합니다.");
     }
 
     private String normalizePassword(String rawPassword) {

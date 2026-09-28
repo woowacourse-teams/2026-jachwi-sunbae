@@ -66,6 +66,16 @@ class AuthServiceTest {
     }
 
     @Test
+    @DisplayName("전각 문자 닉네임은 반각 문자 닉네임과 다른 회원이다")
+    void doesNotNormalizeFullWidthNickname() {
+        LoginResponse fullWidth = login("ｌｅｅ", null);
+        LoginResponse halfWidth = login("lee", null);
+
+        assertThat(fullWidth.member().name()).isEqualTo("ｌｅｅ");
+        assertThat(halfWidth.member().memberId()).isNotEqualTo(fullWidth.member().memberId());
+    }
+
+    @Test
     @DisplayName("비밀번호와 함께 시작하면 비밀번호를 해시로 저장한 보호 회원을 만든다")
     void createsProtectedMemberWithPasswordHash() {
         LoginResponse response = login("보호닉네임", "1234");
