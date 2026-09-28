@@ -3,8 +3,8 @@ package com.jachwisunbae.auth.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import com.jachwisunbae.auth.controller.dto.LoginResponse;
-import com.jachwisunbae.auth.controller.dto.NicknameLoginRequest;
+import com.jachwisunbae.auth.service.dto.command.NicknameLoginCommand;
+import com.jachwisunbae.auth.service.dto.result.LoginResult;
 import com.jachwisunbae.auth.token.JwtTokenProvider;
 import com.jachwisunbae.common.exception.BusinessException;
 import com.jachwisunbae.common.exception.DomainErrorCode;
@@ -42,49 +42,49 @@ class AuthServiceTest {
     @Test
     @DisplayName("처음 보는 닉네임이면 비밀번호 없는 회원을 만든다")
     void createsSharedMemberForNewNickname() {
-        LoginResponse response = login("자취초보", null);
+        LoginResult response = login("자취초보", null);
 
         assertThat(response.newMember()).isTrue();
-        assertThat(response.member().name()).isEqualTo("자취초보");
-        assertThat(response.member().passwordProtected()).isFalse();
+        assertThat(response.nickname()).isEqualTo("자취초보");
+        assertThat(response.passwordProtected()).isFalse();
         assertThat(memberRepository.count()).isEqualTo(1);
     }
 
     @Test
     @DisplayName("비밀번호 없는 닉네임으로 다시 시작하면 같은 회원으로 로그인한다")
     void logsInSameSharedMember() {
-        LoginResponse first = login("자취초보", null);
-        LoginResponse second = login("자취초보", null);
+        LoginResult first = login("자취초보", null);
+        LoginResult second = login("자취초보", null);
 
         assertThat(second.newMember()).isFalse();
-        assertThat(second.member().memberId()).isEqualTo(first.member().memberId());
+        assertThat(second.memberId()).isEqualTo(first.memberId());
         assertThat(memberRepository.count()).isEqualTo(1);
     }
 
     @Test
     @DisplayName("닉네임의 앞뒤 공백은 제거하고 저장한다")
     void trimsNickname() {
-        LoginResponse response = login("  자취초보  ", null);
+        LoginResult response = login("  자취초보  ", null);
 
-        assertThat(response.member().name()).isEqualTo("자취초보");
+        assertThat(response.nickname()).isEqualTo("자취초보");
     }
 
     @Test
     @DisplayName("전각 문자 닉네임은 반각 문자 닉네임과 다른 회원이다")
     void doesNotNormalizeFullWidthNickname() {
-        LoginResponse fullWidth = login("ｌｅｅ", null);
-        LoginResponse halfWidth = login("lee", null);
+        LoginResult fullWidth = login("ｌｅｅ", null);
+        LoginResult halfWidth = login("lee", null);
 
-        assertThat(fullWidth.member().name()).isEqualTo("ｌｅｅ");
-        assertThat(halfWidth.member().memberId()).isNotEqualTo(fullWidth.member().memberId());
+        assertThat(fullWidth.nickname()).isEqualTo("ｌｅｅ");
+        assertThat(halfWidth.memberId()).isNotEqualTo(fullWidth.memberId());
     }
 
     @Test
     @DisplayName("비밀번호를 빈 값으로 보내면 비밀번호 없는 회원으로 시작한다")
     void treatsEmptyPasswordAsNoPassword() {
-        LoginResponse response = login("자취초보", "");
+        LoginResult response = login("자취초보", "");
 
-        assertThat(response.member().passwordProtected()).isFalse();
+        assertThat(response.passwordProtected()).isFalse();
     }
 
     @Test
@@ -102,10 +102,10 @@ class AuthServiceTest {
     @Test
     @DisplayName("비밀번호와 함께 시작하면 비밀번호를 해시로 저장한 보호 회원을 만든다")
     void createsProtectedMemberWithPasswordHash() {
-        LoginResponse response = login("보호닉네임", "1234");
+        LoginResult response = login("보호닉네임", "1234");
 
-        Member member = memberRepository.findById(response.member().memberId()).orElseThrow();
-        assertThat(response.member().passwordProtected()).isTrue();
+        Member member = memberRepository.findById(response.memberId()).orElseThrow();
+        assertThat(response.passwordProtected()).isTrue();
         assertThat(member.getPasswordHash()).isNotEqualTo("1234");
         assertThat(passwordEncoder.matches("1234", member.getPasswordHash())).isTrue();
     }
@@ -114,20 +114,20 @@ class AuthServiceTest {
     @DisplayName("한글 30자 비밀번호로 가입하고 로그인한다")
     void supportsThirtyKoreanCharacterPassword() {
         String password = "가".repeat(30);
-        LoginResponse first = login("보호닉네임", password);
-        LoginResponse second = login("보호닉네임", password);
+        LoginResult first = login("보호닉네임", password);
+        LoginResult second = login("보호닉네임", password);
 
-        assertThat(second.member().memberId()).isEqualTo(first.member().memberId());
+        assertThat(second.memberId()).isEqualTo(first.memberId());
     }
 
     @Test
     @DisplayName("보호 회원은 올바른 비밀번호로 로그인한다")
     void logsInProtectedMemberWithCorrectPassword() {
-        LoginResponse first = login("보호닉네임", "1234");
-        LoginResponse second = login("보호닉네임", "1234");
+        LoginResult first = login("보호닉네임", "1234");
+        LoginResult second = login("보호닉네임", "1234");
 
         assertThat(second.newMember()).isFalse();
-        assertThat(second.member().memberId()).isEqualTo(first.member().memberId());
+        assertThat(second.memberId()).isEqualTo(first.memberId());
     }
 
     @Test
@@ -142,57 +142,56 @@ class AuthServiceTest {
     }
 
     @Test
-    @DisplayName("로그인한 회원의 Bearer Access Token을 발급한다")
-    void issuesBearerAccessToken() {
-        LoginResponse response = login("자취초보", null);
+    @DisplayName("로그인한 회원의 Access Token을 발급한다")
+    void issuesAccessToken() {
+        LoginResult response = login("자취초보", null);
 
-        assertThat(response.tokenType()).isEqualTo("Bearer");
         assertThat(response.expiresIn()).isEqualTo(ACCESS_TOKEN_SECONDS);
-        assertThat(tokenProvider.parseMemberId(response.accessToken())).isEqualTo(response.member().memberId());
+        assertThat(tokenProvider.parseMemberId(response.accessToken())).isEqualTo(response.memberId());
     }
 
     @Test
     @DisplayName("공유 회원이 있는 닉네임에 비밀번호와 함께 시작하면 별도의 보호 회원을 만든다")
     void createsProtectedMemberBesideSharedMember() {
-        LoginResponse shared = login("11", null);
-        LoginResponse protectedMember = login("11", "1111");
+        LoginResult shared = login("11", null);
+        LoginResult protectedMember = login("11", "1111");
 
         assertThat(protectedMember.newMember()).isTrue();
-        assertThat(protectedMember.member().passwordProtected()).isTrue();
-        assertThat(protectedMember.member().memberId()).isNotEqualTo(shared.member().memberId());
+        assertThat(protectedMember.passwordProtected()).isTrue();
+        assertThat(protectedMember.memberId()).isNotEqualTo(shared.memberId());
         assertThat(memberRepository.count()).isEqualTo(2);
     }
 
     @Test
     @DisplayName("보호 회원이 있는 닉네임에 비밀번호 없이 시작하면 별도의 공유 회원을 만든다")
     void createsSharedMemberBesideProtectedMember() {
-        LoginResponse protectedMember = login("11", "1111");
-        LoginResponse shared = login("11", null);
+        LoginResult protectedMember = login("11", "1111");
+        LoginResult shared = login("11", null);
 
         assertThat(shared.newMember()).isTrue();
-        assertThat(shared.member().passwordProtected()).isFalse();
-        assertThat(shared.member().memberId()).isNotEqualTo(protectedMember.member().memberId());
+        assertThat(shared.passwordProtected()).isFalse();
+        assertThat(shared.memberId()).isNotEqualTo(protectedMember.memberId());
         assertThat(memberRepository.count()).isEqualTo(2);
     }
 
     @Test
     @DisplayName("공유 회원과 보호 회원이 모두 있으면 비밀번호 유무에 따라 각자의 회원으로 로그인한다")
     void logsInEachMemberByPasswordPresence() {
-        LoginResponse shared = login("11", null);
-        LoginResponse protectedMember = login("11", "1111");
+        LoginResult shared = login("11", null);
+        LoginResult protectedMember = login("11", "1111");
 
-        assertThat(login("11", null).member().memberId()).isEqualTo(shared.member().memberId());
-        assertThat(login("11", "1111").member().memberId()).isEqualTo(protectedMember.member().memberId());
+        assertThat(login("11", null).memberId()).isEqualTo(shared.memberId());
+        assertThat(login("11", "1111").memberId()).isEqualTo(protectedMember.memberId());
     }
 
     @Test
     @DisplayName("대소문자가 다른 닉네임은 다른 회원이다")
     void distinguishesNicknameCase() {
-        LoginResponse upper = login("Lee", null);
-        LoginResponse lower = login("lee", null);
+        LoginResult upper = login("Lee", null);
+        LoginResult lower = login("lee", null);
 
         assertThat(lower.newMember()).isTrue();
-        assertThat(lower.member().memberId()).isNotEqualTo(upper.member().memberId());
+        assertThat(lower.memberId()).isNotEqualTo(upper.memberId());
     }
 
     @Test
@@ -200,7 +199,7 @@ class AuthServiceTest {
     void logsInMemberSavedByConcurrentRequest() {
         memberRepository.saveConcurrentlyBeforeNextSave(Member.create("자취초보", null, LocalDateTime.now(clock)));
 
-        LoginResponse response = login("자취초보", null);
+        LoginResult response = login("자취초보", null);
 
         assertThat(response.newMember()).isFalse();
         assertThat(memberRepository.count()).isEqualTo(1);
@@ -218,8 +217,8 @@ class AuthServiceTest {
         assertThat(memberRepository.count()).isEqualTo(1);
     }
 
-    private LoginResponse login(String nickname, String password) {
-        return authService.loginNickname(new NicknameLoginRequest(nickname, password));
+    private LoginResult login(String nickname, String password) {
+        return authService.loginNickname(new NicknameLoginCommand(nickname, password));
     }
 
     private static class InMemoryMemberRepository implements MemberRepository {

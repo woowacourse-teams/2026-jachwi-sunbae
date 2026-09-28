@@ -2,8 +2,8 @@ package com.jachwisunbae.auth.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.jachwisunbae.auth.controller.dto.LoginResponse;
-import com.jachwisunbae.auth.controller.dto.NicknameLoginRequest;
+import com.jachwisunbae.auth.service.dto.command.NicknameLoginCommand;
+import com.jachwisunbae.auth.service.dto.result.LoginResult;
 import com.jachwisunbae.auth.token.JwtTokenProvider;
 import com.jachwisunbae.member.repository.JdbcMemberRepository;
 import java.time.Clock;
@@ -56,30 +56,30 @@ class AuthServiceConcurrencyTest {
     @Test
     @DisplayName("같은 새 닉네임으로 동시에 시작해도 회원은 하나만 만들어지고 모두 그 회원으로 로그인한다")
     void createsOneMemberForConcurrentLogins() throws Exception {
-        List<LoginResponse> responses = loginConcurrently("동시닉네임", null);
+        List<LoginResult> responses = loginConcurrently("동시닉네임", null);
 
-        assertThat(responses).extracting(response -> response.member().memberId()).containsOnly(
-                responses.get(0).member().memberId());
-        assertThat(responses).filteredOn(LoginResponse::newMember).hasSize(1);
+        assertThat(responses).extracting(response -> response.memberId()).containsOnly(
+                responses.get(0).memberId());
+        assertThat(responses).filteredOn(LoginResult::newMember).hasSize(1);
         assertThat(jdbcTemplate.queryForObject("SELECT COUNT(*) FROM members WHERE nickname = '동시닉네임'",
                 Integer.class)).isOne();
     }
 
-    private List<LoginResponse> loginConcurrently(String nickname, String password) throws Exception {
+    private List<LoginResult> loginConcurrently(String nickname, String password) throws Exception {
         ExecutorService executor = Executors.newFixedThreadPool(REQUEST_COUNT);
         CountDownLatch start = new CountDownLatch(1);
-        List<Future<LoginResponse>> futures = new ArrayList<>();
+        List<Future<LoginResult>> futures = new ArrayList<>();
         for (int i = 0; i < REQUEST_COUNT; i++) {
-            Callable<LoginResponse> task = () -> {
+            Callable<LoginResult> task = () -> {
                 start.await();
-                return authService.loginNickname(new NicknameLoginRequest(nickname, password));
+                return authService.loginNickname(new NicknameLoginCommand(nickname, password));
             };
             futures.add(executor.submit(task));
         }
         start.countDown();
 
-        List<LoginResponse> responses = new ArrayList<>();
-        for (Future<LoginResponse> future : futures) {
+        List<LoginResult> responses = new ArrayList<>();
+        for (Future<LoginResult> future : futures) {
             responses.add(future.get());
         }
         executor.shutdown();

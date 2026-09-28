@@ -4,6 +4,7 @@ import com.jachwisunbae.common.exception.BusinessException;
 import com.jachwisunbae.common.exception.DomainErrorCode;
 import com.jachwisunbae.member.entity.Member;
 import com.jachwisunbae.member.repository.MemberRepository;
+import com.jachwisunbae.member.service.dto.result.MemberProfile;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -17,7 +18,7 @@ public class MemberService {
         this.memberRepository = memberRepository;
     }
 
-    public Member findById(final Long memberId) {
+    private Member findById(final Long memberId) {
         return memberRepository.findById(memberId)
                 .orElseThrow(() -> new BusinessException(
                         DomainErrorCode.MEMBER_NOT_FOUND,
@@ -26,7 +27,6 @@ public class MemberService {
     }
 
     public MemberProfile findProfileById(final Long memberId) {
-        Member member = findById(memberId);
-        return new MemberProfile(member, member.isPasswordProtected());
+        return MemberProfile.from(findById(memberId));
     }
 }

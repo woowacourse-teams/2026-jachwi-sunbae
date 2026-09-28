@@ -1,9 +1,8 @@
 package com.jachwisunbae.auth.service;
 
-import com.jachwisunbae.auth.controller.dto.LoginMemberResponse;
-import com.jachwisunbae.auth.controller.dto.LoginResponse;
-import com.jachwisunbae.auth.controller.dto.NicknameLoginRequest;
 import com.jachwisunbae.auth.domain.Password;
+import com.jachwisunbae.auth.service.dto.command.NicknameLoginCommand;
+import com.jachwisunbae.auth.service.dto.result.LoginResult;
 import com.jachwisunbae.auth.token.JwtTokenProvider;
 import com.jachwisunbae.common.exception.BusinessException;
 import com.jachwisunbae.common.exception.DomainErrorCode;
@@ -42,9 +41,9 @@ public class AuthService {
         this.accessTokenSeconds = accessTokenSeconds;
     }
 
-    public LoginResponse loginNickname(NicknameLoginRequest request) {
-        String nickname = Nickname.from(request.nickname()).value();
-        String password = password(request.password());
+    public LoginResult loginNickname(NicknameLoginCommand command) {
+        String nickname = Nickname.from(command.nickname()).value();
+        String password = password(command.password());
 
         try {
             return login(nickname, password);
@@ -54,7 +53,7 @@ public class AuthService {
         }
     }
 
-    private LoginResponse login(String nickname, String password) {
+    private LoginResult login(String nickname, String password) {
         if (password == null) {
             return loginSharedMember(nickname);
         }
@@ -62,16 +61,16 @@ public class AuthService {
     }
 
     // 비밀번호 없이 시작하면 그 닉네임의 공유 회원으로 시작하고, 없으면 만든다.
-    private LoginResponse loginSharedMember(String nickname) {
+    private LoginResult loginSharedMember(String nickname) {
         Optional<Member> sharedMember = memberRepository.findByNicknameAndPasswordProtected(nickname, false);
         if (sharedMember.isPresent()) {
-            return createLoginResponse(sharedMember.get(), false);
+            return createLoginResult(sharedMember.get(), false);
         }
         return createMember(nickname, null);
     }
 
     // 비밀번호와 함께 시작하면 그 닉네임의 보호 회원으로 시작한다. 없으면 만들고, 있으면 비밀번호가 맞아야 한다.
-    private LoginResponse loginProtectedMember(String nickname, String password) {
+    private LoginResult loginProtectedMember(String nickname, String password) {
         Optional<Member> protectedMember = memberRepository.findByNicknameAndPasswordProtected(nickname, true);
         if (protectedMember.isEmpty()) {
             return createMember(nickname, passwordEncoder.encode(password));
@@ -80,13 +79,13 @@ public class AuthService {
             throw new BusinessException(DomainErrorCode.NICKNAME_AUTHENTICATION_FAILED,
                     "닉네임 또는 비밀번호가 일치하지 않습니다.");
         }
-        return createLoginResponse(protectedMember.get(), false);
+        return createLoginResult(protectedMember.get(), false);
     }
 
-    private LoginResponse createMember(String nickname, String passwordHash) {
+    private LoginResult createMember(String nickname, String passwordHash) {
         LocalDateTime now = LocalDateTime.now(clock);
         Member member = memberRepository.save(Member.create(nickname, passwordHash, now));
-        return createLoginResponse(member, true);
+        return createLoginResult(member, true);
     }
 
     private boolean matches(String password, String passwordHash) {
@@ -105,12 +104,8 @@ public class AuthService {
         return Password.from(rawPassword).value();
     }
 
-    private LoginResponse createLoginResponse(Member member, boolean newMember) {
-        return new LoginResponse(
-                jwtProvider.createAccessToken(member.getId()),
-                "Bearer",
-                accessTokenSeconds,
-                newMember,
-                new LoginMemberResponse(member.getId(), member.getNickname(), member.isPasswordProtected()));
+    private LoginResult createLoginResult(Member member, boolean newMember) {
+        return new LoginResult(jwtProvider.createAccessToken(member.getId()), accessTokenSeconds, newMember,
+                member.getId(), member.getNickname(), member.isPasswordProtected());
     }
 }

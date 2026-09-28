@@ -28,7 +28,7 @@ public class AuthController {
                     + "시작합니다. 회원이 없으면 새로 만들고, 보호 회원은 비밀번호가 일치해야 합니다. "
                     + "응답의 newMember는 이번 요청에서 회원을 새로 만든 경우에만 true입니다.")
     public ApiResponse<LoginResponse> loginNickname(@RequestBody NicknameLoginRequest request) {
-        return ApiResponse.of(service.loginNickname(request));
+        return ApiResponse.of(LoginResponse.from(service.loginNickname(request.toCommand())));
     }
 
 }
