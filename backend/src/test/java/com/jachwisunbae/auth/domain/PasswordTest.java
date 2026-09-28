@@ -34,10 +34,9 @@ class PasswordTest {
     }
 
     @Test
-    @DisplayName("BCrypt가 받을 수 없는 72바이트 초과 비밀번호는 허용하지 않는다")
-    void rejectsPasswordOverBcryptLimit() {
-        assertThat(Password.from("가".repeat(24)).value()).hasSize(24);
-        assertInvalid("가".repeat(25));
+    @DisplayName("바이트 수와 상관없이 글자 수로 검사한다")
+    void checksCharacterCountRegardlessOfBytes() {
+        assertThat(Password.from("가".repeat(30)).value()).hasSize(30);
     }
 
     private static void assertInvalid(String value) {

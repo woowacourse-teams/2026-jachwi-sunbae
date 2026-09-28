@@ -18,8 +18,9 @@ import java.util.Map;
 import java.util.Optional;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.crypto.password.Pbkdf2PasswordEncoder;
+import org.springframework.security.crypto.password.Pbkdf2PasswordEncoder.SecretKeyFactoryAlgorithm;
 
 class AuthServiceTest {
 
@@ -28,8 +29,9 @@ class AuthServiceTest {
 
     private final Clock clock = Clock.fixed(Instant.parse("2026-09-28T00:00:00Z"), ZoneOffset.UTC);
     private final InMemoryMemberRepository memberRepository = new InMemoryMemberRepository();
-    // 테스트 속도를 위해 BCrypt 비용을 최소값으로 둔다.
-    private final PasswordEncoder passwordEncoder = new BCryptPasswordEncoder(4);
+    // 운영과 같은 PBKDF2를 쓰되, 테스트 속도를 위해 반복 횟수를 줄인다.
+    private final PasswordEncoder passwordEncoder =
+            new Pbkdf2PasswordEncoder("", 16, 1_000, SecretKeyFactoryAlgorithm.PBKDF2WithHmacSHA256);
     private final JwtTokenProvider tokenProvider = new JwtTokenProvider(SECRET, "jachwi-sunbae",
             "jachwi-sunbae-api", ACCESS_TOKEN_SECONDS, clock);
     private final AuthService authService = new AuthService(memberRepository, passwordEncoder, tokenProvider,
@@ -104,6 +106,16 @@ class AuthServiceTest {
         assertThat(response.member().passwordProtected()).isTrue();
         assertThat(member.getPasswordHash()).isNotEqualTo("1234");
         assertThat(passwordEncoder.matches("1234", member.getPasswordHash())).isTrue();
+    }
+
+    @Test
+    @DisplayName("한글 30자 비밀번호로 가입하고 로그인한다")
+    void supportsThirtyKoreanCharacterPassword() {
+        String password = "가".repeat(30);
+        LoginResponse first = login("보호닉네임", password);
+        LoginResponse second = login("보호닉네임", password);
+
+        assertThat(second.member().memberId()).isEqualTo(first.member().memberId());
     }
 
     @Test
