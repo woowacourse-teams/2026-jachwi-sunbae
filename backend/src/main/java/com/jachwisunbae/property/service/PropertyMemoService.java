@@ -34,15 +34,13 @@ public class PropertyMemoService {
                                final UpdatePropertyMemoRequest request) {
         validateOwnedProperty(memberId, propertyId);
 
-        PropertyMemo memo = propertyMemoRepository.findByPropertyId(propertyId)
+        return propertyMemoRepository.findByPropertyId(propertyId)
             .map(existingMemo -> {
                 existingMemo.replaceFreeMemo(request.freeMemo());
                 propertyMemoRepository.update(existingMemo);
                 return existingMemo;
             })
             .orElseGet(() -> propertyMemoRepository.save(PropertyMemo.create(propertyId, request.freeMemo())));
-
-        return memo;
     }
 
     private void validateOwnedProperty(final Long memberId, final Long propertyId) {

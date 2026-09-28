@@ -49,7 +49,7 @@ dev API는 localhost Origin을 허용하지 않으므로 로컬에서는 `http:/
 API 변경 작업 전에는 [실행 리비전](https://dev-api.jachwi-sunbae.kr/actuator/info)과 [배포된 Swagger](https://dev-api.jachwi-sunbae.kr/v3/api-docs)를 함께 확인합니다. Git 커밋 날짜만으로 배포 여부를 판단하지 않습니다.
 
 - 부가정보는 `GET /api/properties/{id}`로 조회하고 `PUT /api/properties/{id}`로 저장합니다. 전체 교체이므로 기본정보 수정 시에도 기존 입주일·관리비·방문일정·방 옵션·공과금을 보존합니다.
-- `/api/properties/{id}/memo`는 자유 메모의 GET·PUT만 사용합니다. 구조화 메모 `items`와 POST 초기화는 사용하지 않습니다.
+- `/api/properties/{id}/memo`는 하나의 자유 메모를 GET으로 조회하고 PUT으로 교체하거나 생성합니다.
 - 매물 주소는 `address`로 전송합니다. 지도 검색 API의 `roadAddress`·`jibunAddress`와 구분합니다.
 - 체크리스트 단계는 `ON_SITE`와 `PRE_CONTRACT`이며, 매물 생성 시 서버가 자동 적용하므로 생성 직후 재적용하지 않습니다.
 

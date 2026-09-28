@@ -41,7 +41,8 @@ public class DomainErrorHttpMapper {
                     PROPERTY_NOT_FOUND,
                     PHOTO_NOT_FOUND,
                     PROPERTY_CHECKLIST_NOT_FOUND,
-                    PROPERTY_CHECKLIST_ITEM_NOT_FOUND -> HttpStatus.NOT_FOUND;
+                    PROPERTY_CHECKLIST_ITEM_NOT_FOUND,
+                    MAP_ADDRESS_NOT_FOUND -> HttpStatus.NOT_FOUND;
             case ACCESS_TOKEN_INVALID,
                     NICKNAME_AUTHENTICATION_FAILED -> HttpStatus.UNAUTHORIZED;
             case PROPERTY_LIMIT_EXCEEDED,

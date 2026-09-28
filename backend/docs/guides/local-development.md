@@ -79,7 +79,10 @@ npm run dev
 브라우저에서 `http://localhost:3000`을 열고 닉네임을 입력한다. 비밀번호를 비우면 같은 닉네임을 입력한 사람이 기록을 함께 사용할 수 있고, 처음 사용할 때 비밀번호를 입력하면 이후 같은 비밀번호가
 필요하다. 빈 데이터베이스에서는 최초 로그인 시 회원이 생성되며 매물은 직접 등록한다.
 
-실제 네이버 지도를 확인할 때는 백엔드와 프론트엔드의 지도 공급자 모드를 `naver`로 바꾸고 인증 정보를 설정한다. Client Secret은 백엔드에만 설정한다.
+실제 네이버 지도 화면을 확인할 때는 프론트엔드 `.env.local`의 `MAP_PROVIDER_MODE`를 `naver`로 바꾸고 `NAVER_MAP_CLIENT_ID`를 설정한다.
+
+실제 주소 검색과 역지오코딩을 확인할 때는 백엔드 `.env`에 `MAP_PROVIDER_MODE=public`과
+`JUSO_CONFIRM_KEY`, `SGIS_CONSUMER_KEY`, `SGIS_CONSUMER_SECRET`을 설정하고 백엔드를 다시 실행한다.
 
 실제 주변 시설을 확인할 때는 백엔드 `.env`에 `MAP_NEARBY_PROVIDER=kakao`와 `KAKAO_REST_API_KEY`를 설정하고 백엔드를 다시 실행한다.
 `MAP_NEARBY_PROVIDER`가 없으면 `demo` 주변 시설이 반환된다.    
