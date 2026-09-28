@@ -187,11 +187,6 @@ public class JdbcUserChecklistRepository implements UserChecklistRepository {
     }
 
     @Override
-    public void deleteItems(final long checklistId) {
-        jdbcTemplate.update("DELETE FROM user_checklist_items WHERE user_checklist_id = ?", checklistId);
-    }
-
-    @Override
     public void delete(final long checklistId) {
         // 명세 8.4: 사용자 체크리스트는 논리 삭제 처리하여 기존 매물 스냅샷의 외래키 참조 무결성을 보존합니다.
         jdbcTemplate.update("UPDATE user_checklists SET deleted_at = NOW(6) WHERE id = ?", checklistId);
