@@ -79,7 +79,7 @@ public class Property extends BaseTimeEntity {
                                  final LocalDate availableMoveInDate, final Long maintenanceFeeAmount,
                                  final LocalDateTime visitScheduledAt,
                                  final List<String> roomOptions, final List<String> utilityOptions,
-                                 final String discoverySource, final String freeMemo,
+                                 final String discoverySource,
                                  final LocalDateTime now) {
         PropertyName newPropertyName = PropertyName.from(name);
         PropertyRentalPrice newPropertyRentalPrice = PropertyRentalPrice.from(depositAmount, monthlyRentAmount);
@@ -93,7 +93,6 @@ public class Property extends BaseTimeEntity {
                 utilityOptions,
                 discoverySource
             );
-        PropertyMemo newMemo = PropertyMemo.from(freeMemo);
         LocalDateTime newUpdatedAt = DomainPreconditions.requireNonNull(
             now,
             DomainErrorCode.PROPERTY_INPUT_INVALID,
@@ -104,7 +103,6 @@ public class Property extends BaseTimeEntity {
         this.propertyRentalPrice = newPropertyRentalPrice;
         this.propertyLocation = newPropertyLocation;
         this.propertyOptions = newPropertyOptions;
-        this.propertyMemo = newMemo;
         updateUpdatedAt(newUpdatedAt);
     }
 
