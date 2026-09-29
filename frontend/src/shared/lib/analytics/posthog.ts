@@ -130,10 +130,7 @@ export const getPostHogPlatform = (): PostHogSessionContext['platform'] => {
   return 'web';
 };
 
-export const capturePostHogException = (
-  error: unknown,
-  properties?: Record<string, unknown>,
-): boolean => {
+export const capturePostHogException = (error: unknown, properties?: Record<string, unknown>): boolean => {
   if (!trackingEnabled) return false;
 
   return runPostHogAction((client) => client.captureException(error, properties));
@@ -143,9 +140,7 @@ export const identifyPostHogMember = (memberId: number, nickname?: string): bool
   if (!trackingEnabled || !Number.isInteger(memberId) || memberId <= 0) return false;
 
   const distinctId = `member-${memberId}`;
-  return runPostHogAction((client) =>
-    client.identify(distinctId, nickname === undefined ? undefined : { nickname }),
-  );
+  return runPostHogAction((client) => client.identify(distinctId, nickname === undefined ? undefined : { nickname }));
 };
 
 export const resetPostHogIdentity = (): void => {
