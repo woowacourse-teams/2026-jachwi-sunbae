@@ -31,6 +31,19 @@ type CreatePropertyRouteState = {
 
 const DEFAULT_PROPERTY_NAME = '새 매물';
 
+const propertyCreationStepEvents = {
+  deposit: 'property_creation_deposit_completed',
+  monthly_rent: 'property_creation_monthly_rent_completed',
+  address: 'property_creation_address_completed',
+  name: 'property_creation_name_completed',
+} as const;
+
+type PropertyCreationStep = keyof typeof propertyCreationStepEvents;
+
+const trackPropertyCreationStep = (step: PropertyCreationStep): void => {
+  trackPostHogEvent(propertyCreationStepEvents[step]);
+};
+
 const emptyValues: PropertyFormValues = {
   name: DEFAULT_PROPERTY_NAME,
   depositAmount: '',
@@ -181,7 +194,7 @@ const CreatePropertyPage = ({ config }: { config: PublicConfig }) => {
     const input = toPropertyInputDto(values);
     if (input === null) return;
     setCreateError(null);
-    trackPostHogEvent('property_creation_step_completed', { step: 'name' });
+    trackPropertyCreationStep('name');
     trackPostHogEvent('property_creation_submitted');
     try {
       const created = await createProperty.mutateAsync({
@@ -229,19 +242,19 @@ const CreatePropertyPage = ({ config }: { config: PublicConfig }) => {
     if (validateRevealedRequiredFields()) return;
 
     if (revealedStep === 0) {
-      trackPostHogEvent('property_creation_step_completed', { step: 'deposit' });
+      trackPropertyCreationStep('deposit');
       setRevealedStep(1);
       return;
     }
 
     if (revealedStep === 1) {
-      trackPostHogEvent('property_creation_step_completed', { step: 'monthly_rent' });
+      trackPropertyCreationStep('monthly_rent');
       setRevealedStep(2);
       return;
     }
 
     if (!hasPresetLocation && revealedStep === 2) {
-      trackPostHogEvent('property_creation_step_completed', { step: 'address' });
+      trackPropertyCreationStep('address');
       setRevealedStep(3);
       return;
     }
