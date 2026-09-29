@@ -1,6 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const webpack = require('webpack');
+const packageVersion = require('./package.json').version;
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 const { BundleAnalyzerPlugin } = require('webpack-bundle-analyzer');
@@ -41,15 +42,27 @@ module.exports = (_env, argv) => {
     ? `http://localhost:${devServerPort}`
     : (process.env.API_BASE_URL ?? 'http://localhost:8080');
 
+  // PostHog는 운영 API를 사용하는 번들에서만 활성화한다. dev 웹은 운영과 같은
+  // production 빌드 모드를 사용하므로 argv.mode만으로 환경을 판별하면 안 된다.
+  const isProductionWebEnvironment = (() => {
+    try {
+      const apiUrl = new URL(apiBaseUrl);
+      return apiUrl.protocol === 'https:' && apiUrl.hostname === 'api.jachwi-sunbae.kr';
+    } catch {
+      return false;
+    }
+  })();
+
   const naverMapClientId = process.env.NAVER_MAP_CLIENT_ID ?? '';
   // 배포 빌드는 항상 실제 Naver 지도를 사용한다. 키가 없으면 앱 설정 오류를 보여 주고
   // 데모 지도로 조용히 대체하지 않아 배포 설정 누락을 바로 발견할 수 있게 한다.
   const mapProviderMode = isProduction
     ? 'naver'
     : (process.env.MAP_PROVIDER_MODE ?? (naverMapClientId === '' ? 'demo' : 'naver'));
-  const metaPixelId = process.env.META_PIXEL_ID ?? '';
-  const posthogProjectToken = process.env.POSTHOG_PROJECT_TOKEN ?? '';
-  const posthogHost = process.env.POSTHOG_HOST ?? '';
+  const posthogProjectToken = isProductionWebEnvironment ? (process.env.POSTHOG_PROJECT_TOKEN ?? '') : '';
+  const posthogHost = isProductionWebEnvironment ? (process.env.POSTHOG_HOST ?? '') : '';
+  const appVersion = process.env.APP_VERSION ?? packageVersion;
+  const appEnvironment = isProductionWebEnvironment ? 'production' : 'development';
 
   return {
     entry: isBrowserTestHarness ? './src/app/test-browser/main.tsx' : './src/main.tsx',
@@ -59,7 +72,9 @@ module.exports = (_env, argv) => {
         config: [__filename],
       },
     },
-    devtool: isProduction ? false : 'eval-cheap-module-source-map',
+    // 운영 오류의 원본 위치를 PostHog Error Tracking에서 복원할 수 있도록
+    // source map을 생성하되 번들에 sourceMappingURL 주석은 넣지 않는다.
+    devtool: isProduction ? 'hidden-source-map' : 'eval-cheap-module-source-map',
     output: {
       path: path.resolve(__dirname, 'dist'),
       // 운영에서만 contenthash 를 붙인다. 내용이 바뀌면 파일명이 바뀌므로 CDN 캐시를 무효화하지 않아도
@@ -75,9 +90,10 @@ module.exports = (_env, argv) => {
         __API_BASE_URL__: JSON.stringify(apiBaseUrl),
         __MAP_PROVIDER_MODE__: JSON.stringify(mapProviderMode),
         __NAVER_MAP_CLIENT_ID__: JSON.stringify(naverMapClientId),
-        __META_PIXEL_ID__: JSON.stringify(metaPixelId),
         __POSTHOG_PROJECT_TOKEN__: JSON.stringify(posthogProjectToken),
         __POSTHOG_HOST__: JSON.stringify(posthogHost),
+        __APP_VERSION__: JSON.stringify(appVersion),
+        __APP_ENVIRONMENT__: JSON.stringify(appEnvironment),
         __ENABLE_MSW__: JSON.stringify(isMockingEnabled),
       }),
       new HtmlWebpackPlugin({

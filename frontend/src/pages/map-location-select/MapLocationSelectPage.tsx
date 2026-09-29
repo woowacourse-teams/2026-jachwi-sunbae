@@ -11,7 +11,6 @@ import { usePropertyList } from '../../features/property/api/useProperties';
 import { useCreateProperty } from '../../features/property/api/usePropertyMutations';
 import type { MapAddress } from '../../features/map/model/Map';
 import type { PublicConfig } from '../../shared/config/publicConfigTypes';
-import { trackMetaPixelFirstPropertyRecorded } from '../../features/tracking-consent/lib/metaPixel';
 import { trackPostHogEvent } from '../../shared/lib/analytics/posthog';
 import {
   coordinatesAreClose,
@@ -133,6 +132,7 @@ const MapLocationSelectPage = ({ config }: { config: PublicConfig }) => {
     setSelected(address);
     writeLastMapCenter(address);
     setStatus('ready');
+    trackPostHogEvent('address_selected', { source: 'search_panel' });
   };
 
   const selectedAddress = selected.roadAddress ?? selected.jibunAddress;
@@ -219,11 +219,14 @@ const MapLocationSelectPage = ({ config }: { config: PublicConfig }) => {
                   })
                   .then((created) => {
                     const firstProperty = (properties.data?.pages[0]?.totalElements ?? 0) === 0;
-                    if (firstProperty) trackMetaPixelFirstPropertyRecorded();
                     trackPostHogEvent('property_created', { first_property: firstProperty });
                     navigate(`/properties/${created.propertyId}`, { replace: true });
                   })
-                  .catch(() => undefined);
+                  .catch((error) => {
+                    trackPostHogEvent('property_creation_failed', {
+                      error_kind: error instanceof Error ? 'request' : 'unknown',
+                    });
+                  });
                 return;
               }
               navigate(returnTo, {

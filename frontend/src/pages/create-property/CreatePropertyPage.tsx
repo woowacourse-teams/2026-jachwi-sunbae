@@ -22,6 +22,7 @@ import {
 } from '../../features/property/lib/propertyForm';
 import type { PropertyFormErrors, PropertyFormValues } from '../../features/property/lib/propertyForm';
 import styles from './CreatePropertyPage.module.css';
+import { trackPostHogEvent } from '../../shared/lib/analytics/posthog';
 
 type CreatePropertyRouteState = {
   registrationDraft?: PropertyInputDto;
@@ -101,6 +102,10 @@ const CreatePropertyPage = ({ config }: { config: PublicConfig }) => {
   const createProperty = useCreateProperty(config);
   const geocodeSequence = useRef(0);
   const geocodeTimer = useRef<number | null>(null);
+
+  useEffect(() => {
+    trackPostHogEvent('property_creation_started');
+  }, []);
 
   const hasName = values.name.trim().length > 0;
   const hasDeposit = values.depositAmount.length > 0;
@@ -185,17 +190,20 @@ const CreatePropertyPage = ({ config }: { config: PublicConfig }) => {
       });
       navigate(`/properties/${created.propertyId}`, { replace: true });
     } catch {
+      trackPostHogEvent('property_creation_failed', { error_kind: 'server' });
       setCreateError('매물을 등록하지 못했어요. 입력한 정보는 유지되니 다시 시도해 주세요.');
     }
   };
 
   const submitAddressSearch = async () => {
     if (searchQuery.trim() === '') return;
+    trackPostHogEvent('address_search_started');
     setSearchStatus('loading');
     try {
       setSearchResults(await searchAddress(config, searchQuery.trim()));
       setSearchStatus('idle');
     } catch {
+      trackPostHogEvent('address_search_failed', { error_kind: 'server' });
       setSearchResults([]);
       setSearchStatus('error');
     }
@@ -208,6 +216,7 @@ const CreatePropertyPage = ({ config }: { config: PublicConfig }) => {
       await resolveLocation(coordinate.latitude, coordinate.longitude);
       setSearchStatus('idle');
     } catch {
+      trackPostHogEvent('address_search_failed', { error_kind: 'location' });
       setSearchStatus('error');
     }
   };

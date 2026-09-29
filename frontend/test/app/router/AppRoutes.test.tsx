@@ -100,16 +100,16 @@ describe('닉네임 인증 흐름', () => {
     expect(screen.getByText(/같은 닉네임을 입력한 사람이 기록을 함께 조회하고 수정/)).toBeInTheDocument();
   });
 
-  it('인증 없이 개인정보 처리방침과 광고 측정 선택 상태를 확인한다', async () => {
+  it('인증 없이 개인정보 처리방침과 PostHog 수집 안내를 확인한다', async () => {
     renderRoutes('/privacy');
 
     expect(await screen.findByRole('heading', { name: '자취선배는 필요한 정보만 처리합니다.' })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: '처리하는 정보와 목적' })).toBeInTheDocument();
     expect(
-      screen.getByText(/닉네임, 비밀번호, 주소, 사진, 메모와 체크 내용은 Meta에 전송하지 않습니다/),
+      screen.getByText(/웹 서비스와 운영 iOS·Android 앱\(WebView\)에서는 웹 번들에 포함된 PostHog/),
     ).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'conditionaltype@gmail.com' })).toBeInTheDocument();
-    expect(screen.getByText('현재 상태: 이 환경에서는 측정하지 않음')).toBeInTheDocument();
+    expect(screen.getByText(/PostHog 세션 녹화에서는 텍스트와 요소 속성을 마스킹합니다/)).toBeInTheDocument();
   });
 
   it('보호 경로에 비인증으로 접근하면 닉네임 시작 화면으로 이동한다', async () => {

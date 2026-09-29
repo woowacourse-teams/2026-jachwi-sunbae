@@ -25,8 +25,16 @@ case "${DEPLOY_ENVIRONMENT}" in
 esac
 
 if [[ ! -f "${LOCAL_INDEX}" ]]; then
-    echo "프론트엔드 빌드 결과가 없다: ${LOCAL_INDEX}" >&2
-    exit 1
+  echo "프론트엔드 빌드 결과가 없다: ${LOCAL_INDEX}" >&2
+  exit 1
+fi
+
+if [[ "${DEPLOY_ENVIRONMENT}" == "prod" ]]; then
+  if [[ -n "${POSTHOG_CLI_API_KEY:-}" ]]; then
+    "${SCRIPT_DIR}/upload-posthog-sourcemaps.sh"
+  else
+    echo "PostHog source map 업로드를 건너뛴다: POSTHOG_CLI_API_KEY가 없다." >&2
+  fi
 fi
 
 VERSION="$(tr -d '[:space:]' < "${VERSION_FILE}")"
@@ -36,6 +44,7 @@ export AWS_PAGER=""
 
 aws s3 sync "${DIST_DIR}/" "${S3_URI}" \
     --delete \
+    --exclude '*.map' \
     --exclude 'index.html' \
     --exclude 'version.json' \
     --cache-control 'public,max-age=31536000,immutable'

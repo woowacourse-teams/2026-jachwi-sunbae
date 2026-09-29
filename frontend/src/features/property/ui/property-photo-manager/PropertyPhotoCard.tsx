@@ -7,6 +7,7 @@ import AuthenticatedPhoto from '../authenticated-photo/AuthenticatedPhoto';
 import ConfirmDialog from '../../../../shared/ui/confirm-dialog/ConfirmDialog';
 import dialogStyles from '../../../../shared/ui/confirm-dialog/ConfirmDialog.module.css';
 import styles from './PropertyPhotoCard.module.css';
+import { trackPostHogEvent } from '../../../../shared/lib/analytics/posthog';
 
 type PropertyPhotoCardProps = {
   config: PublicConfig;
@@ -25,9 +26,11 @@ const PropertyPhotoCard = ({ config, propertyId, photo, position }: PropertyPhot
   const remove = async () => {
     try {
       await removeMutation.mutateAsync(photo.photoId);
+      trackPostHogEvent('property_photo_deleted');
       setIsDialogOpen(false);
       window.setTimeout(() => document.getElementById('photo-gallery-heading')?.focus(), 0);
     } catch {
+      trackPostHogEvent('property_photo_delete_failed');
       // Dialog remains open so the user can retry without optimistic removal.
     }
   };

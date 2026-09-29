@@ -42,6 +42,10 @@ const PropertyComparePage = ({ config }: PropertyComparePageProps) => {
   const selectedSet = useMemo(() => new Set(selectedIds), [selectedIds]);
 
   useEffect(() => {
+    trackPostHogEvent('property_comparison_started');
+  }, []);
+
+  useEffect(() => {
     if (hasRecordedView.current) return;
     hasRecordedView.current = true;
     recordComparisonView();
@@ -50,8 +54,13 @@ const PropertyComparePage = ({ config }: PropertyComparePageProps) => {
   const toggle = (propertyId: number) => {
     setExportError(false);
     setSelectedIds((current) => {
-      if (current.includes(propertyId)) return current.filter((id) => id !== propertyId);
-      return current.length >= MAX_SELECTION ? current : [...current, propertyId];
+      if (current.includes(propertyId)) {
+        trackPostHogEvent('property_selected_for_comparison', { selected: false, selected_count: current.length - 1 });
+        return current.filter((id) => id !== propertyId);
+      }
+      if (current.length >= MAX_SELECTION) return current;
+      trackPostHogEvent('property_selected_for_comparison', { selected: true, selected_count: current.length + 1 });
+      return [...current, propertyId];
     });
   };
 
@@ -59,6 +68,7 @@ const PropertyComparePage = ({ config }: PropertyComparePageProps) => {
     if (selectedIds.length < MIN_SELECTION || selectedIds.length > MAX_SELECTION) return;
     setIsExporting(true);
     setExportError(false);
+    trackPostHogEvent('property_comparison_pdf_export_started', { selected_count: selectedIds.length });
     try {
       const blob = await fetchPropertyComparisonPdf(config, selectedIds);
       const url = URL.createObjectURL(blob);
@@ -71,6 +81,10 @@ const PropertyComparePage = ({ config }: PropertyComparePageProps) => {
       window.setTimeout(() => URL.revokeObjectURL(url), 0);
       trackPostHogEvent('property_comparison_pdf_exported', { count: selectedIds.length });
     } catch {
+      trackPostHogEvent('property_comparison_pdf_export_failed', {
+        selected_count: selectedIds.length,
+        error_kind: 'request',
+      });
       setExportError(true);
     } finally {
       setIsExporting(false);
