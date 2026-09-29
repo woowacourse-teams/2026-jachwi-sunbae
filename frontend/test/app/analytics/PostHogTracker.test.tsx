@@ -18,6 +18,7 @@ const testConfig: PublicConfig = {
 describe('PostHogTracker', () => {
   afterEach(() => {
     vi.restoreAllMocks();
+    delete window.__JACHWI_NATIVE_APP__;
   });
 
   it('토큰과 호스트가 주어지면 초기화하고 현재 경로를 추적한다', () => {
@@ -35,5 +36,23 @@ describe('PostHogTracker', () => {
 
     expect(initSpy).toHaveBeenCalledWith('phc_test_token', 'https://us.i.posthog.com');
     expect(trackSpy).toHaveBeenCalledWith('/properties?page=1');
+  });
+
+  it('네이티브 앱 WebView에서도 제품 이용 경로를 추적한다', () => {
+    window.__JACHWI_NATIVE_APP__ = { platform: 'ios', version: 1 };
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const initSpy = vi.spyOn(posthogModule, 'initPostHog');
+    const trackSpy = vi.spyOn(posthogModule, 'trackPostHogPageView');
+
+    render(
+      <QueryClientProvider client={queryClient}>
+        <MemoryRouter initialEntries={['/map']}>
+          <PostHogTracker config={testConfig} />
+        </MemoryRouter>
+      </QueryClientProvider>,
+    );
+
+    expect(initSpy).toHaveBeenCalledWith('phc_test_token', 'https://us.i.posthog.com');
+    expect(trackSpy).toHaveBeenCalledWith('/map');
   });
 });

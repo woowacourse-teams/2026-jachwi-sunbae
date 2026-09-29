@@ -13,10 +13,10 @@ type MapPropertySheetProps = {
   properties: PropertySummary[];
   selectedPropertyId: number | null;
   config: PublicConfig;
-  onDragStart: (event: PointerEvent<HTMLDivElement>) => void;
-  onDragMove: (event: PointerEvent<HTMLDivElement>) => void;
-  onDragEnd: (event: PointerEvent<HTMLDivElement>) => void;
-  onDragCancel: (event: PointerEvent<HTMLDivElement>) => void;
+  onDragStart: (event: PointerEvent<HTMLButtonElement>) => void;
+  onDragMove: (event: PointerEvent<HTMLButtonElement>) => void;
+  onDragEnd: (event: PointerEvent<HTMLButtonElement>) => void;
+  onDragCancel: (event: PointerEvent<HTMLButtonElement>) => void;
   onCycleStage: () => void;
 };
 
@@ -40,8 +40,11 @@ const MapPropertySheet = ({
     data-dragging={dragHeight === null ? undefined : 'true'}
     aria-label="지도 주변 매물 목록"
   >
-    <div
+    <button
+      type="button"
       className={styles.header}
+      aria-expanded={stage !== 'closed'}
+      aria-label={stage === 'closed' ? '지도 위 매물 목록 열기' : '지도 위 매물 목록 높이 변경'}
       onPointerDown={onDragStart}
       onPointerMove={onDragMove}
       onPointerUp={onDragEnd}
@@ -55,7 +58,7 @@ const MapPropertySheet = ({
         <span>지도 위 매물</span>
         <strong>{properties.length}개</strong>
       </div>
-    </div>
+    </button>
 
     <div className={styles.body}>
       {properties.length === 0 ? (

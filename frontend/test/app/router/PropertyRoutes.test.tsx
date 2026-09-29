@@ -297,6 +297,7 @@ describe('FE-2 등록·수정·메모', () => {
 
       // 1. 보증금 → 월세 → 지도 → 매물 이름 순으로, 다음을 눌렀을 때만 한 단계씩 열린다.
       expect(await screen.findByRole('button', { name: '다음' })).toBeEnabled();
+      expect(navigator.geolocation.getCurrentPosition).not.toHaveBeenCalled();
       await user.type(screen.getByLabelText('보증금 (만원)'), '1000');
       expect(screen.queryByLabelText('월세 (만원)')).not.toBeInTheDocument();
       await user.click(screen.getByRole('button', { name: '다음' }));
@@ -353,6 +354,7 @@ describe('FE-2 등록·수정·메모', () => {
       renderAuthenticated('/properties/new');
 
       await user.type(await screen.findByLabelText('보증금 (만원)'), '1000');
+      expect(navigator.geolocation.getCurrentPosition).not.toHaveBeenCalled();
       await user.click(screen.getByRole('button', { name: '다음' }));
       await user.type(screen.getByLabelText('월세 (만원)'), '55');
       await user.click(screen.getByRole('button', { name: '다음' }));

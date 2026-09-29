@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import WebView, { type WebViewNavigation } from 'react-native-webview';
+import { version as appVersion } from './package.json';
 import { WEB_APP_URL } from './src/config';
 import { isAllowedWebAppUrl, toWebAppUrl } from './src/navigationPolicy';
 
@@ -124,9 +125,13 @@ const AppContent = () => {
           startInLoadingState
           allowsBackForwardNavigationGestures
           allowsInlineMediaPlayback
-          applicationNameForUserAgent="JachwiSunbae/1.0 iOS"
+          applicationNameForUserAgent={`JachwiSunbae/${appVersion} ${Platform.OS}`}
+          automaticallyAdjustContentInsets={false}
+          bounces={false}
+          contentInsetAdjustmentBehavior="never"
+          geolocationEnabled
+          keyboardDisplayRequiresUserAction={false}
           mediaCapturePermissionGrantType="grantIfSameHostElsePrompt"
-          pullToRefreshEnabled
           sharedCookiesEnabled
           thirdPartyCookiesEnabled={false}
           setSupportMultipleWindows={false}
