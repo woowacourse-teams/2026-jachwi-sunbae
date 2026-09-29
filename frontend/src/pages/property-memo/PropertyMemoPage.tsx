@@ -4,15 +4,11 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import { getPropertyErrorMessage } from '@/features/property/api/propertyErrorMessages';
 import { usePropertyDetail } from '@/features/property/api/useProperties';
 import { useUpdateProperty } from '@/features/property/api/usePropertyMutations';
-import {
-  formatAmountForInput,
-  formatMoneyInput,
-  parseMoneyInput,
-  WON_PER_MANWON,
-} from '@/features/property/lib/propertyForm';
+import { formatAmountForInput, parseMoneyInput, WON_PER_MANWON } from '@/features/property/lib/propertyForm';
 import { parsePositiveId } from '@/features/property/lib/propertyFormat';
 import type { RoomOption, UtilityOption } from '@/features/property/model/Property';
 import { MAINTENANCE_OPTIONS, PROPERTY_OPTIONS } from '@/features/property/model/propertyOptions';
+import MoneyField from '@/features/property/ui/money-field/MoneyField';
 import BottomActionArea from '@/shared/ui/bottom-action-area/BottomActionArea';
 import { Button } from '@/shared/ui/button/Button';
 import ContentState from '@/shared/ui/content-state/ContentState';
@@ -127,16 +123,11 @@ const ResolvedPropertyMemoPage = ({ propertyId }: { propertyId: number }) => {
             selected={values.utilityOptions}
             onChange={(next) => setValue('utilityOptions', next as UtilityOption[])}
           >
-            <TextField
+            <MoneyField
               label="총 관리비"
-              suffix="만원"
-              inputMode="numeric"
               value={values.maintenanceFeeAmount}
               placeholder="예: 10"
-              onChange={(event) => {
-                const formatted = formatMoneyInput(event.target.value);
-                if (formatted !== null) setValue('maintenanceFeeAmount', formatted);
-              }}
+              onValueChange={(value) => setValue('maintenanceFeeAmount', value)}
             />
           </PropertyOptionPicker>
           <PropertyOptionPicker

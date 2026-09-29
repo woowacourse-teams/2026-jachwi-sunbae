@@ -1,6 +1,7 @@
 import type { CSSProperties } from 'react';
 import { useLocation } from 'react-router-dom';
 
+import MoneyField from '@/features/property/ui/money-field/MoneyField';
 import { useKeyboardInset } from '@/shared/lib/hooks/useKeyboardInset';
 import BottomActionArea from '@/shared/ui/bottom-action-area/BottomActionArea';
 import { Button } from '@/shared/ui/button/Button';
@@ -41,30 +42,24 @@ const CreatePropertyPage = () => {
           style={{ '--keyboard-inset': `${keyboardInset}px` } as CSSProperties}
           onSubmit={form.submitStep}
         >
-          <TextField
+          <MoneyField
             label="보증금"
-            suffix="만원"
             fieldClassName={`${styles.fieldGroup} ${styles.depositField}`}
             className={styles.input}
-            aria-label="보증금 (만원)"
-            inputMode="numeric"
             placeholder="예: 1,000"
             value={values.depositAmount}
-            onChange={(event) => form.changeMoney('depositAmount', event.target.value)}
+            onValueChange={(value) => form.changeMoney('depositAmount', value)}
             error={errors.depositAmount}
             autoFocus
           />
           {revealedStep >= 1 && (
-            <TextField
+            <MoneyField
               label="월세"
-              suffix="만원"
               fieldClassName={`${styles.fieldGroup} ${styles.rentField}`}
               className={styles.input}
-              aria-label="월세 (만원)"
-              inputMode="numeric"
               placeholder="예: 55"
               value={values.monthlyRentAmount}
-              onChange={(event) => form.changeMoney('monthlyRentAmount', event.target.value)}
+              onValueChange={(value) => form.changeMoney('monthlyRentAmount', value)}
               error={errors.monthlyRentAmount}
               autoFocus={revealedStep === 1}
             />
