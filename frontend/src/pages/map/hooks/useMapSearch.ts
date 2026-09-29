@@ -38,14 +38,24 @@ const useMapSearch = () => {
     setSearchStatus('idle');
   }, []);
 
+  const openSearch = useCallback(() => setSearchOpen(true), []);
+  const changeQuery = useCallback(
+    (value: string) => {
+      setSearchQuery(value);
+      if (value.trim() === '') clearSearch();
+    },
+    [clearSearch],
+  );
+  const submitSearch = () => executeSearch(searchQuery);
+
   return {
     searchOpen,
-    setSearchOpen,
+    openSearch,
     searchQuery,
-    setSearchQuery,
+    changeQuery,
     searchResults,
     searchStatus,
-    executeSearch,
+    submitSearch,
     closeSearch,
     clearSearch,
   };

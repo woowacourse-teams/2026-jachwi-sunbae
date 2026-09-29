@@ -1,4 +1,4 @@
-import { useMemo, useRef } from 'react';
+import { useCallback, useMemo, useRef } from 'react';
 
 import { clusterProperties } from '@/features/map/lib/mapClustering';
 import type { MapCoordinate } from '@/features/map/lib/mapLocation';
@@ -24,6 +24,11 @@ const useMapProperties = (viewportCenter: MapCoordinate, mapLevel: number) => {
   );
   const mappedRef = useRef<PropertySummary[]>(mapped);
   mappedRef.current = mapped;
+  const getFallbackCoordinate = useCallback(() => {
+    const property = mappedRef.current[0];
+    if (property?.location.latitude == null || property.location.longitude == null) return undefined;
+    return { latitude: property.location.latitude, longitude: property.location.longitude, label: property.name };
+  }, []);
   const propertyPhotoUrls = usePropertyPhotoObjectUrls(mapped);
 
   const visibleProperties = useMemo(() => {
@@ -52,7 +57,7 @@ const useMapProperties = (viewportCenter: MapCoordinate, mapLevel: number) => {
     [mapLevel, mapped, propertyPhotoUrls],
   );
 
-  return { mapped, mappedRef, visibleProperties, propertyMarkers };
+  return { getFallbackCoordinate, visibleProperties, propertyMarkers };
 };
 
 export default useMapProperties;

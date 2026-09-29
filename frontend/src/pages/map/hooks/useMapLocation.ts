@@ -12,7 +12,6 @@ import {
   writeLastMapCenter,
 } from '@/features/map/lib/mapLocation';
 import type { MapAddress } from '@/features/map/model/Map';
-import type { PropertySummary } from '@/features/property/model/Property';
 
 export type MapLocationStatus = 'locating' | 'ready' | 'fallback';
 
@@ -27,45 +26,42 @@ const useMapLocation = () => {
     readLastMapCenter() === null ? '우테코 판교사옥' : '마지막으로 본 위치',
   );
 
-  /** 위치를 얻지 못하면 `getFallbackProperty`가 돌려준 매물 위치를 대신 쓴다. */
-  const moveToCurrentLocation = useCallback(async (getFallbackProperty: () => PropertySummary | undefined) => {
-    // 사파리는 누른 그 순간에 요청해야 권한 창을 띄운다. 상태 변경보다 먼저 부른다.
-    const request = requestCurrentMapLocation();
-    setLocationStatus('locating');
-    try {
-      const coordinate = await request;
-      setViewportCenter(coordinate);
-      setCurrentPosition(coordinate);
-      writeLastMapCenter(coordinate);
-      setLocationLabel('현재 위치');
-      setLocationStatus('ready');
-    } catch (error) {
-      setLocationFailure(error instanceof MapLocationError ? error.reason : 'unavailable');
-      // 이미 거부된 권한은 눌러도 창이 뜨지 않는다. 버튼을 내놓을지 여기서 가른다.
-      void readGeolocationPermission().then(setLocationPermission);
-      // 위치 권한을 받지 못하면 마지막으로 본 위치 → 첫 매물 → 우테코 판교사옥 순으로 대체한다.
-      const lastCenter = readLastMapCenter();
-      const firstProperty = getFallbackProperty();
-      const propertyCenter =
-        firstProperty !== undefined &&
-        firstProperty.location.latitude !== null &&
-        firstProperty.location.longitude !== null
-          ? { latitude: firstProperty.location.latitude, longitude: firstProperty.location.longitude }
-          : null;
+  /** 위치를 얻지 못하면 실패 시점의 최신 대체 좌표를 읽는다. */
+  const moveToCurrentLocation = useCallback(
+    async (getFallbackCoordinate: () => (MapCoordinate & { label: string }) | undefined) => {
+      // 사파리는 누른 그 순간에 요청해야 권한 창을 띄운다. 상태 변경보다 먼저 부른다.
+      const request = requestCurrentMapLocation();
+      setLocationStatus('locating');
+      try {
+        const coordinate = await request;
+        setViewportCenter(coordinate);
+        setCurrentPosition(coordinate);
+        writeLastMapCenter(coordinate);
+        setLocationLabel('현재 위치');
+        setLocationStatus('ready');
+      } catch (error) {
+        setLocationFailure(error instanceof MapLocationError ? error.reason : 'unavailable');
+        // 이미 거부된 권한은 눌러도 창이 뜨지 않는다. 버튼을 내놓을지 여기서 가른다.
+        void readGeolocationPermission().then(setLocationPermission);
+        // 위치 권한을 받지 못하면 마지막으로 본 위치 → 첫 매물 → 우테코 판교사옥 순으로 대체한다.
+        const lastCenter = readLastMapCenter();
+        const fallback = getFallbackCoordinate();
 
-      if (lastCenter !== null) {
-        setViewportCenter(lastCenter);
-        setLocationLabel('마지막으로 본 위치');
-      } else if (propertyCenter !== null && firstProperty !== undefined) {
-        setViewportCenter(propertyCenter);
-        setLocationLabel(firstProperty.name);
-      } else {
-        setViewportCenter(PANGYO_MAP_CENTER);
-        setLocationLabel('우테코 판교사옥');
+        if (lastCenter !== null) {
+          setViewportCenter(lastCenter);
+          setLocationLabel('마지막으로 본 위치');
+        } else if (fallback !== undefined) {
+          setViewportCenter({ latitude: fallback.latitude, longitude: fallback.longitude });
+          setLocationLabel(fallback.label);
+        } else {
+          setViewportCenter(PANGYO_MAP_CENTER);
+          setLocationLabel('우테코 판교사옥');
+        }
+        setLocationStatus('fallback');
       }
-      setLocationStatus('fallback');
-    }
-  }, []);
+    },
+    [],
+  );
 
   const moveToAddress = useCallback((address: MapAddress) => {
     const coordinate = { latitude: address.latitude, longitude: address.longitude };
@@ -85,9 +81,11 @@ const useMapLocation = () => {
   const canRetryLocation =
     locationFailure !== 'insecure' && locationFailure !== 'denied' && locationPermission !== 'denied';
 
+  const moveToCoordinate = useCallback((coordinate: MapCoordinate) => setViewportCenter(coordinate), []);
+
   return {
     viewportCenter,
-    setViewportCenter,
+    moveToCoordinate,
     currentPosition,
     locationStatus,
     locationFailure,

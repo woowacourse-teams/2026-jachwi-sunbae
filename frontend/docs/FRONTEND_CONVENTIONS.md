@@ -90,6 +90,7 @@ import styles from './MapPage.module.css';
 - 하나의 컴포넌트가 너무 커지면 화면·도메인·표현 책임을 나눕니다.
 - 페이지가 커지면 JSX를 통째로 옮기지 말고, 함께 바뀌는 상태를 `pages/<page>/hooks`의 Hook으로 먼저 묶습니다. Hook은 setter나 ref 대신 `selectRadius`, `enter`, `cancel`처럼 의도가 드러나는 함수를 반환합니다.
 - 페이지는 Hook과 화면 영역 컴포넌트를 직접 조립합니다. props를 그대로 넘기기만 하는 중간 컴포넌트는 만들지 않습니다.
+- 지도 Hook은 `moveToCoordinate`, `openSearch`, `expandSheet`처럼 동작을 공개합니다. 비동기 실패 시 최신 매물 좌표는 `getFallbackCoordinate`로 읽고 데이터 ref는 Hook 내부에 둡니다. DOM 연결에 필요한 시트 ref는 예외로 노출합니다.
 
 ```tsx
 type PostCardProps = {
