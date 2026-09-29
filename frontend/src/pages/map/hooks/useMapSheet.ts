@@ -72,10 +72,14 @@ const useMapSheet = () => {
     setSheetStage((current) => (current === 'closed' ? 'mid' : current === 'mid' ? 'full' : 'closed'));
   }, []);
 
+  const expandSheet = useCallback(() => setSheetStage('full'), []);
+  const closeSheet = useCallback(() => setSheetStage('closed'), []);
+
   return {
     sheetRef,
     sheetStage,
-    setSheetStage,
+    expandSheet,
+    closeSheet,
     dragHeight,
     handleDragStart,
     handleDragMove,

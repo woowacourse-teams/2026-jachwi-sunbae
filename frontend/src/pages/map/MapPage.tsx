@@ -34,7 +34,10 @@ const MapPage = () => {
   const filters = useMapFilters();
   const addMode = useAddPropertyMode();
   const mapLocation = useMapLocation();
-  const { mappedRef, visibleProperties, propertyMarkers } = useMapProperties(mapLocation.viewportCenter, mapLevel);
+  const { getFallbackCoordinate, visibleProperties, propertyMarkers } = useMapProperties(
+    mapLocation.viewportCenter,
+    mapLevel,
+  );
   const { facilityMarkers, categoryCounts, circles } = useMapNearby(
     mapLocation.viewportCenter,
     mapLevel,
@@ -54,7 +57,7 @@ const MapPage = () => {
     ];
   }, [currentPosition, facilityMarkers, propertyMarkers]);
 
-  const moveToCurrentLocation = () => void mapLocation.moveToCurrentLocation(() => mappedRef.current[0]);
+  const moveToCurrentLocation = () => void mapLocation.moveToCurrentLocation(getFallbackCoordinate);
 
   const selectSearchedAddress = (address: MapAddress) => {
     mapLocation.moveToAddress(address);
@@ -64,13 +67,13 @@ const MapPage = () => {
 
   const selectMarker = (marker: MapMarker) => {
     if (marker.tone === 'propertyCluster') {
-      mapLocation.setViewportCenter({ latitude: marker.latitude, longitude: marker.longitude });
+      mapLocation.moveToCoordinate({ latitude: marker.latitude, longitude: marker.longitude });
       setMapLevel((current) => Math.max(1, current - 1));
       return;
     }
     if (marker.id.startsWith(PROPERTY_MARKER_PREFIX)) {
       setSelectedPropertyId(Number(marker.id.slice(PROPERTY_MARKER_PREFIX.length)));
-      sheet.setSheetStage('full');
+      sheet.expandSheet();
     }
   };
 
@@ -88,7 +91,7 @@ const MapPage = () => {
   const enterAddMode = () => {
     filters.suspendRadius();
     setSelectedPropertyId(null);
-    sheet.setSheetStage('closed');
+    sheet.closeSheet();
     addMode.enter(mapLocation.viewportCenter);
   };
 
@@ -108,13 +111,10 @@ const MapPage = () => {
         query={search.searchQuery}
         results={search.searchResults}
         status={search.searchStatus}
-        onOpen={() => search.setSearchOpen(true)}
+        onOpen={search.openSearch}
         onClose={search.closeSearch}
-        onQueryChange={(value) => {
-          search.setSearchQuery(value);
-          if (value.trim() === '') search.clearSearch();
-        }}
-        onSubmit={() => void search.executeSearch(search.searchQuery)}
+        onQueryChange={search.changeQuery}
+        onSubmit={() => void search.submitSearch()}
         onClear={search.clearSearch}
         onSelect={selectSearchedAddress}
       />
