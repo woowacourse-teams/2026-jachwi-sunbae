@@ -5,6 +5,7 @@ DEPLOY_ENVIRONMENT="${1:?배포 환경은 dev 또는 prod여야 한다.}"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 DIST_DIR="${SCRIPT_DIR}/../dist"
 LOCAL_INDEX="${DIST_DIR}/index.html"
+VERSION_FILE="${SCRIPT_DIR}/../../VERSION"
 
 case "${DEPLOY_ENVIRONMENT}" in
     dev)
@@ -28,20 +29,28 @@ if [[ ! -f "${LOCAL_INDEX}" ]]; then
     exit 1
 fi
 
+VERSION="$(tr -d '[:space:]' < "${VERSION_FILE}")"
+printf '{"version":"%s"}\n' "${VERSION}" > "${DIST_DIR}/version.json"
+
 export AWS_PAGER=""
 
 aws s3 sync "${DIST_DIR}/" "${S3_URI}" \
     --delete \
     --exclude 'index.html' \
+    --exclude 'version.json' \
     --cache-control 'public,max-age=31536000,immutable'
 
 aws s3 cp "${LOCAL_INDEX}" "${S3_URI}index.html" \
     --cache-control 'no-cache,max-age=0,must-revalidate' \
     --content-type 'text/html; charset=utf-8'
 
+aws s3 cp "${DIST_DIR}/version.json" "${S3_URI}version.json" \
+    --cache-control 'no-cache,max-age=0,must-revalidate' \
+    --content-type 'application/json; charset=utf-8'
+
 INVALIDATION_ID="$(aws cloudfront create-invalidation \
     --distribution-id "${DISTRIBUTION_ID}" \
-    --paths '/index.html' \
+    --paths '/index.html' '/version.json' \
     --query 'Invalidation.Id' \
     --output text)"
 
@@ -54,4 +63,4 @@ aws cloudfront wait invalidation-completed \
     --distribution-id "${DISTRIBUTION_ID}" \
     --id "${INVALIDATION_ID}"
 
-"${SCRIPT_DIR}/verify-deployment.sh" "${LOCAL_INDEX}" "${DEPLOYED_INDEX_URL}"
+"${SCRIPT_DIR}/verify-deployment.sh" "${LOCAL_INDEX}" "${DEPLOYED_INDEX_URL}" "${VERSION}"

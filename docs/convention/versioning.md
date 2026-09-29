@@ -6,6 +6,7 @@
 - 백엔드, 프론트엔드, iOS, Android는 같은 제품 버전을 사용한다.
 - 제품 버전은 `MAJOR.MINOR.PATCH` 형식의 시맨틱 버저닝을 따른다.
 - 배포 전에 `python3 .github/scripts/check_versions.py`로 버전 동기화를 검사한다.
+- 릴리스별 변경은 루트의 `CHANGELOG.md`에 기록한다.
 
 ## 버전 증가 기준
 
@@ -14,6 +15,22 @@
 - `PATCH`: 하위 호환되는 버그 수정, 성능 개선 또는 내부 리팩터링
 
 이번 React Native 앱 추가는 지원 플랫폼이 늘어나는 하위 호환 기능이므로 제품 버전을 `1.1.0`으로 설정한다.
+
+## 변경 내역과 릴리스
+
+- 기능 브랜치에서 발생한 변경은 릴리스 PR의 `CHANGELOG.md`에 `Unreleased` 또는 다음 릴리스 섹션으로 정리한다.
+- 릴리스 PR에서 `VERSION`, 각 애플리케이션 버전, changelog 섹션을 함께 확정한다.
+- `main`에 릴리스 PR이 반영되면 Release 워크플로가 `vMAJOR.MINOR.PATCH` Git 태그와 GitHub Release를 생성한다.
+- 프론트엔드 배포 결과는 `/version.json`에서 확인하며, 백엔드 배포 결과는 `/actuator/info`의 `build.version`과 `build.commit`으로 확인한다.
+
+## 롤백 기준
+
+1. 장애가 발생한 환경의 제품 버전과 커밋을 기록한다.
+2. `CHANGELOG.md`와 GitHub Release에서 직전 정상 버전의 태그를 확인한다.
+3. 해당 태그의 커밋 또는 CodePipeline의 직전 정상 실행을 같은 환경에 재배포한다.
+4. 프론트엔드는 `/version.json`, 백엔드는 `/actuator/info`를 조회해 복구된 버전과 커밋을 확인한다.
+
+운영 브랜치의 이력을 덮어쓰거나 태그를 이동하지 않는다. 잘못된 릴리스는 새 PATCH 버전으로 수정하고, 긴급 복구는 기존 태그를 기준으로 재배포한다.
 
 ## 네이티브 빌드 번호
 
