@@ -4,6 +4,7 @@ const webpack = require('webpack');
 const packageVersion = require('./package.json').version;
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
+const CssMinimizerPlugin = require('css-minimizer-webpack-plugin');
 const { BundleAnalyzerPlugin } = require('webpack-bundle-analyzer');
 
 // 로컬 개발용 키는 .env.local 에 둔다(저장소에 커밋하지 않는다). 이미 설정된 환경 변수를 덮어쓰지 않는다.
@@ -87,6 +88,11 @@ module.exports = (_env, argv) => {
       publicPath: '/',
       clean: true,
     },
+    optimization: isProduction
+      ? {
+          minimizer: ['...', new CssMinimizerPlugin()],
+        }
+      : undefined,
     plugins: [
       new webpack.DefinePlugin({
         __API_BASE_URL__: JSON.stringify(apiBaseUrl),
