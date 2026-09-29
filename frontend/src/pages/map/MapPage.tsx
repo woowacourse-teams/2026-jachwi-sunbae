@@ -43,6 +43,7 @@ const MapPage = () => {
     mapLevel,
     filters.selectedCategories,
     filters.selectedRadius,
+    mapLocation.currentPosition,
   );
 
   const { currentPosition } = mapLocation;
@@ -157,7 +158,7 @@ const MapPage = () => {
             onMoveToCurrentLocation={moveToCurrentLocation}
             onEnterAddMode={enterAddMode}
           />
-          {selectedRadius !== null && toastCategory !== undefined && (
+          {currentPosition !== null && selectedRadius !== null && toastCategory !== undefined && (
             <MapNearbyCountToast
               radius={selectedRadius}
               category={toastCategory}

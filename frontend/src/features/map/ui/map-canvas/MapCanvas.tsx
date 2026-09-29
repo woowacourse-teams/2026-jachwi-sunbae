@@ -478,7 +478,11 @@ const MapCanvas = ({
             <span
               key={circle.radiusMeters}
               className={styles.radiusCircle}
-              style={{ width: `${(circle.radiusMeters / 2000) * 84}%` }}
+              style={{
+                width: `${(circle.radiusMeters / 2000) * 84}%`,
+                left: `${50 + (radiusCenter.longitude - boundedCenter.longitude) * 3_100}%`,
+                top: `${50 - (radiusCenter.latitude - boundedCenter.latitude) * 4_200}%`,
+              }}
               aria-hidden="true"
             />
           ))}
