@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom';
 
 import Icon, { type IconName } from '@/shared/ui/icon/Icon';
 
-import styles from '../../MyPage.module.css';
+import styles from './MyMenuLink.module.css';
 
 type MyMenuLinkProps = {
   to: string;
@@ -11,7 +11,7 @@ type MyMenuLinkProps = {
 };
 
 const MyMenuLink = ({ to, icon, label }: MyMenuLinkProps) => (
-  <Link to={to}>
+  <Link className={styles.link} to={to}>
     <span className={styles.menuIcon}>
       <Icon name={icon} size={15} />
     </span>
