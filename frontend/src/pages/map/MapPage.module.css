@@ -59,7 +59,7 @@
   z-index: 15;
   display: grid;
   justify-items: end;
-  --sheet-height: 1.9rem;
+  --sheet-height: 4rem;
 
   bottom: min(calc(min(var(--sheet-height), min(34%, 18rem)) + 0.75rem), calc(100% - 25.9rem));
   transition: bottom 0.22s cubic-bezier(0.4, 0, 0.2, 1);

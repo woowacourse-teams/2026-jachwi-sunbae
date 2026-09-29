@@ -125,8 +125,11 @@ const AppContent = () => {
           allowsBackForwardNavigationGestures
           allowsInlineMediaPlayback
           applicationNameForUserAgent="JachwiSunbae/1.0 iOS"
+          automaticallyAdjustContentInsets={false}
+          bounces={false}
+          contentInsetAdjustmentBehavior="never"
+          keyboardDisplayRequiresUserAction={false}
           mediaCapturePermissionGrantType="grantIfSameHostElsePrompt"
-          pullToRefreshEnabled
           sharedCookiesEnabled
           thirdPartyCookiesEnabled={false}
           setSupportMultipleWindows={false}

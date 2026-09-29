@@ -24,7 +24,7 @@ const PrivacyPage = () => {
             자취선배는 회원 식별과 매물 기록 기능 제공, 서비스 안정성 및 이용 현황 분석을 위해 아래 정보를 처리합니다.
             이 방침은 웹과 iOS 앱에 적용됩니다.
           </p>
-          <p>시행일: 2026년 9월 26일</p>
+          <p>시행일: 2026년 9월 29일</p>
         </section>
 
         <section className={styles.card} aria-labelledby="collected-data-heading">
@@ -53,9 +53,9 @@ const PrivacyPage = () => {
         <section className={styles.card} aria-labelledby="sharing-heading">
           <h2 id="sharing-heading">외부 서비스와 처리 위탁</h2>
           <p>
-            서비스 운영을 위해 클라우드 호스팅·파일 저장소와 지도 제공 서비스를 이용합니다. 웹에서는 서비스 개선을 위해
-            PostHog를 사용하며, 이용 경로와 기능 이벤트, 회원 식별자가 처리될 수 있습니다. iOS 앱에서는 PostHog와 Meta
-            Pixel을 실행하지 않습니다.
+            서비스 운영을 위해 클라우드 호스팅·파일 저장소와 지도 제공 서비스를 이용합니다. 웹과 iOS 앱에서는 서비스
+            개선을 위해 PostHog를 사용하며, 이용 경로와 기능 이벤트, 회원 식별자가 처리될 수 있습니다. 광고 성과 측정용
+            Meta Pixel은 iOS 앱에서 실행하지 않습니다.
           </p>
         </section>
 

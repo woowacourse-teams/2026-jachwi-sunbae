@@ -25,15 +25,11 @@
 }
 
 .collapsed {
-  height: 1.9rem;
-}
-
-.collapsed:not([data-dragging='true']) .heading {
-  display: none;
+  height: 4rem;
 }
 
 .collapsed .header {
-  padding-block: 0.35rem;
+  padding-block: 0.5rem 0.65rem;
 }
 
 .mid {
@@ -46,14 +42,21 @@
 
 .header {
   display: flex;
+  width: 100%;
   flex: none;
   flex-direction: column;
   align-items: center;
   gap: 0.25rem;
   padding: 0.5rem 1rem 0.35rem;
+  border: 0;
   background: var(--color-surface, #fff);
+  color: inherit;
   cursor: pointer;
+  font: inherit;
+  text-align: left;
+  touch-action: none;
   user-select: none;
+  -webkit-user-select: none;
 }
 
 .grabber {

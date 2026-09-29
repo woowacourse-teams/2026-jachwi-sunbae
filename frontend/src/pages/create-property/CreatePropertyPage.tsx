@@ -13,7 +13,7 @@ import type { PropertyInputDto } from '../../features/property/api/dtos/Property
 import type { MapAddress } from '../../features/map/model/Map';
 import type { PublicConfig } from '../../shared/config/publicConfigTypes';
 import { reverseGeocode, searchAddress } from '../../features/map/api/mapApi';
-import { DEFAULT_MAP_CENTER, requestCurrentMapLocation } from '../../features/map/lib/mapLocation';
+import { DEFAULT_MAP_CENTER, readLastMapCenter, requestCurrentMapLocation } from '../../features/map/lib/mapLocation';
 import {
   formatAmountForInput,
   formatMoneyInput,
@@ -78,15 +78,21 @@ const CreatePropertyPage = ({ config }: { config: PublicConfig }) => {
   const hasPresetLocation = routeState.selectedLocation !== undefined;
   const nameStep = hasPresetLocation ? 2 : 3;
   const [revealedStep, setRevealedStep] = useState(0);
-  const [selectedLocation, setSelectedLocation] = useState<MapAddress>(
-    () =>
+  const [selectedLocation, setSelectedLocation] = useState<MapAddress>(() => {
+    const fallbackCenter = readLastMapCenter() ?? DEFAULT_MAP_CENTER;
+    return (
       routeState.selectedLocation ?? {
         address: null,
         roadAddress: null,
         jibunAddress: null,
-        ...DEFAULT_MAP_CENTER,
-      },
-  );
+        ...fallbackCenter,
+      }
+    );
+  });
+  const initialCoordinateRef = useRef({
+    latitude: selectedLocation.latitude,
+    longitude: selectedLocation.longitude,
+  });
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<MapAddress[]>([]);
   const [searchStatus, setSearchStatus] = useState<'idle' | 'loading' | 'error'>('idle');
@@ -142,9 +148,8 @@ const CreatePropertyPage = ({ config }: { config: PublicConfig }) => {
       setLocationStatus('ready');
       return;
     }
-    void requestCurrentMapLocation()
-      .then((coordinate) => resolveLocation(coordinate.latitude, coordinate.longitude))
-      .catch(() => resolveLocation(DEFAULT_MAP_CENTER.latitude, DEFAULT_MAP_CENTER.longitude));
+    const initialCoordinate = initialCoordinateRef.current;
+    void resolveLocation(initialCoordinate.latitude, initialCoordinate.longitude);
   }, [resolveLocation, routeState.selectedLocation]);
 
   useEffect(

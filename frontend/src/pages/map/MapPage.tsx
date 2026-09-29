@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 
 import { useNavigate } from 'react-router-dom';
@@ -21,6 +21,7 @@ import Icon from '../../shared/ui/icon/Icon';
 import { usePropertyList } from '../../features/property/api/useProperties';
 
 import type { MapAddress, MapCategory } from '../../features/map/model/Map';
+import type { MapCoordinate } from '../../features/map/lib/mapLocation';
 import { formatRentSummary } from '../../features/property/lib/propertyFormat';
 import type { PublicConfig } from '../../shared/config/publicConfigTypes';
 import {
@@ -68,13 +69,15 @@ const MapPage = ({ config }: { config: PublicConfig }) => {
   const mappedRef = useRef(mapped);
   mappedRef.current = mapped;
   const [viewportCenter, setViewportCenter] = useState(() => readLastMapCenter() ?? DEFAULT_MAP_CENTER);
-  const [currentPosition, setCurrentPosition] = useState(viewportCenter);
-  const [locationStatus, setLocationStatus] = useState<'locating' | 'ready' | 'fallback'>('locating');
+  const [currentPosition, setCurrentPosition] = useState<MapCoordinate | null>(null);
+  const [locationStatus, setLocationStatus] = useState<'locating' | 'ready' | 'fallback'>('ready');
   const [locationFailure, setLocationFailure] = useState<MapLocationFailure>('unavailable');
   const [locationPermission, setLocationPermission] = useState<PermissionState | 'unknown'>('unknown');
   const [searchOpen, setSearchOpen] = useState(false);
   const [mapLevel, setMapLevel] = useState(INITIAL_MAP_LEVEL);
-  const [locationLabel, setLocationLabel] = useState('현재 위치');
+  const [locationLabel, setLocationLabel] = useState(() =>
+    readLastMapCenter() === null ? '우테코 판교사옥' : '마지막으로 본 위치',
+  );
   const [selectedPropertyId, setSelectedPropertyId] = useState<number | null>(null);
   const [isAddMode, setIsAddMode] = useState(false);
   const [addAddress, setAddAddress] = useState<MapAddress | null>(null);
@@ -143,15 +146,12 @@ const MapPage = ({ config }: { config: PublicConfig }) => {
 
       if (lastCenter !== null) {
         setViewportCenter(lastCenter);
-        setCurrentPosition(lastCenter);
         setLocationLabel('마지막으로 본 위치');
       } else if (propertyCenter !== null && firstProperty !== undefined) {
         setViewportCenter(propertyCenter);
-        setCurrentPosition(propertyCenter);
         setLocationLabel(firstProperty.name);
       } else {
         setViewportCenter(PANGYO_MAP_CENTER);
-        setCurrentPosition(PANGYO_MAP_CENTER);
         setLocationLabel('우테코 판교사옥');
       }
       setLocationStatus('fallback');
@@ -190,10 +190,6 @@ const MapPage = ({ config }: { config: PublicConfig }) => {
     setIsAddMode(false);
     setSelectedRadius(radiusBeforeAddModeRef.current);
   };
-
-  useEffect(() => {
-    void moveToCurrentLocation();
-  }, [moveToCurrentLocation]);
 
   const canRetryLocation =
     locationFailure !== 'insecure' && locationFailure !== 'denied' && locationPermission !== 'denied';
@@ -245,12 +241,16 @@ const MapPage = ({ config }: { config: PublicConfig }) => {
     return [
       ...propertyMarkers,
       ...facilityMarkers,
-      {
-        id: 'current-location',
-        ...currentPosition,
-        label: '현재 위치',
-        tone: 'current' as const,
-      },
+      ...(currentPosition === null
+        ? []
+        : [
+            {
+              id: 'current-location',
+              ...currentPosition,
+              label: '현재 위치',
+              tone: 'current' as const,
+            },
+          ]),
     ];
   }, [currentPosition, facilityMarkers, propertyMarkers]);
 
@@ -292,14 +292,14 @@ const MapPage = ({ config }: { config: PublicConfig }) => {
     const stageHeight = sheetRef.current?.parentElement?.getBoundingClientRect().height ?? 0;
     const rem = 16;
     return {
-      closed: 1.9 * rem,
-      mid: Math.min(stageHeight * 0.42, 22 * rem),
+      closed: 4 * rem,
+      mid: Math.min(stageHeight * 0.34, 18 * rem),
       full: Math.max(stageHeight - 4.25 * rem, 0),
     };
   };
 
   // 포인터를 캡처해야 헤더 밖에서 손을 떼도 드래그가 끝까지 이어진다.
-  const handleDragStart = (event: React.PointerEvent<HTMLDivElement>) => {
+  const handleDragStart = (event: React.PointerEvent<HTMLButtonElement>) => {
     const height = sheetRef.current?.getBoundingClientRect().height ?? 0;
     dragStartRef.current = { y: event.clientY, height };
     touchStartYRef.current = event.clientY;
@@ -307,7 +307,7 @@ const MapPage = ({ config }: { config: PublicConfig }) => {
   };
 
   // 끄는 동안 손끝만큼 높이를 바꿔 시트가 따라오게 한다.
-  const handleDragMove = (event: React.PointerEvent<HTMLDivElement>) => {
+  const handleDragMove = (event: React.PointerEvent<HTMLButtonElement>) => {
     const start = dragStartRef.current;
     if (start === null) return;
     const heights = sheetStageHeights();
@@ -315,7 +315,7 @@ const MapPage = ({ config }: { config: PublicConfig }) => {
     setDragHeight(Math.min(Math.max(next, heights.closed), heights.full));
   };
 
-  const handleDragEnd = (event: React.PointerEvent<HTMLDivElement>) => {
+  const handleDragEnd = (event: React.PointerEvent<HTMLButtonElement>) => {
     const start = dragStartRef.current;
     const startY = touchStartYRef.current;
     dragStartRef.current = null;
@@ -388,7 +388,7 @@ const MapPage = ({ config }: { config: PublicConfig }) => {
             center={viewportCenter}
             markers={markers}
             circles={circles}
-            radiusCenter={currentPosition}
+            radiusCenter={currentPosition ?? undefined}
             level={mapLevel}
             showRadiusLabels={false}
             showCenterPin={isAddMode}
@@ -489,7 +489,7 @@ const MapPage = ({ config }: { config: PublicConfig }) => {
             </div>
           )}
 
-          {!isAddMode && mapped.length > 0 && (
+          {!isAddMode && (
             <MapPropertySheet
               sheetRef={sheetRef}
               stage={sheetStage}

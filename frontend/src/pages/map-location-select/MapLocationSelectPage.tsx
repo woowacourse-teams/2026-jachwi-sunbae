@@ -44,7 +44,7 @@ const MapLocationSelectPage = ({ config }: { config: PublicConfig }) => {
   const launchedFromForm = routeState.returnTo !== undefined;
   const editing = returnTo.endsWith('/edit');
   const registrationDraft = routeState.registrationDraft;
-  const fallbackCenter = readLastMapCenter() ?? DEFAULT_MAP_CENTER;
+  const [fallbackCenter] = useState(() => readLastMapCenter() ?? DEFAULT_MAP_CENTER);
 
   const [selected, setSelected] = useState<MapAddress>(
     () => routeState.initialLocation ?? blankAddress(fallbackCenter.latitude, fallbackCenter.longitude),
@@ -93,7 +93,7 @@ const MapLocationSelectPage = ({ config }: { config: PublicConfig }) => {
 
   useEffect(() => {
     if (routeState.initialLocation === undefined) {
-      void moveToCurrentLocation();
+      void selectCoordinates(fallbackCenter.latitude, fallbackCenter.longitude);
       return;
     }
 
@@ -104,7 +104,7 @@ const MapLocationSelectPage = ({ config }: { config: PublicConfig }) => {
     ) {
       void selectCoordinates(routeState.initialLocation.latitude, routeState.initialLocation.longitude);
     }
-  }, [moveToCurrentLocation, routeState.initialLocation, selectCoordinates]);
+  }, [fallbackCenter.latitude, fallbackCenter.longitude, routeState.initialLocation, selectCoordinates]);
 
   useEffect(
     () => () => {
