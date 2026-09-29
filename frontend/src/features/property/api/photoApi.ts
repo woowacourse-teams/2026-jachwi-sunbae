@@ -1,6 +1,7 @@
-import type { PublicConfig } from '../../../shared/config/publicConfigTypes';
+import { apiBlobRequest, apiRequest } from '@/features/auth/api/apiClient';
+import type { PublicConfig } from '@/shared/config/publicConfigTypes';
+
 import type { PropertyPhoto, PropertyPhotoList } from '../model/Property';
-import { apiBlobRequest, apiRequest } from '../../auth/api/apiClient';
 import { parseNoContent, parsePropertyPhotoList, parsePropertyPhotoResponse } from './propertyParsers';
 
 export const fetchPropertyPhotos = (

@@ -1,265 +1,30 @@
-import { useCallback, useEffect, useRef, useState, type CSSProperties } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
-import TopNavigation from '../../shared/ui/top-navigation/TopNavigation';
-import { useKeyboardInset } from '../../shared/lib/hooks/useKeyboardInset';
-import { Button } from '../../shared/ui/button/Button';
-import MapCanvas from '../../features/map/ui/map-canvas/MapCanvas';
-import Icon from '../../shared/ui/icon/Icon';
-import SearchField from '../../shared/ui/search-field/SearchField';
-import BottomActionArea from '../../shared/ui/bottom-action-area/BottomActionArea';
-import TextField from '../../shared/ui/text-field/TextField';
-import { useCreateProperty } from '../../features/property/api/usePropertyMutations';
-import type { PropertyInputDto } from '../../features/property/api/dtos/PropertyDto';
-import type { MapAddress } from '../../features/map/model/Map';
-import type { PublicConfig } from '../../shared/config/publicConfigTypes';
-import { reverseGeocode, searchAddress } from '../../features/map/api/mapApi';
-import { DEFAULT_MAP_CENTER, readLastMapCenter, requestCurrentMapLocation } from '../../features/map/lib/mapLocation';
-import {
-  formatAmountForInput,
-  formatMoneyInput,
-  toPropertyInputDto,
-  validatePropertyForm,
-} from '../../features/property/lib/propertyForm';
-import type { PropertyFormErrors, PropertyFormValues } from '../../features/property/lib/propertyForm';
+import type { CSSProperties } from 'react';
+import { useLocation } from 'react-router-dom';
+
+import { useKeyboardInset } from '@/shared/lib/hooks/useKeyboardInset';
+import BottomActionArea from '@/shared/ui/bottom-action-area/BottomActionArea';
+import { Button } from '@/shared/ui/button/Button';
+import TextField from '@/shared/ui/text-field/TextField';
+import TopNavigation from '@/shared/ui/top-navigation/TopNavigation';
+
+import { type PropertyCreationRouteState, usePropertyCreationForm } from './hooks/usePropertyCreationForm';
+import PropertyLocationPicker from './ui/property-location-picker/PropertyLocationPicker';
+
 import styles from './CreatePropertyPage.module.css';
-import { trackPostHogEvent } from '../../shared/lib/analytics/posthog';
 
-type CreatePropertyRouteState = {
-  registrationDraft?: PropertyInputDto;
-  selectedLocation?: MapAddress;
+const stepNotice = (revealedStep: number, isReadyToSubmit: boolean) => {
+  if (isReadyToSubmit) return '필수 정보를 모두 입력했다면 매물을 등록해 주세요.';
+  if (revealedStep === 0) return '보증금을 입력한 뒤 다음을 눌러 주세요.';
+  if (revealedStep === 1) return '월세를 입력한 뒤 다음을 눌러 주세요.';
+  return '위치를 선택한 뒤 다음을 눌러 주세요.';
 };
 
-const DEFAULT_PROPERTY_NAME = '새 매물';
-
-const propertyCreationStepEvents = {
-  deposit: 'property_creation_deposit_completed',
-  monthly_rent: 'property_creation_monthly_rent_completed',
-  address: 'property_creation_address_completed',
-  name: 'property_creation_name_completed',
-} as const;
-
-type PropertyCreationStep = keyof typeof propertyCreationStepEvents;
-
-const trackPropertyCreationStep = (step: PropertyCreationStep): void => {
-  trackPostHogEvent(propertyCreationStepEvents[step]);
-};
-
-const emptyValues: PropertyFormValues = {
-  name: DEFAULT_PROPERTY_NAME,
-  depositAmount: '',
-  monthlyRentAmount: '',
-  discoverySource: '',
-};
-
-const draftToValues = (draft: PropertyInputDto | undefined): PropertyFormValues =>
-  draft === undefined
-    ? emptyValues
-    : {
-        name: draft.name,
-        depositAmount: formatAmountForInput(draft.depositAmount),
-        monthlyRentAmount: formatAmountForInput(draft.monthlyRentAmount),
-        discoverySource: draft.discoverySource ?? '',
-        address: draft.address ?? '',
-        latitude: draft.latitude,
-        longitude: draft.longitude,
-      };
-
-/**
- * 매물 등록 1단계. 이름과 보증금·월세만 받고, 주소는 다음 단계인 지도 화면에서 찍는다.
- * 실제 생성 요청은 위치를 확정하는 MapLocationSelectPage에서 보낸다.
- */
-const CreatePropertyPage = ({ config }: { config: PublicConfig }) => {
-  const navigate = useNavigate();
-  const location = useLocation();
+const CreatePropertyPage = () => {
+  const routeState = (useLocation().state as PropertyCreationRouteState | null) ?? {};
   const keyboardInset = useKeyboardInset();
-  const routeState = (location.state as CreatePropertyRouteState | null) ?? {};
-
-  const [values, setValues] = useState<PropertyFormValues>(() => {
-    const draft = draftToValues(routeState.registrationDraft);
-    const selectedLocation = routeState.selectedLocation;
-    return selectedLocation === undefined
-      ? draft
-      : {
-          ...draft,
-          address: selectedLocation.roadAddress ?? selectedLocation.jibunAddress ?? selectedLocation.address ?? '',
-          latitude: selectedLocation.latitude,
-          longitude: selectedLocation.longitude,
-        };
-  });
-  const [errors, setErrors] = useState<PropertyFormErrors>({});
-  // 입력값이 바뀌는 즉시 다음 필드를 노출하지 않고, 사용자가 다음을 눌렀을 때만 한 단계씩 연다.
-  // 지도에서 위치를 정해 넘어왔으면 다시 묻지 않는다. 그만큼 이름 단계가 한 칸 앞당겨진다.
-  const hasPresetLocation = routeState.selectedLocation !== undefined;
-  const nameStep = hasPresetLocation ? 2 : 3;
-  const [revealedStep, setRevealedStep] = useState(0);
-  const [selectedLocation, setSelectedLocation] = useState<MapAddress>(() => {
-    const fallbackCenter = readLastMapCenter() ?? DEFAULT_MAP_CENTER;
-    return (
-      routeState.selectedLocation ?? {
-        address: null,
-        roadAddress: null,
-        jibunAddress: null,
-        ...fallbackCenter,
-      }
-    );
-  });
-  const initialCoordinateRef = useRef({
-    latitude: selectedLocation.latitude,
-    longitude: selectedLocation.longitude,
-  });
-  const [searchQuery, setSearchQuery] = useState('');
-  const [searchResults, setSearchResults] = useState<MapAddress[]>([]);
-  const [searchStatus, setSearchStatus] = useState<'idle' | 'loading' | 'error'>('idle');
-  const [locationStatus, setLocationStatus] = useState<'loading' | 'ready' | 'error'>('loading');
-  const [createError, setCreateError] = useState<string | null>(null);
-  const createProperty = useCreateProperty(config);
-  const geocodeSequence = useRef(0);
-  const geocodeTimer = useRef<number | null>(null);
-
-  useEffect(() => {
-    trackPostHogEvent('property_creation_started');
-  }, []);
-
-  const hasName = values.name.trim().length > 0;
-  const hasDeposit = values.depositAmount.length > 0;
-  const hasMonthlyRent = values.monthlyRentAmount.length > 0;
-
-  const updateMoney = (field: 'depositAmount' | 'monthlyRentAmount', input: string) => {
-    const formatted = formatMoneyInput(input);
-    if (formatted === null) return;
-    setValues((current) => ({ ...current, [field]: formatted }));
-    setErrors((current) => ({ ...current, [field]: undefined }));
-  };
-
-  const validateRevealedRequiredFields = () => {
-    const nextErrors: PropertyFormErrors = {};
-    if (!hasDeposit) nextErrors.depositAmount = '보증금을 입력해 주세요.';
-    if (revealedStep >= 1 && !hasMonthlyRent) nextErrors.monthlyRentAmount = '월세를 입력해 주세요.';
-    if (revealedStep >= nameStep && !hasName) nextErrors.name = '매물 이름을 입력해 주세요.';
-    setErrors(nextErrors);
-    return Object.keys(nextErrors).length > 0;
-  };
-
-  const resolveLocation = useCallback(
-    async (latitude: number, longitude: number) => {
-      const sequence = geocodeSequence.current + 1;
-      geocodeSequence.current = sequence;
-      setLocationStatus('loading');
-      try {
-        const address = await reverseGeocode(config, latitude, longitude);
-        if (geocodeSequence.current !== sequence) return;
-        setSelectedLocation(address);
-        setLocationStatus('ready');
-        // 위치를 못 잡아 띄웠던 안내는 주소를 찾은 순간 치운다.
-        setCreateError(null);
-      } catch {
-        if (geocodeSequence.current !== sequence) return;
-        setSelectedLocation((current) => ({ ...current, address: null, roadAddress: null, jibunAddress: null }));
-        setLocationStatus('error');
-      }
-    },
-    [config],
-  );
-
-  useEffect(() => {
-    if (routeState.selectedLocation !== undefined) {
-      setLocationStatus('ready');
-      return;
-    }
-    const initialCoordinate = initialCoordinateRef.current;
-    void resolveLocation(initialCoordinate.latitude, initialCoordinate.longitude);
-  }, [resolveLocation, routeState.selectedLocation]);
-
-  useEffect(
-    () => () => {
-      if (geocodeTimer.current !== null) window.clearTimeout(geocodeTimer.current);
-    },
-    [],
-  );
-
-  const submitProperty = async () => {
-    const validationErrors = validatePropertyForm(values);
-    setErrors(validationErrors);
-    if (Object.keys(validationErrors).length > 0) return;
-    // 주소를 확인하는 중이거나 확인하지 못한 상태에서 눌렀다면 까닭을 알려 준다.
-    // 조용히 돌아가면 등록 버튼이 고장 난 것처럼 보인다.
-    if (locationStatus !== 'ready') {
-      setCreateError(
-        locationStatus === 'loading'
-          ? '주소를 확인하는 중이에요. 잠시 뒤에 다시 눌러 주세요.'
-          : '주소를 확인하지 못했어요. 지도를 움직이거나 주소를 검색해 위치를 다시 선택해 주세요.',
-      );
-      return;
-    }
-    const input = toPropertyInputDto(values);
-    if (input === null) return;
-    setCreateError(null);
-    trackPropertyCreationStep('name');
-    trackPostHogEvent('property_creation_submitted');
-    try {
-      const created = await createProperty.mutateAsync({
-        ...input,
-        address: selectedLocation.roadAddress ?? selectedLocation.jibunAddress ?? selectedLocation.address,
-        latitude: selectedLocation.latitude,
-        longitude: selectedLocation.longitude,
-      });
-      navigate(`/properties/${created.propertyId}`, { replace: true });
-    } catch {
-      trackPostHogEvent('property_creation_failed', { error_kind: 'server' });
-      setCreateError('매물을 등록하지 못했어요. 입력한 정보는 유지되니 다시 시도해 주세요.');
-    }
-  };
-
-  const submitAddressSearch = async () => {
-    if (searchQuery.trim() === '') return;
-    trackPostHogEvent('address_search_started');
-    setSearchStatus('loading');
-    try {
-      setSearchResults(await searchAddress(config, searchQuery.trim()));
-      setSearchStatus('idle');
-    } catch {
-      trackPostHogEvent('address_search_failed', { error_kind: 'server' });
-      setSearchResults([]);
-      setSearchStatus('error');
-    }
-  };
-
-  const moveToCurrentLocation = async () => {
-    setSearchStatus('loading');
-    try {
-      const coordinate = await requestCurrentMapLocation();
-      await resolveLocation(coordinate.latitude, coordinate.longitude);
-      setSearchStatus('idle');
-    } catch {
-      trackPostHogEvent('address_search_failed', { error_kind: 'location' });
-      setSearchStatus('error');
-    }
-  };
-
-  const handleNext = (event: React.FormEvent) => {
-    event.preventDefault();
-
-    if (validateRevealedRequiredFields()) return;
-
-    if (revealedStep === 0) {
-      trackPropertyCreationStep('deposit');
-      setRevealedStep(1);
-      return;
-    }
-
-    if (revealedStep === 1) {
-      trackPropertyCreationStep('monthly_rent');
-      setRevealedStep(2);
-      return;
-    }
-
-    if (!hasPresetLocation && revealedStep === 2) {
-      trackPropertyCreationStep('address');
-      setRevealedStep(3);
-      return;
-    }
-    void submitProperty();
-  };
+  const form = usePropertyCreationForm(routeState);
+  const { values, errors, revealedStep, nameStep } = form;
+  const isNameStep = revealedStep >= nameStep;
 
   return (
     <main className={styles.page}>
@@ -271,11 +36,10 @@ const CreatePropertyPage = ({ config }: { config: PublicConfig }) => {
           backLabel="매물 등록 닫기"
           navigationIcon="close"
         />
-
         <form
           className={styles.formContainer}
           style={{ '--keyboard-inset': `${keyboardInset}px` } as CSSProperties}
-          onSubmit={handleNext}
+          onSubmit={form.submitStep}
         >
           <TextField
             label="보증금"
@@ -286,11 +50,10 @@ const CreatePropertyPage = ({ config }: { config: PublicConfig }) => {
             inputMode="numeric"
             placeholder="예: 1,000"
             value={values.depositAmount}
-            onChange={(event) => updateMoney('depositAmount', event.target.value)}
+            onChange={(event) => form.changeMoney('depositAmount', event.target.value)}
             error={errors.depositAmount}
             autoFocus
           />
-
           {revealedStep >= 1 && (
             <TextField
               label="월세"
@@ -301,96 +64,15 @@ const CreatePropertyPage = ({ config }: { config: PublicConfig }) => {
               inputMode="numeric"
               placeholder="예: 55"
               value={values.monthlyRentAmount}
-              onChange={(event) => updateMoney('monthlyRentAmount', event.target.value)}
+              onChange={(event) => form.changeMoney('monthlyRentAmount', event.target.value)}
               error={errors.monthlyRentAmount}
               autoFocus={revealedStep === 1}
             />
           )}
-
-          {!hasPresetLocation && revealedStep >= 2 && (
-            <section className={styles.locationSection} aria-label="매물 위치 선택">
-              <div className={styles.locationHeader}>
-                <strong>위치를 선택해 주세요</strong>
-                <button
-                  type="button"
-                  className={styles.currentLocationButton}
-                  aria-label="현재 위치로 이동"
-                  onClick={() => void moveToCurrentLocation()}
-                >
-                  <Icon name="target" size={18} />
-                </button>
-              </div>
-              <div className={styles.addressSearchArea}>
-                <SearchField
-                  label="주소 검색"
-                  value={searchQuery}
-                  placeholder="도로명 또는 지번 주소를 입력해 주세요"
-                  onValueChange={(value) => {
-                    setSearchQuery(value);
-                    setSearchResults([]);
-                    setSearchStatus('idle');
-                  }}
-                  onSubmit={() => void submitAddressSearch()}
-                  onClear={() => {
-                    setSearchQuery('');
-                    setSearchResults([]);
-                    setSearchStatus('idle');
-                  }}
-                  renderAsForm={false}
-                />
-                {searchStatus === 'loading' && <p className={styles.searchStatus}>주소를 찾는 중이에요.</p>}
-                {searchStatus === 'error' && (
-                  <p className={styles.errorNotice} role="alert">
-                    주소를 찾지 못했어요. 다시 시도해 주세요.
-                  </p>
-                )}
-                {searchResults.length > 0 && (
-                  <ul className={styles.searchResults} aria-label="주소 검색 결과">
-                    {searchResults.map((result) => (
-                      <li key={`${result.latitude}-${result.longitude}`}>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            geocodeSequence.current += 1;
-                            setSelectedLocation(result);
-                            setLocationStatus('ready');
-                            setCreateError(null);
-                            setSearchResults([]);
-                            setSearchQuery(result.roadAddress ?? result.jibunAddress ?? result.address ?? '');
-                          }}
-                        >
-                          {result.roadAddress ?? result.jibunAddress ?? result.address}
-                        </button>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </div>
-              <div className={styles.mapPreview}>
-                <MapCanvas
-                  config={config}
-                  center={selectedLocation}
-                  level={5}
-                  interactive
-                  showCenterPin
-                  onCenterChange={(latitude, longitude) => {
-                    if (geocodeTimer.current !== null) window.clearTimeout(geocodeTimer.current);
-                    geocodeTimer.current = window.setTimeout(() => void resolveLocation(latitude, longitude), 450);
-                  }}
-                />
-              </div>
-              <p className={styles.selectedAddress} aria-live="polite">
-                {locationStatus === 'loading'
-                  ? '주소를 확인하는 중이에요.'
-                  : (selectedLocation.roadAddress ?? selectedLocation.jibunAddress ?? '주소를 확인하지 못했어요.')}
-              </p>
-              {locationStatus === 'error' && (
-                <p className={styles.errorNotice}>지도를 움직여 위치를 다시 선택해 주세요.</p>
-              )}
-            </section>
+          {!form.hasPresetLocation && revealedStep >= 2 && (
+            <PropertyLocationPicker location={form.location} search={form.search} />
           )}
-
-          {revealedStep >= nameStep && (
+          {isNameStep && (
             <TextField
               label="매물 이름"
               fieldClassName={`${styles.fieldGroup} ${styles.nameField}`}
@@ -398,39 +80,22 @@ const CreatePropertyPage = ({ config }: { config: PublicConfig }) => {
               placeholder="예: 신림역 3번출구 햇빛 잘 드는 원룸"
               maxLength={30}
               value={values.name}
-              onFocus={() => {
-                if (values.name === DEFAULT_PROPERTY_NAME) {
-                  setValues((current) => ({ ...current, name: '' }));
-                }
-              }}
-              onChange={(event) => {
-                const name = event.target.value;
-                setValues((current) => ({ ...current, name }));
-                setErrors((current) => ({ ...current, name: undefined }));
-              }}
+              onFocus={form.focusName}
+              onChange={form.changeName}
               error={errors.name}
             />
           )}
-
-          {createError !== null && (
+          {form.createError !== null && (
             <p className={styles.errorNotice} role="alert">
-              {createError}
+              {form.createError}
             </p>
           )}
-
           <p className={styles.stepNotice}>
-            {revealedStep >= nameStep && locationStatus === 'ready'
-              ? '필수 정보를 모두 입력했다면 매물을 등록해 주세요.'
-              : revealedStep === 0
-                ? '보증금을 입력한 뒤 다음을 눌러 주세요.'
-                : revealedStep === 1
-                  ? '월세를 입력한 뒤 다음을 눌러 주세요.'
-                  : '위치를 선택한 뒤 다음을 눌러 주세요.'}
+            {stepNotice(revealedStep, isNameStep && form.location.status === 'ready')}
           </p>
-
           <BottomActionArea>
-            <Button variant="primary" type="submit" fullWidth isLoading={createProperty.isPending}>
-              {revealedStep >= nameStep ? '매물 등록' : '다음'}
+            <Button variant="primary" type="submit" fullWidth isLoading={form.isCreating}>
+              {isNameStep ? '매물 등록' : '다음'}
             </Button>
           </BottomActionArea>
         </form>

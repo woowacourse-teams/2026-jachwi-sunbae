@@ -1,7 +1,8 @@
-import type { NearbyPlace } from '../../../../features/map/model/Map';
-import MapCategoryIcon from '../../../../features/map/ui/map-category-icon/MapCategoryIcon';
-import { getMapCategoryLabel } from '../../../../features/map/lib/mapPresentation';
-import Icon from '../../../../shared/ui/icon/Icon';
+import { getMapCategoryLabel } from '@/features/map/lib/mapPresentation';
+import type { NearbyPlace } from '@/features/map/model/Map';
+import MapCategoryIcon from '@/features/map/ui/map-category-icon/MapCategoryIcon';
+import Icon from '@/shared/ui/icon/Icon';
+
 import styles from './MapPlaceDetailCard.module.css';
 
 type MapPlaceDetailCardProps = {

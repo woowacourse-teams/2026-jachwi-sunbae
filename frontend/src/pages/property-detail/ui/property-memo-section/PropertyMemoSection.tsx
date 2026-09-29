@@ -1,19 +1,21 @@
 import { useEffect, useRef, useState } from 'react';
-import { usePropertyMemo } from '../../../../features/property/api/useProperties';
-import { useSavePropertyMemoDocument } from '../../../../features/property/api/usePropertyMutations';
-import type { PublicConfig } from '../../../../shared/config/publicConfigTypes';
-import { Button } from '../../../../shared/ui/button/Button';
+
+import { usePropertyMemo } from '@/features/property/api/useProperties';
+import { useSavePropertyMemoDocument } from '@/features/property/api/usePropertyMutations';
+import { Button } from '@/shared/ui/button/Button';
+
 import PropertyDetailSection from '../property-detail-section/PropertyDetailSection';
+import PropertyMemoContent from './PropertyMemoContent';
+
 import styles from './PropertyMemoSection.module.css';
 
 type PropertyMemoSectionProps = {
-  config: PublicConfig;
   propertyId: number;
 };
 
-const PropertyMemoSection = ({ config, propertyId }: PropertyMemoSectionProps) => {
-  const memo = usePropertyMemo(config, propertyId);
-  const saveMemo = useSavePropertyMemoDocument(config, propertyId);
+const PropertyMemoSection = ({ propertyId }: PropertyMemoSectionProps) => {
+  const memo = usePropertyMemo(propertyId);
+  const saveMemo = useSavePropertyMemoDocument(propertyId);
   const [isOpen, setIsOpen] = useState(false);
   const [draft, setDraft] = useState('');
   const dialogRef = useRef<HTMLDialogElement>(null);
@@ -34,29 +36,19 @@ const PropertyMemoSection = ({ config, propertyId }: PropertyMemoSectionProps) =
     }
   }, [isOpen]);
 
-  const content = memo.isPending ? (
-    <p className={styles.state}>매물 메모를 불러오는 중이에요.</p>
-  ) : memo.isError ? (
-    <button className={styles.retry} type="button" onClick={() => void memo.refetch()}>
-      매물 메모를 불러오지 못했어요. 다시 시도
-    </button>
-  ) : (
-    <button
-      ref={triggerRef}
-      type="button"
-      className={styles.field}
-      onClick={() => {
-        setDraft(memo.data.freeMemo);
-        setIsOpen(true);
-      }}
-    >
-      {memo.data.freeMemo || '탭해서 메모를 입력해 주세요.'}
-    </button>
-  );
-
   return (
     <>
-      <PropertyDetailSection title="메모">{content}</PropertyDetailSection>
+      <PropertyDetailSection title="메모">
+        <PropertyMemoContent
+          memo={memo}
+          triggerRef={triggerRef}
+          onEdit={() => {
+            if (memo.data === undefined) return;
+            setDraft(memo.data.freeMemo);
+            setIsOpen(true);
+          }}
+        />
+      </PropertyDetailSection>
       <dialog
         ref={dialogRef}
         className={styles.dialog}

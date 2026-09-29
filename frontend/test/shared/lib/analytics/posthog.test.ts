@@ -15,16 +15,16 @@ const { mockPostHog } = vi.hoisted(() => ({
 vi.mock('posthog-js', () => ({ default: mockPostHog }));
 
 import {
+  capturePostHogException,
   identifyPostHogMember,
   initPostHog,
   isValidPostHogConfiguration,
-  capturePostHogException,
   resetPostHogForTests,
   resetPostHogIdentity,
   setPostHogSessionContext,
   trackPostHogEvent,
   trackPostHogPageView,
-} from '../../../../src/shared/lib/analytics/posthog';
+} from '@/shared/lib/analytics/posthog';
 
 describe('PostHog 제품 분석', () => {
   afterEach(() => {

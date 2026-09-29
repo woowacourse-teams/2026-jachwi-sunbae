@@ -1,7 +1,10 @@
 import { render, waitFor } from '@testing-library/react';
+import type { ReactElement } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import type { PublicConfig } from '../../../../../src/shared/config/publicConfigTypes';
-import MapCanvas from '../../../../../src/features/map/ui/map-canvas/MapCanvas';
+
+import MapCanvas from '@/features/map/ui/map-canvas/MapCanvas';
+import { PublicConfigProvider } from '@/shared/config/PublicConfigContext';
+import type { PublicConfig } from '@/shared/config/publicConfigTypes';
 
 const config: PublicConfig = {
   apiBaseUrl: 'http://localhost:8080',
@@ -51,6 +54,9 @@ class FakeOverlay {
     overlayInstances.push(this);
   }
 }
+
+const renderWithConfig = (ui: ReactElement) =>
+  render(ui, { wrapper: ({ children }) => <PublicConfigProvider config={config}>{children}</PublicConfigProvider> });
 
 describe('Naver 지도 상태 동기화', () => {
   type FakeMapInstance = {
@@ -118,7 +124,7 @@ describe('Naver 지도 상태 동기화', () => {
     }
     vi.stubGlobal('ResizeObserver', FakeResizeObserver);
 
-    render(<MapCanvas config={config} center={{ latitude: 37.5665, longitude: 126.978 }} level={5} />);
+    renderWithConfig(<MapCanvas center={{ latitude: 37.5665, longitude: 126.978 }} level={5} />);
     await waitFor(() => expect(resizeCallbacks).toHaveLength(1));
 
     expect(() => resizeCallbacks[0]()).not.toThrow();
@@ -126,7 +132,7 @@ describe('Naver 지도 상태 동기화', () => {
   });
 
   it('앱 확대 단계를 반대 방향인 Naver zoom으로 바꿔 전달한다', async () => {
-    render(<MapCanvas config={config} center={{ latitude: 37.5665, longitude: 126.978 }} level={5} />);
+    renderWithConfig(<MapCanvas center={{ latitude: 37.5665, longitude: 126.978 }} level={5} />);
 
     await waitFor(() => expect(maps).toHaveLength(1));
     expect(maps[0].zoom).toBe(15);
@@ -144,13 +150,11 @@ describe('Naver 지도 상태 동기화', () => {
     }
     vi.stubGlobal('ResizeObserver', FakeResizeObserver);
 
-    const { rerender } = render(
-      <MapCanvas config={config} center={{ latitude: 37.5665, longitude: 126.978 }} level={5} />,
-    );
+    const { rerender } = renderWithConfig(<MapCanvas center={{ latitude: 37.5665, longitude: 126.978 }} level={5} />);
     await waitFor(() => expect(maps).toHaveLength(1));
     const [map] = maps;
 
-    rerender(<MapCanvas config={config} center={{ latitude: 37.567, longitude: 126.979 }} level={5} />);
+    rerender(<MapCanvas center={{ latitude: 37.567, longitude: 126.979 }} level={5} />);
 
     await waitFor(() => expect(map.setCenter).toHaveBeenCalledOnce());
     expect(map.setZoom).not.toHaveBeenCalled();
@@ -161,23 +165,20 @@ describe('Naver 지도 상태 동기화', () => {
   });
 
   it('사용자가 지도에서 확대 단계를 바꾸면 같은 단계를 다시 지정하지 않는다', async () => {
-    const { rerender } = render(
-      <MapCanvas config={config} center={{ latitude: 37.5665, longitude: 126.978 }} level={5} />,
-    );
+    const { rerender } = renderWithConfig(<MapCanvas center={{ latitude: 37.5665, longitude: 126.978 }} level={5} />);
     await waitFor(() => expect(maps).toHaveLength(1));
     const [map] = maps;
     map.zoom = 17;
 
-    rerender(<MapCanvas config={config} center={{ latitude: 37.5665, longitude: 126.978 }} level={3} />);
+    rerender(<MapCanvas center={{ latitude: 37.5665, longitude: 126.978 }} level={3} />);
 
     await waitFor(() => expect(map.zoom).toBe(17));
     expect(map.setZoom).not.toHaveBeenCalled();
   });
 
   it('라이브 마커는 확대 중 레이아웃 대신 transform으로 위치를 갱신한다', async () => {
-    render(
+    renderWithConfig(
       <MapCanvas
-        config={config}
         center={{ latitude: 37.5665, longitude: 126.978 }}
         level={5}
         markers={[

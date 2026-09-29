@@ -1,8 +1,9 @@
 import { useRef, useState } from 'react';
+
+import { trackPostHogEvent } from '@/shared/lib/analytics/posthog';
+
 import { getPropertyErrorMessage } from '../api/propertyErrorMessages';
 import { useUploadPropertyPhoto } from '../api/usePropertyMutations';
-import type { PublicConfig } from '../../../shared/config/publicConfigTypes';
-import { trackPostHogEvent } from '../../../shared/lib/analytics/posthog';
 
 export const MAX_PHOTO_BYTES = 5 * 1024 * 1024;
 export const MAX_PROPERTY_PHOTOS = 30;
@@ -53,8 +54,8 @@ const prepareFiles = (files: File[], availableCount: number): PreparedFile[] =>
     return { item, file };
   });
 
-export const usePhotoUploadQueue = (config: PublicConfig, propertyId: number, currentPhotoCount: number) => {
-  const uploadMutation = useUploadPropertyPhoto(config, propertyId);
+export const usePhotoUploadQueue = (propertyId: number, currentPhotoCount: number) => {
+  const uploadMutation = useUploadPropertyPhoto(propertyId);
   const [items, setItems] = useState<PhotoUploadItem[]>([]);
   const [isUploading, setIsUploading] = useState(false);
   const uploadLockRef = useRef(false);

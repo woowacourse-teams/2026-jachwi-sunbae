@@ -1,17 +1,18 @@
 import { useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { getChecklistErrorMessage } from '../../../../features/checklist/api/checklistErrorMessages';
-import { useRemoveChecklist } from '../../../../features/checklist/api/useChecklistMutations';
-import type { ChecklistSummary } from '../../../../features/checklist/model/checklistTypes';
-import type { PublicConfig } from '../../../../shared/config/publicConfigTypes';
-import ConfirmDialog from '../../../../shared/ui/confirm-dialog/ConfirmDialog';
-import Icon from '../../../../shared/ui/icon/Icon';
+
+import { getChecklistErrorMessage } from '@/features/checklist/api/checklistErrorMessages';
+import { useRemoveChecklist } from '@/features/checklist/api/useChecklistMutations';
+import type { ChecklistSummary } from '@/features/checklist/model/checklistTypes';
+import ConfirmDialog from '@/shared/ui/confirm-dialog/ConfirmDialog';
+import Icon from '@/shared/ui/icon/Icon';
+
 import styles from './ChecklistListCard.module.css';
 
-const ChecklistListCard = ({ config, checklist }: { config: PublicConfig; checklist: ChecklistSummary }) => {
+const ChecklistListCard = ({ checklist }: { checklist: ChecklistSummary }) => {
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const deleteButtonRef = useRef<HTMLButtonElement>(null);
-  const remove = useRemoveChecklist(config, checklist.checklistId);
+  const remove = useRemoveChecklist(checklist.checklistId);
 
   const deleteChecklist = async () => {
     try {

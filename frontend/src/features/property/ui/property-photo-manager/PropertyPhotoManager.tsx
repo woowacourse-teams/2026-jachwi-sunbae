@@ -1,20 +1,20 @@
 import { useState } from 'react';
+
 import { getPropertyErrorMessage } from '../../api/propertyErrorMessages';
 import { usePropertyPhotos } from '../../api/useProperties';
-import type { PublicConfig } from '../../../../shared/config/publicConfigTypes';
 import PhotoUploadPanel from './PhotoUploadPanel';
 import PropertyPhotoCard from './PropertyPhotoCard';
+
 import styles from './PropertyPhotoManager.module.css';
 
 type PropertyPhotoManagerProps = {
-  config: PublicConfig;
   propertyId: number;
   showHeading?: boolean;
 };
 
-const PropertyPhotoManager = ({ config, propertyId, showHeading = false }: PropertyPhotoManagerProps) => {
+const PropertyPhotoManager = ({ propertyId, showHeading = false }: PropertyPhotoManagerProps) => {
   const [visibleCount, setVisibleCount] = useState(6);
-  const photos = usePropertyPhotos(config, propertyId);
+  const photos = usePropertyPhotos(propertyId);
 
   if (photos.isPending) {
     return (
@@ -45,7 +45,7 @@ const PropertyPhotoManager = ({ config, propertyId, showHeading = false }: Prope
         </h2>
       </div>
       <div className={styles.grid}>
-        <PhotoUploadPanel config={config} propertyId={propertyId} currentPhotoCount={photos.data.totalCount} />
+        <PhotoUploadPanel propertyId={propertyId} currentPhotoCount={photos.data.totalCount} />
         {photos.data.photos.length === 0 ? (
           <div className={styles.empty}>
             <strong>등록한 사진이 없어요.</strong>
@@ -54,13 +54,7 @@ const PropertyPhotoManager = ({ config, propertyId, showHeading = false }: Prope
         ) : (
           <ul className={styles.photoList}>
             {visiblePhotos.map((photo, index) => (
-              <PropertyPhotoCard
-                key={photo.photoId}
-                config={config}
-                propertyId={propertyId}
-                photo={photo}
-                position={index + 1}
-              />
+              <PropertyPhotoCard key={photo.photoId} propertyId={propertyId} photo={photo} position={index + 1} />
             ))}
           </ul>
         )}

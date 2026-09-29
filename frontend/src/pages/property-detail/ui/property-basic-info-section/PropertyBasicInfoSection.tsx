@@ -1,13 +1,13 @@
 import { Link } from 'react-router-dom';
-import { InfoRow, InfoSection } from '../../../../shared/ui/info-section/InfoSection';
-import Icon from '../../../../shared/ui/icon/Icon';
-import infoStyles from '../../../../shared/ui/info-section/InfoSection.module.css';
-import type { PropertyDetail } from '../../../../features/property/model/Property';
-import type { PublicConfig } from '../../../../shared/config/publicConfigTypes';
-import { formatManwon } from '../../../../features/property/lib/propertyFormat';
+
+import { formatManwon } from '@/features/property/lib/propertyFormat';
+import type { PropertyDetail } from '@/features/property/model/Property';
+import Icon from '@/shared/ui/icon/Icon';
+import { InfoRow, InfoSection } from '@/shared/ui/info-section/InfoSection';
+
+import infoStyles from '@/shared/ui/info-section/InfoSection.module.css';
 
 type PropertyBasicInfoSectionProps = {
-  config: PublicConfig;
   property: PropertyDetail;
 };
 

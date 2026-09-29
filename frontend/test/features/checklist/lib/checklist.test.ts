@@ -1,12 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { onlineItemFixture, secondOnlineItemFixture } from '../../../../src/app/mocks/fixtures/checklistFixtures';
-import type { CheckItem } from '../../../../src/features/checklist/model/checklistTypes';
+
+import { onlineItemFixture, secondOnlineItemFixture } from '@/app/mocks/fixtures/checklistFixtures';
 import {
   hasUniqueSameStageItems,
   moveChecklistItem,
   parseChecklistReturnTo,
   validateChecklistName,
-} from '../../../../src/features/checklist/lib/checklist';
+} from '@/features/checklist/lib/checklist';
+import type { CheckItem } from '@/features/checklist/model/checklistTypes';
 
 describe('체크리스트 편집 규칙', () => {
   it('이름을 trim 기준 1~50자로 검증한다', () => {

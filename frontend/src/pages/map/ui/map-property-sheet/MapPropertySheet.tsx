@@ -1,7 +1,8 @@
 import type { CSSProperties, PointerEvent, RefObject } from 'react';
-import type { PropertySummary } from '../../../../features/property/model/Property';
-import type { PublicConfig } from '../../../../shared/config/publicConfigTypes';
-import PropertyCard from '../../../../features/property/ui/property-card/PropertyCard';
+
+import type { PropertySummary } from '@/features/property/model/Property';
+import PropertyCard from '@/features/property/ui/property-card/PropertyCard';
+
 import styles from './MapPropertySheet.module.css';
 
 export type MapPropertySheetStage = 'closed' | 'mid' | 'full';
@@ -12,7 +13,6 @@ type MapPropertySheetProps = {
   dragHeight: number | null;
   properties: PropertySummary[];
   selectedPropertyId: number | null;
-  config: PublicConfig;
   onDragStart: (event: PointerEvent<HTMLButtonElement>) => void;
   onDragMove: (event: PointerEvent<HTMLButtonElement>) => void;
   onDragEnd: (event: PointerEvent<HTMLButtonElement>) => void;
@@ -26,7 +26,6 @@ const MapPropertySheet = ({
   dragHeight,
   properties,
   selectedPropertyId,
-  config,
   onDragStart,
   onDragMove,
   onDragEnd,
@@ -67,7 +66,7 @@ const MapPropertySheet = ({
         <ul className={styles.list}>
           {properties.map((property) => (
             <li key={property.propertyId} data-selected={property.propertyId === selectedPropertyId || undefined}>
-              <PropertyCard property={property} config={config} />
+              <PropertyCard property={property} />
             </li>
           ))}
         </ul>

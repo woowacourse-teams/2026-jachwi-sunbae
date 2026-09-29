@@ -1,26 +1,27 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import type { UpdatePropertyRequestDto } from '../../features/property/api/dtos/PropertyDto';
-import { getPropertyErrorMessage } from '../../features/property/api/propertyErrorMessages';
-import { MAINTENANCE_OPTIONS, PROPERTY_OPTIONS } from '../../features/property/model/propertyOptions';
-import PropertyOptionPicker from './ui/property-option-picker/PropertyOptionPicker';
-import BottomActionArea from '../../shared/ui/bottom-action-area/BottomActionArea';
-import { Button } from '../../shared/ui/button/Button';
-import ContentState from '../../shared/ui/content-state/ContentState';
-import InlineNotice from '../../shared/ui/inline-notice/InlineNotice';
-import TextField from '../../shared/ui/text-field/TextField';
-import TopNavigation from '../../shared/ui/top-navigation/TopNavigation';
-import { usePropertyDetail } from '../../features/property/api/useProperties';
-import { useUpdateProperty } from '../../features/property/api/usePropertyMutations';
-import type { RoomOption, UtilityOption } from '../../features/property/model/Property';
-import type { PublicConfig } from '../../shared/config/publicConfigTypes';
+
+import { getPropertyErrorMessage } from '@/features/property/api/propertyErrorMessages';
+import { usePropertyDetail } from '@/features/property/api/useProperties';
+import { useUpdateProperty } from '@/features/property/api/usePropertyMutations';
 import {
   formatAmountForInput,
   formatMoneyInput,
   parseMoneyInput,
   WON_PER_MANWON,
-} from '../../features/property/lib/propertyForm';
-import { parsePositiveId } from '../../features/property/lib/propertyFormat';
+} from '@/features/property/lib/propertyForm';
+import { parsePositiveId } from '@/features/property/lib/propertyFormat';
+import type { RoomOption, UtilityOption } from '@/features/property/model/Property';
+import { MAINTENANCE_OPTIONS, PROPERTY_OPTIONS } from '@/features/property/model/propertyOptions';
+import BottomActionArea from '@/shared/ui/bottom-action-area/BottomActionArea';
+import { Button } from '@/shared/ui/button/Button';
+import ContentState from '@/shared/ui/content-state/ContentState';
+import InlineNotice from '@/shared/ui/inline-notice/InlineNotice';
+import TextField from '@/shared/ui/text-field/TextField';
+import TopNavigation from '@/shared/ui/top-navigation/TopNavigation';
+
+import PropertyOptionPicker from './ui/property-option-picker/PropertyOptionPicker';
+
 import styles from './PropertyMemoPage.module.css';
 
 type AdditionalInfoValues = {
@@ -32,24 +33,22 @@ type AdditionalInfoValues = {
   utilityOptions: UtilityOption[];
 };
 
-const PropertyMemoPage = ({ config }: { config: PublicConfig }) => {
+const PropertyMemoPage = () => {
   const propertyId = parsePositiveId(useParams().propertyId);
   if (propertyId === null) {
     return (
-      <main className="property-page">
-        <ContentState page={false} title="올바른 매물 주소가 아니에요.">
-          <Link to="/properties">매물 목록으로 돌아가기</Link>
-        </ContentState>
-      </main>
+      <ContentState title="올바른 매물 주소가 아니에요.">
+        <Link to="/properties">매물 목록으로 돌아가기</Link>
+      </ContentState>
     );
   }
-  return <ResolvedPropertyMemoPage config={config} propertyId={propertyId} />;
+  return <ResolvedPropertyMemoPage propertyId={propertyId} />;
 };
 
-const ResolvedPropertyMemoPage = ({ config, propertyId }: { config: PublicConfig; propertyId: number }) => {
+const ResolvedPropertyMemoPage = ({ propertyId }: { propertyId: number }) => {
   const navigate = useNavigate();
-  const property = usePropertyDetail(config, propertyId);
-  const updateProperty = useUpdateProperty(config, propertyId);
+  const property = usePropertyDetail(propertyId);
+  const updateProperty = useUpdateProperty(propertyId);
   const [values, setValues] = useState<AdditionalInfoValues | null>(null);
 
   useEffect(() => {
@@ -67,19 +66,16 @@ const ResolvedPropertyMemoPage = ({ config, propertyId }: { config: PublicConfig
 
   if (property.isError) {
     return (
-      <main className="property-page">
-        <ContentState
-          page={false}
-          tone="error"
-          title="부가 정보를 불러오지 못했어요."
-          description={getPropertyErrorMessage(property.error)}
-          onRetry={() => void property.refetch()}
-        />
-      </main>
+      <ContentState
+        tone="error"
+        title="부가 정보를 불러오지 못했어요."
+        description={getPropertyErrorMessage(property.error)}
+        onRetry={() => void property.refetch()}
+      />
     );
   }
   if (property.isPending || values === null) {
-    return <ContentState page={false} loading title="부가 정보를 불러오는 중이에요." />;
+    return <ContentState loading title="부가 정보를 불러오는 중이에요." />;
   }
 
   const setValue = <K extends keyof AdditionalInfoValues>(key: K, value: AdditionalInfoValues[K]) =>
@@ -100,23 +96,18 @@ const ResolvedPropertyMemoPage = ({ config, propertyId }: { config: PublicConfig
             values.maintenanceFeeAmount === '' ? null : parseMoneyInput(values.maintenanceFeeAmount);
           if (values.maintenanceFeeAmount !== '' && maintenanceFeeInput === null) return;
 
-          const request: UpdatePropertyRequestDto = {
-            name: property.data.name,
-            depositAmount: property.data.depositAmount,
-            monthlyRentAmount: property.data.monthlyRentAmount,
-            address: property.data.location.address,
-            latitude: property.data.location.latitude,
-            longitude: property.data.location.longitude,
-            availableMoveInDate: values.availableMoveInDate || null,
-            maintenanceFeeAmount: maintenanceFeeInput === null ? null : maintenanceFeeInput * WON_PER_MANWON,
-            visitScheduledAt: values.visitScheduledAt || null,
-            discoverySource: values.discoverySource.trim() || null,
-            roomOptions: values.roomOptions,
-            utilityOptions: values.utilityOptions,
-          };
-
           void updateProperty
-            .mutateAsync(request)
+            .mutateAsync({
+              current: property.data,
+              changes: {
+                availableMoveInDate: values.availableMoveInDate || null,
+                maintenanceFeeAmount: maintenanceFeeInput === null ? null : maintenanceFeeInput * WON_PER_MANWON,
+                visitScheduledAt: values.visitScheduledAt || null,
+                discoverySource: values.discoverySource.trim() || null,
+                roomOptions: values.roomOptions,
+                utilityOptions: values.utilityOptions,
+              },
+            })
             .then(() => navigate(`/properties/${propertyId}`, { replace: true }))
             .catch(() => undefined);
         }}

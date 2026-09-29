@@ -1,20 +1,16 @@
 import { Navigate, Outlet } from 'react-router-dom';
-import { ApiError, getSafeApiErrorMessage } from '../../features/auth/api/apiClient';
-import StatusPanel from '../../shared/ui/status-panel/StatusPanel';
-import { Button } from '../../shared/ui/button/Button';
-import ContentState from '../../shared/ui/content-state/ContentState';
-import { useCurrentMember } from '../../features/auth/api/useCurrentMember';
-import { useAuthentication } from '../../features/auth/model/useAuthentication';
-import useDelayedLoading from '../../shared/lib/hooks/useDelayedLoading';
-import type { PublicConfig } from '../../shared/config/publicConfigTypes';
 
-type ProtectedRouteProps = {
-  config: PublicConfig;
-};
+import { ApiError, getSafeApiErrorMessage } from '@/features/auth/api/apiClient';
+import { useCurrentMember } from '@/features/auth/api/useCurrentMember';
+import { useAuthentication } from '@/features/auth/model/useAuthentication';
+import useDelayedLoading from '@/shared/lib/hooks/useDelayedLoading';
+import { Button } from '@/shared/ui/button/Button';
+import ContentState from '@/shared/ui/content-state/ContentState';
+import StatusPanel from '@/shared/ui/status-panel/StatusPanel';
 
-const ProtectedRoute = ({ config }: ProtectedRouteProps) => {
+const ProtectedRoute = () => {
   const { session } = useAuthentication();
-  const currentMember = useCurrentMember(config, session !== null);
+  const currentMember = useCurrentMember(session !== null);
   const isLoadingVisible = useDelayedLoading(currentMember.isPending);
 
   if (session === null) {

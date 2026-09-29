@@ -1,4 +1,4 @@
-import type { PropertyOptionKey } from '../../../../features/property/model/propertyOptions';
+import type { PropertyOptionKey } from '@/features/property/model/propertyOptions';
 
 type PropertyOptionIconProps = {
   option: PropertyOptionKey;

@@ -1,6 +1,8 @@
 import type { ReactNode } from 'react';
 import { Link } from 'react-router-dom';
+
 import Icon from '../icon/Icon';
+
 import styles from './TopNavigation.module.css';
 
 type TopNavigationProps = {

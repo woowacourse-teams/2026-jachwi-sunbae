@@ -1,9 +1,11 @@
 import { useQueries } from '@tanstack/react-query';
 import { useEffect, useMemo, useRef, useState } from 'react';
+
+import { usePublicConfig } from '@/shared/config/PublicConfigContext';
+
+import type { PropertySummary } from '../model/Property';
 import { fetchPropertyPhotoContent } from './photoApi';
 import { propertyQueryKeys } from './propertyQueryKeys';
-import type { PropertySummary } from '../model/Property';
-import type { PublicConfig } from '../../../shared/config/publicConfigTypes';
 
 type CachedObjectUrl = {
   photoId: number;
@@ -14,10 +16,8 @@ type CachedObjectUrl = {
  * 매물 대표 사진을 인증 요청으로 받아 blob URL로 돌려준다.
  * 지도 마커는 React 밖에서 DOM으로 만들기 때문에 인증이 끝난 URL만 넘겨야 한다.
  */
-export const usePropertyPhotoObjectUrls = (
-  config: PublicConfig,
-  properties: PropertySummary[],
-): Record<number, string> => {
+export const usePropertyPhotoObjectUrls = (properties: PropertySummary[]): Record<number, string> => {
+  const config = usePublicConfig();
   const targets = useMemo(
     () =>
       properties

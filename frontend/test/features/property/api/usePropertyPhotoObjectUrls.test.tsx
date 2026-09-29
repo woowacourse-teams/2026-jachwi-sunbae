@@ -1,12 +1,15 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { renderHook, waitFor } from '@testing-library/react';
-import { HttpResponse, http } from 'msw';
+import { http, HttpResponse } from 'msw';
 import type { PropsWithChildren } from 'react';
 import { describe, expect, it } from 'vitest';
-import { setAuthentication } from '../../../../src/features/auth/model/authStore';
-import { usePropertyPhotoObjectUrls } from '../../../../src/features/property/api/usePropertyPhotoObjectUrls';
-import type { PropertySummary } from '../../../../src/features/property/model/Property';
-import type { PublicConfig } from '../../../../src/shared/config/publicConfigTypes';
+
+import { setAuthentication } from '@/features/auth/model/authStore';
+import { usePropertyPhotoObjectUrls } from '@/features/property/api/usePropertyPhotoObjectUrls';
+import type { PropertySummary } from '@/features/property/model/Property';
+import { PublicConfigProvider } from '@/shared/config/PublicConfigContext';
+import type { PublicConfig } from '@/shared/config/publicConfigTypes';
+
 import { server } from '../../../server';
 
 const config: PublicConfig = { apiBaseUrl: 'http://localhost:8080' };
@@ -52,11 +55,13 @@ describe('지도 매물 사진 Object URL', () => {
     );
     const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
     const wrapper = ({ children }: PropsWithChildren) => (
-      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+      <PublicConfigProvider config={config}>
+        <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+      </PublicConfigProvider>
     );
 
     const rendered = renderHook(
-      ({ properties }: { properties: PropertySummary[] }) => usePropertyPhotoObjectUrls(config, properties),
+      ({ properties }: { properties: PropertySummary[] }) => usePropertyPhotoObjectUrls(properties),
       { initialProps: { properties: [first] }, wrapper },
     );
 

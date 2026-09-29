@@ -1,18 +1,16 @@
-import { HttpResponse, http } from 'msw';
+import { http, HttpResponse } from 'msw';
 import { describe, expect, it } from 'vitest';
-import { setAuthentication } from '../../../../src/features/auth/model/authStore';
-import { server } from '../../../server';
-import { errorEnvelope, photoFixture, successEnvelope } from '../../../../src/app/mocks/fixtures/propertyFixtures';
-import type { PublicConfig } from '../../../../src/shared/config/publicConfigTypes';
-import type { PropertyInputDto } from '../../../../src/features/property/api/dtos/PropertyDto';
-import { getPropertyErrorMessage } from '../../../../src/features/property/api/propertyErrorMessages';
+
+import { errorEnvelope, photoFixture, successEnvelope } from '@/app/mocks/fixtures/propertyFixtures';
+import { setAuthentication } from '@/features/auth/model/authStore';
+import type { PropertyInputDto } from '@/features/property/api/dtos/PropertyDto';
 import {
   fetchPropertyPhotoContent,
   fetchPropertyPhotos,
   removePropertyPhoto,
   setRepresentativePropertyPhoto,
   uploadPropertyPhoto,
-} from '../../../../src/features/property/api/photoApi';
+} from '@/features/property/api/photoApi';
 import {
   createProperty,
   fetchProperties,
@@ -21,7 +19,11 @@ import {
   removeProperty,
   savePropertyMemoDocument,
   updateProperty,
-} from '../../../../src/features/property/api/propertyApi';
+} from '@/features/property/api/propertyApi';
+import { getPropertyErrorMessage } from '@/features/property/api/propertyErrorMessages';
+import type { PublicConfig } from '@/shared/config/publicConfigTypes';
+
+import { server } from '../../../server';
 
 const config: PublicConfig = {
   apiBaseUrl: 'http://localhost:8080',

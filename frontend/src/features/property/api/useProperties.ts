@@ -1,51 +1,66 @@
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
+
+import { usePublicConfig } from '@/shared/config/PublicConfigContext';
+import type { PublicConfig } from '@/shared/config/publicConfigTypes';
+
+import { fetchPropertyPhotos } from './photoApi';
 import {
   fetchProperties,
-  fetchPropertyChecklistOverview,
   fetchPropertyChecklistDetail,
+  fetchPropertyChecklistOverview,
   fetchPropertyDetail,
   fetchPropertyMemo,
 } from './propertyApi';
-import { fetchPropertyPhotos } from './photoApi';
 import { propertyQueryKeys } from './propertyQueryKeys';
-import type { PublicConfig } from '../../../shared/config/publicConfigTypes';
 
-export const usePropertyList = (config: PublicConfig) =>
-  useInfiniteQuery({
+export const usePropertyList = () => {
+  const config = usePublicConfig();
+  return useInfiniteQuery({
     queryKey: propertyQueryKeys.list(''),
     initialPageParam: 0,
     queryFn: ({ pageParam, signal }) => fetchProperties(config, { query: '', page: pageParam, size: 20 }, signal),
     getNextPageParam: (lastPage) => (lastPage.hasNext ? lastPage.page + 1 : undefined),
   });
+};
 
 export const getPropertyDetailQueryOptions = (config: PublicConfig, propertyId: number) => ({
   queryKey: propertyQueryKeys.detail(propertyId),
   queryFn: ({ signal }: { signal: AbortSignal }) => fetchPropertyDetail(config, propertyId, signal),
 });
 
-export const usePropertyDetail = (config: PublicConfig, propertyId: number) =>
-  useQuery(getPropertyDetailQueryOptions(config, propertyId));
+export const usePropertyDetail = (propertyId: number) => {
+  const config = usePublicConfig();
+  return useQuery(getPropertyDetailQueryOptions(config, propertyId));
+};
 
-export const usePropertyMemo = (config: PublicConfig, propertyId: number) =>
-  useQuery({
+export const usePropertyMemo = (propertyId: number) => {
+  const config = usePublicConfig();
+  return useQuery({
     queryKey: propertyQueryKeys.memo(propertyId),
     queryFn: ({ signal }) => fetchPropertyMemo(config, propertyId, signal),
   });
+};
 
-export const usePropertyChecklistOverview = (config: PublicConfig, propertyId: number) =>
-  useQuery({
+export const usePropertyChecklistOverview = (propertyId: number) => {
+  const config = usePublicConfig();
+  return useQuery({
     queryKey: propertyQueryKeys.checklists(propertyId),
     queryFn: ({ signal }) => fetchPropertyChecklistOverview(config, propertyId, signal),
   });
+};
 
-export const usePropertyChecklistDetail = (config: PublicConfig, propertyId: number, propertyChecklistId: number) =>
-  useQuery({
+export const usePropertyChecklistDetail = (propertyId: number, propertyChecklistId: number) => {
+  const config = usePublicConfig();
+  return useQuery({
     queryKey: propertyQueryKeys.checklist(propertyId, propertyChecklistId),
     queryFn: ({ signal }) => fetchPropertyChecklistDetail(config, propertyId, propertyChecklistId, signal),
   });
+};
 
-export const usePropertyPhotos = (config: PublicConfig, propertyId: number) =>
-  useQuery({
+export const usePropertyPhotos = (propertyId: number) => {
+  const config = usePublicConfig();
+  return useQuery({
     queryKey: propertyQueryKeys.photos(propertyId),
     queryFn: ({ signal }) => fetchPropertyPhotos(config, propertyId, signal),
   });
+};

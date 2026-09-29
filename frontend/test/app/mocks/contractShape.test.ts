@@ -1,6 +1,7 @@
 import { setupServer } from 'msw/node';
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
-import { handlers } from '../../../src/app/mocks/handlers';
+
+import { handlers } from '@/app/mocks/handlers';
 
 /**
  * 배포된 dev 백엔드(https://dev-api.jachwi-sunbae.kr/v3/api-docs)가 실제로 내려주는 필드 목록이다.

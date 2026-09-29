@@ -1,5 +1,6 @@
+import type { PublicConfig } from '@/shared/config/publicConfigTypes';
+
 import type { Member } from '../model/Member';
-import type { PublicConfig } from '../../../shared/config/publicConfigTypes';
 import { apiRequest } from './apiClient';
 import { parseMemberDto } from './authParsers';
 

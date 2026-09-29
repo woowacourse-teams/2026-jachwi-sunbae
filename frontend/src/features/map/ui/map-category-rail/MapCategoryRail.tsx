@@ -1,6 +1,7 @@
+import { MAP_CATEGORY_OPTIONS } from '../../lib/mapPresentation';
 import type { MapCategory } from '../../model/Map';
 import MapCategoryIcon from '../map-category-icon/MapCategoryIcon';
-import { MAP_CATEGORY_OPTIONS } from '../../lib/mapPresentation';
+
 import styles from './MapCategoryRail.module.css';
 
 type MapCategoryRailProps = {

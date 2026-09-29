@@ -1,7 +1,8 @@
+import type { ApiErrorDto } from '@/shared/api/dtos/ApiEnvelopeDto';
+import type { PublicConfig } from '@/shared/config/publicConfigTypes';
+import { capturePostHogException } from '@/shared/lib/analytics/posthog';
+
 import { clearAuthentication, getAccessToken, getAuthenticationRevision } from '../model/authStore';
-import type { PublicConfig } from '../../../shared/config/publicConfigTypes';
-import type { ApiErrorDto } from '../../../shared/api/dtos/ApiEnvelopeDto';
-import { capturePostHogException } from '../../../shared/lib/analytics/posthog';
 
 type ApiErrorKind = 'network' | 'server' | 'invalid-response' | 'authentication-ended';
 
@@ -319,3 +320,6 @@ export const getSafeApiErrorMessage = (error: unknown): string => {
 
   return '요청을 처리하지 못했습니다. 잠시 후 다시 시도해 주세요.';
 };
+
+export const isApiErrorCode = (error: unknown, code: string): error is ApiError =>
+  error instanceof ApiError && error.code === code;

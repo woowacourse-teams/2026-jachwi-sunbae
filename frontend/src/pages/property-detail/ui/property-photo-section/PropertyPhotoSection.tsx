@@ -1,27 +1,22 @@
-import { Link } from 'react-router-dom';
 import type { MouseEvent } from 'react';
-import type { PropertyDetail } from '../../../../features/property/model/Property';
-import type { PublicConfig } from '../../../../shared/config/publicConfigTypes';
-import AuthenticatedPhoto from '../../../../features/property/ui/authenticated-photo/AuthenticatedPhoto';
-import Icon from '../../../../shared/ui/icon/Icon';
+import { Link } from 'react-router-dom';
+
+import type { PropertyDetail } from '@/features/property/model/Property';
+import AuthenticatedPhoto from '@/features/property/ui/authenticated-photo/AuthenticatedPhoto';
+import Icon from '@/shared/ui/icon/Icon';
+
 import PropertyDetailSection from '../property-detail-section/PropertyDetailSection';
+
 import styles from './PropertyPhotoSection.module.css';
 
 type PropertyPhotoSectionProps = {
-  config: PublicConfig;
   propertyId: number;
   propertyName: string;
   photoPreview: PropertyDetail['photoPreview'];
   onSelect: (index: number, trigger: HTMLButtonElement) => void;
 };
 
-const PropertyPhotoSection = ({
-  config,
-  propertyId,
-  propertyName,
-  photoPreview,
-  onSelect,
-}: PropertyPhotoSectionProps) => (
+const PropertyPhotoSection = ({ propertyId, propertyName, photoPreview, onSelect }: PropertyPhotoSectionProps) => (
   <PropertyDetailSection
     title="사진"
     meta={<span>{photoPreview.totalCount}/30</span>}
@@ -44,7 +39,6 @@ const PropertyPhotoSection = ({
               onClick={(event: MouseEvent<HTMLButtonElement>) => onSelect(index, event.currentTarget)}
             >
               <AuthenticatedPhoto
-                config={config}
                 propertyId={propertyId}
                 photoId={photo.photoId}
                 contentUrl={photo.contentUrl}

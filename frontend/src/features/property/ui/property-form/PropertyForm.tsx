@@ -1,25 +1,28 @@
-import { useState } from 'react';
 import type { FormEvent } from 'react';
-import type { ApiError } from '../../../auth/api/apiClient';
+import { useState } from 'react';
+
+import type { ApiError } from '@/features/auth/api/apiClient';
+import BottomActionArea from '@/shared/ui/bottom-action-area/BottomActionArea';
+import { Button } from '@/shared/ui/button/Button';
+import InlineNotice from '@/shared/ui/inline-notice/InlineNotice';
+import TextAreaField from '@/shared/ui/text-field/TextAreaField';
+import TextField from '@/shared/ui/text-field/TextField';
+
 import type { PropertyInputDto } from '../../api/dtos/PropertyDto';
 import { getPropertyErrorMessage } from '../../api/propertyErrorMessages';
-import {
-  formatMoneyInput,
-  propertyFieldErrorMessage,
-  toPropertyInputDto,
-  validatePropertyForm,
-} from '../../lib/propertyForm';
 import type {
   PropertyFormErrors,
   PropertyFormField,
   PropertyFormMode,
   PropertyFormValues,
 } from '../../lib/propertyForm';
-import BottomActionArea from '../../../../shared/ui/bottom-action-area/BottomActionArea';
-import { Button } from '../../../../shared/ui/button/Button';
-import InlineNotice from '../../../../shared/ui/inline-notice/InlineNotice';
-import TextAreaField from '../../../../shared/ui/text-field/TextAreaField';
-import TextField from '../../../../shared/ui/text-field/TextField';
+import {
+  formatMoneyInput,
+  propertyFieldErrorMessage,
+  toPropertyInputDto,
+  validatePropertyForm,
+} from '../../lib/propertyForm';
+
 import styles from './PropertyForm.module.css';
 
 type PropertyFormProps = {

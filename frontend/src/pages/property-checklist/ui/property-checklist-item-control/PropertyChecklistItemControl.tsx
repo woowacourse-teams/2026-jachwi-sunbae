@@ -1,13 +1,14 @@
 import { useEffect, useState } from 'react';
+
 import {
   usePropertyChecklistItemMemoMutation,
   usePropertyChecklistItemStatusMutation,
-} from '../../../../features/property/api/usePropertyChecklistItemMutations';
-import type { PropertyChecklistItem, PropertyChecklistItemStatus } from '../../../../features/property/model/Property';
-import type { PublicConfig } from '../../../../shared/config/publicConfigTypes';
+} from '@/features/property/api/usePropertyChecklistItemMutations';
+import type { PropertyChecklistItem, PropertyChecklistItemStatus } from '@/features/property/model/Property';
+import Icon from '@/shared/ui/icon/Icon';
+import SelectionControl from '@/shared/ui/selection-control/SelectionControl';
+
 import styles from './PropertyChecklistItemControl.module.css';
-import Icon from '../../../../shared/ui/icon/Icon';
-import SelectionControl from '../../../../shared/ui/selection-control/SelectionControl';
 
 const STATUS_OPTIONS: Array<{ value: PropertyChecklistItemStatus; label: string }> = [
   { value: 'GOOD', label: '괜찮음' },
@@ -16,7 +17,6 @@ const STATUS_OPTIONS: Array<{ value: PropertyChecklistItemStatus; label: string 
 ];
 
 const PropertyChecklistItemControl = ({
-  config,
   propertyId,
   propertyChecklistId,
   item,
@@ -25,7 +25,6 @@ const PropertyChecklistItemControl = ({
   onStartMemoEdit,
   onFinishMemoEdit,
 }: {
-  config: PublicConfig;
   propertyId: number;
   propertyChecklistId: number;
   item: PropertyChecklistItem;
@@ -35,8 +34,8 @@ const PropertyChecklistItemControl = ({
   onFinishMemoEdit: () => void;
 }) => {
   const [memo, setMemo] = useState(item.memo);
-  const statusMutation = usePropertyChecklistItemStatusMutation(config, propertyId, propertyChecklistId);
-  const memoMutation = usePropertyChecklistItemMemoMutation(config, propertyId, propertyChecklistId);
+  const statusMutation = usePropertyChecklistItemStatusMutation(propertyId, propertyChecklistId);
+  const memoMutation = usePropertyChecklistItemMemoMutation(propertyId, propertyChecklistId);
 
   useEffect(() => {
     if (!isMemoEditing) setMemo(item.memo);

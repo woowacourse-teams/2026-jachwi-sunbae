@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { selectSingleCategory } from '../../../../src/features/map/lib/mapPresentation';
+
+import { selectSingleCategory } from '@/features/map/lib/mapPresentation';
 
 describe('지도 시설 카테고리 선택', () => {
   it('한 번에 한 카테고리만 켠다', () => {

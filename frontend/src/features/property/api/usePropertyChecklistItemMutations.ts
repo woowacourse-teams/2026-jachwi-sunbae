@@ -1,9 +1,11 @@
 import { useMutation } from '@tanstack/react-query';
+
+import { queryClient } from '@/shared/api/queryClient';
+import { usePublicConfig } from '@/shared/config/PublicConfigContext';
+
+import type { PropertyChecklistDetail, PropertyChecklistItemStatus } from '../model/Property';
 import { updatePropertyChecklistItemMemo, updatePropertyChecklistItemStatus } from './propertyApi';
 import { propertyQueryKeys } from './propertyQueryKeys';
-import { queryClient } from '../../../shared/api/queryClient';
-import type { PropertyChecklistDetail, PropertyChecklistItemStatus } from '../model/Property';
-import type { PublicConfig } from '../../../shared/config/publicConfigTypes';
 
 const updateChecklistItem = (
   propertyId: number,
@@ -21,28 +23,24 @@ const updateChecklistItem = (
   void queryClient.invalidateQueries({ queryKey: propertyQueryKeys.checklists(propertyId), exact: true });
 };
 
-export const usePropertyChecklistItemStatusMutation = (
-  config: PublicConfig,
-  propertyId: number,
-  propertyChecklistId: number,
-) =>
-  useMutation({
+export const usePropertyChecklistItemStatusMutation = (propertyId: number, propertyChecklistId: number) => {
+  const config = usePublicConfig();
+  return useMutation({
     mutationFn: ({ itemId, status }: { itemId: number; status: PropertyChecklistItemStatus }) =>
       updatePropertyChecklistItemStatus(config, propertyId, propertyChecklistId, itemId, status),
     onSuccess: ({ itemId, status }) => {
       updateChecklistItem(propertyId, propertyChecklistId, itemId, (item) => ({ ...item, status }));
     },
   });
+};
 
-export const usePropertyChecklistItemMemoMutation = (
-  config: PublicConfig,
-  propertyId: number,
-  propertyChecklistId: number,
-) =>
-  useMutation({
+export const usePropertyChecklistItemMemoMutation = (propertyId: number, propertyChecklistId: number) => {
+  const config = usePublicConfig();
+  return useMutation({
     mutationFn: ({ itemId, memo }: { itemId: number; memo: string }) =>
       updatePropertyChecklistItemMemo(config, propertyId, propertyChecklistId, itemId, memo),
     onSuccess: ({ itemId, memo }) => {
       updateChecklistItem(propertyId, propertyChecklistId, itemId, (item) => ({ ...item, memo }));
     },
   });
+};

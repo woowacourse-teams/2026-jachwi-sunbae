@@ -1,6 +1,8 @@
 import { NavLink, Outlet, useLocation, useOutletContext } from 'react-router-dom';
-import type { Member } from '../../../features/auth/model/Member';
-import Icon from '../../../shared/ui/icon/Icon';
+
+import type { Member } from '@/features/auth/model/Member';
+import Icon from '@/shared/ui/icon/Icon';
+
 import styles from './PropertyAppLayout.module.css';
 
 const PropertyAppLayout = () => {
