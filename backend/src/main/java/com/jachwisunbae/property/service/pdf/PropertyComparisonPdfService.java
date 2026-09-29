@@ -9,7 +9,6 @@ import com.jachwisunbae.property.entity.photo.PropertyPhoto;
 import com.jachwisunbae.property.repository.PropertyRepository;
 import com.jachwisunbae.property.repository.query.PropertyPhotosQuery;
 import com.jachwisunbae.property.service.PropertyChecklistService;
-import com.jachwisunbae.property.service.PropertyMemoService;
 import com.jachwisunbae.property.service.PropertyPhotoService;
 import com.jachwisunbae.property.service.pdf.model.PropertyComparisonPhoto;
 import com.jachwisunbae.property.service.pdf.model.PropertyComparisonRecord;
@@ -26,20 +25,17 @@ public class PropertyComparisonPdfService {
 
     private final PropertyRepository propertyRepository;
     private final PropertyPhotoService propertyPhotoService;
-    private final PropertyMemoService propertyMemoService;
     private final PropertyChecklistService propertyChecklistService;
     private final PropertyComparisonPhotoOptimizer photoOptimizer;
     private final PropertyComparisonPdfRenderer renderer;
 
     public PropertyComparisonPdfService(final PropertyRepository propertyRepository,
                                         final PropertyPhotoService propertyPhotoService,
-                                        final PropertyMemoService propertyMemoService,
                                         final PropertyChecklistService propertyChecklistService,
                                         final PropertyComparisonPhotoOptimizer photoOptimizer,
                                         final PropertyComparisonPdfRenderer renderer) {
         this.propertyRepository = propertyRepository;
         this.propertyPhotoService = propertyPhotoService;
-        this.propertyMemoService = propertyMemoService;
         this.propertyChecklistService = propertyChecklistService;
         this.photoOptimizer = photoOptimizer;
         this.renderer = renderer;
