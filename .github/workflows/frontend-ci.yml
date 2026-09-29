@@ -37,6 +37,10 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Check repository version
+        run: python3 .github/scripts/check_versions.py
+        working-directory: .
+
       - name: Detect frontend changes
         id: changes
         env:
