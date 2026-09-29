@@ -90,7 +90,7 @@ android {
     buildToolsVersion rootProject.ext.buildToolsVersion
     compileSdk rootProject.ext.compileSdkVersion
 
-    namespace "kr.jachwisunbae.app"
+    namespace "com.jachwisunbae.app"
     defaultConfig {
         applicationId "com.jachwisunbae"
         minSdkVersion rootProject.ext.minSdkVersion
