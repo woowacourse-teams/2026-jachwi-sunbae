@@ -95,6 +95,7 @@ const ResolvedCreateChecklistPage = ({ config, returnTo }: { config: PublicConfi
             }}
             onSubmit={async ({ name, items }) => {
               try {
+                trackPostHogEvent('checklist_creation_submitted', { stage });
                 const created = await create.mutateAsync({
                   name,
                   stage,
