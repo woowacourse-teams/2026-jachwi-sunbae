@@ -29,12 +29,10 @@ if [[ ! -f "${LOCAL_INDEX}" ]]; then
   exit 1
 fi
 
-if [[ "${DEPLOY_ENVIRONMENT}" == "prod" ]]; then
-  if [[ -n "${POSTHOG_CLI_API_KEY:-}" ]]; then
-    "${SCRIPT_DIR}/upload-posthog-sourcemaps.sh"
-  else
-    echo "PostHog source map 업로드를 건너뛴다: POSTHOG_CLI_API_KEY가 없다." >&2
-  fi
+if [[ -n "${POSTHOG_CLI_API_KEY:-}" ]]; then
+  "${SCRIPT_DIR}/upload-posthog-sourcemaps.sh"
+else
+  echo "PostHog source map 업로드를 건너뛴다: POSTHOG_CLI_API_KEY가 없다." >&2
 fi
 
 VERSION="$(tr -d '[:space:]' < "${VERSION_FILE}")"

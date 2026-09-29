@@ -85,7 +85,7 @@ dev와 prod는 같은 PostHog 프로젝트에 수집한다. `API_BASE_URL`이 �
 
 로그인 전환은 `login_page_viewed` → `login_started` → `login_succeeded` 순서로 확인하며, 실패는 `login_failed`로 별도 수집한다.
 
-운영 번들은 `hidden-source-map`으로 source map을 생성한다. `publish.sh prod`는 `POSTHOG_CLI_API_KEY`가 있으면 PostHog에 source map을 업로드한 뒤 S3에는 `.map` 파일을 올리지 않는다. 키가 없으면 업로드를 건너뛰고 `.map` 파일만 배포에서 제외한다.
+배포 번들은 `hidden-source-map`으로 source map을 생성한다. `publish.sh dev`와 `publish.sh prod`는 `POSTHOG_CLI_API_KEY`가 있으면 PostHog에 source map을 업로드한 뒤 S3에는 `.map` 파일을 올리지 않는다. 키가 없으면 업로드를 건너뛰고 `.map` 파일만 배포에서 제외한다.
 
 ```bash
 export POSTHOG_CLI_API_KEY='<error_tracking:write 권한의 개인 API 키>'
