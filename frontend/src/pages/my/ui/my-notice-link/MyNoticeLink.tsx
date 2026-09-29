@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom';
 
 import Icon from '@/shared/ui/icon/Icon';
 
-import styles from '../../MyPage.module.css';
+import styles from './MyNoticeLink.module.css';
 
 type MyNoticeLinkProps = {
   to: string;

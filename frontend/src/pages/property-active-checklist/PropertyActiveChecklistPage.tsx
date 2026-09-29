@@ -96,7 +96,7 @@ const ResolvedPropertyActiveChecklist = ({ propertyId, stage }: { propertyId: nu
           title="체크리스트 교체"
           backTo={`/properties/${propertyId}`}
           backLabel="매물 상세로 돌아가기"
-          className={`${styles.page} property-page checklist-page active-checklist-page`}
+          className="property-page checklist-page active-checklist-page"
           containerClassName="page-container checklist-page__narrow"
         >
           <h1 className="sr-only">{propertyDetail.name} 체크리스트 교체</h1>

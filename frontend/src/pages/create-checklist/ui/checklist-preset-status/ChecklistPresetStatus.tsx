@@ -3,7 +3,7 @@ import type { useChecklistPreset } from '@/features/checklist/api/useChecklists'
 import useDelayedLoading from '@/shared/lib/hooks/useDelayedLoading';
 import { Button } from '@/shared/ui/button/Button';
 
-import styles from '../../CreateChecklistPage.module.css';
+import styles from './ChecklistPresetStatus.module.css';
 
 type ChecklistPresetStatusProps = {
   preset: ReturnType<typeof useChecklistPreset>;

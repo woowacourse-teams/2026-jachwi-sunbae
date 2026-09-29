@@ -9,7 +9,7 @@ import Icon from '@/shared/ui/icon/Icon';
 import InlineNotice from '@/shared/ui/inline-notice/InlineNotice';
 import PageAction from '@/shared/ui/page-action/PageAction';
 
-import styles from '../../PropertyListPage.module.css';
+import styles from './PropertyListContent.module.css';
 
 type PropertyListQuery = ReturnType<typeof usePropertyList>;
 
