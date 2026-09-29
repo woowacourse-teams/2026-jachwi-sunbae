@@ -128,6 +128,15 @@ curl -I https://www.jachwi-sunbae.kr/properties
 
 둘 다 200이어야 한다. 두 번째가 404면 SPA 폴백이 빠진 것이다. 이 확인은 접근 가능성과 SPA 폴백을 보는 smoke test이며, 이번 번들 여부는 `verify-deployment.sh`가 판정한다.
 
+배포된 프론트엔드 제품 버전은 환경별 `version.json`에서 확인한다.
+
+```bash
+curl -fsS https://dev.jachwi-sunbae.kr/version.json
+curl -fsS https://www.jachwi-sunbae.kr/version.json
+```
+
+응답의 버전은 저장소 루트 `VERSION`과 같아야 한다. `publish.sh`가 매 배포 때 이 파일을 생성하고, 배포 검증 단계에서 함께 확인한다.
+
 ## 실제 구성
 
 | 항목            | 값                                                                                        |
