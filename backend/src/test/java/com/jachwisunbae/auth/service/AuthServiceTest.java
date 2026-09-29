@@ -296,10 +296,5 @@ class AuthServiceTest {
             members.put(saved.getId(), saved);
             return saved;
         }
-
-        @Override
-        public void update(Member member) {
-            members.put(member.getId(), member);
-        }
     }
 }

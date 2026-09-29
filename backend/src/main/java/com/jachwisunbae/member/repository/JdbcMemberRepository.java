@@ -71,17 +71,6 @@ public class JdbcMemberRepository implements MemberRepository {
                 member.getCreatedAt(), member.getUpdatedAt());
     }
 
-    @Override
-    public void update(final Member member) {
-        String sql = """
-                UPDATE members
-                SET nickname = ?, password_hash = ?, updated_at = ?
-                WHERE id = ?
-                """;
-        jdbcTemplate.update(sql, member.getNickname(), member.getPasswordHash(), member.getUpdatedAt(),
-                member.getId());
-    }
-
     private RowMapper<Member> memberRowMapper() {
         return (resultSet, rowNumber) -> Member.reconstruct(
                 resultSet.getLong("id"),

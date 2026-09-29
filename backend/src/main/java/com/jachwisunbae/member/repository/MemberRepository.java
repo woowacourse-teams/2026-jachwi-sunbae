@@ -13,6 +13,4 @@ public interface MemberRepository {
     Optional<Member> findByNicknameAndPasswordProtected(String nickname, boolean passwordProtected);
 
     Member save(Member member);
-
-    void update(Member member);
 }
