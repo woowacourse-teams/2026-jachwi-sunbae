@@ -4,6 +4,7 @@ import com.jachwisunbae.common.exception.BusinessException;
 import com.jachwisunbae.common.exception.DomainErrorCode;
 import com.jachwisunbae.member.repository.MemberRepository;
 import com.jachwisunbae.property.controller.dto.request.CreatePropertyRequest;
+import com.jachwisunbae.property.controller.dto.request.UpdatePropertyMemoRequest;
 import com.jachwisunbae.property.controller.dto.request.UpdatePropertyRequest;
 import com.jachwisunbae.property.controller.dto.response.PropertyChecklistOverviewResponse;
 import com.jachwisunbae.property.controller.dto.response.PropertyDetailResponse;
@@ -110,4 +111,22 @@ public class PropertyService {
         return propertyRepository.update(property);
     }
 
+    public String findMemoByMemberIdAndPropertyId(final Long memberId, final Long propertyId) {
+        return findOwnedProperty(memberId, propertyId).getMemo();
+    }
+
+    @Transactional
+    public String updateMemoByMemberIdAndPropertyId(final Long memberId, final Long propertyId,
+                                                    final UpdatePropertyMemoRequest request) {
+        Property property = findOwnedProperty(memberId, propertyId);
+        property.replaceMemo(request.freeMemo());
+        propertyRepository.updateMemo(property);
+        return property.getMemo();
+    }
+
+    private Property findOwnedProperty(final Long memberId, final Long propertyId) {
+        return propertyRepository.findByIdAndMemberId(propertyId, memberId)
+                .orElseThrow(() -> new BusinessException(DomainErrorCode.PROPERTY_NOT_FOUND,
+                        "매물을 찾을 수 없습니다."));
+    }
 }

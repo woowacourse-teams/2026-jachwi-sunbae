@@ -1,0 +1,110 @@
+.sheet {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 30;
+  display: flex;
+  width: 100%;
+  max-width: var(--app-max-width);
+  max-height: calc(100% - 4.25rem);
+  flex-direction: column;
+  box-sizing: border-box;
+  margin: 0 auto;
+  padding-bottom: calc(0.5rem + env(safe-area-inset-bottom));
+  overflow: hidden;
+  border-top: 1px solid var(--color-border, #eaebed);
+  border-radius: 1.25rem 1.25rem 0 0;
+  background: var(--color-surface, #fff);
+  box-shadow: 0 -0.4rem 1.5rem rgb(0 0 0 / 12%);
+  transition: height 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.sheet[data-dragging='true'] {
+  transition: none;
+}
+
+.collapsed {
+  height: 1.9rem;
+}
+
+.collapsed:not([data-dragging='true']) .heading {
+  display: none;
+}
+
+.collapsed .header {
+  padding-block: 0.35rem;
+}
+
+.mid {
+  height: min(34%, 18rem);
+}
+
+.full {
+  height: calc(100% - 4.25rem);
+}
+
+.header {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.5rem 1rem 0.35rem;
+  background: var(--color-surface, #fff);
+  cursor: pointer;
+  user-select: none;
+}
+
+.grabber {
+  display: grid;
+  padding: 0.15rem;
+  place-items: center;
+}
+
+.handle {
+  width: 2.5rem;
+  height: 0.25rem;
+  border-radius: 999px;
+  background: var(--color-border-strong, #d7d9dc);
+}
+
+.heading {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 0.4rem;
+  color: var(--color-muted, #868b94);
+  font-size: 0.82rem;
+}
+
+.heading strong {
+  color: var(--color-ink, #212124);
+}
+
+.body {
+  min-height: 0;
+  padding: 0.25rem 0.85rem 0.65rem;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.empty {
+  padding: 2rem 1rem;
+  color: var(--color-muted, #868b94);
+  font-size: 0.85rem;
+  text-align: center;
+}
+
+.list {
+  display: grid;
+  gap: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.list > li[data-selected='true'] {
+  background: color-mix(in srgb, var(--color-primary) 5%, transparent);
+}

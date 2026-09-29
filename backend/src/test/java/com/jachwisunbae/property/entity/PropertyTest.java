@@ -242,7 +242,7 @@ class PropertyTest {
         LocalDateTime createdAt = NOW.minusDays(10);
         Property property = Property.reconstruct(10L, 20L, "기존 매물", 1L, 2L, "기존 주소",
             BigDecimal.valueOf(37), BigDecimal.valueOf(127), TODAY, 3L, NOW,
-            Set.of(RoomOption.BED), Set.of(UtilityOption.WATER), "기존 경로", createdAt, NOW.minusDays(1));
+            Set.of(RoomOption.BED), Set.of(UtilityOption.WATER), "기존 경로", "기존 메모", createdAt, NOW.minusDays(1));
         LocalDateTime updatedAt = NOW.plusHours(1);
 
         updateProperty(property, input -> {

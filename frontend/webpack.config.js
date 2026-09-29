@@ -52,7 +52,7 @@ module.exports = (_env, argv) => {
   const posthogHost = process.env.POSTHOG_HOST ?? '';
 
   return {
-    entry: isBrowserTestHarness ? './src/test-browser/main.tsx' : './src/main.tsx',
+    entry: isBrowserTestHarness ? './src/app/test-browser/main.tsx' : './src/main.tsx',
     cache: {
       type: 'filesystem',
       buildDependencies: {

@@ -1,0 +1,98 @@
+import TopNavigation from '../../shared/ui/top-navigation/TopNavigation';
+import { useTrackingConsent } from '../../features/tracking-consent/model/TrackingConsentContext';
+import styles from './PrivacyPage.module.css';
+import { Button } from '../../shared/ui/button/Button';
+
+const PrivacyPage = () => {
+  const { available, status, grant, deny } = useTrackingConsent();
+  const statusLabel = !available
+    ? '이 환경에서는 측정하지 않음'
+    : status === 'granted'
+      ? '동의함'
+      : status === 'denied'
+        ? '동의하지 않음'
+        : '아직 선택하지 않음';
+
+  return (
+    <main className={styles.page}>
+      <div className={styles.content}>
+        <TopNavigation title="개인정보 처리방침" backTo="/intro" backLabel="소개 화면으로 돌아가기" />
+        <section className={styles.section} aria-labelledby="privacy-overview-heading">
+          <p className={styles.eyebrow}>개인정보 처리방침</p>
+          <h1 id="privacy-overview-heading">자취선배는 필요한 정보만 처리합니다.</h1>
+          <p>
+            자취선배는 회원 식별과 매물 기록 기능 제공, 서비스 안정성 및 이용 현황 분석을 위해 아래 정보를 처리합니다.
+            이 방침은 웹과 iOS 앱에 적용됩니다.
+          </p>
+          <p>시행일: 2026년 9월 26일</p>
+        </section>
+
+        <section className={styles.card} aria-labelledby="collected-data-heading">
+          <h2 id="collected-data-heading">처리하는 정보와 목적</h2>
+          <ul>
+            <li>닉네임, 회원 식별자 및 선택적으로 설정한 비밀번호: 로그인과 회원 식별</li>
+            <li>매물명, 가격, 주소, 좌표, 일정과 선택 옵션: 매물 기록·지도·비교 기능 제공</li>
+            <li>사진, 메모와 체크리스트 내용: 사용자가 선택한 매물 기록 저장</li>
+            <li>서비스 경로, 기능 이용 이벤트와 기기·브라우저 정보: 오류 확인과 서비스 개선</li>
+          </ul>
+          <p className={styles.strongNotice}>
+            현재 위치는 사용자가 위치 기능을 실행할 때 지도와 주변 시설을 표시하기 위해 사용됩니다. 매물에 선택한 위치는
+            해당 매물 정보로 저장됩니다.
+          </p>
+        </section>
+
+        <section className={styles.card} aria-labelledby="storage-heading">
+          <h2 id="storage-heading">보관과 삭제</h2>
+          <p>
+            정보는 서비스 제공에 필요한 기간 동안 보관합니다. 사용자가 앱에서 매물·사진·메모를 삭제하거나 아래 문의처로
+            삭제를 요청하면 관련 정보를 삭제합니다. 법령상 보관 의무가 있는 경우에는 해당 기간 동안 분리하여 보관할 수
+            있습니다.
+          </p>
+        </section>
+
+        <section className={styles.card} aria-labelledby="sharing-heading">
+          <h2 id="sharing-heading">외부 서비스와 처리 위탁</h2>
+          <p>
+            서비스 운영을 위해 클라우드 호스팅·파일 저장소와 지도 제공 서비스를 이용합니다. 웹에서는 서비스 개선을 위해
+            PostHog를 사용하며, 이용 경로와 기능 이벤트, 회원 식별자가 처리될 수 있습니다. iOS 앱에서는 PostHog와 Meta
+            Pixel을 실행하지 않습니다.
+          </p>
+        </section>
+
+        <section className={styles.card} aria-labelledby="tracking-choice-heading">
+          <h2 id="tracking-choice-heading">웹 광고 성과 측정 선택</h2>
+          <p>
+            웹에서는 사용자가 동의한 경우에만 Meta Pixel을 불러오고 페이지 방문, 신규 닉네임 생성 여부와 첫 매물 등록
+            여부를 Meta에 전송합니다. 닉네임, 비밀번호, 주소, 사진, 메모와 체크 내용은 Meta에 전송하지 않습니다.
+            동의하지 않아도 모든 기능을 사용할 수 있으며 언제든 선택을 바꿀 수 있습니다.
+          </p>
+          <p className={styles.status} role="status">
+            현재 상태: {statusLabel}
+          </p>
+          {available ? (
+            <div className={styles.actions}>
+              <Button variant="secondary" onClick={deny}>
+                동의하지 않기
+              </Button>
+              <Button variant="soft" onClick={grant}>
+                측정에 동의하기
+              </Button>
+            </div>
+          ) : null}
+        </section>
+
+        <p className={styles.externalNotice}>
+          개인정보 열람·정정·삭제 및 기타 문의: <a href="mailto:conditionaltype@gmail.com">conditionaltype@gmail.com</a>
+          <br />
+          Meta의 데이터 처리 방식은{' '}
+          <a href="https://www.facebook.com/privacy/policy/" target="_blank" rel="noreferrer">
+            Meta 개인정보처리방침
+          </a>
+          에서 확인할 수 있습니다.
+        </p>
+      </div>
+    </main>
+  );
+};
+
+export default PrivacyPage;

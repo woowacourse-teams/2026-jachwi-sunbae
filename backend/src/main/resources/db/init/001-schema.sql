@@ -21,6 +21,7 @@ CREATE TABLE IF NOT EXISTS properties (
     address VARCHAR(255) NULL,
     latitude DECIMAL(10, 7) NULL,
     longitude DECIMAL(11, 7) NULL,
+    memo VARCHAR(2000) NOT NULL DEFAULT '',
     created_at DATETIME(6) NOT NULL,
     deleted_at DATETIME(6) NULL,
     CONSTRAINT fk_properties_member FOREIGN KEY (member_id) REFERENCES members (id),
@@ -81,15 +82,6 @@ CREATE TABLE IF NOT EXISTS main_property_photos (
     updated_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
     CONSTRAINT fk_main_photos_property FOREIGN KEY (property_id) REFERENCES properties (id),
     CONSTRAINT fk_main_photos_photo FOREIGN KEY (property_id, property_photos_id) REFERENCES property_photos (property_id, id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
--- 매물 자유 메모
-CREATE TABLE IF NOT EXISTS property_memos (
-    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    property_id BIGINT NOT NULL UNIQUE,
-    free_memo VARCHAR(2000) NOT NULL DEFAULT '',
-    created_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
-    CONSTRAINT fk_property_memos_property FOREIGN KEY (property_id) REFERENCES properties (id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- 시스템 체크 항목 (ONLINE_PHONE 제외)
