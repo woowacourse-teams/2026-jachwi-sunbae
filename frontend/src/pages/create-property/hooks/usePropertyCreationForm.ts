@@ -7,12 +7,7 @@ import type { MapAddress } from '@/features/map/model/Map';
 import type { PropertyInputDto } from '@/features/property/api/dtos/PropertyDto';
 import { useCreateProperty } from '@/features/property/api/usePropertyMutations';
 import type { PropertyFormErrors, PropertyFormValues } from '@/features/property/lib/propertyForm';
-import {
-  formatAmountForInput,
-  formatMoneyInput,
-  toPropertyInputDto,
-  validatePropertyForm,
-} from '@/features/property/lib/propertyForm';
+import { formatAmountForInput, toPropertyInputDto, validatePropertyForm } from '@/features/property/lib/propertyForm';
 import { trackPostHogEvent } from '@/shared/lib/analytics/posthog';
 
 import useAddressSearch from './useAddressSearch';
@@ -76,9 +71,7 @@ export const usePropertyCreationForm = (routeState: PropertyCreationRouteState) 
     trackPostHogEvent('property_creation_started');
   }, []);
 
-  const changeMoney = (field: 'depositAmount' | 'monthlyRentAmount', input: string) => {
-    const formatted = formatMoneyInput(input);
-    if (formatted === null) return;
+  const changeMoney = (field: 'depositAmount' | 'monthlyRentAmount', formatted: string) => {
     setValues((current) => ({ ...current, [field]: formatted }));
     setErrors((current) => ({ ...current, [field]: undefined }));
   };

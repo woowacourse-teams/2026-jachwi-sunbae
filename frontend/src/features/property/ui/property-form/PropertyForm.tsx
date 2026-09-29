@@ -16,12 +16,8 @@ import type {
   PropertyFormMode,
   PropertyFormValues,
 } from '../../lib/propertyForm';
-import {
-  formatMoneyInput,
-  propertyFieldErrorMessage,
-  toPropertyInputDto,
-  validatePropertyForm,
-} from '../../lib/propertyForm';
+import { propertyFieldErrorMessage, toPropertyInputDto, validatePropertyForm } from '../../lib/propertyForm';
+import MoneyField from '../money-field/MoneyField';
 
 import styles from './PropertyForm.module.css';
 
@@ -65,11 +61,6 @@ const PropertyForm = ({
   const setValue = (field: PropertyFormField, value: string) => {
     setValues((current) => ({ ...current, [field]: value }));
     setErrors((current) => ({ ...current, [field]: undefined }));
-  };
-
-  const setMoneyValue = (field: 'depositAmount' | 'monthlyRentAmount', value: string) => {
-    const formatted = formatMoneyInput(value);
-    if (formatted !== null) setValue(field, formatted);
   };
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
@@ -134,36 +125,32 @@ const PropertyForm = ({
       )}
 
       <div className={variant === 'detail' ? styles.detailMoneyFields : styles.moneyFields}>
-        <TextField
+        <MoneyField
           id="property-deposit"
           name="depositAmount"
           label="보증금"
           requirement={mode === 'registration' ? '필수' : '선택'}
           value={values.depositAmount}
-          inputMode="numeric"
           autoComplete="off"
           placeholder="0"
-          suffix="만원"
           fieldClassName={variant === 'detail' ? styles.detailField : styles.defaultField}
           className={variant === 'detail' ? styles.detailInput : styles.defaultInput}
           error={displayedErrors.depositAmount}
-          onChange={(event) => setMoneyValue('depositAmount', event.target.value)}
+          onValueChange={(value) => setValue('depositAmount', value)}
         />
 
-        <TextField
+        <MoneyField
           id="property-rent"
           name="monthlyRentAmount"
           label="월세"
           requirement={mode === 'registration' ? '필수' : '선택'}
           value={values.monthlyRentAmount}
-          inputMode="numeric"
           autoComplete="off"
           placeholder="0"
-          suffix="만원"
           fieldClassName={variant === 'detail' ? styles.detailField : styles.defaultField}
           className={variant === 'detail' ? styles.detailInput : styles.defaultInput}
           error={displayedErrors.monthlyRentAmount}
-          onChange={(event) => setMoneyValue('monthlyRentAmount', event.target.value)}
+          onValueChange={(value) => setValue('monthlyRentAmount', value)}
         />
       </div>
 
