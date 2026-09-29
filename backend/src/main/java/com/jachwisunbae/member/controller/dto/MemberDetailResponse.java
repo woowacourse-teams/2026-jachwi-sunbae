@@ -1,6 +1,6 @@
 package com.jachwisunbae.member.controller.dto;
 
-import com.jachwisunbae.member.service.MemberProfile;
+import com.jachwisunbae.member.service.dto.result.MemberProfile;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 public record MemberDetailResponse(
@@ -15,7 +15,6 @@ public record MemberDetailResponse(
 ) {
 
     public static MemberDetailResponse from(MemberProfile profile) {
-        return new MemberDetailResponse(profile.member().getId(), profile.member().getNickname(),
-                profile.passwordProtected());
+        return new MemberDetailResponse(profile.id(), profile.nickname(), profile.passwordProtected());
     }
 }
