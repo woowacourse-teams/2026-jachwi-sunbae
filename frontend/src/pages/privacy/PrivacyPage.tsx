@@ -41,6 +41,16 @@ const PrivacyPage = () => {
           </p>
         </section>
 
+        <section className={styles.card} aria-labelledby="purpose-heading">
+          <h2 id="purpose-heading">정보 이용 목적</h2>
+          <ul>
+            <li>닉네임 로그인, 회원 식별과 계정 접근 보호</li>
+            <li>매물 후보 기록·조회·비교와 사진·메모·체크리스트 관리</li>
+            <li>주소 검색, 지도 표시와 주변 시설 확인</li>
+            <li>오류 확인, 보안 유지와 서비스 개선</li>
+          </ul>
+        </section>
+
         <section className={styles.card} aria-labelledby="storage-heading">
           <h2 id="storage-heading">보관과 삭제</h2>
           <p>
@@ -76,6 +86,30 @@ const PrivacyPage = () => {
             서비스 운영을 위해 클라우드 호스팅·파일 저장소와 지도 제공 서비스를 이용합니다. 웹과 iOS·Android 앱에서는
             서비스 개선을 위해 PostHog를 사용하며, 이용 경로와 기능 이벤트, 회원 식별자가 처리될 수 있습니다. 광고 성과
             측정용 Meta Pixel은 모바일 앱(iOS·Android)에서 실행하지 않습니다.
+          </p>
+        </section>
+
+        <section className={styles.card} aria-labelledby="rights-heading">
+          <h2 id="rights-heading">이용자의 권리</h2>
+          <p>
+            이용자는 본인 정보의 열람·정정·삭제 및 처리 정지를 요청할 수 있습니다. 아래 문의처로 요청해 주시면 본인
+            확인에 필요한 최소한의 정보를 확인한 뒤 처리하겠습니다. 계정과 데이터 삭제는 위의 삭제 요청 안내를
+            참고해 주세요.
+          </p>
+        </section>
+
+        <section className={styles.card} aria-labelledby="security-heading">
+          <h2 id="security-heading">안전성 확보 조치</h2>
+          <p>
+            자취선배는 회원별 접근 권한을 분리하고, 선택 비밀번호를 원문이 아닌 해시 형태로 저장하며, 사용자가 올린
+            사진은 비공개 저장소에 보관하는 등 개인정보를 보호하기 위한 조치를 적용합니다.
+          </p>
+        </section>
+
+        <section className={styles.card} aria-labelledby="changes-heading">
+          <h2 id="changes-heading">방침 변경</h2>
+          <p>
+            서비스 기능이나 정보 처리 방식이 변경되면 이 페이지에 변경 내용을 안내하고 시행일을 갱신합니다.
           </p>
         </section>
 
