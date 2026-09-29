@@ -11,9 +11,6 @@ auth:
     issuer: jachwi-sunbae
     audience: jachwi-sunbae-api
     access-token-seconds: 43200
-  nickname:
-    max-failures: 5
-    failure-window-seconds: 600
 
 app:
   cors:

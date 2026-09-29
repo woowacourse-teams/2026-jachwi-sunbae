@@ -4,16 +4,18 @@
 
 여러 플랫폼에서 찾은 매물 후보를 한곳에 모으고, 방문 전·현장·계약 전 확인 내용을 사진과 메모로 기록해 비교하도록 돕는 임차인용 집 선택 도구입니다.
 
-외부 계정 없이 닉네임만으로 시작할 수 있고, 기록 보호가 필요하면 선택 비밀번호를 설정합니다. 매물별 체크리스트, 실제 사진 업로드, 주소·지도·주변 시설 분석, 선택 매물 비교 PDF와 외부 사용자용 공개 소개 화면을 제공합니다.
+외부 계정 없이 닉네임만으로 시작할 수 있고, 기록 보호가 필요하면 선택 비밀번호를 설정합니다. 매물별 체크리스트, 실제 사진 업로드, 주소·지도·주변 시설 분석, 선택 매물 비교 PDF와 외부 사용자용 공개 소개
+화면을 제공합니다.
 
 ## 실행 환경
 
-| 환경 | 브랜치 | 프론트엔드 | 백엔드 |
-| --- | --- | --- | --- |
-| dev | `develop` | `https://dev.jachwi-sunbae.kr` | `https://dev-api.jachwi-sunbae.kr` |
-| prod | `main` | `https://www.jachwi-sunbae.kr` | `https://api.jachwi-sunbae.kr` |
+| 환경 | 브랜치    | 프론트엔드                     | 백엔드                             |
+|------|-----------|--------------------------------|------------------------------------|
+| dev  | `develop` | `https://dev.jachwi-sunbae.kr` | `https://dev-api.jachwi-sunbae.kr` |
+| prod | `main`    | `https://www.jachwi-sunbae.kr` | `https://api.jachwi-sunbae.kr`     |
 
-`develop`과 `main` 병합은 GitHub Actions 필수 검사를 거칩니다. 배포는 팀 AWS 계정의 CodePipeline Commands, CodeDeploy, S3와 CloudFront가 담당하며 실제 비밀값은 저장소에 커밋하지 않습니다.
+`develop`과 `main` 병합은 GitHub Actions 필수 검사를 거칩니다. 배포는 팀 AWS 계정의 CodePipeline Commands, CodeDeploy, S3와 CloudFront가 담당하며
+실제 비밀값은 저장소에 커밋하지 않습니다.
 
 ## 문서
 
@@ -74,7 +76,10 @@ npm run dev
 - Swagger UI: `http://localhost:8080/swagger-ui/index.html`
 - MinIO 콘솔: `http://localhost:9001`
 
-처음 보는 닉네임은 새 기록 공간을 만듭니다. 비밀번호를 비우면 같은 닉네임을 아는 사람이 기록을 함께 수정할 수 있고, 비밀번호를 입력하면 해당 닉네임을 보호합니다.
+
+처음 보는 닉네임은 새 기록 공간을 만듭니다. 비밀번호를 비우면 같은 닉네임을 아는 사람이 기록을 함께 수정할 수 있고, 비밀번호를 입력하면 같은 닉네임이라도 비밀번호 없는 기록과 분리된 보호 기록을 사용합니다.
+
+
 
 ### iOS 앱
 

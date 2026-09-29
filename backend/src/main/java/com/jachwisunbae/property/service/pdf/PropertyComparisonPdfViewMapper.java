@@ -93,7 +93,7 @@ public class PropertyComparisonPdfViewMapper {
             .mapToObj(stageIndex -> createStageView(record.stages().get(stageIndex), stageIndex + 1))
             .toList();
 
-        String memo = record.memo() == null ? "" : blankToEmpty(record.memo().getFreeMemo());
+        String memo = blankToEmpty(record.property().getMemo());
         return new PropertyView(index, total, property.getName(), basics, photos, memo, stages);
     }
 

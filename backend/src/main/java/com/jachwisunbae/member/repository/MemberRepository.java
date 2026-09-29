@@ -10,9 +10,7 @@ public interface MemberRepository {
 
     Optional<Member> findByIdForUpdate(Long memberId);
 
-    Optional<Member> findByNickname(String nickname);
+    Optional<Member> findByNicknameAndPasswordProtected(String nickname, boolean passwordProtected);
 
     Member save(Member member);
-
-    void update(Member member);
 }

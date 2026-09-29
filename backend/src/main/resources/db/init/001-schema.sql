@@ -1,12 +1,14 @@
 -- 회원 (자격정보 통합)
+-- 닉네임은 대소문자를 구분해 비교하도록 utf8mb4_bin을 쓴다. MySQL 기본 collation은 대소문자를 무시한다.
+-- 같은 닉네임에 비밀번호 없는 회원과 보호된 회원이 하나씩 존재할 수 있다.
 CREATE TABLE IF NOT EXISTS members (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    nickname VARCHAR(50) NOT NULL,
-    nickname_key VARCHAR(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL,
+    nickname VARCHAR(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL,
     password_hash VARCHAR(255) NULL,
+    password_protected BOOLEAN AS (password_hash IS NOT NULL) STORED,
     created_at DATETIME(6) NOT NULL,
     updated_at DATETIME(6) NOT NULL,
-    CONSTRAINT uk_members_nickname_key UNIQUE (nickname_key)
+    CONSTRAINT uk_members_nickname_protection UNIQUE (nickname, password_protected)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- 매물
@@ -19,6 +21,7 @@ CREATE TABLE IF NOT EXISTS properties (
     address VARCHAR(255) NULL,
     latitude DECIMAL(10, 7) NULL,
     longitude DECIMAL(11, 7) NULL,
+    memo VARCHAR(2000) NOT NULL DEFAULT '',
     created_at DATETIME(6) NOT NULL,
     deleted_at DATETIME(6) NULL,
     CONSTRAINT fk_properties_member FOREIGN KEY (member_id) REFERENCES members (id),
@@ -79,15 +82,6 @@ CREATE TABLE IF NOT EXISTS main_property_photos (
     updated_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
     CONSTRAINT fk_main_photos_property FOREIGN KEY (property_id) REFERENCES properties (id),
     CONSTRAINT fk_main_photos_photo FOREIGN KEY (property_id, property_photos_id) REFERENCES property_photos (property_id, id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
--- 매물 자유 메모
-CREATE TABLE IF NOT EXISTS property_memos (
-    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    property_id BIGINT NOT NULL UNIQUE,
-    free_memo VARCHAR(2000) NOT NULL DEFAULT '',
-    created_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
-    CONSTRAINT fk_property_memos_property FOREIGN KEY (property_id) REFERENCES properties (id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- 시스템 체크 항목 (ONLINE_PHONE 제외)
