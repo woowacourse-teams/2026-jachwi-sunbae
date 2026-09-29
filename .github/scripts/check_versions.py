@@ -77,6 +77,10 @@ def main() -> int:
         errors.append("iOS CURRENT_PROJECT_VERSION은 1 이상의 정수여야 합니다.")
     if int(android_version_code) < 1:
         errors.append("Android versionCode는 1 이상의 정수여야 합니다.")
+    if ios_build_numbers and any(number != android_version_code for number in ios_build_numbers):
+        errors.append(
+            "iOS CURRENT_PROJECT_VERSION과 Android versionCode가 같아야 합니다."
+        )
 
     if errors:
         print("버전 검증에 실패했습니다:", file=sys.stderr)
