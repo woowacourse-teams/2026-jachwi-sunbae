@@ -63,11 +63,13 @@ prod → /main.8a49163cbe52bf996d07.js
 | `API_BASE_URL`          | `https://api.jachwi-sunbae.kr` | `https://dev-api.jachwi-sunbae.kr` |
 | `MAP_PROVIDER_MODE`     | `naver`                        | `naver`                            |
 | `NAVER_MAP_CLIENT_ID`   | Naver Maps Client ID           | 같은 Naver Maps Application의 ID   |
-| `POSTHOG_PROJECT_TOKEN` | PostHog 프로젝트 토큰          | 비움(수집 안 함)                    |
-| `POSTHOG_HOST`          | `https://us.i.posthog.com`     | 비움(수집 안 함)                    |
+| `POSTHOG_PROJECT_TOKEN` | PostHog 프로젝트 토큰          | 같은 PostHog 프로젝트 토큰          |
+| `POSTHOG_HOST`          | `https://us.i.posthog.com`     | `https://us.i.posthog.com`          |
 | `APP_VERSION`           | `package.json` 버전            | `package.json` 버전                 |
 
-값은 CodePipeline Commands 빌드 액션의 환경변수로 전달한다. Naver Maps Client ID와 PostHog 프로젝트 토큰은 브라우저 번들에 포함되는 공개 식별자이며 REST API 키나 Client Secret 등 비밀값을 넣지 않는다. Naver Maps Application에 `https://www.jachwi-sunbae.kr`과 `https://dev.jachwi-sunbae.kr`을 Web 서비스 URL로 등록한다. PostHog는 운영 API(`https://api.jachwi-sunbae.kr`)를 사용하는 번들에서만 설정을 주입한다. 따라서 dev 웹과 로컬 개발에서는 SDK를 초기화하지 않으며, 운영에서만 세션 녹화와 로그인 회원 식별, 페이지뷰 및 제품 이벤트를 수집한다. 세션 녹화에서는 텍스트와 요소 속성을 마스킹한다.
+값은 CodePipeline Commands 빌드 액션의 환경변수로 전달한다. Naver Maps Client ID와 PostHog 프로젝트 토큰은 브라우저 번들에 포함되는 공개 식별자이며 REST API 키나 Client Secret 등 비밀값을 넣지 않는다. Naver Maps Application에 `https://www.jachwi-sunbae.kr`과 `https://dev.jachwi-sunbae.kr`을 Web 서비스 URL로 등록한다.
+
+dev와 prod는 같은 PostHog 프로젝트에 수집한다. `API_BASE_URL`이 운영 API이면 `environment=production`, 그 외에는 `environment=development`를 모든 이벤트의 공통 속성으로 등록한다. PostHog 인사이트·퍼널·세션 리플레이에는 반드시 이 속성 필터를 적용해 두 환경을 분리한다. 로컬 개발은 `.env.local`에 `POSTHOG_PROJECT_TOKEN`과 `POSTHOG_HOST`를 넣은 경우에만 수집한다. 세션 녹화에서는 환경과 무관하게 텍스트와 요소 속성을 마스킹한다.
 
 운영 번들은 `hidden-source-map`으로 source map을 생성한다. `publish.sh prod`는 `POSTHOG_CLI_API_KEY`가 있으면 PostHog에 source map을 업로드한 뒤 S3에는 `.map` 파일을 올리지 않는다. 키가 없으면 업로드를 건너뛰고 `.map` 파일만 배포에서 제외한다.
 
