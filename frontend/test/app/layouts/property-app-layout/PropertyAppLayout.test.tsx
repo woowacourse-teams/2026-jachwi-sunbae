@@ -1,7 +1,8 @@
 import { render, screen } from '@testing-library/react';
 import { MemoryRouter, Outlet, Route, Routes } from 'react-router-dom';
 import { describe, expect, it } from 'vitest';
-import PropertyAppLayout from '../../../../src/app/layouts/property-app-layout/PropertyAppLayout';
+
+import PropertyAppLayout from '@/app/layouts/property-app-layout/PropertyAppLayout';
 
 describe('모바일 앱 셸', () => {
   it('현재 화면과 주요 메뉴 네 개를 함께 표시한다', () => {

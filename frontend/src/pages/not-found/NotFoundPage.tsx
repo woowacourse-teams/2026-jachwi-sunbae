@@ -1,6 +1,6 @@
-import StatusPanel from '../../shared/ui/status-panel/StatusPanel';
-import { ButtonLink } from '../../shared/ui/button/Button';
-import { useAuthentication } from '../../features/auth/model/useAuthentication';
+import { useAuthentication } from '@/features/auth/model/useAuthentication';
+import { ButtonLink } from '@/shared/ui/button/Button';
+import StatusPanel from '@/shared/ui/status-panel/StatusPanel';
 
 const NotFoundPage = () => {
   const { session } = useAuthentication();

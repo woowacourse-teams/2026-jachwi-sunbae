@@ -1,19 +1,19 @@
 import { Link } from 'react-router-dom';
-import type { PropertyPhotoPreview } from '../../../../features/property/model/Property';
-import type { PublicConfig } from '../../../../shared/config/publicConfigTypes';
-import AuthenticatedPhoto from '../../../../features/property/ui/authenticated-photo/AuthenticatedPhoto';
-import Icon from '../../../../shared/ui/icon/Icon';
+
+import type { PropertyPhotoPreview } from '@/features/property/model/Property';
+import AuthenticatedPhoto from '@/features/property/ui/authenticated-photo/AuthenticatedPhoto';
+import Icon from '@/shared/ui/icon/Icon';
+
 import styles from './PropertyHeroPhoto.module.css';
 
 type PropertyHeroPhotoProps = {
-  config: PublicConfig;
   propertyId: number;
   propertyName: string;
   photos: PropertyPhotoPreview[];
   onOpen: () => void;
 };
 
-const PropertyHeroPhoto = ({ config, propertyId, propertyName, photos, onOpen }: PropertyHeroPhotoProps) => (
+const PropertyHeroPhoto = ({ propertyId, propertyName, photos, onOpen }: PropertyHeroPhotoProps) => (
   <section className={styles.section} aria-label="대표 사진">
     {photos.length > 0 ? (
       <button
@@ -23,7 +23,6 @@ const PropertyHeroPhoto = ({ config, propertyId, propertyName, photos, onOpen }:
         onClick={onOpen}
       >
         <AuthenticatedPhoto
-          config={config}
           propertyId={propertyId}
           photoId={photos[0].photoId}
           contentUrl={photos[0].contentUrl}

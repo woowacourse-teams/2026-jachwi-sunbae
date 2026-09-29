@@ -20,7 +20,7 @@ frontend/
 이 프로젝트는 FSD의 레이어와 슬라이스 개념만 가져온 `fsd-lite` 구조를 사용합니다.
 
 - `app`: 실행에 필요한 조립 코드만 둡니다. 도메인 상태나 재사용 UI를 두지 않습니다.
-- `pages`: 라우트 진입점입니다. 해당 페이지에서만 쓰는 코드는 페이지 내부 `ui`에 둡니다.
+- `pages`: 라우트 진입점입니다. 해당 페이지에서만 쓰는 화면은 페이지 내부 `ui`, 상태 로직은 `hooks`에 둡니다.
 - `features`: 사용자 기능 또는 도메인별 슬라이스입니다. 각 슬라이스는 필요한 `api`, `model`, `lib`, `ui` 세그먼트만 가집니다.
 - `shared`: 특정 도메인을 모르는 기반 코드입니다. 공통 UI는 반드시 `shared/ui/<component>` 폴더 단위로 둡니다.
 
@@ -65,11 +65,20 @@ API 함수는 컴포넌트에서 직접 호출하지 않고 API 모듈이나 Que
 - 컴포넌트: `default export`
 - 일반 함수·상수·타입: `named export`
 - 타입만 가져올 때는 `import type` 사용
+- 다른 slice나 레이어는 `@/` 별칭(`src/`)으로, 같은 slice 안은 상대 경로로 가져옵니다. 예: `pages/map`에서 `@/features/map/...`, `./hooks/useMapFilters`
+- import 순서는 `simple-import-sort`가 정리합니다. 외부 패키지 → `@/app`·`@/pages`·`@/features`·`@/shared` → 상대 경로 → CSS 순서이며 `npm run lint:fix`로 맞춥니다.
 
 ```tsx
-import type { Post } from '../types/Post';
-import { formatDate } from '../utils/formatDate';
+import { useState } from 'react';
+
+import type { MapAddress } from '@/features/map/model/Map';
+import TopNavigation from '@/shared/ui/top-navigation/TopNavigation';
+
+import useMapFilters from './hooks/useMapFilters';
+
+import styles from './MapPage.module.css';
 ```
+- 기능의 DTO 변환처럼 내부 사정은 페이지로 꺼내지 않습니다. `useUpdateProperty`, `useCreateChecklist`처럼 기능의 Hook이 화면 모델을 받아 API 형식으로 바꿉니다.
 
 불필요한 `index.ts` 재-export와 순환 의존성은 만들지 않습니다.
 
@@ -79,6 +88,8 @@ import { formatDate } from '../utils/formatDate';
 - Props 타입을 선언하고 구조분해 할당합니다.
 - 컴포넌트는 화면 표현에 집중하고, API 호출과 복잡한 상태 로직은 Hook으로 분리합니다.
 - 하나의 컴포넌트가 너무 커지면 화면·도메인·표현 책임을 나눕니다.
+- 페이지가 커지면 JSX를 통째로 옮기지 말고, 함께 바뀌는 상태를 `pages/<page>/hooks`의 Hook으로 먼저 묶습니다. Hook은 setter나 ref 대신 `selectRadius`, `enter`, `cancel`처럼 의도가 드러나는 함수를 반환합니다.
+- 페이지는 Hook과 화면 영역 컴포넌트를 직접 조립합니다. props를 그대로 넘기기만 하는 중간 컴포넌트는 만들지 않습니다.
 
 ```tsx
 type PostCardProps = {
@@ -137,9 +148,12 @@ const PostCard = () => <article className={styles.card}>...</article>;
 ## 7. API와 상태 처리
 
 - API 통신 코드와 DTO는 소유 기능의 `features/<feature>/api`에 둡니다.
+- `apiBaseUrl` 같은 공개 설정은 props로 넘기지 않고 `usePublicConfig()`로 읽습니다. Query Hook은 내부에서 읽고, API 함수(`fetch*`, `get*QueryOptions`)는 순수 함수로 두어 `config`를 인자로 받습니다. 테스트는 `PublicConfigProvider`로 감쌉니다.
 - 서버 응답 형식과 화면 모델이 다르면 API 경계에서 변환합니다.
 - 조회·변경 Query Hook도 같은 기능의 `api`에 둡니다.
 - 화면에는 최소한 loading, error, empty, success 상태를 고려합니다.
+- 페이지 전체를 조회 결과로 그릴 때는 `shared/ui/query-state/QueryState`로 로딩·오류 화면을 맡깁니다. 오류 안내는 `describePropertyLoadError`, `describeChecklistLoadError`처럼 소유 기능의 `api`에서 만듭니다.
+- 오류 코드는 `isApiErrorCode(error, 'CODE')`로 확인합니다.
 - 서버 상태와 UI 상태를 구분합니다. 서버에서 가져온 데이터를 불필요하게 여러 컴포넌트의 로컬 상태로 복사하지 않습니다.
 
 ## 8. 접근성

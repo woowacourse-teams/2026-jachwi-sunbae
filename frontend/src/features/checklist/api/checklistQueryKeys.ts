@@ -1,5 +1,6 @@
+import { authenticationQueryKey } from '@/shared/api/queryClient';
+
 import type { ChecklistPresetType, ChecklistStage } from '../model/checklistTypes';
-import { authenticationQueryKey } from '../../../shared/api/queryClient';
 
 export const checklistQueryKeys = {
   all: [...authenticationQueryKey, 'checklists'] as const,

@@ -2,9 +2,11 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { render } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import type { PublicConfig } from '../../../src/shared/config/publicConfigTypes';
-import * as posthogModule from '../../../src/shared/lib/analytics/posthog';
-import PostHogTracker from '../../../src/app/analytics/PostHogTracker';
+
+import PostHogTracker from '@/app/analytics/PostHogTracker';
+import { PublicConfigProvider } from '@/shared/config/PublicConfigContext';
+import type { PublicConfig } from '@/shared/config/publicConfigTypes';
+import * as posthogModule from '@/shared/lib/analytics/posthog';
 
 const testConfig: PublicConfig = {
   apiBaseUrl: 'http://localhost:8080',
@@ -28,7 +30,9 @@ describe('PostHogTracker', () => {
     render(
       <QueryClientProvider client={queryClient}>
         <MemoryRouter initialEntries={['/properties?page=1']}>
-          <PostHogTracker config={testConfig} />
+          <PublicConfigProvider config={testConfig}>
+            <PostHogTracker />
+          </PublicConfigProvider>
         </MemoryRouter>
       </QueryClientProvider>,
     );
@@ -46,7 +50,9 @@ describe('PostHogTracker', () => {
     render(
       <QueryClientProvider client={queryClient}>
         <MemoryRouter initialEntries={['/map']}>
-          <PostHogTracker config={testConfig} />
+          <PublicConfigProvider config={testConfig}>
+            <PostHogTracker />
+          </PublicConfigProvider>
         </MemoryRouter>
       </QueryClientProvider>,
     );

@@ -1,14 +1,11 @@
 import { QueryClientProvider } from '@tanstack/react-query';
-import { StrictMode } from 'react';
 import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { HttpResponse, delay, http } from 'msw';
+import { delay, http, HttpResponse } from 'msw';
+import { StrictMode } from 'react';
 import { MemoryRouter } from 'react-router-dom';
 import { describe, expect, it, vi } from 'vitest';
-import { setAuthentication } from '../../../src/features/auth/model/authStore';
-import { queryClient } from '../../../src/shared/api/queryClient';
-import AppRoutes from '../../../src/app/router/AppRoutes';
-import { server } from '../../server';
+
 import {
   errorEnvelope,
   memberFixture,
@@ -20,8 +17,14 @@ import {
   propertySummaryFixture,
   secondPropertySummaryFixture,
   successEnvelope,
-} from '../../../src/app/mocks/fixtures/propertyFixtures';
-import type { PublicConfig } from '../../../src/shared/config/publicConfigTypes';
+} from '@/app/mocks/fixtures/propertyFixtures';
+import AppRoutes from '@/app/router/AppRoutes';
+import { setAuthentication } from '@/features/auth/model/authStore';
+import { queryClient } from '@/shared/api/queryClient';
+import { PublicConfigProvider } from '@/shared/config/PublicConfigContext';
+import type { PublicConfig } from '@/shared/config/publicConfigTypes';
+
+import { server } from '../../server';
 
 const config: PublicConfig = {
   apiBaseUrl: 'http://localhost:8080',
@@ -42,7 +45,9 @@ const renderAuthenticated = (path: string) => {
     <StrictMode>
       <QueryClientProvider client={queryClient}>
         <MemoryRouter initialEntries={[path]}>
-          <AppRoutes config={config} />
+          <PublicConfigProvider config={config}>
+            <AppRoutes />
+          </PublicConfigProvider>
         </MemoryRouter>
       </QueryClientProvider>
     </StrictMode>,

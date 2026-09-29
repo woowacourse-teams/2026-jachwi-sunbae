@@ -1,25 +1,23 @@
 import { useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
-import { useCurrentMember } from '../../features/auth/api/useCurrentMember';
-import { useAuthentication } from '../../features/auth/model/useAuthentication';
-import type { PublicConfig } from '../../shared/config/publicConfigTypes';
+
+import { useCurrentMember } from '@/features/auth/api/useCurrentMember';
+import { useAuthentication } from '@/features/auth/model/useAuthentication';
+import { usePublicConfig } from '@/shared/config/PublicConfigContext';
 import {
+  getPostHogPlatform,
   identifyPostHogMember,
   initPostHog,
-  getPostHogPlatform,
   resetPostHogIdentity,
   setPostHogSessionContext,
   trackPostHogPageView,
-} from '../../shared/lib/analytics/posthog';
+} from '@/shared/lib/analytics/posthog';
 
-type PostHogTrackerProps = {
-  config: PublicConfig;
-};
-
-const PostHogTracker = ({ config }: PostHogTrackerProps) => {
+const PostHogTracker = () => {
+  const config = usePublicConfig();
   const location = useLocation();
   const { session } = useAuthentication();
-  const currentMember = useCurrentMember(config, session !== null);
+  const currentMember = useCurrentMember(session !== null);
 
   useEffect(() => {
     initPostHog(config.posthogProjectToken ?? '', config.posthogHost ?? '');

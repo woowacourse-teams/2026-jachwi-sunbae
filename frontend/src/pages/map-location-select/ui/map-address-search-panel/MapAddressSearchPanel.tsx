@@ -1,20 +1,22 @@
 import { useState } from 'react';
-import { searchAddress } from '../../../../features/map/api/mapApi';
-import type { MapAddress } from '../../../../features/map/model/Map';
-import type { PublicConfig } from '../../../../shared/config/publicConfigTypes';
-import InlineNotice from '../../../../shared/ui/inline-notice/InlineNotice';
-import SearchField from '../../../../shared/ui/search-field/SearchField';
-import Icon from '../../../../shared/ui/icon/Icon';
+
+import { searchAddress } from '@/features/map/api/mapApi';
+import type { MapAddress } from '@/features/map/model/Map';
+import { usePublicConfig } from '@/shared/config/PublicConfigContext';
+import Icon from '@/shared/ui/icon/Icon';
+import InlineNotice from '@/shared/ui/inline-notice/InlineNotice';
+import SearchField from '@/shared/ui/search-field/SearchField';
+
 import styles from './MapAddressSearchPanel.module.css';
 
 type MapAddressSearchPanelProps = {
-  config: PublicConfig;
   isOpen: boolean;
   onClose: () => void;
   onSelect: (address: MapAddress) => void;
 };
 
-const MapAddressSearchPanel = ({ config, isOpen, onClose, onSelect }: MapAddressSearchPanelProps) => {
+const MapAddressSearchPanel = ({ isOpen, onClose, onSelect }: MapAddressSearchPanelProps) => {
+  const config = usePublicConfig();
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<MapAddress[]>([]);
   const [status, setStatus] = useState<'idle' | 'loading' | 'error'>('idle');

@@ -1,12 +1,13 @@
 import { describe, expect, it, vi } from 'vitest';
+
 import {
   calculateExpiresAt,
   getAccessToken,
   getAuthenticationSnapshot,
   setAuthentication,
-} from '../../../../src/features/auth/model/authStore';
-import { propertyQueryKeys } from '../../../../src/features/property/api/propertyQueryKeys';
-import { queryClient, currentMemberQueryKey } from '../../../../src/shared/api/queryClient';
+} from '@/features/auth/model/authStore';
+import { propertyQueryKeys } from '@/features/property/api/propertyQueryKeys';
+import { currentMemberQueryKey, queryClient } from '@/shared/api/queryClient';
 
 describe('탭 단위 인증 저장소', () => {
   it('expiresIn을 기준으로 만료 시각을 계산한다', () => {

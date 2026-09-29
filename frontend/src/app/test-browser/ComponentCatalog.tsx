@@ -1,12 +1,14 @@
 import { useState } from 'react';
-import TopNavigation from '../../shared/ui/top-navigation/TopNavigation';
-import BottomActionArea from '../../shared/ui/bottom-action-area/BottomActionArea';
-import { Button, ButtonLink } from '../../shared/ui/button/Button';
-import EmptyState from '../../shared/ui/empty-state/EmptyState';
-import InlineNotice from '../../shared/ui/inline-notice/InlineNotice';
-import SearchField from '../../shared/ui/search-field/SearchField';
-import TextAreaField from '../../shared/ui/text-field/TextAreaField';
-import TextField from '../../shared/ui/text-field/TextField';
+
+import BottomActionArea from '@/shared/ui/bottom-action-area/BottomActionArea';
+import { Button, ButtonLink } from '@/shared/ui/button/Button';
+import EmptyState from '@/shared/ui/empty-state/EmptyState';
+import InlineNotice from '@/shared/ui/inline-notice/InlineNotice';
+import SearchField from '@/shared/ui/search-field/SearchField';
+import TextAreaField from '@/shared/ui/text-field/TextAreaField';
+import TextField from '@/shared/ui/text-field/TextField';
+import TopNavigation from '@/shared/ui/top-navigation/TopNavigation';
+
 import styles from './ComponentCatalog.module.css';
 
 const ComponentCatalog = () => {

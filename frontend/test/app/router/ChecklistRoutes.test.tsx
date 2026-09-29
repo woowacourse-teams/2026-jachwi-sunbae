@@ -1,10 +1,11 @@
 import { QueryClientProvider } from '@tanstack/react-query';
-import { StrictMode } from 'react';
 import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { HttpResponse, http } from 'msw';
+import { http, HttpResponse } from 'msw';
+import { StrictMode } from 'react';
 import { MemoryRouter } from 'react-router-dom';
 import { describe, expect, it } from 'vitest';
+
 import {
   checkItemPageFixture,
   checklistPageFixture,
@@ -12,14 +13,16 @@ import {
   onlineItemFixture,
   secondChecklistSummaryFixture,
   secondOnlineItemFixture,
-} from '../../../src/app/mocks/fixtures/checklistFixtures';
-import { propertyDetailResponseFixture, successEnvelope } from '../../../src/app/mocks/fixtures/propertyFixtures';
+} from '@/app/mocks/fixtures/checklistFixtures';
+import { propertyDetailResponseFixture, successEnvelope } from '@/app/mocks/fixtures/propertyFixtures';
+import AppRoutes from '@/app/router/AppRoutes';
+import { setAuthentication } from '@/features/auth/model/authStore';
+import { readLastSelectedChecklist } from '@/features/checklist/model/lastChecklistStore';
+import { queryClient } from '@/shared/api/queryClient';
+import { PublicConfigProvider } from '@/shared/config/PublicConfigContext';
+import type { PublicConfig } from '@/shared/config/publicConfigTypes';
+
 import { server } from '../../server';
-import type { PublicConfig } from '../../../src/shared/config/publicConfigTypes';
-import AppRoutes from '../../../src/app/router/AppRoutes';
-import { setAuthentication } from '../../../src/features/auth/model/authStore';
-import { queryClient } from '../../../src/shared/api/queryClient';
-import { readLastSelectedChecklist } from '../../../src/features/checklist/model/lastChecklistStore';
 
 const config: PublicConfig = {
   apiBaseUrl: 'http://localhost:8080',
@@ -33,7 +36,9 @@ const renderAuthenticated = (entry: TestEntry) => {
     <StrictMode>
       <QueryClientProvider client={queryClient}>
         <MemoryRouter initialEntries={[entry]}>
-          <AppRoutes config={config} />
+          <PublicConfigProvider config={config}>
+            <AppRoutes />
+          </PublicConfigProvider>
         </MemoryRouter>
       </QueryClientProvider>
     </StrictMode>,
@@ -160,7 +165,7 @@ describe('체크리스트 탐색과 편집', () => {
       http.post(`${config.apiBaseUrl}/api/checklists`, async ({ request }) => {
         requestBody = await request.json();
         return HttpResponse.json(
-          successEnvelope(finalChecklistDetail({ id: 9, name: '원룸 집에서 확인 체크리스트', stage: 'ON_SITE' })),
+          successEnvelope(finalChecklistDetail({ id: 9, name: '집에서 확인 체크리스트', stage: 'ON_SITE' })),
           { status: 201 },
         );
       }),
@@ -168,7 +173,7 @@ describe('체크리스트 탐색과 편집', () => {
     const user = userEvent.setup();
     renderAuthenticated('/checklists/new');
 
-    expect(await screen.findByLabelText('체크리스트 이름')).toHaveValue('원룸 집에서 확인 체크리스트');
+    expect(await screen.findByLabelText('체크리스트 이름')).toHaveValue('집에서 확인 체크리스트');
     expect(screen.getByText(onlineItemFixture.question)).toBeInTheDocument();
     expect(screen.queryByText(secondOnlineItemFixture.question)).not.toBeInTheDocument();
     expect(screen.queryByText('빈 목록')).not.toBeInTheDocument();
@@ -198,7 +203,7 @@ describe('체크리스트 탐색과 편집', () => {
     await user.click(screen.getByRole('button', { name: '체크리스트 만들기' }));
     await waitFor(() =>
       expect(requestBody).toEqual({
-        name: '원룸 집에서 확인 체크리스트',
+        name: '집에서 확인 체크리스트',
         stage: 'ON_SITE',
         items: [{ systemCheckItemId: 101 }, { systemCheckItemId: 102 }],
       }),

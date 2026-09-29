@@ -1,4 +1,5 @@
-import type { MapLocationFailure } from '../../../../features/map/lib/mapLocation';
+import type { MapLocationFailure } from '@/features/map/lib/mapLocation';
+
 import styles from './MapLocationStatus.module.css';
 
 type LocationStatus = 'locating' | 'ready' | 'fallback';

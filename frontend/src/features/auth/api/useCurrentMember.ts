@@ -1,7 +1,10 @@
 import { useQuery } from '@tanstack/react-query';
+
+import { currentMemberQueryKey } from '@/shared/api/queryClient';
+import { usePublicConfig } from '@/shared/config/PublicConfigContext';
+import type { PublicConfig } from '@/shared/config/publicConfigTypes';
+
 import { fetchCurrentMember } from './memberApi';
-import { currentMemberQueryKey } from '../../../shared/api/queryClient';
-import type { PublicConfig } from '../../../shared/config/publicConfigTypes';
 
 export const getCurrentMemberQueryOptions = (config: PublicConfig) => ({
   queryKey: currentMemberQueryKey,
@@ -9,8 +12,10 @@ export const getCurrentMemberQueryOptions = (config: PublicConfig) => ({
   staleTime: 5 * 60 * 1_000,
 });
 
-export const useCurrentMember = (config: PublicConfig, isEnabled = true) =>
-  useQuery({
+export const useCurrentMember = (isEnabled = true) => {
+  const config = usePublicConfig();
+  return useQuery({
     ...getCurrentMemberQueryOptions(config),
     enabled: isEnabled,
   });
+};

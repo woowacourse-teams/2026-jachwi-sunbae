@@ -1,11 +1,12 @@
 import { describe, expect, it } from 'vitest';
+
 import {
-  MAX_PROPERTY_AMOUNT,
   formatMoneyInput,
+  MAX_PROPERTY_AMOUNT,
   parseMoneyInput,
   toPropertyInputDto,
   validatePropertyForm,
-} from '../../../../src/features/property/lib/propertyForm';
+} from '@/features/property/lib/propertyForm';
 
 describe('매물 입력 검증', () => {
   it('금액 0과 최대 안전 정수를 허용한다', () => {

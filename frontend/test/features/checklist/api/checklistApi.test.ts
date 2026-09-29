@@ -1,9 +1,8 @@
-import { HttpResponse, http } from 'msw';
+import { http, HttpResponse } from 'msw';
 import { describe, expect, it } from 'vitest';
-import { setAuthentication } from '../../../../src/features/auth/model/authStore';
-import { errorEnvelope, successEnvelope } from '../../../../src/app/mocks/fixtures/propertyFixtures';
-import { server } from '../../../server';
-import type { PublicConfig } from '../../../../src/shared/config/publicConfigTypes';
+
+import { errorEnvelope, successEnvelope } from '@/app/mocks/fixtures/propertyFixtures';
+import { setAuthentication } from '@/features/auth/model/authStore';
 import {
   assignActiveChecklist,
   createChecklistV11,
@@ -13,8 +12,11 @@ import {
   fetchChecklists,
   removeChecklist,
   updateChecklistV11,
-} from '../../../../src/features/checklist/api/checklistApi';
-import { getChecklistErrorMessage } from '../../../../src/features/checklist/api/checklistErrorMessages';
+} from '@/features/checklist/api/checklistApi';
+import { getChecklistErrorMessage } from '@/features/checklist/api/checklistErrorMessages';
+import type { PublicConfig } from '@/shared/config/publicConfigTypes';
+
+import { server } from '../../../server';
 
 const config: PublicConfig = {
   apiBaseUrl: 'http://localhost:8080',

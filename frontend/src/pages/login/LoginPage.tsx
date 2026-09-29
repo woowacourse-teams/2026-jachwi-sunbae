@@ -1,22 +1,19 @@
 import { type FormEvent, useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ApiError, getSafeApiErrorMessage } from '../../features/auth/api/apiClient';
-import { submitNicknameLogin } from '../../features/auth/api/authApi';
-import logo from '../../shared/assets/jachwi-sunbae-logo-lockup-v3.svg';
-import Icon from '../../shared/ui/icon/Icon';
 
-import { Button } from '../../shared/ui/button/Button';
-import InlineNotice from '../../shared/ui/inline-notice/InlineNotice';
-import TextField from '../../shared/ui/text-field/TextField';
-import { useAuthentication } from '../../features/auth/model/useAuthentication';
-import type { PublicConfig } from '../../shared/config/publicConfigTypes';
-import { setAuthentication } from '../../features/auth/model/authStore';
-import { trackPostHogEvent } from '../../shared/lib/analytics/posthog';
+import { ApiError, getSafeApiErrorMessage } from '@/features/auth/api/apiClient';
+import { submitNicknameLogin } from '@/features/auth/api/authApi';
+import { setAuthentication } from '@/features/auth/model/authStore';
+import { useAuthentication } from '@/features/auth/model/useAuthentication';
+import logo from '@/shared/assets/jachwi-sunbae-logo-lockup-v3.svg';
+import { usePublicConfig } from '@/shared/config/PublicConfigContext';
+import { trackPostHogEvent } from '@/shared/lib/analytics/posthog';
+import { Button } from '@/shared/ui/button/Button';
+import Icon from '@/shared/ui/icon/Icon';
+import InlineNotice from '@/shared/ui/inline-notice/InlineNotice';
+import TextField from '@/shared/ui/text-field/TextField';
+
 import styles from './LoginPage.module.css';
-
-type LoginPageProps = {
-  config: PublicConfig;
-};
 
 const getLoginErrorMessage = (error: unknown): string => {
   if (error instanceof ApiError) {
@@ -39,7 +36,8 @@ const getLoginErrorMessage = (error: unknown): string => {
   return getSafeApiErrorMessage(error);
 };
 
-const LoginPage = ({ config }: LoginPageProps) => {
+const LoginPage = () => {
+  const config = usePublicConfig();
   const [nickname, setNickname] = useState('');
   const [password, setPassword] = useState('');
   const [isStarting, setIsStarting] = useState(false);

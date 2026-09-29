@@ -1,0 +1,124 @@
+.section {
+  order: 1;
+  margin: 0 -1.25rem;
+  padding: 0.8rem 1.25rem 1rem;
+  border-top: 1px solid var(--color-border, #eaebed);
+  border-bottom: 1px solid var(--color-border, #eaebed);
+  background: var(--color-surface, #fff);
+}
+
+.locationHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.65rem;
+}
+
+.locationHeader strong {
+  color: var(--color-ink, #212124);
+  font-size: 0.92rem;
+}
+
+.locationHeader button {
+  padding: 0.35rem 0.55rem;
+  border: 1px solid var(--color-border, #eaebed);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--color-primary-dark, #536d2d);
+  font: inherit;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.currentLocationButton {
+  display: inline-flex;
+  width: 2.25rem;
+  height: 2.25rem;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 1px solid var(--color-border, #eaebed);
+  border-radius: 50%;
+  background: var(--color-surface, #fff);
+  color: var(--color-primary-dark, #536d2d);
+  cursor: pointer;
+}
+
+.addressSearchArea {
+  position: relative;
+  margin-bottom: 0.65rem;
+}
+
+.searchStatus {
+  margin: 0.35rem 0 0;
+  color: var(--color-muted, #868b94);
+  font-size: 0.75rem;
+}
+
+.searchResults {
+  position: absolute;
+  z-index: 2;
+  top: calc(100% + 0.25rem);
+  right: 0;
+  left: 0;
+  max-height: 10rem;
+  margin: 0;
+  padding: 0.25rem;
+  overflow: auto;
+  border: 1px solid var(--color-border, #eaebed);
+  border-radius: var(--radius-sm, 0.65rem);
+  background: var(--color-surface, #fff);
+  box-shadow: 0 0.5rem 1.25rem rgb(0 0 0 / 10%);
+  list-style: none;
+}
+
+.searchResults button {
+  width: 100%;
+  padding: 0.65rem;
+  border: 0;
+  border-radius: 0.45rem;
+  background: transparent;
+  color: var(--color-ink, #212124);
+  font: inherit;
+  font-size: 0.78rem;
+  text-align: left;
+  cursor: pointer;
+}
+
+.searchResults button:hover,
+.searchResults button:focus-visible {
+  background: var(--color-surface-muted, #f7f7f7);
+}
+
+.mapPreview {
+  position: relative;
+  width: calc(100% + 2.5rem);
+  height: 12rem;
+  margin-left: -1.25rem;
+  overflow: hidden;
+  border-radius: 0;
+}
+
+.mapPreview > div {
+  min-height: 0;
+}
+
+.selectedAddress {
+  margin: 0.65rem 0 0;
+  color: var(--color-ink-soft, #5d6455);
+  font-size: 0.82rem;
+  font-weight: 650;
+  line-height: 1.45;
+}
+
+.errorNotice {
+  margin: 0;
+  color: var(--color-error, #e53e3e);
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.section .errorNotice {
+  margin-top: 0.35rem;
+}

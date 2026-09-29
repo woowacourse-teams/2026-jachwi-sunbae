@@ -1,5 +1,6 @@
-import type { MapAddress } from '../../../../features/map/model/Map';
-import { Button } from '../../../../shared/ui/button/Button';
+import type { MapAddress } from '@/features/map/model/Map';
+import { Button } from '@/shared/ui/button/Button';
+
 import styles from './MapAddPropertySheet.module.css';
 
 type AddAddressStatus = 'idle' | 'loading' | 'error';

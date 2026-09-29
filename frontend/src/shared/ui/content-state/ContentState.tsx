@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
-import mascotImage from '../../assets/empty-property.jpg';
+
+import mascotImage from '@/shared/assets/empty-property.jpg';
 
 type ContentStateProps = {
   /** 화면 전체를 차지하는 상태인지. 목록 안에 끼워 넣을 때는 끈다. */

@@ -1,18 +1,19 @@
 import { useRef } from 'react';
+
+import Icon from '@/shared/ui/icon/Icon';
+
 import { acceptedPhotoTypes, MAX_PROPERTY_PHOTOS, usePhotoUploadQueue } from '../../model/usePhotoUploadQueue';
-import type { PublicConfig } from '../../../../shared/config/publicConfigTypes';
-import Icon from '../../../../shared/ui/icon/Icon';
+
 import styles from './PhotoUploadPanel.module.css';
 
 type PhotoUploadPanelProps = {
-  config: PublicConfig;
   propertyId: number;
   currentPhotoCount: number;
 };
 
-const PhotoUploadPanel = ({ config, propertyId, currentPhotoCount }: PhotoUploadPanelProps) => {
+const PhotoUploadPanel = ({ propertyId, currentPhotoCount }: PhotoUploadPanelProps) => {
   const inputRef = useRef<HTMLInputElement>(null);
-  const uploadQueue = usePhotoUploadQueue(config, propertyId, currentPhotoCount);
+  const uploadQueue = usePhotoUploadQueue(propertyId, currentPhotoCount);
   const isLimitReached = currentPhotoCount >= MAX_PROPERTY_PHOTOS;
   const uploadErrors = uploadQueue.items.filter((item) => item.status === 'error');
 

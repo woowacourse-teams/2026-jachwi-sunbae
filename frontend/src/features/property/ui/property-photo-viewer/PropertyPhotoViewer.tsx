@@ -1,21 +1,22 @@
 import { useEffect, useRef, useState } from 'react';
+
+import Icon from '@/shared/ui/icon/Icon';
+
 import { getPropertyErrorMessage } from '../../api/propertyErrorMessages';
 import { usePropertyPhotos } from '../../api/useProperties';
-import type { PublicConfig } from '../../../../shared/config/publicConfigTypes';
 import AuthenticatedPhoto from '../authenticated-photo/AuthenticatedPhoto';
-import Icon from '../../../../shared/ui/icon/Icon';
+
 import styles from './PropertyPhotoViewer.module.css';
 
 type PropertyPhotoViewerProps = {
-  config: PublicConfig;
   propertyId: number;
   propertyName: string;
   initialIndex: number;
   onClose: () => void;
 };
 
-const PropertyPhotoViewer = ({ config, propertyId, propertyName, initialIndex, onClose }: PropertyPhotoViewerProps) => {
-  const photos = usePropertyPhotos(config, propertyId);
+const PropertyPhotoViewer = ({ propertyId, propertyName, initialIndex, onClose }: PropertyPhotoViewerProps) => {
+  const photos = usePropertyPhotos(propertyId);
   const [currentIndex, setCurrentIndex] = useState(initialIndex);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
 
@@ -78,7 +79,6 @@ const PropertyPhotoViewer = ({ config, propertyId, propertyName, initialIndex, o
             <div className={styles.state}>표시할 사진이 없어요.</div>
           ) : (
             <AuthenticatedPhoto
-              config={config}
               propertyId={propertyId}
               photoId={currentPhoto.photoId}
               contentUrl={currentPhoto.contentUrl}

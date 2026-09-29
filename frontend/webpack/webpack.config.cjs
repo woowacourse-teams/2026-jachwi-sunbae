@@ -42,6 +42,9 @@ module.exports = (_env, argv) => {
     },
     resolve: {
       extensions: ['.tsx', '.ts', '.js'],
+      alias: {
+        '@': path.resolve(__dirname, '../src'),
+      },
     },
     performance: {
       hints: isProduction ? 'error' : false,

@@ -1,4 +1,4 @@
-import { queryClient, authenticationQueryKey } from '../../../shared/api/queryClient';
+import { authenticationQueryKey, queryClient } from '@/shared/api/queryClient';
 
 export type AuthenticationSession = {
   accessToken: string;

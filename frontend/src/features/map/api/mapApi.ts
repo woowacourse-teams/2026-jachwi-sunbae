@@ -1,7 +1,8 @@
+import { apiRequest } from '@/features/auth/api/apiClient';
+import { readArray, readInteger, readRecord, readString } from '@/shared/api/responseParsers';
+import type { PublicConfig } from '@/shared/config/publicConfigTypes';
+
 import type { MapAddress, MapCategory, NearbyPlace, NearbyResult } from '../model/Map';
-import type { PublicConfig } from '../../../shared/config/publicConfigTypes';
-import { apiRequest } from '../../auth/api/apiClient';
-import { readArray, readInteger, readRecord, readString } from '../../../shared/api/responseParsers';
 
 const readCoordinate = (record: Record<string, unknown>, key: string): number => {
   const value = record[key];

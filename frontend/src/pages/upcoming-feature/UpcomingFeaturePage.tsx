@@ -1,5 +1,7 @@
+import { ButtonLink } from '@/shared/ui/button/Button';
+
 import PageHeading from './ui/page-heading/PageHeading';
-import { ButtonLink } from '../../shared/ui/button/Button';
+
 import './UpcomingFeaturePage.css';
 
 type UpcomingFeature = 'export' | 'tips';

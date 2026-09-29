@@ -1,4 +1,5 @@
-import TopNavigation from '../../shared/ui/top-navigation/TopNavigation';
+import TopNavigation from '@/shared/ui/top-navigation/TopNavigation';
+
 import styles from './PrivacyPage.module.css';
 
 const PrivacyPage = () => {

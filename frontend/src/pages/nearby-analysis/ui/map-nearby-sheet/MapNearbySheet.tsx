@@ -1,7 +1,9 @@
 import { Link } from 'react-router-dom';
-import type { MapCategory, NearbyPlace, NearbyResult } from '../../../../features/map/model/Map';
-import Icon from '../../../../shared/ui/icon/Icon';
-import { ALL_MAP_CATEGORIES, getMapCategoryLabel } from '../../../../features/map/lib/mapPresentation';
+
+import { ALL_MAP_CATEGORIES, getMapCategoryLabel } from '@/features/map/lib/mapPresentation';
+import type { MapCategory, NearbyPlace, NearbyResult } from '@/features/map/model/Map';
+import Icon from '@/shared/ui/icon/Icon';
+
 import styles from './MapNearbySheet.module.css';
 
 type MapNearbySheetProps = {

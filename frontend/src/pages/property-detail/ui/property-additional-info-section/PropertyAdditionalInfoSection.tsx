@@ -1,10 +1,12 @@
 import { Link } from 'react-router-dom';
-import { InfoRow, InfoSection } from '../../../../shared/ui/info-section/InfoSection';
-import Icon from '../../../../shared/ui/icon/Icon';
-import infoStyles from '../../../../shared/ui/info-section/InfoSection.module.css';
-import type { PropertyDetail } from '../../../../features/property/model/Property';
-import { roomOptionLabels, utilityOptionLabels } from '../../../../features/property/model/propertyOptions';
-import { formatManwon } from '../../../../features/property/lib/propertyFormat';
+
+import { formatManwon } from '@/features/property/lib/propertyFormat';
+import type { PropertyDetail } from '@/features/property/model/Property';
+import { roomOptionLabels, utilityOptionLabels } from '@/features/property/model/propertyOptions';
+import Icon from '@/shared/ui/icon/Icon';
+import { InfoRow, InfoSection } from '@/shared/ui/info-section/InfoSection';
+
+import infoStyles from '@/shared/ui/info-section/InfoSection.module.css';
 
 type PropertyAdditionalInfoSectionProps = {
   property: PropertyDetail;

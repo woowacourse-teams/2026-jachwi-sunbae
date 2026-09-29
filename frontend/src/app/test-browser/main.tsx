@@ -1,8 +1,8 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { MemoryRouter } from 'react-router-dom';
-import App from '../App';
-import { clearAuthentication, setAuthentication } from '../../features/auth/model/authStore';
+
+import App from '@/app/App';
 import {
   checkItemPageFixture,
   checklistPageFixture,
@@ -13,7 +13,7 @@ import {
   presetFixture,
   providedChecklistItemFixture,
   secondChecklistSummaryFixture,
-} from '../mocks/fixtures/checklistFixtures';
+} from '@/app/mocks/fixtures/checklistFixtures';
 import {
   errorEnvelope,
   memberFixture,
@@ -24,8 +24,10 @@ import {
   propertySummaryFixture,
   secondPropertySummaryFixture,
   successEnvelope,
-} from '../mocks/fixtures/propertyFixtures';
-import type { ChecklistDetail } from '../../features/checklist/model/checklistTypes';
+} from '@/app/mocks/fixtures/propertyFixtures';
+import { clearAuthentication, setAuthentication } from '@/features/auth/model/authStore';
+import type { ChecklistDetail } from '@/features/checklist/model/checklistTypes';
+
 import ComponentCatalog from './ComponentCatalog';
 
 const scenario = new URLSearchParams(window.location.search).get('scenario') ?? 'list-two';

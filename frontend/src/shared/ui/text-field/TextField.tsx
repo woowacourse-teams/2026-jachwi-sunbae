@@ -1,5 +1,6 @@
-import { useId } from 'react';
 import type { InputHTMLAttributes, ReactNode } from 'react';
+import { useId } from 'react';
+
 import styles from './TextField.module.css';
 
 type TextFieldProps = Omit<InputHTMLAttributes<HTMLInputElement>, 'children'> & {

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import type { NearbyPlace } from '../../../../src/features/map/model/Map';
-import { clusterNearbyPlaces, clusterProperties } from '../../../../src/features/map/lib/mapClustering';
+
+import { clusterNearbyPlaces, clusterProperties } from '@/features/map/lib/mapClustering';
+import type { NearbyPlace } from '@/features/map/model/Map';
 
 const place = (id: string, latitude: number, longitude: number, category: NearbyPlace['category'] = 'TRANSPORT') => ({
   providerPlaceId: id,

@@ -1,10 +1,12 @@
-import { HttpResponse, http } from 'msw';
+import { http, HttpResponse } from 'msw';
 import { describe, expect, it } from 'vitest';
-import { setAuthentication } from '../../../../src/features/auth/model/authStore';
-import { successEnvelope } from '../../../../src/app/mocks/fixtures/propertyFixtures';
+
+import { successEnvelope } from '@/app/mocks/fixtures/propertyFixtures';
+import { setAuthentication } from '@/features/auth/model/authStore';
+import { fetchNearby, reverseGeocode, searchAddress } from '@/features/map/api/mapApi';
+import type { PublicConfig } from '@/shared/config/publicConfigTypes';
+
 import { server } from '../../../server';
-import type { PublicConfig } from '../../../../src/shared/config/publicConfigTypes';
-import { fetchNearby, reverseGeocode, searchAddress } from '../../../../src/features/map/api/mapApi';
 
 const config: PublicConfig = {
   apiBaseUrl: 'http://localhost:8080',

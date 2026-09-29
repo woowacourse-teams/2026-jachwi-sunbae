@@ -1,7 +1,8 @@
-import { Component, Suspense } from 'react';
 import type { ErrorInfo, ReactNode } from 'react';
-import ContentState from '../../shared/ui/content-state/ContentState';
-import { capturePostHogException, trackPostHogEvent } from '../../shared/lib/analytics/posthog';
+import { Component, Suspense } from 'react';
+
+import { capturePostHogException, trackPostHogEvent } from '@/shared/lib/analytics/posthog';
+import ContentState from '@/shared/ui/content-state/ContentState';
 
 class RouteErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean }> {
   state = { hasError: false };

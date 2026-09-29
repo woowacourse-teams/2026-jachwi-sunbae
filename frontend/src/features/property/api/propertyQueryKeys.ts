@@ -1,4 +1,4 @@
-import { authenticationQueryKey } from '../../../shared/api/queryClient';
+import { authenticationQueryKey } from '@/shared/api/queryClient';
 
 export const propertyQueryKeys = {
   all: [...authenticationQueryKey, 'properties'] as const,

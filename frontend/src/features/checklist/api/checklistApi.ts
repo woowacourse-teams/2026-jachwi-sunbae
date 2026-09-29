@@ -1,6 +1,7 @@
-import type { PublicConfig } from '../../../shared/config/publicConfigTypes';
+import { apiRequest } from '@/features/auth/api/apiClient';
+import type { PublicConfig } from '@/shared/config/publicConfigTypes';
+
 import type { ChecklistPresetType, ChecklistStage, LegacyChecklistDetail } from '../model/checklistTypes';
-import { apiRequest } from '../../auth/api/apiClient';
 import {
   parseActiveChecklist,
   parseCheckItemPage,
@@ -12,10 +13,10 @@ import {
 } from './checklistParsers';
 import type {
   AssignActiveChecklistRequestDto,
-  CreateChecklistV11RequestDto,
   CreateChecklistRequestDto,
-  UpdateChecklistV11RequestDto,
+  CreateChecklistV11RequestDto,
   UpdateChecklistRequestDto,
+  UpdateChecklistV11RequestDto,
 } from './dtos/ChecklistDto';
 
 const toLegacyChecklistDetail = (detail: Awaited<ReturnType<typeof fetchChecklistDetail>>): LegacyChecklistDetail => ({

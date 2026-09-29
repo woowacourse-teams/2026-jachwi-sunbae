@@ -1,10 +1,11 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
-import BottomActionArea from '../../../src/shared/ui/bottom-action-area/BottomActionArea';
-import EmptyState from '../../../src/shared/ui/empty-state/EmptyState';
-import InlineNotice from '../../../src/shared/ui/inline-notice/InlineNotice';
-import TopNavigation from '../../../src/shared/ui/top-navigation/TopNavigation';
+
+import BottomActionArea from '@/shared/ui/bottom-action-area/BottomActionArea';
+import EmptyState from '@/shared/ui/empty-state/EmptyState';
+import InlineNotice from '@/shared/ui/inline-notice/InlineNotice';
+import TopNavigation from '@/shared/ui/top-navigation/TopNavigation';
 
 describe('공용 내비게이션과 상태 안내', () => {
   it('TopNavigation은 뒤로가기 콜백과 우측 슬롯을 제공합니다', async () => {

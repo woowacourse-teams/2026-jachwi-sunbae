@@ -1,6 +1,7 @@
 import { act, renderHook } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import useDelayedLoading from '../../../../src/shared/lib/hooks/useDelayedLoading';
+
+import useDelayedLoading from '@/shared/lib/hooks/useDelayedLoading';
 
 describe('useDelayedLoading', () => {
   afterEach(() => {

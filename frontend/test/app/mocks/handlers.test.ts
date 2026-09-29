@@ -1,6 +1,8 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { handlers } from '../../../src/app/mocks/handlers';
-import { resetMockStore } from '../../../src/app/mocks/mockStore';
+
+import { handlers } from '@/app/mocks/handlers';
+import { resetMockStore } from '@/app/mocks/mockStore';
+
 import { server } from '../../server';
 
 const apiUrl = (path: string) => `http://localhost${path}`;

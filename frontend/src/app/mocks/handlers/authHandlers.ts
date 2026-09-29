@@ -1,4 +1,5 @@
 import { http } from 'msw';
+
 import { failure, success } from '../mockStore';
 
 export const authHandlers = [
