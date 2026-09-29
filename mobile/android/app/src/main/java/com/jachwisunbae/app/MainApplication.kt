@@ -1,4 +1,4 @@
-package kr.jachwisunbae.app
+package com.jachwisunbae.app
 
 import android.app.Application
 import com.facebook.react.PackageList

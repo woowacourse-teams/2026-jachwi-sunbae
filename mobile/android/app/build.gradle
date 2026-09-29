@@ -90,13 +90,13 @@ android {
     buildToolsVersion rootProject.ext.buildToolsVersion
     compileSdk rootProject.ext.compileSdkVersion
 
-    namespace "kr.jachwisunbae.app"
+    namespace "com.jachwisunbae.app"
     defaultConfig {
         applicationId "com.jachwisunbae"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 2
-        versionName "0.0.0"
+        versionName "0.0.1"
     }
     signingConfigs {
         debug {

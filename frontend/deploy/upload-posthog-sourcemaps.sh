@@ -22,4 +22,4 @@ npx -y "@posthog/cli@${POSTHOG_CLI_VERSION}" sourcemap process \
   --public-path-prefix / \
   --release-name jachwi-sunbae-web \
   --release-version "${POSTHOG_RELEASE_VERSION}" \
-  --delete-after-upload
+  --delete-after

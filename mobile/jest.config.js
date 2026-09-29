@@ -1,9 +1,8 @@
 module.exports = {
   preset: '@react-native/jest-preset',
-  // pnpm stores packages under node_modules/.pnpm. Allow React Native's
-  // Flow/ESM sources to pass through Babel just like the preset's npm layout.
+  // React Native's Flow/ESM sources need to pass through Babel in npm's
+  // flat node_modules layout.
   transformIgnorePatterns: [
-    'node_modules/.pnpm/(?!(?:react-native|@react-native\\+[^@]+)@)',
-    'node_modules/(?!\\.pnpm/|((jest-)?react-native|@react-native(-community)?)/)',
+    'node_modules/(?!((jest-)?react-native|@react-native(-community)?|react-native-webview)/)',
   ],
 };

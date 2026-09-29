@@ -6,6 +6,13 @@
 
 아직 릴리스하지 않은 변경을 기록한다.
 
+## [0.0.1] - 2026-09-30
+
+### Added
+
+- 로그인과 매물 등록 사용자 행동 퍼널의 세부 이벤트를 수집한다.
+- Dev와 Prod 배포에서 PostHog Error Tracking 소스맵을 업로드한다.
+
 ## [0.0.0] - 2026-09-29
 
 ### Added
@@ -24,5 +31,6 @@
 - WebView 지도 마커 위치 갱신을 `transform` 기반으로 최적화한다.
 - 매물 사진 Object URL을 재사용해 지도 확대·이동 중 불필요한 재생성을 줄인다.
 
-[Unreleased]: https://github.com/woowacourse-teams/2026-jachwi-sunbae/compare/v0.0.0...HEAD
+[Unreleased]: https://github.com/woowacourse-teams/2026-jachwi-sunbae/compare/v0.0.1...HEAD
+[0.0.1]: https://github.com/woowacourse-teams/2026-jachwi-sunbae/releases/tag/v0.0.1
 [0.0.0]: https://github.com/woowacourse-teams/2026-jachwi-sunbae/releases/tag/v0.0.0

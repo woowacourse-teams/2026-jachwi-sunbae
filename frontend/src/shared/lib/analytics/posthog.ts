@@ -140,7 +140,9 @@ export const identifyPostHogMember = (memberId: number, nickname?: string): bool
   if (!trackingEnabled || !Number.isInteger(memberId) || memberId <= 0) return false;
 
   const distinctId = `member-${memberId}`;
-  return runPostHogAction((client) => client.identify(distinctId, nickname === undefined ? undefined : { nickname }));
+  return runPostHogAction((client) =>
+    client.identify(distinctId, nickname === undefined ? undefined : { name: nickname, nickname }),
+  );
 };
 
 export const resetPostHogIdentity = (): void => {

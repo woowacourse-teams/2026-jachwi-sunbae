@@ -42,8 +42,8 @@ module.exports = (_env, argv) => {
     ? `http://localhost:${devServerPort}`
     : (process.env.API_BASE_URL ?? 'http://localhost:8080');
 
-  // PostHog는 운영 API를 사용하는 번들에서만 활성화한다. dev 웹은 운영과 같은
-  // production 빌드 모드를 사용하므로 argv.mode만으로 환경을 판별하면 안 된다.
+  // dev 웹도 운영과 같은 production 빌드 모드를 사용하므로 argv.mode가 아니라
+  // 연결하는 API 호스트를 기준으로 분석 환경 속성을 구분한다.
   const isProductionWebEnvironment = (() => {
     try {
       const apiUrl = new URL(apiBaseUrl);
@@ -59,8 +59,10 @@ module.exports = (_env, argv) => {
   const mapProviderMode = isProduction
     ? 'naver'
     : (process.env.MAP_PROVIDER_MODE ?? (naverMapClientId === '' ? 'demo' : 'naver'));
-  const posthogProjectToken = isProductionWebEnvironment ? (process.env.POSTHOG_PROJECT_TOKEN ?? '') : '';
-  const posthogHost = isProductionWebEnvironment ? (process.env.POSTHOG_HOST ?? '') : '';
+  // 토큰과 호스트가 주입된 환경에서만 PostHog를 활성화한다. dev와 prod는 같은
+  // 프로젝트에 수집하고 모든 이벤트에 등록되는 environment 속성으로 분리한다.
+  const posthogProjectToken = process.env.POSTHOG_PROJECT_TOKEN ?? '';
+  const posthogHost = process.env.POSTHOG_HOST ?? '';
   const appVersion = process.env.APP_VERSION ?? packageVersion;
   const appEnvironment = isProductionWebEnvironment ? 'production' : 'development';
 
