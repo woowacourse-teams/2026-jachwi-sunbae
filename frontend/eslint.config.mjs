@@ -8,7 +8,7 @@ export default defineConfig(
     ignores: ['dist/**', 'node_modules/**', 'public/mockServiceWorker.js'],
   },
   {
-    files: ['src/**/*.{ts,tsx}'],
+    files: ['src/**/*.{ts,tsx}', 'test/**/*.{ts,tsx}'],
     extends: [js.configs.recommended, ...tseslint.configs.recommended, eslintConfigPrettier],
     languageOptions: {
       parserOptions: {
@@ -22,6 +22,39 @@ export default defineConfig(
         {
           argsIgnorePattern: '^_',
           varsIgnorePattern: '^React$',
+        },
+      ],
+    },
+  },
+  {
+    files: ['src/shared/**/*.{ts,tsx}'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: ['**/app/**', '**/pages/**', '**/features/**'],
+        },
+      ],
+    },
+  },
+  {
+    files: ['src/features/**/*.{ts,tsx}'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: ['**/app/**', '**/pages/**'],
+        },
+      ],
+    },
+  },
+  {
+    files: ['src/pages/**/*.{ts,tsx}'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: ['**/app/**'],
         },
       ],
     },

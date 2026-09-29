@@ -1,0 +1,38 @@
+.count {
+  color: var(--color-primary-dark);
+  font-size: 0.78rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.retry {
+  display: flex;
+  min-height: 2.75rem;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+  border: 1px dashed var(--color-border-strong);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-muted);
+  font: inherit;
+  font-size: 0.72rem;
+  cursor: pointer;
+}
+
+.mainAction {
+  gap: 0.4rem;
+  margin-top: 0.9rem;
+}
+
+.contractSection {
+  margin: 0 calc(-1 * var(--page-inline-padding));
+  padding: 0.8rem var(--page-inline-padding);
+  border-top: 0.5rem solid var(--color-canvas);
+  background: var(--color-surface);
+}
+
+.contractAction {
+  gap: 0.4rem;
+}

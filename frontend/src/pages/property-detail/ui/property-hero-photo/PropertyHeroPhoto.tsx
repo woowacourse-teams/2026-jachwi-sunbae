@@ -1,0 +1,45 @@
+import { Link } from 'react-router-dom';
+import type { PropertyPhotoPreview } from '../../../../features/property/model/Property';
+import type { PublicConfig } from '../../../../shared/config/publicConfigTypes';
+import AuthenticatedPhoto from '../../../../features/property/ui/authenticated-photo/AuthenticatedPhoto';
+import Icon from '../../../../shared/ui/icon/Icon';
+import styles from './PropertyHeroPhoto.module.css';
+
+type PropertyHeroPhotoProps = {
+  config: PublicConfig;
+  propertyId: number;
+  propertyName: string;
+  photos: PropertyPhotoPreview[];
+  onOpen: () => void;
+};
+
+const PropertyHeroPhoto = ({ config, propertyId, propertyName, photos, onOpen }: PropertyHeroPhotoProps) => (
+  <section className={styles.section} aria-label="대표 사진">
+    {photos.length > 0 ? (
+      <button
+        type="button"
+        className={styles.button}
+        aria-label={`${propertyName} 대표 사진 크게 보기`}
+        onClick={onOpen}
+      >
+        <AuthenticatedPhoto
+          config={config}
+          propertyId={propertyId}
+          photoId={photos[0].photoId}
+          contentUrl={photos[0].contentUrl}
+          alt={`${propertyName} 대표 사진`}
+          className={styles.photo}
+        />
+      </button>
+    ) : (
+      <Link className={`${styles.button} ${styles.emptyButton}`} to={`/properties/${propertyId}/photos`}>
+        <span className={styles.addLabel}>
+          <Icon name="plus" size={16} />
+          사진 추가
+        </span>
+      </Link>
+    )}
+  </section>
+);
+
+export default PropertyHeroPhoto;
