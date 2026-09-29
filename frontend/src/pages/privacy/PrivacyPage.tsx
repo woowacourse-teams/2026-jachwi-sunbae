@@ -83,9 +83,10 @@ const PrivacyPage = () => {
         <section className={styles.card} aria-labelledby="sharing-heading">
           <h2 id="sharing-heading">외부 서비스와 처리 위탁</h2>
           <p>
-            서비스 운영을 위해 클라우드 호스팅·파일 저장소와 지도 제공 서비스를 이용합니다. 웹과 iOS·Android 앱에서는
-            서비스 개선을 위해 PostHog를 사용하며, 이용 경로와 기능 이벤트, 회원 식별자가 처리될 수 있습니다. 광고 성과
-            측정용 Meta Pixel은 모바일 앱(iOS·Android)에서 실행하지 않습니다.
+            서비스 운영을 위해 클라우드 호스팅·파일 저장소와 지도 제공 서비스를 이용합니다. 웹 서비스와 운영 iOS·Android
+            앱(WebView)에서는 웹 번들에 포함된 PostHog를 통해 서비스 개선을 위한 이용 경로, 기능 이벤트, 회원 식별자가
+            처리될 수 있습니다. 개발용 앱에서는 PostHog를 수집하지 않습니다. 광고 성과 측정용 Meta Pixel은 모바일 앱
+            (iOS·Android)에서 실행하지 않습니다.
           </p>
         </section>
 
@@ -93,8 +94,8 @@ const PrivacyPage = () => {
           <h2 id="rights-heading">이용자의 권리</h2>
           <p>
             이용자는 본인 정보의 열람·정정·삭제 및 처리 정지를 요청할 수 있습니다. 아래 문의처로 요청해 주시면 본인
-            확인에 필요한 최소한의 정보를 확인한 뒤 처리하겠습니다. 계정과 데이터 삭제는 위의 삭제 요청 안내를
-            참고해 주세요.
+            확인에 필요한 최소한의 정보를 확인한 뒤 처리하겠습니다. 계정과 데이터 삭제는 위의 삭제 요청 안내를 참고해
+            주세요.
           </p>
         </section>
 
@@ -108,9 +109,7 @@ const PrivacyPage = () => {
 
         <section className={styles.card} aria-labelledby="changes-heading">
           <h2 id="changes-heading">방침 변경</h2>
-          <p>
-            서비스 기능이나 정보 처리 방식이 변경되면 이 페이지에 변경 내용을 안내하고 시행일을 갱신합니다.
-          </p>
+          <p>서비스 기능이나 정보 처리 방식이 변경되면 이 페이지에 변경 내용을 안내하고 시행일을 갱신합니다.</p>
         </section>
 
         <section className={styles.card} aria-labelledby="tracking-choice-heading">
