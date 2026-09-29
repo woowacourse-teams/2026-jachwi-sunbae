@@ -71,9 +71,21 @@ prod → /main.8a49163cbe52bf996d07.js
 
 dev와 prod는 같은 PostHog 프로젝트에 수집한다. `API_BASE_URL`이 운영 API이면 `environment=production`, 그 외에는 `environment=development`를 모든 이벤트의 공통 속성으로 등록한다. PostHog 인사이트·퍼널·세션 리플레이에는 반드시 이 속성 필터를 적용해 두 환경을 분리한다. 로컬 개발은 `.env.local`에 `POSTHOG_PROJECT_TOKEN`과 `POSTHOG_HOST`를 넣은 경우에만 수집한다. 세션 녹화에서는 환경과 무관하게 텍스트와 요소 속성을 마스킹한다.
 
-공용 사용자 행동 대시보드는 [자취선배 사용자 행동 모니터링](https://us.posthog.com/project/579863/dashboard/2149589)이다. 기본 필터는 `environment = production`으로 저장해 운영 현황을 바로 확인하도록 했으며, dev 검증 시 대시보드 상단 필터에서 값을 `development`로 바꾼다. 대시보드에는 DAU, 핵심 기능 이벤트, 로그인·매물 등록 퍼널, 에러·레이지클릭 추이와 `세션별 로그인 → 매물 등록 퍼널`이 포함되어 있다.
+공용 사용자 행동 대시보드는 [자취선배 사용자 행동 모니터링](https://us.posthog.com/project/579863/dashboard/2149589)이다. 운영 현황은 `environment = production`, dev 검증은 `environment = development`로 필터링한다. 대시보드에는 DAU, 핵심 기능 이벤트, 로그인·매물 등록 퍼널, 에러·레이지클릭 추이와 `세션별 로그인 → 매물 등록 퍼널`이 포함되어 있다.
 
-운영 번들은 `hidden-source-map`으로 source map을 생성한다. `publish.sh prod`는 `POSTHOG_CLI_API_KEY`가 있으면 PostHog에 source map을 업로드한 뒤 S3에는 `.map` 파일을 올리지 않는다. 키가 없으면 업로드를 건너뛰고 `.map` 파일만 배포에서 제외한다.
+퍼널에서 바로 단계를 선택할 수 있도록 매물 등록 단계는 다음 이벤트를 사용한다.
+
+- `property_creation_started`
+- `property_creation_deposit_completed`
+- `property_creation_monthly_rent_completed`
+- `property_creation_address_completed`
+- `property_creation_name_completed`
+- `property_creation_submitted`
+- `property_created`
+
+로그인 전환은 `login_page_viewed` → `login_started` → `login_succeeded` 순서로 확인하며, 실패는 `login_failed`로 별도 수집한다.
+
+배포 번들은 `hidden-source-map`으로 source map을 생성한다. `publish.sh dev`와 `publish.sh prod`는 `POSTHOG_CLI_API_KEY`가 있으면 PostHog에 source map을 업로드한 뒤 S3에는 `.map` 파일을 올리지 않는다. 키가 없으면 업로드를 건너뛰고 `.map` 파일만 배포에서 제외한다.
 
 ```bash
 export POSTHOG_CLI_API_KEY='<error_tracking:write 권한의 개인 API 키>'

@@ -1,4 +1,4 @@
-import { type FormEvent, useRef, useState } from 'react';
+import { type FormEvent, useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ApiError, getSafeApiErrorMessage } from '../../features/auth/api/apiClient';
 import { submitNicknameLogin } from '../../features/auth/api/authApi';
@@ -47,6 +47,10 @@ const LoginPage = ({ config }: LoginPageProps) => {
   const isStartingRef = useRef(false);
   const { terminationReason } = useAuthentication();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    trackPostHogEvent('login_page_viewed');
+  }, []);
 
   const handleLogin = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
