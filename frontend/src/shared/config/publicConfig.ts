@@ -35,8 +35,9 @@ export const getPublicConfig = (): PublicConfig => {
     apiBaseUrl: requireHttpUrl(typeof __API_BASE_URL__ === 'string' ? __API_BASE_URL__ : '', 'API_BASE_URL'),
     mapProviderMode,
     naverMapClientId: typeof __NAVER_MAP_CLIENT_ID__ === 'string' ? __NAVER_MAP_CLIENT_ID__.trim() : '',
-    metaPixelId: typeof __META_PIXEL_ID__ === 'string' ? __META_PIXEL_ID__.trim() : '',
     posthogProjectToken: typeof __POSTHOG_PROJECT_TOKEN__ === 'string' ? __POSTHOG_PROJECT_TOKEN__.trim() : '',
     posthogHost: typeof __POSTHOG_HOST__ === 'string' ? __POSTHOG_HOST__.trim() : '',
+    appVersion: typeof __APP_VERSION__ === 'string' ? __APP_VERSION__.trim() : '',
+    appEnvironment: __APP_ENVIRONMENT__ === 'production' ? 'production' : 'development',
   };
 };

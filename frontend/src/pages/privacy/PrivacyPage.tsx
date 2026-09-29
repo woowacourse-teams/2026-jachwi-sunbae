@@ -1,18 +1,7 @@
 import TopNavigation from '../../shared/ui/top-navigation/TopNavigation';
-import { useTrackingConsent } from '../../features/tracking-consent/model/TrackingConsentContext';
 import styles from './PrivacyPage.module.css';
-import { Button } from '../../shared/ui/button/Button';
 
 const PrivacyPage = () => {
-  const { available, status, grant, deny } = useTrackingConsent();
-  const statusLabel = !available
-    ? '이 환경에서는 측정하지 않음'
-    : status === 'granted'
-      ? '동의함'
-      : status === 'denied'
-        ? '동의하지 않음'
-        : '아직 선택하지 않음';
-
   return (
     <main className={styles.page}>
       <div className={styles.content}>
@@ -85,8 +74,8 @@ const PrivacyPage = () => {
           <p>
             서비스 운영을 위해 클라우드 호스팅·파일 저장소와 지도 제공 서비스를 이용합니다. 웹 서비스와 운영 iOS·Android
             앱(WebView)에서는 웹 번들에 포함된 PostHog를 통해 서비스 개선을 위한 이용 경로, 기능 이벤트, 회원 식별자가
-            처리될 수 있습니다. 개발용 앱에서는 PostHog를 수집하지 않습니다. 광고 성과 측정용 Meta Pixel은 모바일 앱
-            (iOS·Android)에서 실행하지 않습니다.
+            처리될 수 있습니다. 개발용 앱에서는 PostHog를 수집하지 않습니다. PostHog 세션 녹화에서는 텍스트와 요소
+            속성을 마스킹합니다.
           </p>
         </section>
 
@@ -112,34 +101,12 @@ const PrivacyPage = () => {
           <p>서비스 기능이나 정보 처리 방식이 변경되면 이 페이지에 변경 내용을 안내하고 시행일을 갱신합니다.</p>
         </section>
 
-        <section className={styles.card} aria-labelledby="tracking-choice-heading">
-          <h2 id="tracking-choice-heading">웹 광고 성과 측정 선택</h2>
-          <p>
-            웹에서는 사용자가 동의한 경우에만 Meta Pixel을 불러오고 페이지 방문, 신규 닉네임 생성 여부와 첫 매물 등록
-            여부를 Meta에 전송합니다. 닉네임, 비밀번호, 주소, 사진, 메모와 체크 내용은 Meta에 전송하지 않습니다.
-            동의하지 않아도 모든 기능을 사용할 수 있으며 언제든 선택을 바꿀 수 있습니다.
-          </p>
-          <p className={styles.status} role="status">
-            현재 상태: {statusLabel}
-          </p>
-          {available ? (
-            <div className={styles.actions}>
-              <Button variant="secondary" onClick={deny}>
-                동의하지 않기
-              </Button>
-              <Button variant="soft" onClick={grant}>
-                측정에 동의하기
-              </Button>
-            </div>
-          ) : null}
-        </section>
-
         <p className={styles.externalNotice}>
           개인정보 열람·정정·삭제 및 기타 문의: <a href="mailto:conditionaltype@gmail.com">conditionaltype@gmail.com</a>
           <br />
-          Meta의 데이터 처리 방식은{' '}
-          <a href="https://www.facebook.com/privacy/policy/" target="_blank" rel="noreferrer">
-            Meta 개인정보처리방침
+          PostHog의 데이터 처리 방식은{' '}
+          <a href="https://posthog.com/privacy" target="_blank" rel="noreferrer">
+            PostHog 개인정보처리방침
           </a>
           에서 확인할 수 있습니다.
         </p>

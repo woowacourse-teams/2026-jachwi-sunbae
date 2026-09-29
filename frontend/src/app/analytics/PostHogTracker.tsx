@@ -6,7 +6,9 @@ import type { PublicConfig } from '../../shared/config/publicConfigTypes';
 import {
   identifyPostHogMember,
   initPostHog,
+  getPostHogPlatform,
   resetPostHogIdentity,
+  setPostHogSessionContext,
   trackPostHogPageView,
 } from '../../shared/lib/analytics/posthog';
 
@@ -22,6 +24,14 @@ const PostHogTracker = ({ config }: PostHogTrackerProps) => {
   useEffect(() => {
     initPostHog(config.posthogProjectToken ?? '', config.posthogHost ?? '');
   }, [config.posthogProjectToken, config.posthogHost]);
+
+  useEffect(() => {
+    setPostHogSessionContext({
+      environment: config.appEnvironment ?? 'production',
+      app_version: config.appVersion ?? 'unknown',
+      platform: getPostHogPlatform(),
+    });
+  }, [config.appEnvironment, config.appVersion]);
 
   useEffect(() => {
     trackPostHogPageView(`${location.pathname}${location.search}`);

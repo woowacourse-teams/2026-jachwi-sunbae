@@ -21,9 +21,6 @@ const NATIVE_CONTEXT_SCRIPT = `
     platform: '${Platform.OS}',
     version: 1
   });
-  try {
-    window.localStorage.setItem('jachwi-sunbae:meta-tracking-consent', 'denied');
-  } catch (_) {}
   window.dispatchEvent(new CustomEvent('jachwi-native-ready', {
     detail: window.__JACHWI_NATIVE_APP__
   }));

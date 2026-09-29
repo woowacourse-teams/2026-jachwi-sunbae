@@ -1,5 +1,10 @@
 type PostHogClient = (typeof import('posthog-js'))['default'];
 type PostHogAction = (client: PostHogClient) => void;
+type PostHogSessionContext = {
+  environment: 'production' | 'development';
+  app_version: string;
+  platform: 'web' | 'ios_webview' | 'android_webview';
+};
 
 let initializedConfiguration: string | null = null;
 let requestedConfiguration: { key: string; projectToken: string; host: string } | null = null;
@@ -106,15 +111,40 @@ export const trackPostHogEvent = (eventName: string, properties?: Record<string,
   return runPostHogAction((client) => client.capture(eventName, properties));
 };
 
-export const identifyPostHogMember = (memberId: number, displayName?: string): boolean => {
+export const setPostHogSessionContext = (context: PostHogSessionContext): boolean => {
+  if (!trackingEnabled || context.app_version.trim().length === 0) return false;
+
+  return runPostHogAction((client) => client.register(context));
+};
+
+export const getPostHogPlatform = (): PostHogSessionContext['platform'] => {
+  if (typeof navigator === 'undefined') return 'web';
+
+  const userAgent = navigator.userAgent;
+  if (/\bwv\b|; wv\)/i.test(userAgent)) return 'android_webview';
+
+  const isIos = /iPad|iPhone|iPod/i.test(userAgent);
+  const isIosBrowser = /CriOS|FxiOS|EdgiOS|Safari/i.test(userAgent);
+  if (isIos && !isIosBrowser) return 'ios_webview';
+
+  return 'web';
+};
+
+export const capturePostHogException = (
+  error: unknown,
+  properties?: Record<string, unknown>,
+): boolean => {
+  if (!trackingEnabled) return false;
+
+  return runPostHogAction((client) => client.captureException(error, properties));
+};
+
+export const identifyPostHogMember = (memberId: number, nickname?: string): boolean => {
   if (!trackingEnabled || !Number.isInteger(memberId) || memberId <= 0) return false;
 
   const distinctId = `member-${memberId}`;
   return runPostHogAction((client) =>
-    client.identify(distinctId, {
-      displayName: displayName ?? distinctId,
-      name: displayName ?? distinctId,
-    }),
+    client.identify(distinctId, nickname === undefined ? undefined : { nickname }),
   );
 };
 

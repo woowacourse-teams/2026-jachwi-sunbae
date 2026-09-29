@@ -10,7 +10,6 @@ const testConfig: PublicConfig = {
   apiBaseUrl: 'http://localhost:8080',
   mapProviderMode: 'demo',
   naverMapClientId: '',
-  metaPixelId: '',
   posthogProjectToken: 'phc_test_token',
   posthogHost: 'https://us.i.posthog.com',
 };

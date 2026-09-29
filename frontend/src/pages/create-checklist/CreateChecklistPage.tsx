@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 
 import { getChecklistErrorMessage } from '../../features/checklist/api/checklistErrorMessages';
@@ -33,6 +34,10 @@ const ResolvedCreateChecklistPage = ({ config, returnTo }: { config: PublicConfi
   const isPresetLoading = preset.isPending || isPresetLoadingVisible;
   const create = useCreateChecklist(config);
   const isAddingItems = searchParams.get('mode') === 'add-items';
+
+  useEffect(() => {
+    trackPostHogEvent('checklist_creation_started', { stage });
+  }, []);
 
   return (
     <main className={`${styles.page} property-page checklist-page checklist-editor-page`}>
@@ -89,18 +94,26 @@ const ResolvedCreateChecklistPage = ({ config, returnTo }: { config: PublicConfi
               setSearchParams(next, { replace: mode === 'EDIT' });
             }}
             onSubmit={async ({ name, items }) => {
-              const created = await create.mutateAsync({
-                name,
-                stage,
-                items: toProvidedChecklistItemInputs(items),
-              });
-              trackPostHogEvent('checklist_created', { stage });
-              if (safeReturn !== null && safeReturn.stage === stage) {
-                navigate(safeReturn.path, { replace: true, state: { newChecklistId: created.checklistId } });
-              } else {
-                navigate('/checklists', { replace: true, state: { newChecklistId: created.checklistId } });
+              try {
+                const created = await create.mutateAsync({
+                  name,
+                  stage,
+                  items: toProvidedChecklistItemInputs(items),
+                });
+                trackPostHogEvent('checklist_created', { stage });
+                if (safeReturn !== null && safeReturn.stage === stage) {
+                  navigate(safeReturn.path, { replace: true, state: { newChecklistId: created.checklistId } });
+                } else {
+                  navigate('/checklists', { replace: true, state: { newChecklistId: created.checklistId } });
+                }
+                return created;
+              } catch (error) {
+                trackPostHogEvent('checklist_save_failed', {
+                  stage,
+                  error_kind: error instanceof Error ? 'request' : 'unknown',
+                });
+                throw error;
               }
-              return created;
             }}
           />
         )}

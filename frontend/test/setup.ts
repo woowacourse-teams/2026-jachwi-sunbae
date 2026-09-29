@@ -3,7 +3,6 @@ import { cleanup, configure } from '@testing-library/react';
 import { webcrypto } from 'node:crypto';
 import { afterAll, afterEach, beforeAll, vi } from 'vitest';
 import { resetAuthenticationForTests } from '../src/features/auth/model/authStore';
-import { resetMetaPixelForTests } from '../src/features/tracking-consent/lib/metaPixel';
 import { server } from './server';
 
 configure({ asyncUtilTimeout: 5_000 });
@@ -61,7 +60,6 @@ afterEach(() => {
   cleanup();
   server.resetHandlers();
   resetAuthenticationForTests();
-  resetMetaPixelForTests();
   window.sessionStorage.clear();
   window.localStorage.clear();
   window.history.replaceState(null, '', '/');

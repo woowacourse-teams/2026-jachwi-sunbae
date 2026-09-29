@@ -1,6 +1,5 @@
 import AppProviders from './providers/AppProviders';
 import AppRoutes from './router/AppRoutes';
-import { TrackingConsentProvider } from '../features/tracking-consent/model/TrackingConsentContext';
 import { getPublicConfig } from '../shared/config/publicConfig';
 import PostHogTracker from './analytics/PostHogTracker';
 import StatusPanel from '../shared/ui/status-panel/StatusPanel';
@@ -27,9 +26,7 @@ const App = ({ config }: AppProps) => {
   return (
     <AppProviders>
       <PostHogTracker config={resolvedConfig} />
-      <TrackingConsentProvider metaPixelId={resolvedConfig.metaPixelId}>
-        <AppRoutes config={resolvedConfig} />
-      </TrackingConsentProvider>
+      <AppRoutes config={resolvedConfig} />
     </AppProviders>
   );
 };

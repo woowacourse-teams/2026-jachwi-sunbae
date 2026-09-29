@@ -10,8 +10,8 @@ import InlineNotice from '../../shared/ui/inline-notice/InlineNotice';
 import TextField from '../../shared/ui/text-field/TextField';
 import { useAuthentication } from '../../features/auth/model/useAuthentication';
 import type { PublicConfig } from '../../shared/config/publicConfigTypes';
-import { trackMetaPixelCompleteRegistration } from '../../features/tracking-consent/lib/metaPixel';
 import { setAuthentication } from '../../features/auth/model/authStore';
+import { trackPostHogEvent } from '../../shared/lib/analytics/posthog';
 import styles from './LoginPage.module.css';
 
 type LoginPageProps = {
@@ -65,6 +65,7 @@ const LoginPage = ({ config }: LoginPageProps) => {
     isStartingRef.current = true;
     setIsStarting(true);
     setStartError(null);
+    trackPostHogEvent('login_started', { login_method: 'nickname' });
 
     try {
       const response = await submitNicknameLogin(config, {
@@ -72,12 +73,17 @@ const LoginPage = ({ config }: LoginPageProps) => {
         password: password.length === 0 ? undefined : password,
       });
       setAuthentication(response);
-      if (response.newMember) trackMetaPixelCompleteRegistration();
+      trackPostHogEvent('login_succeeded', { new_member: response.newMember });
       navigate('/properties', { replace: true });
     } catch (error) {
       isStartingRef.current = false;
       setIsStarting(false);
       setStartError(getLoginErrorMessage(error));
+      trackPostHogEvent('login_failed', {
+        login_method: 'nickname',
+        error_kind: error instanceof ApiError ? error.kind : 'unknown',
+        error_code: error instanceof ApiError ? error.code : null,
+      });
     }
   };
 

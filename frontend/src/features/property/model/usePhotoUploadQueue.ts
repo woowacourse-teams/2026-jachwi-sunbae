@@ -2,6 +2,7 @@ import { useRef, useState } from 'react';
 import { getPropertyErrorMessage } from '../api/propertyErrorMessages';
 import { useUploadPropertyPhoto } from '../api/usePropertyMutations';
 import type { PublicConfig } from '../../../shared/config/publicConfigTypes';
+import { trackPostHogEvent } from '../../../shared/lib/analytics/posthog';
 
 export const MAX_PHOTO_BYTES = 5 * 1024 * 1024;
 export const MAX_PROPERTY_PHOTOS = 30;
@@ -69,6 +70,7 @@ export const usePhotoUploadQueue = (config: PublicConfig, propertyId: number, cu
 
     uploadLockRef.current = true;
     setIsUploading(true);
+    trackPostHogEvent('property_photo_upload_started', { count: files.length });
     const prepared = prepareFiles(files, Math.max(0, MAX_PROPERTY_PHOTOS - currentPhotoCount));
     setItems(prepared.map(({ item }) => item));
 
@@ -82,8 +84,12 @@ export const usePhotoUploadQueue = (config: PublicConfig, propertyId: number, cu
       try {
         await uploadMutation.mutateAsync(file);
         updateItem(item.id, 'success', '업로드 완료');
+        trackPostHogEvent('property_photo_uploaded');
       } catch (error) {
         updateItem(item.id, 'error', getPropertyErrorMessage(error));
+        trackPostHogEvent('property_photo_upload_failed', {
+          error_kind: error instanceof Error ? 'request' : 'unknown',
+        });
       }
     }
 
