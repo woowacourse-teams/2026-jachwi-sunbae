@@ -95,7 +95,7 @@ public class UserChecklistController {
     }
 
     @DeleteMapping("/{checklistId}")
-    @Operation(summary = "사용자 체크리스트 삭제", description = "항목을 먼저 삭제한 후 사용자 체크리스트를 삭제합니다.")
+    @Operation(summary = "사용자 체크리스트 삭제", description = "사용자 체크리스트를 논리 삭제합니다.")
     public ResponseEntity<Void> delete(
             @AuthenticatedMemberId final Long memberId,
             @PathVariable final long checklistId) {

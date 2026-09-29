@@ -14,7 +14,6 @@ import com.jachwisunbae.member.repository.MemberRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
@@ -43,10 +42,9 @@ public class UserChecklistService {
     public UserChecklist create(final Long memberId, final String name, final CheckStage stage,
                                 final List<Long> systemCheckItemIds) {
         List<SystemCheckItem> requestedItems = findCreatableSystemItems(stage, systemCheckItemIds);
-        List<SystemCheckItem> finalSystemItems = mergeWithActiveCoreItems(stage, requestedItems);
 
         UserChecklist checklist = userChecklistRepository.save(UserChecklist.create(memberId, name, stage));
-        saveChecklistItems(checklist.getId(), finalSystemItems);
+        saveChecklistItems(checklist.getId(), requestedItems);
         return checklist;
     }
 
@@ -84,6 +82,7 @@ public class UserChecklistService {
     private List<SystemCheckItem> findCreatableSystemItems(final CheckStage stage,
                                                            final List<Long> systemCheckItemIds) {
         validateRequestedItems(systemCheckItemIds);
+        validateFinalItemCount(systemCheckItemIds.size());
 
         List<Long> requestedIds = List.copyOf(systemCheckItemIds);
         List<SystemCheckItem> requestedItems = systemCheckItemRepository.findByIdsAndStageInOrder(stage, requestedIds);
@@ -92,23 +91,9 @@ public class UserChecklistService {
         return requestedItems;
     }
 
-    private List<SystemCheckItem> mergeWithActiveCoreItems(final CheckStage stage,
-                                                           final List<SystemCheckItem> requestedItems) {
-        List<SystemCheckItem> activeCoreItems = systemCheckItemRepository.findActiveCoreByStage(stage);
-        Set<Long> coreItemIds = activeCoreItems.stream()
-            .map(SystemCheckItem::getId)
-            .collect(Collectors.toSet());
-
-        List<SystemCheckItem> finalSystemItems = new ArrayList<>(activeCoreItems);
-        requestedItems.stream()
-            .filter(item -> !coreItemIds.contains(item.getId()))
-            .forEach(finalSystemItems::add);
-        validateFinalItemCount(finalSystemItems.size());
-        return finalSystemItems;
-    }
-
     private void saveChecklistItems(final long checklistId, final List<SystemCheckItem> systemItems) {
         List<UserChecklistItem> items = createChecklistItems(checklistId, systemItems);
+        validateUniqueQuestions(items);
         userChecklistRepository.saveItems(checklistId, items);
     }
 
