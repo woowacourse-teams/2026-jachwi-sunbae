@@ -1,7 +1,7 @@
-diff --git a/android/src/main/java/com/reactnativecommunity/webview/RNCWebChromeClient.java b/android/src/main/java/com/reactnativecommunity/webview/RNCWebChromeClient.java
+diff --git a/node_modules/react-native-webview/android/src/main/java/com/reactnativecommunity/webview/RNCWebChromeClient.java b/node_modules/react-native-webview/android/src/main/java/com/reactnativecommunity/webview/RNCWebChromeClient.java
 index 1b5c4c9f83159f15f710851e52558944b592d113..c27767bbe71c6bb0cba8008e4bfcbf0eddd6132c 100644
---- a/android/src/main/java/com/reactnativecommunity/webview/RNCWebChromeClient.java
-+++ b/android/src/main/java/com/reactnativecommunity/webview/RNCWebChromeClient.java
+--- a/node_modules/react-native-webview/android/src/main/java/com/reactnativecommunity/webview/RNCWebChromeClient.java
++++ b/node_modules/react-native-webview/android/src/main/java/com/reactnativecommunity/webview/RNCWebChromeClient.java
 @@ -30,7 +30,7 @@ import com.reactnativecommunity.webview.events.TopLoadingProgressEvent;
  import com.reactnativecommunity.webview.events.TopOpenWindowEvent;
  

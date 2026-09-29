@@ -181,6 +181,8 @@ const CreatePropertyPage = ({ config }: { config: PublicConfig }) => {
     const input = toPropertyInputDto(values);
     if (input === null) return;
     setCreateError(null);
+    trackPostHogEvent('property_creation_step_completed', { step: 'name' });
+    trackPostHogEvent('property_creation_submitted');
     try {
       const created = await createProperty.mutateAsync({
         ...input,
@@ -227,16 +229,19 @@ const CreatePropertyPage = ({ config }: { config: PublicConfig }) => {
     if (validateRevealedRequiredFields()) return;
 
     if (revealedStep === 0) {
+      trackPostHogEvent('property_creation_step_completed', { step: 'deposit' });
       setRevealedStep(1);
       return;
     }
 
     if (revealedStep === 1) {
+      trackPostHogEvent('property_creation_step_completed', { step: 'monthly_rent' });
       setRevealedStep(2);
       return;
     }
 
     if (!hasPresetLocation && revealedStep === 2) {
+      trackPostHogEvent('property_creation_step_completed', { step: 'address' });
       setRevealedStep(3);
       return;
     }

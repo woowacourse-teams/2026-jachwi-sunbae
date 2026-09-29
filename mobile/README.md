@@ -7,7 +7,7 @@
 | 항목 | 버전 | 선택 이유 |
 | --- | --- | --- |
 | Node.js | `>=22.11.0` | React Native 0.87의 최소 요구 버전이며 LTS 계열에서 개발 환경을 통일합니다. |
-| pnpm | `11.19.0` | 엄격한 의존성 해석, 콘텐츠 주소 기반 저장소, 빠른 설치를 사용하며 팀이 선택한 패키지 매니저를 고정합니다. |
+| npm | `10.9.7` | 프론트엔드와 패키지 매니저를 통일해 설치·CI·문서 운영을 단순화합니다. |
 | React Native | `0.87.1` | 생성 시점의 최신 안정 버전이며 iOS·Android 네이티브 셸을 함께 유지할 수 있습니다. |
 | React | `19.2.3` | React Native 0.87이 요구하는 호환 버전입니다. |
 | react-native-webview | `14.0.1` | 브라우저 서비스를 네이티브 앱 안에 안전하게 표시하는 안정 버전입니다. |
@@ -30,20 +30,20 @@ Expo 같은 보일러플레이트는 사용하지 않았습니다. React Native 
 
 ## 로컬 실행
 
-필요한 도구는 Node.js 22 이상, pnpm 11입니다. iOS에는 Xcode와 CocoaPods, Android에는 JDK 17 이상과 Android SDK가 추가로 필요합니다.
+필요한 도구는 Node.js 22 이상, npm 10입니다. iOS에는 Xcode와 CocoaPods, Android에는 JDK 17 이상과 Android SDK가 추가로 필요합니다.
 
 ```bash
 cd mobile
-pnpm install
+npm ci
 cd ios && pod install && cd ..
-pnpm start
+npm start
 ```
 
 다른 터미널에서 실행합니다.
 
 ```bash
 cd mobile
-pnpm ios
+npm run ios
 ```
 
 Xcode로 열 때는 `.xcodeproj`가 아니라 `ios/JachwiSunbaeMobile.xcworkspace`를 사용합니다.
@@ -52,15 +52,15 @@ Android는 에뮬레이터 또는 USB 디버깅을 켠 기기를 연결한 뒤 �
 
 ```bash
 cd mobile
-pnpm android
+npm run android
 ```
 
 ## 품질 검사
 
 ```bash
-pnpm typecheck
-pnpm lint
-pnpm test --runInBand
+npm run typecheck
+npm run lint
+npm test -- --runInBand
 ```
 
 서명 없이 시뮬레이터 빌드만 확인하려면 다음 명령을 사용합니다. 디스크가 빠듯한 개발 환경을 고려해 단일 arm64 아키텍처만 빌드합니다.

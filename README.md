@@ -89,7 +89,7 @@ npm run dev
 
 ```bash
 cd mobile
-pnpm install
+npm ci
 cd ios && pod install && cd ..
-pnpm ios
+npm run ios
 ```

@@ -100,7 +100,10 @@ describe('PostHog 제품 분석', () => {
 
     expect(identifyPostHogMember(12, '자취선배1')).toBe(true);
     await vi.waitFor(() => {
-      expect(mockPostHog.identify).toHaveBeenCalledWith('member-12', { nickname: '자취선배1' });
+      expect(mockPostHog.identify).toHaveBeenCalledWith('member-12', {
+        name: '자취선배1',
+        nickname: '자취선배1',
+      });
     });
 
     resetPostHogIdentity();
