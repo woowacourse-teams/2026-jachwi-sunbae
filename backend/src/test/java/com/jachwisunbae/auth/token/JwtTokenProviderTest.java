@@ -5,19 +5,17 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.jachwisunbae.common.exception.BusinessException;
 import com.jachwisunbae.common.exception.DomainErrorCode;
-import java.nio.charset.StandardCharsets;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneOffset;
-import java.util.Base64;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.function.Executable;
 
 class JwtTokenProviderTest {
 
-    // Base64로 인코딩한 32바이트 값
+    // 32바이트 이상 문자열
     private static final String SECRET = "MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY=";
     private static final String OTHER_SECRET = "ZmVkY2JhOTg3NjU0MzIxMGZlZGNiYTk4NzY1NDMyMTA=";
     private static final String ISSUER = "jachwi-sunbae";
@@ -70,18 +68,17 @@ class JwtTokenProviderTest {
     }
 
     @Test
-    @DisplayName("비밀키가 Base64가 아니면 만들 수 없다")
-    void rejectsNonBase64Secret() {
-        assertThatThrownBy(() -> provider("local-demo-jwt-secret-at-least-32-bytes", ISSUER, AUDIENCE, NOW))
+    @DisplayName("비밀키가 비어 있으면 만들 수 없다")
+    void rejectsBlankSecret() {
+        assertThatThrownBy(() -> provider(" ", ISSUER, AUDIENCE, NOW))
                 .isInstanceOf(IllegalStateException.class);
     }
 
     @Test
-    @DisplayName("디코딩한 비밀키가 32바이트보다 짧으면 만들 수 없다")
+    @DisplayName("비밀키가 32바이트보다 짧으면 만들 수 없다")
     void rejectsShortSecret() {
-        String thirtyOneBytes = Base64.getEncoder().encodeToString("a".repeat(31).getBytes(StandardCharsets.UTF_8));
-
-        assertThatThrownBy(() -> provider(thirtyOneBytes, ISSUER, AUDIENCE, NOW))
+        assertThat(provider("a".repeat(32), ISSUER, AUDIENCE, NOW)).isNotNull();
+        assertThatThrownBy(() -> provider("a".repeat(31), ISSUER, AUDIENCE, NOW))
                 .isInstanceOf(IllegalStateException.class);
     }
 
