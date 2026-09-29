@@ -105,4 +105,13 @@ describe('공용 UI 컴포넌트', () => {
 
     expect(screen.getByText('해당 상태의 매물이 없어요.').closest('section')).toHaveAttribute('data-variant', 'plain');
   });
+
+  it('TextField는 큰 입력칸 크기를 입력칸 묶음에 표시한다', () => {
+    render(<TextField label="보증금" fieldSize="large" />);
+
+    expect(screen.getByRole('textbox', { name: '보증금' }).closest('[data-size]')).toHaveAttribute(
+      'data-size',
+      'large',
+    );
+  });
 });

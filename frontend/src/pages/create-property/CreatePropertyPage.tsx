@@ -44,8 +44,8 @@ const CreatePropertyPage = () => {
         >
           <MoneyField
             label="보증금"
-            fieldClassName={`${styles.fieldGroup} ${styles.depositField}`}
-            className={styles.input}
+            fieldClassName={styles.depositField}
+            fieldSize="large"
             placeholder="예: 1,000"
             value={values.depositAmount}
             onValueChange={(value) => form.changeMoney('depositAmount', value)}
@@ -55,8 +55,8 @@ const CreatePropertyPage = () => {
           {revealedStep >= 1 && (
             <MoneyField
               label="월세"
-              fieldClassName={`${styles.fieldGroup} ${styles.rentField}`}
-              className={styles.input}
+              fieldClassName={styles.rentField}
+              fieldSize="large"
               placeholder="예: 55"
               value={values.monthlyRentAmount}
               onValueChange={(value) => form.changeMoney('monthlyRentAmount', value)}
@@ -70,8 +70,8 @@ const CreatePropertyPage = () => {
           {isNameStep && (
             <TextField
               label="매물 이름"
-              fieldClassName={`${styles.fieldGroup} ${styles.nameField}`}
-              className={styles.input}
+              fieldClassName={styles.nameField}
+              fieldSize="large"
               placeholder="예: 신림역 3번출구 햇빛 잘 드는 원룸"
               maxLength={30}
               value={values.name}
