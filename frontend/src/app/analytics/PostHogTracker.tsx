@@ -9,6 +9,7 @@ import {
   resetPostHogIdentity,
   trackPostHogPageView,
 } from '../../shared/lib/analytics/posthog';
+import { isRunningInNativeApp } from '../../shared/lib/native-app/nativeApp';
 
 type PostHogTrackerProps = {
   config: PublicConfig;
@@ -20,14 +21,17 @@ const PostHogTracker = ({ config }: PostHogTrackerProps) => {
   const currentMember = useCurrentMember(config, session !== null);
 
   useEffect(() => {
+    if (isRunningInNativeApp()) return;
     initPostHog(config.posthogProjectToken ?? '', config.posthogHost ?? '');
   }, [config.posthogProjectToken, config.posthogHost]);
 
   useEffect(() => {
+    if (isRunningInNativeApp()) return;
     trackPostHogPageView(`${location.pathname}${location.search}`);
   }, [location.pathname, location.search]);
 
   useEffect(() => {
+    if (isRunningInNativeApp()) return;
     if (session === null) {
       resetPostHogIdentity();
       return;

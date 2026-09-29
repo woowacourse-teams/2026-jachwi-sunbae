@@ -1,6 +1,7 @@
 import { createContext, type ReactNode, useContext, useEffect, useMemo, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import TrackingConsentBanner from '../ui/tracking-consent-banner/TrackingConsentBanner';
+import { isRunningInNativeApp } from '../../../shared/lib/native-app/nativeApp';
 import {
   grantMetaPixelConsent,
   isValidMetaPixelId,
@@ -44,7 +45,7 @@ type TrackingConsentProviderProps = {
 export const TrackingConsentProvider = ({ children, metaPixelId = '' }: TrackingConsentProviderProps) => {
   const [status, setStatus] = useState<TrackingConsentStatus>(readStoredConsent);
   const location = useLocation();
-  const available = isValidMetaPixelId(metaPixelId);
+  const available = !isRunningInNativeApp() && isValidMetaPixelId(metaPixelId);
 
   useEffect(() => {
     if (!available || status !== 'granted') {
