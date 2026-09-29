@@ -67,6 +67,16 @@ const MyPage = ({ config }: { config: PublicConfig }) => {
           </span>
           <Icon name="arrow-right" size={15} />
         </Link>
+        <Link className={styles.notice} to="/privacy#account-deletion">
+          <span className={styles.noticeIcon}>
+            <Icon name="info" size={16} />
+          </span>
+          <span>
+            <strong>계정 및 데이터 삭제 요청</strong>
+            <small>자취선배 계정과 연결된 기록의 삭제를 요청해요.</small>
+          </span>
+          <Icon name="arrow-right" size={15} />
+        </Link>
         <footer className={styles.footer}>
           <span>자취선배 MVP2 · {config.mapProviderMode === 'demo' ? 'DEMO MAP' : 'LIVE MAP'}</span>
           <Button variant="text" className={styles.logoutButton} onClick={() => clearAuthentication('logout')}>

@@ -100,7 +100,7 @@ python3 ../.github/scripts/check_versions.py
 
 ## Google Play 제출 전
 
-Google Play에는 디버그 키가 아닌 별도 업로드 키로 서명한 Android App Bundle(`.aab`)을 제출합니다. 키스토어와 비밀번호는 저장소에 커밋하지 않습니다. 아래 값을 `~/.gradle/gradle.properties` 또는 환경 변수로 설정합니다.
+Google Play 앱 패키지 ID는 `com.jachwisunbae`입니다. Android `applicationId`를 변경하면 기존 Play 앱과 다른 앱으로 취급되므로 임의로 바꾸지 않습니다. Google Play에는 디버그 키가 아닌 별도 업로드 키로 서명한 Android App Bundle(`.aab`)을 제출합니다. 키스토어와 비밀번호는 저장소에 커밋하지 않습니다. 아래 값을 `~/.gradle/gradle.properties` 또는 환경 변수로 설정합니다.
 
 ```properties
 JACHWI_UPLOAD_STORE_FILE=/absolute/path/to/jachwi-sunbae-upload.keystore

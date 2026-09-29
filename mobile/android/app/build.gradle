@@ -92,7 +92,7 @@ android {
 
     namespace "kr.jachwisunbae.app"
     defaultConfig {
-        applicationId "kr.jachwisunbae.app"
+        applicationId "com.jachwisunbae"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 2
