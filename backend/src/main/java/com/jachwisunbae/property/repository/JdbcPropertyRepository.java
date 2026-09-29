@@ -101,8 +101,8 @@ public class JdbcPropertyRepository implements PropertyRepository {
         String sql = """
                 INSERT INTO properties
                     (member_id, name, deposit_amount, monthly_rent_amount,
-                     address, latitude, longitude, created_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                     address, latitude, longitude, memo, created_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """;
         KeyHolder keyHolder = new GeneratedKeyHolder();
         jdbcTemplate.update(connection -> {
@@ -114,7 +114,8 @@ public class JdbcPropertyRepository implements PropertyRepository {
             statement.setString(5, property.getAddress());
             statement.setBigDecimal(6, property.getLatitude());
             statement.setBigDecimal(7, property.getLongitude());
-            statement.setObject(8, property.getCreatedAt());
+            statement.setString(8, property.getMemo());
+            statement.setObject(9, property.getCreatedAt());
             return statement;
         }, keyHolder);
 
@@ -129,7 +130,6 @@ public class JdbcPropertyRepository implements PropertyRepository {
             property.getName(),
             property.getDepositAmount(),
             property.getMonthlyRentAmount(),
-            property.getDiscoverySource(),
             property.getAddress(),
             property.getLatitude(),
             property.getLongitude(),
@@ -138,6 +138,8 @@ public class JdbcPropertyRepository implements PropertyRepository {
             property.getVisitScheduledAt(),
             property.getRoomOptions(),
             property.getUtilityOptions(),
+            property.getDiscoverySource(),
+            property.getMemo(),
             property.getCreatedAt(),
             property.getUpdatedAt()
         );
@@ -190,6 +192,19 @@ public class JdbcPropertyRepository implements PropertyRepository {
     }
 
     @Override
+    public void updateMemo(final Property property) {
+        jdbcTemplate.update("""
+                UPDATE properties
+                SET memo = ?
+                WHERE id = ? AND member_id = ? AND deleted_at IS NULL
+                """,
+            property.getMemo(),
+            property.getId(),
+            property.getMemberId()
+        );
+    }
+
+    @Override
     public void deleteById(final long propertyId) {
         jdbcTemplate.update("UPDATE properties SET deleted_at = NOW() WHERE id = ? AND deleted_at IS NULL", propertyId);
     }
@@ -197,7 +212,7 @@ public class JdbcPropertyRepository implements PropertyRepository {
     private String findByIdSql() {
         return """
                 SELECT p.id, p.member_id, p.name, p.deposit_amount, p.monthly_rent_amount,
-                       p.address, p.latitude, p.longitude, p.created_at,
+                       p.address, p.latitude, p.longitude, p.memo, p.created_at,
                        pd.discovery_source, pd.available_move_in_date, pd.maintenance_fee_amount,
                        pd.visit_scheduled_at
                 FROM properties p
@@ -217,7 +232,6 @@ public class JdbcPropertyRepository implements PropertyRepository {
             rs.getString("name"),
             rs.getObject("deposit_amount", Long.class),
             rs.getObject("monthly_rent_amount", Long.class),
-            rs.getString("discovery_source"),
             rs.getString("address"),
             rs.getBigDecimal("latitude"),
             rs.getBigDecimal("longitude"),
@@ -226,6 +240,8 @@ public class JdbcPropertyRepository implements PropertyRepository {
             visitScheduledAt == null ? null : visitScheduledAt.toLocalDateTime(),
             findRoomOptions(propertyId),
             findUtilityOptions(propertyId),
+            rs.getString("discovery_source"),
+            rs.getString("memo"),
             createdAt.toLocalDateTime(),
             createdAt.toLocalDateTime()
         );

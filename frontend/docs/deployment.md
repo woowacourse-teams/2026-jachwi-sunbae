@@ -56,18 +56,29 @@ prod → /main.8a49163cbe52bf996d07.js
 
 ## 환경변수는 빌드 타임에 박힌다
 
-`webpack.config.js`의 `DefinePlugin`이 `API_BASE_URL`·`MAP_PROVIDER_MODE`·`NAVER_MAP_CLIENT_ID`·`ENABLE_MSW`·`META_PIXEL_ID`·`POSTHOG_PROJECT_TOKEN`·`POSTHOG_HOST`를 번들에 박아넣는다. 런타임 설정이 아니므로 **값을 바꾸면 재빌드·재배포해야 한다.** 배포 빌드는 `MAP_PROVIDER_MODE`가 비어 있어도 항상 Naver 지도를 선택하며, Client ID가 없으면 데모 지도로 대체하지 않고 설정 오류를 표시한다. MSW는 기본적으로 배포에서 꺼져 있지만 API 개발용 dev fixture가 필요할 때만 `ENABLE_MSW=true`로 선택해 켤 수 있다. 운영에서는 이 값을 지정하지 않는다.
+`webpack.config.js`의 `DefinePlugin`이 `API_BASE_URL`·`MAP_PROVIDER_MODE`·`NAVER_MAP_CLIENT_ID`·`ENABLE_MSW`·`POSTHOG_PROJECT_TOKEN`·`POSTHOG_HOST`·`APP_VERSION`·`APP_ENVIRONMENT`를 번들에 박아넣는다. 런타임 설정이 아니므로 **값을 바꾸면 재빌드·재배포해야 한다.** 배포 빌드는 `MAP_PROVIDER_MODE`가 비어 있어도 항상 Naver 지도를 선택하며, Client ID가 없으면 데모 지도로 대체하지 않고 설정 오류를 표시한다. MSW는 기본적으로 배포에서 꺼져 있지만 API 개발용 dev fixture가 필요할 때만 `ENABLE_MSW=true`로 선택해 켤 수 있다. 운영에서는 이 값을 지정하지 않는다.
 
 | 환경변수                | prod                           | dev                                |
 | ----------------------- | ------------------------------ | ---------------------------------- |
 | `API_BASE_URL`          | `https://api.jachwi-sunbae.kr` | `https://dev-api.jachwi-sunbae.kr` |
 | `MAP_PROVIDER_MODE`     | `naver`                        | `naver`                            |
 | `NAVER_MAP_CLIENT_ID`   | Naver Maps Client ID           | 같은 Naver Maps Application의 ID   |
-| `META_PIXEL_ID`         | 비움(운영 측정 승인 전)        | `1591771152645660`                 |
-| `POSTHOG_PROJECT_TOKEN` | PostHog 프로젝트 토큰          | PostHog 프로젝트 토큰              |
-| `POSTHOG_HOST`          | `https://us.i.posthog.com`     | `https://us.i.posthog.com`         |
+| `POSTHOG_PROJECT_TOKEN` | PostHog 프로젝트 토큰          | 비움(수집 안 함)                    |
+| `POSTHOG_HOST`          | `https://us.i.posthog.com`     | 비움(수집 안 함)                    |
+| `APP_VERSION`           | `package.json` 버전            | `package.json` 버전                 |
 
-값은 CodePipeline Commands 빌드 액션의 환경변수로 전달한다. Naver Maps Client ID, Meta Pixel ID, PostHog 프로젝트 토큰은 브라우저 번들에 포함되는 공개 식별자이며 REST API 키나 Client Secret 등 비밀값을 넣지 않는다. Naver Maps Application에 `https://www.jachwi-sunbae.kr`과 `https://dev.jachwi-sunbae.kr`을 Web 서비스 URL로 등록한다. `META_PIXEL_ID`를 비우면 Pixel과 동의 고지를 함께 비활성화하며, 값을 설정해도 사용자가 동의하기 전에는 Meta 스크립트를 불러오지 않는다. PostHog 설정이 유효할 때만 SDK 청크를 불러오며, 세션 녹화와 로그인 회원 식별, 페이지뷰 및 제품 이벤트를 수집한다. 세션 녹화에서는 텍스트와 요소 속성을 마스킹한다.
+값은 CodePipeline Commands 빌드 액션의 환경변수로 전달한다. Naver Maps Client ID와 PostHog 프로젝트 토큰은 브라우저 번들에 포함되는 공개 식별자이며 REST API 키나 Client Secret 등 비밀값을 넣지 않는다. Naver Maps Application에 `https://www.jachwi-sunbae.kr`과 `https://dev.jachwi-sunbae.kr`을 Web 서비스 URL로 등록한다. PostHog는 운영 API(`https://api.jachwi-sunbae.kr`)를 사용하는 번들에서만 설정을 주입한다. 따라서 dev 웹과 로컬 개발에서는 SDK를 초기화하지 않으며, 운영에서만 세션 녹화와 로그인 회원 식별, 페이지뷰 및 제품 이벤트를 수집한다. 세션 녹화에서는 텍스트와 요소 속성을 마스킹한다.
+
+운영 번들은 `hidden-source-map`으로 source map을 생성한다. `publish.sh prod`는 `POSTHOG_CLI_API_KEY`가 있으면 PostHog에 source map을 업로드한 뒤 S3에는 `.map` 파일을 올리지 않는다. 키가 없으면 업로드를 건너뛰고 `.map` 파일만 배포에서 제외한다.
+
+```bash
+export POSTHOG_CLI_API_KEY='<error_tracking:write 권한의 개인 API 키>'
+export POSTHOG_CLI_PROJECT_ID='579863'
+export POSTHOG_RELEASE_VERSION='1.1.1'
+./frontend/deploy/upload-posthog-sourcemaps.sh
+```
+
+스크립트는 업로드가 끝난 뒤 `dist`의 source map을 삭제한다. API 키는 저장소나 브라우저 번들에 넣지 않는다.
 
 `API_BASE_URL`이 비거나 올바른 HTTP(S) URL이 아니면 시작 시 예외가 발생한다. `MAP_PROVIDER_MODE=naver`에서 Naver Client ID가 비어도 같은 방식으로 실패한다. 잘못된 값으로 조용히 demo 지도를 제공하지 않는다.
 
@@ -127,6 +138,15 @@ curl -I https://www.jachwi-sunbae.kr/properties
 ```
 
 둘 다 200이어야 한다. 두 번째가 404면 SPA 폴백이 빠진 것이다. 이 확인은 접근 가능성과 SPA 폴백을 보는 smoke test이며, 이번 번들 여부는 `verify-deployment.sh`가 판정한다.
+
+배포된 프론트엔드 제품 버전은 환경별 `version.json`에서 확인한다.
+
+```bash
+curl -fsS https://dev.jachwi-sunbae.kr/version.json
+curl -fsS https://www.jachwi-sunbae.kr/version.json
+```
+
+응답의 버전은 저장소 루트 `VERSION`과 같아야 한다. `publish.sh`가 매 배포 때 이 파일을 생성하고, 배포 검증 단계에서 함께 확인한다.
 
 ## 실제 구성
 

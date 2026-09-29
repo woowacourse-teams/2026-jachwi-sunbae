@@ -9,6 +9,7 @@ React 19·TypeScript 6·Webpack 5 기반 모바일 우선 SPA입니다.
 - [백엔드와 프론트엔드 로컬 개발](../backend/docs/guides/local-development.md)
 - [백엔드 환경변수](../backend/docs/guides/environment-variables.md)
 - [프론트엔드 배포](docs/deployment.md)
+- [프론트엔드 테스트 전략](docs/testing-strategy.md)
 
 ## 설치와 실행
 
@@ -28,7 +29,7 @@ npm run dev
 
 `npm run dev`는 실제 백엔드 API에 연결합니다. 백엔드 없이 UI fixture만 확인할 때에만 `npm run dev:mock`을 사용합니다. dev 배포에서 fixture가 꼭 필요한 경우에는 CodePipeline 빌드 환경변수에 `ENABLE_MSW=true`를 지정할 수 있으며, 운영에서는 이 값을 사용하지 않습니다.
 
-목(MSW)은 배포된 dev 백엔드와 같은 필드만 내려줘야 합니다. 목이 계약보다 넉넉하면 화면이 실제로는 없는 필드를 읽어도 목 뒤에서는 드러나지 않습니다. `src/mocks/contractShape.test.ts`가 응답별 필드 집합을 정확히 비교해 이를 막으므로, API 계약이 바뀌면 그 표를 먼저 고치고 목을 맞춥니다.
+목(MSW)은 배포된 dev 백엔드와 같은 필드만 내려줘야 합니다. 목이 계약보다 넉넉하면 화면이 실제로는 없는 필드를 읽어도 목 뒤에서는 드러나지 않습니다. `test/app/mocks/contractShape.test.ts`가 응답별 필드 집합을 정확히 비교해 이를 막으므로, API 계약이 바뀌면 그 표를 먼저 고치고 목을 맞춥니다.
 
 ## 공개 빌드 설정
 
@@ -49,7 +50,7 @@ dev API는 localhost Origin을 허용하지 않으므로 로컬에서는 `http:/
 API 변경 작업 전에는 [실행 리비전](https://dev-api.jachwi-sunbae.kr/actuator/info)과 [배포된 Swagger](https://dev-api.jachwi-sunbae.kr/v3/api-docs)를 함께 확인합니다. Git 커밋 날짜만으로 배포 여부를 판단하지 않습니다.
 
 - 부가정보는 `GET /api/properties/{id}`로 조회하고 `PUT /api/properties/{id}`로 저장합니다. 전체 교체이므로 기본정보 수정 시에도 기존 입주일·관리비·방문일정·방 옵션·공과금을 보존합니다.
-- `/api/properties/{id}/memo`는 자유 메모의 GET·PUT만 사용합니다. 구조화 메모 `items`와 POST 초기화는 사용하지 않습니다.
+- `/api/properties/{id}/memo`는 하나의 자유 메모를 GET으로 조회하고 PUT으로 교체하거나 생성합니다.
 - 매물 주소는 `address`로 전송합니다. 지도 검색 API의 `roadAddress`·`jibunAddress`와 구분합니다.
 - 체크리스트 단계는 `ON_SITE`와 `PRE_CONTRACT`이며, 매물 생성 시 서버가 자동 적용하므로 생성 직후 재적용하지 않습니다.
 
@@ -61,9 +62,8 @@ API 변경 작업 전에는 [실행 리비전](https://dev-api.jachwi-sunbae.kr/
 | `MAP_PROVIDER_MODE`   | 키가 있으면 `naver`     | `demo` 또는 `naver`                   |
 | `NAVER_MAP_CLIENT_ID` | 비움                    | `naver` 모드의 공개 Maps Client ID    |
 | `ENABLE_MSW`          | `false`                 | dev fixture가 필요할 때만 `true`      |
-| `META_PIXEL_ID`       | 비움                    | 동의 기반 Meta Pixel 공개 데이터셋 ID |
 
-JWT secret, 지도 Client Secret, S3 자격증명은 프론트에 넣지 않습니다. `META_PIXEL_ID`가 비면 광고 측정 고지와 Pixel을 모두 비활성화합니다.
+JWT secret, 지도 Client Secret, S3 자격증명은 프론트에 넣지 않습니다. PostHog는 운영 API를 사용하는 번들에서만 초기화됩니다.
 
 ## 화면과 경로
 
@@ -97,7 +97,7 @@ JWT secret, 지도 Client Secret, S3 자격증명은 프론트에 넣지 않습�
 - 사진 콘텐츠는 URL을 `<img>`에 직접 주지 않고 Bearer 인증 Blob으로 조회해 Object URL을 만든 뒤 해제합니다.
 - 사진은 JPEG·PNG·WebP, 파일당 5MiB, 매물당 30장으로 선택 단계부터 검증합니다.
 - 서버 상태는 TanStack Query가 관리하고, 체크 항목 상태와 메모 저장 채널은 서로 독립적입니다.
-- Meta Pixel은 사용자가 명시적으로 동의한 뒤에만 불러옵니다. 페이지 방문·신규 닉네임 생성·첫 매물 등록 여부만 전송하며 닉네임·비밀번호와 매물 기록 내용은 보내지 않습니다.
+- PostHog는 운영 환경에서 서비스 경로, 기능 이벤트, 오류와 세션 리플레이를 수집합니다. 세션 리플레이에서는 텍스트와 요소 속성을 마스킹합니다.
 
 ## 검사
 

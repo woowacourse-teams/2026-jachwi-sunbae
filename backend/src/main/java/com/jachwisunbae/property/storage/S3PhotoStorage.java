@@ -7,7 +7,6 @@ import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -16,9 +15,9 @@ public class S3PhotoStorage implements PhotoStorage {
     private final S3Client s3Client;
     private final String bucket;
 
-    public S3PhotoStorage(S3Client s3Client, @Value("${photo.storage.bucket}") String bucket) {
+    public S3PhotoStorage(final S3Client s3Client, final PhotoStorageProperties properties) {
         this.s3Client = s3Client;
-        this.bucket = bucket;
+        this.bucket = properties.bucket();
     }
 
     @Override

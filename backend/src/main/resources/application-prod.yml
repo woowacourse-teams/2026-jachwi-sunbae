@@ -20,4 +20,4 @@ logging:
 
 auth:
   jwt:
-    secret: ${JWT_SECRET_BASE64}
+    secret: ${JWT_SECRET}
