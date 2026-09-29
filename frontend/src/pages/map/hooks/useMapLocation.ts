@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 import type { MapCoordinate, MapLocationFailure } from '@/features/map/lib/mapLocation';
 import {
@@ -25,6 +25,29 @@ const useMapLocation = () => {
   const [locationLabel, setLocationLabel] = useState(() =>
     readLastMapCenter() === null ? '우테코 판교사옥' : '마지막으로 본 위치',
   );
+
+  // 이미 위치 권한을 허용했다면 들어오자마자 현재 위치와 반경을 보여 준다.
+  // 권한 창은 사용자가 버튼을 눌렀을 때만 띄운다. 이번 세션에서 보던 위치가 있으면 화면은 그대로 둔다.
+  useEffect(() => {
+    let isActive = true;
+    void (async () => {
+      if ((await readGeolocationPermission()) !== 'granted') return;
+      try {
+        const coordinate = await requestCurrentMapLocation();
+        if (!isActive) return;
+        setCurrentPosition(coordinate);
+        if (readLastMapCenter() !== null) return;
+        setViewportCenter(coordinate);
+        writeLastMapCenter(coordinate);
+        setLocationLabel('현재 위치');
+      } catch {
+        // 조용히 실패하고 현재 위치 버튼을 기다린다.
+      }
+    })();
+    return () => {
+      isActive = false;
+    };
+  }, []);
 
   /** 위치를 얻지 못하면 실패 시점의 최신 대체 좌표를 읽는다. */
   const moveToCurrentLocation = useCallback(
@@ -66,7 +89,6 @@ const useMapLocation = () => {
   const moveToAddress = useCallback((address: MapAddress) => {
     const coordinate = { latitude: address.latitude, longitude: address.longitude };
     setViewportCenter(coordinate);
-    setCurrentPosition(coordinate);
     writeLastMapCenter(coordinate);
     setLocationLabel(address.roadAddress ?? address.jibunAddress ?? address.address ?? '선택한 위치');
     setLocationStatus('ready');

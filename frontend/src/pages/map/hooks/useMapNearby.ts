@@ -20,19 +20,19 @@ const useMapNearby = (
   mapLevel: number,
   selectedCategories: MapCategory[],
   selectedRadius: MapRadius | null,
+  currentPosition: MapCoordinate | null,
 ) => {
   const config = usePublicConfig();
   const nearbyRadius = selectedRadius ?? 500;
+  // 반경 모드의 조회와 원은 같은 GPS 좌표를 기준으로 한다. 화면 이동은 기준점을 바꾸지 않는다.
+  const queryCenter = selectedRadius === null ? viewportCenter : currentPosition;
   const nearby = useQuery({
-    queryKey: [
-      'nearby-map',
-      viewportCenter.latitude,
-      viewportCenter.longitude,
-      nearbyRadius,
-      ALL_MAP_CATEGORIES.join(','),
-    ],
-    queryFn: ({ signal }) =>
-      fetchNearby(config, viewportCenter.latitude, viewportCenter.longitude, nearbyRadius, ALL_MAP_CATEGORIES, signal),
+    queryKey: ['nearby-map', queryCenter?.latitude, queryCenter?.longitude, nearbyRadius, ALL_MAP_CATEGORIES.join(',')],
+    queryFn: ({ signal }) => {
+      if (queryCenter === null) throw new Error('주변 시설 조회 기준 좌표가 없습니다.');
+      return fetchNearby(config, queryCenter.latitude, queryCenter.longitude, nearbyRadius, ALL_MAP_CATEGORIES, signal);
+    },
+    enabled: queryCenter !== null,
   });
 
   const filteredPlaces = useMemo(
@@ -52,13 +52,13 @@ const useMapNearby = (
 
   const circles = useMemo<MapRadiusCircle[]>(
     () =>
-      selectedRadius === null
+      selectedRadius === null || currentPosition === null
         ? []
         : RADIUS_OPTIONS.filter((value) => value <= selectedRadius).map((value) => ({
             radiusMeters: value,
             label: radiusLabel(value),
           })),
-    [selectedRadius],
+    [selectedRadius, currentPosition],
   );
 
   return { nearby, filteredPlaces, facilityMarkers, categoryCounts, circles };
