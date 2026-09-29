@@ -149,7 +149,9 @@ const naverEngine = (clientId: string): LiveEngine => ({
     const position = new window.naver!.maps.LatLng(marker.latitude, marker.longitude);
     const element = content;
     element.style.position = 'absolute';
-    element.style.transform = 'translate(-50%, -50%)';
+    element.style.top = '0';
+    element.style.left = '0';
+    element.style.willChange = 'transform';
     element.style.zIndex = String(zIndex);
     overlay.setPosition?.(position);
     overlay.onAdd = () => overlay.getPanes?.().overlayLayer.append(element);
@@ -157,8 +159,9 @@ const naverEngine = (clientId: string): LiveEngine => ({
       const projection = overlay.getProjection?.();
       if (projection !== undefined && overlay.getPanes !== undefined) {
         const pixel = projection.fromCoordToOffset(position);
-        element.style.left = `${pixel.x}px`;
-        element.style.top = `${pixel.y}px`;
+        // 확대·이동 중 left/top을 바꾸면 WebView가 마커마다 레이아웃을 다시 계산한다.
+        // 합성 단계에서 처리되는 transform으로 옮겨 지도 제스처의 메인 스레드 부담을 줄인다.
+        element.style.transform = `translate3d(${pixel.x}px, ${pixel.y}px, 0) translate(-50%, -50%)`;
       }
     };
     overlay.onRemove = () => element.remove();

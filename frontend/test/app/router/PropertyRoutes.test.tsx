@@ -534,6 +534,35 @@ describe('FE-2 등록·수정·메모', () => {
     expect(await screen.findAllByRole('heading', { name: '신림역 원룸', level: 1 })).toHaveLength(2);
     expect(saveAttempts).toBe(2);
   });
+
+  it('상세의 빠른 메모를 열어 수정하고 저장된 내용을 바로 반영한다', async () => {
+    let requestBody: unknown;
+    server.use(
+      http.get(`${config.apiBaseUrl}/api/properties/10`, () => HttpResponse.json(successEnvelope(detailWithoutPhotos))),
+      http.get(`${config.apiBaseUrl}/api/properties/10/memo`, () =>
+        HttpResponse.json(successEnvelope({ propertyId: 10, freeMemo: '기존 메모' })),
+      ),
+      http.put(`${config.apiBaseUrl}/api/properties/10/memo`, async ({ request }) => {
+        requestBody = await request.json();
+        return HttpResponse.json(successEnvelope({ propertyId: 10, ...(requestBody as object) }));
+      }),
+    );
+    const user = userEvent.setup();
+    renderAuthenticated('/properties/10');
+
+    await user.click(await screen.findByRole('button', { name: '기존 메모' }));
+    const dialog = screen.getByRole('dialog', { name: '메모' });
+    const memoInput = within(dialog).getByRole('textbox', { name: '메모 내용' });
+    expect(memoInput).toHaveValue('기존 메모');
+
+    await user.clear(memoInput);
+    await user.type(memoInput, '수정한 메모');
+    await user.click(within(dialog).getByRole('button', { name: '저장' }));
+
+    await waitFor(() => expect(requestBody).toEqual({ freeMemo: '수정한 메모' }));
+    expect(await screen.findByRole('button', { name: '수정한 메모' })).toHaveFocus();
+    expect(screen.queryByRole('dialog', { name: '메모' })).not.toBeInTheDocument();
+  });
 });
 
 describe('FE-2 사진과 삭제 확인', () => {

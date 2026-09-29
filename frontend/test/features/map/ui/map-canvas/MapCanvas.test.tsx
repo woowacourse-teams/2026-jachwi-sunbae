@@ -29,8 +29,27 @@ class FakeLatLngBounds {
   getNE = () => this.ne;
 }
 
+const overlayInstances: FakeOverlay[] = [];
+
 class FakeOverlay {
-  setMap = vi.fn();
+  readonly pane = document.createElement('div');
+  onAdd?: () => void;
+  draw?: () => void;
+  onRemove?: () => void;
+  setPosition = vi.fn();
+  getPanes = () => ({ overlayLayer: this.pane });
+  getProjection = () => ({ fromCoordToOffset: () => ({ x: 120, y: 80 }) });
+  setMap = vi.fn((map: unknown) => {
+    if (map === null) this.onRemove?.();
+    else {
+      this.onAdd?.();
+      this.draw?.();
+    }
+  });
+
+  constructor() {
+    overlayInstances.push(this);
+  }
 }
 
 describe('Naver 지도 상태 동기화', () => {
@@ -47,6 +66,7 @@ describe('Naver 지도 상태 동기화', () => {
 
   beforeEach(() => {
     maps = [];
+    overlayInstances.length = 0;
     class FakeMap {
       center: FakeLatLng;
       zoom: number;
@@ -152,5 +172,34 @@ describe('Naver 지도 상태 동기화', () => {
 
     await waitFor(() => expect(map.zoom).toBe(17));
     expect(map.setZoom).not.toHaveBeenCalled();
+  });
+
+  it('라이브 마커는 확대 중 레이아웃 대신 transform으로 위치를 갱신한다', async () => {
+    render(
+      <MapCanvas
+        config={config}
+        center={{ latitude: 37.5665, longitude: 126.978 }}
+        level={5}
+        markers={[
+          {
+            id: 'property-10',
+            latitude: 37.5665,
+            longitude: 126.978,
+            label: '테스트 매물',
+            tone: 'property',
+          },
+        ]}
+      />,
+    );
+
+    await waitFor(() => expect(overlayInstances).toHaveLength(1));
+    const marker = overlayInstances[0].pane.firstElementChild;
+    expect(marker).toBeInstanceOf(HTMLElement);
+    expect(marker).toHaveStyle({
+      left: '0px',
+      top: '0px',
+      transform: 'translate3d(120px, 80px, 0) translate(-50%, -50%)',
+      willChange: 'transform',
+    });
   });
 });
