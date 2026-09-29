@@ -48,7 +48,13 @@ public class AuthService {
         try {
             return login(nickname, password);
         } catch (DuplicateKeyException exception) {
-            // 같은 닉네임으로 동시에 가입하면 한 요청만 저장된다. 먼저 저장된 회원으로 다시 로그인한다.
+            // 같은 닉네임으로 동시에 가입하면 한 요청만 저장된다.
+            // 먼저 저장된 회원이 있을 때만 닉네임 충돌로 보고 다시 로그인한다.
+            // 회원이 없으면 다른 유니크 제약 위반이므로 그대로 던진다.
+            boolean passwordProtected = password != null;
+            if (memberRepository.findByNicknameAndPasswordProtected(nickname, passwordProtected).isEmpty()) {
+                throw exception;
+            }
             return login(nickname, password);
         }
     }

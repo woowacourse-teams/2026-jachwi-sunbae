@@ -217,6 +217,16 @@ class AuthServiceTest {
         assertThat(memberRepository.count()).isEqualTo(1);
     }
 
+    @Test
+    @DisplayName("닉네임 충돌이 아닌 유니크 제약 위반은 다시 로그인하지 않고 그대로 던진다")
+    void rethrowsDuplicateKeyNotCausedByNickname() {
+        memberRepository.failNextSaveWithOtherConstraint();
+
+        assertThatThrownBy(() -> login("자취초보", null)).isInstanceOf(DuplicateKeyException.class);
+        assertThat(memberRepository.saveAttempts()).isOne();
+        assertThat(memberRepository.count()).isZero();
+    }
+
     private LoginResult login(String nickname, String password) {
         return authService.loginNickname(new NicknameLoginCommand(nickname, password));
     }
@@ -226,10 +236,21 @@ class AuthServiceTest {
         private final Map<Long, Member> members = new LinkedHashMap<>();
         private long sequence;
         private Member concurrentMember;
+        private boolean failNextSaveWithOtherConstraint;
+        private int saveAttempts;
 
         // 다음 저장 직전에 다른 요청이 같은 회원을 먼저 저장한 상황을 흉내 낸다.
         void saveConcurrentlyBeforeNextSave(Member member) {
             this.concurrentMember = member;
+        }
+
+        // 다음 저장이 닉네임이 아닌 다른 유니크 제약 위반으로 실패하는 상황을 흉내 낸다.
+        void failNextSaveWithOtherConstraint() {
+            this.failNextSaveWithOtherConstraint = true;
+        }
+
+        int saveAttempts() {
+            return saveAttempts;
         }
 
         int count() {
@@ -256,6 +277,11 @@ class AuthServiceTest {
 
         @Override
         public Member save(Member member) {
+            saveAttempts++;
+            if (failNextSaveWithOtherConstraint) {
+                failNextSaveWithOtherConstraint = false;
+                throw new DuplicateKeyException("other_unique_constraint");
+            }
             if (concurrentMember != null) {
                 store(concurrentMember);
                 concurrentMember = null;
