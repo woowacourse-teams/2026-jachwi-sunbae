@@ -65,6 +65,19 @@ class AuthServiceConcurrencyTest {
                 Integer.class)).isOne();
     }
 
+    @Test
+    @DisplayName("같은 새 닉네임과 같은 비밀번호로 동시에 시작해도 보호 회원은 하나만 만들어지고 모두 그 회원으로 로그인한다")
+    void createsOneProtectedMemberForConcurrentLogins() throws Exception {
+        List<LoginResult> responses = loginConcurrently("동시보호닉네임", "1234");
+
+        assertThat(responses).extracting(LoginResult::memberId).containsOnly(responses.get(0).memberId());
+        assertThat(responses).allMatch(LoginResult::passwordProtected);
+        assertThat(responses).filteredOn(LoginResult::newMember).hasSize(1);
+        assertThat(jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM members WHERE nickname = '동시보호닉네임' AND password_protected = TRUE",
+                Integer.class)).isOne();
+    }
+
     private List<LoginResult> loginConcurrently(String nickname, String password) throws Exception {
         ExecutorService executor = Executors.newFixedThreadPool(REQUEST_COUNT);
         CountDownLatch start = new CountDownLatch(1);
