@@ -57,7 +57,6 @@ public class PropertyComparisonPdfService {
         return new PropertyComparisonRecord(
                 findProperty(memberId, propertyId),
                 collectPhotos(memberId, propertyId),
-                propertyMemoService.find(memberId, propertyId),
                 collectStages(memberId, propertyId));
     }
 
