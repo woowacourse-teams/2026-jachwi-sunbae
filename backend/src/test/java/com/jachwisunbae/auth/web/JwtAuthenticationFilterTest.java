@@ -21,7 +21,7 @@ class JwtAuthenticationFilterTest {
     private final JwtTokenProvider tokenProvider = new JwtTokenProvider(SECRET, "jachwi-sunbae", "jachwi-sunbae-api",
             43_200, Clock.fixed(Instant.parse("2026-09-28T00:00:00Z"), ZoneOffset.UTC));
     private final JwtAuthenticationFilter filter =
-            new JwtAuthenticationFilter(tokenProvider, new AuthenticationErrorWriter(new ObjectMapper()));
+            new JwtAuthenticationFilter(tokenProvider, new ObjectMapper());
 
     @Test
     @DisplayName("올바른 토큰이면 회원 ID를 요청에 담아 다음 필터로 넘긴다")

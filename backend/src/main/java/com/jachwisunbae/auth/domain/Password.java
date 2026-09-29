@@ -4,6 +4,7 @@ import com.jachwisunbae.common.exception.DomainErrorCode;
 import com.jachwisunbae.common.validation.DomainPreconditions;
 
 // 로그인할 때 입력한 비밀번호. 앞뒤 공백도 비밀번호의 일부로 보고 입력한 그대로 검사한다.
+//TODO 비밀번호 관련 정책
 public record Password(String value) {
 
     private static final int MIN_LENGTH = 4;

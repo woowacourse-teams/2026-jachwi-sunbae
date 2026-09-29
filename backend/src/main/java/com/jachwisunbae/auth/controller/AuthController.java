@@ -24,9 +24,8 @@ public class AuthController {
 
     @PostMapping("/nickname")
     @Operation(summary = "닉네임 로그인",
-            description = "비밀번호 없이 시작하면 그 닉네임의 공유 회원으로, 비밀번호와 함께 시작하면 그 닉네임의 보호 회원으로 "
-                    + "시작합니다. 회원이 없으면 새로 만들고, 보호 회원은 비밀번호가 일치해야 합니다. "
-                    + "응답의 newMember는 이번 요청에서 회원을 새로 만든 경우에만 true입니다.")
+            description = "비밀번호 없이 시작하면 그 닉네임의 공유 회원으로, 비밀번호와 함께 시작하면 그 닉네임의 보호 회원으로 시작합니다. "
+                    + "회원이 없으면 새로 만들고, 보호 회원은 비밀번호가 일치해야 합니다.")
     public ApiResponse<LoginResponse> loginNickname(@RequestBody NicknameLoginRequest request) {
         return ApiResponse.of(LoginResponse.from(service.loginNickname(request.toCommand())));
     }
