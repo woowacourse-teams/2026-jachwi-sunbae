@@ -1,8 +1,6 @@
 package com.jachwisunbae.property.entity;
 
 import com.jachwisunbae.common.entity.BaseTimeEntity;
-import com.jachwisunbae.common.exception.errorcode.ErrorCode;
-import com.jachwisunbae.common.validation.DomainPreconditions;
 import com.jachwisunbae.property.type.RoomOption;
 import com.jachwisunbae.property.type.UtilityOption;
 import java.math.BigDecimal;
@@ -93,11 +91,11 @@ public class Property extends BaseTimeEntity {
                 utilityOptions,
                 discoverySource
             );
-        LocalDateTime newUpdatedAt = DomainPreconditions.requireNonNull(
-            now,
-            ErrorCode.PROPERTY_INPUT_INVALID,
-            "변경 시각은 필수입니다."
-        );
+        // 변경 시각은 사용자가 보내는 값이 아니라 서버가 넣는 값이다.
+        if (now == null) {
+            throw new IllegalArgumentException("변경 시각은 필수입니다.");
+        }
+        LocalDateTime newUpdatedAt = now;
 
         this.propertyName = newPropertyName;
         this.propertyRentalPrice = newPropertyRentalPrice;
@@ -163,7 +161,10 @@ public class Property extends BaseTimeEntity {
     }
 
     private static Long validateMemberId(final Long memberId) {
-        return DomainPreconditions.requireNonNull(memberId, ErrorCode.PROPERTY_INPUT_INVALID,
-            "매물 소유 회원은 필수입니다.");
+        // 소유 회원은 인증된 회원 ID로 서버가 넣는 값이다. 없으면 서버 코드 문제다.
+        if (memberId == null) {
+            throw new IllegalArgumentException("매물 소유 회원은 필수입니다.");
+        }
+        return memberId;
     }
 }

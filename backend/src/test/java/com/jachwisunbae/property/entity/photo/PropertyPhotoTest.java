@@ -3,7 +3,6 @@ package com.jachwisunbae.property.entity.photo;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import com.jachwisunbae.common.exception.BusinessException;
 import com.jachwisunbae.common.exception.JachwiException;
 import com.jachwisunbae.common.exception.client.InvalidInputException;
 import com.jachwisunbae.common.exception.errorcode.ErrorCode;
@@ -42,17 +41,15 @@ class PropertyPhotoTest {
     @Test
     @DisplayName("매물 ID가 없으면 예외가 발생한다")
     void rejectMissingPropertyId() {
-        assertErrorCode(
-            () -> PropertyPhoto.create(null, "photo.png", "image/png", 1L, CREATED_AT),
-            ErrorCode.PROPERTY_INPUT_INVALID);
+        assertInternalInvariant(
+            () -> PropertyPhoto.create(null, "photo.png", "image/png", 1L, CREATED_AT));
     }
 
     @Test
     @DisplayName("저장 키가 비어 있으면 예외가 발생한다")
     void rejectBlankStorageKey() {
-        assertErrorCode(
-            () -> PropertyPhoto.create(1L, " ", "image/png", 1L, CREATED_AT),
-            ErrorCode.PROPERTY_INPUT_INVALID);
+        assertInternalInvariant(
+            () -> PropertyPhoto.create(1L, " ", "image/png", 1L, CREATED_AT));
     }
 
     @Test
@@ -74,35 +71,28 @@ class PropertyPhotoTest {
     @Test
     @DisplayName("사진 크기가 없거나 음수이면 예외가 발생한다")
     void rejectMissingOrNegativeSize() {
-        assertErrorCode(
-            () -> PropertyPhoto.create(1L, "photo.png", "image/png", null, CREATED_AT),
-            ErrorCode.PROPERTY_INPUT_INVALID);
-        assertErrorCode(
-            () -> PropertyPhoto.create(1L, "photo.png", "image/png", -1L, CREATED_AT),
-            ErrorCode.PROPERTY_INPUT_INVALID);
+        assertInternalInvariant(
+            () -> PropertyPhoto.create(1L, "photo.png", "image/png", null, CREATED_AT));
+        assertInternalInvariant(
+            () -> PropertyPhoto.create(1L, "photo.png", "image/png", -1L, CREATED_AT));
     }
 
     @Test
     @DisplayName("사진 크기가 5MiB를 초과하면 예외가 발생한다")
     void rejectOversizedPhoto() {
-        assertErrorCode(
-            () -> PropertyPhoto.create(1L, "photo.png", "image/png", MAX_SIZE_BYTES + 1, CREATED_AT),
-            ErrorCode.PHOTO_FILE_SIZE_INVALID);
+        assertInternalInvariant(
+            () -> PropertyPhoto.create(1L, "photo.png", "image/png", MAX_SIZE_BYTES + 1, CREATED_AT));
     }
 
     @Test
     @DisplayName("생성 시각이 없으면 예외가 발생한다")
     void rejectMissingCreatedAt() {
-        assertErrorCode(
-            () -> PropertyPhoto.create(1L, "photo.png", "image/png", 1L, null),
-            ErrorCode.PROPERTY_INPUT_INVALID);
+        assertInternalInvariant(
+            () -> PropertyPhoto.create(1L, "photo.png", "image/png", 1L, null));
     }
 
-    private void assertErrorCode(final ThrowingCallable callable, final ErrorCode code) {
-        assertThatThrownBy(callable)
-            .isInstanceOf(BusinessException.class)
-            .extracting("code")
-            .isEqualTo(code);
+    private void assertInternalInvariant(final ThrowingCallable callable) {
+        assertThatThrownBy(callable).isInstanceOf(IllegalArgumentException.class);
     }
 
     private void assertErrorCode(final ThrowingCallable callable, final ErrorCode code,

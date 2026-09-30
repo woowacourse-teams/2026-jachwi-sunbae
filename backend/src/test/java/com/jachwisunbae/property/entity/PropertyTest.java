@@ -3,7 +3,6 @@ package com.jachwisunbae.property.entity;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import com.jachwisunbae.common.exception.BusinessException;
 import com.jachwisunbae.common.exception.client.InvalidInputException;
 import com.jachwisunbae.common.exception.errorcode.ErrorCode;
 import com.jachwisunbae.property.type.RoomOption;
@@ -29,7 +28,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 class PropertyTest {
 
     private static final Clock FIXED_CLOCK = Clock.fixed(
-        Instant.parse("2026-09-24T10:00:00Z"), ZoneOffset.UTC);
+            Instant.parse("2026-09-24T10:00:00Z"), ZoneOffset.UTC);
     private static final LocalDateTime NOW = LocalDateTime.now(FIXED_CLOCK);
     private static final LocalDate TODAY = LocalDate.now(FIXED_CLOCK);
 
@@ -39,7 +38,7 @@ class PropertyTest {
     @ValueSource(strings = {"   "})
     void createRejectsBlankName(String name) {
         assertPropertyError(() -> createProperty(input -> input.name = name),
-            ErrorCode.PROPERTY_INPUT_INVALID);
+                ErrorCode.PROPERTY_INPUT_INVALID);
     }
 
     @DisplayName("매물 생성은 1자와 30자 이름을 허용한다")
@@ -57,7 +56,7 @@ class PropertyTest {
     @Test
     void createRejectsThirtyOneCharacterName() {
         assertPropertyError(() -> createProperty(input -> input.name = "가".repeat(31)),
-            ErrorCode.PROPERTY_INPUT_INVALID);
+                ErrorCode.PROPERTY_INPUT_INVALID);
     }
 
     @DisplayName("매물 생성은 이름의 앞뒤 공백을 제거한다")
@@ -76,7 +75,7 @@ class PropertyTest {
         Property property = createProperty();
 
         assertPropertyError(() -> updateProperty(property, input -> input.name = name),
-            ErrorCode.PROPERTY_INPUT_INVALID);
+                ErrorCode.PROPERTY_INPUT_INVALID);
     }
 
     @DisplayName("매물 수정은 유효한 이름의 앞뒤 공백을 제거한다")
@@ -128,8 +127,7 @@ class PropertyTest {
     @Test
     void createRejectsNullMemberId() {
         assertThatThrownBy(() -> createProperty(input -> input.memberId = null))
-            .isInstanceOfSatisfying(BusinessException.class,
-                exception -> assertThat(exception.getCode()).isEqualTo(ErrorCode.PROPERTY_INPUT_INVALID));
+                .isInstanceOf(IllegalArgumentException.class);
     }
 
     @DisplayName("입력하지 않은 금액은 0으로 저장한다")
@@ -150,11 +148,11 @@ class PropertyTest {
     @Test
     void createRejectsNegativeAmounts() {
         assertPropertyError(() -> createProperty(input -> input.depositAmount = -1L),
-            ErrorCode.PROPERTY_INPUT_INVALID);
+                ErrorCode.PROPERTY_INPUT_INVALID);
         assertPropertyError(() -> createProperty(input -> input.monthlyRentAmount = -1L),
-            ErrorCode.PROPERTY_INPUT_INVALID);
+                ErrorCode.PROPERTY_INPUT_INVALID);
         assertPropertyError(() -> createProperty(input -> input.maintenanceFeeAmount = -1L),
-            ErrorCode.PROPERTY_INPUT_INVALID);
+                ErrorCode.PROPERTY_INPUT_INVALID);
     }
 
     @DisplayName("입력하지 않은 선택 정보는 빈 값으로 정규화한다")
@@ -177,27 +175,27 @@ class PropertyTest {
     @Test
     void createRejectsTextOverMaximumLength() {
         assertPropertyError(() -> createProperty(input -> input.discoverySource = "출".repeat(501)),
-            ErrorCode.PROPERTY_INPUT_INVALID);
+                ErrorCode.PROPERTY_INPUT_INVALID);
         assertPropertyError(() -> createProperty(input -> input.address = "주".repeat(256)),
-            ErrorCode.PROPERTY_INPUT_INVALID);
+                ErrorCode.PROPERTY_INPUT_INVALID);
     }
 
     @DisplayName("위도와 경도는 함께 입력해야 한다")
     @Test
     void createRejectsIncompleteLocationPair() {
         assertPropertyError(() -> createProperty(input -> input.longitude = null),
-            ErrorCode.PROPERTY_LOCATION_INVALID);
+                ErrorCode.PROPERTY_LOCATION_INVALID);
         assertPropertyError(() -> createProperty(input -> input.latitude = null),
-            ErrorCode.PROPERTY_LOCATION_INVALID);
+                ErrorCode.PROPERTY_LOCATION_INVALID);
     }
 
     @DisplayName("위도와 경도는 유효한 좌표 범위 안에 있어야 한다")
     @Test
     void createRejectsLocationOutsideRange() {
         assertPropertyError(() -> createProperty(input -> input.latitude = BigDecimal.valueOf(90.0000001)),
-            ErrorCode.PROPERTY_LOCATION_INVALID);
+                ErrorCode.PROPERTY_LOCATION_INVALID);
         assertPropertyError(() -> createProperty(input -> input.longitude = BigDecimal.valueOf(180.0000001)),
-            ErrorCode.PROPERTY_LOCATION_INVALID);
+                ErrorCode.PROPERTY_LOCATION_INVALID);
     }
 
     @DisplayName("지원하는 방 옵션과 공과금 옵션은 중복 없이 저장한다")
@@ -210,16 +208,16 @@ class PropertyTest {
 
         assertThat(property.getRoomOptions()).containsExactlyInAnyOrder(RoomOption.BED, RoomOption.DESK);
         assertThat(property.getUtilityOptions()).containsExactlyInAnyOrder(UtilityOption.WATER,
-            UtilityOption.INTERNET);
+                UtilityOption.INTERNET);
     }
 
     @DisplayName("지원하지 않는 방 옵션과 공과금 옵션은 거부한다")
     @Test
     void createRejectsUnknownOptions() {
         assertPropertyError(() -> createProperty(input -> input.roomOptions = List.of("UNKNOWN")),
-            ErrorCode.PROPERTY_INPUT_INVALID);
+                ErrorCode.PROPERTY_INPUT_INVALID);
         assertPropertyError(() -> createProperty(input -> input.utilityOptions = List.of("UNKNOWN")),
-            ErrorCode.PROPERTY_INPUT_INVALID);
+                ErrorCode.PROPERTY_INPUT_INVALID);
     }
 
     @DisplayName("비어 있는 옵션 값은 NullPointerException이 아니라 입력 오류로 거부한다")
@@ -228,26 +226,26 @@ class PropertyTest {
         List<String> nullCode = Arrays.asList((String) null);
 
         assertPropertyError(() -> createProperty(input -> input.roomOptions = nullCode),
-            ErrorCode.PROPERTY_INPUT_INVALID);
+                ErrorCode.PROPERTY_INPUT_INVALID);
         assertPropertyError(() -> createProperty(input -> input.utilityOptions = nullCode),
-            ErrorCode.PROPERTY_INPUT_INVALID);
+                ErrorCode.PROPERTY_INPUT_INVALID);
     }
 
     @DisplayName("매물 수정은 생성과 동일한 기본 정보 검증을 적용한다")
     @Test
     void updateAppliesSameBasicInfoValidationAsCreate() {
         assertUpdatePropertyError(input -> input.name = "가".repeat(31),
-            ErrorCode.PROPERTY_INPUT_INVALID);
+                ErrorCode.PROPERTY_INPUT_INVALID);
         assertUpdatePropertyError(input -> input.depositAmount = -1L,
-            ErrorCode.PROPERTY_INPUT_INVALID);
+                ErrorCode.PROPERTY_INPUT_INVALID);
         assertUpdatePropertyError(input -> input.longitude = null,
-            ErrorCode.PROPERTY_LOCATION_INVALID);
+                ErrorCode.PROPERTY_LOCATION_INVALID);
         assertUpdatePropertyError(input -> input.latitude = BigDecimal.valueOf(90.0000001),
-            ErrorCode.PROPERTY_LOCATION_INVALID);
+                ErrorCode.PROPERTY_LOCATION_INVALID);
         assertUpdatePropertyError(input -> input.roomOptions = List.of("UNKNOWN"),
-            ErrorCode.PROPERTY_INPUT_INVALID);
+                ErrorCode.PROPERTY_INPUT_INVALID);
         assertUpdatePropertyError(input -> input.utilityOptions = List.of("UNKNOWN"),
-            ErrorCode.PROPERTY_INPUT_INVALID);
+                ErrorCode.PROPERTY_INPUT_INVALID);
     }
 
     @DisplayName("매물 수정은 기본 정보와 수정 시각만 바꾸고 식별자와 생성 시각을 유지한다")
@@ -255,8 +253,8 @@ class PropertyTest {
     void updateReplacesBasicInfoAndPreservesIdentity() {
         LocalDateTime createdAt = NOW.minusDays(10);
         Property property = Property.reconstruct(10L, 20L, "기존 매물", 1L, 2L, "기존 주소",
-            BigDecimal.valueOf(37), BigDecimal.valueOf(127), TODAY, 3L, NOW,
-            Set.of(RoomOption.BED), Set.of(UtilityOption.WATER), "기존 경로", "기존 메모", createdAt, NOW.minusDays(1));
+                BigDecimal.valueOf(37), BigDecimal.valueOf(127), TODAY, 3L, NOW,
+                Set.of(RoomOption.BED), Set.of(UtilityOption.WATER), "기존 경로", "기존 메모", createdAt, NOW.minusDays(1));
         LocalDateTime updatedAt = NOW.plusHours(1);
 
         updateProperty(property, input -> {
@@ -312,8 +310,8 @@ class PropertyTest {
 
     private static void assertPropertyError(ThrowingCallable callable, ErrorCode expectedCode) {
         assertThatThrownBy(callable)
-            .isInstanceOfSatisfying(InvalidInputException.class,
-                exception -> assertThat(exception.getErrorCode()).isEqualTo(expectedCode));
+                .isInstanceOfSatisfying(InvalidInputException.class,
+                        exception -> assertThat(exception.getErrorCode()).isEqualTo(expectedCode));
     }
 
     private static void assertUpdatePropertyError(Consumer<PropertyFixture> customization,
@@ -341,14 +339,14 @@ class PropertyTest {
 
         private Property create() {
             return Property.create(memberId, name, depositAmount, monthlyRentAmount, address,
-                latitude, longitude, availableMoveInDate, maintenanceFeeAmount, visitScheduledAt,
-                roomOptions, utilityOptions, discoverySource, now);
+                    latitude, longitude, availableMoveInDate, maintenanceFeeAmount, visitScheduledAt,
+                    roomOptions, utilityOptions, discoverySource, now);
         }
 
         private void update(Property property) {
             property.replaceBasicInfo(name, depositAmount, monthlyRentAmount, address,
-                latitude, longitude, availableMoveInDate, maintenanceFeeAmount, visitScheduledAt,
-                roomOptions, utilityOptions, discoverySource, now);
+                    latitude, longitude, availableMoveInDate, maintenanceFeeAmount, visitScheduledAt,
+                    roomOptions, utilityOptions, discoverySource, now);
         }
     }
 }
