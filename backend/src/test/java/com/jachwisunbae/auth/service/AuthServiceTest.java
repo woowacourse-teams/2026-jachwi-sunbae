@@ -9,6 +9,7 @@ import com.jachwisunbae.auth.token.JwtTokenProvider;
 import com.jachwisunbae.common.exception.client.AuthenticationFailedException;
 import com.jachwisunbae.common.exception.client.InvalidInputException;
 import com.jachwisunbae.common.exception.errorcode.ErrorCode;
+import com.jachwisunbae.common.exception.server.DataInconsistencyException;
 import com.jachwisunbae.member.entity.Member;
 import com.jachwisunbae.member.repository.MemberRepository;
 import java.time.Clock;
@@ -226,6 +227,16 @@ class AuthServiceTest {
         assertThatThrownBy(() -> login("자취초보", null)).isInstanceOf(DuplicateKeyException.class);
         assertThat(memberRepository.saveAttempts()).isOne();
         assertThat(memberRepository.count()).isZero();
+    }
+
+    @Test
+    @DisplayName("저장된 비밀번호 해시를 검증할 수 없으면 비밀번호 불일치가 아니라 서버 데이터 오류로 본다")
+    void rejectsCorruptedPasswordHashAsDataInconsistency() {
+        memberRepository.save(Member.create("보호닉네임", "corrupted-hash", LocalDateTime.now(clock)));
+
+        assertThatThrownBy(() -> login("보호닉네임", "1234"))
+                .isInstanceOfSatisfying(DataInconsistencyException.class, exception ->
+                        assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.INTERNAL_SERVER_ERROR));
     }
 
     private LoginResult login(String nickname, String password) {

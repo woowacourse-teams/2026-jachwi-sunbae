@@ -3,6 +3,8 @@ package com.jachwisunbae.member.repository;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import com.jachwisunbae.common.exception.client.InvalidInputException;
+import com.jachwisunbae.common.exception.server.DataInconsistencyException;
 import com.jachwisunbae.member.entity.Member;
 import java.time.LocalDateTime;
 import javax.sql.DataSource;
@@ -76,5 +78,18 @@ class JdbcMemberRepositoryTest {
         assertThat(memberRepository.findByNicknameAndPasswordProtected("lee", false))
                 .get().extracting(Member::getId).isEqualTo(lower.getId());
         assertThat(memberRepository.findByNicknameAndPasswordProtected("LEE", false)).isEmpty();
+    }
+
+    @Test
+    @DisplayName("저장된 닉네임이 회원 규칙을 만족하지 않으면 사용자 입력 오류가 아니라 서버 데이터 오류로 본다")
+    void rejectsInvalidStoredNicknameAsDataInconsistency() {
+        jdbcTemplate.update("""
+                INSERT INTO members (id, nickname, password_hash, created_at, updated_at)
+                VALUES (999, ?, NULL, NOW(6), NOW(6))
+                """, "가".repeat(31));
+
+        assertThatThrownBy(() -> memberRepository.findById(999L))
+                .isInstanceOf(DataInconsistencyException.class)
+                .hasCauseInstanceOf(InvalidInputException.class);
     }
 }
