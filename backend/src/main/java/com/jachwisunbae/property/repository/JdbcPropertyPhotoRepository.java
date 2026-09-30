@@ -43,10 +43,10 @@ public class JdbcPropertyPhotoRepository implements PropertyPhotoRepository {
     }
 
     @Override
-    public PropertyPhoto save(final long memberId, final PropertyPhoto photo, final String checksumSha256) {
+    public PropertyPhoto save(final long memberId, final PropertyPhoto photo) {
         String sql = "INSERT INTO property_photos "
-                + "(property_id, member_id, storage_key, content_type, size_bytes, checksum_sha256, created_at) "
-                + "VALUES (?, ?, ?, ?, ?, ?, ?)";
+                + "(property_id, member_id, storage_key, content_type, size_bytes, created_at) "
+                + "VALUES (?, ?, ?, ?, ?, ?)";
         KeyHolder keyHolder = new GeneratedKeyHolder();
         jdbcTemplate.update(connection -> {
             PreparedStatement statement = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
@@ -55,8 +55,7 @@ public class JdbcPropertyPhotoRepository implements PropertyPhotoRepository {
             statement.setString(3, photo.getStorageKey());
             statement.setString(4, photo.getContentType());
             statement.setLong(5, photo.getSizeBytes());
-            statement.setString(6, checksumSha256);
-            statement.setObject(7, photo.getCreatedAt());
+            statement.setObject(6, photo.getCreatedAt());
             return statement;
         }, keyHolder);
         return PropertyPhoto.reconstruct(keyHolder.getKey().longValue(), photo.getPropertyId(), photo.getStorageKey(),

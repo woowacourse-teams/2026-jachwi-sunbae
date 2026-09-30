@@ -2,9 +2,6 @@ package com.jachwisunbae.property.entity.photo;
 
 import com.jachwisunbae.common.exception.BusinessException;
 import com.jachwisunbae.common.exception.DomainErrorCode;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-import java.util.HexFormat;
 
 public class PhotoFile {
 
@@ -32,14 +29,6 @@ public class PhotoFile {
 
     public String extension() {
         return format.extension();
-    }
-
-    public String checksum() {
-        try {
-            return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(bytes));
-        } catch (NoSuchAlgorithmException exception) {
-            throw new IllegalStateException("SHA-256을 사용할 수 없습니다.", exception);
-        }
     }
 
     private static byte[] validateBytes(final byte[] bytes) {

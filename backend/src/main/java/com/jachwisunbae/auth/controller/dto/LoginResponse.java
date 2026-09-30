@@ -1,5 +1,6 @@
 package com.jachwisunbae.auth.controller.dto;
 
+import com.jachwisunbae.auth.service.dto.result.LoginResult;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 public record LoginResponse(
@@ -16,4 +17,11 @@ public record LoginResponse(
         boolean newMember,
 
         LoginMemberResponse member) {
+
+    private static final String BEARER = "Bearer";
+
+    public static LoginResponse from(LoginResult result) {
+        return new LoginResponse(result.accessToken(), BEARER, result.expiresIn(), result.newMember(),
+                new LoginMemberResponse(result.memberId(), result.nickname(), result.passwordProtected()));
+    }
 }

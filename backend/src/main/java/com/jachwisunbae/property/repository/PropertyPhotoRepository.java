@@ -9,7 +9,7 @@ public interface PropertyPhotoRepository {
 
     int countByPropertyId(long propertyId);
 
-    PropertyPhoto save(long memberId, PropertyPhoto photo, String checksumSha256);
+    PropertyPhoto save(long memberId, PropertyPhoto photo);
 
     Optional<PropertyPhoto> findByIdAndPropertyId(long photoId, long propertyId);
 
