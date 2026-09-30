@@ -27,7 +27,7 @@
 }
 
 .field[data-floating-label='true'] .control {
-  padding-top: 0.82rem;
+  padding-top: 0.72rem;
 }
 
 .field[data-floating-label='true'] .control input {
@@ -41,7 +41,7 @@
   left: 0;
   z-index: 1;
   color: var(--color-placeholder);
-  font-size: inherit;
+  font-size: 0.72rem;
   font-weight: 500;
   line-height: 1.45;
   opacity: 0;
@@ -50,24 +50,26 @@
   transition:
     top 0.16s ease,
     color 0.16s ease,
-    font-size 0.16s ease,
     opacity 0.16s ease,
     transform 0.16s ease;
+  will-change: top, opacity, transform;
 }
 
 .field[data-floating-label='true']:focus-within .floatingLabel,
 .field[data-floating-label='true']:has(input:not(:placeholder-shown)) .floatingLabel,
 .field[data-floating-label='true']:has(input[aria-invalid='true']) .floatingLabel {
-  top: 0.28rem;
-  color: var(--color-ink);
+  top: 0.92rem;
+  color: var(--color-muted);
   font-size: 0.72rem;
   font-weight: 500;
   opacity: 1;
   transform: translateY(-50%);
 }
 
-.field[data-floating-label='true']:focus-within .floatingLabel {
-  color: var(--color-brand-yellow);
+/* :has(input:not(:placeholder-shown))의 우선순위가 더 높으므로 포커스된 input을 직접 기준으로 삼는다. */
+.field[data-floating-label='true']:focus-within .floatingLabel,
+.field[data-floating-label='true']:has(input:focus) .floatingLabel {
+  color: var(--color-muted);
 }
 
 /* 포커스·입력으로 라벨 색이 바뀌어도 필수 표시는 계속 의미 색을 유지한다. */
@@ -105,7 +107,7 @@
 
 .field[data-size='large'] .control input {
   min-height: 3.25rem;
-  font-size: 0.95rem;
+  font-size: 1.15rem;
 }
 
 .field[data-size='large'][data-floating-label='true'] .floatingLabel {
@@ -115,7 +117,7 @@
 .field[data-size='large'][data-floating-label='true']:focus-within .floatingLabel,
 .field[data-size='large'][data-floating-label='true']:has(input:not(:placeholder-shown)) .floatingLabel,
 .field[data-size='large'][data-floating-label='true']:has(input[aria-invalid='true']) .floatingLabel {
-  top: 0.28rem;
+  top: 0.92rem;
 }
 
 /* 단위 표시가 붙는 칸만 오른쪽을 비워 글자가 겹치지 않게 한다. */
@@ -140,8 +142,8 @@
 }
 
 .field[data-floating-label='true'][data-size='large'][data-variant='underline'] .control input {
-  min-height: 3rem;
-  padding-bottom: 0.42rem;
+  min-height: 2.8rem;
+  padding-bottom: 0;
 }
 
 .field[data-floating-label='true'][data-variant='box'] .floatingLabel {
@@ -208,6 +210,10 @@
   font-size: 0.82rem;
   transform: translateY(-50%);
   pointer-events: none;
+}
+
+.field[data-size='large'][data-variant='underline'] .suffix {
+  top: calc(50% + 0.4rem);
 }
 
 .help,

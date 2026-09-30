@@ -48,10 +48,11 @@ const CreatePropertyPage = () => {
           onSubmit={form.submitStep}
         >
           <MoneyField
-            label="보증금"
+            label="보증금 입력"
             fieldClassName={styles.depositField}
             fieldSize="large"
-            placeholder="예: 1,000"
+            floatingLabel
+            placeholder="보증금 입력"
             value={values.depositAmount}
             onValueChange={(value) => form.changeMoney('depositAmount', value)}
             error={errors.depositAmount}
@@ -61,10 +62,11 @@ const CreatePropertyPage = () => {
           />
           {revealedStep >= 1 && (
             <MoneyField
-              label="월세"
+              label="월세 입력"
               fieldClassName={styles.rentField}
               fieldSize="large"
-              placeholder="예: 55"
+              floatingLabel
+              placeholder="월세 입력"
               value={values.monthlyRentAmount}
               onValueChange={(value) => form.changeMoney('monthlyRentAmount', value)}
               error={errors.monthlyRentAmount}
@@ -78,7 +80,7 @@ const CreatePropertyPage = () => {
           )}
           {isNameStep && (
             <TextField
-              label="매물 이름"
+              label="매물 이름 입력"
               fieldClassName={styles.nameField}
               fieldSize="large"
               floatingLabel

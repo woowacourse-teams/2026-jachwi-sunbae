@@ -10,10 +10,11 @@ type PropertyHeroPhotoProps = {
   propertyId: number;
   propertyName: string;
   photos: PropertyPhotoPreview[];
+  backTo: string;
   onOpen: () => void;
 };
 
-const PropertyHeroPhoto = ({ propertyId, propertyName, photos, onOpen }: PropertyHeroPhotoProps) => (
+const PropertyHeroPhoto = ({ propertyId, propertyName, photos, backTo, onOpen }: PropertyHeroPhotoProps) => (
   <section className={styles.section} aria-label="대표 사진">
     {photos.length > 0 ? (
       <button
@@ -38,6 +39,9 @@ const PropertyHeroPhoto = ({ propertyId, propertyName, photos, onOpen }: Propert
         </span>
       </Link>
     )}
+    <Link className={styles.backButton} to={backTo} aria-label="매물 목록으로 돌아가기">
+      <Icon name="chevron-left" size={24} />
+    </Link>
   </section>
 );
 

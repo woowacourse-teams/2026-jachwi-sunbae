@@ -45,6 +45,12 @@ export const WithHelpAndError: Story = {
   },
 };
 
+export const WithValue: Story = {
+  args: {
+    value: '신림역 근처 원룸',
+  },
+};
+
 export const LargeBox: Story = {
   args: {
     fieldSize: 'large',

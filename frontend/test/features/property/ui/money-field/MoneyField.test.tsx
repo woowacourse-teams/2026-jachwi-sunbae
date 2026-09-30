@@ -19,6 +19,15 @@ describe('MoneyField', () => {
     expect(screen.getByText('만원')).toBeInTheDocument();
   });
 
+  it('플로팅 라벨 옵션을 입력 UI에 전달한다', () => {
+    render(<MoneyField label="보증금" value="1,000" floatingLabel onValueChange={() => undefined} />);
+
+    expect(screen.getByRole('textbox', { name: '보증금 (만원)' }).closest('[data-floating-label]')).toHaveAttribute(
+      'data-floating-label',
+      'true',
+    );
+  });
+
   it('숫자에 천 단위 쉼표를 붙이고 숫자가 아닌 입력은 무시한다', async () => {
     const user = userEvent.setup();
     render(<ControlledMoneyField />);
