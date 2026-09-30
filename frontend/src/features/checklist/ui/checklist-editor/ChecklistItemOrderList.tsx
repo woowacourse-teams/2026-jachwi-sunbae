@@ -1,4 +1,4 @@
-import ChecklistItemRow from '@/shared/ui/checklist-item/ChecklistItemRow';
+import ChecklistItemRow from '@/features/checklist/ui/checklist-item-row/ChecklistItemRow';
 
 import type { ChecklistEditorItem } from '../../model/ChecklistEditor';
 import usePointerReorder from './usePointerReorder';
@@ -15,7 +15,7 @@ type ChecklistItemOrderListProps = {
   onRemove: (index: number) => void;
 };
 
-/** 순서 변경 상태와 기능 콜백을 관리하고, 표시 구조는 공용 ChecklistItemRow에 위임한다. */
+/** 순서 변경 상태와 기능 콜백을 관리하고, 표시 구조는 체크리스트 UI 컴포넌트에 위임한다. */
 const ChecklistItemOrderList = ({
   items,
   isDisabled,

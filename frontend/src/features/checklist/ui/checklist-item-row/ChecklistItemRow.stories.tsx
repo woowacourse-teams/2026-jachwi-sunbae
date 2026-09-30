@@ -3,7 +3,7 @@ import type { Meta, StoryObj } from '@storybook/react-webpack5';
 import ChecklistItemRow from './ChecklistItemRow';
 
 const meta = {
-  title: '공통/ChecklistItemRow',
+  title: '체크리스트/ChecklistItemRow',
   component: ChecklistItemRow,
   parameters: {
     layout: 'padded',
