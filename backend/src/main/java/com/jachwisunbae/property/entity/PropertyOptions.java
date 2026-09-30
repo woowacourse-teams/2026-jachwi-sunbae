@@ -1,7 +1,7 @@
 package com.jachwisunbae.property.entity;
 
 import com.jachwisunbae.common.exception.BusinessException;
-import com.jachwisunbae.common.exception.DomainErrorCode;
+import com.jachwisunbae.common.exception.errorcode.ErrorCode;
 import com.jachwisunbae.common.validation.DomainPreconditions;
 import com.jachwisunbae.property.type.RoomOption;
 import com.jachwisunbae.property.type.UtilityOption;
@@ -75,7 +75,7 @@ record PropertyOptions(
         try {
             return RoomOption.valueOf(code);
         } catch (IllegalArgumentException | NullPointerException exception) {
-            throw new BusinessException(DomainErrorCode.PROPERTY_INPUT_INVALID,
+            throw new BusinessException(ErrorCode.PROPERTY_INPUT_INVALID,
                 "지원하지 않는 방 옵션입니다: " + code);
         }
     }
@@ -93,7 +93,7 @@ record PropertyOptions(
         try {
             return UtilityOption.valueOf(code);
         } catch (IllegalArgumentException | NullPointerException exception) {
-            throw new BusinessException(DomainErrorCode.PROPERTY_INPUT_INVALID,
+            throw new BusinessException(ErrorCode.PROPERTY_INPUT_INVALID,
                 "지원하지 않는 관리비 포함 공과금입니다: " + code);
         }
     }
@@ -102,7 +102,7 @@ record PropertyOptions(
         if (amount == null) {
             return 0L;
         }
-        return DomainPreconditions.requireNonNegative(amount, DomainErrorCode.PROPERTY_INPUT_INVALID,
+        return DomainPreconditions.requireNonNegative(amount, ErrorCode.PROPERTY_INPUT_INVALID,
             "금액은 0 이상의 정수여야 합니다.");
     }
 
@@ -110,7 +110,7 @@ record PropertyOptions(
         if (source == null) {
             return "";
         }
-        DomainPreconditions.require(source.length() <= 500, DomainErrorCode.PROPERTY_INPUT_INVALID,
+        DomainPreconditions.require(source.length() <= 500, ErrorCode.PROPERTY_INPUT_INVALID,
             "발견 경로는 500자 이하여야 합니다.");
         return source;
     }

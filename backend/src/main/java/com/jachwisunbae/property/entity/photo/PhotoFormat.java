@@ -1,7 +1,7 @@
 package com.jachwisunbae.property.entity.photo;
 
 import com.jachwisunbae.common.exception.BusinessException;
-import com.jachwisunbae.common.exception.DomainErrorCode;
+import com.jachwisunbae.common.exception.errorcode.ErrorCode;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -77,7 +77,7 @@ public enum PhotoFormat {
                 reader.dispose();
             }
         } catch (IOException exception) {
-            throw new BusinessException(DomainErrorCode.PHOTO_CONTENT_TYPE_UNSUPPORTED,
+            throw new BusinessException(ErrorCode.PHOTO_CONTENT_TYPE_UNSUPPORTED,
                 "손상되었거나 지원하지 않는 사진입니다.", exception);
         }
     }
@@ -104,12 +104,12 @@ public enum PhotoFormat {
     }
 
     private static BusinessException invalidPhotoFormat() {
-        return new BusinessException(DomainErrorCode.PHOTO_CONTENT_TYPE_UNSUPPORTED,
+        return new BusinessException(ErrorCode.PHOTO_CONTENT_TYPE_UNSUPPORTED,
             "파일 내용과 사진 형식이 일치하지 않습니다.");
     }
 
     private static BusinessException unsupportedContentType() {
-        return new BusinessException(DomainErrorCode.PHOTO_CONTENT_TYPE_UNSUPPORTED,
+        return new BusinessException(ErrorCode.PHOTO_CONTENT_TYPE_UNSUPPORTED,
             "JPEG, PNG, WebP, HEIC, HEIF 사진만 업로드할 수 있습니다.");
     }
 }

@@ -1,7 +1,5 @@
 package com.jachwisunbae.auth.web;
 
-import com.jachwisunbae.common.exception.BusinessException;
-import com.jachwisunbae.common.exception.DomainErrorCode;
 import org.springframework.core.MethodParameter;
 import org.springframework.stereotype.Component;
 import org.springframework.web.bind.support.WebDataBinderFactory;
@@ -24,8 +22,11 @@ public class AuthenticatedMemberIdResolver implements HandlerMethodArgumentResol
     public Object resolveArgument(MethodParameter parameter, ModelAndViewContainer container,
                                   NativeWebRequest request, WebDataBinderFactory factory) {
         Object memberId = request.getAttribute(JwtAuthenticationFilter.MEMBER_ID_ATTRIBUTE, 0);
+        // 인증이 필요한 경로라면 Filter가 이미 회원 ID를 넣었다.
+        // 없으면 인증이 필요 없는 경로에 @AuthenticatedMemberId를 잘못 붙인 서버 코드 문제다.
         if (memberId == null) {
-            throw new BusinessException(DomainErrorCode.ACCESS_TOKEN_INVALID, "Access Token이 필요합니다.");
+            throw new IllegalStateException("인증이 필요 없는 경로에서 @AuthenticatedMemberId를 사용했습니다: "
+                    + parameter.getExecutable());
         }
         return memberId;
     }

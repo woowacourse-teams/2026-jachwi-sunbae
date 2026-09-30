@@ -3,12 +3,19 @@ package com.jachwisunbae.auth.token;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import com.jachwisunbae.common.exception.BusinessException;
-import com.jachwisunbae.common.exception.DomainErrorCode;
+import com.jachwisunbae.common.exception.client.AuthenticationFailedException;
+import com.jachwisunbae.common.exception.errorcode.ErrorCode;
+import com.nimbusds.jose.JWSAlgorithm;
+import com.nimbusds.jose.JWSHeader;
+import com.nimbusds.jose.crypto.MACSigner;
+import com.nimbusds.jwt.JWTClaimsSet;
+import com.nimbusds.jwt.SignedJWT;
+import java.nio.charset.StandardCharsets;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneOffset;
+import java.util.Date;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.function.Executable;
@@ -82,13 +89,32 @@ class JwtTokenProviderTest {
                 .isInstanceOf(IllegalStateException.class);
     }
 
+    @Test
+    @DisplayName("만료 시각이 없거나 subject가 회원 ID가 아닌 토큰은 거부한다")
+    void rejectsTokenWithMissingExpirationOrInvalidSubject() throws Exception {
+        JWTClaimsSet withoutExpiration = new JWTClaimsSet.Builder()
+                .subject("7").issuer(ISSUER).audience(AUDIENCE).build();
+        JWTClaimsSet nonNumericSubject = new JWTClaimsSet.Builder()
+                .subject("admin").issuer(ISSUER).audience(AUDIENCE)
+                .expirationTime(Date.from(NOW.plusSeconds(60))).build();
+
+        assertInvalidToken(() -> provider.parseMemberId(sign(withoutExpiration)));
+        assertInvalidToken(() -> provider.parseMemberId(sign(nonNumericSubject)));
+    }
+
+    private static String sign(JWTClaimsSet claims) throws Exception {
+        SignedJWT jwt = new SignedJWT(new JWSHeader(JWSAlgorithm.HS256), claims);
+        jwt.sign(new MACSigner(SECRET.getBytes(StandardCharsets.UTF_8)));
+        return jwt.serialize();
+    }
+
     private static JwtTokenProvider provider(String secret, String issuer, String audience, Instant now) {
         return new JwtTokenProvider(secret, issuer, audience, ACCESS_TOKEN_SECONDS, Clock.fixed(now, ZoneOffset.UTC));
     }
 
     private static void assertInvalidToken(Executable call) {
         assertThatThrownBy(call::execute)
-                .isInstanceOfSatisfying(BusinessException.class, exception ->
-                        assertThat(exception.getCode()).isEqualTo(DomainErrorCode.ACCESS_TOKEN_INVALID));
+                .isInstanceOfSatisfying(AuthenticationFailedException.class, exception ->
+                        assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.ACCESS_TOKEN_INVALID));
     }
 }

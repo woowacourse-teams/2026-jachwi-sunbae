@@ -4,12 +4,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.queryParam;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.requestTo;
+import static org.springframework.test.web.client.response.MockRestResponseCreators.withException;
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withStatus;
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withSuccess;
 
-import com.jachwisunbae.common.exception.BusinessException;
-import com.jachwisunbae.common.exception.DomainErrorCode;
+import com.jachwisunbae.common.exception.errorcode.ErrorCode;
+import com.jachwisunbae.common.exception.server.UpstreamServiceException;
 import java.math.BigDecimal;
+import java.net.SocketTimeoutException;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -94,8 +96,19 @@ class KakaoPlaceClientTest {
                 .andRespond(withStatus(HttpStatus.TOO_MANY_REQUESTS));
 
         assertThatThrownBy(() -> client.searchCategory("HP8", LATITUDE, LONGITUDE, 500, 1))
-                .isInstanceOfSatisfying(BusinessException.class, exception ->
-                        assertThat(exception.getCode()).isEqualTo(DomainErrorCode.MAP_PROVIDER_UNAVAILABLE));
+                .isInstanceOfSatisfying(UpstreamServiceException.class, exception ->
+                        assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.MAP_PROVIDER_UNAVAILABLE));
+    }
+
+    @Test
+    @DisplayName("연결이 실패하거나 응답 시간이 초과되면 지도 공급자 오류로 변환한다")
+    void convertsConnectionFailureToProviderUnavailable() {
+        server.expect(requestTo(Matchers.containsString("/v2/local/search/category.json")))
+                .andRespond(withException(new SocketTimeoutException("Read timed out")));
+
+        assertThatThrownBy(() -> client.searchCategory("HP8", LATITUDE, LONGITUDE, 500, 1))
+                .isInstanceOfSatisfying(UpstreamServiceException.class, exception ->
+                        assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.MAP_PROVIDER_UNAVAILABLE));
     }
 
     @Test
@@ -107,8 +120,8 @@ class KakaoPlaceClientTest {
                         """, MediaType.APPLICATION_JSON));
 
         assertThatThrownBy(() -> client.searchCategory("HP8", LATITUDE, LONGITUDE, 500, 1))
-                .isInstanceOfSatisfying(BusinessException.class, exception ->
-                        assertThat(exception.getCode()).isEqualTo(DomainErrorCode.MAP_PROVIDER_UNAVAILABLE));
+                .isInstanceOfSatisfying(UpstreamServiceException.class, exception ->
+                        assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.MAP_PROVIDER_UNAVAILABLE));
     }
 
     @Test

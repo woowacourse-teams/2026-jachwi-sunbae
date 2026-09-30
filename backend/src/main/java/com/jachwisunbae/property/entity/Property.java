@@ -1,7 +1,7 @@
 package com.jachwisunbae.property.entity;
 
 import com.jachwisunbae.common.entity.BaseTimeEntity;
-import com.jachwisunbae.common.exception.DomainErrorCode;
+import com.jachwisunbae.common.exception.errorcode.ErrorCode;
 import com.jachwisunbae.common.validation.DomainPreconditions;
 import com.jachwisunbae.property.type.RoomOption;
 import com.jachwisunbae.property.type.UtilityOption;
@@ -95,7 +95,7 @@ public class Property extends BaseTimeEntity {
             );
         LocalDateTime newUpdatedAt = DomainPreconditions.requireNonNull(
             now,
-            DomainErrorCode.PROPERTY_INPUT_INVALID,
+            ErrorCode.PROPERTY_INPUT_INVALID,
             "변경 시각은 필수입니다."
         );
 
@@ -163,7 +163,7 @@ public class Property extends BaseTimeEntity {
     }
 
     private static Long validateMemberId(final Long memberId) {
-        return DomainPreconditions.requireNonNull(memberId, DomainErrorCode.PROPERTY_INPUT_INVALID,
+        return DomainPreconditions.requireNonNull(memberId, ErrorCode.PROPERTY_INPUT_INVALID,
             "매물 소유 회원은 필수입니다.");
     }
 }

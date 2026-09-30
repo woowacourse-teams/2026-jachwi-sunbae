@@ -9,7 +9,7 @@ import com.jachwisunbae.checklist.service.MemberChecklistPreferenceService;
 import com.jachwisunbae.checklist.type.CheckStage;
 import com.jachwisunbae.checklist.type.CheckStatus;
 import com.jachwisunbae.common.exception.BusinessException;
-import com.jachwisunbae.common.exception.DomainErrorCode;
+import com.jachwisunbae.common.exception.errorcode.ErrorCode;
 import com.jachwisunbae.property.repository.PropertyChecklistRepository;
 import com.jachwisunbae.property.repository.PropertyChecklistItemRepository;
 import com.jachwisunbae.property.repository.PropertyProgressRepository;
@@ -120,7 +120,7 @@ public class PropertyChecklistService {
 
     private void validateOwnedPropertyForUpdate(final Long memberId, final Long propertyId) {
         propertyRepository.findByIdAndMemberIdForUpdate(propertyId, memberId)
-            .orElseThrow(() -> new BusinessException(DomainErrorCode.PROPERTY_NOT_FOUND,
+            .orElseThrow(() -> new BusinessException(ErrorCode.PROPERTY_NOT_FOUND,
                 "매물을 찾을 수 없습니다."));
     }
 
@@ -128,7 +128,7 @@ public class PropertyChecklistService {
                                       final List<PropertyChecklistItemStateQuery> previousItems) {
         List<SystemCheckItem> coreItems = systemCheckItemRepository.findActiveCoreByStage(stage);
         if (coreItems.isEmpty()) {
-            throw new BusinessException(DomainErrorCode.CHECKLIST_ITEMS_INVALID,
+            throw new BusinessException(ErrorCode.CHECKLIST_ITEMS_INVALID,
                 "현재 단계의 기본 체크 항목이 없습니다.");
         }
         return saveSystemChecklist(propertyId, stage, coreItems, previousItems);
@@ -147,15 +147,15 @@ public class PropertyChecklistService {
     private UserChecklist findApplicableUserChecklist(final Long memberId, final CheckStage stage,
                                                       final Long checklistId) {
         if (checklistId == null) {
-            throw new BusinessException(DomainErrorCode.CHECKLIST_NOT_FOUND,
+            throw new BusinessException(ErrorCode.CHECKLIST_NOT_FOUND,
                 "적용할 체크리스트 ID가 필요합니다.");
         }
         UserChecklist checklist = userChecklistRepository.findByIdAndMemberIdForUpdate(checklistId, memberId)
-            .orElseThrow(() -> new BusinessException(DomainErrorCode.CHECKLIST_NOT_FOUND,
+            .orElseThrow(() -> new BusinessException(ErrorCode.CHECKLIST_NOT_FOUND,
                 "체크리스트를 찾을 수 없습니다."));
 
         if (checklist.getStage() != stage) {
-            throw new BusinessException(DomainErrorCode.PROPERTY_CHECKLIST_STAGE_MISMATCH,
+            throw new BusinessException(ErrorCode.PROPERTY_CHECKLIST_STAGE_MISMATCH,
                 "매물 적용 단계와 체크리스트 단계가 다릅니다.");
         }
         return checklist;
@@ -236,7 +236,7 @@ public class PropertyChecklistService {
 
     public List<PropertyChecklistProgressQuery> findOverview(final Long memberId, final Long propertyId) {
         if (!propertyRepository.existsByIdAndMemberId(propertyId, memberId)) {
-            throw new BusinessException(DomainErrorCode.PROPERTY_NOT_FOUND, "매물을 찾을 수 없습니다.");
+            throw new BusinessException(ErrorCode.PROPERTY_NOT_FOUND, "매물을 찾을 수 없습니다.");
         }
         return propertyProgressRepository.findByPropertyIdAndStage(propertyId);
     }
@@ -244,7 +244,7 @@ public class PropertyChecklistService {
     public PropertyChecklistApplicationQuery findApplication(final Long memberId, final Long propertyId,
                                                              final Long propertyChecklistId) {
         return propertyChecklistRepository.findApplication(memberId, propertyId, propertyChecklistId)
-            .orElseThrow(() -> new BusinessException(DomainErrorCode.PROPERTY_CHECKLIST_NOT_FOUND, "매물 적용 체크리스트를 찾을 수 없습니다."));
+            .orElseThrow(() -> new BusinessException(ErrorCode.PROPERTY_CHECKLIST_NOT_FOUND, "매물 적용 체크리스트를 찾을 수 없습니다."));
     }
 
 }

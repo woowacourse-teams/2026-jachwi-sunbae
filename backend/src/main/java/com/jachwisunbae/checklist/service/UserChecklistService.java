@@ -9,7 +9,7 @@ import com.jachwisunbae.checklist.repository.query.UserChecklistItemDetail;
 import com.jachwisunbae.checklist.repository.query.UserChecklistSummaryQuery;
 import com.jachwisunbae.checklist.type.CheckStage;
 import com.jachwisunbae.common.exception.BusinessException;
-import com.jachwisunbae.common.exception.DomainErrorCode;
+import com.jachwisunbae.common.exception.errorcode.ErrorCode;
 import com.jachwisunbae.member.repository.MemberRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -100,9 +100,9 @@ public class UserChecklistService {
 
     private UserChecklist findOwnedChecklistForUpdate(final Long memberId, final long checklistId) {
         memberRepository.findByIdForUpdate(memberId)
-            .orElseThrow(() -> new BusinessException(DomainErrorCode.MEMBER_NOT_FOUND, "회원을 찾을 수 없습니다."));
+            .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND, "회원을 찾을 수 없습니다."));
         return userChecklistRepository.findByIdAndMemberIdForUpdate(checklistId, memberId)
-            .orElseThrow(() -> new BusinessException(DomainErrorCode.CHECKLIST_NOT_FOUND,
+            .orElseThrow(() -> new BusinessException(ErrorCode.CHECKLIST_NOT_FOUND,
                 "체크리스트를 찾을 수 없습니다."));
     }
 
@@ -135,19 +135,19 @@ public class UserChecklistService {
 
     private UserChecklist findOwnedChecklist(final Long memberId, final long checklistId) {
         Optional<UserChecklist> checklist = userChecklistRepository.findByIdAndMemberId(checklistId, memberId);
-        return checklist.orElseThrow(() -> new BusinessException(DomainErrorCode.CHECKLIST_NOT_FOUND,
+        return checklist.orElseThrow(() -> new BusinessException(ErrorCode.CHECKLIST_NOT_FOUND,
             "체크리스트를 찾을 수 없습니다."));
     }
 
     private void requireOwnedChecklist(final Long memberId, final long checklistId) {
         if (!userChecklistRepository.existsByIdAndMemberId(checklistId, memberId)) {
-            throw new BusinessException(DomainErrorCode.CHECKLIST_NOT_FOUND, "체크리스트를 찾을 수 없습니다.");
+            throw new BusinessException(ErrorCode.CHECKLIST_NOT_FOUND, "체크리스트를 찾을 수 없습니다.");
         }
     }
 
     private void requireActive(final List<SystemCheckItem> items) {
         if (items.stream().anyMatch(item -> item.getDeletedAt() != null)) {
-            throw new BusinessException(DomainErrorCode.CHECKLIST_INACTIVE_ITEM_NOT_ALLOWED,
+            throw new BusinessException(ErrorCode.CHECKLIST_INACTIVE_ITEM_NOT_ALLOWED,
                 "비활성 시스템 항목은 새 체크리스트에 추가할 수 없습니다.");
         }
     }
@@ -159,25 +159,25 @@ public class UserChecklistService {
             .collect(Collectors.toSet());
 
         if (items.stream().anyMatch(item -> item.getDeletedAt() != null && !existingSystemIds.contains(item.getId()))) {
-            throw new BusinessException(DomainErrorCode.CHECKLIST_INACTIVE_ITEM_NOT_ALLOWED,
+            throw new BusinessException(ErrorCode.CHECKLIST_INACTIVE_ITEM_NOT_ALLOWED,
                 "기존 체크리스트에 포함되어 있지 않던 비활성 시스템 항목은 새로 추가할 수 없습니다.");
         }
     }
 
     private void validateRequestedItems(final List<Long> systemCheckItemIds) {
         if (systemCheckItemIds == null) {
-            throw new BusinessException(DomainErrorCode.CHECKLIST_ITEMS_INVALID,
+            throw new BusinessException(ErrorCode.CHECKLIST_ITEMS_INVALID,
                 "체크리스트 항목 목록은 null일 수 없습니다.");
         }
 
         Set<Long> systemIds = new HashSet<>();
         for (Long systemCheckItemId : systemCheckItemIds) {
             if (systemCheckItemId == null || systemCheckItemId <= 0) {
-                throw new BusinessException(DomainErrorCode.CHECKLIST_ITEMS_INVALID,
+                throw new BusinessException(ErrorCode.CHECKLIST_ITEMS_INVALID,
                     "자취선배가 제공하는 올바른 체크 항목 ID가 필요합니다.");
             }
             if (!systemIds.add(systemCheckItemId)) {
-                throw new BusinessException(DomainErrorCode.DUPLICATE_CHECK_ITEM,
+                throw new BusinessException(ErrorCode.DUPLICATE_CHECK_ITEM,
                     "같은 체크 항목을 중복해서 추가할 수 없습니다.");
             }
         }
@@ -185,14 +185,14 @@ public class UserChecklistService {
 
     private void validateFinalItemCount(final int count) {
         if (count < 1 || count > 30) {
-            throw new BusinessException(DomainErrorCode.CHECKLIST_ITEM_COUNT_OUT_OF_RANGE,
+            throw new BusinessException(ErrorCode.CHECKLIST_ITEM_COUNT_OUT_OF_RANGE,
                 "체크리스트 항목은 1개 이상 30개 이하여야 합니다.");
         }
     }
 
     private void validateItemsExist(final List<Long> requestedIds, final List<SystemCheckItem> items) {
         if (requestedIds.size() != items.size()) {
-            throw new BusinessException(DomainErrorCode.INVALID_SYSTEM_CHECK_ITEM,
+            throw new BusinessException(ErrorCode.INVALID_SYSTEM_CHECK_ITEM,
                 "존재하지 않거나 단계가 일치하지 않는 시스템 체크 항목이 포함되어 있습니다.");
         }
     }
@@ -200,7 +200,7 @@ public class UserChecklistService {
     private void validateUniqueQuestions(final List<UserChecklistItem> items) {
         Set<String> questions = new HashSet<>();
         if (items.stream().anyMatch(item -> !questions.add(item.getQuestion()))) {
-            throw new BusinessException(DomainErrorCode.DUPLICATE_CHECK_ITEM,
+            throw new BusinessException(ErrorCode.DUPLICATE_CHECK_ITEM,
                 "같은 체크 항목을 중복해서 추가할 수 없습니다.");
         }
     }

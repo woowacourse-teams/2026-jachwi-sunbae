@@ -1,7 +1,11 @@
 package com.jachwisunbae.map.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import com.jachwisunbae.common.exception.client.InvalidInputException;
+import com.jachwisunbae.common.exception.errorcode.ErrorCode;
+import com.jachwisunbae.common.exception.server.UpstreamServiceException;
 import com.jachwisunbae.map.domain.NearbyPlace;
 import com.jachwisunbae.map.provider.BusStopProvider;
 import com.jachwisunbae.map.provider.NearbyPlaceProvider;
@@ -16,6 +20,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
+import org.assertj.core.api.ThrowableAssert.ThrowingCallable;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -58,15 +63,26 @@ class MapServiceTest {
     }
 
     @Test
-    @DisplayName("버스정류장 조회가 실패해도 기존 시설 결과를 반환한다")
+    @DisplayName("버스정류장 외부 API가 실패해도 기존 시설 결과를 반환한다")
     void busStopFailureKeepsNearbyPlaces() {
         MapService service = service(Optional.of((latitude, longitude, radius) -> {
-            throw new IllegalStateException("TAGO 장애");
+            throw new UpstreamServiceException(ErrorCode.MAP_PROVIDER_UNAVAILABLE, "TAGO 장애");
         }));
 
         NearbyResult response = service.nearby(LATITUDE, LONGITUDE, 500, EnumSet.allOf(MapCategory.class));
 
         assertThat(response.places()).containsExactly(subway, hospital);
+    }
+
+    @Test
+    @DisplayName("외부 장애가 아닌 오류는 대체 처리로 숨기지 않는다")
+    void busStopBugIsNotHiddenByFallback() {
+        MapService service = service(Optional.of((latitude, longitude, radius) -> {
+            throw new IllegalStateException("우리 코드의 버그");
+        }));
+
+        assertThatThrownBy(() -> service.nearby(LATITUDE, LONGITUDE, 500, EnumSet.allOf(MapCategory.class)))
+                .isInstanceOf(IllegalStateException.class);
     }
 
     @Test
@@ -115,6 +131,22 @@ class MapServiceTest {
         service.nearby(LATITUDE, LONGITUDE, 500, categoriesWithNull);
 
         assertThat(requested).containsExactly(EnumSet.of(MapCategory.HOSPITAL));
+    }
+
+    @Test
+    @DisplayName("검색어, 좌표, 반경이 허용 범위를 벗어나면 사용자 입력 오류로 본다")
+    void rejectsInvalidQueryAsInvalidInput() {
+        MapService service = service(Optional.empty());
+
+        assertInvalidQuery(() -> service.geocode(" "));
+        assertInvalidQuery(() -> service.reverseGeocode(new BigDecimal("91"), LONGITUDE));
+        assertInvalidQuery(() -> service.nearby(LATITUDE, LONGITUDE, 700, EnumSet.allOf(MapCategory.class)));
+    }
+
+    private static void assertInvalidQuery(ThrowingCallable call) {
+        assertThatThrownBy(call)
+                .isInstanceOfSatisfying(InvalidInputException.class, exception ->
+                        assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.MAP_QUERY_INVALID));
     }
 
     private MapService service(Optional<BusStopProvider> busStopProvider) {
