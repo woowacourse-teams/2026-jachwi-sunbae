@@ -48,7 +48,7 @@ public class JdbcUserChecklistRepository implements UserChecklistRepository {
             CheckItemType.valueOf(rs.getString("item_type")),
             rs.getString("question"),
             rs.getInt("display_order")
-        ));
+        ), rs.getBoolean("active"));
 
     public JdbcUserChecklistRepository(final JdbcTemplate jdbcTemplate) {
         this.jdbcTemplate = jdbcTemplate;
@@ -168,7 +168,9 @@ public class JdbcUserChecklistRepository implements UserChecklistRepository {
                        COALESCE(uci.stage, sci.stage) AS stage,
                        COALESCE(uci.item_type, sci.item_type) AS item_type,
                        COALESCE(uci.question, sci.question) AS question,
-                       uci.display_order
+                       uci.display_order,
+                       CASE WHEN sci.id IS NOT NULL AND sci.deleted_at IS NULL
+                           THEN TRUE ELSE FALSE END AS active
                 FROM user_checklist_items uci
                 LEFT JOIN system_check_items sci ON sci.id = uci.system_check_item_id
                 WHERE uci.user_checklist_id = ?

@@ -19,7 +19,7 @@ public record CreateUserChecklistResponse(
         return new CreateUserChecklistResponse(
                 checklist.getId(), checklist.getName(), checklist.getStage(), details.size(),
                 details.stream()
-                        .map(detail -> UserChecklistItemResponse.from(detail.getItem()))
+                        .map(UserChecklistItemResponse::from)
                         .toList());
     }
 }

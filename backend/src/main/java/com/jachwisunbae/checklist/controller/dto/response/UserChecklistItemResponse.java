@@ -1,7 +1,7 @@
 package com.jachwisunbae.checklist.controller.dto.response;
 
-import com.jachwisunbae.checklist.entity.SystemCheckItem;
 import com.jachwisunbae.checklist.entity.UserChecklistItem;
+import com.jachwisunbae.checklist.repository.query.UserChecklistItemDetail;
 import com.jachwisunbae.checklist.type.CheckItemType;
 import com.jachwisunbae.checklist.type.ChecklistItemOrigin;
 
@@ -14,22 +14,15 @@ public record UserChecklistItemResponse(
         Integer displayOrder,
         boolean active) {
 
-    public static UserChecklistItemResponse from(final UserChecklistItem item,
-                                                  final SystemCheckItem systemCheckItem) {
-        return new UserChecklistItemResponse(
-                item.getId(), ChecklistItemOrigin.PROVIDED,
-                item.getSystemCheckItemId(),
-                systemCheckItem.getItemType(),
-                systemCheckItem.getQuestion(),
-                item.getDisplayOrder(),
-                systemCheckItem.getDeletedAt() == null);
-    }
-
-    public static UserChecklistItemResponse from(final UserChecklistItem item) {
+    public static UserChecklistItemResponse from(final UserChecklistItemDetail detail) {
+        UserChecklistItem item = detail.item();
         return new UserChecklistItemResponse(
                 item.getId(),
                 ChecklistItemOrigin.PROVIDED,
-                item.getSystemCheckItemId(), item.getItemType(),
-                item.getQuestion(), item.getDisplayOrder(), true);
+                item.getSystemCheckItemId(),
+                item.getItemType(),
+                item.getQuestion(),
+                item.getDisplayOrder(),
+                detail.active());
     }
 }
