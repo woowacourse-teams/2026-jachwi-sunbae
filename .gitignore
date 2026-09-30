@@ -25,6 +25,6 @@ logs/
 # JavaScript and frontend build outputs
 node_modules/
 dist/
+storybook-static/
 .next/
 coverage/
-
