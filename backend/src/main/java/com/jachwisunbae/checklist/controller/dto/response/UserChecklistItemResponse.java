@@ -3,11 +3,9 @@ package com.jachwisunbae.checklist.controller.dto.response;
 import com.jachwisunbae.checklist.entity.UserChecklistItem;
 import com.jachwisunbae.checklist.repository.query.UserChecklistItemDetail;
 import com.jachwisunbae.checklist.type.CheckItemType;
-import com.jachwisunbae.checklist.type.ChecklistItemOrigin;
 
 public record UserChecklistItemResponse(
         Long id,
-        ChecklistItemOrigin origin,
         Long systemCheckItemId,
         CheckItemType itemType,
         String question,
@@ -18,7 +16,6 @@ public record UserChecklistItemResponse(
         UserChecklistItem item = detail.item();
         return new UserChecklistItemResponse(
                 item.getId(),
-                ChecklistItemOrigin.PROVIDED,
                 item.getSystemCheckItemId(),
                 item.getItemType(),
                 item.getQuestion(),
