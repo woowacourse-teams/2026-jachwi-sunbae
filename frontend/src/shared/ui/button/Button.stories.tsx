@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react-webpack5';
 import { MemoryRouter } from 'react-router-dom';
 
+import Icon from '../icon/Icon';
 import { Button, ButtonLink } from './Button';
 
 const meta = {
@@ -49,6 +50,7 @@ export const Link: Story = {
   render: ({ children, variant, fullWidth }) => (
     <MemoryRouter initialEntries={['/']}>
       <ButtonLink to="/properties" variant={variant} fullWidth={fullWidth}>
+        <Icon name="plus" size={15} />
         {children}
       </ButtonLink>
     </MemoryRouter>
