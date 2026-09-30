@@ -1,7 +1,17 @@
 package com.jachwisunbae.common.web.error;
 
 import com.jachwisunbae.common.exception.BusinessException;
+import com.jachwisunbae.common.exception.JachwiException;
+import com.jachwisunbae.common.exception.client.AuthenticationFailedException;
+import com.jachwisunbae.common.exception.client.AuthorizationFailedException;
+import com.jachwisunbae.common.exception.client.BusinessRuleViolationException;
+import com.jachwisunbae.common.exception.client.InvalidInputException;
+import com.jachwisunbae.common.exception.client.ResourceNotFoundException;
 import com.jachwisunbae.common.exception.errorcode.ErrorCode;
+import com.jachwisunbae.common.exception.server.DataInconsistencyException;
+import com.jachwisunbae.common.exception.server.InternalSystemException;
+import com.jachwisunbae.common.exception.server.ServerException;
+import com.jachwisunbae.common.exception.server.UpstreamServiceException;
 import jakarta.validation.ConstraintViolationException;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
@@ -34,6 +44,14 @@ public class GlobalExceptionHandler {
         this.httpMapper = httpMapper;
     }
 
+    @ExceptionHandler(JachwiException.class)
+    public ResponseEntity<ErrorResponse> handleJachwiException(final JachwiException exception) {
+        HttpStatus status = statusOf(exception);
+        logJachwiException(exception, status);
+        return response(status, exception.getErrorCode());
+    }
+
+    // 레거시: 옮기지 않은 패키지의 BusinessException은 ErrorCode마다 상태를 정한다.
     @ExceptionHandler(BusinessException.class)
     public ResponseEntity<ErrorResponse> handleBusinessException(final BusinessException exception) {
         HttpStatus status = httpMapper.statusOf(exception.getCode());
@@ -160,6 +178,33 @@ public class GlobalExceptionHandler {
             return new FieldErrorResponse(error.getField(), "올바른 형식의 값이 아닙니다.");
         }
         return new FieldErrorResponse(error.getField(), reasonOf(error.getDefaultMessage()));
+    }
+
+    // 예외 타입이 HTTP 상태를 정한다. ErrorCode는 실패 이유만 나타낸다.
+    private HttpStatus statusOf(final JachwiException exception) {
+        return switch (exception) {
+            case InvalidInputException invalidInput -> HttpStatus.BAD_REQUEST;
+            case BusinessRuleViolationException ruleViolation -> HttpStatus.BAD_REQUEST;
+            case AuthenticationFailedException authenticationFailed -> HttpStatus.UNAUTHORIZED;
+            case AuthorizationFailedException authorizationFailed -> HttpStatus.FORBIDDEN;
+            case ResourceNotFoundException notFound -> HttpStatus.NOT_FOUND;
+            case DataInconsistencyException dataInconsistency -> HttpStatus.INTERNAL_SERVER_ERROR;
+            case InternalSystemException internalSystem -> HttpStatus.INTERNAL_SERVER_ERROR;
+            case UpstreamServiceException upstream -> HttpStatus.BAD_GATEWAY;
+            // 상태를 정하지 않은 새 예외 타입은 서버 문제로 드러낸다.
+            default -> HttpStatus.INTERNAL_SERVER_ERROR;
+        };
+    }
+
+    // 서버가 고쳐야 하는 실패만 Stack Trace와 함께 ERROR로 남긴다.
+    private void logJachwiException(final JachwiException exception, final HttpStatus status) {
+        String message = "{}: code={}, status={}, debugMessage={}";
+        String type = exception.getClass().getSimpleName();
+        if (exception instanceof ServerException) {
+            log.error(message, type, exception.getErrorCode(), status.value(), exception.getMessage(), exception);
+            return;
+        }
+        log.info(message, type, exception.getErrorCode(), status.value(), exception.getMessage());
     }
 
     private void logBusinessException(final BusinessException exception, final HttpStatus status) {
