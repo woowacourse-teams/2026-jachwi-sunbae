@@ -1,5 +1,8 @@
 package com.jachwisunbae.property.repository;
 
+import com.jachwisunbae.common.exception.client.ClientException;
+import com.jachwisunbae.common.exception.errorcode.ErrorCode;
+import com.jachwisunbae.common.exception.server.DataInconsistencyException;
 import com.jachwisunbae.property.entity.photo.PropertyPhoto;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
@@ -15,10 +18,19 @@ import org.springframework.jdbc.support.KeyHolder;
 public class JdbcPropertyPhotoRepository implements PropertyPhotoRepository {
 
     private final JdbcTemplate jdbcTemplate;
-    private final RowMapper<PropertyPhoto> propertyPhotoRowMapper = (rs, row) -> PropertyPhoto.reconstruct(
-            rs.getLong("id"), rs.getLong("property_id"), rs.getString("storage_key"),
-            rs.getString("content_type"), rs.getLong("size_bytes"),
-            rs.getTimestamp("created_at").toLocalDateTime());
+    // DB에 저장된 사진이 사진 규칙(지원 형식 등)을 만족하지 않는 것은 사용자 요청이 아니라 서버 데이터 문제다.
+    private final RowMapper<PropertyPhoto> propertyPhotoRowMapper = (rs, row) -> {
+        long photoId = rs.getLong("id");
+        try {
+            return PropertyPhoto.reconstruct(
+                    photoId, rs.getLong("property_id"), rs.getString("storage_key"),
+                    rs.getString("content_type"), rs.getLong("size_bytes"),
+                    rs.getTimestamp("created_at").toLocalDateTime());
+        } catch (ClientException exception) {
+            throw new DataInconsistencyException(ErrorCode.INTERNAL_SERVER_ERROR,
+                    "photoId=" + photoId + " 저장된 사진 데이터가 사진 규칙을 만족하지 않습니다.", exception);
+        }
+    };
 
     public JdbcPropertyPhotoRepository(final JdbcTemplate jdbcTemplate) {
         this.jdbcTemplate = jdbcTemplate;
