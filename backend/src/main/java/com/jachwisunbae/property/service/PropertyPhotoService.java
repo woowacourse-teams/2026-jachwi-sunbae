@@ -1,9 +1,9 @@
 package com.jachwisunbae.property.service;
 
-import com.jachwisunbae.common.exception.BusinessException;
 import com.jachwisunbae.common.exception.client.BusinessRuleViolationException;
 import com.jachwisunbae.common.exception.client.ResourceNotFoundException;
 import com.jachwisunbae.common.exception.errorcode.ErrorCode;
+import com.jachwisunbae.common.exception.server.InternalSystemException;
 import com.jachwisunbae.property.entity.photo.PropertyPhoto;
 import com.jachwisunbae.property.repository.PropertyPhotoRepository;
 import com.jachwisunbae.property.repository.PropertyRepository;
@@ -94,7 +94,9 @@ public class PropertyPhotoService {
         try {
             return new PhotoFile(file.getBytes(), file.getContentType());
         } catch (IOException exception) {
-            throw new BusinessException(ErrorCode.PHOTO_FILE_READ_FAILURE,
+            // Spring이 Controller 전에 받아 둔 업로드(메모리·임시 파일)를 읽다가 실패한 것이다.
+            // 업로드 중단 같은 사용자 쪽 문제는 그 전에 다른 예외로 실패하므로 서버 문제로 본다.
+            throw new InternalSystemException(ErrorCode.PHOTO_FILE_READ_FAILURE,
                 "업로드 사진을 읽을 수 없습니다.", exception);
         }
     }
