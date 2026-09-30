@@ -1,10 +1,12 @@
 import type { Meta, StoryObj } from '@storybook/react-webpack5';
 
-import { InfoSection, InfoValue } from './InfoSection';
+import InfoValue from '@/shared/ui/info-value/InfoValue';
+
+import PropertyInfoSection from './PropertyInfoSection';
 
 const meta = {
-  title: '공통/InfoSection',
-  component: InfoSection,
+  title: '매물 상세/PropertyInfoSection',
+  component: PropertyInfoSection,
   argTypes: {
     children: { control: false },
     action: { control: false },
@@ -12,13 +14,13 @@ const meta = {
   parameters: {
     layout: 'fullscreen',
   },
-} satisfies Meta<typeof InfoSection>;
+} satisfies Meta<typeof PropertyInfoSection>;
 
 export default meta;
 
 type Story = StoryObj<typeof meta>;
 
-export const PropertyBasic: Story = {
+export const Basic: Story = {
   args: {
     title: '기본 정보',
     label: '매물 기본 정보',

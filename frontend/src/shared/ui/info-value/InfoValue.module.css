@@ -1,9 +1,3 @@
-.summary {
-  display: grid;
-  gap: 0;
-  margin: 0;
-}
-
 .row {
   display: grid;
   grid-template-columns: 6.5rem minmax(0, 1fr);
@@ -31,8 +25,7 @@
 }
 
 /* 값은 읽기 전용이라 hover도 커서 변화도 두지 않는다. */
-/* 빈 값은 물론 일반 값도 값 칸의 가운데에 맞춘다. */
 .value[data-empty='true'] {
-  color: var(--color-placeholder, #adb5bd);
+  color: var(--color-placeholder, #a8abb0);
   font-weight: 500;
 }

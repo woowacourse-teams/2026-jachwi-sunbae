@@ -3,7 +3,9 @@ import { Link } from 'react-router-dom';
 import { formatManwon } from '@/features/property/lib/propertyFormat';
 import type { PropertyDetail } from '@/features/property/model/Property';
 import Icon from '@/shared/ui/icon/Icon';
-import { InfoSection, InfoValue } from '@/shared/ui/info-section/InfoSection';
+import InfoValue from '@/shared/ui/info-value/InfoValue';
+
+import PropertyInfoSection from '../property-info-section/PropertyInfoSection';
 
 import detailStyles from '@/shared/ui/detail-section/DetailSection.module.css';
 
@@ -12,7 +14,7 @@ type PropertyBasicInfoSectionProps = {
 };
 
 const PropertyBasicInfoSection = ({ property }: PropertyBasicInfoSectionProps) => (
-  <InfoSection
+  <PropertyInfoSection
     title="기본 정보"
     label="매물 기본 정보"
     action={
@@ -27,7 +29,7 @@ const PropertyBasicInfoSection = ({ property }: PropertyBasicInfoSectionProps) =
       value={`${formatManwon(property.depositAmount)} / ${formatManwon(property.monthlyRentAmount)}`}
     />
     <InfoValue label="주소" value={property.location.address ?? ''} emptyText="주소를 입력해 주세요" />
-  </InfoSection>
+  </PropertyInfoSection>
 );
 
 export default PropertyBasicInfoSection;
