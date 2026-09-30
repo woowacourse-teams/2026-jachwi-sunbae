@@ -29,6 +29,11 @@
   padding-top: 0.82rem;
 }
 
+.field[data-floating-label='true'] .control input {
+  caret-color: var(--color-brand-yellow);
+  line-height: 1.6;
+}
+
 .floatingLabel {
   position: absolute;
   top: 1.7rem;
@@ -55,7 +60,7 @@
   top: 0.18rem;
   color: var(--color-brand-yellow);
   font-size: 0.72rem;
-  font-weight: 800;
+  font-weight: 500;
   opacity: 1;
   transform: translateY(-50%);
 }
@@ -117,6 +122,16 @@
   border-bottom: 1.5px solid var(--color-border-strong);
   border-radius: 0;
   background: transparent;
+}
+
+.field[data-floating-label='true'][data-variant='underline'] .control input {
+  min-height: 2.4rem;
+  padding-bottom: 0.38rem;
+}
+
+.field[data-floating-label='true'][data-size='large'][data-variant='underline'] .control input {
+  min-height: 3rem;
+  padding-bottom: 0.42rem;
 }
 
 .field[data-floating-label='true'][data-variant='box'] .floatingLabel {
