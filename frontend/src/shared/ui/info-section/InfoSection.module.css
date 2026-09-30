@@ -27,12 +27,12 @@
   font-size: 0.85rem;
   font-weight: 400;
   line-height: 1.5;
+  text-align: center;
 }
 
 /* 값은 읽기 전용이라 hover도 커서 변화도 두지 않는다. */
-/* 빈 값 표시는 짧아서 왼쪽에 붙으면 떠 보인다. 값 칸 가운데에 둔다. */
+/* 빈 값은 물론 일반 값도 값 칸의 가운데에 맞춘다. */
 .value[data-empty='true'] {
   color: var(--color-placeholder, #adb5bd);
   font-weight: 500;
-  text-align: center;
 }

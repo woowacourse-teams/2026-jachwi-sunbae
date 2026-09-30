@@ -7,6 +7,11 @@ import DetailSection from './DetailSection';
 const meta = {
   title: '공통/DetailSection',
   component: DetailSection,
+  argTypes: {
+    children: { control: false },
+    meta: { control: false },
+    action: { control: false },
+  },
   parameters: {
     layout: 'fullscreen',
   },

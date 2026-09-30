@@ -5,6 +5,10 @@ import { InfoSection, InfoValue } from './InfoSection';
 const meta = {
   title: '공통/InfoSection',
   component: InfoSection,
+  argTypes: {
+    children: { control: false },
+    action: { control: false },
+  },
   parameters: {
     layout: 'fullscreen',
   },
