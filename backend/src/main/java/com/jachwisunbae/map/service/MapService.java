@@ -1,7 +1,8 @@
 package com.jachwisunbae.map.service;
 
-import com.jachwisunbae.common.exception.BusinessException;
-import com.jachwisunbae.common.exception.DomainErrorCode;
+import com.jachwisunbae.common.exception.client.InvalidInputException;
+import com.jachwisunbae.common.exception.errorcode.ErrorCode;
+import com.jachwisunbae.common.exception.server.UpstreamServiceException;
 import com.jachwisunbae.map.domain.MapAddress;
 import com.jachwisunbae.map.domain.NearbyPlace;
 import com.jachwisunbae.map.provider.AddressProvider;
@@ -86,7 +87,9 @@ public class MapService {
         try {
             busStopProvider.get().nearby(latitude, longitude, radius)
                 .forEach(place -> unique.putIfAbsent(place.providerPlaceId(), place));
-        } catch (RuntimeException exception) {
+        } catch (UpstreamServiceException exception) {
+            // 버스정류장 없이도 주변 시설 결과를 제공할 수 있어 외부 장애만 대체 처리한다.
+            // 우리 코드의 오류(NullPointerException 등)까지 숨기지 않도록 RuntimeException 전체를 잡지 않는다.
             LOG.warn("TAGO 버스정류소 조회에 실패해 주변 시설 검색 결과만 반환합니다.", exception);
         }
         return List.copyOf(unique.values());
@@ -109,7 +112,7 @@ public class MapService {
         }
     }
 
-    private BusinessException invalidQuery(String message) {
-        return new BusinessException(DomainErrorCode.MAP_QUERY_INVALID, message);
+    private InvalidInputException invalidQuery(String message) {
+        return new InvalidInputException(ErrorCode.MAP_QUERY_INVALID, message);
     }
 }

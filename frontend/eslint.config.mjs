@@ -6,7 +6,7 @@ import tseslint from 'typescript-eslint';
 
 export default defineConfig(
   {
-    ignores: ['dist/**', 'node_modules/**', 'public/mockServiceWorker.js'],
+    ignores: ['dist/**', 'storybook-static/**', 'node_modules/**', 'public/mockServiceWorker.js'],
   },
   {
     files: ['src/**/*.{ts,tsx}', 'test/**/*.{ts,tsx}'],

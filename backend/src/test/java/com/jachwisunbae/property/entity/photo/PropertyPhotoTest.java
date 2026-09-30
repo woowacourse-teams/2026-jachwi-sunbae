@@ -4,7 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.jachwisunbae.common.exception.BusinessException;
-import com.jachwisunbae.common.exception.DomainErrorCode;
+import com.jachwisunbae.common.exception.errorcode.ErrorCode;
 import java.time.LocalDateTime;
 import org.assertj.core.api.ThrowableAssert.ThrowingCallable;
 import org.junit.jupiter.api.DisplayName;
@@ -42,7 +42,7 @@ class PropertyPhotoTest {
     void rejectMissingPropertyId() {
         assertErrorCode(
             () -> PropertyPhoto.create(null, "photo.png", "image/png", 1L, CREATED_AT),
-            DomainErrorCode.PROPERTY_INPUT_INVALID);
+            ErrorCode.PROPERTY_INPUT_INVALID);
     }
 
     @Test
@@ -50,7 +50,7 @@ class PropertyPhotoTest {
     void rejectBlankStorageKey() {
         assertErrorCode(
             () -> PropertyPhoto.create(1L, " ", "image/png", 1L, CREATED_AT),
-            DomainErrorCode.PROPERTY_INPUT_INVALID);
+            ErrorCode.PROPERTY_INPUT_INVALID);
     }
 
     @Test
@@ -58,7 +58,7 @@ class PropertyPhotoTest {
     void rejectMissingContentType() {
         assertErrorCode(
             () -> PropertyPhoto.create(1L, "photo.png", null, 1L, CREATED_AT),
-            DomainErrorCode.PHOTO_CONTENT_TYPE_UNSUPPORTED);
+            ErrorCode.PHOTO_CONTENT_TYPE_UNSUPPORTED);
     }
 
     @Test
@@ -66,7 +66,7 @@ class PropertyPhotoTest {
     void rejectUnsupportedContentType() {
         assertErrorCode(
             () -> PropertyPhoto.create(1L, "photo.gif", "image/gif", 1L, CREATED_AT),
-            DomainErrorCode.PHOTO_CONTENT_TYPE_UNSUPPORTED);
+            ErrorCode.PHOTO_CONTENT_TYPE_UNSUPPORTED);
     }
 
     @Test
@@ -74,10 +74,10 @@ class PropertyPhotoTest {
     void rejectMissingOrNegativeSize() {
         assertErrorCode(
             () -> PropertyPhoto.create(1L, "photo.png", "image/png", null, CREATED_AT),
-            DomainErrorCode.PROPERTY_INPUT_INVALID);
+            ErrorCode.PROPERTY_INPUT_INVALID);
         assertErrorCode(
             () -> PropertyPhoto.create(1L, "photo.png", "image/png", -1L, CREATED_AT),
-            DomainErrorCode.PROPERTY_INPUT_INVALID);
+            ErrorCode.PROPERTY_INPUT_INVALID);
     }
 
     @Test
@@ -85,7 +85,7 @@ class PropertyPhotoTest {
     void rejectOversizedPhoto() {
         assertErrorCode(
             () -> PropertyPhoto.create(1L, "photo.png", "image/png", MAX_SIZE_BYTES + 1, CREATED_AT),
-            DomainErrorCode.PHOTO_FILE_SIZE_INVALID);
+            ErrorCode.PHOTO_FILE_SIZE_INVALID);
     }
 
     @Test
@@ -93,10 +93,10 @@ class PropertyPhotoTest {
     void rejectMissingCreatedAt() {
         assertErrorCode(
             () -> PropertyPhoto.create(1L, "photo.png", "image/png", 1L, null),
-            DomainErrorCode.PROPERTY_INPUT_INVALID);
+            ErrorCode.PROPERTY_INPUT_INVALID);
     }
 
-    private void assertErrorCode(final ThrowingCallable callable, final DomainErrorCode code) {
+    private void assertErrorCode(final ThrowingCallable callable, final ErrorCode code) {
         assertThatThrownBy(callable)
             .isInstanceOf(BusinessException.class)
             .extracting("code")

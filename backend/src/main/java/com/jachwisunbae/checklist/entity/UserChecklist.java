@@ -2,7 +2,7 @@ package com.jachwisunbae.checklist.entity;
 
 import lombok.Getter;
 import com.jachwisunbae.checklist.type.CheckStage;
-import com.jachwisunbae.common.exception.DomainErrorCode;
+import com.jachwisunbae.common.exception.errorcode.ErrorCode;
 import com.jachwisunbae.common.validation.DomainPreconditions;
 
 @Getter
@@ -34,17 +34,17 @@ public class UserChecklist {
     }
 
     private static Long validateMemberId(final Long memberId) {
-        return DomainPreconditions.requireNonNull(memberId, DomainErrorCode.USER_CHECKLIST_MEMBER_REQUIRED,
+        return DomainPreconditions.requireNonNull(memberId, ErrorCode.USER_CHECKLIST_MEMBER_REQUIRED,
                 "체크리스트 소유 회원은 필수입니다.");
     }
 
     private static String validateName(final String name) {
-        return DomainPreconditions.requireTrimmed(name, 1, 30, DomainErrorCode.USER_CHECKLIST_NAME_INVALID,
+        return DomainPreconditions.requireTrimmed(name, 1, 30, ErrorCode.USER_CHECKLIST_NAME_INVALID,
                 "체크리스트 이름은 trim 후 1자 이상 30자 이하여야 합니다.");
     }
 
     private static CheckStage validateStage(final CheckStage stage) {
-        return DomainPreconditions.requireNonNull(stage, DomainErrorCode.USER_CHECKLIST_STAGE_REQUIRED,
+        return DomainPreconditions.requireNonNull(stage, ErrorCode.USER_CHECKLIST_STAGE_REQUIRED,
                 "체크리스트 단계는 필수입니다.");
     }
 }

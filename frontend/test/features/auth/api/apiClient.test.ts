@@ -1,7 +1,7 @@
 import { http, HttpResponse } from 'msw';
 import { describe, expect, it, vi } from 'vitest';
 
-import { apiRequest } from '@/features/auth/api/apiClient';
+import { ApiError, apiRequest, getApiErrorTrackingContext } from '@/features/auth/api/apiClient';
 import { clearAuthentication, getAccessToken, setAuthentication } from '@/features/auth/model/authStore';
 import { propertyQueryKeys } from '@/features/property/api/propertyQueryKeys';
 import { queryClient } from '@/shared/api/queryClient';
@@ -14,6 +14,21 @@ const config: PublicConfig = {
 };
 
 describe('API 클라이언트', () => {
+  it('API 오류를 대응 우선순위와 종류로 분류한다', () => {
+    expect(getApiErrorTrackingContext(new ApiError({ kind: 'network' }))).toEqual({
+      error_category: 'network',
+      severity: 'P2',
+    });
+    expect(getApiErrorTrackingContext(new Error('서버 오류'), 503)).toEqual({
+      error_category: 'api_server',
+      severity: 'P1',
+    });
+    expect(getApiErrorTrackingContext(new ApiError({ kind: 'invalid-response' }))).toEqual({
+      error_category: 'api_contract',
+      severity: 'P1',
+    });
+  });
+
   it('204 No Content 응답을 JSON 파싱 없이 처리할 수 있다', async () => {
     setAuthentication({ accessToken: 'member-token', tokenType: 'Bearer', expiresIn: 60 });
     server.use(http.delete(`${config.apiBaseUrl}/api/example`, () => new HttpResponse(null, { status: 204 })));

@@ -2,9 +2,9 @@ package com.jachwisunbae.auth.web;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jachwisunbae.auth.token.JwtTokenProvider;
-import com.jachwisunbae.common.exception.BusinessException;
-import com.jachwisunbae.common.exception.DomainErrorCode;
-import com.jachwisunbae.common.web.error.DomainErrorResponse;
+import com.jachwisunbae.common.exception.client.AuthenticationFailedException;
+import com.jachwisunbae.common.exception.errorcode.ErrorCode;
+import com.jachwisunbae.common.web.error.ErrorResponse;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -24,7 +24,6 @@ import org.springframework.web.filter.OncePerRequestFilter;
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     public static final String MEMBER_ID_ATTRIBUTE = "authenticatedMemberId";
-    private static final String AUTHENTICATION_ERROR_MESSAGE = "인증 정보가 올바르지 않습니다.";
     private final JwtTokenProvider provider;
     private final ObjectMapper objectMapper;
 
@@ -53,7 +52,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             request.setAttribute(
                     MEMBER_ID_ATTRIBUTE,
                     provider.parseMemberId(extractToken(authorization)));
-        } catch (BusinessException exception) { //잘못된 jwt. 클라 문제
+        } catch (AuthenticationFailedException exception) { //잘못된 jwt. 클라 문제
             writeAuthenticationError(response);
             return;
         }
@@ -86,6 +85,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         response.setCharacterEncoding("UTF-8");
         response.setContentType(MediaType.APPLICATION_JSON_VALUE);
         objectMapper.writeValue(response.getWriter(),
-                new DomainErrorResponse(DomainErrorCode.ACCESS_TOKEN_INVALID.name(), AUTHENTICATION_ERROR_MESSAGE));
+                new ErrorResponse(ErrorCode.ACCESS_TOKEN_INVALID.name(),
+                        ErrorCode.ACCESS_TOKEN_INVALID.publicMessage()));
     }
 }

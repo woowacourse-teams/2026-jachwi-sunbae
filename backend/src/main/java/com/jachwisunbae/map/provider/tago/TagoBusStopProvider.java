@@ -2,8 +2,8 @@ package com.jachwisunbae.map.provider.tago;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.MissingNode;
-import com.jachwisunbae.common.exception.BusinessException;
-import com.jachwisunbae.common.exception.DomainErrorCode;
+import com.jachwisunbae.common.exception.errorcode.ErrorCode;
+import com.jachwisunbae.common.exception.server.UpstreamServiceException;
 import com.jachwisunbae.map.domain.NearbyPlace;
 import com.jachwisunbae.map.provider.BusStopProvider;
 import com.jachwisunbae.map.type.MapCategory;
@@ -19,6 +19,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.client.JdkClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
+import org.springframework.web.client.RestClientException;
 
 @Component
 @ConditionalOnProperty(name = "map.bus-stops.provider", havingValue = "tago")
@@ -89,7 +90,7 @@ public class TagoBusStopProvider implements BusStopProvider {
                     .queryParam("gpsLong", longitude)
                     .build()).retrieve().body(JsonNode.class);
             return Objects.requireNonNullElse(result, MissingNode.getInstance());
-        } catch (RuntimeException exception) {
+        } catch (RestClientException exception) {
             throw unavailable("TAGO 버스정류소 요청에 실패했습니다.", exception);
         }
     }
@@ -126,14 +127,18 @@ public class TagoBusStopProvider implements BusStopProvider {
         if (value.isBlank()) {
             throw unavailable("TAGO 버스정류소 좌표가 비어 있습니다.");
         }
-        return new BigDecimal(value);
+        try {
+            return new BigDecimal(value);
+        } catch (NumberFormatException exception) {
+            throw unavailable("TAGO 버스정류소 좌표 형식이 올바르지 않습니다. " + name + "=" + value, exception);
+        }
     }
 
-    private BusinessException unavailable(String message) {
-        return new BusinessException(DomainErrorCode.MAP_PROVIDER_UNAVAILABLE, message);
+    private UpstreamServiceException unavailable(String message) {
+        return new UpstreamServiceException(ErrorCode.MAP_PROVIDER_UNAVAILABLE, message);
     }
 
-    private BusinessException unavailable(String message, Throwable cause) {
-        return new BusinessException(DomainErrorCode.MAP_PROVIDER_UNAVAILABLE, message, cause);
+    private UpstreamServiceException unavailable(String message, Throwable cause) {
+        return new UpstreamServiceException(ErrorCode.MAP_PROVIDER_UNAVAILABLE, message, cause);
     }
 }

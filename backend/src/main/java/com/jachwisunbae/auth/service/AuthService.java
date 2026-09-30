@@ -4,8 +4,9 @@ import com.jachwisunbae.auth.domain.Password;
 import com.jachwisunbae.auth.service.dto.command.NicknameLoginCommand;
 import com.jachwisunbae.auth.service.dto.result.LoginResult;
 import com.jachwisunbae.auth.token.JwtTokenProvider;
-import com.jachwisunbae.common.exception.BusinessException;
-import com.jachwisunbae.common.exception.DomainErrorCode;
+import com.jachwisunbae.common.exception.client.AuthenticationFailedException;
+import com.jachwisunbae.common.exception.errorcode.ErrorCode;
+import com.jachwisunbae.common.exception.server.DataInconsistencyException;
 import com.jachwisunbae.member.entity.Member;
 import com.jachwisunbae.member.entity.Nickname;
 import com.jachwisunbae.member.repository.MemberRepository;
@@ -81,8 +82,8 @@ public class AuthService {
         if (protectedMember.isEmpty()) {
             return createMember(nickname, passwordEncoder.encode(password));
         }
-        if (!matches(password, protectedMember.get().getPasswordHash())) {
-            throw new BusinessException(DomainErrorCode.NICKNAME_AUTHENTICATION_FAILED,
+        if (!matches(password, protectedMember.get())) {
+            throw new AuthenticationFailedException(ErrorCode.NICKNAME_AUTHENTICATION_FAILED,
                     "닉네임 또는 비밀번호가 일치하지 않습니다.");
         }
         return createLoginResult(protectedMember.get(), false);
@@ -94,11 +95,13 @@ public class AuthService {
         return createLoginResult(member, true);
     }
 
-    private boolean matches(String password, String passwordHash) {
+    // 저장된 해시를 해석할 수 없으면 사용자가 올바른 비밀번호를 다시 입력해도 해결되지 않는 서버 데이터 문제다.
+    private boolean matches(String password, Member member) {
         try {
-            return passwordEncoder.matches(password, passwordHash);
+            return passwordEncoder.matches(password, member.getPasswordHash());
         } catch (IllegalArgumentException exception) {
-            return false;
+            throw new DataInconsistencyException(ErrorCode.INTERNAL_SERVER_ERROR,
+                    "memberId=" + member.getId() + " 저장된 비밀번호 해시를 검증할 수 없습니다.", exception);
         }
     }
 

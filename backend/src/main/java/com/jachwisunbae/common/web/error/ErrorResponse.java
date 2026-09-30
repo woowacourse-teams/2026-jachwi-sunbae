@@ -2,16 +2,16 @@ package com.jachwisunbae.common.web.error;
 
 import java.util.List;
 
-public record DomainErrorResponse(
+public record ErrorResponse(
         String code,
         String message,
         List<FieldErrorResponse> errors) {
 
-    public DomainErrorResponse {
+    public ErrorResponse {
         errors = errors == null ? List.of() : List.copyOf(errors);
     }
 
-    public DomainErrorResponse(final String code, final String message) {
+    public ErrorResponse(final String code, final String message) {
         this(code, message, List.of());
     }
 }

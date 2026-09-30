@@ -1,7 +1,7 @@
 package com.jachwisunbae.common.validation;
 
 import com.jachwisunbae.common.exception.BusinessException;
-import com.jachwisunbae.common.exception.DomainErrorCode;
+import com.jachwisunbae.common.exception.errorcode.ErrorCode;
 
 public final class DomainPreconditions {
 
@@ -10,7 +10,7 @@ public final class DomainPreconditions {
 
     public static <T> T requireNonNull(
             T value,
-            DomainErrorCode code,
+            ErrorCode code,
             String debugMessage) {
         if (value == null) {
             throw new BusinessException(code, debugMessage);
@@ -20,7 +20,7 @@ public final class DomainPreconditions {
 
     public static String requireNonBlank(
             String value,
-            DomainErrorCode code,
+            ErrorCode code,
             String debugMessage) {
         if (value == null || value.isBlank()) {
             throw new BusinessException(code, debugMessage);
@@ -32,7 +32,7 @@ public final class DomainPreconditions {
             String value,
             int minLength,
             int maxLength,
-            DomainErrorCode code,
+            ErrorCode code,
             String debugMessage) {
         String trimmed = requireNonBlank(value, code, debugMessage).trim();
         require(trimmed.length() >= minLength && trimmed.length() <= maxLength, code, debugMessage);
@@ -41,7 +41,7 @@ public final class DomainPreconditions {
 
     public static long requireNonNegative(
             Long value,
-            DomainErrorCode code,
+            ErrorCode code,
             String debugMessage) {
         requireNonNull(value, code, debugMessage);
         require(value >= 0, code, debugMessage);
@@ -51,7 +51,7 @@ public final class DomainPreconditions {
     public static long requireAtMost(
             Long value,
             long maximum,
-            DomainErrorCode code,
+            ErrorCode code,
             String debugMessage) {
         requireNonNull(value, code, debugMessage);
         require(value <= maximum, code, debugMessage);
@@ -60,7 +60,7 @@ public final class DomainPreconditions {
 
     public static int requirePositive(
             Integer value,
-            DomainErrorCode code,
+            ErrorCode code,
             String debugMessage) {
         requireNonNull(value, code, debugMessage);
         require(value > 0, code, debugMessage);
@@ -69,7 +69,7 @@ public final class DomainPreconditions {
 
     public static void require(
             boolean condition,
-            DomainErrorCode code,
+            ErrorCode code,
             String debugMessage) {
         if (!condition) {
             throw new BusinessException(code, debugMessage);

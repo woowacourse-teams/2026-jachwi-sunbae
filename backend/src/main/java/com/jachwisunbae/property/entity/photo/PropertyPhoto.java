@@ -1,7 +1,7 @@
 package com.jachwisunbae.property.entity.photo;
 
 import lombok.Getter;
-import com.jachwisunbae.common.exception.DomainErrorCode;
+import com.jachwisunbae.common.exception.errorcode.ErrorCode;
 import com.jachwisunbae.common.validation.DomainPreconditions;
 
 import java.time.LocalDateTime;
@@ -41,12 +41,12 @@ public class PropertyPhoto {
     }
 
     private static Long validateId(final Long id) {
-        return DomainPreconditions.requireNonNull(id, DomainErrorCode.PROPERTY_INPUT_INVALID,
+        return DomainPreconditions.requireNonNull(id, ErrorCode.PROPERTY_INPUT_INVALID,
                 "사진의 매물 ID는 필수입니다.");
     }
 
     private static String validateText(final String value) {
-        return DomainPreconditions.requireNonBlank(value, DomainErrorCode.PROPERTY_INPUT_INVALID,
+        return DomainPreconditions.requireNonBlank(value, ErrorCode.PROPERTY_INPUT_INVALID,
                 "사진 저장 키는 필수입니다.");
     }
 
@@ -56,14 +56,14 @@ public class PropertyPhoto {
 
     private static Long validateSize(final Long sizeBytes) {
         return DomainPreconditions.requireAtMost(
-                DomainPreconditions.requireNonNegative(sizeBytes, DomainErrorCode.PROPERTY_INPUT_INVALID,
+                DomainPreconditions.requireNonNegative(sizeBytes, ErrorCode.PROPERTY_INPUT_INVALID,
                         "사진 크기는 0 이상의 값이어야 합니다."),
-                5L * 1024 * 1024, DomainErrorCode.PHOTO_FILE_SIZE_INVALID,
+                5L * 1024 * 1024, ErrorCode.PHOTO_FILE_SIZE_INVALID,
                 "사진 크기는 5MiB 이하여야 합니다.");
     }
 
     private static java.time.LocalDateTime requireCreatedAt(final java.time.LocalDateTime createdAt) {
-        return DomainPreconditions.requireNonNull(createdAt, DomainErrorCode.PROPERTY_INPUT_INVALID,
+        return DomainPreconditions.requireNonNull(createdAt, ErrorCode.PROPERTY_INPUT_INVALID,
                 "사진 업로드 시각은 필수입니다.");
     }
 }

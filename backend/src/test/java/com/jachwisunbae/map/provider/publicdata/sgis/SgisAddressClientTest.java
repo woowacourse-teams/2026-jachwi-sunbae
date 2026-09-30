@@ -7,8 +7,8 @@ import static org.springframework.test.web.client.match.MockRestRequestMatchers.
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withServerError;
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withSuccess;
 
-import com.jachwisunbae.common.exception.BusinessException;
-import com.jachwisunbae.common.exception.DomainErrorCode;
+import com.jachwisunbae.common.exception.errorcode.ErrorCode;
+import com.jachwisunbae.common.exception.server.UpstreamServiceException;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.time.Clock;
@@ -123,8 +123,8 @@ class SgisAddressClientTest {
 
     private void assertProviderUnavailable(Runnable call) {
         assertThatThrownBy(call::run)
-                .isInstanceOfSatisfying(BusinessException.class, exception ->
-                        assertThat(exception.getCode()).isEqualTo(DomainErrorCode.MAP_PROVIDER_UNAVAILABLE));
+                .isInstanceOfSatisfying(UpstreamServiceException.class, exception ->
+                        assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.MAP_PROVIDER_UNAVAILABLE));
     }
 
     private static ResponseCreator coordinateResponse() {
