@@ -41,11 +41,12 @@ public class UserChecklistService {
     @Transactional
     public UserChecklist create(final Long memberId, final String name, final CheckStage stage,
                                 final List<Long> systemCheckItemIds) {
+        UserChecklist checklist = UserChecklist.create(memberId, name, stage);
         List<SystemCheckItem> requestedItems = findCreatableSystemItems(stage, systemCheckItemIds);
 
-        UserChecklist checklist = userChecklistRepository.save(UserChecklist.create(memberId, name, stage));
-        saveChecklistItems(checklist.getId(), requestedItems);
-        return checklist;
+        UserChecklist savedChecklist = userChecklistRepository.save(checklist);
+        saveChecklistItems(savedChecklist.getId(), requestedItems);
+        return savedChecklist;
     }
 
     public List<UserChecklistSummaryQuery> findAll(final Long memberId, final CheckStage stage) {
