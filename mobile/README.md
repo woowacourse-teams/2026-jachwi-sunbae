@@ -2,8 +2,6 @@
 
 기존 React 웹을 제품 코드의 단일 소스로 유지하면서 iOS·Android 앱으로 배포하기 위한 React Native WebView 셸입니다. 웹의 화면·API 로직은 `frontend/`에서 계속 개발하고, 앱 전용 기능만 이 디렉터리에 둡니다.
 
-프로젝트 전체 테스트 기준은 [공통 테스트 전략](../docs/convention/testing-strategy.md), 모바일 셸의 실행 명령과 세부 검사는 아래 품질 검사 항목을 따릅니다.
-
 ## 기술 선택
 
 | 항목 | 버전 | 선택 이유 |
