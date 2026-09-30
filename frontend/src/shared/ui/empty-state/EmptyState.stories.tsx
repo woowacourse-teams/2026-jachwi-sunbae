@@ -1,6 +1,8 @@
 import type { Meta, StoryObj } from '@storybook/react-webpack5';
+import { MemoryRouter } from 'react-router-dom';
 
-import { Button } from '@/shared/ui/button/Button';
+import { ButtonLink } from '@/shared/ui/button/Button';
+import Icon from '@/shared/ui/icon/Icon';
 
 import EmptyState from './EmptyState';
 
@@ -38,6 +40,12 @@ export const Plain: Story = {
 
 export const WithAction: Story = {
   args: {
-    action: <Button>첫 매물 등록하기</Button>,
+    action: (
+      <MemoryRouter initialEntries={['/properties']}>
+        <ButtonLink to="/properties/new">
+          <Icon name="plus" size={15} />첫 매물 등록하기
+        </ButtonLink>
+      </MemoryRouter>
+    ),
   },
 };
