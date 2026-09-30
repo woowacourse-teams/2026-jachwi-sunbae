@@ -7,7 +7,8 @@ const meta = {
   component: TextField,
   args: {
     label: '매물 이름',
-    placeholder: '예: 햇살 좋은 원룸',
+    placeholder: '매물 이름 입력',
+    floatingLabel: true,
     variant: 'underline',
     fieldSize: 'medium',
   },
@@ -20,6 +21,7 @@ const meta = {
       control: 'select',
       options: ['medium', 'large'],
     },
+    floatingLabel: { control: 'boolean' },
   },
 } satisfies Meta<typeof TextField>;
 
