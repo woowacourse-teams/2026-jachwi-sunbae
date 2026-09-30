@@ -3,7 +3,7 @@ package com.jachwisunbae.map.provider.publicdata;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import com.jachwisunbae.common.exception.BusinessException;
+import com.jachwisunbae.common.exception.client.ResourceNotFoundException;
 import com.jachwisunbae.common.exception.errorcode.ErrorCode;
 import com.jachwisunbae.map.domain.MapAddress;
 import com.jachwisunbae.map.provider.publicdata.juso.JusoAddressClient;
@@ -84,8 +84,8 @@ class PublicDataAddressProviderTest {
     @DisplayName("좌표의 도로명주소를 찾지 못하면 주소 없음 오류로 변환한다")
     void convertsMissingAddressToNotFound() {
         assertThatThrownBy(() -> provider.reverseGeocode(LATITUDE, LONGITUDE))
-                .isInstanceOfSatisfying(BusinessException.class, exception ->
-                        assertThat(exception.getCode()).isEqualTo(ErrorCode.MAP_ADDRESS_NOT_FOUND));
+                .isInstanceOfSatisfying(ResourceNotFoundException.class, exception ->
+                        assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.MAP_ADDRESS_NOT_FOUND));
     }
 
     private static class FakeJusoAddressClient extends JusoAddressClient {

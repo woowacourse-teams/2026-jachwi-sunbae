@@ -1,7 +1,10 @@
 package com.jachwisunbae.map.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import com.jachwisunbae.common.exception.client.InvalidInputException;
+import com.jachwisunbae.common.exception.errorcode.ErrorCode;
 import com.jachwisunbae.map.domain.NearbyPlace;
 import com.jachwisunbae.map.provider.BusStopProvider;
 import com.jachwisunbae.map.provider.NearbyPlaceProvider;
@@ -16,6 +19,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
+import org.assertj.core.api.ThrowableAssert.ThrowingCallable;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -115,6 +119,22 @@ class MapServiceTest {
         service.nearby(LATITUDE, LONGITUDE, 500, categoriesWithNull);
 
         assertThat(requested).containsExactly(EnumSet.of(MapCategory.HOSPITAL));
+    }
+
+    @Test
+    @DisplayName("검색어, 좌표, 반경이 허용 범위를 벗어나면 사용자 입력 오류로 본다")
+    void rejectsInvalidQueryAsInvalidInput() {
+        MapService service = service(Optional.empty());
+
+        assertInvalidQuery(() -> service.geocode(" "));
+        assertInvalidQuery(() -> service.reverseGeocode(new BigDecimal("91"), LONGITUDE));
+        assertInvalidQuery(() -> service.nearby(LATITUDE, LONGITUDE, 700, EnumSet.allOf(MapCategory.class)));
+    }
+
+    private static void assertInvalidQuery(ThrowingCallable call) {
+        assertThatThrownBy(call)
+                .isInstanceOfSatisfying(InvalidInputException.class, exception ->
+                        assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.MAP_QUERY_INVALID));
     }
 
     private MapService service(Optional<BusStopProvider> busStopProvider) {

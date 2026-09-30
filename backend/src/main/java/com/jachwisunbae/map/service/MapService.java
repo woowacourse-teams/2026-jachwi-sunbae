@@ -1,6 +1,6 @@
 package com.jachwisunbae.map.service;
 
-import com.jachwisunbae.common.exception.BusinessException;
+import com.jachwisunbae.common.exception.client.InvalidInputException;
 import com.jachwisunbae.common.exception.errorcode.ErrorCode;
 import com.jachwisunbae.map.domain.MapAddress;
 import com.jachwisunbae.map.domain.NearbyPlace;
@@ -109,7 +109,7 @@ public class MapService {
         }
     }
 
-    private BusinessException invalidQuery(String message) {
-        return new BusinessException(ErrorCode.MAP_QUERY_INVALID, message);
+    private InvalidInputException invalidQuery(String message) {
+        return new InvalidInputException(ErrorCode.MAP_QUERY_INVALID, message);
     }
 }
