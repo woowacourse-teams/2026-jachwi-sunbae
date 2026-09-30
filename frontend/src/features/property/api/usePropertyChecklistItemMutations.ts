@@ -2,6 +2,7 @@ import { useMutation } from '@tanstack/react-query';
 
 import { queryClient } from '@/shared/api/queryClient';
 import { usePublicConfig } from '@/shared/config/PublicConfigContext';
+import { trackPostHogEvent } from '@/shared/lib/analytics/posthog';
 
 import type { PropertyChecklistDetail, PropertyChecklistItemStatus } from '../model/Property';
 import { updatePropertyChecklistItemMemo, updatePropertyChecklistItemStatus } from './propertyApi';
@@ -30,6 +31,14 @@ export const usePropertyChecklistItemStatusMutation = (propertyId: number, prope
       updatePropertyChecklistItemStatus(config, propertyId, propertyChecklistId, itemId, status),
     onSuccess: ({ itemId, status }) => {
       updateChecklistItem(propertyId, propertyChecklistId, itemId, (item) => ({ ...item, status }));
+      if (status !== 'UNCONFIRMED') {
+        trackPostHogEvent('checklist_item_checked', {
+          property_id: propertyId,
+          property_checklist_id: propertyChecklistId,
+          item_id: itemId,
+          status,
+        });
+      }
     },
   });
 };

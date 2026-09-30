@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 
 import { describePropertyLoadError } from '@/features/property/api/propertyErrorMessages';
@@ -7,6 +7,7 @@ import { useRemoveProperty } from '@/features/property/api/usePropertyMutations'
 import { parsePositiveId } from '@/features/property/lib/propertyFormat';
 import type { PropertyDetail } from '@/features/property/model/Property';
 import PropertyPhotoViewer from '@/features/property/ui/property-photo-viewer/PropertyPhotoViewer';
+import { trackPostHogEvent } from '@/shared/lib/analytics/posthog';
 import ConfirmDialog from '@/shared/ui/confirm-dialog/ConfirmDialog';
 import ContentState from '@/shared/ui/content-state/ContentState';
 import PageHeading from '@/shared/ui/page-heading/PageHeading';
@@ -56,6 +57,10 @@ const PropertyDetailView = ({ propertyId, detail }: PropertyDetailViewProps) => 
   const [selectedPhotoIndex, setSelectedPhotoIndex] = useState<number | null>(null);
   const deleteButtonRef = useRef<HTMLButtonElement>(null);
   const photoTriggerRef = useRef<HTMLButtonElement | null>(null);
+
+  useEffect(() => {
+    trackPostHogEvent('property_detail_viewed', { property_id: propertyId });
+  }, [propertyId]);
 
   const deleteProperty = async () => {
     try {
