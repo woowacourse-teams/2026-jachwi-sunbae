@@ -3,7 +3,7 @@ package com.jachwisunbae.map.provider.publicdata.juso;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.MissingNode;
 import com.jachwisunbae.common.exception.BusinessException;
-import com.jachwisunbae.common.exception.DomainErrorCode;
+import com.jachwisunbae.common.exception.errorcode.ErrorCode;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -78,7 +78,7 @@ public class JusoAddressClient {
 
         //우리 서버가 정상적인 주소 검색 결과를 얻을 수 없는 문제 (인증키, 외부 시스템, 요청 자체의 문제 등)
         if (!errorCode.isSuccess()) {
-            throw new BusinessException(DomainErrorCode.MAP_PROVIDER_UNAVAILABLE,
+            throw new BusinessException(ErrorCode.MAP_PROVIDER_UNAVAILABLE,
                 "행안부 주소 검색이 실패했습니다. errorCode=" + errorCodeValue
                     + ", errorMessage=" + common.path("errorMessage").asText(""));
         }
@@ -100,7 +100,7 @@ public class JusoAddressClient {
                 .body(JsonNode.class);//response body의 JSON을 Jackson의 JsonNode 형태로 변환.
             return Objects.requireNonNullElse(root, MissingNode.getInstance());
         } catch (RuntimeException exception) {
-            throw new BusinessException(DomainErrorCode.MAP_PROVIDER_UNAVAILABLE,
+            throw new BusinessException(ErrorCode.MAP_PROVIDER_UNAVAILABLE,
                 "행안부 주소 검색 요청에 실패했습니다.", exception);
         }
     }

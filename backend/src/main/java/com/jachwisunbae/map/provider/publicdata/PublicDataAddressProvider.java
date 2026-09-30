@@ -1,7 +1,7 @@
 package com.jachwisunbae.map.provider.publicdata;
 
 import com.jachwisunbae.common.exception.BusinessException;
-import com.jachwisunbae.common.exception.DomainErrorCode;
+import com.jachwisunbae.common.exception.errorcode.ErrorCode;
 import com.jachwisunbae.map.domain.MapAddress;
 import com.jachwisunbae.map.provider.AddressProvider;
 import com.jachwisunbae.map.provider.publicdata.juso.JusoAddressClient;
@@ -53,7 +53,7 @@ public class PublicDataAddressProvider implements AddressProvider {
     public MapAddress reverseGeocode(BigDecimal latitude, BigDecimal longitude) {
         // 도로명주소가 없는 곳(산, 논밭 등)은 주소 없이 좌표만 저장되지 않도록 실패로 응답한다.
         String roadAddress = sgisClient.reverseGeocode(latitude, longitude)
-            .orElseThrow(() -> new BusinessException(DomainErrorCode.MAP_ADDRESS_NOT_FOUND,
+            .orElseThrow(() -> new BusinessException(ErrorCode.MAP_ADDRESS_NOT_FOUND,
                 "좌표의 도로명주소를 찾지 못했습니다."));
         return new MapAddress(roadAddress, null, latitude, longitude);
     }

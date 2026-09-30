@@ -4,7 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.jachwisunbae.common.exception.BusinessException;
-import com.jachwisunbae.common.exception.DomainErrorCode;
+import com.jachwisunbae.common.exception.errorcode.ErrorCode;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
@@ -89,6 +89,6 @@ class JwtTokenProviderTest {
     private static void assertInvalidToken(Executable call) {
         assertThatThrownBy(call::execute)
                 .isInstanceOfSatisfying(BusinessException.class, exception ->
-                        assertThat(exception.getCode()).isEqualTo(DomainErrorCode.ACCESS_TOKEN_INVALID));
+                        assertThat(exception.getCode()).isEqualTo(ErrorCode.ACCESS_TOKEN_INVALID));
     }
 }

@@ -1,6 +1,7 @@
 package com.jachwisunbae.common.web.error;
 
 import com.jachwisunbae.common.exception.BusinessException;
+import com.jachwisunbae.common.exception.errorcode.ErrorCode;
 import jakarta.validation.ConstraintViolationException;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
@@ -27,11 +28,6 @@ import org.springframework.web.servlet.resource.NoResourceFoundException;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
-    private static final String INVALID_REQUEST = "INVALID_REQUEST";
-    private static final String INVALID_REQUEST_MESSAGE = "요청 값이 올바르지 않습니다.";
-    private static final String INTERNAL_SERVER_ERROR = "INTERNAL_SERVER_ERROR";
-    private static final String INTERNAL_SERVER_ERROR_MESSAGE = "서버 내부 오류가 발생했습니다.";
-
     private final DomainErrorHttpMapper httpMapper;
 
     public GlobalExceptionHandler(final DomainErrorHttpMapper httpMapper) {
@@ -39,119 +35,117 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(BusinessException.class)
-    public ResponseEntity<DomainErrorResponse> handleBusinessException(final BusinessException exception) {
+    public ResponseEntity<ErrorResponse> handleBusinessException(final BusinessException exception) {
         HttpStatus status = httpMapper.statusOf(exception.getCode());
         logBusinessException(exception, status);
-        return response(status, exception.getCode().name(), INVALID_REQUEST_MESSAGE);
+        return response(status, exception.getCode());
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<DomainErrorResponse> handleMethodArgumentNotValid(
+    public ResponseEntity<ErrorResponse> handleMethodArgumentNotValid(
             final MethodArgumentNotValidException exception) {
         List<FieldErrorResponse> errors = exception.getBindingResult().getFieldErrors().stream()
                 .map(this::toFieldErrorResponse)
                 .toList();
         log.info("Request validation failed: errorCount={}", errors.size());
-        return response(HttpStatus.BAD_REQUEST, INVALID_REQUEST, INVALID_REQUEST_MESSAGE, errors);
+        return response(HttpStatus.BAD_REQUEST, ErrorCode.INVALID_REQUEST, errors);
     }
 
     @ExceptionHandler(BindException.class)
-    public ResponseEntity<DomainErrorResponse> handleBindException(final BindException exception) {
+    public ResponseEntity<ErrorResponse> handleBindException(final BindException exception) {
         List<FieldErrorResponse> errors = exception.getBindingResult().getFieldErrors().stream()
                 .map(this::toFieldErrorResponse)
                 .toList();
         log.info("Request binding failed: errorCount={}", errors.size());
-        return response(HttpStatus.BAD_REQUEST, INVALID_REQUEST, INVALID_REQUEST_MESSAGE, errors);
+        return response(HttpStatus.BAD_REQUEST, ErrorCode.INVALID_REQUEST, errors);
     }
 
     @ExceptionHandler({HandlerMethodValidationException.class, ConstraintViolationException.class})
-    public ResponseEntity<DomainErrorResponse> handleConstraintViolation(final Exception exception) {
+    public ResponseEntity<ErrorResponse> handleConstraintViolation(final Exception exception) {
         log.info("Request constraint validation failed: type={}", exception.getClass().getSimpleName());
-        return response(HttpStatus.BAD_REQUEST, INVALID_REQUEST, INVALID_REQUEST_MESSAGE);
+        return response(HttpStatus.BAD_REQUEST, ErrorCode.INVALID_REQUEST);
     }
 
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)
-    public ResponseEntity<DomainErrorResponse> handleTypeMismatch(
+    public ResponseEntity<ErrorResponse> handleTypeMismatch(
             final MethodArgumentTypeMismatchException exception) {
         FieldErrorResponse error = new FieldErrorResponse(exception.getName(), "올바른 형식의 값이 아닙니다.");
         log.info("Request argument type mismatch: field={}", exception.getName());
-        return response(HttpStatus.BAD_REQUEST, INVALID_REQUEST, INVALID_REQUEST_MESSAGE, List.of(error));
+        return response(HttpStatus.BAD_REQUEST, ErrorCode.INVALID_REQUEST, List.of(error));
     }
 
     @ExceptionHandler(HttpMessageNotReadableException.class)
-    public ResponseEntity<DomainErrorResponse> handleUnreadableMessage(
+    public ResponseEntity<ErrorResponse> handleUnreadableMessage(
             final HttpMessageNotReadableException exception) {
         log.info("Request body is not readable: type={}", exception.getClass().getSimpleName());
-        return response(HttpStatus.BAD_REQUEST, INVALID_REQUEST, INVALID_REQUEST_MESSAGE);
+        return response(HttpStatus.BAD_REQUEST, ErrorCode.INVALID_REQUEST);
     }
 
     @ExceptionHandler(MissingServletRequestParameterException.class)
-    public ResponseEntity<DomainErrorResponse> handleMissingParameter(
+    public ResponseEntity<ErrorResponse> handleMissingParameter(
             final MissingServletRequestParameterException exception) {
         FieldErrorResponse error = new FieldErrorResponse(exception.getParameterName(), "필수 값입니다.");
         log.info("Required request parameter is missing: field={}", exception.getParameterName());
-        return response(HttpStatus.BAD_REQUEST, INVALID_REQUEST, INVALID_REQUEST_MESSAGE, List.of(error));
+        return response(HttpStatus.BAD_REQUEST, ErrorCode.INVALID_REQUEST, List.of(error));
     }
 
     @ExceptionHandler({MissingPathVariableException.class, MissingServletRequestPartException.class})
-    public ResponseEntity<DomainErrorResponse> handleMissingRequestValue(final Exception exception) {
+    public ResponseEntity<ErrorResponse> handleMissingRequestValue(final Exception exception) {
         log.info("Required request value is missing: type={}", exception.getClass().getSimpleName());
-        return response(HttpStatus.BAD_REQUEST, INVALID_REQUEST, INVALID_REQUEST_MESSAGE);
+        return response(HttpStatus.BAD_REQUEST, ErrorCode.INVALID_REQUEST);
     }
 
     @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
-    public ResponseEntity<DomainErrorResponse> handleMethodNotSupported(
+    public ResponseEntity<ErrorResponse> handleMethodNotSupported(
             final HttpRequestMethodNotSupportedException exception) {
         log.info("Request method is not supported: method={}", exception.getMethod());
-        return response(HttpStatus.METHOD_NOT_ALLOWED, "METHOD_NOT_ALLOWED", "지원하지 않는 요청 메서드입니다.");
+        return response(HttpStatus.METHOD_NOT_ALLOWED, ErrorCode.METHOD_NOT_ALLOWED);
     }
 
     @ExceptionHandler(HttpMediaTypeNotSupportedException.class)
-    public ResponseEntity<DomainErrorResponse> handleMediaTypeNotSupported(
+    public ResponseEntity<ErrorResponse> handleMediaTypeNotSupported(
             final HttpMediaTypeNotSupportedException exception) {
         log.info("Request media type is not supported");
-        return response(HttpStatus.UNSUPPORTED_MEDIA_TYPE, "UNSUPPORTED_MEDIA_TYPE", "지원하지 않는 미디어 타입입니다.");
+        return response(HttpStatus.UNSUPPORTED_MEDIA_TYPE, ErrorCode.UNSUPPORTED_MEDIA_TYPE);
     }
 
     @ExceptionHandler(MaxUploadSizeExceededException.class)
-    public ResponseEntity<DomainErrorResponse> handleMaxUploadSize(
+    public ResponseEntity<ErrorResponse> handleMaxUploadSize(
             final MaxUploadSizeExceededException exception) {
         log.info("Upload size limit exceeded");
-        return response(HttpStatus.PAYLOAD_TOO_LARGE, "PHOTO_FILE_TOO_LARGE", "파일 크기 제한을 초과했습니다.");
+        return response(HttpStatus.PAYLOAD_TOO_LARGE, ErrorCode.PHOTO_FILE_TOO_LARGE);
     }
 
     @ExceptionHandler(NoResourceFoundException.class)
-    public ResponseEntity<DomainErrorResponse> handleNoResourceFound(final NoResourceFoundException exception) {
+    public ResponseEntity<ErrorResponse> handleNoResourceFound(final NoResourceFoundException exception) {
         log.info("Request resource was not found");
-        return response(HttpStatus.NOT_FOUND, "RESOURCE_NOT_FOUND", "요청한 리소스를 찾을 수 없습니다.");
+        return response(HttpStatus.NOT_FOUND, ErrorCode.RESOURCE_NOT_FOUND);
     }
 
     @ExceptionHandler(DataIntegrityViolationException.class)
-    public ResponseEntity<DomainErrorResponse> handleDataIntegrityViolation(
+    public ResponseEntity<ErrorResponse> handleDataIntegrityViolation(
             final DataIntegrityViolationException exception) {
         log.warn("Data integrity violation: type={}", exception.getClass().getSimpleName());
-        return response(HttpStatus.CONFLICT, "DATA_INTEGRITY_VIOLATION", "요청이 현재 데이터 상태와 충돌합니다.");
+        return response(HttpStatus.CONFLICT, ErrorCode.DATA_INTEGRITY_VIOLATION);
     }
 
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<DomainErrorResponse> handleUnexpectedException(final Exception exception) {
+    public ResponseEntity<ErrorResponse> handleUnexpectedException(final Exception exception) {
         log.error("Unexpected server error: type={}", exception.getClass().getSimpleName(), exception);
-        return response(HttpStatus.INTERNAL_SERVER_ERROR, INTERNAL_SERVER_ERROR, INTERNAL_SERVER_ERROR_MESSAGE);
+        return response(HttpStatus.INTERNAL_SERVER_ERROR, ErrorCode.INTERNAL_SERVER_ERROR);
     }
 
-    private ResponseEntity<DomainErrorResponse> response(
-            final HttpStatus status,
-            final String code,
-            final String message) {
-        return response(status, code, message, List.of());
+    private ResponseEntity<ErrorResponse> response(final HttpStatus status, final ErrorCode errorCode) {
+        return response(status, errorCode, List.of());
     }
 
-    private ResponseEntity<DomainErrorResponse> response(
+    // 응답 메시지는 항상 ErrorCode의 공개 메시지를 쓴다. 예외의 debugMessage는 로그에만 남긴다.
+    private ResponseEntity<ErrorResponse> response(
             final HttpStatus status,
-            final String code,
-            final String message,
+            final ErrorCode errorCode,
             final List<FieldErrorResponse> errors) {
-        return ResponseEntity.status(status).body(new DomainErrorResponse(code, message, errors));
+        return ResponseEntity.status(status)
+                .body(new ErrorResponse(errorCode.name(), errorCode.publicMessage(), errors));
     }
 
     private String reasonOf(final String reason) {

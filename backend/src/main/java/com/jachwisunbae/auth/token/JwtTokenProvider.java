@@ -1,7 +1,7 @@
 package com.jachwisunbae.auth.token;
 
 import com.jachwisunbae.common.exception.BusinessException;
-import com.jachwisunbae.common.exception.DomainErrorCode;
+import com.jachwisunbae.common.exception.errorcode.ErrorCode;
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.JWSAlgorithm;
 import com.nimbusds.jose.JWSHeader;
@@ -116,6 +116,6 @@ public class JwtTokenProvider {
     }
 
     private BusinessException invalidToken() {//클라 문제
-        return new BusinessException(DomainErrorCode.ACCESS_TOKEN_INVALID, "Access Token이 올바르지 않습니다.");
+        return new BusinessException(ErrorCode.ACCESS_TOKEN_INVALID, "Access Token이 올바르지 않습니다.");
     }
 }

@@ -1,7 +1,7 @@
 package com.jachwisunbae.auth.web;
 
 import com.jachwisunbae.common.exception.BusinessException;
-import com.jachwisunbae.common.exception.DomainErrorCode;
+import com.jachwisunbae.common.exception.errorcode.ErrorCode;
 import org.springframework.core.MethodParameter;
 import org.springframework.stereotype.Component;
 import org.springframework.web.bind.support.WebDataBinderFactory;
@@ -25,7 +25,7 @@ public class AuthenticatedMemberIdResolver implements HandlerMethodArgumentResol
                                   NativeWebRequest request, WebDataBinderFactory factory) {
         Object memberId = request.getAttribute(JwtAuthenticationFilter.MEMBER_ID_ATTRIBUTE, 0);
         if (memberId == null) {
-            throw new BusinessException(DomainErrorCode.ACCESS_TOKEN_INVALID, "Access Token이 필요합니다.");
+            throw new BusinessException(ErrorCode.ACCESS_TOKEN_INVALID, "Access Token이 필요합니다.");
         }
         return memberId;
     }

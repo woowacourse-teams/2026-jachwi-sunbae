@@ -7,7 +7,7 @@ import com.jachwisunbae.auth.service.dto.command.NicknameLoginCommand;
 import com.jachwisunbae.auth.service.dto.result.LoginResult;
 import com.jachwisunbae.auth.token.JwtTokenProvider;
 import com.jachwisunbae.common.exception.BusinessException;
-import com.jachwisunbae.common.exception.DomainErrorCode;
+import com.jachwisunbae.common.exception.errorcode.ErrorCode;
 import com.jachwisunbae.member.entity.Member;
 import com.jachwisunbae.member.repository.MemberRepository;
 import java.time.Clock;
@@ -92,10 +92,10 @@ class AuthServiceTest {
     void doesNotCreateMemberWhenInputIsInvalid() {
         assertThatThrownBy(() -> login("가".repeat(31), null))
                 .isInstanceOfSatisfying(BusinessException.class, exception ->
-                        assertThat(exception.getCode()).isEqualTo(DomainErrorCode.NICKNAME_INVALID));
+                        assertThat(exception.getCode()).isEqualTo(ErrorCode.NICKNAME_INVALID));
         assertThatThrownBy(() -> login("자취초보", "123"))
                 .isInstanceOfSatisfying(BusinessException.class, exception ->
-                        assertThat(exception.getCode()).isEqualTo(DomainErrorCode.NICKNAME_PASSWORD_INVALID));
+                        assertThat(exception.getCode()).isEqualTo(ErrorCode.NICKNAME_PASSWORD_INVALID));
         assertThat(memberRepository.count()).isZero();
     }
 
@@ -137,7 +137,7 @@ class AuthServiceTest {
 
         assertThatThrownBy(() -> login("보호닉네임", "9999"))
                 .isInstanceOfSatisfying(BusinessException.class, exception ->
-                        assertThat(exception.getCode()).isEqualTo(DomainErrorCode.NICKNAME_AUTHENTICATION_FAILED));
+                        assertThat(exception.getCode()).isEqualTo(ErrorCode.NICKNAME_AUTHENTICATION_FAILED));
         assertThat(memberRepository.count()).isEqualTo(1);
     }
 
@@ -213,7 +213,7 @@ class AuthServiceTest {
 
         assertThatThrownBy(() -> login("보호닉네임", "9999"))
                 .isInstanceOfSatisfying(BusinessException.class, exception ->
-                        assertThat(exception.getCode()).isEqualTo(DomainErrorCode.NICKNAME_AUTHENTICATION_FAILED));
+                        assertThat(exception.getCode()).isEqualTo(ErrorCode.NICKNAME_AUTHENTICATION_FAILED));
         assertThat(memberRepository.count()).isEqualTo(1);
     }
 

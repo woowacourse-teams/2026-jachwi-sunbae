@@ -3,7 +3,7 @@ package com.jachwisunbae.map.provider.publicdata.sgis;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.MissingNode;
 import com.jachwisunbae.common.exception.BusinessException;
-import com.jachwisunbae.common.exception.DomainErrorCode;
+import com.jachwisunbae.common.exception.errorcode.ErrorCode;
 import java.net.http.HttpClient;
 import java.time.Duration;
 import java.time.Instant;
@@ -66,14 +66,14 @@ public class SgisAuthClient {
         String value = result.path("accessToken").asText("");
         String timeout = result.path("accessTimeout").asText("");
         if (root.path("errCd").asInt(Integer.MIN_VALUE) != SUCCESS || value.isBlank() || timeout.isBlank()) {
-            throw new BusinessException(DomainErrorCode.MAP_PROVIDER_UNAVAILABLE,
+            throw new BusinessException(ErrorCode.MAP_PROVIDER_UNAVAILABLE,
                     "SGIS 토큰 발급이 실패했습니다. errCd=" + root.path("errCd").asText("")
                             + ", errMsg=" + root.path("errMsg").asText(""));
         }
         try {
             return new SgisAccessToken(value, Instant.ofEpochMilli(Long.parseLong(timeout)));
         } catch (NumberFormatException exception) {
-            throw new BusinessException(DomainErrorCode.MAP_PROVIDER_UNAVAILABLE,
+            throw new BusinessException(ErrorCode.MAP_PROVIDER_UNAVAILABLE,
                     "SGIS 토큰 만료 시각 형식이 올바르지 않습니다.", exception);
         }
     }
@@ -88,7 +88,7 @@ public class SgisAuthClient {
                     .body(JsonNode.class);
             return Objects.requireNonNullElse(root, MissingNode.getInstance());
         } catch (RuntimeException exception) {
-            throw new BusinessException(DomainErrorCode.MAP_PROVIDER_UNAVAILABLE,
+            throw new BusinessException(ErrorCode.MAP_PROVIDER_UNAVAILABLE,
                     "SGIS 토큰 발급 요청에 실패했습니다.", exception);
         }
     }

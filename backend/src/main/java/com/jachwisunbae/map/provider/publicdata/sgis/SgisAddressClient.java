@@ -3,7 +3,7 @@ package com.jachwisunbae.map.provider.publicdata.sgis;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.MissingNode;
 import com.jachwisunbae.common.exception.BusinessException;
-import com.jachwisunbae.common.exception.DomainErrorCode;
+import com.jachwisunbae.common.exception.errorcode.ErrorCode;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -127,14 +127,14 @@ public class SgisAddressClient {
 
     private void requireSuccess(JsonNode root) {
         if (errorCode(root) != SUCCESS) {
-            throw new BusinessException(DomainErrorCode.MAP_PROVIDER_UNAVAILABLE,
+            throw new BusinessException(ErrorCode.MAP_PROVIDER_UNAVAILABLE,
                 "SGIS 주소 요청이 실패했습니다. errCd=" + root.path("errCd").asText("")
                     + ", errMsg=" + root.path("errMsg").asText(""));
         }
     }
 
     private BusinessException requestFailed(RuntimeException exception) {
-        return new BusinessException(DomainErrorCode.MAP_PROVIDER_UNAVAILABLE, "SGIS 주소 요청에 실패했습니다.", exception);
+        return new BusinessException(ErrorCode.MAP_PROVIDER_UNAVAILABLE, "SGIS 주소 요청에 실패했습니다.", exception);
     }
 
     private int errorCode(JsonNode root) {
@@ -145,7 +145,7 @@ public class SgisAddressClient {
         try {
             return text(node, name).map(BigDecimal::new);
         } catch (NumberFormatException exception) {
-            throw new BusinessException(DomainErrorCode.MAP_PROVIDER_UNAVAILABLE,
+            throw new BusinessException(ErrorCode.MAP_PROVIDER_UNAVAILABLE,
                 "SGIS 좌표 응답 형식이 올바르지 않습니다.", exception);
         }
     }

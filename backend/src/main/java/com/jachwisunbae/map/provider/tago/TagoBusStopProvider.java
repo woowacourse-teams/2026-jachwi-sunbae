@@ -3,7 +3,7 @@ package com.jachwisunbae.map.provider.tago;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.MissingNode;
 import com.jachwisunbae.common.exception.BusinessException;
-import com.jachwisunbae.common.exception.DomainErrorCode;
+import com.jachwisunbae.common.exception.errorcode.ErrorCode;
 import com.jachwisunbae.map.domain.NearbyPlace;
 import com.jachwisunbae.map.provider.BusStopProvider;
 import com.jachwisunbae.map.type.MapCategory;
@@ -130,10 +130,10 @@ public class TagoBusStopProvider implements BusStopProvider {
     }
 
     private BusinessException unavailable(String message) {
-        return new BusinessException(DomainErrorCode.MAP_PROVIDER_UNAVAILABLE, message);
+        return new BusinessException(ErrorCode.MAP_PROVIDER_UNAVAILABLE, message);
     }
 
     private BusinessException unavailable(String message, Throwable cause) {
-        return new BusinessException(DomainErrorCode.MAP_PROVIDER_UNAVAILABLE, message, cause);
+        return new BusinessException(ErrorCode.MAP_PROVIDER_UNAVAILABLE, message, cause);
     }
 }

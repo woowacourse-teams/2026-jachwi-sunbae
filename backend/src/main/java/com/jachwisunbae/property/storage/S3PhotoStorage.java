@@ -1,7 +1,7 @@
 package com.jachwisunbae.property.storage;
 
 import com.jachwisunbae.common.exception.BusinessException;
-import com.jachwisunbae.common.exception.DomainErrorCode;
+import com.jachwisunbae.common.exception.errorcode.ErrorCode;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
@@ -53,7 +53,7 @@ public class S3PhotoStorage implements PhotoStorage {
     }
 
     private BusinessException storageFailure(RuntimeException cause) {
-        return new BusinessException(DomainErrorCode.PHOTO_STORAGE_FAILURE,
+        return new BusinessException(ErrorCode.PHOTO_STORAGE_FAILURE,
                 "사진 저장소 요청에 실패했습니다.", cause);
     }
 }

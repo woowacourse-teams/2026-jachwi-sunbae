@@ -1,7 +1,7 @@
 package com.jachwisunbae.property.service;
 
 import com.jachwisunbae.common.exception.BusinessException;
-import com.jachwisunbae.common.exception.DomainErrorCode;
+import com.jachwisunbae.common.exception.errorcode.ErrorCode;
 import com.jachwisunbae.member.repository.MemberRepository;
 import com.jachwisunbae.property.controller.dto.request.CreatePropertyRequest;
 import com.jachwisunbae.property.controller.dto.request.UpdatePropertyMemoRequest;
@@ -63,7 +63,7 @@ public class PropertyService {
 
     public PropertyDetailResponse findDetail(final Long memberId, final Long propertyId) {
         Property property = propertyRepository.findByIdAndMemberId(propertyId, memberId)
-            .orElseThrow(() -> new BusinessException(DomainErrorCode.PROPERTY_NOT_FOUND,
+            .orElseThrow(() -> new BusinessException(ErrorCode.PROPERTY_NOT_FOUND,
                 "매물을 찾을 수 없습니다."));
         return PropertyDetailResponse.from(property, propertyPhotoRepository.findByPropertyId(propertyId),
             propertyPhotoRepository.findRepresentativePhotoId(propertyId).orElse(null),
@@ -73,7 +73,7 @@ public class PropertyService {
     @Transactional
     public Property create(final Long memberId, final CreatePropertyRequest request) {
         memberRepository.findByIdForUpdate(memberId)
-            .orElseThrow(() -> new BusinessException(DomainErrorCode.MEMBER_NOT_FOUND, "회원을 찾을 수 없습니다."));
+            .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND, "회원을 찾을 수 없습니다."));
 
         int propertyCount = propertyRepository.countByMemberId(memberId);
         validatePropertyCount(propertyCount);
@@ -93,7 +93,7 @@ public class PropertyService {
 
     private void validatePropertyCount(final int propertyCount) {
         if (propertyCount >= 30) {
-            throw new BusinessException(DomainErrorCode.PROPERTY_LIMIT_EXCEEDED,
+            throw new BusinessException(ErrorCode.PROPERTY_LIMIT_EXCEEDED,
                 "회원당 매물은 30개까지 등록할 수 있습니다.");
         }
     }
@@ -101,7 +101,7 @@ public class PropertyService {
     @Transactional
     public Property update(final Long memberId, final Long propertyId, final UpdatePropertyRequest request) {
         Property property = propertyRepository.findByIdAndMemberId(propertyId, memberId)
-            .orElseThrow(() -> new BusinessException(DomainErrorCode.PROPERTY_NOT_FOUND,
+            .orElseThrow(() -> new BusinessException(ErrorCode.PROPERTY_NOT_FOUND,
                 "매물을 찾을 수 없습니다."));
         property.replaceBasicInfo(request.name(), request.depositAmount(),
             request.monthlyRentAmount(), request.address(),
@@ -126,7 +126,7 @@ public class PropertyService {
 
     private Property findOwnedProperty(final Long memberId, final Long propertyId) {
         return propertyRepository.findByIdAndMemberId(propertyId, memberId)
-                .orElseThrow(() -> new BusinessException(DomainErrorCode.PROPERTY_NOT_FOUND,
+                .orElseThrow(() -> new BusinessException(ErrorCode.PROPERTY_NOT_FOUND,
                         "매물을 찾을 수 없습니다."));
     }
 }

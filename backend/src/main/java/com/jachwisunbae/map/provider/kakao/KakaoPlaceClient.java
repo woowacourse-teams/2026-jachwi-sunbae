@@ -3,7 +3,7 @@ package com.jachwisunbae.map.provider.kakao;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.MissingNode;
 import com.jachwisunbae.common.exception.BusinessException;
-import com.jachwisunbae.common.exception.DomainErrorCode;
+import com.jachwisunbae.common.exception.errorcode.ErrorCode;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -75,7 +75,7 @@ public class KakaoPlaceClient {
                 .body(JsonNode.class);
             return response(Objects.requireNonNullElse(root, MissingNode.getInstance()));
         } catch (RuntimeException exception) {
-            throw new BusinessException(DomainErrorCode.MAP_PROVIDER_UNAVAILABLE,
+            throw new BusinessException(ErrorCode.MAP_PROVIDER_UNAVAILABLE,
                 "주변 시설 공급자 요청에 실패했습니다.", exception);
         }
     }

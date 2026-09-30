@@ -1,7 +1,7 @@
 package com.jachwisunbae.property.entity.photo;
 
 import com.jachwisunbae.common.exception.BusinessException;
-import com.jachwisunbae.common.exception.DomainErrorCode;
+import com.jachwisunbae.common.exception.errorcode.ErrorCode;
 
 public class PhotoFile {
 
@@ -33,7 +33,7 @@ public class PhotoFile {
 
     private static byte[] validateBytes(final byte[] bytes) {
         if (bytes == null || bytes.length == 0 || bytes.length > MAX_SIZE_BYTES) {
-            throw new BusinessException(DomainErrorCode.PHOTO_FILE_SIZE_INVALID,
+            throw new BusinessException(ErrorCode.PHOTO_FILE_SIZE_INVALID,
                 "사진은 1바이트 이상 5MiB 이하여야 합니다.");
         }
         return bytes.clone();

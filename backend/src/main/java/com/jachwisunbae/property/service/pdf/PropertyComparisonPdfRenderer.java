@@ -3,7 +3,7 @@ package com.jachwisunbae.property.service.pdf;
 import com.openhtmltopdf.outputdevice.helper.BaseRendererBuilder.FontStyle;
 import com.openhtmltopdf.pdfboxout.PdfRendererBuilder;
 import com.jachwisunbae.common.exception.BusinessException;
-import com.jachwisunbae.common.exception.DomainErrorCode;
+import com.jachwisunbae.common.exception.errorcode.ErrorCode;
 import com.jachwisunbae.property.service.pdf.model.PropertyComparisonRecord;
 import com.jachwisunbae.property.service.pdf.view.PropertyComparisonPdfView;
 import java.io.ByteArrayOutputStream;
@@ -52,7 +52,7 @@ public class PropertyComparisonPdfRenderer {
             builder.run();
             return output.toByteArray();
         } catch (IOException | RuntimeException exception) {
-            throw new BusinessException(DomainErrorCode.PROPERTY_COMPARISON_EXPORT_FAILED,
+            throw new BusinessException(ErrorCode.PROPERTY_COMPARISON_EXPORT_FAILED,
                 "매물 비교 PDF를 생성하지 못했습니다.", exception);
         }
     }

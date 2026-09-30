@@ -8,7 +8,7 @@ import static org.springframework.test.web.client.response.MockRestResponseCreat
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withSuccess;
 
 import com.jachwisunbae.common.exception.BusinessException;
-import com.jachwisunbae.common.exception.DomainErrorCode;
+import com.jachwisunbae.common.exception.errorcode.ErrorCode;
 import java.nio.charset.StandardCharsets;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
@@ -83,7 +83,7 @@ class JusoAddressClientTest {
 
         assertThatThrownBy(() -> client.search("판교역로 166"))
                 .isInstanceOfSatisfying(BusinessException.class, exception -> {
-                    assertThat(exception.getCode()).isEqualTo(DomainErrorCode.MAP_PROVIDER_UNAVAILABLE);
+                    assertThat(exception.getCode()).isEqualTo(ErrorCode.MAP_PROVIDER_UNAVAILABLE);
                     assertThat(exception.getMessage()).contains("E0001");
                 });
     }
@@ -107,7 +107,7 @@ class JusoAddressClientTest {
 
         assertThatThrownBy(() -> client.search("판교역로 166"))
                 .isInstanceOfSatisfying(BusinessException.class, exception -> {
-                    assertThat(exception.getCode()).isEqualTo(DomainErrorCode.MAP_PROVIDER_UNAVAILABLE);
+                    assertThat(exception.getCode()).isEqualTo(ErrorCode.MAP_PROVIDER_UNAVAILABLE);
                     assertThat(exception.getMessage()).contains("E0014");
                 });
     }
@@ -120,7 +120,7 @@ class JusoAddressClientTest {
 
         assertThatThrownBy(() -> client.search("판교역로 166"))
                 .isInstanceOfSatisfying(BusinessException.class, exception ->
-                        assertThat(exception.getCode()).isEqualTo(DomainErrorCode.MAP_PROVIDER_UNAVAILABLE));
+                        assertThat(exception.getCode()).isEqualTo(ErrorCode.MAP_PROVIDER_UNAVAILABLE));
     }
 
     @Test
@@ -131,7 +131,7 @@ class JusoAddressClientTest {
 
         assertThatThrownBy(() -> client.search("판교역로 166"))
                 .isInstanceOfSatisfying(BusinessException.class, exception ->
-                        assertThat(exception.getCode()).isEqualTo(DomainErrorCode.MAP_PROVIDER_UNAVAILABLE));
+                        assertThat(exception.getCode()).isEqualTo(ErrorCode.MAP_PROVIDER_UNAVAILABLE));
     }
 
     @Test

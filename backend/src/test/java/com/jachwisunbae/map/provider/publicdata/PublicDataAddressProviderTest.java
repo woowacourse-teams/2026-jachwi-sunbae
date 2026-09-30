@@ -4,7 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.jachwisunbae.common.exception.BusinessException;
-import com.jachwisunbae.common.exception.DomainErrorCode;
+import com.jachwisunbae.common.exception.errorcode.ErrorCode;
 import com.jachwisunbae.map.domain.MapAddress;
 import com.jachwisunbae.map.provider.publicdata.juso.JusoAddressClient;
 import com.jachwisunbae.map.provider.publicdata.juso.JusoAddressSearchResponse;
@@ -85,7 +85,7 @@ class PublicDataAddressProviderTest {
     void convertsMissingAddressToNotFound() {
         assertThatThrownBy(() -> provider.reverseGeocode(LATITUDE, LONGITUDE))
                 .isInstanceOfSatisfying(BusinessException.class, exception ->
-                        assertThat(exception.getCode()).isEqualTo(DomainErrorCode.MAP_ADDRESS_NOT_FOUND));
+                        assertThat(exception.getCode()).isEqualTo(ErrorCode.MAP_ADDRESS_NOT_FOUND));
     }
 
     private static class FakeJusoAddressClient extends JusoAddressClient {

@@ -4,7 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.jachwisunbae.common.exception.BusinessException;
-import com.jachwisunbae.common.exception.DomainErrorCode;
+import com.jachwisunbae.common.exception.errorcode.ErrorCode;
 import java.util.Arrays;
 import java.util.Base64;
 import org.junit.jupiter.api.DisplayName;
@@ -38,7 +38,7 @@ class PhotoFileTest {
         assertThatThrownBy(() -> new PhotoFile(bytes, "image/png"))
             .isInstanceOf(BusinessException.class)
             .extracting("code")
-            .isEqualTo(DomainErrorCode.PHOTO_FILE_SIZE_INVALID);
+            .isEqualTo(ErrorCode.PHOTO_FILE_SIZE_INVALID);
     }
 
 }

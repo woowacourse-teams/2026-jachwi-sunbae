@@ -11,7 +11,7 @@ import com.jachwisunbae.checklist.repository.UserChecklistRepository;
 import com.jachwisunbae.checklist.repository.query.UserChecklistItemDetail;
 import com.jachwisunbae.checklist.type.CheckStage;
 import com.jachwisunbae.common.exception.BusinessException;
-import com.jachwisunbae.common.exception.DomainErrorCode;
+import com.jachwisunbae.common.exception.errorcode.ErrorCode;
 import com.jachwisunbae.member.repository.MemberRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -106,11 +106,11 @@ public class UserChecklistService {
     public UserChecklist update(final Long memberId, final long checklistId,
                                 final UpdateUserChecklistRequest request) {
         memberRepository.findByIdForUpdate(memberId)
-            .orElseThrow(() -> new BusinessException(DomainErrorCode.MEMBER_NOT_FOUND, "회원을 찾을 수 없습니다."));
+            .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND, "회원을 찾을 수 없습니다."));
 
         UserChecklist checklist = userChecklistRepository
             .findByIdAndMemberIdForUpdate(checklistId, memberId)
-            .orElseThrow(() -> new BusinessException(DomainErrorCode.CHECKLIST_NOT_FOUND, "체크리스트를 찾을 수 없습니다."));
+            .orElseThrow(() -> new BusinessException(ErrorCode.CHECKLIST_NOT_FOUND, "체크리스트를 찾을 수 없습니다."));
 
         validator.validateRequestedItems(request.items());
         validator.validateFinalItemCount(request.items().size());
@@ -147,19 +147,19 @@ public class UserChecklistService {
 
     private UserChecklist findOwnedChecklist(final Long memberId, final long checklistId) {
         Optional<UserChecklist> checklist = userChecklistRepository.findByIdAndMemberId(checklistId, memberId);
-        return checklist.orElseThrow(() -> new BusinessException(DomainErrorCode.CHECKLIST_NOT_FOUND,
+        return checklist.orElseThrow(() -> new BusinessException(ErrorCode.CHECKLIST_NOT_FOUND,
             "체크리스트를 찾을 수 없습니다."));
     }
 
     private void requireOwnedChecklist(final Long memberId, final long checklistId) {
         if (!userChecklistRepository.existsByIdAndMemberId(checklistId, memberId)) {
-            throw new BusinessException(DomainErrorCode.CHECKLIST_NOT_FOUND, "체크리스트를 찾을 수 없습니다.");
+            throw new BusinessException(ErrorCode.CHECKLIST_NOT_FOUND, "체크리스트를 찾을 수 없습니다.");
         }
     }
 
     private void requireActive(final List<SystemCheckItem> items) {
         if (items.stream().anyMatch(item -> item.getDeletedAt() != null)) {
-            throw new BusinessException(DomainErrorCode.CHECKLIST_INACTIVE_ITEM_NOT_ALLOWED,
+            throw new BusinessException(ErrorCode.CHECKLIST_INACTIVE_ITEM_NOT_ALLOWED,
                 "비활성 시스템 항목은 새 체크리스트에 추가할 수 없습니다.");
         }
     }
@@ -171,7 +171,7 @@ public class UserChecklistService {
             .collect(Collectors.toSet());
 
         if (items.stream().anyMatch(item -> item.getDeletedAt() != null && !existingSystemIds.contains(item.getId()))) {
-            throw new BusinessException(DomainErrorCode.CHECKLIST_INACTIVE_ITEM_NOT_ALLOWED,
+            throw new BusinessException(ErrorCode.CHECKLIST_INACTIVE_ITEM_NOT_ALLOWED,
                 "기존 체크리스트에 포함되어 있지 않던 비활성 시스템 항목은 새로 추가할 수 없습니다.");
         }
     }

@@ -8,7 +8,7 @@ import static org.springframework.test.web.client.response.MockRestResponseCreat
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withSuccess;
 
 import com.jachwisunbae.common.exception.BusinessException;
-import com.jachwisunbae.common.exception.DomainErrorCode;
+import com.jachwisunbae.common.exception.errorcode.ErrorCode;
 import java.math.BigDecimal;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
@@ -95,7 +95,7 @@ class KakaoPlaceClientTest {
 
         assertThatThrownBy(() -> client.searchCategory("HP8", LATITUDE, LONGITUDE, 500, 1))
                 .isInstanceOfSatisfying(BusinessException.class, exception ->
-                        assertThat(exception.getCode()).isEqualTo(DomainErrorCode.MAP_PROVIDER_UNAVAILABLE));
+                        assertThat(exception.getCode()).isEqualTo(ErrorCode.MAP_PROVIDER_UNAVAILABLE));
     }
 
     @Test
@@ -108,7 +108,7 @@ class KakaoPlaceClientTest {
 
         assertThatThrownBy(() -> client.searchCategory("HP8", LATITUDE, LONGITUDE, 500, 1))
                 .isInstanceOfSatisfying(BusinessException.class, exception ->
-                        assertThat(exception.getCode()).isEqualTo(DomainErrorCode.MAP_PROVIDER_UNAVAILABLE));
+                        assertThat(exception.getCode()).isEqualTo(ErrorCode.MAP_PROVIDER_UNAVAILABLE));
     }
 
     @Test
