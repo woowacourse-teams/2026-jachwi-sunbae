@@ -15,6 +15,8 @@ type TextFieldProps = Omit<InputHTMLAttributes<HTMLInputElement>, 'children'> & 
   variant?: 'box' | 'underline';
   /** 한 화면에서 한 칸씩 크게 묻는 폼은 `large`를 쓴다. */
   fieldSize?: 'medium' | 'large';
+  /** 입력 전에는 placeholder를 보여주고, 포커스하거나 값이 있으면 라벨을 위로 띄운다. */
+  floatingLabel?: boolean;
 };
 
 const TextField = ({
@@ -29,6 +31,7 @@ const TextField = ({
   fieldClassName,
   variant = 'underline',
   fieldSize = 'medium',
+  floatingLabel = false,
   ...inputProps
 }: TextFieldProps) => {
   const generatedId = useId();
@@ -37,18 +40,32 @@ const TextField = ({
   const errorId = error === undefined ? undefined : `${inputId}-error`;
   const describedBy = [helpId, errorId].filter(Boolean).join(' ') || undefined;
 
+  const labelContent = (
+    <>
+      {requirement === '필수' && (
+        <span className={styles.requiredMarker} aria-hidden="true">
+          *
+        </span>
+      )}
+      {label}
+      {labelSuffix}
+    </>
+  );
+
   return (
-    <div className={`${styles.field} ${fieldClassName ?? ''}`} data-variant={variant} data-size={fieldSize}>
-      <label htmlFor={inputId}>
-        {requirement === '필수' && (
-          <span className={styles.requiredMarker} aria-hidden="true">
-            *
-          </span>
-        )}
-        {label}
-        {labelSuffix}
-      </label>
+    <div
+      className={`${styles.field} ${fieldClassName ?? ''}`}
+      data-variant={variant}
+      data-size={fieldSize}
+      data-floating-label={floatingLabel || undefined}
+    >
+      {!floatingLabel && <label htmlFor={inputId}>{labelContent}</label>}
       <div className={styles.control}>
+        {floatingLabel && (
+          <label className={styles.floatingLabel} htmlFor={inputId}>
+            {labelContent}
+          </label>
+        )}
         <input
           {...inputProps}
           id={inputId}

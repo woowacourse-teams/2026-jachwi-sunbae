@@ -72,7 +72,8 @@ const CreatePropertyPage = () => {
               label="매물 이름"
               fieldClassName={styles.nameField}
               fieldSize="large"
-              placeholder="예: 신림역 3번출구 햇빛 잘 드는 원룸"
+              floatingLabel
+              placeholder="매물 이름 입력"
               maxLength={30}
               value={values.name}
               onFocus={form.focusName}

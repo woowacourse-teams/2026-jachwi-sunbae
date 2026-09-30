@@ -3,8 +3,8 @@ import { useEffect, useRef, useState } from 'react';
 import { usePropertyMemo } from '@/features/property/api/useProperties';
 import { useSavePropertyMemoDocument } from '@/features/property/api/usePropertyMutations';
 import { Button } from '@/shared/ui/button/Button';
+import DetailSection from '@/shared/ui/detail-section/DetailSection';
 
-import PropertyDetailSection from '../property-detail-section/PropertyDetailSection';
 import PropertyMemoContent from './PropertyMemoContent';
 
 import styles from './PropertyMemoSection.module.css';
@@ -38,7 +38,7 @@ const PropertyMemoSection = ({ propertyId }: PropertyMemoSectionProps) => {
 
   return (
     <>
-      <PropertyDetailSection title="메모">
+      <DetailSection title="메모">
         <PropertyMemoContent
           memo={memo}
           triggerRef={triggerRef}
@@ -48,7 +48,7 @@ const PropertyMemoSection = ({ propertyId }: PropertyMemoSectionProps) => {
             setIsOpen(true);
           }}
         />
-      </PropertyDetailSection>
+      </DetailSection>
       <dialog
         ref={dialogRef}
         className={styles.dialog}
