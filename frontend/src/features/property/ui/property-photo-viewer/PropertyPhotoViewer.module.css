@@ -7,7 +7,7 @@
   overflow: hidden;
   padding: max(env(safe-area-inset-top), 0.5rem) 0 max(env(safe-area-inset-bottom), 0.5rem);
   background: rgb(14 17 15 / 94%);
-  place-items: center;
+  place-items: start center;
 }
 
 .viewer {

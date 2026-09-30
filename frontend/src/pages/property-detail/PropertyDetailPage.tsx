@@ -11,7 +11,6 @@ import ConfirmDialog from '@/shared/ui/confirm-dialog/ConfirmDialog';
 import ContentState from '@/shared/ui/content-state/ContentState';
 import PageHeading from '@/shared/ui/page-heading/PageHeading';
 import QueryState from '@/shared/ui/query-state/QueryState';
-import TopNavigation from '@/shared/ui/top-navigation/TopNavigation';
 import TopNavigationMenu from '@/shared/ui/top-navigation-menu/TopNavigationMenu';
 
 import PropertyAdditionalInfoSection from './ui/property-additional-info-section/PropertyAdditionalInfoSection';
@@ -70,12 +69,20 @@ const PropertyDetailView = ({ propertyId, detail }: PropertyDetailViewProps) => 
   return (
     <main className={styles.page}>
       <div className={styles.container}>
-        <TopNavigation
-          className={styles.detailNavigation}
-          title={detail.name}
+        <PropertyHeroPhoto
+          propertyId={propertyId}
+          propertyName={detail.name}
+          photos={detail.photoPreview.photos}
           backTo="/properties"
-          backLabel="매물 목록으로 돌아가기"
-          endSlot={
+          onOpen={() => {
+            photoTriggerRef.current = null;
+            setSelectedPhotoIndex(0);
+          }}
+        />
+
+        <div className={styles.infoPanel}>
+          <div className={styles.titleRow}>
+            <PageHeading title={detail.name} />
             <TopNavigationMenu label="매물 정보 메뉴 열기">
               <button
                 ref={deleteButtonRef}
@@ -89,37 +96,26 @@ const PropertyDetailView = ({ propertyId, detail }: PropertyDetailViewProps) => 
                 삭제
               </button>
             </TopNavigationMenu>
-          }
-        />
+          </div>
 
-        <PropertyHeroPhoto
-          propertyId={propertyId}
-          propertyName={detail.name}
-          photos={detail.photoPreview.photos}
-          onOpen={() => {
-            photoTriggerRef.current = null;
-            setSelectedPhotoIndex(0);
-          }}
-        />
+          <PropertyBasicInfoSection property={detail} />
 
-        <PageHeading title={detail.name} variant="overlap" />
-        <PropertyBasicInfoSection property={detail} />
+          <PropertyAdditionalInfoSection property={detail} />
 
-        <PropertyAdditionalInfoSection property={detail} />
+          <PropertyMemoSection propertyId={propertyId} />
 
-        <PropertyMemoSection propertyId={propertyId} />
+          <PropertyPhotoSection
+            propertyId={propertyId}
+            propertyName={detail.name}
+            photoPreview={detail.photoPreview}
+            onSelect={(index, trigger) => {
+              photoTriggerRef.current = trigger;
+              setSelectedPhotoIndex(index);
+            }}
+          />
 
-        <PropertyPhotoSection
-          propertyId={propertyId}
-          propertyName={detail.name}
-          photoPreview={detail.photoPreview}
-          onSelect={(index, trigger) => {
-            photoTriggerRef.current = trigger;
-            setSelectedPhotoIndex(index);
-          }}
-        />
-
-        <PropertyChecklistSection propertyId={propertyId} />
+          <PropertyChecklistSection propertyId={propertyId} />
+        </div>
 
         {selectedPhotoIndex !== null && (
           <PropertyPhotoViewer
