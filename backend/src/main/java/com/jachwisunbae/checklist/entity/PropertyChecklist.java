@@ -2,8 +2,6 @@ package com.jachwisunbae.checklist.entity;
 
 import lombok.Getter;
 import com.jachwisunbae.checklist.type.CheckStage;
-import com.jachwisunbae.common.exception.errorcode.ErrorCode;
-import com.jachwisunbae.common.validation.DomainPreconditions;
 
 @Getter
 public class PropertyChecklist {
@@ -35,9 +33,9 @@ public class PropertyChecklist {
                 validateName(checklistName), validateStage(stage));
     }
 
+    // 매물 체크리스트의 값은 서버가 매물과 적용한 체크리스트에서 복사해 넣는다. 어긋나면 서버 코드 문제다.
     private static Long validateId(final Long id) {
-        return DomainPreconditions.requireNonNull(id, ErrorCode.PROPERTY_CHECKLIST_NOT_FOUND,
-                "매물 체크리스트 ID는 필수입니다.");
+        return requireNonNull(id, "매물 체크리스트 ID는 필수입니다.");
     }
 
     private static Long validateNullableId(final Long id) {
@@ -45,12 +43,24 @@ public class PropertyChecklist {
     }
 
     private static String validateName(final String name) {
-        return DomainPreconditions.requireTrimmed(name, 1, 30, ErrorCode.CHECKLIST_ITEMS_INVALID,
-                "적용 체크리스트 이름은 trim 후 1자 이상 30자 이하여야 합니다.");
+        return requireTrimmed(name, 30, "적용 체크리스트 이름은 trim 후 1자 이상 30자 이하여야 합니다.");
     }
 
     private static CheckStage validateStage(final CheckStage stage) {
-        return DomainPreconditions.requireNonNull(stage, ErrorCode.PROPERTY_CHECKLIST_STAGE_MISMATCH,
-                "적용 단계는 필수입니다.");
+        return requireNonNull(stage, "적용 단계는 필수입니다.");
+    }
+
+    private static <T> T requireNonNull(final T value, final String message) {
+        if (value == null) {
+            throw new IllegalArgumentException(message);
+        }
+        return value;
+    }
+
+    private static String requireTrimmed(final String value, final int maxLength, final String message) {
+        if (value == null || value.isBlank() || value.trim().length() > maxLength) {
+            throw new IllegalArgumentException(message);
+        }
+        return value.trim();
     }
 }
