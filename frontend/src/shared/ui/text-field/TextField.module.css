@@ -66,8 +66,9 @@
   transform: translateY(-50%);
 }
 
-/* 포커스 중에만 밑줄과 같은 색을 사용하고, 포커스가 끝나면 기본 색으로 돌아온다. */
-.field[data-floating-label='true']:focus-within .floatingLabel {
+/* :has(input:not(:placeholder-shown))의 우선순위가 더 높으므로 포커스된 input을 직접 기준으로 삼는다. */
+.field[data-floating-label='true']:focus-within .floatingLabel,
+.field[data-floating-label='true']:has(input:focus) .floatingLabel {
   color: var(--color-brand-yellow);
 }
 
