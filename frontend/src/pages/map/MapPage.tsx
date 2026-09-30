@@ -21,7 +21,7 @@ import MapPropertySheet from './ui/map-property-sheet/MapPropertySheet';
 
 import styles from './MapPage.module.css';
 
-/** 지도 탭은 시설 확인 목적에 맞춰 500m 반경을 기본으로 사용한다. */
+/** 지도 탭은 사용자가 반경을 선택했을 때만 주변 시설 반경을 표시한다. */
 const INITIAL_MAP_LEVEL = 4;
 const PROPERTY_MARKER_PREFIX = 'property-';
 

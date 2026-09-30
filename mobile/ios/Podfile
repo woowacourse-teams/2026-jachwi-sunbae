@@ -17,6 +17,9 @@ end
 target 'JachwiSunbaeMobile' do
   config = use_native_modules!
 
+  # 앱 셸 전용 네이티브 UI(탭바 등)
+  pod 'JachwiNativeUI', :path => './JachwiNativeUI'
+
   use_react_native!(
     :path => config[:reactNativePath],
     # An absolute path to your application root.

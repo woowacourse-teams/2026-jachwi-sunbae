@@ -1,4 +1,4 @@
-import type { CSSProperties } from 'react';
+import type { CSSProperties, KeyboardEvent } from 'react';
 import { useLocation } from 'react-router-dom';
 
 import MoneyField from '@/features/property/ui/money-field/MoneyField';
@@ -26,6 +26,11 @@ const CreatePropertyPage = () => {
   const form = usePropertyCreationForm(routeState);
   const { values, errors, revealedStep, nameStep } = form;
   const isNameStep = revealedStep >= nameStep;
+  const submitOnKeyboardEnter = (event: KeyboardEvent<HTMLInputElement>) => {
+    if (event.key !== 'Enter') return;
+    event.preventDefault();
+    event.currentTarget.form?.requestSubmit();
+  };
 
   return (
     <main className={styles.page}>
@@ -50,6 +55,8 @@ const CreatePropertyPage = () => {
             value={values.depositAmount}
             onValueChange={(value) => form.changeMoney('depositAmount', value)}
             error={errors.depositAmount}
+            enterKeyHint="next"
+            onKeyDown={submitOnKeyboardEnter}
             autoFocus
           />
           {revealedStep >= 1 && (
@@ -61,6 +68,8 @@ const CreatePropertyPage = () => {
               value={values.monthlyRentAmount}
               onValueChange={(value) => form.changeMoney('monthlyRentAmount', value)}
               error={errors.monthlyRentAmount}
+              enterKeyHint="next"
+              onKeyDown={submitOnKeyboardEnter}
               autoFocus={revealedStep === 1}
             />
           )}
@@ -79,6 +88,8 @@ const CreatePropertyPage = () => {
               onFocus={form.focusName}
               onChange={form.changeName}
               error={errors.name}
+              enterKeyHint="done"
+              onKeyDown={submitOnKeyboardEnter}
             />
           )}
           {form.createError !== null && (
@@ -89,11 +100,13 @@ const CreatePropertyPage = () => {
           <p className={styles.stepNotice}>
             {stepNotice(revealedStep, isNameStep && form.location.status === 'ready')}
           </p>
-          <BottomActionArea>
-            <Button variant="primary" type="submit" fullWidth isLoading={form.isCreating}>
-              {isNameStep ? '매물 등록' : '다음'}
-            </Button>
-          </BottomActionArea>
+          {keyboardInset === 0 && (
+            <BottomActionArea>
+              <Button variant="primary" type="submit" fullWidth isLoading={form.isCreating}>
+                {isNameStep ? '매물 등록' : '다음'}
+              </Button>
+            </BottomActionArea>
+          )}
         </form>
       </div>
     </main>

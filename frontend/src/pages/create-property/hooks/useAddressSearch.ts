@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 
 import { searchAddress } from '@/features/map/api/mapApi';
 import type { MapAddress } from '@/features/map/model/Map';
@@ -20,6 +20,11 @@ const useAddressSearch = () => {
     setResults([]);
     setStatus('idle');
   };
+
+  /** 현재 선택된 주소를 검색창의 초기값으로만 채운다. 사용자가 입력한 검색어는 덮어쓰지 않는다. */
+  const setInitialQuery = useCallback((value: string) => {
+    setQuery((current) => (current === '' ? value : current));
+  }, []);
 
   const clear = () => changeQuery('');
 
@@ -43,7 +48,7 @@ const useAddressSearch = () => {
     setQuery(formatAddress(result));
   };
 
-  return { query, results, status, setStatus, changeQuery, clear, submit, pick };
+  return { query, results, status, setStatus, changeQuery, setInitialQuery, clear, submit, pick };
 };
 
 export default useAddressSearch;
