@@ -7,7 +7,9 @@ import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.util.Collections;
 import java.util.Iterator;
+import java.util.Optional;
 import javax.imageio.IIOImage;
 import javax.imageio.ImageIO;
 import javax.imageio.ImageReadParam;
@@ -16,20 +18,41 @@ import javax.imageio.ImageWriteParam;
 import javax.imageio.ImageWriter;
 import javax.imageio.stream.ImageInputStream;
 import javax.imageio.stream.ImageOutputStream;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 @Component
 public class PropertyComparisonPhotoOptimizer {
+
+    private static final Logger LOG = LoggerFactory.getLogger(PropertyComparisonPhotoOptimizer.class);
     private static final int MAX_DECODED_EDGE = 1_600;
     private static final int MAX_OUTPUT_EDGE = 1_200;
     private static final float JPEG_QUALITY = 0.78f;
 
+    // 최적화하지 못한 사진은 비교 PDF에서 빼고 나머지로 PDF를 만든다. 대신 어떤 이유로 빠졌는지 로그를 남긴다.
     public byte[] optimize(final byte[] source) {
+        Optional<BufferedImage> image = decode(source);
+        if (image.isEmpty()) {
+            return new byte[0];
+        }
+        try {
+            return encodeJpeg(resize(image.get()));
+        } catch (IOException exception) {
+            LOG.warn("비교 PDF용 사진을 JPEG로 변환하지 못해 제외합니다.", exception);
+            return new byte[0];
+        }
+    }
+
+    // 사용자가 올린 이미지는 깨져 있을 수 있고, ImageIO는 깨진 이미지에서 IOException 외의 런타임 예외도 던진다.
+    // 그래서 이미지를 해석하는 이 부분에 한정해 RuntimeException까지 잡아 그 사진만 제외한다.
+    private Optional<BufferedImage> decode(final byte[] source) {
         try (ImageInputStream input = ImageIO.createImageInputStream(new ByteArrayInputStream(source))) {
-            Iterator<ImageReader> readers = input == null ? java.util.Collections.emptyIterator()
+            Iterator<ImageReader> readers = input == null ? Collections.emptyIterator()
                     : ImageIO.getImageReaders(input);
             if (!readers.hasNext()) {
-                return new byte[0];
+                LOG.info("비교 PDF에서 해석할 수 없는 사진 형식이라 제외합니다.");
+                return Optional.empty();
             }
             ImageReader reader = readers.next();
             try {
@@ -40,12 +63,13 @@ public class PropertyComparisonPhotoOptimizer {
 
                 ImageReadParam parameter = reader.getDefaultReadParam();
                 parameter.setSourceSubsampling(subsampling, subsampling, 0, 0);
-                return encodeJpeg(resize(reader.read(0, parameter)));
+                return Optional.of(reader.read(0, parameter));
             } finally {
                 reader.dispose();
             }
         } catch (IOException | RuntimeException exception) {
-            return new byte[0];
+            LOG.warn("비교 PDF용 사진을 해석하지 못해 제외합니다.", exception);
+            return Optional.empty();
         }
     }
 
