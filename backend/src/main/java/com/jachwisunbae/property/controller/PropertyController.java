@@ -12,7 +12,6 @@ import com.jachwisunbae.property.controller.dto.response.PropertyMemoResponse;
 import com.jachwisunbae.property.controller.dto.response.UpdatePropertyResponse;
 import com.jachwisunbae.property.entity.Property;
 import com.jachwisunbae.property.service.PropertyDeletionService;
-import com.jachwisunbae.property.service.PropertyMemoService;
 import com.jachwisunbae.property.service.PropertyService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -35,14 +34,11 @@ import org.springframework.web.bind.annotation.RestController;
 @SecurityRequirement(name = "bearerAuth")
 public class PropertyController {
     private final PropertyService propertyService;
-    private final PropertyMemoService propertyMemoService;
     private final PropertyDeletionService propertyDeletionService;
 
     public PropertyController(final PropertyService propertyService,
-                              final PropertyMemoService propertyMemoService,
                               final PropertyDeletionService propertyDeletionService) {
         this.propertyService = propertyService;
-        this.propertyMemoService = propertyMemoService;
         this.propertyDeletionService = propertyDeletionService;
     }
 
@@ -106,16 +102,16 @@ public class PropertyController {
         @AuthenticatedMemberId final Long memberId,
         @PathVariable final Long propertyId) {
         return ApiResponse.of("자유 메모를 조회했습니다.",
-            PropertyMemoResponse.from(propertyMemoService.find(memberId, propertyId)));
+            PropertyMemoResponse.of(propertyId, propertyService.findMemoByMemberIdAndPropertyId(memberId, propertyId)));
     }
 
     @PutMapping("/{propertyId}/memo")
-    @Operation(summary = "자유 메모 교체 및 생성", description = "자유 메모를 교체합니다. 메모 행이 없으면 생성합니다.")
+    @Operation(summary = "자유 메모 교체", description = "매물의 자유 메모를 교체합니다.")
     public ApiResponse<PropertyMemoResponse> updateMemo(
         @AuthenticatedMemberId final Long memberId,
         @PathVariable final Long propertyId,
         @Valid @RequestBody final UpdatePropertyMemoRequest request) {
         return ApiResponse.of("자유 메모를 저장했습니다.",
-            PropertyMemoResponse.from(propertyMemoService.update(memberId, propertyId, request)));
+            PropertyMemoResponse.of(propertyId, propertyService.updateMemoByMemberIdAndPropertyId(memberId, propertyId, request)));
     }
 }

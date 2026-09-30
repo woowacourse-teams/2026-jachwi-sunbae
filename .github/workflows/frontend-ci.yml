@@ -37,6 +37,16 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Check repository version
+        run: python3 .github/scripts/check_versions.py
+        working-directory: .
+
+      - name: Check changelog
+        run: |
+          VERSION="$(tr -d '[:space:]' < VERSION)"
+          python3 .github/scripts/check_changelog.py "${VERSION}"
+        working-directory: .
+
       - name: Detect frontend changes
         id: changes
         env:

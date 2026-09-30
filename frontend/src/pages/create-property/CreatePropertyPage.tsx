@@ -1,0 +1,102 @@
+import type { CSSProperties } from 'react';
+import { useLocation } from 'react-router-dom';
+
+import MoneyField from '@/features/property/ui/money-field/MoneyField';
+import { useKeyboardInset } from '@/shared/lib/hooks/useKeyboardInset';
+import BottomActionArea from '@/shared/ui/bottom-action-area/BottomActionArea';
+import { Button } from '@/shared/ui/button/Button';
+import TextField from '@/shared/ui/text-field/TextField';
+import TopNavigation from '@/shared/ui/top-navigation/TopNavigation';
+
+import { type PropertyCreationRouteState, usePropertyCreationForm } from './hooks/usePropertyCreationForm';
+import PropertyLocationPicker from './ui/property-location-picker/PropertyLocationPicker';
+
+import styles from './CreatePropertyPage.module.css';
+
+const stepNotice = (revealedStep: number, isReadyToSubmit: boolean) => {
+  if (isReadyToSubmit) return '필수 정보를 모두 입력했다면 매물을 등록해 주세요.';
+  if (revealedStep === 0) return '보증금을 입력한 뒤 다음을 눌러 주세요.';
+  if (revealedStep === 1) return '월세를 입력한 뒤 다음을 눌러 주세요.';
+  return '위치를 선택한 뒤 다음을 눌러 주세요.';
+};
+
+const CreatePropertyPage = () => {
+  const routeState = (useLocation().state as PropertyCreationRouteState | null) ?? {};
+  const keyboardInset = useKeyboardInset();
+  const form = usePropertyCreationForm(routeState);
+  const { values, errors, revealedStep, nameStep } = form;
+  const isNameStep = revealedStep >= nameStep;
+
+  return (
+    <main className={styles.page}>
+      <div className={styles.content}>
+        <TopNavigation
+          className={styles.createNavigation}
+          title="새 매물 등록"
+          backTo="/properties"
+          backLabel="매물 등록 닫기"
+          navigationIcon="close"
+        />
+        <form
+          className={styles.formContainer}
+          style={{ '--keyboard-inset': `${keyboardInset}px` } as CSSProperties}
+          onSubmit={form.submitStep}
+        >
+          <MoneyField
+            label="보증금"
+            fieldClassName={styles.depositField}
+            fieldSize="large"
+            placeholder="예: 1,000"
+            value={values.depositAmount}
+            onValueChange={(value) => form.changeMoney('depositAmount', value)}
+            error={errors.depositAmount}
+            autoFocus
+          />
+          {revealedStep >= 1 && (
+            <MoneyField
+              label="월세"
+              fieldClassName={styles.rentField}
+              fieldSize="large"
+              placeholder="예: 55"
+              value={values.monthlyRentAmount}
+              onValueChange={(value) => form.changeMoney('monthlyRentAmount', value)}
+              error={errors.monthlyRentAmount}
+              autoFocus={revealedStep === 1}
+            />
+          )}
+          {!form.hasPresetLocation && revealedStep >= 2 && (
+            <PropertyLocationPicker location={form.location} search={form.search} />
+          )}
+          {isNameStep && (
+            <TextField
+              label="매물 이름"
+              fieldClassName={styles.nameField}
+              fieldSize="large"
+              placeholder="예: 신림역 3번출구 햇빛 잘 드는 원룸"
+              maxLength={30}
+              value={values.name}
+              onFocus={form.focusName}
+              onChange={form.changeName}
+              error={errors.name}
+            />
+          )}
+          {form.createError !== null && (
+            <p className={styles.errorNotice} role="alert">
+              {form.createError}
+            </p>
+          )}
+          <p className={styles.stepNotice}>
+            {stepNotice(revealedStep, isNameStep && form.location.status === 'ready')}
+          </p>
+          <BottomActionArea>
+            <Button variant="primary" type="submit" fullWidth isLoading={form.isCreating}>
+              {isNameStep ? '매물 등록' : '다음'}
+            </Button>
+          </BottomActionArea>
+        </form>
+      </div>
+    </main>
+  );
+};
+
+export default CreatePropertyPage;

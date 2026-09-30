@@ -57,7 +57,7 @@ public class PropertyPhotoService {
         try {
             PropertyPhoto saved = propertyPhotoRepository.save(memberId,
                 PropertyPhoto.create(propertyId, storageKey, photoFile.getContentType(), photoFile.size(),
-                    LocalDateTime.now(clock)), photoFile.checksum());
+                    LocalDateTime.now(clock)));
 
             propertyPhotoRepository.ensureRepresentative(propertyId);
             boolean representative = propertyPhotoRepository.findRepresentativePhotoId(propertyId)

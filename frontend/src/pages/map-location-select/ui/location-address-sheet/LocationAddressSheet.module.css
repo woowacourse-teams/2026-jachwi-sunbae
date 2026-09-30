@@ -1,0 +1,79 @@
+.sheet {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 18;
+  display: grid;
+  gap: 0.62rem;
+  padding: 1.15rem 1rem calc(1rem + env(safe-area-inset-bottom));
+  border-radius: 1.2rem 1.2rem 0 0;
+  background: rgb(255 255 255 / 97%);
+  box-shadow: 0 -0.5rem 1.5rem rgb(44 50 39 / 14%);
+  backdrop-filter: blur(10px);
+}
+
+.sheet > strong,
+.sheet > p {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sheet > strong {
+  font-size: 1.05rem;
+  line-height: 1.35;
+}
+
+.sheet > p {
+  margin: 0;
+  color: var(--color-muted);
+  font-size: 0.7rem;
+}
+
+.addressNotice {
+  min-height: 2.75rem;
+  margin: 0;
+  padding: 0.7rem;
+  border: 0;
+  border-radius: 0.75rem;
+  background: #fff0ee;
+  color: #ee625d !important;
+  font-size: 0.66rem !important;
+  font-weight: 800;
+  text-align: center;
+  cursor: pointer;
+}
+
+.addressHint {
+  margin: 0;
+  padding: 0.35rem 0 0;
+  color: var(--color-muted, #868b94);
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-align: center;
+}
+
+.addressError {
+  margin: 0.5rem 0 0;
+  color: var(--color-error);
+  font-size: 0.66rem;
+  line-height: 1.45;
+}
+
+.confirmButton {
+  min-height: 3.25rem;
+  padding: 0.8rem 1rem;
+  border: 0;
+  border-radius: 0.85rem;
+  background: #111;
+  color: white;
+  font-size: 0.78rem;
+  font-weight: 850;
+  cursor: pointer;
+}
+
+.confirmButton:disabled {
+  background: #d8d8d5;
+  cursor: not-allowed;
+}

@@ -1,0 +1,18 @@
+.description {
+  margin: 0.9rem 0 0.75rem;
+  padding: 0;
+  color: var(--color-muted);
+  font-size: 0.82rem;
+  line-height: 1.5;
+}
+
+.loadMore {
+  display: grid;
+  gap: 0.45rem;
+  margin-top: 0.75rem;
+}
+
+.bottomAction > div {
+  margin-right: -1rem;
+  margin-left: -1rem;
+}
