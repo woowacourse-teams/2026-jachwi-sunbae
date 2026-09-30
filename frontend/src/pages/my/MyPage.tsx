@@ -1,13 +1,39 @@
-import { Link, useOutletContext } from 'react-router-dom';
-import { clearAuthentication } from '../../features/auth/model/authStore';
-import { Button } from '../../shared/ui/button/Button';
-import Icon from '../../shared/ui/icon/Icon';
-import TopNavigation from '../../shared/ui/top-navigation/TopNavigation';
-import type { Member } from '../../features/auth/model/Member';
-import type { PublicConfig } from '../../shared/config/publicConfigTypes';
+import { useOutletContext } from 'react-router-dom';
+
+import { clearAuthentication } from '@/features/auth/model/authStore';
+import type { Member } from '@/features/auth/model/Member';
+import { usePublicConfig } from '@/shared/config/PublicConfigContext';
+import { Button } from '@/shared/ui/button/Button';
+import type { IconName } from '@/shared/ui/icon/Icon';
+import TopNavigation from '@/shared/ui/top-navigation/TopNavigation';
+
+import MyMenuLink from './ui/my-menu-link/MyMenuLink';
+import MyNoticeLink from './ui/my-notice-link/MyNoticeLink';
+
 import styles from './MyPage.module.css';
 
-const MyPage = ({ config }: { config: PublicConfig }) => {
+const myMenuItems: Array<{ to: string; icon: IconName; label: string }> = [
+  { to: '/properties', icon: 'home', label: '내 매물 관리' },
+  { to: '/checklists', icon: 'checklist', label: '내 체크리스트 관리' },
+  { to: '/map', icon: 'map', label: '지도와 주변 시설' },
+  { to: '/compare', icon: 'external-link', label: '매물 비교 PDF' },
+];
+
+const myNoticeItems = [
+  {
+    to: '/tips',
+    title: '선배팁 · 계약 전 꼭 확인할 7가지',
+    description: '먼저 자취한 선배들이 남긴 정보를 확인해요.',
+  },
+  {
+    to: '/privacy#account-deletion',
+    title: '계정 및 데이터 삭제 요청',
+    description: '자취선배 계정과 연결된 기록의 삭제를 요청해요.',
+  },
+];
+
+const MyPage = () => {
+  const config = usePublicConfig();
   const member = useOutletContext<Member>();
   const displayInitial = member.displayName.trim().slice(0, 1) || '자';
 
@@ -28,45 +54,13 @@ const MyPage = ({ config }: { config: PublicConfig }) => {
           </div>
         </section>
         <nav className={styles.menu} aria-label="내 기록">
-          <Link to="/properties">
-            <span className={styles.menuIcon}>
-              <Icon name="home" size={15} />
-            </span>
-            <strong>내 매물 관리</strong>
-            <Icon name="arrow-right" size={15} />
-          </Link>
-          <Link to="/checklists">
-            <span className={styles.menuIcon}>
-              <Icon name="checklist" size={15} />
-            </span>
-            <strong>내 체크리스트 관리</strong>
-            <Icon name="arrow-right" size={15} />
-          </Link>
-          <Link to="/map">
-            <span className={styles.menuIcon}>
-              <Icon name="map" size={15} />
-            </span>
-            <strong>지도와 주변 시설</strong>
-            <Icon name="arrow-right" size={15} />
-          </Link>
-          <Link to="/compare">
-            <span className={styles.menuIcon}>
-              <Icon name="external-link" size={15} />
-            </span>
-            <strong>매물 비교 PDF</strong>
-            <Icon name="arrow-right" size={15} />
-          </Link>
+          {myMenuItems.map((item) => (
+            <MyMenuLink key={item.to} {...item} />
+          ))}
         </nav>
-        <Link className={styles.notice} to="/tips">
-          <span className={styles.noticeIcon}>
-            <Icon name="info" size={16} />
-          </span>
-          <span>
-            <strong>선배팁 · 계약 전 꼭 확인할 7가지</strong>
-            <small>먼저 자취한 선배들이 남긴 정보를 확인해요.</small>
-          </span>
-          <Icon name="arrow-right" size={15} />
-        </Link>
+        {myNoticeItems.map((item) => (
+          <MyNoticeLink key={item.to} {...item} />
+        ))}
         <footer className={styles.footer}>
           <span>자취선배 MVP2 · {config.mapProviderMode === 'demo' ? 'DEMO MAP' : 'LIVE MAP'}</span>
           <Button variant="text" className={styles.logoutButton} onClick={() => clearAuthentication('logout')}>

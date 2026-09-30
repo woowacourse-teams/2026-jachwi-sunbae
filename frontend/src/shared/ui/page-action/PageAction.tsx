@@ -1,7 +1,9 @@
 import type { ReactNode } from 'react';
 import type { LinkProps } from 'react-router-dom';
 import { Link } from 'react-router-dom';
+
 import Icon from '../icon/Icon';
+
 import styles from './PageAction.module.css';
 
 type PageActionProps = {

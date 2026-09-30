@@ -1246,7 +1246,7 @@ PODS:
     - ReactCommon/turbomodule/core
     - ReactNativeDependencies
     - Yoga
-  - react-native-safe-area-context (5.6.2):
+  - react-native-safe-area-context (5.10.0):
     - hermes-engine
     - RCTRequired
     - RCTTypeSafety
@@ -1259,8 +1259,8 @@ PODS:
     - React-graphics
     - React-ImageManager
     - React-jsi
-    - react-native-safe-area-context/common (= 5.6.2)
-    - react-native-safe-area-context/fabric (= 5.6.2)
+    - react-native-safe-area-context/common (= 5.10.0)
+    - react-native-safe-area-context/fabric (= 5.10.0)
     - React-NativeModulesApple
     - React-RCTFabric
     - React-renderercss
@@ -1270,7 +1270,7 @@ PODS:
     - ReactCommon/turbomodule/core
     - ReactNativeDependencies
     - Yoga
-  - react-native-safe-area-context/common (5.6.2):
+  - react-native-safe-area-context/common (5.10.0):
     - hermes-engine
     - RCTRequired
     - RCTTypeSafety
@@ -1292,7 +1292,7 @@ PODS:
     - ReactCommon/turbomodule/core
     - ReactNativeDependencies
     - Yoga
-  - react-native-safe-area-context/fabric (5.6.2):
+  - react-native-safe-area-context/fabric (5.10.0):
     - hermes-engine
     - RCTRequired
     - RCTTypeSafety
@@ -2015,7 +2015,7 @@ SPEC CHECKSUMS:
   React-Mapbuffer: 295203fc648a43acf7fba609ddf573aa9fca849f
   React-microtasksnativemodule: 269f81deee27a2a9bedb6b2d1088c1ae93de9bd3
   React-mutationobservernativemodule: 877e9f730e0d8175c2e952901b55c170fc3d372f
-  react-native-safe-area-context: dcf118fde0c1d3bd82aa240e342dacb0fdadc9d7
+  react-native-safe-area-context: b3e507b0dbfb44dfadb29f7a31e884ac13789723
   react-native-webview: f189adab64d5d71cec3b9e9ec3261355376ec7a2
   React-NativeModulesApple: adb1dd8361dff80e9f6652fb3fdbf033cfbe2a89
   React-networking: c00b437c4408f0640ba0d4158357133488521eca
@@ -2050,7 +2050,7 @@ SPEC CHECKSUMS:
   React-viewtransitionnativemodule: 1bc6bb59029e578e62cb1a818ff4a4d548071a66
   React-webperformancenativemodule: 10cf05e9bcf2f28a4b1c498d580e21ba3cc114f1
   ReactAppDependencyProvider: 3949ea6b2df0d96295128aae79f068cb6c5f81dc
-  ReactCodegen: 9d453e498a8da11c81c98ae0a1ccba373f4f510b
+  ReactCodegen: 13d2ebfe2d8f1200052509b4fc4abf7a6825a7fc
   ReactCommon: 749169e12aa3461a3df3656a00e48dbe0456b2d6
   ReactNativeDependencies: 94c922c39e0e6150ee9ad05e2ca1946e0ef55783
   SocketRocket: 37aec555668fb852ec12e3c0de59a86ca58f0871

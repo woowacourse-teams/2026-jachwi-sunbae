@@ -1,16 +1,19 @@
 import { QueryClientProvider } from '@tanstack/react-query';
-import { StrictMode } from 'react';
 import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { HttpResponse, http } from 'msw';
+import { http, HttpResponse } from 'msw';
+import { StrictMode } from 'react';
 import { MemoryRouter } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { successEnvelope } from '../../../src/app/mocks/fixtures/propertyFixtures';
+
+import { successEnvelope } from '@/app/mocks/fixtures/propertyFixtures';
+import AppRoutes from '@/app/router/AppRoutes';
+import { setAuthentication } from '@/features/auth/model/authStore';
+import { queryClient } from '@/shared/api/queryClient';
+import { PublicConfigProvider } from '@/shared/config/PublicConfigContext';
+import type { PublicConfig } from '@/shared/config/publicConfigTypes';
+
 import { server } from '../../server';
-import type { PublicConfig } from '../../../src/shared/config/publicConfigTypes';
-import AppRoutes from '../../../src/app/router/AppRoutes';
-import { setAuthentication } from '../../../src/features/auth/model/authStore';
-import { queryClient } from '../../../src/shared/api/queryClient';
 
 const config: PublicConfig = {
   apiBaseUrl: 'http://localhost:8080',
@@ -94,7 +97,9 @@ const renderAuthenticated = (path: string) => {
     <StrictMode>
       <QueryClientProvider client={queryClient}>
         <MemoryRouter initialEntries={[path]}>
-          <AppRoutes config={config} />
+          <PublicConfigProvider config={config}>
+            <AppRoutes />
+          </PublicConfigProvider>
         </MemoryRouter>
       </QueryClientProvider>
     </StrictMode>,
@@ -134,6 +139,7 @@ describe('MVP2 지도 화면', () => {
   });
 
   it('현재 위치와 주변 매물 목록을 표시하고 매물 선택 시 상세로 이동한다', async () => {
+    const user = userEvent.setup();
     server.use(
       http.get(`${config.apiBaseUrl}/api/properties`, () =>
         HttpResponse.json(successEnvelope({ totalCount: 1, items: [property] })),
@@ -144,6 +150,11 @@ describe('MVP2 지도 화면', () => {
     renderAuthenticated('/map');
 
     expect(await screen.findByRole('generic', { name: '데모 지도' })).toBeInTheDocument();
+    expect(navigator.geolocation.getCurrentPosition).not.toHaveBeenCalled();
+
+    await user.click(screen.getByRole('button', { name: '내 현재 위치로 이동' }));
+
+    expect(navigator.geolocation.getCurrentPosition).toHaveBeenCalledOnce();
     expect(await screen.findByRole('img', { name: '현재 위치' })).toBeInTheDocument();
 
     // 상단 검색바 확인
@@ -153,6 +164,29 @@ describe('MVP2 지도 화면', () => {
     expect(await screen.findByRole('region', { name: '지도 주변 매물 목록' })).toBeInTheDocument();
     expect(screen.getByText('신림역 원룸')).toBeInTheDocument();
     expect(screen.getByText(/1,000만원 \/ 월세 55만원/)).toBeInTheDocument();
+  });
+
+  it('등록한 매물이 없어도 지도 바텀시트를 열 수 있다', async () => {
+    const user = userEvent.setup();
+    server.use(
+      http.get(`${config.apiBaseUrl}/api/properties`, () =>
+        HttpResponse.json(successEnvelope({ totalCount: 0, items: [] })),
+      ),
+    );
+
+    renderAuthenticated('/map');
+
+    const sheet = await screen.findByRole('region', { name: '지도 주변 매물 목록' });
+    const trigger = within(sheet).getByRole('button', { name: '지도 위 매물 목록 열기' });
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+    expect(within(sheet).getByText('현재 지도 화면에 등록된 매물이 없어요.')).toBeInTheDocument();
+
+    await user.click(trigger);
+
+    expect(within(sheet).getByRole('button', { name: '지도 위 매물 목록 높이 변경' })).toHaveAttribute(
+      'aria-expanded',
+      'true',
+    );
   });
 
   it('주소 검색은 필요할 때 열고 도로명·지번 주소와 좌표를 위치 선택에 유지한다', async () => {
@@ -188,6 +222,7 @@ describe('MVP2 지도 화면', () => {
 
     renderAuthenticated('/map/select-location');
     const openSearchButton = await screen.findByRole('button', { name: '주소 검색 열기' });
+    expect(navigator.geolocation.getCurrentPosition).not.toHaveBeenCalled();
     expect(screen.queryByRole('textbox', { name: '주소 검색' })).not.toBeInTheDocument();
     expect(screen.queryByRole('navigation', { name: '주요 메뉴' })).not.toBeInTheDocument();
 

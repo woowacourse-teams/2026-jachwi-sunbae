@@ -1,6 +1,6 @@
 import type { NearbyPlace } from '../model/Map';
-import { getMapCategoryLabel } from './mapPresentation';
 import type { MapMarker } from '../ui/map-canvas/MapCanvas';
+import { getMapCategoryLabel } from './mapPresentation';
 
 type PlaceCluster = {
   latitude: number;

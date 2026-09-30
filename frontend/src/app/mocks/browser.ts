@@ -1,5 +1,7 @@
 import { setupWorker } from 'msw/browser';
-import { setAuthentication } from '../../features/auth/model/authStore';
+
+import { setAuthentication } from '@/features/auth/model/authStore';
+
 import { handlers } from './handlers';
 
 const worker = setupWorker(...handlers);

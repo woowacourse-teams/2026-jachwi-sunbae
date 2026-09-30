@@ -1,6 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
-import ChecklistProgressBar from '../../../../../src/features/checklist/ui/checklist-progress-bar/ChecklistProgressBar';
+
+import ChecklistProgressBar from '@/features/checklist/ui/checklist-progress-bar/ChecklistProgressBar';
 
 describe('ChecklistProgressBar', () => {
   it('괜찮음, 주의, 미확인 결과를 하나의 막대와 범례로 표시한다', () => {

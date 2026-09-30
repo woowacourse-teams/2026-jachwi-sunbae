@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import WebView, { type WebViewNavigation } from 'react-native-webview';
+import { version as appVersion } from './package.json';
 import { WEB_APP_URL } from './src/config';
 import { isAllowedWebAppUrl, toWebAppUrl } from './src/navigationPolicy';
 
@@ -20,9 +21,6 @@ const NATIVE_CONTEXT_SCRIPT = `
     platform: '${Platform.OS}',
     version: 1
   });
-  try {
-    window.localStorage.setItem('jachwi-sunbae:meta-tracking-consent', 'denied');
-  } catch (_) {}
   window.dispatchEvent(new CustomEvent('jachwi-native-ready', {
     detail: window.__JACHWI_NATIVE_APP__
   }));
@@ -124,9 +122,13 @@ const AppContent = () => {
           startInLoadingState
           allowsBackForwardNavigationGestures
           allowsInlineMediaPlayback
-          applicationNameForUserAgent="JachwiSunbae/1.0 iOS"
+          applicationNameForUserAgent={`JachwiSunbae/${appVersion} ${Platform.OS}`}
+          automaticallyAdjustContentInsets={false}
+          bounces={false}
+          contentInsetAdjustmentBehavior="never"
+          geolocationEnabled
+          keyboardDisplayRequiresUserAction={false}
           mediaCapturePermissionGrantType="grantIfSameHostElsePrompt"
-          pullToRefreshEnabled
           sharedCookiesEnabled
           thirdPartyCookiesEnabled={false}
           setSupportMultipleWindows={false}

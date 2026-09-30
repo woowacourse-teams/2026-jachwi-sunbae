@@ -1,33 +1,37 @@
 import { useRef, useState } from 'react';
+
+import { trackPostHogEvent } from '@/shared/lib/analytics/posthog';
+import ConfirmDialog from '@/shared/ui/confirm-dialog/ConfirmDialog';
+
 import { getPropertyErrorMessage } from '../../api/propertyErrorMessages';
 import { useRemovePropertyPhoto, useSetRepresentativePropertyPhoto } from '../../api/usePropertyMutations';
 import type { PropertyPhoto } from '../../model/Property';
-import type { PublicConfig } from '../../../../shared/config/publicConfigTypes';
 import AuthenticatedPhoto from '../authenticated-photo/AuthenticatedPhoto';
-import ConfirmDialog from '../../../../shared/ui/confirm-dialog/ConfirmDialog';
-import dialogStyles from '../../../../shared/ui/confirm-dialog/ConfirmDialog.module.css';
+
 import styles from './PropertyPhotoCard.module.css';
+import dialogStyles from '@/shared/ui/confirm-dialog/ConfirmDialog.module.css';
 
 type PropertyPhotoCardProps = {
-  config: PublicConfig;
   propertyId: number;
   photo: PropertyPhoto;
   position: number;
 };
 
-const PropertyPhotoCard = ({ config, propertyId, photo, position }: PropertyPhotoCardProps) => {
+const PropertyPhotoCard = ({ propertyId, photo, position }: PropertyPhotoCardProps) => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const deleteButtonRef = useRef<HTMLButtonElement>(null);
-  const removeMutation = useRemovePropertyPhoto(config, propertyId);
-  const representativeMutation = useSetRepresentativePropertyPhoto(config, propertyId);
+  const removeMutation = useRemovePropertyPhoto(propertyId);
+  const representativeMutation = useSetRepresentativePropertyPhoto(propertyId);
   const accessibleName = `업로드 순 ${position}번째 사진`;
 
   const remove = async () => {
     try {
       await removeMutation.mutateAsync(photo.photoId);
+      trackPostHogEvent('property_photo_deleted');
       setIsDialogOpen(false);
       window.setTimeout(() => document.getElementById('photo-gallery-heading')?.focus(), 0);
     } catch {
+      trackPostHogEvent('property_photo_delete_failed');
       // Dialog remains open so the user can retry without optimistic removal.
     }
   };
@@ -35,7 +39,6 @@ const PropertyPhotoCard = ({ config, propertyId, photo, position }: PropertyPhot
   return (
     <li className={styles.item}>
       <AuthenticatedPhoto
-        config={config}
         propertyId={propertyId}
         photoId={photo.photoId}
         contentUrl={photo.contentUrl}
@@ -80,7 +83,6 @@ const PropertyPhotoCard = ({ config, propertyId, photo, position }: PropertyPhot
       >
         {isDialogOpen && (
           <AuthenticatedPhoto
-            config={config}
             propertyId={propertyId}
             photoId={photo.photoId}
             contentUrl={photo.contentUrl}

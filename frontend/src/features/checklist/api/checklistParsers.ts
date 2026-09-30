@@ -1,3 +1,12 @@
+import {
+  readArray,
+  readBoolean,
+  readInteger,
+  readNullableInteger,
+  readRecord,
+  readString,
+} from '@/shared/api/responseParsers';
+
 import { isChecklistStage } from '../model/checklist';
 import type {
   ActiveChecklist,
@@ -11,14 +20,6 @@ import type {
   ChecklistSummary,
   CreatedChecklist,
 } from '../model/checklistTypes';
-import {
-  readArray,
-  readBoolean,
-  readInteger,
-  readNullableInteger,
-  readRecord,
-  readString,
-} from '../../../shared/api/responseParsers';
 
 const unknownDate = '1970-01-01T00:00:00Z';
 

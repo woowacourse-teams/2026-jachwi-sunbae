@@ -1,7 +1,8 @@
 import { HttpResponse } from 'msw';
-import { isChecklistStage } from '../../features/checklist/model/checklist';
-import { CHECKLIST_STAGES } from '../../features/checklist/model/checklistTypes';
-import type { ChecklistStage } from '../../features/checklist/model/checklistTypes';
+
+import { isChecklistStage } from '@/features/checklist/model/checklist';
+import type { ChecklistStage } from '@/features/checklist/model/checklistTypes';
+import { CHECKLIST_STAGES } from '@/features/checklist/model/checklistTypes';
 
 export const now = '2026-08-20T05:00:00.000Z';
 

@@ -3,6 +3,7 @@ set -euo pipefail
 
 LOCAL_INDEX="${1:?로컬 index.html 경로가 필요하다.}"
 DEPLOYED_INDEX_URL="${2:?배포된 index.html URL이 필요하다.}"
+EXPECTED_VERSION="${3:-}"
 
 if [[ ! -f "${LOCAL_INDEX}" ]]; then
     echo "로컬 index.html이 없다: ${LOCAL_INDEX}" >&2
@@ -38,3 +39,23 @@ done <<< "${EXPECTED_ASSETS}"
 
 echo "배포된 index.html에서 이번 빌드 파일을 확인했다:"
 printf '%s\n' "${EXPECTED_ASSETS}"
+
+if [[ -n "${EXPECTED_VERSION}" ]]; then
+    VERSION_URL="${DEPLOYED_INDEX_URL%/index.html}/version.json"
+    DEPLOYED_VERSION="$(curl \
+        --fail \
+        --silent \
+        --show-error \
+        --retry 12 \
+        --retry-all-errors \
+        --retry-delay 5 \
+        --max-time 10 \
+        -H 'Cache-Control: no-cache' \
+        "${VERSION_URL}")"
+    EXPECTED_VERSION_JSON="{\"version\":\"${EXPECTED_VERSION}\"}"
+    if [[ "${DEPLOYED_VERSION}" != "${EXPECTED_VERSION_JSON}" ]]; then
+        echo "배포된 버전이 이번 빌드와 다르다: expected=${EXPECTED_VERSION}, actual=${DEPLOYED_VERSION}" >&2
+        exit 1
+    fi
+    echo "배포된 제품 버전을 확인했다: ${EXPECTED_VERSION}"
+fi

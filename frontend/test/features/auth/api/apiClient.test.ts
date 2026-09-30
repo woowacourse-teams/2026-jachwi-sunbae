@@ -1,11 +1,13 @@
-import { HttpResponse, http } from 'msw';
+import { http, HttpResponse } from 'msw';
 import { describe, expect, it, vi } from 'vitest';
-import { clearAuthentication, getAccessToken, setAuthentication } from '../../../../src/features/auth/model/authStore';
-import { propertyQueryKeys } from '../../../../src/features/property/api/propertyQueryKeys';
-import { queryClient } from '../../../../src/shared/api/queryClient';
-import type { PublicConfig } from '../../../../src/shared/config/publicConfigTypes';
+
+import { apiRequest } from '@/features/auth/api/apiClient';
+import { clearAuthentication, getAccessToken, setAuthentication } from '@/features/auth/model/authStore';
+import { propertyQueryKeys } from '@/features/property/api/propertyQueryKeys';
+import { queryClient } from '@/shared/api/queryClient';
+import type { PublicConfig } from '@/shared/config/publicConfigTypes';
+
 import { server } from '../../../server';
-import { apiRequest } from '../../../../src/features/auth/api/apiClient';
 
 const config: PublicConfig = {
   apiBaseUrl: 'http://localhost:8080',

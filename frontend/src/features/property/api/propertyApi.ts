@@ -1,15 +1,17 @@
-import type { PublicConfig } from '../../../shared/config/publicConfigTypes';
+import { apiBlobRequest, apiRequest } from '@/features/auth/api/apiClient';
+import { readInteger, readRecord, readString } from '@/shared/api/responseParsers';
+import type { PublicConfig } from '@/shared/config/publicConfigTypes';
+
 import type {
   CreatedProperty,
   PropertyBasicInfo,
-  PropertyDetail,
-  PropertyChecklistOverview,
   PropertyChecklistDetail,
   PropertyChecklistItemStatus,
+  PropertyChecklistOverview,
+  PropertyDetail,
   PropertyMemoDocument,
   PropertyPage,
 } from '../model/Property';
-import { apiBlobRequest, apiRequest } from '../../auth/api/apiClient';
 import type {
   PropertyInputDto,
   SavePropertyMemoDocumentRequestDto,
@@ -19,13 +21,12 @@ import {
   parseCreatedProperty,
   parseNoContent,
   parsePropertyBasicInfo,
-  parsePropertyDetail,
-  parsePropertyChecklistOverview,
   parsePropertyChecklistDetail,
+  parsePropertyChecklistOverview,
+  parsePropertyDetail,
   parsePropertyMemoDocument,
   parsePropertyPage,
 } from './propertyParsers';
-import { readInteger, readRecord, readString } from '../../../shared/api/responseParsers';
 
 export type PropertySearch = {
   query: string;

@@ -1,93 +1,53 @@
-import { useQuery } from '@tanstack/react-query';
-import { useEffect, useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { fetchNearby } from '../../features/map/api/mapApi';
-import MapCanvas from '../../features/map/ui/map-canvas/MapCanvas';
-import type { MapMarker, MapRadiusCircle } from '../../features/map/ui/map-canvas/MapCanvas';
-import MapCategoryRail from '../../features/map/ui/map-category-rail/MapCategoryRail';
+
+import MapCanvas from '@/features/map/ui/map-canvas/MapCanvas';
+import MapCategoryRail from '@/features/map/ui/map-category-rail/MapCategoryRail';
+import MapRadiusSelector from '@/features/map/ui/map-radius-selector/MapRadiusSelector';
+import { usePropertyDetail } from '@/features/property/api/useProperties';
+import { parsePositiveId } from '@/features/property/lib/propertyFormat';
+import { ButtonLink } from '@/shared/ui/button/Button';
+import EmptyState from '@/shared/ui/empty-state/EmptyState';
+import InlineNotice from '@/shared/ui/inline-notice/InlineNotice';
+import TopNavigation from '@/shared/ui/top-navigation/TopNavigation';
+
+import useNearbyAnalysis, {
+  NEARBY_RADII,
+  type NearbyRadius,
+  nearbyRadiusLabel,
+  type NearbyRadiusOption,
+} from './hooks/useNearbyAnalysis';
 import MapNearbySheet from './ui/map-nearby-sheet/MapNearbySheet';
 import MapPlaceDetailCard from './ui/map-place-detail-card/MapPlaceDetailCard';
-import MapRadiusSelector from '../../features/map/ui/map-radius-selector/MapRadiusSelector';
-import { clusterNearbyPlaces } from '../../features/map/lib/mapClustering';
-import { ALL_MAP_CATEGORIES } from '../../features/map/lib/mapPresentation';
-import { ButtonLink } from '../../shared/ui/button/Button';
-import EmptyState from '../../shared/ui/empty-state/EmptyState';
-import InlineNotice from '../../shared/ui/inline-notice/InlineNotice';
-import TopNavigation from '../../shared/ui/top-navigation/TopNavigation';
-import { usePropertyDetail } from '../../features/property/api/useProperties';
-import type { MapCategory } from '../../features/map/model/Map';
-import type { PublicConfig } from '../../shared/config/publicConfigTypes';
-import { coordinatesAreClose, SEOUL_MAP_CENTER } from '../../features/map/lib/mapLocation';
-import { parsePositiveId } from '../../features/property/lib/propertyFormat';
+import NearbyMapNotice from './ui/nearby-map-notice/NearbyMapNotice';
+
 import styles from './NearbyAnalysisPage.module.css';
 
-const toggleCategory = (categories: MapCategory[], category: MapCategory): MapCategory[] =>
-  categories.includes(category) ? categories.filter((item) => item !== category) : [...categories, category];
+const EMPTY_COUNTS = { HOSPITAL: 0, TRANSPORT: 0, SCHOOL: 0, CONVENIENCE: 0, AGENCY: 0 };
 
-const radiusLabel = (radius: 500 | 1000 | 2000): string => (radius === 500 ? '500m' : `${radius / 1000}km`);
-const levelForRadius = (radius: 500 | 1000 | 2000): number => (radius === 500 ? 4 : radius === 1000 ? 5 : 6);
+const radiusOptions = (isAllMode: boolean, radius: NearbyRadius) => [
+  { value: 'all' as const, label: '전체', isSelected: isAllMode },
+  ...NEARBY_RADII.map((value) => ({
+    value,
+    label: nearbyRadiusLabel(value),
+    isSelected: !isAllMode && radius === value,
+  })),
+];
 
-const NearbyAnalysisPage = ({ config }: { config: PublicConfig }) => {
+const NearbyAnalysisPage = () => {
   const propertyId = parsePositiveId(useParams().propertyId);
   if (propertyId === null)
     return <EmptyState title="올바른 매물 주소가 아니에요" description="매물 목록에서 다시 선택해 주세요." />;
-  return <ResolvedNearbyAnalysisPage config={config} propertyId={propertyId} />;
+  return <ResolvedNearbyAnalysisPage propertyId={propertyId} />;
 };
 
-const ResolvedNearbyAnalysisPage = ({ config, propertyId }: { config: PublicConfig; propertyId: number }) => {
-  const property = usePropertyDetail(config, propertyId);
+const ResolvedNearbyAnalysisPage = ({ propertyId }: { propertyId: number }) => {
+  const property = usePropertyDetail(propertyId);
   const latitude = property.data?.location.latitude ?? null;
   const longitude = property.data?.location.longitude ?? null;
-  const center = latitude === null || longitude === null ? SEOUL_MAP_CENTER : { latitude, longitude };
-  const [viewportCenter, setViewportCenter] = useState(center);
-  const [radius, setRadius] = useState<500 | 1000 | 2000>(2000);
-  const [mapLevel, setMapLevel] = useState(6);
-  const [selectedCategories, setSelectedCategories] = useState<MapCategory[]>([]);
-  const [listExpanded, setListExpanded] = useState(false);
-  const [allMode, setAllMode] = useState(false);
-  const [selectedPlaceId, setSelectedPlaceId] = useState<string | null>(null);
-  const nearby = useQuery({
-    queryKey: ['nearby', propertyId, latitude, longitude, radius, ALL_MAP_CATEGORIES.join(',')],
-    queryFn: ({ signal }) => fetchNearby(config, latitude ?? 0, longitude ?? 0, radius, ALL_MAP_CATEGORIES, signal),
-    enabled: latitude !== null && longitude !== null,
-  });
+  const hasLocation = latitude !== null && longitude !== null;
+  const analysis = useNearbyAnalysis(propertyId, hasLocation ? { latitude, longitude } : null);
+  const { nearby } = analysis;
 
-  useEffect(() => {
-    setViewportCenter(center);
-  }, [center.latitude, center.longitude]);
-
-  const filteredPlaces = useMemo(
-    () => nearby.data?.places.filter((place) => selectedCategories.includes(place.category)) ?? [],
-    [nearby.data?.places, selectedCategories],
-  );
-  const facilityMarkers = useMemo(() => clusterNearbyPlaces(filteredPlaces, mapLevel), [filteredPlaces, mapLevel]);
-  const selectedPlace = useMemo(
-    () => filteredPlaces.find((place) => place.providerPlaceId === selectedPlaceId) ?? null,
-    [filteredPlaces, selectedPlaceId],
-  );
-
-  useEffect(() => {
-    if (selectedPlaceId !== null && selectedPlace === null) setSelectedPlaceId(null);
-  }, [selectedPlace, selectedPlaceId]);
-  const markers = useMemo<MapMarker[]>(
-    () => [
-      {
-        id: `selected-property-${propertyId}`,
-        ...center,
-        label: '선택한 매물',
-        tone: 'selected',
-      },
-      ...facilityMarkers,
-    ],
-    [center, facilityMarkers, propertyId],
-  );
-  const circles = useMemo<MapRadiusCircle[]>(
-    () =>
-      ([500, 1000, 2000] as const)
-        .filter((value) => value <= radius)
-        .map((value) => ({ radiusMeters: value, label: radiusLabel(value) })),
-    [radius],
-  );
   return (
     <main className={styles.page}>
       <TopNavigation
@@ -103,7 +63,7 @@ const ResolvedNearbyAnalysisPage = ({ config, propertyId }: { config: PublicConf
             다시 시도
           </button>
         </div>
-      ) : !property.isPending && (latitude === null || longitude === null) ? (
+      ) : !property.isPending && !hasLocation ? (
         <div className={styles.fullState}>
           <EmptyState
             title="먼저 매물 위치를 등록해 주세요"
@@ -114,108 +74,47 @@ const ResolvedNearbyAnalysisPage = ({ config, propertyId }: { config: PublicConf
       ) : (
         <section className={styles.mapStage} aria-label="매물 주변 분석 지도">
           <MapCanvas
-            config={config}
-            center={viewportCenter}
-            markers={markers}
-            circles={circles}
-            radiusCenter={center}
-            level={mapLevel}
+            center={analysis.viewportCenter}
+            markers={analysis.markers}
+            circles={analysis.circles}
+            radiusCenter={analysis.center}
+            level={analysis.mapLevel}
             showRadiusLabels
-            selectedMarkerId={selectedPlace === null ? null : `place-${selectedPlace.providerPlaceId}`}
-            onSelectMarker={(marker) => {
-              if (marker.tone === 'cluster') {
-                setViewportCenter({ latitude: marker.latitude, longitude: marker.longitude });
-                setMapLevel((current) => Math.max(3, current - 1));
-                setSelectedPlaceId(null);
-                return;
-              }
-              if (marker.placeId !== undefined) {
-                setSelectedPlaceId(marker.placeId);
-                setListExpanded(false);
-              }
-            }}
-            onCenterChange={(nextLatitude, nextLongitude) => {
-              const nextCenter = { latitude: nextLatitude, longitude: nextLongitude };
-              setViewportCenter((current) => (coordinatesAreClose(current, nextCenter) ? current : nextCenter));
-            }}
-            onLevelChange={setMapLevel}
+            selectedMarkerId={
+              analysis.selectedPlace === null ? null : `place-${analysis.selectedPlace.providerPlaceId}`
+            }
+            onSelectMarker={analysis.selectMarker}
+            onCenterChange={analysis.panTo}
+            onLevelChange={analysis.setMapLevel}
           />
-
-          <MapRadiusSelector<'all' | 500 | 1000 | 2000>
+          <MapRadiusSelector<NearbyRadiusOption>
             label="분석 반경"
-            options={[
-              { value: 'all', label: '전체', isSelected: allMode },
-              ...([500, 1000, 2000] as const).map((value) => ({
-                value,
-                label: radiusLabel(value),
-                isSelected: !allMode && radius === value,
-              })),
-            ]}
-            onSelect={(value) => {
-              if (value === 'all') {
-                setSelectedPlaceId(null);
-                setRadius(2000);
-                setMapLevel(levelForRadius(2000));
-                setViewportCenter(center);
-                setSelectedCategories(ALL_MAP_CATEGORIES);
-                setAllMode(true);
-                return;
-              }
-              setSelectedPlaceId(null);
-              setRadius(value);
-              setMapLevel(levelForRadius(value));
-              setViewportCenter(center);
-              setAllMode(false);
-            }}
+            options={radiusOptions(analysis.isAllMode, analysis.radius)}
+            onSelect={analysis.selectRadius}
           />
-
           <MapCategoryRail
-            selectedCategories={selectedCategories}
+            selectedCategories={analysis.selectedCategories}
             counts={nearby.data?.counts}
-            onToggle={(category) => {
-              setSelectedCategories((current) => toggleCategory(current, category));
-              setAllMode(false);
-            }}
+            onToggle={analysis.selectCategory}
           />
-
-          {property.isPending && (
-            <p className={styles.mapNotice} role="status">
-              매물 위치를 확인하는 중이에요.
-            </p>
+          <NearbyMapNotice
+            isPropertyPending={property.isPending}
+            isNearbyPending={nearby.isPending}
+            isNearbyError={nearby.isError}
+            onRetry={() => void nearby.refetch()}
+          />
+          {analysis.selectedPlace !== null && (
+            <MapPlaceDetailCard place={analysis.selectedPlace} onClose={analysis.closePlace} />
           )}
-          {nearby.isPending && latitude !== null && longitude !== null && (
-            <p className={styles.mapNotice} role="status">
-              주변 시설을 분석하는 중이에요.
-            </p>
-          )}
-          {nearby.isError && (
-            <div className={styles.mapNotice} role="alert">
-              주변 시설을 불러오지 못했어요.
-              <button type="button" onClick={() => void nearby.refetch()}>
-                다시 시도
-              </button>
-            </div>
-          )}
-
-          {selectedPlace !== null && (
-            <MapPlaceDetailCard place={selectedPlace} onClose={() => setSelectedPlaceId(null)} />
-          )}
-
-          {!property.isPending && !nearby.isPending && !nearby.isError && nearby.data !== undefined && (
+          {!property.isPending && !nearby.isPending && !nearby.isError && (
             <MapNearbySheet
-              heading={`${property.data?.name ?? '선택한'} 매물 주변 ${radiusLabel(radius)}`}
-              counts={nearby.data.counts}
-              selectedCategories={selectedCategories}
-              places={filteredPlaces}
-              expanded={listExpanded}
-              onToggleExpanded={() => {
-                setListExpanded((current) => !current);
-                if (!listExpanded) setSelectedPlaceId(null);
-              }}
-              onToggleCategory={(category) => {
-                setSelectedCategories((current) => toggleCategory(current, category));
-                setAllMode(false);
-              }}
+              heading={`${property.data?.name ?? '선택한'} 매물 주변 ${nearbyRadiusLabel(analysis.radius)}`}
+              counts={nearby.data?.counts ?? EMPTY_COUNTS}
+              selectedCategories={analysis.selectedCategories}
+              places={analysis.places}
+              expanded={analysis.isListExpanded}
+              onToggleExpanded={analysis.toggleList}
+              onToggleCategory={analysis.selectCategory}
             />
           )}
         </section>

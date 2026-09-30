@@ -1,5 +1,7 @@
 import type { ReactNode } from 'react';
-import errorIllustration from '../../assets/empty-property.jpg';
+
+import errorIllustration from '@/shared/assets/empty-property.jpg';
+
 import styles from './StatusPanel.module.css';
 
 type StatusPanelProps = {

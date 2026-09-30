@@ -1,7 +1,8 @@
 import type { CSSProperties, PointerEvent, RefObject } from 'react';
-import type { PropertySummary } from '../../../../features/property/model/Property';
-import type { PublicConfig } from '../../../../shared/config/publicConfigTypes';
-import PropertyCard from '../../../../features/property/ui/property-card/PropertyCard';
+
+import type { PropertySummary } from '@/features/property/model/Property';
+import PropertyCard from '@/features/property/ui/property-card/PropertyCard';
+
 import styles from './MapPropertySheet.module.css';
 
 export type MapPropertySheetStage = 'closed' | 'mid' | 'full';
@@ -12,11 +13,10 @@ type MapPropertySheetProps = {
   dragHeight: number | null;
   properties: PropertySummary[];
   selectedPropertyId: number | null;
-  config: PublicConfig;
-  onDragStart: (event: PointerEvent<HTMLDivElement>) => void;
-  onDragMove: (event: PointerEvent<HTMLDivElement>) => void;
-  onDragEnd: (event: PointerEvent<HTMLDivElement>) => void;
-  onDragCancel: (event: PointerEvent<HTMLDivElement>) => void;
+  onDragStart: (event: PointerEvent<HTMLButtonElement>) => void;
+  onDragMove: (event: PointerEvent<HTMLButtonElement>) => void;
+  onDragEnd: (event: PointerEvent<HTMLButtonElement>) => void;
+  onDragCancel: (event: PointerEvent<HTMLButtonElement>) => void;
   onCycleStage: () => void;
 };
 
@@ -26,7 +26,6 @@ const MapPropertySheet = ({
   dragHeight,
   properties,
   selectedPropertyId,
-  config,
   onDragStart,
   onDragMove,
   onDragEnd,
@@ -40,8 +39,11 @@ const MapPropertySheet = ({
     data-dragging={dragHeight === null ? undefined : 'true'}
     aria-label="지도 주변 매물 목록"
   >
-    <div
+    <button
+      type="button"
       className={styles.header}
+      aria-expanded={stage !== 'closed'}
+      aria-label={stage === 'closed' ? '지도 위 매물 목록 열기' : '지도 위 매물 목록 높이 변경'}
       onPointerDown={onDragStart}
       onPointerMove={onDragMove}
       onPointerUp={onDragEnd}
@@ -55,7 +57,7 @@ const MapPropertySheet = ({
         <span>지도 위 매물</span>
         <strong>{properties.length}개</strong>
       </div>
-    </div>
+    </button>
 
     <div className={styles.body}>
       {properties.length === 0 ? (
@@ -64,7 +66,7 @@ const MapPropertySheet = ({
         <ul className={styles.list}>
           {properties.map((property) => (
             <li key={property.propertyId} data-selected={property.propertyId === selectedPropertyId || undefined}>
-              <PropertyCard property={property} config={config} />
+              <PropertyCard property={property} />
             </li>
           ))}
         </ul>

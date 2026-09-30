@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { roomOptionLabels, utilityOptionLabels } from '../../../../src/features/property/model/propertyOptions';
+
+import { roomOptionLabels, utilityOptionLabels } from '@/features/property/model/propertyOptions';
 
 describe('매물 부가 정보 표시', () => {
   it('Swagger enum 값을 화면 표시 순서의 한글 이름으로 바꾼다', () => {

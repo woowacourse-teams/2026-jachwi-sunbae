@@ -1,11 +1,14 @@
 import { useMutation } from '@tanstack/react-query';
-import { assignActiveChecklist, createChecklistV11, removeChecklist, updateChecklistV11 } from './checklistApi';
-import type { CreateChecklistV11RequestDto, UpdateChecklistV11RequestDto } from './dtos/ChecklistDto';
-import { checklistQueryKeys } from './checklistQueryKeys';
-import { propertyQueryKeys } from '../../property/api/propertyQueryKeys';
-import { queryClient } from '../../../shared/api/queryClient';
+
+import { propertyQueryKeys } from '@/features/property/api/propertyQueryKeys';
+import { queryClient } from '@/shared/api/queryClient';
+import { usePublicConfig } from '@/shared/config/PublicConfigContext';
+
+import { toProvidedChecklistItemInputs } from '../lib/checklistEditor';
 import type { ChecklistStage } from '../model/checklistTypes';
-import type { PublicConfig } from '../../../shared/config/publicConfigTypes';
+import type { ChecklistDraftInput } from '../model/useChecklistDraft';
+import { assignActiveChecklist, createChecklistV11, removeChecklist, updateChecklistV11 } from './checklistApi';
+import { checklistQueryKeys } from './checklistQueryKeys';
 
 const invalidateChecklistAggregates = async () =>
   Promise.all([
@@ -13,19 +16,24 @@ const invalidateChecklistAggregates = async () =>
     queryClient.invalidateQueries({ queryKey: checklistQueryKeys.details() }),
   ]);
 
-export const useCreateChecklist = (config: PublicConfig) =>
-  useMutation({
-    mutationFn: (request: CreateChecklistV11RequestDto) => createChecklistV11(config, request),
+export const useCreateChecklist = () => {
+  const config = usePublicConfig();
+  return useMutation({
+    mutationFn: ({ name, stage, items }: ChecklistDraftInput & { stage: ChecklistStage }) =>
+      createChecklistV11(config, { name, stage, items: toProvidedChecklistItemInputs(items) }),
     retry: false,
     onSuccess: async (detail) => {
       queryClient.setQueryData(checklistQueryKeys.detail(detail.checklistId), detail);
       await queryClient.invalidateQueries({ queryKey: checklistQueryKeys.lists() });
     },
   });
+};
 
-export const useUpdateChecklist = (config: PublicConfig, checklistId: number) =>
-  useMutation({
-    mutationFn: (request: UpdateChecklistV11RequestDto) => updateChecklistV11(config, checklistId, request),
+export const useUpdateChecklist = (checklistId: number) => {
+  const config = usePublicConfig();
+  return useMutation({
+    mutationFn: ({ name, items }: ChecklistDraftInput) =>
+      updateChecklistV11(config, checklistId, { name, items: toProvidedChecklistItemInputs(items) }),
     retry: false,
     onMutate: async () => {
       await queryClient.cancelQueries({ queryKey: checklistQueryKeys.detail(checklistId), exact: true });
@@ -38,9 +46,11 @@ export const useUpdateChecklist = (config: PublicConfig, checklistId: number) =>
       ]);
     },
   });
+};
 
-export const useRemoveChecklist = (config: PublicConfig, checklistId: number) =>
-  useMutation({
+export const useRemoveChecklist = (checklistId: number) => {
+  const config = usePublicConfig();
+  return useMutation({
     mutationFn: () => removeChecklist(config, checklistId),
     onMutate: async () => {
       await queryClient.cancelQueries({ queryKey: checklistQueryKeys.detail(checklistId), exact: true });
@@ -53,9 +63,11 @@ export const useRemoveChecklist = (config: PublicConfig, checklistId: number) =>
       queryClient.removeQueries({ queryKey: checklistQueryKeys.detail(checklistId), exact: true });
     },
   });
+};
 
-export const useAssignActiveChecklist = (config: PublicConfig, propertyId: number, stage: ChecklistStage) =>
-  useMutation({
+export const useAssignActiveChecklist = (propertyId: number, stage: ChecklistStage) => {
+  const config = usePublicConfig();
+  return useMutation({
     mutationFn: (checklistId: number | 'SYSTEM_DEFAULT') =>
       assignActiveChecklist(
         config,
@@ -74,3 +86,4 @@ export const useAssignActiveChecklist = (config: PublicConfig, propertyId: numbe
       ]);
     },
   });
+};

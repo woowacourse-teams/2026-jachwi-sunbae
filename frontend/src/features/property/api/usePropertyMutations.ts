@@ -1,4 +1,9 @@
 import { useMutation } from '@tanstack/react-query';
+
+import { queryClient } from '@/shared/api/queryClient';
+import { usePublicConfig } from '@/shared/config/PublicConfigContext';
+
+import type { PropertyBasicInfo, PropertyDetail } from '../model/Property';
 import type {
   PropertyInputDto,
   SavePropertyMemoDocumentRequestDto,
@@ -13,26 +18,48 @@ import {
   updateProperty,
 } from './propertyApi';
 import { propertyQueryKeys } from './propertyQueryKeys';
-import { queryClient } from '../../../shared/api/queryClient';
-import type { PublicConfig } from '../../../shared/config/publicConfigTypes';
-import type { PropertyBasicInfo, PropertyDetail } from '../model/Property';
 
-export const useCreateProperty = (config: PublicConfig) =>
-  useMutation({
+export const useCreateProperty = () => {
+  const config = usePublicConfig();
+  return useMutation({
     mutationFn: (request: PropertyInputDto) => createProperty(config, request),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: propertyQueryKeys.lists() });
     },
   });
+};
 
-export const useRecordPropertyComparisonView = (config: PublicConfig) =>
-  useMutation({
+export const useRecordPropertyComparisonView = () => {
+  const config = usePublicConfig();
+  return useMutation({
     mutationFn: () => recordPropertyComparisonView(config),
   });
+};
 
-export const useUpdateProperty = (config: PublicConfig, propertyId: number) =>
-  useMutation({
-    mutationFn: (request: UpdatePropertyRequestDto) => updateProperty(config, propertyId, request),
+export type PropertyChanges = Partial<UpdatePropertyRequestDto>;
+
+/** 매물 수정 API는 전체를 덮어쓰므로, 현재 상세에 바뀐 값만 얹어 요청을 만든다. */
+const toUpdatePropertyRequest = (current: PropertyDetail, changes: PropertyChanges): UpdatePropertyRequestDto => ({
+  name: current.name,
+  depositAmount: current.depositAmount,
+  monthlyRentAmount: current.monthlyRentAmount,
+  discoverySource: current.discoverySource.value || null,
+  address: current.location.address,
+  latitude: current.location.latitude,
+  longitude: current.location.longitude,
+  availableMoveInDate: current.availableMoveInDate,
+  maintenanceFeeAmount: current.maintenanceFeeAmount,
+  visitScheduledAt: current.visitScheduledAt,
+  roomOptions: current.roomOptions,
+  utilityOptions: current.utilityOptions,
+  ...changes,
+});
+
+export const useUpdateProperty = (propertyId: number) => {
+  const config = usePublicConfig();
+  return useMutation({
+    mutationFn: ({ current, changes }: { current: PropertyDetail; changes: PropertyChanges }) =>
+      updateProperty(config, propertyId, toUpdatePropertyRequest(current, changes)),
     onSuccess: async (updated: PropertyBasicInfo) => {
       queryClient.setQueryData<PropertyDetail>(propertyQueryKeys.detail(propertyId), (current) =>
         current === undefined
@@ -55,23 +82,28 @@ export const useUpdateProperty = (config: PublicConfig, propertyId: number) =>
       await queryClient.invalidateQueries({ queryKey: propertyQueryKeys.lists() });
     },
   });
+};
 
-export const useSavePropertyMemoDocument = (config: PublicConfig, propertyId: number) =>
-  useMutation({
+export const useSavePropertyMemoDocument = (propertyId: number) => {
+  const config = usePublicConfig();
+  return useMutation({
     mutationFn: (request: SavePropertyMemoDocumentRequestDto) => savePropertyMemoDocument(config, propertyId, request),
     onSuccess: (memo) => {
       queryClient.setQueryData(propertyQueryKeys.memo(propertyId), memo);
     },
   });
+};
 
-export const useRemoveProperty = (config: PublicConfig, propertyId: number) =>
-  useMutation({
+export const useRemoveProperty = (propertyId: number) => {
+  const config = usePublicConfig();
+  return useMutation({
     mutationFn: () => removeProperty(config, propertyId),
     onSuccess: async () => {
       queryClient.removeQueries({ queryKey: propertyQueryKeys.detail(propertyId) });
       await queryClient.invalidateQueries({ queryKey: propertyQueryKeys.lists() });
     },
   });
+};
 
 const invalidatePhotoAggregates = async (propertyId: number) => {
   await Promise.all([
@@ -81,20 +113,25 @@ const invalidatePhotoAggregates = async (propertyId: number) => {
   ]);
 };
 
-export const useUploadPropertyPhoto = (config: PublicConfig, propertyId: number) =>
-  useMutation({
+export const useUploadPropertyPhoto = (propertyId: number) => {
+  const config = usePublicConfig();
+  return useMutation({
     mutationFn: (file: File) => uploadPropertyPhoto(config, propertyId, file),
     onSuccess: async () => invalidatePhotoAggregates(propertyId),
   });
+};
 
-export const useSetRepresentativePropertyPhoto = (config: PublicConfig, propertyId: number) =>
-  useMutation({
+export const useSetRepresentativePropertyPhoto = (propertyId: number) => {
+  const config = usePublicConfig();
+  return useMutation({
     mutationFn: (photoId: number) => setRepresentativePropertyPhoto(config, propertyId, photoId),
     onSuccess: async () => invalidatePhotoAggregates(propertyId),
   });
+};
 
-export const useRemovePropertyPhoto = (config: PublicConfig, propertyId: number) =>
-  useMutation({
+export const useRemovePropertyPhoto = (propertyId: number) => {
+  const config = usePublicConfig();
+  return useMutation({
     mutationFn: (photoId: number) => removePropertyPhoto(config, propertyId, photoId),
     onSuccess: async (_, photoId) => {
       queryClient.removeQueries({ queryKey: propertyQueryKeys.photoContent(propertyId, photoId), exact: true });
@@ -106,3 +143,4 @@ export const useRemovePropertyPhoto = (config: PublicConfig, propertyId: number)
       }
     },
   });
+};

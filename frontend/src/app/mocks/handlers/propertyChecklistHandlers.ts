@@ -1,5 +1,7 @@
 import { http } from 'msw';
-import { CHECKLIST_STAGES } from '../../../features/checklist/model/checklistTypes';
+
+import { CHECKLIST_STAGES } from '@/features/checklist/model/checklistTypes';
+
 import {
   emptyProgress,
   failure,

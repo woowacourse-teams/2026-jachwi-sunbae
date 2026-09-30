@@ -1,24 +1,3 @@
-import type {
-  DiscoverySource,
-  CreatedProperty,
-  PropertyBasicInfo,
-  PropertyChecklistOverview,
-  PropertyChecklistProgress,
-  PropertyChecklistStageSummary,
-  PropertyChecklistDetail,
-  PropertyChecklistItemStatus,
-  PropertyDetail,
-  PropertyMemoDocument,
-  PropertyPage,
-  PropertyPhoto,
-  PropertyPhotoList,
-  PropertyPhotoPreview,
-  PropertySummary,
-  PropertyLocation,
-  PropertyAdditionalInfo,
-  RoomOption,
-  UtilityOption,
-} from '../model/Property';
 import {
   readArray,
   readBoolean,
@@ -28,7 +7,29 @@ import {
   readRecord,
   readString,
   readUtcDateTime,
-} from '../../../shared/api/responseParsers';
+} from '@/shared/api/responseParsers';
+
+import type {
+  CreatedProperty,
+  DiscoverySource,
+  PropertyAdditionalInfo,
+  PropertyBasicInfo,
+  PropertyChecklistDetail,
+  PropertyChecklistItemStatus,
+  PropertyChecklistOverview,
+  PropertyChecklistProgress,
+  PropertyChecklistStageSummary,
+  PropertyDetail,
+  PropertyLocation,
+  PropertyMemoDocument,
+  PropertyPage,
+  PropertyPhoto,
+  PropertyPhotoList,
+  PropertyPhotoPreview,
+  PropertySummary,
+  RoomOption,
+  UtilityOption,
+} from '../model/Property';
 
 const parseDiscoverySource = (value: unknown): DiscoverySource => {
   if (value === null) return { type: 'TEXT', value: '' };

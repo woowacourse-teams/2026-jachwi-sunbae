@@ -1,10 +1,11 @@
+import { getPublicConfig } from '@/shared/config/publicConfig';
+import type { PublicConfig } from '@/shared/config/publicConfigTypes';
+import StatusPanel from '@/shared/ui/status-panel/StatusPanel';
+
+import PostHogTracker from './analytics/PostHogTracker';
 import AppProviders from './providers/AppProviders';
 import AppRoutes from './router/AppRoutes';
-import { TrackingConsentProvider } from '../features/tracking-consent/model/TrackingConsentContext';
-import { getPublicConfig } from '../shared/config/publicConfig';
-import PostHogTracker from './analytics/PostHogTracker';
-import StatusPanel from '../shared/ui/status-panel/StatusPanel';
-import type { PublicConfig } from '../shared/config/publicConfigTypes';
+
 import './styles/tokens.css';
 import './styles/global.css';
 import './styles/utilities.css';
@@ -25,11 +26,9 @@ const App = ({ config }: AppProps) => {
   }
 
   return (
-    <AppProviders>
-      <PostHogTracker config={resolvedConfig} />
-      <TrackingConsentProvider metaPixelId={resolvedConfig.metaPixelId}>
-        <AppRoutes config={resolvedConfig} />
-      </TrackingConsentProvider>
+    <AppProviders config={resolvedConfig}>
+      <PostHogTracker />
+      <AppRoutes />
     </AppProviders>
   );
 };

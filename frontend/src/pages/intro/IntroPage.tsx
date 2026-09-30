@@ -1,7 +1,10 @@
 import { Link } from 'react-router-dom';
-import logo from '../../shared/assets/jachwi-sunbae-logo.png';
+
+import logo from '@/shared/assets/jachwi-sunbae-logo.png';
+import Icon, { type IconName } from '@/shared/ui/icon/Icon';
+
 import IntroDemoPlayer from './ui/intro-demo-player/IntroDemoPlayer';
-import Icon, { type IconName } from '../../shared/ui/icon/Icon';
+
 import styles from './IntroPage.module.css';
 
 type IntroFeature = {

@@ -39,6 +39,16 @@
   cursor: text;
 }
 
+/* 큰 입력칸: 매물 등록처럼 한 칸씩 묻는 폼에서 쓴다. */
+.field[data-size='large'] {
+  gap: 0.45rem;
+}
+
+.field[data-size='large'] .control input {
+  min-height: 3.25rem;
+  font-size: 0.95rem;
+}
+
 /* 단위 표시가 붙는 칸만 오른쪽을 비워 글자가 겹치지 않게 한다. */
 .field[data-variant='underline'] .control:has(.suffix) input {
   padding-right: 2.6rem;

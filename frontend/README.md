@@ -62,9 +62,8 @@ API 변경 작업 전에는 [실행 리비전](https://dev-api.jachwi-sunbae.kr/
 | `MAP_PROVIDER_MODE`   | 키가 있으면 `naver`     | `demo` 또는 `naver`                   |
 | `NAVER_MAP_CLIENT_ID` | 비움                    | `naver` 모드의 공개 Maps Client ID    |
 | `ENABLE_MSW`          | `false`                 | dev fixture가 필요할 때만 `true`      |
-| `META_PIXEL_ID`       | 비움                    | 동의 기반 Meta Pixel 공개 데이터셋 ID |
 
-JWT secret, 지도 Client Secret, S3 자격증명은 프론트에 넣지 않습니다. `META_PIXEL_ID`가 비면 광고 측정 고지와 Pixel을 모두 비활성화합니다.
+JWT secret, 지도 Client Secret, S3 자격증명은 프론트에 넣지 않습니다. PostHog는 운영 API를 사용하는 번들에서만 초기화됩니다.
 
 ## 화면과 경로
 
@@ -98,7 +97,7 @@ JWT secret, 지도 Client Secret, S3 자격증명은 프론트에 넣지 않습�
 - 사진 콘텐츠는 URL을 `<img>`에 직접 주지 않고 Bearer 인증 Blob으로 조회해 Object URL을 만든 뒤 해제합니다.
 - 사진은 JPEG·PNG·WebP, 파일당 5MiB, 매물당 30장으로 선택 단계부터 검증합니다.
 - 서버 상태는 TanStack Query가 관리하고, 체크 항목 상태와 메모 저장 채널은 서로 독립적입니다.
-- Meta Pixel은 사용자가 명시적으로 동의한 뒤에만 불러옵니다. 페이지 방문·신규 닉네임 생성·첫 매물 등록 여부만 전송하며 닉네임·비밀번호와 매물 기록 내용은 보내지 않습니다.
+- PostHog는 운영 환경에서 서비스 경로, 기능 이벤트, 오류와 세션 리플레이를 수집합니다. 세션 리플레이에서는 텍스트와 요소 속성을 마스킹합니다.
 
 ## 검사
 

@@ -1,12 +1,15 @@
 import { QueryClientProvider } from '@tanstack/react-query';
 import { render, screen, waitFor } from '@testing-library/react';
-import { HttpResponse, http } from 'msw';
+import { http, HttpResponse } from 'msw';
 import { describe, expect, it, vi } from 'vitest';
-import { setAuthentication } from '../../../../../src/features/auth/model/authStore';
-import { queryClient } from '../../../../../src/shared/api/queryClient';
+
+import { setAuthentication } from '@/features/auth/model/authStore';
+import AuthenticatedPhoto from '@/features/property/ui/authenticated-photo/AuthenticatedPhoto';
+import { queryClient } from '@/shared/api/queryClient';
+import { PublicConfigProvider } from '@/shared/config/PublicConfigContext';
+import type { PublicConfig } from '@/shared/config/publicConfigTypes';
+
 import { server } from '../../../../server';
-import type { PublicConfig } from '../../../../../src/shared/config/publicConfigTypes';
-import AuthenticatedPhoto from '../../../../../src/features/property/ui/authenticated-photo/AuthenticatedPhoto';
 
 const config: PublicConfig = {
   apiBaseUrl: 'http://localhost:8080',
@@ -23,15 +26,16 @@ describe('인증 사진 표시', () => {
     );
 
     const rendered = render(
-      <QueryClientProvider client={queryClient}>
-        <AuthenticatedPhoto
-          config={config}
-          propertyId={10}
-          photoId={81}
-          contentUrl="/api/properties/10/photos/81"
-          alt="업로드 순 1번째 사진"
-        />
-      </QueryClientProvider>,
+      <PublicConfigProvider config={config}>
+        <QueryClientProvider client={queryClient}>
+          <AuthenticatedPhoto
+            propertyId={10}
+            photoId={81}
+            contentUrl="/api/properties/10/photos/81"
+            alt="업로드 순 1번째 사진"
+          />
+        </QueryClientProvider>
+      </PublicConfigProvider>,
     );
 
     const image = await screen.findByRole('img', { name: '업로드 순 1번째 사진' });
@@ -57,15 +61,16 @@ describe('인증 사진 표시', () => {
     );
 
     render(
-      <QueryClientProvider client={queryClient}>
-        <AuthenticatedPhoto
-          config={config}
-          propertyId={10}
-          photoId={81}
-          contentUrl="/api/properties/10/photos/81"
-          alt="업로드 순 1번째 사진"
-        />
-      </QueryClientProvider>,
+      <PublicConfigProvider config={config}>
+        <QueryClientProvider client={queryClient}>
+          <AuthenticatedPhoto
+            propertyId={10}
+            photoId={81}
+            contentUrl="/api/properties/10/photos/81"
+            alt="업로드 순 1번째 사진"
+          />
+        </QueryClientProvider>
+      </PublicConfigProvider>,
     );
 
     expect(await screen.findByRole('group', { name: '업로드 순 1번째 사진 불러오기 실패' })).toBeInTheDocument();

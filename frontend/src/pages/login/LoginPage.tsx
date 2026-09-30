@@ -1,22 +1,19 @@
-import { type FormEvent, useRef, useState } from 'react';
+import { type FormEvent, useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ApiError, getSafeApiErrorMessage } from '../../features/auth/api/apiClient';
-import { submitNicknameLogin } from '../../features/auth/api/authApi';
-import logo from '../../shared/assets/jachwi-sunbae-logo-lockup-v3.svg';
-import Icon from '../../shared/ui/icon/Icon';
 
-import { Button } from '../../shared/ui/button/Button';
-import InlineNotice from '../../shared/ui/inline-notice/InlineNotice';
-import TextField from '../../shared/ui/text-field/TextField';
-import { useAuthentication } from '../../features/auth/model/useAuthentication';
-import type { PublicConfig } from '../../shared/config/publicConfigTypes';
-import { trackMetaPixelCompleteRegistration } from '../../features/tracking-consent/lib/metaPixel';
-import { setAuthentication } from '../../features/auth/model/authStore';
+import { ApiError, getSafeApiErrorMessage } from '@/features/auth/api/apiClient';
+import { submitNicknameLogin } from '@/features/auth/api/authApi';
+import { setAuthentication } from '@/features/auth/model/authStore';
+import { useAuthentication } from '@/features/auth/model/useAuthentication';
+import logo from '@/shared/assets/jachwi-sunbae-logo-lockup-v3.svg';
+import { usePublicConfig } from '@/shared/config/PublicConfigContext';
+import { trackPostHogEvent } from '@/shared/lib/analytics/posthog';
+import { Button } from '@/shared/ui/button/Button';
+import Icon from '@/shared/ui/icon/Icon';
+import InlineNotice from '@/shared/ui/inline-notice/InlineNotice';
+import TextField from '@/shared/ui/text-field/TextField';
+
 import styles from './LoginPage.module.css';
-
-type LoginPageProps = {
-  config: PublicConfig;
-};
 
 const getLoginErrorMessage = (error: unknown): string => {
   if (error instanceof ApiError) {
@@ -39,7 +36,8 @@ const getLoginErrorMessage = (error: unknown): string => {
   return getSafeApiErrorMessage(error);
 };
 
-const LoginPage = ({ config }: LoginPageProps) => {
+const LoginPage = () => {
+  const config = usePublicConfig();
   const [nickname, setNickname] = useState('');
   const [password, setPassword] = useState('');
   const [isStarting, setIsStarting] = useState(false);
@@ -47,6 +45,10 @@ const LoginPage = ({ config }: LoginPageProps) => {
   const isStartingRef = useRef(false);
   const { terminationReason } = useAuthentication();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    trackPostHogEvent('login_page_viewed');
+  }, []);
 
   const handleLogin = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -65,6 +67,7 @@ const LoginPage = ({ config }: LoginPageProps) => {
     isStartingRef.current = true;
     setIsStarting(true);
     setStartError(null);
+    trackPostHogEvent('login_started', { login_method: 'nickname' });
 
     try {
       const response = await submitNicknameLogin(config, {
@@ -72,12 +75,17 @@ const LoginPage = ({ config }: LoginPageProps) => {
         password: password.length === 0 ? undefined : password,
       });
       setAuthentication(response);
-      if (response.newMember) trackMetaPixelCompleteRegistration();
+      trackPostHogEvent('login_succeeded', { new_member: response.newMember });
       navigate('/properties', { replace: true });
     } catch (error) {
       isStartingRef.current = false;
       setIsStarting(false);
       setStartError(getLoginErrorMessage(error));
+      trackPostHogEvent('login_failed', {
+        login_method: 'nickname',
+        error_kind: error instanceof ApiError ? error.kind : 'unknown',
+        error_code: error instanceof ApiError ? error.code : null,
+      });
     }
   };
 

@@ -1,6 +1,8 @@
+import type { ApiErrorDto } from '@/shared/api/dtos/ApiEnvelopeDto';
+import type { PublicConfig } from '@/shared/config/publicConfigTypes';
+import { capturePostHogException } from '@/shared/lib/analytics/posthog';
+
 import { clearAuthentication, getAccessToken, getAuthenticationRevision } from '../model/authStore';
-import type { PublicConfig } from '../../../shared/config/publicConfigTypes';
-import type { ApiErrorDto } from '../../../shared/api/dtos/ApiEnvelopeDto';
 
 type ApiErrorKind = 'network' | 'server' | 'invalid-response' | 'authentication-ended';
 
@@ -39,6 +41,25 @@ type ApiRequestOptions<T> = {
   signal?: AbortSignal;
   requiresAuthentication?: boolean;
   parseData: (value: unknown) => T;
+};
+
+const captureUnexpectedApiError = ({
+  error,
+  path,
+  method,
+  status,
+}: {
+  error: unknown;
+  path: string;
+  method: string;
+  status?: number;
+}) => {
+  capturePostHogException(error, {
+    source: 'api_request',
+    request_path: path,
+    request_method: method,
+    ...(status === undefined ? {} : { response_status: status }),
+  });
 };
 
 const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null;
@@ -180,30 +201,53 @@ export const apiRequest = async <T>({
     headers.set('Content-Type', 'application/json');
   }
 
-  const response = await executeRequest({
-    config,
-    path,
-    method,
-    headers,
-    body: formData ?? (body === undefined ? undefined : JSON.stringify(body)),
-    signal,
-    requiresAuthentication,
-  });
+  let response: Response;
+  try {
+    response = await executeRequest({
+      config,
+      path,
+      method,
+      headers,
+      body: formData ?? (body === undefined ? undefined : JSON.stringify(body)),
+      signal,
+      requiresAuthentication,
+    });
+  } catch (error) {
+    if (error instanceof ApiError && error.kind === 'network') {
+      captureUnexpectedApiError({ error, path, method });
+    }
+    throw error;
+  }
 
   if (response.status === 204 && response.ok) {
     return parseData(undefined);
   }
 
   if (!response.ok) {
+    if (response.status >= 500) {
+      captureUnexpectedApiError({
+        error: new Error('서버 오류가 발생했습니다.'),
+        path,
+        method,
+        status: response.status,
+      });
+    }
     return throwResponseError(response);
   }
 
-  const payload = await readJson(response);
+  let payload: unknown | undefined;
+  try {
+    payload = await readJson(response);
+  } catch (error) {
+    captureUnexpectedApiError({ error, path, method, status: response.status });
+    throw error;
+  }
 
   if (payload === undefined) {
     try {
       return parseData(undefined);
-    } catch {
+    } catch (error) {
+      captureUnexpectedApiError({ error, path, method, status: response.status });
       throw new ApiError({ kind: 'invalid-response', status: response.status });
     }
   }
@@ -214,7 +258,8 @@ export const apiRequest = async <T>({
 
   try {
     return parseData(payload.data);
-  } catch {
+  } catch (error) {
+    captureUnexpectedApiError({ error, path, method, status: response.status });
     throw new ApiError({ kind: 'invalid-response', status: response.status });
   }
 };
@@ -275,3 +320,6 @@ export const getSafeApiErrorMessage = (error: unknown): string => {
 
   return '요청을 처리하지 못했습니다. 잠시 후 다시 시도해 주세요.';
 };
+
+export const isApiErrorCode = (error: unknown, code: string): error is ApiError =>
+  error instanceof ApiError && error.code === code;

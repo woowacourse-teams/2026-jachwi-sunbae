@@ -26,6 +26,8 @@
 ### 개발과 운영
 
 - [컨벤션](docs/convention/README.md) — 브랜치·커밋, 이슈·PR, 코드 리뷰
+- [변경 내역](CHANGELOG.md) — 릴리스별 기능·수정·성능 개선
+- [버전 관리](docs/convention/versioning.md) — SemVer, Git 태그, 릴리스와 롤백 기준
 - [백엔드 문서](backend/docs/README.md) — 코드·API·예외 컨벤션, 패키지 구조, 환경변수·로컬 실행·운영
 - [환경변수](backend/docs/guides/environment-variables.md)와 [프론트엔드 공개 빌드 설정](frontend/README.md#공개-빌드-설정)
 - [백엔드 배포](backend/docs/operations/deployment.md)와 [프론트엔드 배포](frontend/docs/deployment.md)
@@ -87,7 +89,7 @@ npm run dev
 
 ```bash
 cd mobile
-pnpm install
+npm ci
 cd ios && pod install && cd ..
-pnpm ios
+npm run ios
 ```

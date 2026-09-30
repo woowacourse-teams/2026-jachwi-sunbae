@@ -1,59 +1,52 @@
 import { useState } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
-import { ApiError } from '../../features/auth/api/apiClient';
-import type { UpdatePropertyRequestDto } from '../../features/property/api/dtos/PropertyDto';
-import { getPropertyErrorMessage } from '../../features/property/api/propertyErrorMessages';
-import PropertyForm from '../../features/property/ui/property-form/PropertyForm';
-import TopNavigation from '../../shared/ui/top-navigation/TopNavigation';
-import { usePropertyDetail } from '../../features/property/api/useProperties';
-import { useUpdateProperty } from '../../features/property/api/usePropertyMutations';
-import type { PublicConfig } from '../../shared/config/publicConfigTypes';
-import { formatAmountForInput } from '../../features/property/lib/propertyForm';
-import { parsePositiveId } from '../../features/property/lib/propertyFormat';
+
+import { ApiError } from '@/features/auth/api/apiClient';
+import { describePropertyLoadError } from '@/features/property/api/propertyErrorMessages';
+import { usePropertyDetail } from '@/features/property/api/useProperties';
+import { useUpdateProperty } from '@/features/property/api/usePropertyMutations';
+import { formatAmountForInput } from '@/features/property/lib/propertyForm';
+import { parsePositiveId } from '@/features/property/lib/propertyFormat';
+import type { PropertyDetail } from '@/features/property/model/Property';
+import PropertyForm from '@/features/property/ui/property-form/PropertyForm';
+import ContentState from '@/shared/ui/content-state/ContentState';
+import QueryState from '@/shared/ui/query-state/QueryState';
+import TopNavigation from '@/shared/ui/top-navigation/TopNavigation';
+
 import styles from './EditPropertyPage.module.css';
-import ContentState from '../../shared/ui/content-state/ContentState';
 
-type EditPropertyPageProps = { config: PublicConfig };
+const backToList = <Link to="/properties">매물 목록으로 돌아가기</Link>;
+const describeError = describePropertyLoadError('매물 정보를 불러오지 못했어요.');
 
-const EditPropertyPage = ({ config }: EditPropertyPageProps) => {
-  const { propertyId: propertyIdParam } = useParams();
-  const propertyId = parsePositiveId(propertyIdParam);
-
-  if (propertyId === null) {
-    return (
-      <ContentState title="올바른 매물 주소가 아니에요.">
-        <Link to="/properties">매물 목록으로 돌아가기</Link>
-      </ContentState>
-    );
-  }
-
-  return <ResolvedEditPropertyPage config={config} propertyId={propertyId} />;
+const EditPropertyPage = () => {
+  const propertyId = parsePositiveId(useParams().propertyId);
+  if (propertyId === null) return <ContentState title="올바른 매물 주소가 아니에요.">{backToList}</ContentState>;
+  return <ResolvedEditPropertyPage propertyId={propertyId} />;
 };
 
-const ResolvedEditPropertyPage = ({ config, propertyId }: { config: PublicConfig; propertyId: number }) => {
+const ResolvedEditPropertyPage = ({ propertyId }: { propertyId: number }) => {
+  const property = usePropertyDetail(propertyId);
+
+  return (
+    <QueryState
+      query={property}
+      loadingTitle="매물 정보를 불러오는 중이에요."
+      describeError={describeError}
+      errorAction={backToList}
+    >
+      {(initial) => <EditPropertyView propertyId={propertyId} initial={initial} />}
+    </QueryState>
+  );
+};
+
+type EditPropertyViewProps = { propertyId: number; initial: PropertyDetail };
+
+const EditPropertyView = ({ propertyId, initial }: EditPropertyViewProps) => {
   const navigate = useNavigate();
   const location = useLocation();
-  const property = usePropertyDetail(config, propertyId);
-  const updateMutation = useUpdateProperty(config, propertyId);
+  const updateMutation = useUpdateProperty(propertyId);
   const [formNotice, setFormNotice] = useState<string | null>(null);
 
-  if (property.isPending) return <ContentState loading title="매물 정보를 불러오는 중이에요." />;
-  if (property.isError)
-    return (
-      <ContentState
-        tone="error"
-        title={
-          property.error instanceof ApiError && property.error.code === 'PROPERTY_NOT_FOUND'
-            ? '매물을 찾을 수 없어요.'
-            : '매물 정보를 불러오지 못했어요.'
-        }
-        description={getPropertyErrorMessage(property.error)}
-      >
-        <Link to="/properties">매물 목록으로 돌아가기</Link>
-      </ContentState>
-    );
-
-  const initial = property.data;
   const mutationError = updateMutation.error instanceof ApiError ? updateMutation.error : null;
   const selectedLocation =
     (location.state as {
@@ -104,18 +97,13 @@ const ResolvedEditPropertyPage = ({ config, propertyId }: { config: PublicConfig
               },
             })
           }
-          onSubmit={(input) => {
-            const changes: UpdatePropertyRequestDto = {
-              ...input,
-              availableMoveInDate: initial.availableMoveInDate,
-              maintenanceFeeAmount: initial.maintenanceFeeAmount,
-              visitScheduledAt: initial.visitScheduledAt,
-              roomOptions: initial.roomOptions,
-              utilityOptions: initial.utilityOptions,
-            };
+          onSubmit={({ name, depositAmount, monthlyRentAmount, discoverySource, address, latitude, longitude }) => {
             setFormNotice(null);
             void updateMutation
-              .mutateAsync(changes)
+              .mutateAsync({
+                current: initial,
+                changes: { name, depositAmount, monthlyRentAmount, discoverySource, address, latitude, longitude },
+              })
               .then(() => navigate(`/properties/${propertyId}`, { replace: true }))
               .catch(() => undefined);
           }}

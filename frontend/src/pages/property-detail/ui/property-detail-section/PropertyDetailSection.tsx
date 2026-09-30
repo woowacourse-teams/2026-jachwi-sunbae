@@ -1,5 +1,6 @@
-import { useId } from 'react';
 import type { ReactNode } from 'react';
+import { useId } from 'react';
+
 import styles from './PropertyDetailSection.module.css';
 
 type PropertyDetailSectionProps = {

@@ -1,13 +1,15 @@
-import { useState } from 'react';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { createRef, useState } from 'react';
 import { MemoryRouter } from 'react-router-dom';
 import { describe, expect, it, vi } from 'vitest';
-import { Button, ButtonLink } from '../../../src/shared/ui/button/Button';
-import EmptyState from '../../../src/shared/ui/empty-state/EmptyState';
-import TopNavigation from '../../../src/shared/ui/top-navigation/TopNavigation';
-import SearchField from '../../../src/shared/ui/search-field/SearchField';
-import TextField from '../../../src/shared/ui/text-field/TextField';
+
+import { Button, ButtonLink } from '@/shared/ui/button/Button';
+import EmptyState from '@/shared/ui/empty-state/EmptyState';
+import SearchField from '@/shared/ui/search-field/SearchField';
+import TextAreaField from '@/shared/ui/text-field/TextAreaField';
+import TextField from '@/shared/ui/text-field/TextField';
+import TopNavigation from '@/shared/ui/top-navigation/TopNavigation';
 
 describe('공용 UI 컴포넌트', () => {
   it('Button은 처리 중일 때 중복 동작을 막고 진행 상태를 표시한다', () => {
@@ -20,6 +22,24 @@ describe('공용 UI 컴포넌트', () => {
     const button = screen.getByRole('button', { name: '저장 중…' });
     expect(button).toBeDisabled();
     expect(button).toHaveAttribute('aria-busy', 'true');
+  });
+
+  it('React 19의 ref prop으로 공용 입력 컴포넌트의 DOM에 접근한다', () => {
+    const buttonRef = createRef<HTMLButtonElement>();
+    const textAreaRef = createRef<HTMLTextAreaElement>();
+    const ButtonAndTextArea = () => {
+      return (
+        <>
+          <Button ref={buttonRef}>저장</Button>
+          <TextAreaField ref={textAreaRef} label="메모" />
+        </>
+      );
+    };
+
+    render(<ButtonAndTextArea />);
+
+    expect(screen.getByRole('button', { name: '저장' })).toBe(buttonRef.current);
+    expect(screen.getByRole('textbox', { name: '메모' })).toBe(textAreaRef.current);
   });
 
   it('TextField는 라벨과 도움말·오류를 입력 요소에 연결한다', () => {
@@ -84,5 +104,14 @@ describe('공용 UI 컴포넌트', () => {
     render(<EmptyState variant="plain" title="해당 상태의 매물이 없어요." description="다른 상태를 선택해 보세요." />);
 
     expect(screen.getByText('해당 상태의 매물이 없어요.').closest('section')).toHaveAttribute('data-variant', 'plain');
+  });
+
+  it('TextField는 큰 입력칸 크기를 입력칸 묶음에 표시한다', () => {
+    render(<TextField label="보증금" fieldSize="large" />);
+
+    expect(screen.getByRole('textbox', { name: '보증금' }).closest('[data-size]')).toHaveAttribute(
+      'data-size',
+      'large',
+    );
   });
 });

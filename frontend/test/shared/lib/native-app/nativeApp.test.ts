@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it } from 'vitest';
-import { isRunningInNativeApp } from '../../../../src/shared/lib/native-app/nativeApp';
+
+import { isRunningInNativeApp } from '@/shared/lib/native-app/nativeApp';
 
 afterEach(() => {
   delete window.__JACHWI_NATIVE_APP__;

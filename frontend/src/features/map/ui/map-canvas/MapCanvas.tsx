@@ -1,10 +1,13 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
 import type { CSSProperties } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+
+import { usePublicConfig } from '@/shared/config/PublicConfigContext';
+import StatusPanel from '@/shared/ui/status-panel/StatusPanel';
+
+import { clampToSouthKorea, SOUTH_KOREA_BOUNDS } from '../../lib/mapLocation';
 import type { MapCategory } from '../../model/Map';
-import { SOUTH_KOREA_BOUNDS, clampToSouthKorea } from '../../lib/mapLocation';
-import type { PublicConfig } from '../../../../shared/config/publicConfigTypes';
 import MapCategoryIcon, { createMapCategoryIconElement } from '../map-category-icon/MapCategoryIcon';
-import StatusPanel from '../../../../shared/ui/status-panel/StatusPanel';
+
 import styles from './MapCanvas.module.css';
 
 export type MapMarker = {
@@ -29,7 +32,6 @@ export type MapRadiusCircle = {
 };
 
 type MapCanvasProps = {
-  config: PublicConfig;
   center: { latitude: number; longitude: number };
   markers?: MapMarker[];
   circles?: MapRadiusCircle[];
@@ -301,7 +303,6 @@ const demoMarkerStyle = (marker: MapMarker, center: { latitude: number; longitud
 });
 
 const MapCanvas = ({
-  config,
   center,
   markers = [],
   circles = [],
@@ -316,6 +317,7 @@ const MapCanvas = ({
   onLevelChange,
   radiusCenter = center,
 }: MapCanvasProps) => {
+  const config = usePublicConfig();
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<LiveMap | null>(null);
   const overlaysRef = useRef(new Map<string, { signature: string; overlay: LiveOverlay }>());
@@ -476,7 +478,11 @@ const MapCanvas = ({
             <span
               key={circle.radiusMeters}
               className={styles.radiusCircle}
-              style={{ width: `${(circle.radiusMeters / 2000) * 84}%` }}
+              style={{
+                width: `${(circle.radiusMeters / 2000) * 84}%`,
+                left: `${50 + (radiusCenter.longitude - boundedCenter.longitude) * 3_100}%`,
+                top: `${50 - (radiusCenter.latitude - boundedCenter.latitude) * 4_200}%`,
+              }}
               aria-hidden="true"
             />
           ))}

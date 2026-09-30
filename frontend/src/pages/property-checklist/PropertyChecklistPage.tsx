@@ -1,38 +1,36 @@
 import { useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { ApiError } from '../../features/auth/api/apiClient';
-import ChecklistPageLayout from '../../features/checklist/ui/checklist-page-layout/ChecklistPageLayout';
-import ContentState from '../../shared/ui/content-state/ContentState';
-import PropertyChecklistItemControl from './ui/property-checklist-item-control/PropertyChecklistItemControl';
-import Icon from '../../shared/ui/icon/Icon';
-import IconButton from '../../shared/ui/icon-button/IconButton';
-import { usePropertyChecklistDetail, usePropertyDetail } from '../../features/property/api/useProperties';
 
-import useDelayedLoading from '../../shared/lib/hooks/useDelayedLoading';
-import type { PublicConfig } from '../../shared/config/publicConfigTypes';
-import { USER_CHECKLIST_STAGE } from '../../features/checklist/model/checklist';
-import { getChecklistStageLabel, parsePositiveId } from '../../features/property/lib/propertyFormat';
+import { isApiErrorCode } from '@/features/auth/api/apiClient';
+import { USER_CHECKLIST_STAGE } from '@/features/checklist/model/checklist';
+import ChecklistPageLayout from '@/features/checklist/ui/checklist-page-layout/ChecklistPageLayout';
+import { usePropertyChecklistDetail, usePropertyDetail } from '@/features/property/api/useProperties';
+import { getChecklistStageLabel, parsePositiveId } from '@/features/property/lib/propertyFormat';
+import useDelayedLoading from '@/shared/lib/hooks/useDelayedLoading';
+import ContentState from '@/shared/ui/content-state/ContentState';
+import Icon from '@/shared/ui/icon/Icon';
+import IconButton from '@/shared/ui/icon-button/IconButton';
+
+import PropertyChecklistItemControl from './ui/property-checklist-item-control/PropertyChecklistItemControl';
+
 import styles from './PropertyChecklistPage.module.css';
 
-const PropertyChecklistPage = ({ config }: { config: PublicConfig }) => {
+const PropertyChecklistPage = () => {
   const params = useParams();
   const propertyId = parsePositiveId(params.propertyId);
   const propertyChecklistId = parsePositiveId(params.propertyChecklistId);
 
   if (propertyId === null || propertyChecklistId === null) {
     return (
-      <main className="property-page">
-        <ContentState page={false} title="올바른 매물 체크리스트 주소가 아니에요.">
-          <Link to="/properties">매물 목록으로 돌아가기</Link>
-        </ContentState>
-      </main>
+      <ContentState title="올바른 매물 체크리스트 주소가 아니에요.">
+        <Link to="/properties">매물 목록으로 돌아가기</Link>
+      </ContentState>
     );
   }
 
   return (
     <ResolvedPropertyChecklistPage
       key={propertyChecklistId}
-      config={config}
       propertyId={propertyId}
       propertyChecklistId={propertyChecklistId}
     />
@@ -40,26 +38,24 @@ const PropertyChecklistPage = ({ config }: { config: PublicConfig }) => {
 };
 
 const ResolvedPropertyChecklistPage = ({
-  config,
   propertyId,
   propertyChecklistId,
 }: {
-  config: PublicConfig;
   propertyId: number;
   propertyChecklistId: number;
 }) => {
-  const checklist = usePropertyChecklistDetail(config, propertyId, propertyChecklistId);
+  const checklist = usePropertyChecklistDetail(propertyId, propertyChecklistId);
   const isLoadingVisible = useDelayedLoading(checklist.isPending);
   const isLoading = checklist.isPending || isLoadingVisible;
-  const property = usePropertyDetail(config, propertyId);
+  const property = usePropertyDetail(propertyId);
   const [editingMemoItemId, setEditingMemoItemId] = useState<number | null>(null);
 
   if (isLoading) {
-    return isLoadingVisible ? <ContentState page={false} loading title="체크리스트를 불러오는 중이에요." /> : null;
+    return isLoadingVisible ? <ContentState loading title="체크리스트를 불러오는 중이에요." /> : null;
   }
 
   if (checklist.isError) {
-    const isNotFound = checklist.error instanceof ApiError && checklist.error.code === 'PROPERTY_CHECKLIST_NOT_FOUND';
+    const isNotFound = isApiErrorCode(checklist.error, 'PROPERTY_CHECKLIST_NOT_FOUND');
     return (
       <main className={`${styles.statePage} property-page`}>
         <div className={isNotFound ? styles.plainState : styles.stateCard}>
@@ -117,7 +113,6 @@ const ResolvedPropertyChecklistPage = ({
         {detail.items.map((item) => (
           <PropertyChecklistItemControl
             key={item.itemId}
-            config={config}
             propertyId={propertyId}
             propertyChecklistId={propertyChecklistId}
             item={item}

@@ -151,7 +151,7 @@ sudo systemctl start jachwi-sunbae.service
 3. dev 애플리케이션 DB 계정에 서비스 실행에 필요한 `SELECT`, `INSERT`, `UPDATE`, `DELETE` 권한이 있는지 확인한다.
 4. `/etc/jachwi-sunbae/app.env`에 dev DB·JWT·CORS·선택한 지도 공급자 인증 정보·S3 접두사를 dev 환경에 맞게 설정한다. 정적 AWS 키는 두지 않는다.
 5. 버스정류소 API 승인이 끝나지 않았다면 `BUS_STOP_PROVIDER=none`으로 둔다.
-6. 프론트 dev `Commands` 액션에 `API_BASE_URL=https://dev-api.jachwi-sunbae.kr`, `MAP_PROVIDER_MODE`와 선택한 지도 공급자의 공개 키를 주입한다.
+6. 프론트 dev `Commands` 액션에 `API_BASE_URL=https://dev-api.jachwi-sunbae.kr`, `MAP_PROVIDER_MODE`, 선택한 지도 공급자의 공개 키, 운영과 같은 `POSTHOG_PROJECT_TOKEN`, `POSTHOG_HOST=https://us.i.posthog.com`을 주입한다. PostHog 데이터는 `environment=development` 속성으로 운영 데이터와 구분한다.
 
 애플리케이션은 배포 중 RDS 스키마를 자동 변경하지 않는다. `db/init`은 빈 로컬 MySQL을 만들기 위한 기준선이므로 기존 RDS에 직접 실행하지 않는다. 스키마 전환이 필요한 배포는 백업, 데이터 덤프, 새 스키마 생성, 데이터 적재, 무결성 검증을 별도 작업으로 수행하고 결과를 배포 이슈에 기록한다.
 

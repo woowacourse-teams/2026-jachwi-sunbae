@@ -1,5 +1,5 @@
-import type { CheckItem, ChecklistStage } from '../model/checklistTypes';
 import { isChecklistStage } from '../model/checklist';
+import type { CheckItem, ChecklistStage } from '../model/checklistTypes';
 import { moveItem } from './moveItem';
 
 export const validateChecklistName = (value: string): string | null => {

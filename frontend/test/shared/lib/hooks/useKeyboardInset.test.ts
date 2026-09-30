@@ -1,6 +1,7 @@
 import { act, renderHook } from '@testing-library/react';
 import { afterEach, describe, expect, it } from 'vitest';
-import { useKeyboardInset } from '../../../../src/shared/lib/hooks/useKeyboardInset';
+
+import { useKeyboardInset } from '@/shared/lib/hooks/useKeyboardInset';
 
 const listeners = new Map<string, () => void>();
 

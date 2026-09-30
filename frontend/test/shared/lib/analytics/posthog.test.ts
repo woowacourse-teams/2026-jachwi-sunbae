@@ -3,6 +3,8 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 const { mockPostHog } = vi.hoisted(() => ({
   mockPostHog: {
     capture: vi.fn(),
+    captureException: vi.fn(),
+    register: vi.fn(),
     identify: vi.fn(),
     init: vi.fn(),
     opt_out_capturing: vi.fn(),
@@ -13,14 +15,16 @@ const { mockPostHog } = vi.hoisted(() => ({
 vi.mock('posthog-js', () => ({ default: mockPostHog }));
 
 import {
+  capturePostHogException,
   identifyPostHogMember,
   initPostHog,
   isValidPostHogConfiguration,
   resetPostHogForTests,
   resetPostHogIdentity,
+  setPostHogSessionContext,
   trackPostHogEvent,
   trackPostHogPageView,
-} from '../../../../src/shared/lib/analytics/posthog';
+} from '@/shared/lib/analytics/posthog';
 
 describe('PostHog 제품 분석', () => {
   afterEach(() => {
@@ -59,6 +63,37 @@ describe('PostHog 제품 분석', () => {
     });
   });
 
+  it('예외를 Error Tracking 이벤트로 전송한다', async () => {
+    const error = new Error('request failed');
+    expect(capturePostHogException(error, { source: 'api_request' })).toBe(false);
+
+    initPostHog('phc_test', 'https://us.i.posthog.com');
+    expect(capturePostHogException(error, { source: 'api_request' })).toBe(true);
+
+    await vi.waitFor(() => {
+      expect(mockPostHog.captureException).toHaveBeenCalledWith(error, { source: 'api_request' });
+    });
+  });
+
+  it('세션 환경과 버전 정보를 공통 속성으로 등록한다', async () => {
+    initPostHog('phc_test', 'https://us.i.posthog.com');
+    expect(
+      setPostHogSessionContext({
+        environment: 'production',
+        app_version: '1.1.1',
+        platform: 'ios_webview',
+      }),
+    ).toBe(true);
+
+    await vi.waitFor(() => {
+      expect(mockPostHog.register).toHaveBeenCalledWith({
+        environment: 'production',
+        app_version: '1.1.1',
+        platform: 'ios_webview',
+      });
+    });
+  });
+
   it('회원 식별과 초기화를 수행한다', async () => {
     expect(identifyPostHogMember(12, '자취선배1')).toBe(false);
     initPostHog('phc_test', 'https://us.i.posthog.com');
@@ -66,8 +101,8 @@ describe('PostHog 제품 분석', () => {
     expect(identifyPostHogMember(12, '자취선배1')).toBe(true);
     await vi.waitFor(() => {
       expect(mockPostHog.identify).toHaveBeenCalledWith('member-12', {
-        displayName: '자취선배1',
         name: '자취선배1',
+        nickname: '자취선배1',
       });
     });
 

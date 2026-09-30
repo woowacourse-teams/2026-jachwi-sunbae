@@ -1,22 +1,23 @@
-import { useState, type MouseEventHandler } from 'react';
+import { type MouseEventHandler, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import type { PropertySummary } from '../../model/Property';
-import type { PublicConfig } from '../../../../shared/config/publicConfigTypes';
+
+import ChecklistProgressBar from '@/features/checklist/ui/checklist-progress-bar/ChecklistProgressBar';
+import mascotImage from '@/shared/assets/empty-property.jpg';
+
 import { formatManwon } from '../../lib/propertyFormat';
-import ChecklistProgressBar from '../../../checklist/ui/checklist-progress-bar/ChecklistProgressBar';
-import styles from './PropertyCard.module.css';
+import type { PropertySummary } from '../../model/Property';
 import AuthenticatedPhoto from '../authenticated-photo/AuthenticatedPhoto';
-import mascotImage from '../../../../shared/assets/empty-property.jpg';
+
+import styles from './PropertyCard.module.css';
 
 type PropertyPhotoThumbnailProps = {
   property: PropertySummary;
   thumbnailUrl?: string;
-  config?: PublicConfig;
   onActivate?: () => void;
 };
 
 /** 목록 카드에는 대표 사진 한 장만 보여 준다. 나머지 사진은 매물 상세에서 본다. */
-const PropertyPhotoThumbnail = ({ property, thumbnailUrl, config, onActivate }: PropertyPhotoThumbnailProps) => {
+const PropertyPhotoThumbnail = ({ property, thumbnailUrl, onActivate }: PropertyPhotoThumbnailProps) => {
   const [failed, setFailed] = useState(false);
   const photo = property.representativePhoto ?? property.photos?.[0] ?? null;
   const contentUrl = thumbnailUrl ?? photo?.contentUrl ?? property.photoUrls?.[0];
@@ -27,9 +28,8 @@ const PropertyPhotoThumbnail = ({ property, thumbnailUrl, config, onActivate }: 
         <div className={styles.emptyPhoto} role="img" aria-label="등록된 사진 없음">
           <img src={mascotImage} alt="" />
         </div>
-      ) : config !== undefined && photo !== null ? (
+      ) : photo !== null ? (
         <AuthenticatedPhoto
-          config={config}
           propertyId={property.propertyId}
           photoId={photo.photoId}
           contentUrl={contentUrl}
@@ -45,11 +45,10 @@ const PropertyPhotoThumbnail = ({ property, thumbnailUrl, config, onActivate }: 
 type PropertyCardProps = {
   property: PropertySummary;
   thumbnailUrl?: string;
-  config?: PublicConfig;
   onClick?: MouseEventHandler<HTMLAnchorElement>;
 };
 
-const PropertyCard = ({ property, thumbnailUrl, config, onClick }: PropertyCardProps) => {
+const PropertyCard = ({ property, thumbnailUrl, onClick }: PropertyCardProps) => {
   const navigate = useNavigate();
   const onSiteStage = property.stages.find((stage) => stage.stage === 'ON_SITE');
 
@@ -59,7 +58,6 @@ const PropertyCard = ({ property, thumbnailUrl, config, onClick }: PropertyCardP
         <PropertyPhotoThumbnail
           property={property}
           thumbnailUrl={thumbnailUrl}
-          config={config}
           onActivate={() => navigate(`/properties/${property.propertyId}`)}
         />
       </div>

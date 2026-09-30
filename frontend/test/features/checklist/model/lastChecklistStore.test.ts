@@ -1,9 +1,10 @@
 import { beforeEach, describe, expect, it } from 'vitest';
+
 import {
   clearLastSelectedChecklist,
   readLastSelectedChecklist,
   writeLastSelectedChecklist,
-} from '../../../../src/features/checklist/model/lastChecklistStore';
+} from '@/features/checklist/model/lastChecklistStore';
 
 describe('마지막으로 고른 체크리스트', () => {
   beforeEach(() => {

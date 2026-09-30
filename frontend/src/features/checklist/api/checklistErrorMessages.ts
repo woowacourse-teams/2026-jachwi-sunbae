@@ -1,4 +1,5 @@
-import { ApiError, getSafeApiErrorMessage } from '../../auth/api/apiClient';
+import { ApiError, getSafeApiErrorMessage, isApiErrorCode } from '@/features/auth/api/apiClient';
+import type { QueryErrorView } from '@/shared/ui/query-state/QueryState';
 
 const messages: Record<string, string> = {
   INVALID_STAGE: '확인 단계를 다시 선택해 주세요.',
@@ -23,3 +24,13 @@ export const getChecklistErrorMessage = (error: unknown): string => {
   if (error instanceof ApiError && error.code !== null && error.code in messages) return messages[error.code];
   return getSafeApiErrorMessage(error);
 };
+
+/** 체크리스트를 조회하지 못했을 때의 안내. `notFoundTitles`에 있는 오류 코드는 다시 시도를 막는다. */
+export const describeChecklistLoadError =
+  (failedTitle: string, notFoundTitles: Record<string, string>) =>
+  (error: unknown): QueryErrorView => {
+    const notFoundCode = Object.keys(notFoundTitles).find((code) => isApiErrorCode(error, code));
+    return notFoundCode === undefined
+      ? { title: failedTitle, description: getChecklistErrorMessage(error), canRetry: true }
+      : { title: notFoundTitles[notFoundCode], description: getChecklistErrorMessage(error), canRetry: false };
+  };

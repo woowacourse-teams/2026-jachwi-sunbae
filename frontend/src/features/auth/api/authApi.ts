@@ -1,4 +1,5 @@
-import type { PublicConfig } from '../../../shared/config/publicConfigTypes';
+import type { PublicConfig } from '@/shared/config/publicConfigTypes';
+
 import { apiRequest } from './apiClient';
 import { parseLoginResponseDto } from './authParsers';
 import type { LoginResponseDto, NicknameLoginRequestDto } from './dtos/AuthDto';

@@ -1,8 +1,8 @@
 import { authHandlers } from './authHandlers';
 import { checklistHandlers } from './checklistHandlers';
+import { mapHandlers } from './mapHandlers';
 import { propertyChecklistHandlers } from './propertyChecklistHandlers';
 import { propertyHandlers } from './propertyHandlers';
-import { mapHandlers } from './mapHandlers';
 
 export const handlers = [
   ...authHandlers,

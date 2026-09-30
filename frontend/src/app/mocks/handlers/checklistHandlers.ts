@@ -1,8 +1,12 @@
 import { http, HttpResponse } from 'msw';
-import { isChecklistStage } from '../../../features/checklist/model/checklist';
+
+import { isChecklistStage } from '@/features/checklist/model/checklist';
+import type { ChecklistStage } from '@/features/checklist/model/checklistTypes';
+
+import type { MockChecklistItem } from '../mockStore';
 import {
-  checklistDetail,
   checkItems,
+  checklistDetail,
   failure,
   getMockChecklists,
   obsoleteEndpoint,
@@ -10,8 +14,6 @@ import {
   setMockChecklists,
   success,
 } from '../mockStore';
-import type { MockChecklistItem } from '../mockStore';
-import type { ChecklistStage } from '../../../features/checklist/model/checklistTypes';
 
 type ChecklistItemBody = { systemCheckItemId?: unknown; question?: unknown };
 

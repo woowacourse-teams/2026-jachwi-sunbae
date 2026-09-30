@@ -1,5 +1,7 @@
 import type { ReactNode } from 'react';
-import type { PropertyChecklistProgress } from '../../../property/model/Property';
+
+import type { PropertyChecklistProgress } from '@/features/property/model/Property';
+
 import styles from './ChecklistProgressBar.module.css';
 
 type ChecklistProgressBarProps = {

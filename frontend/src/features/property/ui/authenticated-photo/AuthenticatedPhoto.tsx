@@ -1,10 +1,9 @@
 import { getPropertyErrorMessage } from '../../api/propertyErrorMessages';
 import { useAuthenticatedPhoto } from '../../api/useAuthenticatedPhoto';
-import type { PublicConfig } from '../../../../shared/config/publicConfigTypes';
+
 import './AuthenticatedPhoto.css';
 
 type AuthenticatedPhotoProps = {
-  config: PublicConfig;
   propertyId: number;
   photoId: number;
   contentUrl: string;
@@ -12,15 +11,8 @@ type AuthenticatedPhotoProps = {
   className?: string;
 };
 
-const AuthenticatedPhoto = ({
-  config,
-  propertyId,
-  photoId,
-  contentUrl,
-  alt,
-  className = '',
-}: AuthenticatedPhotoProps) => {
-  const photo = useAuthenticatedPhoto(config, propertyId, photoId, contentUrl);
+const AuthenticatedPhoto = ({ propertyId, photoId, contentUrl, alt, className = '' }: AuthenticatedPhotoProps) => {
+  const photo = useAuthenticatedPhoto(propertyId, photoId, contentUrl);
 
   if (photo.isError) {
     return (

@@ -1,8 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
-import mapRegisterVideo from '../../../../shared/assets/intro/intro-map-register.mp4';
-import nearbyCompareVideo from '../../../../shared/assets/intro/intro-nearby-compare.mp4';
-import quickRegisterVideo from '../../../../shared/assets/intro/intro-quick-register.mp4';
-import { trackPostHogEvent } from '../../../../shared/lib/analytics/posthog';
+
+import mapRegisterVideo from '@/shared/assets/intro/intro-map-register.mp4';
+import nearbyCompareVideo from '@/shared/assets/intro/intro-nearby-compare.mp4';
+import quickRegisterVideo from '@/shared/assets/intro/intro-quick-register.mp4';
+import { trackPostHogEvent } from '@/shared/lib/analytics/posthog';
+
 import styles from './IntroDemoPlayer.module.css';
 
 type DemoChapter = {
