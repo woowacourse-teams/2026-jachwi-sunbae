@@ -1,6 +1,10 @@
 import type { ApiErrorDto } from '@/shared/api/dtos/ApiEnvelopeDto';
 import type { PublicConfig } from '@/shared/config/publicConfigTypes';
-import { capturePostHogException } from '@/shared/lib/analytics/posthog';
+import {
+  capturePostHogException,
+  type PostHogErrorCategory,
+  type PostHogErrorSeverity,
+} from '@/shared/lib/analytics/posthog';
 
 import { clearAuthentication, getAccessToken, getAuthenticationRevision } from '../model/authStore';
 
@@ -54,12 +58,32 @@ const captureUnexpectedApiError = ({
   method: string;
   status?: number;
 }) => {
+  const trackingContext = getApiErrorTrackingContext(error, status);
   capturePostHogException(error, {
     source: 'api_request',
+    ...trackingContext,
     request_path: path,
     request_method: method,
     ...(status === undefined ? {} : { response_status: status }),
   });
+};
+
+export const getApiErrorTrackingContext = (
+  error: unknown,
+  status?: number,
+): { error_category: PostHogErrorCategory; severity: PostHogErrorSeverity } => {
+  if (error instanceof ApiError && error.kind === 'network') {
+    return { error_category: 'network', severity: 'P2' };
+  }
+
+  if (
+    (status !== undefined && status >= 500) ||
+    (error instanceof ApiError && error.status !== null && error.status >= 500)
+  ) {
+    return { error_category: 'api_server', severity: 'P1' };
+  }
+
+  return { error_category: 'api_contract', severity: 'P1' };
 };
 
 const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null;

@@ -15,6 +15,8 @@ class RouteErrorBoundary extends Component<{ children: ReactNode }, { hasError: 
     capturePostHogException(error, {
       boundary: 'lazy_route',
       component_stack: info.componentStack,
+      error_category: 'render',
+      severity: 'P0',
     });
     trackPostHogEvent('error_state_viewed', { screen: 'lazy_route_boundary', error_kind: 'render' });
   }
