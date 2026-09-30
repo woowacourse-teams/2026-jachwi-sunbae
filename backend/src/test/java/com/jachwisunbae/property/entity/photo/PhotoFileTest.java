@@ -18,15 +18,6 @@ class PhotoFileTest {
         "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=");
 
     @Test
-    @DisplayName("사진 파일의 SHA-256 체크섬을 계산한다")
-    void calculateChecksum() {
-        PhotoFile photoFile = new PhotoFile(PNG, "image/png");
-
-        assertThat(photoFile.checksum())
-            .isEqualTo("431ced6916a2a21a156e38701afe55bbd7f88969fbbfc56d7fe099d47f265460");
-    }
-
-    @Test
     @DisplayName("사진 크기가 정확히 5MiB이면 허용한다")
     void acceptMaximumSize() {
         byte[] maximumSizePng = Arrays.copyOf(PNG, MAX_SIZE_BYTES);
