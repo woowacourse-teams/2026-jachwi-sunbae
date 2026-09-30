@@ -52,7 +52,7 @@ const CreatePropertyPage = () => {
             fieldClassName={styles.depositField}
             fieldSize="large"
             floatingLabel
-            placeholder="예: 1,000"
+            placeholder="보증금 입력"
             value={values.depositAmount}
             onValueChange={(value) => form.changeMoney('depositAmount', value)}
             error={errors.depositAmount}
@@ -66,7 +66,7 @@ const CreatePropertyPage = () => {
               fieldClassName={styles.rentField}
               fieldSize="large"
               floatingLabel
-              placeholder="예: 55"
+              placeholder="월세 입력"
               value={values.monthlyRentAmount}
               onValueChange={(value) => form.changeMoney('monthlyRentAmount', value)}
               error={errors.monthlyRentAmount}

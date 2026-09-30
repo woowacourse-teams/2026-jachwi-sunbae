@@ -58,17 +58,17 @@
 .field[data-floating-label='true']:focus-within .floatingLabel,
 .field[data-floating-label='true']:has(input:not(:placeholder-shown)) .floatingLabel,
 .field[data-floating-label='true']:has(input[aria-invalid='true']) .floatingLabel {
-  top: 0.28rem;
-  color: var(--color-ink);
+  top: 0.4rem;
+  color: var(--color-brand-yellow);
   font-size: 0.72rem;
   font-weight: 500;
   opacity: 1;
   transform: translateY(-50%);
 }
 
-/* 포커스 중에도 입력된 라벨은 기본 색을 유지한다. 포커스 표시는 밑줄 색으로 구분한다. */
+/* 포커스 중에는 밑줄과 같은 색을 사용해 입력 상태를 보여준다. */
 .field[data-floating-label='true']:focus-within .floatingLabel {
-  color: var(--color-ink);
+  color: var(--color-brand-yellow);
 }
 
 /* 포커스·입력으로 라벨 색이 바뀌어도 필수 표시는 계속 의미 색을 유지한다. */
@@ -116,7 +116,7 @@
 .field[data-size='large'][data-floating-label='true']:focus-within .floatingLabel,
 .field[data-size='large'][data-floating-label='true']:has(input:not(:placeholder-shown)) .floatingLabel,
 .field[data-size='large'][data-floating-label='true']:has(input[aria-invalid='true']) .floatingLabel {
-  top: 0.28rem;
+  top: 0.4rem;
 }
 
 /* 단위 표시가 붙는 칸만 오른쪽을 비워 글자가 겹치지 않게 한다. */
