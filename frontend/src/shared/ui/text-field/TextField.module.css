@@ -11,7 +11,8 @@
 
 .requiredMarker {
   margin-right: 0.2rem;
-  color: var(--color-error);
+  /* 필수 표시 자체의 의미 색상은 라벨의 포커스 색과 분리한다. */
+  color: var(--color-danger, #c96b6b);
   font-size: 0.8rem;
   font-weight: 800;
 }
@@ -67,6 +68,11 @@
 
 .field[data-floating-label='true']:focus-within .floatingLabel {
   color: var(--color-brand-yellow);
+}
+
+/* 포커스·입력으로 라벨 색이 바뀌어도 필수 표시는 계속 의미 색을 유지한다. */
+.field[data-floating-label='true'] .floatingLabel .requiredMarker {
+  color: var(--color-danger, #c96b6b);
 }
 
 .field[data-floating-label='true'] .control input:focus::placeholder {
