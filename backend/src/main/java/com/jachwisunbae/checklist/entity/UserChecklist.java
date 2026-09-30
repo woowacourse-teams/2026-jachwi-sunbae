@@ -2,12 +2,14 @@ package com.jachwisunbae.checklist.entity;
 
 import lombok.Getter;
 import com.jachwisunbae.checklist.type.CheckStage;
+import com.jachwisunbae.common.exception.client.InvalidInputException;
 import com.jachwisunbae.common.exception.errorcode.ErrorCode;
 import com.jachwisunbae.common.validation.DomainPreconditions;
 
 @Getter
 public class UserChecklist {
 
+    private static final int MAX_NAME_LENGTH = 30;
     private final Long id;
     private final Long memberId;
     private String name;
@@ -38,9 +40,13 @@ public class UserChecklist {
                 "체크리스트 소유 회원은 필수입니다.");
     }
 
+    // 체크리스트 이름은 사용자가 입력하는 값이다.
     private static String validateName(final String name) {
-        return DomainPreconditions.requireTrimmed(name, 1, 30, ErrorCode.USER_CHECKLIST_NAME_INVALID,
-                "체크리스트 이름은 trim 후 1자 이상 30자 이하여야 합니다.");
+        if (name == null || name.isBlank() || name.trim().length() > MAX_NAME_LENGTH) {
+            throw new InvalidInputException(ErrorCode.USER_CHECKLIST_NAME_INVALID,
+                    "체크리스트 이름은 trim 후 1자 이상 30자 이하여야 합니다.");
+        }
+        return name.trim();
     }
 
     private static CheckStage validateStage(final CheckStage stage) {
