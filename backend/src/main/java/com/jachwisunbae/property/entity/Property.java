@@ -22,10 +22,11 @@ public class Property extends BaseTimeEntity {
     private PropertyRentalPrice propertyRentalPrice;
     private PropertyLocation propertyLocation;
     private PropertyOptions propertyOptions;
+    private PropertyMemo propertyMemo;
 
     private Property(final Long id, final Long memberId, final PropertyName propertyName,
                      final PropertyRentalPrice propertyRentalPrice, final PropertyLocation propertyLocation,
-                     final PropertyOptions propertyOptions,
+                     final PropertyOptions propertyOptions, final PropertyMemo propertyMemo,
                      final LocalDateTime createdAt, final LocalDateTime updatedAt) {
         super(createdAt, updatedAt);
         this.id = id;
@@ -34,6 +35,7 @@ public class Property extends BaseTimeEntity {
         this.propertyRentalPrice = propertyRentalPrice;
         this.propertyLocation = propertyLocation;
         this.propertyOptions = propertyOptions;
+        this.propertyMemo = propertyMemo;
     }
 
     public static Property create(final Long memberId, final String name, final Long depositAmount,
@@ -49,6 +51,7 @@ public class Property extends BaseTimeEntity {
             PropertyLocation.from(address, latitude, longitude),
             PropertyOptions.fromCodes(availableMoveInDate, maintenanceFeeAmount, visitScheduledAt, roomOptions,
                 utilityOptions, discoverySource),
+            PropertyMemo.from(""),
             now, now);
     }
 
@@ -59,13 +62,14 @@ public class Property extends BaseTimeEntity {
                                        final LocalDate availableMoveInDate, final Long maintenanceFeeAmount,
                                        final LocalDateTime visitScheduledAt,
                                        final Set<RoomOption> roomOptions, final Set<UtilityOption> utilityOptions,
-                                       final String discoverySource,
+                                       final String discoverySource, final String freeMemo,
                                        final LocalDateTime createdAt, final LocalDateTime updatedAt) {
         return new Property(id, validateMemberId(memberId), PropertyName.from(name),
             PropertyRentalPrice.from(depositAmount, monthlyRentAmount),
             PropertyLocation.from(address, latitude, longitude),
             PropertyOptions.of(availableMoveInDate, maintenanceFeeAmount, visitScheduledAt, roomOptions, utilityOptions,
                 discoverySource),
+            PropertyMemo.from(freeMemo),
             createdAt, updatedAt);
     }
 
@@ -148,6 +152,14 @@ public class Property extends BaseTimeEntity {
 
     public String getDiscoverySource() {
         return propertyOptions.discoverySource();
+    }
+
+    public String getMemo() {
+        return propertyMemo.value();
+    }
+
+    public void replaceMemo(final String memo) {
+        this.propertyMemo = PropertyMemo.from(memo);
     }
 
     private static Long validateMemberId(final Long memberId) {

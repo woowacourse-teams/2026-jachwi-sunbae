@@ -20,6 +20,8 @@ public interface PropertyRepository {
 
     Property update(Property property);
 
+    void updateMemo(Property property);
+
     void deleteById(long propertyId);
 
 }

@@ -63,12 +63,12 @@ common/exception
 | `DataInconsistencyException` | `500 Internal Server Error` |
 | `ExternalServiceException` | `500 Internal Server Error` |
 
-인증 필터에서 발생하는 오류는 Controller 이후의 `GlobalExceptionHandler`에 도달하지 않는다. `JachwiAuthenticationEntryPoint`가 같은 오류 응답 형식으로 다음 코드를 반환한다.
+인증 필터에서 발생하는 오류는 Controller 이후의 `GlobalExceptionHandler`에 도달하지 않는다. `JwtAuthenticationFilter`가 같은 오류 응답 형식으로 다음 코드를 직접 반환한다.
 
 | 상황 | 상태 코드 | 오류 코드 |
 | --- | --- | --- |
-| Bearer Access Token 누락·잘못된 인증 스킴 | `401 Unauthorized` | `UNAUTHENTICATED` |
-| Access Token 만료 | `401 Unauthorized` | `ACCESS_TOKEN_EXPIRED` |
+| Bearer Access Token 누락·잘못된 인증 스킴 | `401 Unauthorized` | `ACCESS_TOKEN_INVALID` |
+| Access Token 만료 | `401 Unauthorized` | `ACCESS_TOKEN_INVALID` |
 | 서명·issuer·audience·subject·형식 오류 | `401 Unauthorized` | `ACCESS_TOKEN_INVALID` |
 
 `UpstreamServiceException`은 네이버 지도나 TAGO처럼 상류 시스템이 실패한 경우 사용하며 `ErrorCode`에 따라 `502 Bad Gateway`로 변환한다.

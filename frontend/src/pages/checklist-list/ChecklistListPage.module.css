@@ -1,0 +1,36 @@
+.page {
+  min-height: 100%;
+  background: var(--color-canvas);
+}
+
+.container {
+  padding: 0 0 1.5rem;
+}
+
+.navigationArea {
+  padding: 0 1rem;
+  background: var(--color-canvas);
+}
+
+.topNavigation {
+  margin-bottom: 0;
+  border-bottom: 0;
+}
+
+.navigationArea > :global([data-full-bleed='true']) {
+  width: 100%;
+  margin-left: 0;
+}
+
+.description {
+  margin: 0.65rem 0 0;
+  color: var(--color-muted);
+  font-size: 0.68rem;
+  line-height: 1.5;
+}
+
+.container > :global(.content-state),
+.container > :global(.load-more) {
+  margin-right: 1rem;
+  margin-left: 1rem;
+}

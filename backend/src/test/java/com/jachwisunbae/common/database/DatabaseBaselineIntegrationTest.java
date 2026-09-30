@@ -46,14 +46,14 @@ class DatabaseBaselineIntegrationTest {
         JdbcMemberRepository memberRepository = new JdbcMemberRepository(jdbcTemplate);
         LocalDateTime now = LocalDateTime.parse("2026-09-22T00:00:00");
         Member savedMember = memberRepository.save(Member.create("새회원", null, now));
-        assertThat(memberRepository.findByNickname("새회원"))
+        assertThat(memberRepository.findByNicknameAndPasswordProtected("새회원", false))
                 .get()
                 .extracting(Member::getId)
                 .isEqualTo(savedMember.getId());
 
         jdbcTemplate.update("""
-                INSERT INTO members (id, nickname, nickname_key, password_hash, created_at, updated_at)
-                VALUES (999, '기준선 사용자', '기준선 사용자', NULL, NOW(6), NOW(6))
+                INSERT INTO members (id, nickname, password_hash, created_at, updated_at)
+                VALUES (999, '기준선 사용자', NULL, NOW(6), NOW(6))
                 """);
         jdbcTemplate.update("""
                 INSERT INTO user_checklists (id, member_id, name, stage, created_at)

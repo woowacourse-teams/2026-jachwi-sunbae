@@ -2,8 +2,6 @@ package com.jachwisunbae.member.entity;
 
 import lombok.Getter;
 import com.jachwisunbae.common.entity.BaseTimeEntity;
-import com.jachwisunbae.common.exception.DomainErrorCode;
-import com.jachwisunbae.common.validation.DomainPreconditions;
 
 import java.time.LocalDateTime;
 
@@ -36,7 +34,6 @@ public class Member extends BaseTimeEntity {
     }
 
     private static String validateNickname(final String nickname) {
-        return DomainPreconditions.requireTrimmed(nickname, 1, 50, DomainErrorCode.NICKNAME_INVALID,
-            "닉네임은 trim 후 1자 이상 50자 이하여야 합니다.");
+        return Nickname.from(nickname).value();
     }
 }
