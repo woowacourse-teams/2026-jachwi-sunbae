@@ -1,5 +1,7 @@
 type PostHogClient = (typeof import('posthog-js'))['default'];
 type PostHogAction = (client: PostHogClient) => void;
+export type PostHogErrorSeverity = 'P0' | 'P1' | 'P2';
+export type PostHogErrorCategory = 'uncaught' | 'render' | 'api_server' | 'api_contract' | 'network';
 type PostHogSessionContext = {
   environment: 'production' | 'development';
   app_version: string;
@@ -41,6 +43,22 @@ const initializePostHogClient = (
   client.init(configuration.projectToken, {
     api_host: configuration.host,
     autocapture: true,
+    capture_exceptions: {
+      capture_unhandled_errors: true,
+      capture_unhandled_rejections: true,
+    },
+    before_send: (event) => {
+      if (event === null || event.event !== '$exception') return event;
+
+      return {
+        ...event,
+        properties: {
+          ...event.properties,
+          error_category: event.properties.error_category ?? 'uncaught',
+          severity: event.properties.severity ?? 'P0',
+        },
+      };
+    },
     capture_pageview: false,
     disable_session_recording: false,
     mask_all_text: true,
