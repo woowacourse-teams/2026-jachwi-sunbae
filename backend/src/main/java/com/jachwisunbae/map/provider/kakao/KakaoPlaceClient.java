@@ -2,8 +2,8 @@ package com.jachwisunbae.map.provider.kakao;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.MissingNode;
-import com.jachwisunbae.common.exception.BusinessException;
 import com.jachwisunbae.common.exception.errorcode.ErrorCode;
+import com.jachwisunbae.common.exception.server.UpstreamServiceException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -12,6 +12,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.client.JdkClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
+import org.springframework.web.client.RestClientException;
 
 import java.math.BigDecimal;
 import java.net.http.HttpClient;
@@ -61,6 +62,11 @@ public class KakaoPlaceClient {
 
     public KakaoCategorySearchResponse searchCategory(String categoryCode, BigDecimal latitude,
                                                       BigDecimal longitude, int radius, int page) {
+        return response(request(categoryCode, latitude, longitude, radius, page));
+    }
+
+    // 통신 실패만 외부 장애로 바꾼다. 응답 해석은 요청 밖에서 해서 우리 코드의 오류를 외부 장애로 숨기지 않는다.
+    private JsonNode request(String categoryCode, BigDecimal latitude, BigDecimal longitude, int radius, int page) {
         try {
             JsonNode root = client.get().uri(uri -> uri.path("/v2/local/search/category.json")
                     .queryParam("category_group_code", categoryCode)
@@ -73,9 +79,9 @@ public class KakaoPlaceClient {
                     .build())
                 .retrieve()
                 .body(JsonNode.class);
-            return response(Objects.requireNonNullElse(root, MissingNode.getInstance()));
-        } catch (RuntimeException exception) {
-            throw new BusinessException(ErrorCode.MAP_PROVIDER_UNAVAILABLE,
+            return Objects.requireNonNullElse(root, MissingNode.getInstance());
+        } catch (RestClientException exception) {
+            throw new UpstreamServiceException(ErrorCode.MAP_PROVIDER_UNAVAILABLE,
                 "주변 시설 공급자 요청에 실패했습니다.", exception);
         }
     }
@@ -105,12 +111,17 @@ public class KakaoPlaceClient {
         return value;
     }
 
+    // 응답은 성공했지만 숫자 형식이 잘못되면 외부 응답 형식 오류로 본다.
     private BigDecimal decimal(JsonNode node, String name) {
         String value = text(node, name);
         if (value == null) {
             return null;
         }
-        return new BigDecimal(value);
+        try {
+            return new BigDecimal(value);
+        } catch (NumberFormatException exception) {
+            throw malformedNumber(name, value, exception);
+        }
     }
 
     private Integer integer(JsonNode node, String name) {
@@ -118,6 +129,15 @@ public class KakaoPlaceClient {
         if (value == null) {
             return null;
         }
-        return Integer.valueOf(value);
+        try {
+            return Integer.valueOf(value);
+        } catch (NumberFormatException exception) {
+            throw malformedNumber(name, value, exception);
+        }
+    }
+
+    private UpstreamServiceException malformedNumber(String name, String value, NumberFormatException cause) {
+        return new UpstreamServiceException(ErrorCode.MAP_PROVIDER_UNAVAILABLE,
+            "카카오 응답의 숫자 형식이 올바르지 않습니다. " + name + "=" + value, cause);
     }
 }

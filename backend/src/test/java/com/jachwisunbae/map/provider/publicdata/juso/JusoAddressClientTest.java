@@ -7,8 +7,8 @@ import static org.springframework.test.web.client.match.MockRestRequestMatchers.
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withServerError;
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withSuccess;
 
-import com.jachwisunbae.common.exception.BusinessException;
 import com.jachwisunbae.common.exception.errorcode.ErrorCode;
+import com.jachwisunbae.common.exception.server.UpstreamServiceException;
 import java.nio.charset.StandardCharsets;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
@@ -82,8 +82,8 @@ class JusoAddressClientTest {
                         MediaType.APPLICATION_JSON));
 
         assertThatThrownBy(() -> client.search("판교역로 166"))
-                .isInstanceOfSatisfying(BusinessException.class, exception -> {
-                    assertThat(exception.getCode()).isEqualTo(ErrorCode.MAP_PROVIDER_UNAVAILABLE);
+                .isInstanceOfSatisfying(UpstreamServiceException.class, exception -> {
+                    assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.MAP_PROVIDER_UNAVAILABLE);
                     assertThat(exception.getMessage()).contains("E0001");
                 });
     }
@@ -106,8 +106,8 @@ class JusoAddressClientTest {
                         MediaType.APPLICATION_JSON));
 
         assertThatThrownBy(() -> client.search("판교역로 166"))
-                .isInstanceOfSatisfying(BusinessException.class, exception -> {
-                    assertThat(exception.getCode()).isEqualTo(ErrorCode.MAP_PROVIDER_UNAVAILABLE);
+                .isInstanceOfSatisfying(UpstreamServiceException.class, exception -> {
+                    assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.MAP_PROVIDER_UNAVAILABLE);
                     assertThat(exception.getMessage()).contains("E0014");
                 });
     }
@@ -119,8 +119,8 @@ class JusoAddressClientTest {
                 .andRespond(withSuccess(response("E9999", "새로운 오류", "null"), MediaType.APPLICATION_JSON));
 
         assertThatThrownBy(() -> client.search("판교역로 166"))
-                .isInstanceOfSatisfying(BusinessException.class, exception ->
-                        assertThat(exception.getCode()).isEqualTo(ErrorCode.MAP_PROVIDER_UNAVAILABLE));
+                .isInstanceOfSatisfying(UpstreamServiceException.class, exception ->
+                        assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.MAP_PROVIDER_UNAVAILABLE));
     }
 
     @Test
@@ -130,8 +130,8 @@ class JusoAddressClientTest {
                 .andRespond(withServerError());
 
         assertThatThrownBy(() -> client.search("판교역로 166"))
-                .isInstanceOfSatisfying(BusinessException.class, exception ->
-                        assertThat(exception.getCode()).isEqualTo(ErrorCode.MAP_PROVIDER_UNAVAILABLE));
+                .isInstanceOfSatisfying(UpstreamServiceException.class, exception ->
+                        assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.MAP_PROVIDER_UNAVAILABLE));
     }
 
     @Test

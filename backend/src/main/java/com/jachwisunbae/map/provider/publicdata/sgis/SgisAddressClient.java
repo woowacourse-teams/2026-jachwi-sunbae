@@ -2,8 +2,8 @@ package com.jachwisunbae.map.provider.publicdata.sgis;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.MissingNode;
-import com.jachwisunbae.common.exception.BusinessException;
 import com.jachwisunbae.common.exception.errorcode.ErrorCode;
+import com.jachwisunbae.common.exception.server.UpstreamServiceException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -12,6 +12,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.client.JdkClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
+import org.springframework.web.client.RestClientException;
 
 import java.math.BigDecimal;
 import java.net.http.HttpClient;
@@ -99,7 +100,7 @@ public class SgisAddressClient {
                 .retrieve()
                 .body(JsonNode.class);
             return Objects.requireNonNullElse(root, MissingNode.getInstance());
-        } catch (RuntimeException exception) {
+        } catch (RestClientException exception) {
             throw requestFailed(exception);
         }
     }
@@ -116,7 +117,7 @@ public class SgisAddressClient {
                 .retrieve()
                 .body(JsonNode.class);
             return Objects.requireNonNullElse(root, MissingNode.getInstance());
-        } catch (RuntimeException exception) {
+        } catch (RestClientException exception) {
             throw requestFailed(exception);
         }
     }
@@ -127,14 +128,14 @@ public class SgisAddressClient {
 
     private void requireSuccess(JsonNode root) {
         if (errorCode(root) != SUCCESS) {
-            throw new BusinessException(ErrorCode.MAP_PROVIDER_UNAVAILABLE,
+            throw new UpstreamServiceException(ErrorCode.MAP_PROVIDER_UNAVAILABLE,
                 "SGIS 주소 요청이 실패했습니다. errCd=" + root.path("errCd").asText("")
                     + ", errMsg=" + root.path("errMsg").asText(""));
         }
     }
 
-    private BusinessException requestFailed(RuntimeException exception) {
-        return new BusinessException(ErrorCode.MAP_PROVIDER_UNAVAILABLE, "SGIS 주소 요청에 실패했습니다.", exception);
+    private UpstreamServiceException requestFailed(RestClientException exception) {
+        return new UpstreamServiceException(ErrorCode.MAP_PROVIDER_UNAVAILABLE, "SGIS 주소 요청에 실패했습니다.", exception);
     }
 
     private int errorCode(JsonNode root) {
@@ -145,7 +146,7 @@ public class SgisAddressClient {
         try {
             return text(node, name).map(BigDecimal::new);
         } catch (NumberFormatException exception) {
-            throw new BusinessException(ErrorCode.MAP_PROVIDER_UNAVAILABLE,
+            throw new UpstreamServiceException(ErrorCode.MAP_PROVIDER_UNAVAILABLE,
                 "SGIS 좌표 응답 형식이 올바르지 않습니다.", exception);
         }
     }

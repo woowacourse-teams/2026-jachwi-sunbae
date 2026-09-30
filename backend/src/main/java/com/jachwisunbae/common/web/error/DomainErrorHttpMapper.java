@@ -51,8 +51,7 @@ public class DomainErrorHttpMapper {
             // 레거시 매핑이 없는 코드가 들어오면 서버 문제로 드러낸다.
             default -> HttpStatus.INTERNAL_SERVER_ERROR;
             case PHOTO_STORAGE_FAILURE,
-                    PROPERTY_COMPARISON_EXPORT_FAILED,
-                    MAP_PROVIDER_UNAVAILABLE -> HttpStatus.SERVICE_UNAVAILABLE;
+                    PROPERTY_COMPARISON_EXPORT_FAILED -> HttpStatus.SERVICE_UNAVAILABLE;
         };
     }
 }
