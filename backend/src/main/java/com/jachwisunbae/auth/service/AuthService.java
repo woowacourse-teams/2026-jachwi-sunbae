@@ -4,7 +4,7 @@ import com.jachwisunbae.auth.domain.Password;
 import com.jachwisunbae.auth.service.dto.command.NicknameLoginCommand;
 import com.jachwisunbae.auth.service.dto.result.LoginResult;
 import com.jachwisunbae.auth.token.JwtTokenProvider;
-import com.jachwisunbae.common.exception.BusinessException;
+import com.jachwisunbae.common.exception.client.AuthenticationFailedException;
 import com.jachwisunbae.common.exception.errorcode.ErrorCode;
 import com.jachwisunbae.member.entity.Member;
 import com.jachwisunbae.member.entity.Nickname;
@@ -82,7 +82,7 @@ public class AuthService {
             return createMember(nickname, passwordEncoder.encode(password));
         }
         if (!matches(password, protectedMember.get().getPasswordHash())) {
-            throw new BusinessException(ErrorCode.NICKNAME_AUTHENTICATION_FAILED,
+            throw new AuthenticationFailedException(ErrorCode.NICKNAME_AUTHENTICATION_FAILED,
                     "닉네임 또는 비밀번호가 일치하지 않습니다.");
         }
         return createLoginResult(protectedMember.get(), false);

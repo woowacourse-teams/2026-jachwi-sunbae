@@ -6,7 +6,8 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import com.jachwisunbae.auth.service.dto.command.NicknameLoginCommand;
 import com.jachwisunbae.auth.service.dto.result.LoginResult;
 import com.jachwisunbae.auth.token.JwtTokenProvider;
-import com.jachwisunbae.common.exception.BusinessException;
+import com.jachwisunbae.common.exception.client.AuthenticationFailedException;
+import com.jachwisunbae.common.exception.client.InvalidInputException;
 import com.jachwisunbae.common.exception.errorcode.ErrorCode;
 import com.jachwisunbae.member.entity.Member;
 import com.jachwisunbae.member.repository.MemberRepository;
@@ -91,11 +92,11 @@ class AuthServiceTest {
     @DisplayName("닉네임이나 비밀번호가 규칙에 맞지 않으면 회원을 만들지 않는다")
     void doesNotCreateMemberWhenInputIsInvalid() {
         assertThatThrownBy(() -> login("가".repeat(31), null))
-                .isInstanceOfSatisfying(BusinessException.class, exception ->
-                        assertThat(exception.getCode()).isEqualTo(ErrorCode.NICKNAME_INVALID));
+                .isInstanceOfSatisfying(InvalidInputException.class, exception ->
+                        assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.NICKNAME_INVALID));
         assertThatThrownBy(() -> login("자취초보", "123"))
-                .isInstanceOfSatisfying(BusinessException.class, exception ->
-                        assertThat(exception.getCode()).isEqualTo(ErrorCode.NICKNAME_PASSWORD_INVALID));
+                .isInstanceOfSatisfying(InvalidInputException.class, exception ->
+                        assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.NICKNAME_PASSWORD_INVALID));
         assertThat(memberRepository.count()).isZero();
     }
 
@@ -136,8 +137,8 @@ class AuthServiceTest {
         login("보호닉네임", "1234");
 
         assertThatThrownBy(() -> login("보호닉네임", "9999"))
-                .isInstanceOfSatisfying(BusinessException.class, exception ->
-                        assertThat(exception.getCode()).isEqualTo(ErrorCode.NICKNAME_AUTHENTICATION_FAILED));
+                .isInstanceOfSatisfying(AuthenticationFailedException.class, exception ->
+                        assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.NICKNAME_AUTHENTICATION_FAILED));
         assertThat(memberRepository.count()).isEqualTo(1);
     }
 
@@ -212,8 +213,8 @@ class AuthServiceTest {
                 Member.create("보호닉네임", passwordEncoder.encode("1234"), LocalDateTime.now(clock)));
 
         assertThatThrownBy(() -> login("보호닉네임", "9999"))
-                .isInstanceOfSatisfying(BusinessException.class, exception ->
-                        assertThat(exception.getCode()).isEqualTo(ErrorCode.NICKNAME_AUTHENTICATION_FAILED));
+                .isInstanceOfSatisfying(AuthenticationFailedException.class, exception ->
+                        assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.NICKNAME_AUTHENTICATION_FAILED));
         assertThat(memberRepository.count()).isEqualTo(1);
     }
 

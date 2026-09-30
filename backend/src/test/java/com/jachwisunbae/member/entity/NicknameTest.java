@@ -3,7 +3,7 @@ package com.jachwisunbae.member.entity;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import com.jachwisunbae.common.exception.BusinessException;
+import com.jachwisunbae.common.exception.client.InvalidInputException;
 import com.jachwisunbae.common.exception.errorcode.ErrorCode;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -48,7 +48,7 @@ class NicknameTest {
 
     private static void assertInvalid(String value) {
         assertThatThrownBy(() -> Nickname.from(value))
-                .isInstanceOfSatisfying(BusinessException.class, exception ->
-                        assertThat(exception.getCode()).isEqualTo(ErrorCode.NICKNAME_INVALID));
+                .isInstanceOfSatisfying(InvalidInputException.class, exception ->
+                        assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.NICKNAME_INVALID));
     }
 }

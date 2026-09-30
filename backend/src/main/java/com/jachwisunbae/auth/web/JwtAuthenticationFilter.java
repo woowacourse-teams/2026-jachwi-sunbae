@@ -2,7 +2,7 @@ package com.jachwisunbae.auth.web;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jachwisunbae.auth.token.JwtTokenProvider;
-import com.jachwisunbae.common.exception.BusinessException;
+import com.jachwisunbae.common.exception.client.AuthenticationFailedException;
 import com.jachwisunbae.common.exception.errorcode.ErrorCode;
 import com.jachwisunbae.common.web.error.ErrorResponse;
 import jakarta.servlet.FilterChain;
@@ -52,7 +52,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             request.setAttribute(
                     MEMBER_ID_ATTRIBUTE,
                     provider.parseMemberId(extractToken(authorization)));
-        } catch (BusinessException exception) { //잘못된 jwt. 클라 문제
+        } catch (AuthenticationFailedException exception) { //잘못된 jwt. 클라 문제
             writeAuthenticationError(response);
             return;
         }

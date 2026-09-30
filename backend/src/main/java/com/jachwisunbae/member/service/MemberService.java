@@ -1,6 +1,6 @@
 package com.jachwisunbae.member.service;
 
-import com.jachwisunbae.common.exception.BusinessException;
+import com.jachwisunbae.common.exception.client.ResourceNotFoundException;
 import com.jachwisunbae.common.exception.errorcode.ErrorCode;
 import com.jachwisunbae.member.entity.Member;
 import com.jachwisunbae.member.repository.MemberRepository;
@@ -20,10 +20,8 @@ public class MemberService {
 
     private Member findById(final Long memberId) {
         return memberRepository.findById(memberId)
-                .orElseThrow(() -> new BusinessException(
-                        ErrorCode.MEMBER_NOT_FOUND,
-                        "회원을 찾을 수 없습니다."
-                ));
+                .orElseThrow(() -> new ResourceNotFoundException(ErrorCode.MEMBER_NOT_FOUND,
+                        "memberId=" + memberId + " 회원을 찾을 수 없습니다."));
     }
 
     public MemberProfile findProfileById(final Long memberId) {
