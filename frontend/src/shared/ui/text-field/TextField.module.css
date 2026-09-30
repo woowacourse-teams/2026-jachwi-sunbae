@@ -59,7 +59,7 @@
 .field[data-floating-label='true']:has(input:not(:placeholder-shown)) .floatingLabel,
 .field[data-floating-label='true']:has(input[aria-invalid='true']) .floatingLabel {
   top: 0.52rem;
-  color: var(--color-ink);
+  color: var(--color-muted);
   font-size: 0.68rem;
   font-weight: 500;
   opacity: 1;
@@ -69,7 +69,7 @@
 /* :has(input:not(:placeholder-shown))의 우선순위가 더 높으므로 포커스된 input을 직접 기준으로 삼는다. */
 .field[data-floating-label='true']:focus-within .floatingLabel,
 .field[data-floating-label='true']:has(input:focus) .floatingLabel {
-  color: var(--color-brand-yellow);
+  color: var(--color-muted);
 }
 
 /* 포커스·입력으로 라벨 색이 바뀌어도 필수 표시는 계속 의미 색을 유지한다. */
@@ -213,7 +213,7 @@
 }
 
 .field[data-size='large'][data-variant='underline'] .suffix {
-  top: calc(50% + 0.1rem);
+  top: calc(50% + 0.4rem);
 }
 
 .help,
