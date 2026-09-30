@@ -59,14 +59,14 @@
 .field[data-floating-label='true']:has(input:not(:placeholder-shown)) .floatingLabel,
 .field[data-floating-label='true']:has(input[aria-invalid='true']) .floatingLabel {
   top: 0.4rem;
-  color: var(--color-brand-yellow);
+  color: var(--color-ink);
   font-size: 0.72rem;
   font-weight: 500;
   opacity: 1;
   transform: translateY(-50%);
 }
 
-/* 포커스 중에는 밑줄과 같은 색을 사용해 입력 상태를 보여준다. */
+/* 포커스 중에만 밑줄과 같은 색을 사용하고, 포커스가 끝나면 기본 색으로 돌아온다. */
 .field[data-floating-label='true']:focus-within .floatingLabel {
   color: var(--color-brand-yellow);
 }

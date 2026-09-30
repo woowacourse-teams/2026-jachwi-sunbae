@@ -48,7 +48,7 @@ const CreatePropertyPage = () => {
           onSubmit={form.submitStep}
         >
           <MoneyField
-            label="보증금"
+            label="보증금 입력"
             fieldClassName={styles.depositField}
             fieldSize="large"
             floatingLabel
@@ -62,7 +62,7 @@ const CreatePropertyPage = () => {
           />
           {revealedStep >= 1 && (
             <MoneyField
-              label="월세"
+              label="월세 입력"
               fieldClassName={styles.rentField}
               fieldSize="large"
               floatingLabel
@@ -80,7 +80,7 @@ const CreatePropertyPage = () => {
           )}
           {isNameStep && (
             <TextField
-              label="매물 이름"
+              label="매물 이름 입력"
               fieldClassName={styles.nameField}
               fieldSize="large"
               floatingLabel
