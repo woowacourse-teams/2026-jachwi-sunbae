@@ -58,7 +58,6 @@ const finalChecklistDetail = (overrides: Record<string, unknown> = {}) => ({
   items: [
     {
       id: 701,
-      origin: 'PROVIDED',
       systemCheckItemId: 101,
       itemType: 'CORE',
       question: onlineItemFixture.question,
@@ -67,7 +66,6 @@ const finalChecklistDetail = (overrides: Record<string, unknown> = {}) => ({
     },
     {
       id: 702,
-      origin: 'PROVIDED',
       systemCheckItemId: 102,
       itemType: 'OPTIONAL',
       question: secondOnlineItemFixture.question,

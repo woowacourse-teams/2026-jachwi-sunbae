@@ -37,7 +37,6 @@ const checklistDetailResponse = {
   items: [
     {
       id: 701,
-      origin: 'PROVIDED',
       systemCheckItemId: 101,
       itemType: 'CORE',
       question: '관리비를 확인했나요?',
@@ -46,7 +45,6 @@ const checklistDetailResponse = {
     },
     {
       id: 702,
-      origin: 'PROVIDED',
       systemCheckItemId: 102,
       itemType: 'OPTIONAL',
       question: '입주일을 확인했나요?',
