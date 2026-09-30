@@ -1,6 +1,8 @@
 package com.jachwisunbae.property.service;
 
 import com.jachwisunbae.common.exception.BusinessException;
+import com.jachwisunbae.common.exception.client.BusinessRuleViolationException;
+import com.jachwisunbae.common.exception.client.ResourceNotFoundException;
 import com.jachwisunbae.common.exception.errorcode.ErrorCode;
 import com.jachwisunbae.property.entity.photo.PropertyPhoto;
 import com.jachwisunbae.property.repository.PropertyPhotoRepository;
@@ -77,13 +79,13 @@ public class PropertyPhotoService {
 
     private void validateOwnedPropertyForUpload(final Long memberId, final Long propertyId) {
         propertyRepository.findByIdAndMemberIdForUpdate(propertyId, memberId)
-            .orElseThrow(() -> new BusinessException(ErrorCode.PROPERTY_NOT_FOUND,
+            .orElseThrow(() -> new ResourceNotFoundException(ErrorCode.PROPERTY_NOT_FOUND,
                 "매물을 찾을 수 없습니다."));
     }
 
     private void validatePhotoLimit(final Long propertyId) {
         if (propertyPhotoRepository.countByPropertyId(propertyId) >= 30) {
-            throw new BusinessException(ErrorCode.PHOTO_LIMIT_EXCEEDED,
+            throw new BusinessRuleViolationException(ErrorCode.PHOTO_LIMIT_EXCEEDED,
                 "매물당 사진은 30장까지 업로드할 수 있습니다.");
         }
     }
@@ -116,20 +118,20 @@ public class PropertyPhotoService {
     public void designateRepresentative(final Long memberId, final Long propertyId, final Long photoId) {
         findOwnedProperty(memberId, propertyId);
         propertyPhotoRepository.findByIdAndPropertyId(photoId, propertyId)
-            .orElseThrow(() -> new BusinessException(ErrorCode.PHOTO_NOT_FOUND,
+            .orElseThrow(() -> new ResourceNotFoundException(ErrorCode.PHOTO_NOT_FOUND,
                 "사진을 찾을 수 없습니다."));
         propertyPhotoRepository.setRepresentative(propertyId, photoId);
     }
 
     private void findOwnedProperty(final Long memberId, final Long propertyId) {
         if (!propertyRepository.existsByIdAndMemberId(propertyId, memberId)) {
-            throw new BusinessException(ErrorCode.PROPERTY_NOT_FOUND, "매물을 찾을 수 없습니다.");
+            throw new ResourceNotFoundException(ErrorCode.PROPERTY_NOT_FOUND, "매물을 찾을 수 없습니다.");
         }
     }
 
     private PropertyPhoto findPhoto(final Long propertyId, final Long photoId) {
         return propertyPhotoRepository.findByIdAndPropertyId(photoId, propertyId)
-            .orElseThrow(() -> new BusinessException(ErrorCode.PHOTO_NOT_FOUND,
+            .orElseThrow(() -> new ResourceNotFoundException(ErrorCode.PHOTO_NOT_FOUND,
                 "사진을 찾을 수 없습니다."));
     }
 
