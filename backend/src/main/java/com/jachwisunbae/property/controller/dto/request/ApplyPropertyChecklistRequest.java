@@ -1,11 +1,7 @@
 package com.jachwisunbae.property.controller.dto.request;
 
+import com.jachwisunbae.property.type.PropertyChecklistSourceType;
 import jakarta.validation.constraints.NotNull;
 
-public record ApplyPropertyChecklistRequest(@NotNull SourceType sourceType, Long checklistId) {
-
-    public enum SourceType {
-        USER,
-        SYSTEM_DEFAULT
-    }
+public record ApplyPropertyChecklistRequest(@NotNull PropertyChecklistSourceType sourceType, Long checklistId) {
 }

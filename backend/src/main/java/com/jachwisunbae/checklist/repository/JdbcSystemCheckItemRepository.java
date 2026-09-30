@@ -53,44 +53,6 @@ public class JdbcSystemCheckItemRepository implements SystemCheckItemRepository 
     }
 
     @Override
-    public List<SystemCheckItem> findActiveOptionalByIds(final CheckStage stage, final List<Long> ids) {
-        if (ids == null || ids.isEmpty()) {
-            return Collections.emptyList();
-        }
-        String placeholders = ids.stream().map(id -> "?").collect(Collectors.joining(", "));
-        String sql = """
-                SELECT id, stage, item_type, question, deleted_at
-                FROM system_check_items
-                WHERE stage = ? AND item_type = 'OPTIONAL' AND deleted_at IS NULL
-                  AND id IN (%s)
-                """.formatted(placeholders);
-        Object[] parameters = new Object[ids.size() + 1];
-        parameters[0] = stage.name();
-        for (int index = 0; index < ids.size(); index++) {
-            parameters[index + 1] = ids.get(index);
-        }
-        return queryItems(sql, parameters);
-    }
-
-    public List<SystemCheckItem> findByIdsAndStage(final CheckStage stage, final List<Long> ids) {
-        if (ids == null || ids.isEmpty()) {
-            return Collections.emptyList();
-        }
-        String placeholders = ids.stream().map(id -> "?").collect(Collectors.joining(", "));
-        String sql = """
-                SELECT id, stage, item_type, question, deleted_at
-                FROM system_check_items
-                WHERE stage = ? AND id IN (%s)
-                """.formatted(placeholders);
-        Object[] parameters = new Object[ids.size() + 1];
-        parameters[0] = stage.name();
-        for (int index = 0; index < ids.size(); index++) {
-            parameters[index + 1] = ids.get(index);
-        }
-        return queryItems(sql, parameters);
-    }
-
-    @Override
     public List<SystemCheckItem> findByIdsAndStageInOrder(final CheckStage stage, final List<Long> ids) {
         if (ids == null || ids.isEmpty()) {
             return Collections.emptyList();
@@ -107,26 +69,6 @@ public class JdbcSystemCheckItemRepository implements SystemCheckItemRepository 
         for (int index = 0; index < ids.size(); index++) {
             parameters[index + 1] = ids.get(index);
             parameters[index + ids.size() + 1] = ids.get(index);
-        }
-        return queryItems(sql, parameters);
-    }
-
-    @Override
-    public List<SystemCheckItem> findByIdsInOrder(final List<Long> ids) {
-        if (ids == null || ids.isEmpty()) {
-            return Collections.emptyList();
-        }
-        String placeholders = ids.stream().map(id -> "?").collect(Collectors.joining(", "));
-        String sql = """
-                SELECT id, stage, item_type, question, deleted_at
-                FROM system_check_items
-                WHERE id IN (%s)
-                ORDER BY FIELD(id, %s)
-                """.formatted(placeholders, placeholders);
-        Object[] parameters = new Object[ids.size() * 2];
-        for (int index = 0; index < ids.size(); index++) {
-            parameters[index] = ids.get(index);
-            parameters[index + ids.size()] = ids.get(index);
         }
         return queryItems(sql, parameters);
     }

@@ -4,6 +4,7 @@ import com.jachwisunbae.checklist.entity.UserChecklist;
 import com.jachwisunbae.checklist.entity.UserChecklistItem;
 
 import com.jachwisunbae.checklist.repository.query.UserChecklistItemDetail;
+import com.jachwisunbae.checklist.repository.query.UserChecklistSummaryQuery;
 import java.util.List;
 import java.util.Optional;
 import com.jachwisunbae.checklist.type.CheckStage;
@@ -20,7 +21,7 @@ public interface UserChecklistRepository {
 
     Optional<UserChecklist> findByIdAndMemberIdForUpdate(long checklistId, long memberId);
 
-    List<UserChecklist> findByMemberId(long memberId, CheckStage stage);
+    List<UserChecklistSummaryQuery> findSummariesByMemberId(long memberId, CheckStage stage);
 
     List<UserChecklistItem> findItems(long checklistId);
 

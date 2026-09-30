@@ -1,6 +1,8 @@
 package com.jachwisunbae.property.controller;
 
 import com.jachwisunbae.auth.web.AuthenticatedMemberId;
+import com.jachwisunbae.checklist.entity.PropertyChecklist;
+import com.jachwisunbae.checklist.entity.PropertyChecklistItem;
 import com.jachwisunbae.checklist.type.CheckStage;
 import com.jachwisunbae.common.web.ApiResponse;
 import com.jachwisunbae.property.controller.dto.request.ApplyPropertyChecklistRequest;
@@ -13,6 +15,7 @@ import com.jachwisunbae.property.controller.dto.response.PropertyChecklistItemSt
 import com.jachwisunbae.property.controller.dto.response.PropertyChecklistItemStatusResponse;
 import com.jachwisunbae.property.controller.dto.response.PropertyChecklistOverviewResponse;
 import com.jachwisunbae.property.service.PropertyChecklistService;
+import com.jachwisunbae.property.service.PropertyChecklistItemService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -32,9 +35,12 @@ import org.springframework.web.bind.annotation.RestController;
 public class PropertyChecklistController {
 
     private final PropertyChecklistService propertyChecklistService;
+    private final PropertyChecklistItemService propertyChecklistItemService;
 
-    public PropertyChecklistController(final PropertyChecklistService propertyChecklistService) {
+    public PropertyChecklistController(final PropertyChecklistService propertyChecklistService,
+                                       final PropertyChecklistItemService propertyChecklistItemService) {
         this.propertyChecklistService = propertyChecklistService;
+        this.propertyChecklistItemService = propertyChecklistItemService;
     }
 
     @GetMapping("/{propertyId}/checklists")
@@ -69,7 +75,8 @@ public class PropertyChecklistController {
             @Valid @RequestBody final ApplyPropertyChecklistRequest request) {
         return ApiResponse.of("매물 단계 체크리스트를 적용했습니다.",
                 PropertyChecklistApplicationResponse.from(
-                        propertyChecklistService.apply(memberId, propertyId, stage, request)));
+                        propertyChecklistService.apply(
+                                memberId, propertyId, stage, request.sourceType(), request.checklistId())));
     }
 
     @PatchMapping("/{propertyId}/checklists/{propertyChecklistId}/items/{itemId}/status")
@@ -80,10 +87,11 @@ public class PropertyChecklistController {
             @PathVariable final Long propertyChecklistId,
             @PathVariable final Long itemId,
             @Valid @RequestBody final UpdatePropertyChecklistStatusRequest request) {
-        var item = propertyChecklistService.updateStatus(memberId, propertyId, propertyChecklistId, itemId, request);
+        PropertyChecklistItem item = propertyChecklistItemService.updateStatus(
+                memberId, propertyId, propertyChecklistId, itemId, request.status());
         return ApiResponse.of("체크 상태를 저장했습니다.",
                 new PropertyChecklistItemStatusResponse(
-                        new PropertyChecklistItemStatusItem(item.id(), item.status())));
+                        new PropertyChecklistItemStatusItem(item.getId(), item.getStatus())));
     }
 
     @PatchMapping("/{propertyId}/checklists/{propertyChecklistId}/items/{itemId}/memo")
@@ -94,8 +102,10 @@ public class PropertyChecklistController {
             @PathVariable final Long propertyChecklistId,
             @PathVariable final Long itemId,
             @Valid @RequestBody final UpdatePropertyChecklistMemoRequest request) {
-        var item = propertyChecklistService.updateMemo(memberId, propertyId, propertyChecklistId, itemId, request);
+        PropertyChecklistItem item = propertyChecklistItemService.updateMemo(
+                memberId, propertyId, propertyChecklistId, itemId, request.memo());
         return ApiResponse.of("항목 메모를 저장했습니다.",
-                new PropertyChecklistItemMemoResponse(new PropertyChecklistItemMemoItem(item.id(), item.memo())));
+                new PropertyChecklistItemMemoResponse(
+                        new PropertyChecklistItemMemoItem(item.getId(), item.getMemo())));
     }
 }
