@@ -1,8 +1,7 @@
 package com.jachwisunbae.property.entity;
 
-import com.jachwisunbae.common.exception.BusinessException;
+import com.jachwisunbae.common.exception.client.InvalidInputException;
 import com.jachwisunbae.common.exception.errorcode.ErrorCode;
-import com.jachwisunbae.common.validation.DomainPreconditions;
 import com.jachwisunbae.property.type.RoomOption;
 import com.jachwisunbae.property.type.UtilityOption;
 import java.time.LocalDate;
@@ -72,11 +71,14 @@ record PropertyOptions(
     }
 
     private static RoomOption parseRoomOption(final String code) {
+        if (code == null) {
+            throw new InvalidInputException(ErrorCode.PROPERTY_INPUT_INVALID, "방 옵션 값이 비어 있습니다.");
+        }
         try {
             return RoomOption.valueOf(code);
-        } catch (IllegalArgumentException | NullPointerException exception) {
-            throw new BusinessException(ErrorCode.PROPERTY_INPUT_INVALID,
-                "지원하지 않는 방 옵션입니다: " + code);
+        } catch (IllegalArgumentException exception) {
+            throw new InvalidInputException(ErrorCode.PROPERTY_INPUT_INVALID,
+                "지원하지 않는 방 옵션입니다: " + code, exception);
         }
     }
 
@@ -90,11 +92,14 @@ record PropertyOptions(
     }
 
     private static UtilityOption parseUtilityOption(final String code) {
+        if (code == null) {
+            throw new InvalidInputException(ErrorCode.PROPERTY_INPUT_INVALID, "관리비 포함 공과금 값이 비어 있습니다.");
+        }
         try {
             return UtilityOption.valueOf(code);
-        } catch (IllegalArgumentException | NullPointerException exception) {
-            throw new BusinessException(ErrorCode.PROPERTY_INPUT_INVALID,
-                "지원하지 않는 관리비 포함 공과금입니다: " + code);
+        } catch (IllegalArgumentException exception) {
+            throw new InvalidInputException(ErrorCode.PROPERTY_INPUT_INVALID,
+                "지원하지 않는 관리비 포함 공과금입니다: " + code, exception);
         }
     }
 
@@ -102,16 +107,19 @@ record PropertyOptions(
         if (amount == null) {
             return 0L;
         }
-        return DomainPreconditions.requireNonNegative(amount, ErrorCode.PROPERTY_INPUT_INVALID,
-            "금액은 0 이상의 정수여야 합니다.");
+        if (amount < 0) {
+            throw new InvalidInputException(ErrorCode.PROPERTY_INPUT_INVALID, "금액은 0 이상의 정수여야 합니다.");
+        }
+        return amount;
     }
 
     private static String validateSource(final String source) {
         if (source == null) {
             return "";
         }
-        DomainPreconditions.require(source.length() <= 500, ErrorCode.PROPERTY_INPUT_INVALID,
-            "발견 경로는 500자 이하여야 합니다.");
+        if (source.length() > 500) {
+            throw new InvalidInputException(ErrorCode.PROPERTY_INPUT_INVALID, "발견 경로는 500자 이하여야 합니다.");
+        }
         return source;
     }
 }

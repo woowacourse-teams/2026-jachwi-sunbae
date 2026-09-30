@@ -4,6 +4,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.jachwisunbae.common.exception.BusinessException;
+import com.jachwisunbae.common.exception.JachwiException;
+import com.jachwisunbae.common.exception.client.InvalidInputException;
 import com.jachwisunbae.common.exception.errorcode.ErrorCode;
 import java.time.LocalDateTime;
 import org.assertj.core.api.ThrowableAssert.ThrowingCallable;
@@ -58,7 +60,7 @@ class PropertyPhotoTest {
     void rejectMissingContentType() {
         assertErrorCode(
             () -> PropertyPhoto.create(1L, "photo.png", null, 1L, CREATED_AT),
-            ErrorCode.PHOTO_CONTENT_TYPE_UNSUPPORTED);
+            ErrorCode.PHOTO_CONTENT_TYPE_UNSUPPORTED, InvalidInputException.class);
     }
 
     @Test
@@ -66,7 +68,7 @@ class PropertyPhotoTest {
     void rejectUnsupportedContentType() {
         assertErrorCode(
             () -> PropertyPhoto.create(1L, "photo.gif", "image/gif", 1L, CREATED_AT),
-            ErrorCode.PHOTO_CONTENT_TYPE_UNSUPPORTED);
+            ErrorCode.PHOTO_CONTENT_TYPE_UNSUPPORTED, InvalidInputException.class);
     }
 
     @Test
@@ -100,6 +102,14 @@ class PropertyPhotoTest {
         assertThatThrownBy(callable)
             .isInstanceOf(BusinessException.class)
             .extracting("code")
+            .isEqualTo(code);
+    }
+
+    private void assertErrorCode(final ThrowingCallable callable, final ErrorCode code,
+                                 final Class<? extends JachwiException> type) {
+        assertThatThrownBy(callable)
+            .isInstanceOf(type)
+            .extracting("errorCode")
             .isEqualTo(code);
     }
 }

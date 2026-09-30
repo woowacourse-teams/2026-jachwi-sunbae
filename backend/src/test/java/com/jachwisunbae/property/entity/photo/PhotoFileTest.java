@@ -3,7 +3,7 @@ package com.jachwisunbae.property.entity.photo;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import com.jachwisunbae.common.exception.BusinessException;
+import com.jachwisunbae.common.exception.client.InvalidInputException;
 import com.jachwisunbae.common.exception.errorcode.ErrorCode;
 import java.util.Arrays;
 import java.util.Base64;
@@ -36,8 +36,8 @@ class PhotoFileTest {
 
     private void assertSizeExceeded(final byte[] bytes) {
         assertThatThrownBy(() -> new PhotoFile(bytes, "image/png"))
-            .isInstanceOf(BusinessException.class)
-            .extracting("code")
+            .isInstanceOf(InvalidInputException.class)
+            .extracting("errorCode")
             .isEqualTo(ErrorCode.PHOTO_FILE_SIZE_INVALID);
     }
 

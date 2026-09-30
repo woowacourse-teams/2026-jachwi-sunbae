@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.jachwisunbae.common.exception.BusinessException;
+import com.jachwisunbae.common.exception.client.InvalidInputException;
 import com.jachwisunbae.common.exception.errorcode.ErrorCode;
 import com.jachwisunbae.property.type.RoomOption;
 import com.jachwisunbae.property.type.UtilityOption;
@@ -13,6 +14,7 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Consumer;
@@ -125,8 +127,9 @@ class PropertyTest {
     @DisplayName("매물은 소유 회원 없이 생성할 수 없다")
     @Test
     void createRejectsNullMemberId() {
-        assertPropertyError(() -> createProperty(input -> input.memberId = null),
-            ErrorCode.PROPERTY_INPUT_INVALID);
+        assertThatThrownBy(() -> createProperty(input -> input.memberId = null))
+            .isInstanceOfSatisfying(BusinessException.class,
+                exception -> assertThat(exception.getCode()).isEqualTo(ErrorCode.PROPERTY_INPUT_INVALID));
     }
 
     @DisplayName("입력하지 않은 금액은 0으로 저장한다")
@@ -219,6 +222,17 @@ class PropertyTest {
             ErrorCode.PROPERTY_INPUT_INVALID);
     }
 
+    @DisplayName("비어 있는 옵션 값은 NullPointerException이 아니라 입력 오류로 거부한다")
+    @Test
+    void createRejectsNullOptionCode() {
+        List<String> nullCode = Arrays.asList((String) null);
+
+        assertPropertyError(() -> createProperty(input -> input.roomOptions = nullCode),
+            ErrorCode.PROPERTY_INPUT_INVALID);
+        assertPropertyError(() -> createProperty(input -> input.utilityOptions = nullCode),
+            ErrorCode.PROPERTY_INPUT_INVALID);
+    }
+
     @DisplayName("매물 수정은 생성과 동일한 기본 정보 검증을 적용한다")
     @Test
     void updateAppliesSameBasicInfoValidationAsCreate() {
@@ -298,8 +312,8 @@ class PropertyTest {
 
     private static void assertPropertyError(ThrowingCallable callable, ErrorCode expectedCode) {
         assertThatThrownBy(callable)
-            .isInstanceOfSatisfying(BusinessException.class,
-                exception -> assertThat(exception.getCode()).isEqualTo(expectedCode));
+            .isInstanceOfSatisfying(InvalidInputException.class,
+                exception -> assertThat(exception.getErrorCode()).isEqualTo(expectedCode));
     }
 
     private static void assertUpdatePropertyError(Consumer<PropertyFixture> customization,
