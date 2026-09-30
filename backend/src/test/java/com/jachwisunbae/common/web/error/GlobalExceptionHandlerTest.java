@@ -13,14 +13,21 @@ import com.jachwisunbae.common.exception.errorcode.ErrorCode;
 import com.jachwisunbae.common.exception.server.DataInconsistencyException;
 import com.jachwisunbae.common.exception.server.InternalSystemException;
 import com.jachwisunbae.common.exception.server.UpstreamServiceException;
+import java.lang.reflect.Method;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.springframework.core.MethodParameter;
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.MissingPathVariableException;
+import org.springframework.web.method.annotation.ExceptionHandlerMethodResolver;
+import org.springframework.web.multipart.support.MissingServletRequestPartException;
 
 class GlobalExceptionHandlerTest {
 
@@ -79,5 +86,35 @@ class GlobalExceptionHandlerTest {
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR);
         assertThat(response.getBody()).isEqualTo(new ErrorResponse(ErrorCode.INTERNAL_SERVER_ERROR.name(),
                 ErrorCode.INTERNAL_SERVER_ERROR.publicMessage()));
+    }
+
+    @ParameterizedTest(name = "{0}")
+    @MethodSource("unexpectedExceptions")
+    @DisplayName("예상하지 못한 DB 제약 위반과 Controller 매핑 오류는 500 처리로 넘어간다")
+    void routesServerProblemsToUnexpectedHandler(Exception exception) {
+        Method handlerMethod = new ExceptionHandlerMethodResolver(GlobalExceptionHandler.class)
+                .resolveMethod(exception);
+
+        assertThat(handlerMethod.getName()).isEqualTo("handleUnexpectedException");
+    }
+
+    static Stream<Exception> unexpectedExceptions() throws NoSuchMethodException {
+        MethodParameter parameter = new MethodParameter(
+                GlobalExceptionHandlerTest.class.getDeclaredMethod("unexpectedExceptions"), -1);
+        return Stream.of(
+                new DataIntegrityViolationException("unexpected constraint"),
+                new DuplicateKeyException("other_unique_constraint"),
+                new MissingPathVariableException("propertyId", parameter));
+    }
+
+    @Test
+    @DisplayName("요청 파트가 없으면 400과 필드 오류로 응답한다")
+    void respondsMissingPartAsInvalidRequest() {
+        ResponseEntity<ErrorResponse> response = handler.handleMissingPart(
+                new MissingServletRequestPartException("file"));
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        assertThat(response.getBody().code()).isEqualTo(ErrorCode.INVALID_REQUEST.name());
+        assertThat(response.getBody().errors()).containsExactly(new FieldErrorResponse("file", "필수 값입니다."));
     }
 }

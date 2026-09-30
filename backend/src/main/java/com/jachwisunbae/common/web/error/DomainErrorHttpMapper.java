@@ -49,8 +49,7 @@ public class DomainErrorHttpMapper {
                     MAP_ADDRESS_NOT_FOUND -> HttpStatus.NOT_FOUND;
             case ACCESS_TOKEN_INVALID,
                     NICKNAME_AUTHENTICATION_FAILED -> HttpStatus.UNAUTHORIZED;
-            case PROPERTY_LIMIT_EXCEEDED,
-                    DATA_INTEGRITY_VIOLATION -> HttpStatus.CONFLICT;
+            case PROPERTY_LIMIT_EXCEEDED -> HttpStatus.CONFLICT;
             case METHOD_NOT_ALLOWED -> HttpStatus.METHOD_NOT_ALLOWED;
             case PHOTO_FILE_TOO_LARGE -> HttpStatus.PAYLOAD_TOO_LARGE;
             case UNSUPPORTED_MEDIA_TYPE -> HttpStatus.UNSUPPORTED_MEDIA_TYPE;

@@ -15,7 +15,6 @@ import com.jachwisunbae.common.exception.server.UpstreamServiceException;
 import jakarta.validation.ConstraintViolationException;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindException;
@@ -23,7 +22,6 @@ import org.springframework.validation.FieldError;
 import org.springframework.web.HttpMediaTypeNotSupportedException;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
-import org.springframework.web.bind.MissingPathVariableException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -107,10 +105,11 @@ public class GlobalExceptionHandler {
         return response(HttpStatus.BAD_REQUEST, ErrorCode.INVALID_REQUEST, List.of(error));
     }
 
-    @ExceptionHandler({MissingPathVariableException.class, MissingServletRequestPartException.class})
-    public ResponseEntity<ErrorResponse> handleMissingRequestValue(final Exception exception) {
-        log.info("Required request value is missing: type={}", exception.getClass().getSimpleName());
-        return response(HttpStatus.BAD_REQUEST, ErrorCode.INVALID_REQUEST);
+    @ExceptionHandler(MissingServletRequestPartException.class)
+    public ResponseEntity<ErrorResponse> handleMissingPart(final MissingServletRequestPartException exception) {
+        FieldErrorResponse error = new FieldErrorResponse(exception.getRequestPartName(), "필수 값입니다.");
+        log.info("Required request part is missing: field={}", exception.getRequestPartName());
+        return response(HttpStatus.BAD_REQUEST, ErrorCode.INVALID_REQUEST, List.of(error));
     }
 
     @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
@@ -140,13 +139,9 @@ public class GlobalExceptionHandler {
         return response(HttpStatus.NOT_FOUND, ErrorCode.RESOURCE_NOT_FOUND);
     }
 
-    @ExceptionHandler(DataIntegrityViolationException.class)
-    public ResponseEntity<ErrorResponse> handleDataIntegrityViolation(
-            final DataIntegrityViolationException exception) {
-        log.warn("Data integrity violation: type={}", exception.getClass().getSimpleName());
-        return response(HttpStatus.CONFLICT, ErrorCode.DATA_INTEGRITY_VIOLATION);
-    }
-
+    // 의미를 알고 처리하지 않은 예외는 모두 서버 문제로 본다.
+    // 예상하지 못한 DB 제약 위반(DataIntegrityViolationException), Controller 매핑 오류(MissingPathVariableException),
+    // 내부 불변식 위반(IllegalArgumentException, IllegalStateException)도 여기서 500이 된다.
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleUnexpectedException(final Exception exception) {
         log.error("Unexpected server error: type={}", exception.getClass().getSimpleName(), exception);
