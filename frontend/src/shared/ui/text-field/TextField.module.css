@@ -60,7 +60,7 @@
 .field[data-floating-label='true']:has(input[aria-invalid='true']) .floatingLabel {
   top: 0.52rem;
   color: var(--color-ink);
-  font-size: 0.72rem;
+  font-size: 0.68rem;
   font-weight: 500;
   opacity: 1;
   transform: translateY(-50%);
@@ -210,6 +210,10 @@
   font-size: 0.82rem;
   transform: translateY(-50%);
   pointer-events: none;
+}
+
+.field[data-size='large'][data-variant='underline'] .suffix {
+  top: calc(50% + 0.1rem);
 }
 
 .help,
