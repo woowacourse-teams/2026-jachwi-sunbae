@@ -1,9 +1,10 @@
 declare const __API_BASE_URL__: string;
 declare const __MAP_PROVIDER_MODE__: string;
 declare const __NAVER_MAP_CLIENT_ID__: string;
-declare const __META_PIXEL_ID__: string;
 declare const __POSTHOG_PROJECT_TOKEN__: string;
 declare const __POSTHOG_HOST__: string;
+declare const __APP_VERSION__: string;
+declare const __APP_ENVIRONMENT__: 'production' | 'development';
 declare const __ENABLE_MSW__: boolean;
 
 interface Window {

@@ -1,0 +1,11 @@
+.page {
+  background: var(--color-canvas);
+}
+
+.topNavigation {
+  margin-bottom: 0;
+}
+
+.container > :global([data-full-bleed='true']) {
+  margin-top: -0.15rem;
+}

@@ -1,0 +1,46 @@
+import { useMutation } from '@tanstack/react-query';
+
+import { queryClient } from '@/shared/api/queryClient';
+import { usePublicConfig } from '@/shared/config/PublicConfigContext';
+
+import type { PropertyChecklistDetail, PropertyChecklistItemStatus } from '../model/Property';
+import { updatePropertyChecklistItemMemo, updatePropertyChecklistItemStatus } from './propertyApi';
+import { propertyQueryKeys } from './propertyQueryKeys';
+
+const updateChecklistItem = (
+  propertyId: number,
+  propertyChecklistId: number,
+  itemId: number,
+  update: (item: PropertyChecklistDetail['items'][number]) => PropertyChecklistDetail['items'][number],
+) => {
+  queryClient.setQueryData<PropertyChecklistDetail>(
+    propertyQueryKeys.checklist(propertyId, propertyChecklistId),
+    (current) =>
+      current === undefined
+        ? current
+        : { ...current, items: current.items.map((item) => (item.itemId === itemId ? update(item) : item)) },
+  );
+  void queryClient.invalidateQueries({ queryKey: propertyQueryKeys.checklists(propertyId), exact: true });
+};
+
+export const usePropertyChecklistItemStatusMutation = (propertyId: number, propertyChecklistId: number) => {
+  const config = usePublicConfig();
+  return useMutation({
+    mutationFn: ({ itemId, status }: { itemId: number; status: PropertyChecklistItemStatus }) =>
+      updatePropertyChecklistItemStatus(config, propertyId, propertyChecklistId, itemId, status),
+    onSuccess: ({ itemId, status }) => {
+      updateChecklistItem(propertyId, propertyChecklistId, itemId, (item) => ({ ...item, status }));
+    },
+  });
+};
+
+export const usePropertyChecklistItemMemoMutation = (propertyId: number, propertyChecklistId: number) => {
+  const config = usePublicConfig();
+  return useMutation({
+    mutationFn: ({ itemId, memo }: { itemId: number; memo: string }) =>
+      updatePropertyChecklistItemMemo(config, propertyId, propertyChecklistId, itemId, memo),
+    onSuccess: ({ itemId, memo }) => {
+      updateChecklistItem(propertyId, propertyChecklistId, itemId, (item) => ({ ...item, memo }));
+    },
+  });
+};

@@ -1,0 +1,149 @@
+import { useMemo, useState } from 'react';
+
+import BottomActionArea from '@/shared/ui/bottom-action-area/BottomActionArea';
+import { Button } from '@/shared/ui/button/Button';
+import SearchField from '@/shared/ui/search-field/SearchField';
+import SelectionControl from '@/shared/ui/selection-control/SelectionControl';
+
+import { getChecklistErrorMessage } from '../../api/checklistErrorMessages';
+import { useCheckItemSearch } from '../../api/useChecklists';
+import type { CheckItem, ChecklistStage } from '../../model/checklistTypes';
+
+import styles from './ChecklistEditor.module.css';
+
+type CheckItemPickerProps = {
+  stage: ChecklistStage;
+  existingSourceIds: number[];
+  disabled: boolean;
+  onCancel: () => void;
+  onAdd: (items: CheckItem[]) => void;
+};
+
+const CheckItemPicker = ({ stage, existingSourceIds, disabled, onCancel, onAdd }: CheckItemPickerProps) => {
+  const [input, setInput] = useState('');
+  const [query, setQuery] = useState('');
+  const [selectedIds, setSelectedIds] = useState<Set<number>>(() => new Set());
+  const result = useCheckItemSearch(stage, query);
+  const items = useMemo(() => result.data?.pages.flatMap((page) => page.content) ?? [], [result.data]);
+  const existingIds = useMemo(() => new Set(existingSourceIds), [existingSourceIds]);
+  const additionCount = selectedIds.size;
+
+  const search = (nextQuery: string) => {
+    setQuery(nextQuery.trim());
+    setSelectedIds(new Set());
+  };
+
+  const addSelected = () => {
+    const selected = items.filter((item) => selectedIds.has(item.checkItemId) && !existingIds.has(item.checkItemId));
+    if (selected.length === 0) return;
+    onAdd(selected);
+    setSelectedIds(new Set());
+  };
+
+  return (
+    <div className={`${styles.checklistEditor} ${styles.checklistItemPickerView}`}>
+      <section className={styles.itemPicker} aria-labelledby="item-picker-heading">
+        <div className={styles.sectionHeadingRow}>
+          <div>
+            <h2 id="item-picker-heading">체크 항목 검색</h2>
+          </div>
+          <span className={styles.selectionCount} aria-live="polite">
+            {additionCount}개 선택
+          </span>
+        </div>
+        <div className={styles.checkItemSearch}>
+          <SearchField
+            label="제공 항목 검색"
+            value={input}
+            placeholder="예: 채광, 관리비, 소음"
+            disabled={disabled}
+            showSubmitButton={false}
+            onValueChange={setInput}
+            onSubmit={() => search(input)}
+            onClear={() => {
+              setInput('');
+              setQuery('');
+              setSelectedIds(new Set());
+            }}
+          />
+        </div>
+
+        <BottomActionArea placement="screen" divider={false} className={styles.pickerActions}>
+          <Button variant="secondary" type="button" disabled={disabled} onClick={onCancel}>
+            취소
+          </Button>
+          <Button type="button" disabled={disabled || additionCount === 0} onClick={addSelected}>
+            선택한 {additionCount}개 항목 추가
+          </Button>
+        </BottomActionArea>
+
+        {result.isPending ? (
+          <div className={styles.compactState} role="status">
+            <span className="spinner" /> 항목을 불러오는 중이에요.
+          </div>
+        ) : result.isError ? (
+          <div className={styles.pickerError} role="alert">
+            <span>{getChecklistErrorMessage(result.error)}</span>
+            <Button
+              className={styles.pickerRetry}
+              type="button"
+              variant="text"
+              disabled={disabled}
+              onClick={() => void result.refetch()}
+            >
+              다시 시도
+            </Button>
+          </div>
+        ) : items.length === 0 ? (
+          <p className={styles.compactState}>검색 결과가 없어요.</p>
+        ) : (
+          <div className={styles.checkItemResults}>
+            <h3>검색 결과</h3>
+            <ul className={styles.checkItemSearchResults}>
+              {items.map((item) => {
+                const exists = existingIds.has(item.checkItemId);
+                const checked = exists || selectedIds.has(item.checkItemId);
+                return (
+                  <li key={item.checkItemId}>
+                    <SelectionControl
+                      checked={checked}
+                      disabled={disabled || exists}
+                      onSelect={() => {
+                        const next = new Set(selectedIds);
+                        if (checked) next.delete(item.checkItemId);
+                        else next.add(item.checkItemId);
+                        setSelectedIds(next);
+                      }}
+                      markClassName={styles.resultControl}
+                    >
+                      <span className={styles.resultCopy}>
+                        <strong>{item.question}</strong>
+                        {item.guide !== null && <small>{item.guide}</small>}
+                      </span>
+                    </SelectionControl>
+                    {exists && <small className={styles.alreadyAdded}>이미 추가됨</small>}
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        )}
+
+        {result.hasNextPage && (
+          <Button
+            variant="secondary"
+            fullWidth
+            className={styles.compactButton}
+            type="button"
+            disabled={disabled || result.isFetchingNextPage}
+            onClick={() => void result.fetchNextPage()}
+          >
+            {result.isFetchingNextPage ? '불러오는 중…' : '항목 더 보기'}
+          </Button>
+        )}
+      </section>
+    </div>
+  );
+};
+
+export default CheckItemPicker;

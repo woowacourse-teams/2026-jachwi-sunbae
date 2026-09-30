@@ -1,0 +1,78 @@
+.root {
+  position: relative;
+  width: min(100%, var(--app-max-width));
+  height: 100dvh;
+  margin: 0 auto;
+  overflow: hidden;
+  background: var(--color-canvas);
+}
+
+.content {
+  position: relative;
+  z-index: 0;
+  width: 100%;
+  height: 100%;
+  padding-bottom: calc(var(--bottom-navigation-height) + 1.1rem + env(safe-area-inset-bottom));
+  overflow-x: hidden;
+  overflow-y: auto;
+  /* 상단에서 당기는 모바일 새로고침이 내부 스크롤러에 막히지 않게 한다. */
+  overscroll-behavior-y: auto;
+  scrollbar-width: none;
+}
+
+.root[data-full-screen='true'] .content {
+  padding-bottom: 0;
+}
+
+.content::-webkit-scrollbar {
+  display: none;
+}
+
+/*
+ * 하단바는 앱 셸이 아니라 화면에 고정한다.
+ * 스크롤이 문서로 넘어가 셸이 튕기거나 당겨질 때(당겨서 새로고침 포함)도 제자리에 남는다.
+ */
+.bottomNavigation {
+  position: fixed;
+  bottom: calc(0.55rem + env(safe-area-inset-bottom));
+  left: 50%;
+  z-index: 100;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  width: calc(min(100%, var(--app-max-width)) - 1.25rem);
+  transform: translateX(-50%);
+  min-height: var(--bottom-navigation-height);
+  margin: 0;
+  padding: 0.25rem;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  background: var(--color-navigation-surface);
+}
+
+.bottomNavigation a {
+  display: grid;
+  min-height: calc(var(--bottom-navigation-height) - 0.5rem);
+  place-items: center;
+  align-content: center;
+  gap: 0.16rem;
+  margin: 0;
+  border-radius: 999px;
+  color: var(--color-muted);
+  font-size: 0.68rem;
+  font-weight: 800;
+  text-decoration: none;
+  transition:
+    color 180ms ease-out,
+    background-color 180ms ease-out;
+}
+
+.bottomNavigation a[aria-current='page'] {
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+}
+
+@media (min-width: 431px) {
+  .root {
+    box-shadow: 0 0 2rem rgb(59 52 36 / 8%);
+  }
+}

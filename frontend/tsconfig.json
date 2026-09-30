@@ -8,8 +8,11 @@
     "ignoreDeprecations": "6.0",
     "jsx": "react-jsx",
     "esModuleInterop": true,
-    "types": ["node"]
+    "types": ["node"],
+    "paths": {
+      "@/*": ["./src/*"]
+    }
   },
-  "include": ["src/**/*.ts", "src/**/*.tsx", "global.d.ts"],
+  "include": ["src/**/*.ts", "src/**/*.tsx", "test/**/*.ts", "test/**/*.tsx", "global.d.ts"],
   "exclude": ["node_modules", "dist"]
 }
