@@ -71,10 +71,10 @@ class GlobalExceptionHandlerTest {
     @DisplayName("레거시 BusinessException은 ErrorCode마다 정한 상태와 공개 메시지로 응답한다")
     void respondsLegacyBusinessExceptionWithPublicMessage() {
         ResponseEntity<ErrorResponse> response = handler.handleBusinessException(
-                new BusinessException(ErrorCode.PROPERTY_LIMIT_EXCEEDED, DEBUG_MESSAGE));
+                new BusinessException(ErrorCode.DUPLICATE_CHECK_ITEM, DEBUG_MESSAGE));
 
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
-        assertThat(response.getBody().message()).isEqualTo(ErrorCode.PROPERTY_LIMIT_EXCEEDED.publicMessage());
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        assertThat(response.getBody().message()).isEqualTo(ErrorCode.DUPLICATE_CHECK_ITEM.publicMessage());
     }
 
     @Test
