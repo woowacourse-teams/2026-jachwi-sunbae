@@ -54,6 +54,8 @@ const ChecklistEditor = ({
           id="checklist-name"
           fieldClassName={styles.nameField}
           label="체크리스트 이름"
+          placeholder="체크리스트 이름"
+          floatingLabel
           value={draft.name}
           maxLength={30}
           disabled={isSubmitting}
