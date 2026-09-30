@@ -57,12 +57,16 @@
 .field[data-floating-label='true']:focus-within .floatingLabel,
 .field[data-floating-label='true']:has(input:not(:placeholder-shown)) .floatingLabel,
 .field[data-floating-label='true']:has(input[aria-invalid='true']) .floatingLabel {
-  top: 0.18rem;
-  color: var(--color-brand-yellow);
+  top: 0.28rem;
+  color: var(--color-ink);
   font-size: 0.72rem;
   font-weight: 500;
   opacity: 1;
   transform: translateY(-50%);
+}
+
+.field[data-floating-label='true']:focus-within .floatingLabel {
+  color: var(--color-brand-yellow);
 }
 
 .field[data-floating-label='true'] .control input:focus::placeholder {
@@ -105,7 +109,7 @@
 .field[data-size='large'][data-floating-label='true']:focus-within .floatingLabel,
 .field[data-size='large'][data-floating-label='true']:has(input:not(:placeholder-shown)) .floatingLabel,
 .field[data-size='large'][data-floating-label='true']:has(input[aria-invalid='true']) .floatingLabel {
-  top: 0.18rem;
+  top: 0.28rem;
 }
 
 /* 단위 표시가 붙는 칸만 오른쪽을 비워 글자가 겹치지 않게 한다. */
