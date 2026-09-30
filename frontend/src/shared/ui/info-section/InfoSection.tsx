@@ -1,5 +1,7 @@
 import type { ReactNode } from 'react';
 
+import DetailSection from '../detail-section/DetailSection';
+
 import styles from './InfoSection.module.css';
 
 type InfoSectionProps = {
@@ -13,23 +15,20 @@ type InfoSectionProps = {
 
 /** 값을 읽기만 하는 정보 섹션. 고치는 일은 별도 편집 화면이 맡는다. */
 export const InfoSection = ({ title, label, action, children }: InfoSectionProps) => (
-  <section className={styles.section} aria-label={label ?? title}>
-    <div className={styles.sectionHeader}>
-      <h2>{title}</h2>
-      {action}
-    </div>
+  <DetailSection title={title} label={label} action={action}>
     <dl className={styles.summary}>{children}</dl>
-  </section>
+  </DetailSection>
 );
 
-type InfoRowProps = {
+export type InfoValueProps = {
   label: string;
   value: string;
   /** 값이 비었을 때 흐리게 보여 줄 문구. */
   emptyText?: string;
 };
 
-export const InfoRow = ({ label, value, emptyText = '-' }: InfoRowProps) => {
+/** 라벨과 값을 한 줄로 보여 주는 읽기 전용 정보 값 UI. */
+export const InfoValue = ({ label, value, emptyText = '-' }: InfoValueProps) => {
   const isEmpty = value.trim() === '';
 
   return (
@@ -41,3 +40,6 @@ export const InfoRow = ({ label, value, emptyText = '-' }: InfoRowProps) => {
     </div>
   );
 };
+
+/** 기존 이름과의 호환을 위해 남겨 둔 별칭이다. 새 화면에서는 `InfoValue`를 사용한다. */
+export const InfoRow = InfoValue;

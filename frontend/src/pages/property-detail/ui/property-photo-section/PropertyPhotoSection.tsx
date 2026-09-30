@@ -3,9 +3,8 @@ import { Link } from 'react-router-dom';
 
 import type { PropertyDetail } from '@/features/property/model/Property';
 import AuthenticatedPhoto from '@/features/property/ui/authenticated-photo/AuthenticatedPhoto';
+import DetailSection from '@/shared/ui/detail-section/DetailSection';
 import Icon from '@/shared/ui/icon/Icon';
-
-import PropertyDetailSection from '../property-detail-section/PropertyDetailSection';
 
 import styles from './PropertyPhotoSection.module.css';
 
@@ -17,7 +16,7 @@ type PropertyPhotoSectionProps = {
 };
 
 const PropertyPhotoSection = ({ propertyId, propertyName, photoPreview, onSelect }: PropertyPhotoSectionProps) => (
-  <PropertyDetailSection
+  <DetailSection
     title="사진"
     meta={<span>{photoPreview.totalCount}/30</span>}
     action={
@@ -55,7 +54,7 @@ const PropertyPhotoSection = ({ propertyId, propertyName, photoPreview, onSelect
         사진을 추가해 주세요.
       </Link>
     )}
-  </PropertyDetailSection>
+  </DetailSection>
 );
 
 export default PropertyPhotoSection;

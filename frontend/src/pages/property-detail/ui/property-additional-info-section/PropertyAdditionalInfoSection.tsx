@@ -4,9 +4,9 @@ import { formatManwon } from '@/features/property/lib/propertyFormat';
 import type { PropertyDetail } from '@/features/property/model/Property';
 import { roomOptionLabels, utilityOptionLabels } from '@/features/property/model/propertyOptions';
 import Icon from '@/shared/ui/icon/Icon';
-import { InfoRow, InfoSection } from '@/shared/ui/info-section/InfoSection';
+import { InfoSection, InfoValue } from '@/shared/ui/info-section/InfoSection';
 
-import infoStyles from '@/shared/ui/info-section/InfoSection.module.css';
+import detailStyles from '@/shared/ui/detail-section/DetailSection.module.css';
 
 type PropertyAdditionalInfoSectionProps = {
   property: PropertyDetail;
@@ -23,20 +23,20 @@ const PropertyAdditionalInfoSection = ({ property }: PropertyAdditionalInfoSecti
     title="부가 정보"
     label="매물 부가 정보"
     action={
-      <Link className={infoStyles.sectionAction} to={`/properties/${property.propertyId}/memo`}>
+      <Link className={detailStyles.sectionAction} to={`/properties/${property.propertyId}/memo`}>
         <Icon name="edit" size={14} /> 편집
       </Link>
     }
   >
-    <InfoRow label="입주 가능일" value={formatDate(property.availableMoveInDate)} />
-    <InfoRow
+    <InfoValue label="입주 가능일" value={formatDate(property.availableMoveInDate)} />
+    <InfoValue
       label="관리비"
       value={property.maintenanceFeeAmount === null ? '' : formatManwon(property.maintenanceFeeAmount)}
     />
-    <InfoRow label="관리비 포함 공과금" value={utilityOptionLabels(property.utilityOptions)} />
-    <InfoRow label="방 옵션" value={roomOptionLabels(property.roomOptions)} />
-    <InfoRow label="방문 일정" value={formatDateTime(property.visitScheduledAt)} />
-    <InfoRow label="확인한 곳" value={property.discoverySource.value} />
+    <InfoValue label="관리비 포함 공과금" value={utilityOptionLabels(property.utilityOptions)} />
+    <InfoValue label="방 옵션" value={roomOptionLabels(property.roomOptions)} />
+    <InfoValue label="방문 일정" value={formatDateTime(property.visitScheduledAt)} />
+    <InfoValue label="확인한 곳" value={property.discoverySource.value} />
   </InfoSection>
 );
 

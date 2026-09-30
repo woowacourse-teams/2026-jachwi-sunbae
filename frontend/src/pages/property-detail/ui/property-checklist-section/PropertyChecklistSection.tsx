@@ -6,9 +6,8 @@ import { clearLastSelectedChecklist, readLastSelectedChecklist } from '@/feature
 import ChecklistProgressBar from '@/features/checklist/ui/checklist-progress-bar/ChecklistProgressBar';
 import { usePropertyChecklistOverview } from '@/features/property/api/useProperties';
 import { Button, ButtonLink } from '@/shared/ui/button/Button';
+import DetailSection from '@/shared/ui/detail-section/DetailSection';
 import Icon from '@/shared/ui/icon/Icon';
-
-import PropertyDetailSection from '../property-detail-section/PropertyDetailSection';
 
 import styles from './PropertyChecklistSection.module.css';
 
@@ -45,7 +44,7 @@ const PropertyChecklistSection = ({ propertyId }: PropertyChecklistSectionProps)
 
   return (
     <>
-      <PropertyDetailSection title="체크리스트">
+      <DetailSection title="체크리스트">
         {onSiteChecklist !== undefined && onSiteChecklist.progress.totalCount > 0 && (
           <ChecklistProgressBar
             progress={onSiteChecklist.progress}
@@ -99,7 +98,7 @@ const PropertyChecklistSection = ({ propertyId }: PropertyChecklistSectionProps)
               <Icon name="arrow-right" size={16} />
             </Button>
           ))}
-      </PropertyDetailSection>
+      </DetailSection>
 
       <div className={styles.contractSection}>
         <ButtonLink
