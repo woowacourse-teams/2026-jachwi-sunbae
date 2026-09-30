@@ -3,6 +3,7 @@ import {
   ActivityIndicator,
   BackHandler,
   Linking,
+  type NativeSyntheticEvent,
   Platform,
   Pressable,
   StatusBar,
@@ -11,21 +12,20 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
-import WebView, { type WebViewNavigation } from 'react-native-webview';
+import WebView, { type WebViewMessageEvent, type WebViewNavigation } from 'react-native-webview';
 import { version as appVersion } from './package.json';
 import { WEB_APP_URL } from './src/config';
 import { isAllowedWebAppUrl, toWebAppUrl } from './src/navigationPolicy';
+import NativeTabBar, { MAIN_TABS } from './src/NativeTabBar';
+import {
+  createNativeContextScript,
+  createSelectTabScript,
+  createTabBarHeightScript,
+  parseWebMessage,
+} from './src/webBridge';
 
-const NATIVE_CONTEXT_SCRIPT = `
-  window.__JACHWI_NATIVE_APP__ = Object.freeze({
-    platform: '${Platform.OS}',
-    version: 1
-  });
-  window.dispatchEvent(new CustomEvent('jachwi-native-ready', {
-    detail: window.__JACHWI_NATIVE_APP__
-  }));
-  true;
-`;
+const DEFAULT_NATIVE_TAB_BAR_HEIGHT = 49;
+const NATIVE_FEATURES = Platform.OS === 'ios' ? (['tab-bar'] as const) : ([] as const);
 
 type ErrorViewProps = {
   onRetry: () => void;
@@ -59,6 +59,9 @@ const AppContent = () => {
   const [failed, setFailed] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
   const [appUrl, setAppUrl] = useState(WEB_APP_URL);
+  const [nativeTabBarVisible, setNativeTabBarVisible] = useState(false);
+  const [activeTab, setActiveTab] = useState<string | null>(null);
+  const [nativeTabBarHeight, setNativeTabBarHeight] = useState(DEFAULT_NATIVE_TAB_BAR_HEIGHT);
 
   const openDeepLink = useCallback((url: string) => {
     const nextUrl = toWebAppUrl(url);
@@ -90,8 +93,36 @@ const AppContent = () => {
 
   const retry = () => {
     setFailed(false);
+    setNativeTabBarVisible(false);
+    setActiveTab(null);
     setReloadKey((current) => current + 1);
   };
+
+  const handleWebMessage = useCallback((event: WebViewMessageEvent) => {
+    const route = parseWebMessage(event.nativeEvent.data);
+    if (route === null) return;
+    setNativeTabBarVisible(route.isTabBarVisible);
+    setActiveTab(route.activeTab);
+  }, []);
+
+  const handleNativeTabSelect = useCallback((event: NativeSyntheticEvent<{ key: string }>) => {
+    webViewRef.current?.injectJavaScript(createSelectTabScript(event.nativeEvent.key));
+  }, []);
+
+  const handleNativeTabBarMeasure = useCallback((event: NativeSyntheticEvent<{ height: number }>) => {
+    const height = Number(event.nativeEvent.height);
+    if (Number.isFinite(height) && height > 0) {
+      const roundedHeight = Math.round(height);
+      setNativeTabBarHeight(roundedHeight);
+      webViewRef.current?.injectJavaScript(createTabBarHeightScript(roundedHeight));
+    }
+  }, []);
+
+  const handleWebViewLoadEnd = useCallback(() => {
+    if (Platform.OS === 'ios') {
+      webViewRef.current?.injectJavaScript(createTabBarHeightScript(nativeTabBarHeight));
+    }
+  }, [nativeTabBarHeight]);
 
   const shouldStartLoad = (request: WebViewNavigation) => {
     if (isAllowedWebAppUrl(request.url)) return true;
@@ -103,37 +134,50 @@ const AppContent = () => {
   };
 
   return (
-    <SafeAreaView edges={['top']} style={styles.safeArea}>
+    <SafeAreaView edges={['top', 'bottom']} style={styles.safeArea}>
       <StatusBar barStyle="dark-content" />
       {failed ? (
         <ErrorView onRetry={retry} />
       ) : (
-        <WebView<object>
-          key={reloadKey}
-          ref={webViewRef}
-          source={{ uri: appUrl }}
-          originWhitelist={['https://*', 'about:blank']}
-          injectedJavaScriptBeforeContentLoaded={NATIVE_CONTEXT_SCRIPT}
-          onShouldStartLoadWithRequest={shouldStartLoad}
-          onNavigationStateChange={({ canGoBack: nextCanGoBack }) => setCanGoBack(nextCanGoBack)}
-          onError={() => setFailed(true)}
-          onContentProcessDidTerminate={() => webViewRef.current?.reload()}
-          renderLoading={LoadingView}
-          startInLoadingState
-          allowsBackForwardNavigationGestures
-          allowsInlineMediaPlayback
-          applicationNameForUserAgent={`JachwiSunbae/${appVersion} ${Platform.OS}`}
-          automaticallyAdjustContentInsets={false}
-          bounces={false}
-          contentInsetAdjustmentBehavior="never"
-          geolocationEnabled
-          keyboardDisplayRequiresUserAction={false}
-          mediaCapturePermissionGrantType="grantIfSameHostElsePrompt"
-          sharedCookiesEnabled
-          thirdPartyCookiesEnabled={false}
-          setSupportMultipleWindows={false}
-          style={styles.webView}
-        />
+        <>
+          <WebView<object>
+            key={reloadKey}
+            ref={webViewRef}
+            source={{ uri: appUrl }}
+            originWhitelist={['https://*', 'about:blank']}
+            injectedJavaScriptBeforeContentLoaded={createNativeContextScript(Platform.OS, NATIVE_FEATURES)}
+            onMessage={handleWebMessage}
+            onShouldStartLoadWithRequest={shouldStartLoad}
+            onNavigationStateChange={({ canGoBack: nextCanGoBack }) => setCanGoBack(nextCanGoBack)}
+            onLoadEnd={handleWebViewLoadEnd}
+            onError={() => setFailed(true)}
+            onContentProcessDidTerminate={() => webViewRef.current?.reload()}
+            renderLoading={LoadingView}
+            startInLoadingState
+            allowsBackForwardNavigationGestures
+            allowsInlineMediaPlayback
+            applicationNameForUserAgent={`JachwiSunbae/${appVersion} ${Platform.OS}`}
+            automaticallyAdjustContentInsets={false}
+            bounces={false}
+            contentInsetAdjustmentBehavior="never"
+            geolocationEnabled
+            keyboardDisplayRequiresUserAction={false}
+            mediaCapturePermissionGrantType="grantIfSameHostElsePrompt"
+            sharedCookiesEnabled
+            thirdPartyCookiesEnabled={false}
+            setSupportMultipleWindows={false}
+            style={styles.webView}
+          />
+          {Platform.OS === 'ios' && nativeTabBarVisible && (
+            <NativeTabBar
+              items={MAIN_TABS}
+              selectedKey={activeTab}
+              onSelectTab={handleNativeTabSelect}
+              onMeasure={handleNativeTabBarMeasure}
+              style={[styles.nativeTabBar, { height: nativeTabBarHeight }]}
+            />
+          )}
+        </>
       )}
     </SafeAreaView>
   );
@@ -153,6 +197,10 @@ const styles = StyleSheet.create({
   webView: {
     backgroundColor: '#ffffff',
     flex: 1,
+  },
+  nativeTabBar: {
+    flexShrink: 0,
+    width: '100%',
   },
   stateContainer: {
     alignItems: 'center',
