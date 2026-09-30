@@ -65,7 +65,6 @@ CREATE TABLE IF NOT EXISTS property_photos (
     storage_key VARCHAR(512) CHARACTER SET ascii COLLATE ascii_bin NOT NULL UNIQUE,
     content_type VARCHAR(100) NOT NULL,
     size_bytes BIGINT NOT NULL,
-    checksum_sha256 CHAR(64) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
     created_at DATETIME(6) NOT NULL,
     deleted_at DATETIME(6) NULL,
     CONSTRAINT fk_property_photos_property_owner FOREIGN KEY (property_id, member_id)
