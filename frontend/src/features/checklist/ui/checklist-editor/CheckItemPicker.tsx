@@ -1,9 +1,8 @@
-import { useMemo, useState } from 'react';
+import { Fragment, useMemo, useState } from 'react';
 
 import BottomActionArea from '@/shared/ui/bottom-action-area/BottomActionArea';
 import { Button } from '@/shared/ui/button/Button';
 import SearchField from '@/shared/ui/search-field/SearchField';
-import SelectionControl from '@/shared/ui/selection-control/SelectionControl';
 
 import { getChecklistErrorMessage } from '../../api/checklistErrorMessages';
 import { useCheckItemSearch } from '../../api/useChecklists';
@@ -26,6 +25,13 @@ const CheckItemPicker = ({ stage, existingSourceIds, disabled, onCancel, onAdd }
   const result = useCheckItemSearch(stage, query);
   const items = useMemo(() => result.data?.pages.flatMap((page) => page.content) ?? [], [result.data]);
   const existingIds = useMemo(() => new Set(existingSourceIds), [existingSourceIds]);
+  const orderedItems = useMemo(
+    () => [
+      ...items.filter((item) => !existingIds.has(item.checkItemId)),
+      ...items.filter((item) => existingIds.has(item.checkItemId)),
+    ],
+    [existingIds, items],
+  );
   const additionCount = selectedIds.size;
 
   const search = (nextQuery: string) => {
@@ -100,29 +106,50 @@ const CheckItemPicker = ({ stage, existingSourceIds, disabled, onCancel, onAdd }
           <div className={styles.checkItemResults}>
             <h3>검색 결과</h3>
             <ul className={styles.checkItemSearchResults}>
-              {items.map((item) => {
+              {orderedItems.map((item, index) => {
                 const exists = existingIds.has(item.checkItemId);
                 const checked = exists || selectedIds.has(item.checkItemId);
+                const startsExistingGroup =
+                  exists && (index === 0 || !existingIds.has(orderedItems[index - 1].checkItemId));
+                const toggleItem = () => {
+                  setSelectedIds((current) => {
+                    const next = new Set(current);
+                    if (next.has(item.checkItemId)) next.delete(item.checkItemId);
+                    else next.add(item.checkItemId);
+                    return next;
+                  });
+                };
                 return (
-                  <li key={item.checkItemId}>
-                    <SelectionControl
-                      checked={checked}
-                      disabled={disabled || exists}
-                      onSelect={() => {
-                        const next = new Set(selectedIds);
-                        if (checked) next.delete(item.checkItemId);
-                        else next.add(item.checkItemId);
-                        setSelectedIds(next);
-                      }}
-                      markClassName={styles.resultControl}
-                    >
-                      <span className={styles.resultCopy}>
-                        <strong>{item.question}</strong>
-                        {item.guide !== null && <small>{item.guide}</small>}
-                      </span>
-                    </SelectionControl>
-                    {exists && <small className={styles.alreadyAdded}>이미 추가됨</small>}
-                  </li>
+                  <Fragment key={item.checkItemId}>
+                    {startsExistingGroup && <li className={styles.existingDivider}>이미 추가됨</li>}
+                    <li className={exists ? styles.alreadyAddedItem : undefined}>
+                      <button
+                        className={styles.resultSelect}
+                        type="button"
+                        role="checkbox"
+                        aria-checked={checked}
+                        disabled={disabled || exists}
+                        onPointerDown={(event) => {
+                          // 모바일 WebView에서 pointerup 이후 click이 누락되는 경우에도
+                          // 누른 순간 선택 상태가 바뀌도록 한다.
+                          event.preventDefault();
+                          toggleItem();
+                        }}
+                        onClick={(event) => {
+                          // 키보드(Enter/Space)는 pointer 이벤트 없이 click만 발생한다.
+                          if (event.detail === 0) toggleItem();
+                        }}
+                      >
+                        <span className={styles.resultControl} data-selected={checked || undefined} aria-hidden="true">
+                          {checked ? '✓' : null}
+                        </span>
+                        <span className={styles.resultCopy}>
+                          <strong>{item.question}</strong>
+                          {item.guide !== null && <small>{item.guide}</small>}
+                        </span>
+                      </button>
+                    </li>
+                  </Fragment>
                 );
               })}
             </ul>
