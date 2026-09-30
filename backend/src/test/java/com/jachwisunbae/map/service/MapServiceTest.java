@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.jachwisunbae.common.exception.client.InvalidInputException;
 import com.jachwisunbae.common.exception.errorcode.ErrorCode;
+import com.jachwisunbae.common.exception.server.UpstreamServiceException;
 import com.jachwisunbae.map.domain.NearbyPlace;
 import com.jachwisunbae.map.provider.BusStopProvider;
 import com.jachwisunbae.map.provider.NearbyPlaceProvider;
@@ -62,15 +63,26 @@ class MapServiceTest {
     }
 
     @Test
-    @DisplayName("버스정류장 조회가 실패해도 기존 시설 결과를 반환한다")
+    @DisplayName("버스정류장 외부 API가 실패해도 기존 시설 결과를 반환한다")
     void busStopFailureKeepsNearbyPlaces() {
         MapService service = service(Optional.of((latitude, longitude, radius) -> {
-            throw new IllegalStateException("TAGO 장애");
+            throw new UpstreamServiceException(ErrorCode.MAP_PROVIDER_UNAVAILABLE, "TAGO 장애");
         }));
 
         NearbyResult response = service.nearby(LATITUDE, LONGITUDE, 500, EnumSet.allOf(MapCategory.class));
 
         assertThat(response.places()).containsExactly(subway, hospital);
+    }
+
+    @Test
+    @DisplayName("외부 장애가 아닌 오류는 대체 처리로 숨기지 않는다")
+    void busStopBugIsNotHiddenByFallback() {
+        MapService service = service(Optional.of((latitude, longitude, radius) -> {
+            throw new IllegalStateException("우리 코드의 버그");
+        }));
+
+        assertThatThrownBy(() -> service.nearby(LATITUDE, LONGITUDE, 500, EnumSet.allOf(MapCategory.class)))
+                .isInstanceOf(IllegalStateException.class);
     }
 
     @Test
