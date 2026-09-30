@@ -522,6 +522,17 @@ try {
 
 오류가 발생하지 않은 것처럼 만들기 위해 잡지 않는다.
 
+다른 예외를 잡아 바꿔 던질 때는 원래 예외를 `cause`로 넘긴다. 지금 로그에 쓰이지 않더라도 원인을 잃지 않기 위해서다. 직접 조건을 검사해 발견한 실패에는 넘길 원인 예외가 없다.
+
+```java
+try {
+    return SignedJWT.parse(token);
+} catch (ParseException exception) {
+    throw new AuthenticationFailedException(ErrorCode.ACCESS_TOKEN_INVALID,
+            "JWT 형식이 올바르지 않습니다.", exception);
+}
+```
+
 ## 20. 판단 순서
 
 새로운 실패 상황을 발견하면 다음 순서로 판단한다.
