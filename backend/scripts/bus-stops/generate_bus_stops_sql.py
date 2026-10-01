@@ -1,11 +1,15 @@
 #!/usr/bin/env python3
 """국토교통부 전국 버스정류장 위치정보 CSV를 정제해 bus_stops 적재 SQL을 만든다.
 
-해댕 스크립트는 개발자 PC에서 한번 실행한느 도구이다.
-하지만 남겨놓는 이유는 정제 규칙 자체가 데이터 정책이기 떄문이다.(개인 로컬에만있으면 정합성이 꺠질 즉, 버그 발생활률이 올라간다.)
+해당 스크립트는 개발자 PC에서 한번 실행하는 도구이다.
+하지만 남겨놓는 이유는 정제 규칙 자체가 데이터 정책이기 때문이다.(개인 로컬에만 있으면 정합성이 깨질, 즉 버그 발생 확률이 올라간다.)
 
 사용법:
     python3 generate_bus_stops_sql.py <CSV 경로> --output <SQL 경로>
+
+로컬 개발용 샘플 (기준 좌표 주변만):
+    python3 generate_bus_stops_sql.py <CSV 경로> --output <SQL 경로> \
+        --around 37.3948,127.1119 --around 37.5665,126.978 --around-meters 2500
 
 생성한 SQL은 한 트랜잭션 안에서 bus_stops를 비우고 다시 채운다.
 적재 중 오류가 나면 전체가 롤백되고, 원본에서 사라진(폐지된) 정류장도 함께 정리된다.
@@ -14,6 +18,7 @@
 
 import argparse
 import csv
+import math
 import sys
 from collections import Counter
 from decimal import ROUND_HALF_UP, Decimal, InvalidOperation
@@ -32,6 +37,9 @@ MAX_CITY_NAME_LENGTH = 30
 # DECIMAL(10, 7), DECIMAL(11, 7)에 맞춰 소수 7자리로 반올림한다.
 COORDINATE_SCALE = Decimal("0.0000001")
 
+# 위도 1도의 거리(m). 샘플 지역의 위경도 범위를 계산할 때 쓴다.
+METERS_PER_LATITUDE_DEGREE = 111_320
+
 COLUMNS = {
     "node_id": "정류장번호",
     "name": "정류장명",
@@ -46,16 +54,45 @@ class InvalidRow(Exception):
     pass
 
 
+def coordinate_pair(value):
+    try:
+        latitude, longitude = (Decimal(part.strip()) for part in value.split(","))
+    except (ValueError, InvalidOperation):
+        raise argparse.ArgumentTypeError("'위도,경도' 형식이어야 합니다: " + value)
+    return latitude, longitude
+
+
+def area(center, meters):
+    latitude, longitude = center
+    latitude_delta = Decimal(meters / METERS_PER_LATITUDE_DEGREE)
+    longitude_delta = Decimal(meters / (METERS_PER_LATITUDE_DEGREE * math.cos(math.radians(latitude))))
+    return (latitude - latitude_delta, latitude + latitude_delta,
+            longitude - longitude_delta, longitude + longitude_delta)
+
+
+def contains(bounds, stop):
+    min_latitude, max_latitude, min_longitude, max_longitude = bounds
+    return (min_latitude <= stop["latitude"] <= max_latitude
+            and min_longitude <= stop["longitude"] <= max_longitude)
+
+
 def main():
     parser = argparse.ArgumentParser(description="버스정류장 CSV로 bus_stops 적재 SQL을 만든다.")
     parser.add_argument("csv_path", type=Path, help="국토교통부 전국 버스정류장 위치정보 CSV")
     parser.add_argument("--output", type=Path, required=True, help="생성할 SQL 파일 경로")
     parser.add_argument("--encoding", default="euc-kr", help="CSV 인코딩 (기본: euc-kr)")
     parser.add_argument("--batch-size", type=int, default=1000, help="INSERT 한 문장에 넣을 행 수")
+    parser.add_argument("--around", type=coordinate_pair, action="append", default=[],
+                        metavar="위도,경도", help="이 좌표 주변 정류장만 넣는다. 여러 번 쓸 수 있다")
+    parser.add_argument("--around-meters", type=int, default=2500,
+                        help="--around 기준 좌표에서 위아래·좌우로 포함할 거리(m)")
     args = parser.parse_args()
 
     stops, skipped, total = read_stops(args.csv_path, args.encoding)
-    write_sql(args.output, stops, args.batch_size, args.csv_path.name)
+    if args.around:
+        areas = [area(center, args.around_meters) for center in args.around]
+        stops = [stop for stop in stops if any(contains(bounds, stop) for bounds in areas)]
+    write_sql(args.output, stops, args.batch_size, args.csv_path.name, args.around, args.around_meters)
     print_summary(total, stops, skipped, args.output)
 
 
@@ -125,10 +162,12 @@ def coordinate(row, column, valid_range):
     return number.quantize(COORDINATE_SCALE, rounding=ROUND_HALF_UP)
 
 
-def write_sql(output, stops, batch_size, source_name):
+def write_sql(output, stops, batch_size, source_name, centers, around_meters):
     output.parent.mkdir(parents=True, exist_ok=True)
     with output.open("w", encoding="utf-8") as file:
         file.write("-- 원본: " + source_name + "\n")
+        for latitude, longitude in centers:
+            file.write("-- 샘플 지역: {},{} 주변 {}m\n".format(latitude, longitude, around_meters))
         file.write("-- 적재 행 수: " + str(len(stops)) + "\n")
         file.write("SET NAMES utf8mb4;\n")
         file.write("START TRANSACTION;\n")
