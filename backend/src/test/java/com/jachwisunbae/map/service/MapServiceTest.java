@@ -29,22 +29,41 @@ class MapServiceTest {
     private static final BigDecimal LATITUDE = new BigDecimal("37.406");
     private static final BigDecimal LONGITUDE = new BigDecimal("127.088");
 
-    private final NearbyPlace subway = place("kakao:1", "판교역", MapCategory.TRANSPORT);
     private final NearbyPlace hospital = place("kakao:2", "판교병원", MapCategory.HOSPITAL);
     private final NearbyPlace busStop = place("tago:31:1", "판교역 정류장", MapCategory.TRANSPORT);
 
     @Test
-    @DisplayName("주변 시설과 버스정류장 결과를 합치고 중복을 제거한다")
-    void transportSearchCombinesNearbyPlacesAndBusStops() {
-        MapService service = service(Optional.of((latitude, longitude, radius) -> List.of(busStop, subway)));
+    @DisplayName("교통은 버스정류장으로만 채우고 주변 시설 결과와 합친다")
+    void transportConsistsOfBusStopsOnly() {
+        List<Set<MapCategory>> requested = new ArrayList<>();
+        MapService service = new MapService(new DemoAddressProvider(), (latitude, longitude, radius, categories) -> {
+            requested.add(categories);
+            return List.of(hospital);
+        }, Optional.of((latitude, longitude, radius) -> List.of(busStop)));
 
         NearbyResult response = service.nearby(LATITUDE, LONGITUDE, 500, EnumSet.allOf(MapCategory.class));
 
-        assertThat(response.places()).containsExactly(subway, hospital, busStop);
+        assertThat(requested).containsExactly(EnumSet.complementOf(EnumSet.of(MapCategory.TRANSPORT)));
+        assertThat(response.places()).containsExactly(hospital, busStop);
         assertThat(response.counts())
-                .containsEntry(MapCategory.TRANSPORT, 2)
+                .containsEntry(MapCategory.TRANSPORT, 1)
                 .containsEntry(MapCategory.HOSPITAL, 1)
                 .containsEntry(MapCategory.SCHOOL, 0);
+    }
+
+    @Test
+    @DisplayName("교통만 요청하면 주변 시설 공급자를 호출하지 않는다")
+    void transportOnlyDoesNotRequestNearbyProvider() {
+        AtomicInteger nearbyCalls = new AtomicInteger();
+        MapService service = new MapService(new DemoAddressProvider(), (latitude, longitude, radius, categories) -> {
+            nearbyCalls.incrementAndGet();
+            return List.of(hospital);
+        }, Optional.of((latitude, longitude, radius) -> List.of(busStop)));
+
+        NearbyResult response = service.nearby(LATITUDE, LONGITUDE, 500, EnumSet.of(MapCategory.TRANSPORT));
+
+        assertThat(nearbyCalls).hasValue(0);
+        assertThat(response.places()).containsExactly(busStop);
     }
 
     @Test
@@ -71,7 +90,7 @@ class MapServiceTest {
 
         NearbyResult response = service.nearby(LATITUDE, LONGITUDE, 500, EnumSet.allOf(MapCategory.class));
 
-        assertThat(response.places()).containsExactly(subway, hospital);
+        assertThat(response.places()).containsExactly(hospital);
     }
 
     @Test
@@ -102,7 +121,7 @@ class MapServiceTest {
     }
 
     @Test
-    @DisplayName("요청 카테고리가 없으면 전체 카테고리로 조회한다")
+    @DisplayName("요청 카테고리가 없으면 교통을 뺀 전체 카테고리를 주변 시설 공급자에 요청한다")
     void requestsAllCategoriesWhenCategoriesAreMissing() {
         List<Set<MapCategory>> requested = new ArrayList<>();
         MapService service = new MapService(new DemoAddressProvider(), (latitude, longitude, radius, categories) -> {
@@ -113,7 +132,8 @@ class MapServiceTest {
         service.nearby(LATITUDE, LONGITUDE, 500, null);
         service.nearby(LATITUDE, LONGITUDE, 500, Set.of());
 
-        assertThat(requested).containsExactly(EnumSet.allOf(MapCategory.class), EnumSet.allOf(MapCategory.class));
+        EnumSet<MapCategory> facilities = EnumSet.complementOf(EnumSet.of(MapCategory.TRANSPORT));
+        assertThat(requested).containsExactly(facilities, facilities);
     }
 
     @Test
@@ -150,7 +170,7 @@ class MapServiceTest {
     }
 
     private MapService service(Optional<BusStopProvider> busStopProvider) {
-        NearbyPlaceProvider nearbyPlaceProvider = (latitude, longitude, radius, categories) -> List.of(subway, hospital);
+        NearbyPlaceProvider nearbyPlaceProvider = (latitude, longitude, radius, categories) -> List.of(hospital);
         return new MapService(new DemoAddressProvider(), nearbyPlaceProvider, busStopProvider);
     }
 

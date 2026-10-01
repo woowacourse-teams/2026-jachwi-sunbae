@@ -15,9 +15,9 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.EnumSet;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -76,23 +76,38 @@ public class MapService {
         return categories.isEmpty() ? EnumSet.allOf(MapCategory.class) : categories;
     }
 
-    //TODO TAGO 실제 적용은 다음 이슈에서 진행
+    // 교통은 버스정류장으로만 구성하고, 나머지 카테고리는 주변 시설 공급자에서 조회한다.
     private List<NearbyPlace> findPlaces(BigDecimal latitude, BigDecimal longitude, int radius, Set<MapCategory> categories) {
-        List<NearbyPlace> places = nearbyPlaceProvider.nearby(latitude, longitude, radius, categories);
-        if (!categories.contains(MapCategory.TRANSPORT) || busStopProvider.isEmpty()) {
-            return places;
+        List<NearbyPlace> places = new ArrayList<>(findFacilities(latitude, longitude, radius, categories));
+        if (categories.contains(MapCategory.TRANSPORT)) {
+            places.addAll(findBusStops(latitude, longitude, radius));
         }
-        Map<String, NearbyPlace> unique = new LinkedHashMap<>();
-        places.forEach(place -> unique.putIfAbsent(place.providerPlaceId(), place));
+        return List.copyOf(places);
+    }
+
+    private List<NearbyPlace> findFacilities(BigDecimal latitude, BigDecimal longitude, int radius,
+                                             Set<MapCategory> categories) {
+        EnumSet<MapCategory> facilityCategories = EnumSet.noneOf(MapCategory.class);
+        facilityCategories.addAll(categories);
+        facilityCategories.remove(MapCategory.TRANSPORT);
+        if (facilityCategories.isEmpty()) {
+            return List.of();
+        }
+        return nearbyPlaceProvider.nearby(latitude, longitude, radius, facilityCategories);
+    }
+
+    private List<NearbyPlace> findBusStops(BigDecimal latitude, BigDecimal longitude, int radius) {
+        if (busStopProvider.isEmpty()) {
+            return List.of();
+        }
         try {
-            busStopProvider.get().nearby(latitude, longitude, radius)
-                .forEach(place -> unique.putIfAbsent(place.providerPlaceId(), place));
+            return busStopProvider.get().nearby(latitude, longitude, radius);
         } catch (UpstreamServiceException exception) {
             // 버스정류장 없이도 주변 시설 결과를 제공할 수 있어 외부 장애만 대체 처리한다.
             // 우리 코드의 오류(NullPointerException 등)까지 숨기지 않도록 RuntimeException 전체를 잡지 않는다.
-            LOG.warn("TAGO 버스정류소 조회에 실패해 주변 시설 검색 결과만 반환합니다.", exception);
+            LOG.warn("버스정류장 조회에 실패해 주변 시설 검색 결과만 반환합니다.", exception);
+            return List.of();
         }
-        return List.copyOf(unique.values());
     }
 
     private void validateNearbyQuery(BigDecimal latitude, BigDecimal longitude, int radius) {
