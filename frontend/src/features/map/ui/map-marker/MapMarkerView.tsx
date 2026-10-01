@@ -55,7 +55,7 @@ const MapMarkerView = ({ marker, selectedMarkerId = null, onSelectMarker }: MapM
       {isCurrentLocationDot(marker) ? null : usesCategoryIcon(marker) && marker.category !== undefined ? (
         <MapCategoryIcon category={marker.category} className={styles.categoryIcon} />
       ) : usesPhoto(marker) && marker.photoUrl !== undefined ? (
-        <img className={styles.markerPhoto} src={marker.photoUrl} alt="" draggable={false} />
+        <img className={styles.markerPhoto} src={marker.photoUrl} alt="" draggable={false} decoding="async" />
       ) : (
         <span className={styles.markerIcon} aria-hidden="true">
           {markerSymbol(marker)}
