@@ -15,16 +15,16 @@ const { mockPostHog } = vi.hoisted(() => ({
 vi.mock('posthog-js', () => ({ default: mockPostHog }));
 
 import {
+  capturePostHogException,
   identifyPostHogMember,
   initPostHog,
   isValidPostHogConfiguration,
-  capturePostHogException,
   resetPostHogForTests,
   resetPostHogIdentity,
   setPostHogSessionContext,
   trackPostHogEvent,
   trackPostHogPageView,
-} from '../../../../src/shared/lib/analytics/posthog';
+} from '@/shared/lib/analytics/posthog';
 
 describe('PostHog 제품 분석', () => {
   afterEach(() => {
@@ -41,6 +41,11 @@ describe('PostHog 제품 분석', () => {
       expect(mockPostHog.init).toHaveBeenCalledWith('phc_test', {
         api_host: 'https://us.i.posthog.com',
         autocapture: true,
+        capture_exceptions: {
+          capture_unhandled_errors: true,
+          capture_unhandled_rejections: true,
+        },
+        before_send: expect.any(Function),
         capture_pageview: false,
         disable_session_recording: false,
         mask_all_text: true,

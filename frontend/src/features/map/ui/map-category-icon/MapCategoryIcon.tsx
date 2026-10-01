@@ -1,4 +1,5 @@
 import type { MapCategory } from '../../model/Map';
+
 import styles from './MapCategoryIcon.module.css';
 
 type MapCategoryIconProps = {

@@ -1,20 +1,18 @@
 import { describe, expect, it } from 'vitest';
-import {
-  checkItemToEditorItem,
-  checklistItemToEditorItem,
-} from '../../../../src/features/checklist/model/ChecklistEditor';
-import {
-  editorItemsFingerprint,
-  moveEditorItem,
-  toProvidedChecklistItemInputs,
-} from '../../../../src/features/checklist/lib/checklistEditor';
+
 import {
   customChecklistItemFixture,
   onlineItemFixture,
   providedChecklistItemFixture,
   secondOnlineItemFixture,
-} from '../../../../src/app/mocks/fixtures/checklistFixtures';
-import type { CheckItem, ChecklistItem } from '../../../../src/features/checklist/model/checklistTypes';
+} from '@/app/mocks/fixtures/checklistFixtures';
+import {
+  editorItemsFingerprint,
+  moveEditorItem,
+  toProvidedChecklistItemInputs,
+} from '@/features/checklist/lib/checklistEditor';
+import { checkItemToEditorItem, checklistItemToEditorItem } from '@/features/checklist/model/ChecklistEditor';
+import type { CheckItem, ChecklistItem } from '@/features/checklist/model/checklistTypes';
 
 describe('체크리스트 편집 상태와 DTO 변환', () => {
   const optionalItem = checkItemToEditorItem(onlineItemFixture as CheckItem);

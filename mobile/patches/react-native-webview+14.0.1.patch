@@ -1,5 +1,5 @@
 diff --git a/node_modules/react-native-webview/android/src/main/java/com/reactnativecommunity/webview/RNCWebChromeClient.java b/node_modules/react-native-webview/android/src/main/java/com/reactnativecommunity/webview/RNCWebChromeClient.java
-index 1b5c4c9f83159f15f710851e52558944b592d113..c27767bbe71c6bb0cba8008e4bfcbf0eddd6132c 100644
+index 1b5c4c9..c27767b 100644
 --- a/node_modules/react-native-webview/android/src/main/java/com/reactnativecommunity/webview/RNCWebChromeClient.java
 +++ b/node_modules/react-native-webview/android/src/main/java/com/reactnativecommunity/webview/RNCWebChromeClient.java
 @@ -30,7 +30,7 @@ import com.reactnativecommunity.webview.events.TopLoadingProgressEvent;
@@ -81,3 +81,24 @@ index 1b5c4c9f83159f15f710851e52558944b592d113..c27767bbe71c6bb0cba8008e4bfcbf0e
          if (shouldAnswerToPermissionRequest
                  && permissionRequest != null
                  && grantedPermissions != null) {
+diff --git a/node_modules/react-native-webview/apple/RNCWebViewImpl.m b/node_modules/react-native-webview/apple/RNCWebViewImpl.m
+index 3890426..ecf26e7 100644
+--- a/node_modules/react-native-webview/apple/RNCWebViewImpl.m
++++ b/node_modules/react-native-webview/apple/RNCWebViewImpl.m
+@@ -1060,6 +1060,16 @@ - (void)setScrollEnabled:(BOOL)scrollEnabled
+ // UIScrollViewDelegate method
+ - (void)scrollViewDidScroll:(UIScrollView *)scrollView
+ {
++  // 자취선배: 당겨서 새로고침(위쪽)만 허용하고 아래쪽 끝에서는 튕기지 않게 한다.
++  // 문서가 튕기면 웹에서 화면에 고정한 바텀시트·버튼이 함께 밀린다.
++  if (_pullToRefreshEnabled) {
++    CGFloat maxOffsetY = MAX(scrollView.contentSize.height - scrollView.bounds.size.height + scrollView.adjustedContentInset.bottom,
++                             -scrollView.adjustedContentInset.top);
++    if (scrollView.contentOffset.y > maxOffsetY) {
++      scrollView.contentOffset = CGPointMake(scrollView.contentOffset.x, maxOffsetY);
++    }
++  }
++
+   // Don't allow scrolling the scrollView.
+   if (!_scrollEnabled) {
+     scrollView.bounds = _webView.bounds;

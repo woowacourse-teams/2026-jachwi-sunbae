@@ -1,24 +1,25 @@
 import { describe, expect, it, vi } from 'vitest';
+
 import {
   calculateExpiresAt,
   getAccessToken,
   getAuthenticationSnapshot,
   setAuthentication,
-} from '../../../../src/features/auth/model/authStore';
-import { propertyQueryKeys } from '../../../../src/features/property/api/propertyQueryKeys';
-import { queryClient, currentMemberQueryKey } from '../../../../src/shared/api/queryClient';
+} from '@/features/auth/model/authStore';
+import { propertyQueryKeys } from '@/features/property/api/propertyQueryKeys';
+import { currentMemberQueryKey, queryClient } from '@/shared/api/queryClient';
 
-describe('탭 단위 인증 저장소', () => {
+describe('인증 저장소', () => {
   it('expiresIn을 기준으로 만료 시각을 계산한다', () => {
     expect(calculateExpiresAt(43_200, 1_000)).toBe(43_201_000);
   });
 
-  it('토큰을 localStorage에는 쓰지 않고 탭 단위 sessionStorage에서 복원할 수 있게 저장한다', () => {
+  it('앱을 다시 열어도 로그인 상태를 복원할 수 있도록 localStorage에 저장한다', () => {
     setAuthentication({ accessToken: 'memory-token', tokenType: 'Bearer', expiresIn: 60 });
 
     expect(getAccessToken()).toBe('memory-token');
-    expect(window.localStorage).toHaveLength(0);
-    expect(window.sessionStorage).toHaveLength(1);
+    expect(window.localStorage).toHaveLength(1);
+    expect(window.sessionStorage).toHaveLength(0);
   });
 
   it('만료되면 인증과 인증 Query Cache를 정리한다', () => {

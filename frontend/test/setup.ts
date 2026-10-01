@@ -1,8 +1,11 @@
 import '@testing-library/jest-dom/vitest';
+
 import { cleanup, configure } from '@testing-library/react';
 import { webcrypto } from 'node:crypto';
 import { afterAll, afterEach, beforeAll, vi } from 'vitest';
-import { resetAuthenticationForTests } from '../src/features/auth/model/authStore';
+
+import { resetAuthenticationForTests } from '@/features/auth/model/authStore';
+
 import { server } from './server';
 
 configure({ asyncUtilTimeout: 5_000 });

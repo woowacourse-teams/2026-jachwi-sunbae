@@ -1,10 +1,14 @@
 import { Link } from 'react-router-dom';
-import { InfoRow, InfoSection } from '../../../../shared/ui/info-section/InfoSection';
-import Icon from '../../../../shared/ui/icon/Icon';
-import infoStyles from '../../../../shared/ui/info-section/InfoSection.module.css';
-import type { PropertyDetail } from '../../../../features/property/model/Property';
-import { roomOptionLabels, utilityOptionLabels } from '../../../../features/property/model/propertyOptions';
-import { formatManwon } from '../../../../features/property/lib/propertyFormat';
+
+import { formatManwon } from '@/features/property/lib/propertyFormat';
+import type { PropertyDetail } from '@/features/property/model/Property';
+import { roomOptionLabels, utilityOptionLabels } from '@/features/property/model/propertyOptions';
+import Icon from '@/shared/ui/icon/Icon';
+import InfoValue from '@/shared/ui/info-value/InfoValue';
+
+import PropertyInfoSection from '../property-info-section/PropertyInfoSection';
+
+import detailStyles from '@/shared/ui/detail-section/DetailSection.module.css';
 
 type PropertyAdditionalInfoSectionProps = {
   property: PropertyDetail;
@@ -17,25 +21,25 @@ const formatDateTime = (value: string | null): string =>
 
 /** 새 매물 API가 돌려준 부가 정보를 그대로 표시하고, 편집은 한 화면에서 전체 PUT으로 저장한다. */
 const PropertyAdditionalInfoSection = ({ property }: PropertyAdditionalInfoSectionProps) => (
-  <InfoSection
+  <PropertyInfoSection
     title="부가 정보"
     label="매물 부가 정보"
     action={
-      <Link className={infoStyles.sectionAction} to={`/properties/${property.propertyId}/memo`}>
+      <Link className={detailStyles.sectionAction} to={`/properties/${property.propertyId}/memo`}>
         <Icon name="edit" size={14} /> 편집
       </Link>
     }
   >
-    <InfoRow label="입주 가능일" value={formatDate(property.availableMoveInDate)} />
-    <InfoRow
+    <InfoValue label="입주 가능일" value={formatDate(property.availableMoveInDate)} />
+    <InfoValue
       label="관리비"
       value={property.maintenanceFeeAmount === null ? '' : formatManwon(property.maintenanceFeeAmount)}
     />
-    <InfoRow label="관리비 포함 공과금" value={utilityOptionLabels(property.utilityOptions)} />
-    <InfoRow label="방 옵션" value={roomOptionLabels(property.roomOptions)} />
-    <InfoRow label="방문 일정" value={formatDateTime(property.visitScheduledAt)} />
-    <InfoRow label="확인한 곳" value={property.discoverySource.value} />
-  </InfoSection>
+    <InfoValue label="관리비 포함 공과금" value={utilityOptionLabels(property.utilityOptions)} />
+    <InfoValue label="방 옵션" value={roomOptionLabels(property.roomOptions)} />
+    <InfoValue label="방문 일정" value={formatDateTime(property.visitScheduledAt)} />
+    <InfoValue label="확인한 곳" value={property.discoverySource.value} />
+  </PropertyInfoSection>
 );
 
 export default PropertyAdditionalInfoSection;

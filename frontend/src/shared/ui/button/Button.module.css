@@ -15,6 +15,19 @@
   cursor: pointer;
 }
 
+/* 아이콘·이모티콘과 한글이 각자의 글꼴 baseline에 끌려가지 않게 한 줄의 가운데를 공유한다. */
+.button > span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.button > span svg {
+  display: block;
+  flex: none;
+}
+
 .button:disabled {
   cursor: not-allowed;
   opacity: 0.52;

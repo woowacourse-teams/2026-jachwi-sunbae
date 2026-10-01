@@ -1,6 +1,7 @@
-import type { MapAddress } from '../../../../features/map/model/Map';
-import Icon from '../../../../shared/ui/icon/Icon';
-import SearchField from '../../../../shared/ui/search-field/SearchField';
+import type { MapAddress } from '@/features/map/model/Map';
+import Icon from '@/shared/ui/icon/Icon';
+import SearchField from '@/shared/ui/search-field/SearchField';
+
 import styles from './MapAddressSearch.module.css';
 
 type SearchStatus = 'idle' | 'loading' | 'error';

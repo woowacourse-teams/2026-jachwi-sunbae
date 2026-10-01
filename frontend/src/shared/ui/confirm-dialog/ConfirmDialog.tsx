@@ -1,6 +1,8 @@
-import { useEffect, useId, useRef } from 'react';
 import type { ReactNode, RefObject } from 'react';
+import { useEffect, useId, useRef } from 'react';
+
 import { Button } from '../button/Button';
+
 import styles from './ConfirmDialog.module.css';
 
 type ConfirmDialogProps = {

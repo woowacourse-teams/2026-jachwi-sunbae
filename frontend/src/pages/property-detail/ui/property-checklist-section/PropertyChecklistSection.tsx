@@ -1,27 +1,24 @@
 import { useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import {
-  clearLastSelectedChecklist,
-  readLastSelectedChecklist,
-} from '../../../../features/checklist/model/lastChecklistStore';
-import { useAssignActiveChecklist } from '../../../../features/checklist/api/useChecklistMutations';
-import { usePropertyChecklistOverview } from '../../../../features/property/api/useProperties';
-import type { PublicConfig } from '../../../../shared/config/publicConfigTypes';
-import ChecklistProgressBar from '../../../../features/checklist/ui/checklist-progress-bar/ChecklistProgressBar';
-import { Button, ButtonLink } from '../../../../shared/ui/button/Button';
-import Icon from '../../../../shared/ui/icon/Icon';
-import PropertyDetailSection from '../property-detail-section/PropertyDetailSection';
+
+import { useAssignActiveChecklist } from '@/features/checklist/api/useChecklistMutations';
+import { clearLastSelectedChecklist, readLastSelectedChecklist } from '@/features/checklist/model/lastChecklistStore';
+import ChecklistProgressBar from '@/features/checklist/ui/checklist-progress-bar/ChecklistProgressBar';
+import { usePropertyChecklistOverview } from '@/features/property/api/useProperties';
+import { Button, ButtonLink } from '@/shared/ui/button/Button';
+import DetailSection from '@/shared/ui/detail-section/DetailSection';
+import Icon from '@/shared/ui/icon/Icon';
+
 import styles from './PropertyChecklistSection.module.css';
 
 type PropertyChecklistSectionProps = {
-  config: PublicConfig;
   propertyId: number;
 };
 
-const PropertyChecklistSection = ({ config, propertyId }: PropertyChecklistSectionProps) => {
+const PropertyChecklistSection = ({ propertyId }: PropertyChecklistSectionProps) => {
   const navigate = useNavigate();
-  const checklists = usePropertyChecklistOverview(config, propertyId);
-  const assignDefaultChecklist = useAssignActiveChecklist(config, propertyId, 'ON_SITE');
+  const checklists = usePropertyChecklistOverview(propertyId);
+  const assignDefaultChecklist = useAssignActiveChecklist(propertyId, 'ON_SITE');
   const assignmentStarted = useRef(false);
   const onSiteChecklist = checklists.data?.stages.find((item) => item.stage === 'ON_SITE');
 
@@ -47,7 +44,7 @@ const PropertyChecklistSection = ({ config, propertyId }: PropertyChecklistSecti
 
   return (
     <>
-      <PropertyDetailSection title="체크리스트">
+      <DetailSection title="체크리스트">
         {onSiteChecklist !== undefined && onSiteChecklist.progress.totalCount > 0 && (
           <ChecklistProgressBar
             progress={onSiteChecklist.progress}
@@ -101,7 +98,7 @@ const PropertyChecklistSection = ({ config, propertyId }: PropertyChecklistSecti
               <Icon name="arrow-right" size={16} />
             </Button>
           ))}
-      </PropertyDetailSection>
+      </DetailSection>
 
       <div className={styles.contractSection}>
         <ButtonLink

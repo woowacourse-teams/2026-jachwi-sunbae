@@ -37,6 +37,7 @@ def main() -> int:
     frontend_lock = read_json("frontend/package-lock.json")
     frontend_public_version = read_json("frontend/public/version.json")
     mobile_package = read_json("mobile/package.json")
+    mobile_lock = read_json("mobile/package-lock.json")
 
     actual_versions = {
         "frontend/package.json": frontend_package.get("version"),
@@ -46,6 +47,10 @@ def main() -> int:
         .get("version"),
         "frontend/public/version.json": frontend_public_version.get("version"),
         "mobile/package.json": mobile_package.get("version"),
+        "mobile/package-lock.json": mobile_lock.get("version"),
+        "mobile/package-lock.json packages['']": mobile_lock.get("packages", {})
+        .get("", {})
+        .get("version"),
         "backend/build.gradle": extract_one(
             "backend/build.gradle", r"^version\s*=\s*'([^']+)'$", "version"
         ),

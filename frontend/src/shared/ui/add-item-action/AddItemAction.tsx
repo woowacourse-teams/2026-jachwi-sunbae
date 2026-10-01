@@ -1,6 +1,8 @@
 import type { LinkProps } from 'react-router-dom';
+
 import { Button, ButtonLink } from '../button/Button';
-import Icon from '../icon/Icon';
+import PlusIcon from '../icon/icons/PlusIcon';
+
 import styles from './AddItemAction.module.css';
 
 type AddItemActionProps = {
@@ -12,7 +14,7 @@ type AddItemActionProps = {
 const AddItemAction = ({ children, disabled, to, onClick }: AddItemActionProps) => {
   const content = (
     <>
-      <Icon name="plus" size={16} /> {children}
+      <PlusIcon size={16} /> {children}
     </>
   );
 

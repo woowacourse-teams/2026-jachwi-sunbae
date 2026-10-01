@@ -3,8 +3,12 @@ package com.jachwisunbae.checklist.repository;
 import com.jachwisunbae.checklist.entity.UserChecklist;
 import com.jachwisunbae.checklist.entity.UserChecklistItem;
 import com.jachwisunbae.checklist.repository.query.UserChecklistItemDetail;
+import com.jachwisunbae.checklist.repository.query.UserChecklistSummaryQuery;
 import com.jachwisunbae.checklist.type.CheckItemType;
 import com.jachwisunbae.checklist.type.CheckStage;
+import com.jachwisunbae.common.exception.client.ClientException;
+import com.jachwisunbae.common.exception.errorcode.ErrorCode;
+import com.jachwisunbae.common.exception.server.DataInconsistencyException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.support.GeneratedKeyHolder;
@@ -21,12 +25,21 @@ public class JdbcUserChecklistRepository implements UserChecklistRepository {
 
     private final JdbcTemplate jdbcTemplate;
 
-    private final RowMapper<UserChecklist> checklistRowMapper = (rs, row) -> UserChecklist.reconstruct(
-        rs.getLong("id"),
-        rs.getLong("member_id"),
-        rs.getString("name"),
-        CheckStage.valueOf(rs.getString("stage"))
-    );
+    // DB에 저장된 체크리스트가 입력 규칙(이름 길이 등)을 만족하지 않는 것은 사용자 요청이 아니라 서버 데이터 문제다.
+    private final RowMapper<UserChecklist> checklistRowMapper = (rs, row) -> {
+        long checklistId = rs.getLong("id");
+        try {
+            return UserChecklist.reconstruct(
+                checklistId,
+                rs.getLong("member_id"),
+                rs.getString("name"),
+                CheckStage.valueOf(rs.getString("stage"))
+            );
+        } catch (ClientException exception) {
+            throw new DataInconsistencyException(ErrorCode.INTERNAL_SERVER_ERROR,
+                "checklistId=" + checklistId + " 저장된 체크리스트 데이터가 체크리스트 규칙을 만족하지 않습니다.", exception);
+        }
+    };
 
     private final RowMapper<UserChecklistItem> itemRowMapper = (rs, row) -> UserChecklistItem.reconstruct(
         rs.getLong("id"),
@@ -47,7 +60,7 @@ public class JdbcUserChecklistRepository implements UserChecklistRepository {
             CheckItemType.valueOf(rs.getString("item_type")),
             rs.getString("question"),
             rs.getInt("display_order")
-        ));
+        ), rs.getBoolean("active"));
 
     public JdbcUserChecklistRepository(final JdbcTemplate jdbcTemplate) {
         this.jdbcTemplate = jdbcTemplate;
@@ -127,14 +140,21 @@ public class JdbcUserChecklistRepository implements UserChecklistRepository {
     }
 
     @Override
-    public List<UserChecklist> findByMemberId(final long memberId, final CheckStage stage) {
+    public List<UserChecklistSummaryQuery> findSummariesByMemberId(final long memberId, final CheckStage stage) {
         String sql = """
-                SELECT id, member_id, name, stage
-                FROM user_checklists
-                WHERE member_id = ? AND (? IS NULL OR stage = ?) AND deleted_at IS NULL
-                ORDER BY id DESC
+                SELECT uc.id, uc.name, uc.stage, COUNT(uci.id) AS item_count
+                FROM user_checklists uc
+                LEFT JOIN user_checklist_items uci ON uci.user_checklist_id = uc.id
+                WHERE uc.member_id = ? AND (? IS NULL OR uc.stage = ?) AND uc.deleted_at IS NULL
+                GROUP BY uc.id, uc.name, uc.stage
+                ORDER BY uc.id DESC
                 """;
-        return jdbcTemplate.query(sql, checklistRowMapper, memberId, stageName(stage), stageName(stage));
+        return jdbcTemplate.query(sql, (resultSet, rowNumber) -> new UserChecklistSummaryQuery(
+            resultSet.getLong("id"),
+            resultSet.getString("name"),
+            CheckStage.valueOf(resultSet.getString("stage")),
+            resultSet.getInt("item_count")
+        ), memberId, stageName(stage), stageName(stage));
     }
 
     @Override
@@ -160,7 +180,9 @@ public class JdbcUserChecklistRepository implements UserChecklistRepository {
                        COALESCE(uci.stage, sci.stage) AS stage,
                        COALESCE(uci.item_type, sci.item_type) AS item_type,
                        COALESCE(uci.question, sci.question) AS question,
-                       uci.display_order
+                       uci.display_order,
+                       CASE WHEN sci.id IS NOT NULL AND sci.deleted_at IS NULL
+                           THEN TRUE ELSE FALSE END AS active
                 FROM user_checklist_items uci
                 LEFT JOIN system_check_items sci ON sci.id = uci.system_check_item_id
                 WHERE uci.user_checklist_id = ?

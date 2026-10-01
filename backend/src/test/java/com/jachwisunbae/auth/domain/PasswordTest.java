@@ -3,8 +3,8 @@ package com.jachwisunbae.auth.domain;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import com.jachwisunbae.common.exception.BusinessException;
-import com.jachwisunbae.common.exception.DomainErrorCode;
+import com.jachwisunbae.common.exception.client.InvalidInputException;
+import com.jachwisunbae.common.exception.errorcode.ErrorCode;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -41,7 +41,7 @@ class PasswordTest {
 
     private static void assertInvalid(String value) {
         assertThatThrownBy(() -> Password.from(value))
-                .isInstanceOfSatisfying(BusinessException.class, exception ->
-                        assertThat(exception.getCode()).isEqualTo(DomainErrorCode.NICKNAME_PASSWORD_INVALID));
+                .isInstanceOfSatisfying(InvalidInputException.class, exception ->
+                        assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.NICKNAME_PASSWORD_INVALID));
     }
 }

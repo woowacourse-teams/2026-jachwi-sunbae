@@ -1,7 +1,7 @@
 package com.jachwisunbae.property.entity;
 
-import com.jachwisunbae.common.exception.DomainErrorCode;
-import com.jachwisunbae.common.validation.DomainPreconditions;
+import com.jachwisunbae.common.exception.client.InvalidInputException;
+import com.jachwisunbae.common.exception.errorcode.ErrorCode;
 
 record PropertyRentalPrice(
     Long depositAmount,
@@ -21,7 +21,9 @@ record PropertyRentalPrice(
         if (amount == null) {
             return 0L;
         }
-        return DomainPreconditions.requireNonNegative(amount, DomainErrorCode.PROPERTY_INPUT_INVALID,
-            "금액은 0 이상의 정수여야 합니다.");
+        if (amount < 0) {
+            throw new InvalidInputException(ErrorCode.PROPERTY_INPUT_INVALID, "금액은 0 이상의 정수여야 합니다.");
+        }
+        return amount;
     }
 }

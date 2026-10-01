@@ -1,9 +1,11 @@
+import { getPublicConfig } from '@/shared/config/publicConfig';
+import type { PublicConfig } from '@/shared/config/publicConfigTypes';
+import StatusPanel from '@/shared/ui/status-panel/StatusPanel';
+
+import PostHogTracker from './analytics/PostHogTracker';
 import AppProviders from './providers/AppProviders';
 import AppRoutes from './router/AppRoutes';
-import { getPublicConfig } from '../shared/config/publicConfig';
-import PostHogTracker from './analytics/PostHogTracker';
-import StatusPanel from '../shared/ui/status-panel/StatusPanel';
-import type { PublicConfig } from '../shared/config/publicConfigTypes';
+
 import './styles/tokens.css';
 import './styles/global.css';
 import './styles/utilities.css';
@@ -24,9 +26,9 @@ const App = ({ config }: AppProps) => {
   }
 
   return (
-    <AppProviders>
-      <PostHogTracker config={resolvedConfig} />
-      <AppRoutes config={resolvedConfig} />
+    <AppProviders config={resolvedConfig}>
+      <PostHogTracker />
+      <AppRoutes />
     </AppProviders>
   );
 };

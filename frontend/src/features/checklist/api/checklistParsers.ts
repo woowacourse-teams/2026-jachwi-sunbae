@@ -1,3 +1,12 @@
+import {
+  readArray,
+  readBoolean,
+  readInteger,
+  readNullableInteger,
+  readRecord,
+  readString,
+} from '@/shared/api/responseParsers';
+
 import { isChecklistStage } from '../model/checklist';
 import type {
   ActiveChecklist,
@@ -11,14 +20,6 @@ import type {
   ChecklistSummary,
   CreatedChecklist,
 } from '../model/checklistTypes';
-import {
-  readArray,
-  readBoolean,
-  readInteger,
-  readNullableInteger,
-  readRecord,
-  readString,
-} from '../../../shared/api/responseParsers';
 
 const unknownDate = '1970-01-01T00:00:00Z';
 
@@ -98,8 +99,9 @@ export const parseChecklistPage = (value: unknown): ChecklistPage => {
 const parseChecklistItem = (value: unknown): ChecklistItem => {
   const item = readRecord(value);
   const checklistItemId = readInteger(item, 'id', 1);
-  const origin = readString(item, 'origin');
-  const systemCheckItemId = readNullableInteger(item, 'systemCheckItemId', 1);
+  // 사용자 체크리스트 조회 응답에는 origin이 없다. 현재 API는 시스템 제공 항목만
+  // 저장하므로 systemCheckItemId를 기준으로 화면 내부의 PROVIDED 모델을 복원한다.
+  const systemCheckItemId = readInteger(item, 'systemCheckItemId', 1);
   const common = {
     checklistItemId,
     itemType: parseItemType(item.itemType),
@@ -108,23 +110,12 @@ const parseChecklistItem = (value: unknown): ChecklistItem => {
     order: readInteger(item, 'displayOrder', 1),
     active: 'active' in item ? readBoolean(item, 'active') : true,
   };
-  if (origin === 'PROVIDED' && systemCheckItemId !== null) {
-    return {
-      ...common,
-      origin: 'PROVIDED',
-      sourceCheckItemId: systemCheckItemId,
-      checkItemId: systemCheckItemId,
-    };
-  }
-  if (origin === 'CUSTOM' && systemCheckItemId === null) {
-    return {
-      ...common,
-      origin: 'CUSTOM',
-      sourceCheckItemId: null,
-      checkItemId: null,
-    };
-  }
-  throw new Error('체크리스트 항목 출처 응답이 올바르지 않습니다.');
+  return {
+    ...common,
+    origin: 'PROVIDED',
+    sourceCheckItemId: systemCheckItemId,
+    checkItemId: systemCheckItemId,
+  };
 };
 
 export const parseChecklistDetail = (value: unknown): ChecklistDetail => {

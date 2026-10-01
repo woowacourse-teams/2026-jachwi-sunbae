@@ -1,6 +1,11 @@
 import { NavLink, Outlet, useLocation, useOutletContext } from 'react-router-dom';
-import type { Member } from '../../../features/auth/model/Member';
-import Icon from '../../../shared/ui/icon/Icon';
+
+import type { Member } from '@/features/auth/model/Member';
+import Icon from '@/shared/ui/icon/Icon';
+
+import { MAIN_TABS } from './mainTabs';
+import useNativeTabBar from './useNativeTabBar';
+
 import styles from './PropertyAppLayout.module.css';
 
 const PropertyAppLayout = () => {
@@ -13,28 +18,25 @@ const PropertyAppLayout = () => {
     /^\/checklists\/\d+$/.test(location.pathname) ||
     /^\/properties\/\d+\/checklists\/\d+$/.test(location.pathname);
 
+  const hasNativeTabBar = useNativeTabBar(!fullScreen);
+
   return (
-    <div className={styles.root} data-full-screen={fullScreen || undefined}>
+    <div
+      className={styles.root}
+      data-full-screen={fullScreen || undefined}
+      data-native-tab-bar={hasNativeTabBar || undefined}
+    >
       <div className={styles.content}>
         <Outlet context={member} />
       </div>
-      {!fullScreen && (
+      {!fullScreen && !hasNativeTabBar && (
         <nav className={styles.bottomNavigation} aria-label="주요 메뉴">
-          <NavLink to="/properties" aria-label="홈">
-            <Icon name="home" size={20} />홈
-          </NavLink>
-          <NavLink to="/checklists" aria-label="체크리스트">
-            <Icon name="checklist" size={20} />
-            체크리스트
-          </NavLink>
-          <NavLink to="/map" aria-label="지도">
-            <Icon name="map" size={20} />
-            지도
-          </NavLink>
-          <NavLink to="/me" aria-label="마이">
-            <Icon name="user" size={20} />
-            마이
-          </NavLink>
+          {MAIN_TABS.map((tab) => (
+            <NavLink key={tab.key} to={tab.path} aria-label={tab.label}>
+              <Icon name={tab.icon} size={20} />
+              {tab.label}
+            </NavLink>
+          ))}
         </nav>
       )}
     </div>

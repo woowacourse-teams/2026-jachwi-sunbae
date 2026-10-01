@@ -1,27 +1,17 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
 import type { CSSProperties } from 'react';
-import type { MapCategory } from '../../model/Map';
-import { SOUTH_KOREA_BOUNDS, clampToSouthKorea } from '../../lib/mapLocation';
-import type { PublicConfig } from '../../../../shared/config/publicConfigTypes';
-import MapCategoryIcon, { createMapCategoryIconElement } from '../map-category-icon/MapCategoryIcon';
-import StatusPanel from '../../../../shared/ui/status-panel/StatusPanel';
+import { useEffect, useMemo, useRef, useState } from 'react';
+
+import { usePublicConfig } from '@/shared/config/PublicConfigContext';
+import StatusPanel from '@/shared/ui/status-panel/StatusPanel';
+
+import { clampToSouthKorea, SOUTH_KOREA_BOUNDS } from '../../lib/mapLocation';
+import type { MapMarker } from '../../model/Map';
+import MapMarkerView from '../map-marker/MapMarkerView';
+import { createMapMarkerElement } from '../map-marker/MapMarkerView';
+
 import styles from './MapCanvas.module.css';
 
-export type MapMarker = {
-  id: string;
-  latitude: number;
-  longitude: number;
-  label: string;
-  /** 마커 아래에 노출할 짧은 문구. 없으면 label을 쓴다. */
-  caption?: string;
-  tone?: 'property' | 'current' | 'place' | 'selected' | 'cluster' | 'propertyCluster';
-  category?: MapCategory;
-  count?: number;
-  placeId?: string;
-  /** 마커 안에 넣을 매물 사진. 인증이 끝난 blob URL만 받는다. */
-  photoUrl?: string;
-  actionable?: boolean;
-};
+export type { MapMarker } from '../../model/Map';
 
 export type MapRadiusCircle = {
   radiusMeters: 500 | 1000 | 2000;
@@ -29,7 +19,6 @@ export type MapRadiusCircle = {
 };
 
 type MapCanvasProps = {
-  config: PublicConfig;
   center: { latitude: number; longitude: number };
   markers?: MapMarker[];
   circles?: MapRadiusCircle[];
@@ -181,42 +170,6 @@ const naverEngine = (clientId: string): LiveEngine => ({
     }),
 });
 
-const markerSymbol = (marker: MapMarker): string => {
-  if (marker.tone === 'cluster' || marker.tone === 'propertyCluster') return String(marker.count ?? '');
-  if (marker.tone === 'property' || marker.tone === 'selected') return '⌂';
-  return '•';
-};
-
-/** 현재 위치는 지도 앱 관례대로 글리프 없는 파란 점 하나로 그린다. */
-const isCurrentLocationDot = (marker: MapMarker): boolean => marker.tone === 'current';
-
-const usesCategoryIcon = (marker: MapMarker): boolean =>
-  (marker.tone === 'place' || marker.tone === 'cluster') && marker.category !== undefined;
-
-/** 매물·매물 군집 마커는 대표 사진을 받았을 때 그 사진을 마커 안에 넣는다. */
-const usesPhoto = (marker: MapMarker): boolean =>
-  (marker.tone === 'property' || marker.tone === 'selected' || marker.tone === 'propertyCluster') &&
-  marker.photoUrl !== undefined;
-
-/** 묶음 숫자 배지. 사진이 없는 매물 군집은 숫자를 마커 본문에 그대로 쓰므로 배지를 겹치지 않는다. */
-const usesCountBadge = (marker: MapMarker): boolean =>
-  marker.count !== undefined &&
-  (marker.category !== undefined || (marker.tone === 'propertyCluster' && marker.photoUrl !== undefined));
-
-const markerClassName = (marker: MapMarker, selectedMarkerId: string | null): string =>
-  [
-    styles.marker,
-    marker.tone === 'property' ? styles.propertyMarker : '',
-    marker.tone === 'current' ? styles.currentMarker : '',
-    marker.tone === 'selected' ? styles.selectedMarker : '',
-    marker.tone === 'place' ? styles.placeMarker : '',
-    marker.tone === 'cluster' ? styles.clusterMarker : '',
-    marker.tone === 'propertyCluster' ? styles.propertyClusterMarker : '',
-    selectedMarkerId === marker.id ? styles.activeMarker : '',
-  ]
-    .filter(Boolean)
-    .join(' ');
-
 /** 이 값이 같으면 마커를 다시 그릴 필요가 없다. */
 const markerSignature = (marker: MapMarker, selectedMarkerId: string | null): string =>
   [
@@ -240,68 +193,12 @@ const markerZIndex = (marker: MapMarker, selectedMarkerId: string | null): numbe
   return 5;
 };
 
-const createMarkerContent = (
-  marker: MapMarker,
-  selectedMarkerId: string | null,
-  onSelectMarker?: (marker: MapMarker) => void,
-): HTMLElement => {
-  const canSelect = marker.actionable === true && onSelectMarker !== undefined;
-  const element = document.createElement(canSelect ? 'button' : 'div');
-  element.className = markerClassName(marker, selectedMarkerId);
-  element.dataset.tone = marker.tone ?? 'property';
-  if (marker.category !== undefined) element.dataset.category = marker.category;
-  element.setAttribute('aria-label', marker.label);
-  if (!canSelect) element.setAttribute('role', 'img');
-  else {
-    element.setAttribute('type', 'button');
-    element.addEventListener('click', (event) => {
-      event.stopPropagation();
-      onSelectMarker(marker);
-    });
-  }
-
-  if (isCurrentLocationDot(marker)) {
-    // 점 자체가 표시라서 안에 넣을 내용이 없다.
-  } else if (usesCategoryIcon(marker) && marker.category !== undefined) {
-    element.append(createMapCategoryIconElement(marker.category, styles.categoryIcon));
-  } else if (usesPhoto(marker) && marker.photoUrl !== undefined) {
-    const photo = document.createElement('img');
-    photo.className = styles.markerPhoto;
-    photo.src = marker.photoUrl;
-    photo.alt = '';
-    photo.draggable = false;
-    element.append(photo);
-  } else {
-    const icon = document.createElement(marker.tone === 'cluster' ? 'strong' : 'span');
-    icon.className = styles.markerIcon;
-    icon.setAttribute('aria-hidden', 'true');
-    icon.textContent = markerSymbol(marker);
-    element.append(icon);
-  }
-
-  if (usesCountBadge(marker)) {
-    const count = document.createElement('strong');
-    count.className = styles.markerCount;
-    count.textContent = String(marker.count);
-    element.append(count);
-  }
-
-  if (marker.tone === 'selected' || marker.tone === 'property') {
-    const caption = document.createElement('span');
-    caption.className = styles.markerCaption;
-    caption.textContent = marker.caption ?? marker.label;
-    element.append(caption);
-  }
-  return element;
-};
-
 const demoMarkerStyle = (marker: MapMarker, center: { latitude: number; longitude: number }): CSSProperties => ({
   left: `${clamp(50 + (marker.longitude - center.longitude) * 3_100, 9, 91)}%`,
   top: `${clamp(50 - (marker.latitude - center.latitude) * 4_200, 10, 88)}%`,
 });
 
 const MapCanvas = ({
-  config,
   center,
   markers = [],
   circles = [],
@@ -316,6 +213,7 @@ const MapCanvas = ({
   onLevelChange,
   radiusCenter = center,
 }: MapCanvasProps) => {
+  const config = usePublicConfig();
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<LiveMap | null>(null);
   const overlaysRef = useRef(new Map<string, { signature: string; overlay: LiveOverlay }>());
@@ -422,7 +320,7 @@ const MapCanvas = ({
         kept.overlay.setMap(null);
         previous.delete(marker.id);
       }
-      const content = createMarkerContent(marker, selectedMarkerId, (selected) =>
+      const content = createMapMarkerElement(marker, selectedMarkerId, (selected) =>
         callbackRef.current.onSelectMarker?.(selected),
       );
       next.set(marker.id, {
@@ -476,58 +374,19 @@ const MapCanvas = ({
             <span
               key={circle.radiusMeters}
               className={styles.radiusCircle}
-              style={{ width: `${(circle.radiusMeters / 2000) * 84}%` }}
+              style={{
+                width: `${(circle.radiusMeters / 2000) * 84}%`,
+                left: `${50 + (radiusCenter.longitude - boundedCenter.longitude) * 3_100}%`,
+                top: `${50 - (radiusCenter.latitude - boundedCenter.latitude) * 4_200}%`,
+              }}
               aria-hidden="true"
             />
           ))}
           {markers.map((marker) => {
-            const markerNode = (
-              <>
-                {isCurrentLocationDot(marker) ? null : usesCategoryIcon(marker) && marker.category !== undefined ? (
-                  <MapCategoryIcon category={marker.category} className={styles.categoryIcon} />
-                ) : usesPhoto(marker) ? (
-                  <img className={styles.markerPhoto} src={marker.photoUrl} alt="" draggable={false} />
-                ) : (
-                  <span className={styles.markerIcon} aria-hidden="true">
-                    {markerSymbol(marker)}
-                  </span>
-                )}
-                {usesCountBadge(marker) && <strong className={styles.markerCount}>{marker.count}</strong>}
-                {(marker.tone === 'selected' || marker.tone === 'property') && (
-                  <span className={styles.markerCaption}>{marker.caption ?? marker.label}</span>
-                )}
-              </>
-            );
-            const className = markerClassName(marker, selectedMarkerId);
-            const canSelect = marker.actionable === true && onSelectMarker !== undefined;
-            return !canSelect ? (
-              <div
-                key={marker.id}
-                className={`${styles.demoMarkerPosition} ${className}`}
-                data-tone={marker.tone ?? 'property'}
-                data-category={marker.category}
-                style={demoMarkerStyle(marker, boundedCenter)}
-                role="img"
-                aria-label={marker.label}
-              >
-                {markerNode}
+            return (
+              <div key={marker.id} className={styles.demoMarkerPosition} style={demoMarkerStyle(marker, boundedCenter)}>
+                <MapMarkerView marker={marker} selectedMarkerId={selectedMarkerId} onSelectMarker={onSelectMarker} />
               </div>
-            ) : (
-              <button
-                key={marker.id}
-                type="button"
-                className={`${styles.demoMarkerPosition} ${className}`}
-                data-tone={marker.tone ?? 'property'}
-                data-category={marker.category}
-                style={demoMarkerStyle(marker, boundedCenter)}
-                aria-label={marker.label}
-                onClick={(event) => {
-                  event.stopPropagation();
-                  onSelectMarker(marker);
-                }}
-              >
-                {markerNode}
-              </button>
             );
           })}
           <span className={styles.demoBadge}>DEMO MAP</span>

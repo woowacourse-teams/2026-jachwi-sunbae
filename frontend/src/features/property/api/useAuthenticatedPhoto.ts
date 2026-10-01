@@ -1,15 +1,13 @@
 import { useQuery } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
+
+import { usePublicConfig } from '@/shared/config/PublicConfigContext';
+
 import { fetchPropertyPhotoContent } from './photoApi';
 import { propertyQueryKeys } from './propertyQueryKeys';
-import type { PublicConfig } from '../../../shared/config/publicConfigTypes';
 
-export const useAuthenticatedPhoto = (
-  config: PublicConfig,
-  propertyId: number,
-  photoId: number,
-  contentUrl: string,
-) => {
+export const useAuthenticatedPhoto = (propertyId: number, photoId: number, contentUrl: string) => {
+  const config = usePublicConfig();
   const photoQuery = useQuery({
     queryKey: propertyQueryKeys.photoContent(propertyId, photoId),
     queryFn: ({ signal }) => fetchPropertyPhotoContent(config, contentUrl, signal),

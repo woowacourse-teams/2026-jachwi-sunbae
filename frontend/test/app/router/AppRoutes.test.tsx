@@ -1,15 +1,18 @@
 import { QueryClientProvider } from '@tanstack/react-query';
-import { StrictMode } from 'react';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { HttpResponse, http } from 'msw';
+import { http, HttpResponse } from 'msw';
+import { StrictMode } from 'react';
 import { MemoryRouter } from 'react-router-dom';
 import { describe, expect, it } from 'vitest';
-import type { PublicConfig } from '../../../src/shared/config/publicConfigTypes';
+
+import AppRoutes from '@/app/router/AppRoutes';
+import { getAccessToken, setAuthentication } from '@/features/auth/model/authStore';
+import { queryClient } from '@/shared/api/queryClient';
+import { PublicConfigProvider } from '@/shared/config/PublicConfigContext';
+import type { PublicConfig } from '@/shared/config/publicConfigTypes';
+
 import { server } from '../../server';
-import { getAccessToken, setAuthentication } from '../../../src/features/auth/model/authStore';
-import AppRoutes from '../../../src/app/router/AppRoutes';
-import { queryClient } from '../../../src/shared/api/queryClient';
 
 const config: PublicConfig = {
   apiBaseUrl: 'http://localhost:8080',
@@ -50,7 +53,9 @@ const renderRoutes = (path: string) => {
     <StrictMode>
       <QueryClientProvider client={queryClient}>
         <MemoryRouter initialEntries={[path]}>
-          <AppRoutes config={config} />
+          <PublicConfigProvider config={config}>
+            <AppRoutes />
+          </PublicConfigProvider>
         </MemoryRouter>
       </QueryClientProvider>
     </StrictMode>,

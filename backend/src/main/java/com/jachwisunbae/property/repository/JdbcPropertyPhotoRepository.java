@@ -1,5 +1,8 @@
 package com.jachwisunbae.property.repository;
 
+import com.jachwisunbae.common.exception.client.ClientException;
+import com.jachwisunbae.common.exception.errorcode.ErrorCode;
+import com.jachwisunbae.common.exception.server.DataInconsistencyException;
 import com.jachwisunbae.property.entity.photo.PropertyPhoto;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
@@ -15,10 +18,19 @@ import org.springframework.jdbc.support.KeyHolder;
 public class JdbcPropertyPhotoRepository implements PropertyPhotoRepository {
 
     private final JdbcTemplate jdbcTemplate;
-    private final RowMapper<PropertyPhoto> propertyPhotoRowMapper = (rs, row) -> PropertyPhoto.reconstruct(
-            rs.getLong("id"), rs.getLong("property_id"), rs.getString("storage_key"),
-            rs.getString("content_type"), rs.getLong("size_bytes"),
-            rs.getTimestamp("created_at").toLocalDateTime());
+    // DB에 저장된 사진이 사진 규칙(지원 형식 등)을 만족하지 않는 것은 사용자 요청이 아니라 서버 데이터 문제다.
+    private final RowMapper<PropertyPhoto> propertyPhotoRowMapper = (rs, row) -> {
+        long photoId = rs.getLong("id");
+        try {
+            return PropertyPhoto.reconstruct(
+                    photoId, rs.getLong("property_id"), rs.getString("storage_key"),
+                    rs.getString("content_type"), rs.getLong("size_bytes"),
+                    rs.getTimestamp("created_at").toLocalDateTime());
+        } catch (ClientException exception) {
+            throw new DataInconsistencyException(ErrorCode.INTERNAL_SERVER_ERROR,
+                    "photoId=" + photoId + " 저장된 사진 데이터가 사진 규칙을 만족하지 않습니다.", exception);
+        }
+    };
 
     public JdbcPropertyPhotoRepository(final JdbcTemplate jdbcTemplate) {
         this.jdbcTemplate = jdbcTemplate;
@@ -43,10 +55,10 @@ public class JdbcPropertyPhotoRepository implements PropertyPhotoRepository {
     }
 
     @Override
-    public PropertyPhoto save(final long memberId, final PropertyPhoto photo, final String checksumSha256) {
+    public PropertyPhoto save(final long memberId, final PropertyPhoto photo) {
         String sql = "INSERT INTO property_photos "
-                + "(property_id, member_id, storage_key, content_type, size_bytes, checksum_sha256, created_at) "
-                + "VALUES (?, ?, ?, ?, ?, ?, ?)";
+                + "(property_id, member_id, storage_key, content_type, size_bytes, created_at) "
+                + "VALUES (?, ?, ?, ?, ?, ?)";
         KeyHolder keyHolder = new GeneratedKeyHolder();
         jdbcTemplate.update(connection -> {
             PreparedStatement statement = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
@@ -55,8 +67,7 @@ public class JdbcPropertyPhotoRepository implements PropertyPhotoRepository {
             statement.setString(3, photo.getStorageKey());
             statement.setString(4, photo.getContentType());
             statement.setLong(5, photo.getSizeBytes());
-            statement.setString(6, checksumSha256);
-            statement.setObject(7, photo.getCreatedAt());
+            statement.setObject(6, photo.getCreatedAt());
             return statement;
         }, keyHolder);
         return PropertyPhoto.reconstruct(keyHolder.getKey().longValue(), photo.getPropertyId(), photo.getStorageKey(),

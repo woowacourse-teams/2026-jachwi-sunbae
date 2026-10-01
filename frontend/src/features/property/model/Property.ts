@@ -1,4 +1,4 @@
-import type { ChecklistStage } from '../../checklist/model/checklistTypes';
+import type { ChecklistStage } from '@/features/checklist/model/checklistTypes';
 
 export type DiscoverySource = {
   type: 'URL' | 'TEXT';

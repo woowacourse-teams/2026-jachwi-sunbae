@@ -1,10 +1,14 @@
 import { QueryClientProvider } from '@tanstack/react-query';
 import type { ReactNode } from 'react';
-import { unstable_HistoryRouter as HistoryRouter, UNSAFE_createBrowserHistory } from 'react-router-dom';
-import { createGuardedHistory } from '../../shared/lib/navigation/guardedHistory';
-import { queryClient } from '../../shared/api/queryClient';
+import { UNSAFE_createBrowserHistory, unstable_HistoryRouter as HistoryRouter } from 'react-router-dom';
+
+import { queryClient } from '@/shared/api/queryClient';
+import { PublicConfigProvider } from '@/shared/config/PublicConfigContext';
+import type { PublicConfig } from '@/shared/config/publicConfigTypes';
+import { createGuardedHistory } from '@/shared/lib/navigation/guardedHistory';
 
 type AppProvidersProps = {
+  config: PublicConfig;
   children: ReactNode;
 };
 
@@ -15,13 +19,15 @@ const getBrowserHistory = () => {
   return browserHistory;
 };
 
-const AppProviders = ({ children }: AppProvidersProps) => {
+const AppProviders = ({ config, children }: AppProvidersProps) => {
   const history = getBrowserHistory();
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <HistoryRouter history={history}>{children}</HistoryRouter>
-    </QueryClientProvider>
+    <PublicConfigProvider config={config}>
+      <QueryClientProvider client={queryClient}>
+        <HistoryRouter history={history}>{children}</HistoryRouter>
+      </QueryClientProvider>
+    </PublicConfigProvider>
   );
 };
 

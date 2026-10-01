@@ -1,4 +1,4 @@
-import { queryClient, authenticationQueryKey } from '../../../shared/api/queryClient';
+import { authenticationQueryKey, queryClient } from '@/shared/api/queryClient';
 
 export type AuthenticationSession = {
   accessToken: string;
@@ -20,13 +20,13 @@ type AuthenticationInput = {
 };
 
 const listeners = new Set<() => void>();
-const SESSION_STORAGE_KEY = 'jachwi-sunbae.authentication.session';
+const AUTHENTICATION_STORAGE_KEY = 'jachwi-sunbae.authentication.session';
 let expirationTimer: ReturnType<typeof setTimeout> | null = null;
 let authenticationRevision = 0;
 const readStoredSession = (): AuthenticationSession | null => {
   if (typeof window === 'undefined') return null;
   try {
-    const raw = window.sessionStorage.getItem(SESSION_STORAGE_KEY);
+    const raw = window.localStorage.getItem(AUTHENTICATION_STORAGE_KEY);
     if (raw === null) return null;
     const value: unknown = JSON.parse(raw);
     if (
@@ -40,12 +40,12 @@ const readStoredSession = (): AuthenticationSession | null => {
       typeof value.expiresAt !== 'number' ||
       value.expiresAt <= Date.now()
     ) {
-      window.sessionStorage.removeItem(SESSION_STORAGE_KEY);
+      window.localStorage.removeItem(AUTHENTICATION_STORAGE_KEY);
       return null;
     }
     return { accessToken: value.accessToken, tokenType: value.tokenType, expiresAt: value.expiresAt };
   } catch {
-    window.sessionStorage.removeItem(SESSION_STORAGE_KEY);
+    window.localStorage.removeItem(AUTHENTICATION_STORAGE_KEY);
     return null;
   }
 };
@@ -84,7 +84,7 @@ export const clearAuthentication = (reason: AuthenticationTerminationReason) => 
   clearExpirationTimer();
   authenticationRevision += 1;
   state = { session: null, terminationReason: reason };
-  if (typeof window !== 'undefined') window.sessionStorage.removeItem(SESSION_STORAGE_KEY);
+  if (typeof window !== 'undefined') window.localStorage.removeItem(AUTHENTICATION_STORAGE_KEY);
   clearAuthenticationClientState();
   emitChange();
 };
@@ -105,7 +105,9 @@ export const setAuthentication = ({
   };
 
   state = { session, terminationReason: null };
-  if (typeof window !== 'undefined') window.sessionStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(session));
+  if (typeof window !== 'undefined') {
+    window.localStorage.setItem(AUTHENTICATION_STORAGE_KEY, JSON.stringify(session));
+  }
 
   const remainingMilliseconds = session.expiresAt - Date.now();
 
@@ -150,7 +152,7 @@ export const resetAuthenticationForTests = () => {
   clearExpirationTimer();
   authenticationRevision += 1;
   state = { session: null, terminationReason: null };
-  if (typeof window !== 'undefined') window.sessionStorage.removeItem(SESSION_STORAGE_KEY);
+  if (typeof window !== 'undefined') window.localStorage.removeItem(AUTHENTICATION_STORAGE_KEY);
   queryClient.clear();
   emitChange();
 };

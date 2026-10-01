@@ -1,68 +1,65 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { ApiError } from '../../features/auth/api/apiClient';
-import { getPropertyErrorMessage } from '../../features/property/api/propertyErrorMessages';
-import ConfirmDialog from '../../shared/ui/confirm-dialog/ConfirmDialog';
-import PropertyPhotoViewer from '../../features/property/ui/property-photo-viewer/PropertyPhotoViewer';
+
+import { describePropertyLoadError } from '@/features/property/api/propertyErrorMessages';
+import { usePropertyDetail } from '@/features/property/api/useProperties';
+import { useRemoveProperty } from '@/features/property/api/usePropertyMutations';
+import { parsePositiveId } from '@/features/property/lib/propertyFormat';
+import type { PropertyDetail } from '@/features/property/model/Property';
+import PropertyPhotoViewer from '@/features/property/ui/property-photo-viewer/PropertyPhotoViewer';
+import { trackPostHogEvent } from '@/shared/lib/analytics/posthog';
+import ConfirmDialog from '@/shared/ui/confirm-dialog/ConfirmDialog';
+import ContentState from '@/shared/ui/content-state/ContentState';
+import PageHeading from '@/shared/ui/page-heading/PageHeading';
+import QueryState from '@/shared/ui/query-state/QueryState';
+import TopNavigationMenu from '@/shared/ui/top-navigation-menu/TopNavigationMenu';
+
 import PropertyAdditionalInfoSection from './ui/property-additional-info-section/PropertyAdditionalInfoSection';
 import PropertyBasicInfoSection from './ui/property-basic-info-section/PropertyBasicInfoSection';
 import PropertyChecklistSection from './ui/property-checklist-section/PropertyChecklistSection';
 import PropertyHeroPhoto from './ui/property-hero-photo/PropertyHeroPhoto';
 import PropertyMemoSection from './ui/property-memo-section/PropertyMemoSection';
 import PropertyPhotoSection from './ui/property-photo-section/PropertyPhotoSection';
-import TopNavigation from '../../shared/ui/top-navigation/TopNavigation';
-import TopNavigationMenu from '../../shared/ui/top-navigation-menu/TopNavigationMenu';
-import PageHeading from '../../shared/ui/page-heading/PageHeading';
 
-import { usePropertyDetail } from '../../features/property/api/useProperties';
-import { useRemoveProperty } from '../../features/property/api/usePropertyMutations';
-import type { PublicConfig } from '../../shared/config/publicConfigTypes';
-import { parsePositiveId } from '../../features/property/lib/propertyFormat';
 import styles from './PropertyDetailPage.module.css';
-import ContentState from '../../shared/ui/content-state/ContentState';
 
-const PropertyDetailPage = ({ config }: { config: PublicConfig }) => {
+const backToList = <Link to="/properties">매물 목록으로 돌아가기</Link>;
+const describeError = describePropertyLoadError('매물 상세를 불러오지 못했어요.');
+
+type PropertyDetailViewProps = { propertyId: number; detail: PropertyDetail };
+
+const PropertyDetailPage = () => {
   const propertyId = parsePositiveId(useParams().propertyId);
-  if (propertyId === null) {
-    return (
-      <main className="property-page">
-        <ContentState page={false} title="올바른 매물 주소가 아니에요.">
-          <Link to="/properties">매물 목록으로 돌아가기</Link>
-        </ContentState>
-      </main>
-    );
-  }
-  return <ResolvedPropertyDetailPage config={config} propertyId={propertyId} />;
+  if (propertyId === null) return <ContentState title="올바른 매물 주소가 아니에요.">{backToList}</ContentState>;
+  return <ResolvedPropertyDetailPage propertyId={propertyId} />;
 };
 
-const ResolvedPropertyDetailPage = ({ config, propertyId }: { config: PublicConfig; propertyId: number }) => {
+const ResolvedPropertyDetailPage = ({ propertyId }: { propertyId: number }) => {
+  const property = usePropertyDetail(propertyId);
+
+  return (
+    <QueryState
+      query={property}
+      loadingTitle="매물 상세를 불러오는 중이에요."
+      describeError={describeError}
+      errorAction={backToList}
+    >
+      {(detail) => <PropertyDetailView propertyId={propertyId} detail={detail} />}
+    </QueryState>
+  );
+};
+
+const PropertyDetailView = ({ propertyId, detail }: PropertyDetailViewProps) => {
   const navigate = useNavigate();
-  const property = usePropertyDetail(config, propertyId);
-  const removeMutation = useRemoveProperty(config, propertyId);
+  const removeMutation = useRemoveProperty(propertyId);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [selectedPhotoIndex, setSelectedPhotoIndex] = useState<number | null>(null);
   const deleteButtonRef = useRef<HTMLButtonElement>(null);
   const photoTriggerRef = useRef<HTMLButtonElement | null>(null);
 
-  if (property.isPending) return <ContentState page={false} loading title="매물 상세를 불러오는 중이에요." />;
-  if (property.isError) {
-    const isNotFound = property.error instanceof ApiError && property.error.code === 'PROPERTY_NOT_FOUND';
-    return (
-      <main className="property-page">
-        <ContentState
-          page={false}
-          tone="error"
-          title={isNotFound ? '매물을 찾을 수 없어요.' : '매물 상세를 불러오지 못했어요.'}
-          description={getPropertyErrorMessage(property.error)}
-          onRetry={isNotFound ? undefined : () => void property.refetch()}
-        >
-          <Link to="/properties">매물 목록으로 돌아가기</Link>
-        </ContentState>
-      </main>
-    );
-  }
-
-  const detail = property.data;
+  useEffect(() => {
+    trackPostHogEvent('property_detail_viewed', { property_id: propertyId });
+  }, [propertyId]);
 
   const deleteProperty = async () => {
     try {
@@ -77,12 +74,20 @@ const ResolvedPropertyDetailPage = ({ config, propertyId }: { config: PublicConf
   return (
     <main className={styles.page}>
       <div className={styles.container}>
-        <TopNavigation
-          className={styles.detailNavigation}
-          title={detail.name}
+        <PropertyHeroPhoto
+          propertyId={propertyId}
+          propertyName={detail.name}
+          photos={detail.photoPreview.photos}
           backTo="/properties"
-          backLabel="매물 목록으로 돌아가기"
-          endSlot={
+          onOpen={() => {
+            photoTriggerRef.current = null;
+            setSelectedPhotoIndex(0);
+          }}
+        />
+
+        <div className={styles.infoPanel}>
+          <div className={styles.titleRow}>
+            <PageHeading title={detail.name} />
             <TopNavigationMenu label="매물 정보 메뉴 열기">
               <button
                 ref={deleteButtonRef}
@@ -96,43 +101,29 @@ const ResolvedPropertyDetailPage = ({ config, propertyId }: { config: PublicConf
                 삭제
               </button>
             </TopNavigationMenu>
-          }
-        />
+          </div>
 
-        <PropertyHeroPhoto
-          config={config}
-          propertyId={propertyId}
-          propertyName={detail.name}
-          photos={detail.photoPreview.photos}
-          onOpen={() => {
-            photoTriggerRef.current = null;
-            setSelectedPhotoIndex(0);
-          }}
-        />
+          <PropertyBasicInfoSection property={detail} />
 
-        <PageHeading title={detail.name} variant="overlap" />
-        <PropertyBasicInfoSection config={config} property={detail} />
+          <PropertyAdditionalInfoSection property={detail} />
 
-        <PropertyAdditionalInfoSection property={detail} />
+          <PropertyMemoSection propertyId={propertyId} />
 
-        <PropertyMemoSection config={config} propertyId={propertyId} />
+          <PropertyPhotoSection
+            propertyId={propertyId}
+            propertyName={detail.name}
+            photoPreview={detail.photoPreview}
+            onSelect={(index, trigger) => {
+              photoTriggerRef.current = trigger;
+              setSelectedPhotoIndex(index);
+            }}
+          />
 
-        <PropertyPhotoSection
-          config={config}
-          propertyId={propertyId}
-          propertyName={detail.name}
-          photoPreview={detail.photoPreview}
-          onSelect={(index, trigger) => {
-            photoTriggerRef.current = trigger;
-            setSelectedPhotoIndex(index);
-          }}
-        />
-
-        <PropertyChecklistSection config={config} propertyId={propertyId} />
+          <PropertyChecklistSection propertyId={propertyId} />
+        </div>
 
         {selectedPhotoIndex !== null && (
           <PropertyPhotoViewer
-            config={config}
             propertyId={propertyId}
             propertyName={detail.name}
             initialIndex={selectedPhotoIndex}

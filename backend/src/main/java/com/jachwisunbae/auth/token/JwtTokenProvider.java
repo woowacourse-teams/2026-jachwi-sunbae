@@ -1,7 +1,7 @@
 package com.jachwisunbae.auth.token;
 
-import com.jachwisunbae.common.exception.BusinessException;
-import com.jachwisunbae.common.exception.DomainErrorCode;
+import com.jachwisunbae.common.exception.client.AuthenticationFailedException;
+import com.jachwisunbae.common.exception.errorcode.ErrorCode;
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.JWSAlgorithm;
 import com.nimbusds.jose.JWSHeader;
@@ -12,6 +12,7 @@ import com.nimbusds.jose.crypto.MACVerifier;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 import java.nio.charset.StandardCharsets;
+import java.text.ParseException;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.Date;
@@ -57,18 +58,22 @@ public class JwtTokenProvider {
         }
     }
 
+    // 토큰 문제는 원인과 관계없이 ACCESS_TOKEN_INVALID로 응답하고, 상세 원인은 debugMessage에만 남긴다.
+    //TODO 이후 세부 토근 관련 예외 고려
     public Long parseMemberId(String token) {
         try {
             SignedJWT jwt = SignedJWT.parse(token);//읽을 수 있는 JWT형태로 파싱.
-            JWTClaimsSet claims = jwt.getJWTClaimsSet();//페이로드(클레임의 묶음)를 꺼냄
-            if (!isValid(jwt, claims)) {
-                throw invalidToken();
+            //Header + Payload를 비밀키로 다시 서명해보고, 그 결과가 JWT의 Signature와 같은지 확인
+            if (!jwt.verify(verifier)) {
+                throw new AuthenticationFailedException(ErrorCode.ACCESS_TOKEN_INVALID,
+                        "Access Token이 올바르지 않습니다: 서명이 올바르지 않습니다.");
             }
-            return Long.valueOf(claims.getSubject());
-        } catch (BusinessException exception) {
-            throw exception;
-        } catch (Exception exception) {
-            throw invalidToken();
+            JWTClaimsSet claims = jwt.getJWTClaimsSet();//페이로드(클레임의 묶음)를 꺼냄
+            validateClaims(claims);
+            return memberId(claims.getSubject());
+        } catch (ParseException | JOSEException exception) {
+            throw new AuthenticationFailedException(ErrorCode.ACCESS_TOKEN_INVALID,
+                    "Access Token이 올바르지 않습니다: JWT 형식이나 서명 방식이 올바르지 않습니다.", exception);
         }
     }
 
@@ -108,14 +113,29 @@ public class JwtTokenProvider {
                 .build();
     }
 
-    private boolean isValid(SignedJWT jwt, JWTClaimsSet claims) throws JOSEException {
-        return jwt.verify(verifier) //Header + Payload를 비밀키로 다시 서명해보고, 그 결과가 JWT의 Signature와 같은지 확인
-                && issuer.equals(claims.getIssuer())
-                && claims.getAudience().contains(audience)
-                && claims.getExpirationTime().toInstant().isAfter(clock.instant());
+    // 클레임이 없어도 NullPointerException이 아니라 인증 실패가 되도록 하나씩 확인한다.
+    private void validateClaims(JWTClaimsSet claims) {
+        if (!issuer.equals(claims.getIssuer())) {
+            throw new AuthenticationFailedException(ErrorCode.ACCESS_TOKEN_INVALID,
+                    "Access Token이 올바르지 않습니다: 발급자(issuer)가 다릅니다.");
+        }
+        if (claims.getAudience() == null || !claims.getAudience().contains(audience)) {
+            throw new AuthenticationFailedException(ErrorCode.ACCESS_TOKEN_INVALID,
+                    "Access Token이 올바르지 않습니다: 대상(audience)이 다릅니다.");
+        }
+        Date expiresAt = claims.getExpirationTime();
+        if (expiresAt == null || !expiresAt.toInstant().isAfter(clock.instant())) {
+            throw new AuthenticationFailedException(ErrorCode.ACCESS_TOKEN_INVALID,
+                    "Access Token이 올바르지 않습니다: 만료되었거나 만료 시각이 없습니다.");
+        }
     }
 
-    private BusinessException invalidToken() {//클라 문제
-        return new BusinessException(DomainErrorCode.ACCESS_TOKEN_INVALID, "Access Token이 올바르지 않습니다.");
+    private Long memberId(String subject) {
+        try {
+            return Long.valueOf(subject);
+        } catch (NumberFormatException exception) {
+            throw new AuthenticationFailedException(ErrorCode.ACCESS_TOKEN_INVALID,
+                    "Access Token이 올바르지 않습니다: subject가 회원 ID가 아닙니다.", exception);
+        }
     }
 }

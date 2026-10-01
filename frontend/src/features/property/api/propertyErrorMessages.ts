@@ -1,4 +1,5 @@
-import { ApiError, getSafeApiErrorMessage } from '../../auth/api/apiClient';
+import { ApiError, getSafeApiErrorMessage, isApiErrorCode } from '@/features/auth/api/apiClient';
+import type { QueryErrorView } from '@/shared/ui/query-state/QueryState';
 
 const messages: Record<string, string> = {
   INVALID_REQUEST: '입력한 내용을 다시 확인해 주세요.',
@@ -22,3 +23,11 @@ export const getPropertyErrorMessage = (error: unknown): string => {
 
   return getSafeApiErrorMessage(error);
 };
+
+/** 매물을 조회하지 못했을 때의 안내. 없는 매물이면 다시 시도를 막는다. */
+export const describePropertyLoadError =
+  (failedTitle: string) =>
+  (error: unknown): QueryErrorView =>
+    isApiErrorCode(error, 'PROPERTY_NOT_FOUND')
+      ? { title: '매물을 찾을 수 없어요.', description: getPropertyErrorMessage(error), canRetry: false }
+      : { title: failedTitle, description: getPropertyErrorMessage(error), canRetry: true };

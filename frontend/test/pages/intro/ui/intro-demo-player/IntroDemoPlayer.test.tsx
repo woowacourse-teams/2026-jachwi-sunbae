@@ -1,6 +1,7 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import IntroDemoPlayer from '../../../../../src/pages/intro/ui/intro-demo-player/IntroDemoPlayer';
+
+import IntroDemoPlayer from '@/pages/intro/ui/intro-demo-player/IntroDemoPlayer';
 
 describe('공개 소개 사용 영상', () => {
   afterEach(() => vi.restoreAllMocks());

@@ -1,7 +1,7 @@
 package com.jachwisunbae.property.service;
 
-import com.jachwisunbae.common.exception.BusinessException;
-import com.jachwisunbae.common.exception.DomainErrorCode;
+import com.jachwisunbae.common.exception.client.ResourceNotFoundException;
+import com.jachwisunbae.common.exception.errorcode.ErrorCode;
 import com.jachwisunbae.property.repository.PropertyPhotoRepository;
 import com.jachwisunbae.property.repository.PropertyRepository;
 import com.jachwisunbae.property.storage.PhotoStorage;
@@ -25,7 +25,7 @@ public class PropertyDeletionService {
     @Transactional
     public void delete(final Long memberId, final Long propertyId) {
         propertyRepository.findByIdAndMemberIdForUpdate(propertyId, memberId)
-                .orElseThrow(() -> new BusinessException(DomainErrorCode.PROPERTY_NOT_FOUND,
+                .orElseThrow(() -> new ResourceNotFoundException(ErrorCode.PROPERTY_NOT_FOUND,
                         "매물을 찾을 수 없습니다."));
         propertyPhotoRepository.findByPropertyId(propertyId)
                 .forEach(photo -> photoStorage.delete(photo.getStorageKey()));

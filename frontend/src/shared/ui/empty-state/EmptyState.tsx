@@ -1,6 +1,8 @@
 import type { ReactNode } from 'react';
-import Icon from '../icon/Icon';
+
 import type { IconName } from '../icon/Icon';
+import Icon from '../icon/Icon';
+
 import styles from './EmptyState.module.css';
 
 type EmptyStateProps = {

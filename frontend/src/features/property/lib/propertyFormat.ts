@@ -1,5 +1,5 @@
-import { checklistStageMeta } from '../../checklist/model/checklist';
-import type { ChecklistStage } from '../../checklist/model/checklistTypes';
+import { checklistStageMeta } from '@/features/checklist/model/checklist';
+import type { ChecklistStage } from '@/features/checklist/model/checklistTypes';
 
 export const formatWon = (amount: number): string => `${new Intl.NumberFormat('ko-KR').format(amount)}원`;
 

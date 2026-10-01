@@ -1,7 +1,8 @@
 import { HttpResponse } from 'msw';
-import { isChecklistStage } from '../../features/checklist/model/checklist';
-import { CHECKLIST_STAGES } from '../../features/checklist/model/checklistTypes';
-import type { ChecklistStage } from '../../features/checklist/model/checklistTypes';
+
+import { isChecklistStage } from '@/features/checklist/model/checklist';
+import type { ChecklistStage } from '@/features/checklist/model/checklistTypes';
+import { CHECKLIST_STAGES } from '@/features/checklist/model/checklistTypes';
 
 export const now = '2026-08-20T05:00:00.000Z';
 
@@ -100,7 +101,8 @@ export const checklistDetail = (checklist: MockChecklist) => ({
   name: checklist.name,
   stage: checklist.stage,
   itemCount: checklist.items.length,
-  items: checklist.items.map(({ stage: _stage, ...item }) => item),
+  // dev API의 사용자 체크리스트 조회 응답에는 origin이 없다.
+  items: checklist.items.map(({ stage: _stage, origin: _origin, ...item }) => item),
 });
 
 export type MockPhoto = {

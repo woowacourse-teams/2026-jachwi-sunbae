@@ -1,7 +1,10 @@
 import type { ReactNode } from 'react';
-import type { PropertyOptionKey } from '../../../../features/property/model/propertyOptions';
+
+import type { PropertyOptionKey } from '@/features/property/model/propertyOptions';
+import SelectionControl from '@/shared/ui/selection-control/SelectionControl';
+
 import PropertyOptionIcon from './PropertyOptionIcon';
-import SelectionControl from '../../../../shared/ui/selection-control/SelectionControl';
+
 import styles from './PropertyOptionPicker.module.css';
 
 type PickerOption = { key: string; label: string };

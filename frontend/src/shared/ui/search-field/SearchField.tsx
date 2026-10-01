@@ -1,6 +1,8 @@
-import { useId } from 'react';
 import type { FormEvent } from 'react';
+import { useId } from 'react';
+
 import Icon from '../icon/Icon';
+
 import styles from './SearchField.module.css';
 
 type SearchFieldProps = {
