@@ -23,6 +23,29 @@
 - `main`에 릴리스 PR이 반영되면 Release 워크플로가 `vMAJOR.MINOR.PATCH` Git 태그와 GitHub Release를 생성한다.
 - 프론트엔드 배포 결과는 `/version.json`에서 확인하며, 백엔드 배포 결과는 `/actuator/info`의 `build.version`과 `build.commit`으로 확인한다.
 
+### 릴리스 버전 변경 절차
+
+`VERSION`을 수정해도 각 애플리케이션 버전이 자동으로 변경되지는 않는다. 릴리스 PR에서 다음 값을 같은 제품 버전으로 함께 수정한다.
+
+| 파일 | 변경할 값 |
+| --- | --- |
+| `VERSION` | 제품 버전 |
+| `frontend/package.json`, `mobile/package.json` | `version` |
+| `frontend/package-lock.json`, `mobile/package-lock.json` | 최상위 `version`과 `packages[""].version` |
+| `frontend/public/version.json` | `version` |
+| `backend/build.gradle` | `version` |
+| `mobile/android/app/build.gradle` | `versionName` |
+| `mobile/ios/JachwiSunbaeMobile.xcodeproj/project.pbxproj` | Debug·Release의 `MARKETING_VERSION` |
+
+lock 파일에서 외부 의존성의 버전은 변경하지 않는다. `CHANGELOG.md`에는 해당 버전의 릴리스 섹션과 변경 내역, 릴리스 링크를 추가하고 `Unreleased` 비교 링크의 기준 태그를 갱신한다.
+
+저장소 루트에서 두 검사를 모두 통과해야 한다. 버전 검사에는 프론트엔드와 모바일 lock 파일의 제품 버전도 포함된다.
+
+```bash
+python3 .github/scripts/check_versions.py
+python3 .github/scripts/check_changelog.py "$(tr -d '[:space:]' < VERSION)"
+```
+
 ## 롤백 기준
 
 1. 장애가 발생한 환경의 제품 버전과 커밋을 기록한다.

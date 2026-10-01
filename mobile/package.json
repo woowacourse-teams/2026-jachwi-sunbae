@@ -1,6 +1,6 @@
 {
   "name": "jachwi-sunbae-mobile",
-  "version": "0.0.1",
+  "version": "1.0.0",
   "private": true,
   "packageManager": "npm@10.9.7",
   "scripts": {

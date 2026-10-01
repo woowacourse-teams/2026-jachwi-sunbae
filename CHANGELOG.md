@@ -6,6 +6,25 @@
 
 아직 릴리스하지 않은 변경을 기록한다.
 
+## [1.0.0] - 2026-10-01
+
+### Added
+
+- iOS 네이티브 탭바를 추가하고 웹 화면의 라우트와 선택 탭을 동기화한다.
+- 활성 사용자 분석 이벤트와 공용 컴포넌트 Storybook을 추가한다.
+
+### Changed
+
+- 매물 등록과 체크리스트 입력에 공용 플로팅 라벨을 적용한다.
+- 체크리스트 서비스의 책임을 분리하고 백엔드 예외 계층과 오류 응답 처리를 정리한다.
+- 백엔드·프론트엔드·iOS·Android 제품 버전을 첫 메이저 릴리스인 `1.0.0`으로 맞춘다.
+
+### Fixed
+
+- 터치 스크롤 시 하단바 이동과 지도 반경 기준 위치를 바로잡는다.
+- 체크리스트 응답 계약에 맞게 프론트엔드의 항목 파싱을 수정한다.
+- 모바일 패키지 lock 파일의 제품 버전을 동기화하고 CI 버전 검사에 포함한다.
+
 ## [0.0.1] - 2026-09-30
 
 ### Added
@@ -31,6 +50,7 @@
 - WebView 지도 마커 위치 갱신을 `transform` 기반으로 최적화한다.
 - 매물 사진 Object URL을 재사용해 지도 확대·이동 중 불필요한 재생성을 줄인다.
 
-[Unreleased]: https://github.com/woowacourse-teams/2026-jachwi-sunbae/compare/v0.0.1...HEAD
+[Unreleased]: https://github.com/woowacourse-teams/2026-jachwi-sunbae/compare/v1.0.0...HEAD
+[1.0.0]: https://github.com/woowacourse-teams/2026-jachwi-sunbae/releases/tag/v1.0.0
 [0.0.1]: https://github.com/woowacourse-teams/2026-jachwi-sunbae/releases/tag/v0.0.1
 [0.0.0]: https://github.com/woowacourse-teams/2026-jachwi-sunbae/releases/tag/v0.0.0
