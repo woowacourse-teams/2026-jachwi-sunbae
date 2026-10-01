@@ -1,6 +1,5 @@
 package com.jachwisunbae.common.web.error;
 
-import com.jachwisunbae.common.exception.BusinessException;
 import com.jachwisunbae.common.exception.JachwiException;
 import com.jachwisunbae.common.exception.client.AuthenticationFailedException;
 import com.jachwisunbae.common.exception.client.AuthorizationFailedException;
@@ -36,25 +35,11 @@ import org.springframework.web.servlet.resource.NoResourceFoundException;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
-    private final DomainErrorHttpMapper httpMapper;
-
-    public GlobalExceptionHandler(final DomainErrorHttpMapper httpMapper) {
-        this.httpMapper = httpMapper;
-    }
-
     @ExceptionHandler(JachwiException.class)
     public ResponseEntity<ErrorResponse> handleJachwiException(final JachwiException exception) {
         HttpStatus status = statusOf(exception);
         logJachwiException(exception, status);
         return response(status, exception.getErrorCode());
-    }
-
-    // 레거시: 옮기지 않은 패키지의 BusinessException은 ErrorCode마다 상태를 정한다.
-    @ExceptionHandler(BusinessException.class)
-    public ResponseEntity<ErrorResponse> handleBusinessException(final BusinessException exception) {
-        HttpStatus status = httpMapper.statusOf(exception.getCode());
-        logBusinessException(exception, status);
-        return response(status, exception.getCode());
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
@@ -200,18 +185,5 @@ public class GlobalExceptionHandler {
             return;
         }
         log.info(message, type, exception.getErrorCode(), status.value(), exception.getMessage());
-    }
-
-    private void logBusinessException(final BusinessException exception, final HttpStatus status) {
-        String message = "BusinessException: code={}, status={}, debugMessage={}";
-        if (status.is5xxServerError()) {
-            log.error(message, exception.getCode(), status.value(), exception.getMessage(), exception);
-            return;
-        }
-        if (status == HttpStatus.UNAUTHORIZED || status == HttpStatus.FORBIDDEN || status == HttpStatus.CONFLICT) {
-            log.warn(message, exception.getCode(), status.value(), exception.getMessage());
-            return;
-        }
-        log.info(message, exception.getCode(), status.value(), exception.getMessage());
     }
 }

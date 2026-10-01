@@ -574,17 +574,7 @@ try {
 | `DataIntegrityViolationException` → `409` | 원인을 모르는 DB 오류를 사용자 문제로 응답한다 |
 | `new ErrorResponse(code, exception.getMessage())` | 내부 디버깅 메시지가 응답에 노출된다 |
 
-## 22. 전환 상태
-
-새 예외 계층은 map, auth(#291), property(#299)에 적용했다. checklist는 아직 옮기지 않았으며, 그전까지 다음이 남아 있다.
-
-- **`BusinessException`(레거시)**: `ErrorCode`만 가지며 예외 타입으로 분류되지 않는다. checklist에서만 사용한다.
-- **`DomainErrorHttpMapper`(레거시)**: `BusinessException`의 HTTP 상태를 `ErrorCode`마다 매핑한다. checklist 코드만 남아 있다.
-- **`DomainPreconditions`(레거시)**: `BusinessException`을 던지며 `404` 코드(`PROPERTY_CHECKLIST_NOT_FOUND` 등)에도 쓰이고 있어 `InvalidInputException`으로 일괄 바꾸지 않는다. 새 코드에서는 사용하지 않는다.
-
-새로 작성하는 코드는 이 문서의 `JachwiException` 계층을 사용한다. 모든 패키지를 옮기면 이 절과 레거시 클래스를 제거한다.
-
-## 23. 향후 정리할 항목
+## 22. 향후 정리할 항목
 
 - **로그 정책**: Client Exception은 Stack Trace 없이 `INFO`, Server Exception은 Stack Trace와 함께 `ERROR`, 대체 처리한 외부 장애는 `WARN`. 요청 로그와 연결하도록 `request_id`, `error_code`, `exception_type`, `upstream`을 구조화해 기록한다.
 - **예외 테스트**: 예외 타입별 HTTP 상태, 요청 검증, Spring MVC 예외, 인증 Filter, 외부 API 실패 유형, 모든 `ErrorCode`의 `publicMessage` 존재 여부
