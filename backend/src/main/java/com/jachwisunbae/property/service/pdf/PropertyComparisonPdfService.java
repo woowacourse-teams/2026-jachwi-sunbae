@@ -1,6 +1,7 @@
 package com.jachwisunbae.property.service.pdf;
 
-import com.jachwisunbae.common.exception.BusinessException;
+import com.jachwisunbae.common.exception.client.InvalidInputException;
+import com.jachwisunbae.common.exception.client.ResourceNotFoundException;
 import com.jachwisunbae.common.exception.errorcode.ErrorCode;
 import com.jachwisunbae.property.controller.dto.response.PropertyChecklistOverviewResponse;
 import com.jachwisunbae.property.controller.dto.response.PropertyChecklistStageResponse;
@@ -58,7 +59,7 @@ public class PropertyComparisonPdfService {
 
     private Property findProperty(final Long memberId, final Long propertyId) {
         return propertyRepository.findByIdAndMemberId(propertyId, memberId)
-                .orElseThrow(() -> new BusinessException(ErrorCode.PROPERTY_NOT_FOUND,
+                .orElseThrow(() -> new ResourceNotFoundException(ErrorCode.PROPERTY_NOT_FOUND,
                         "비교할 매물을 찾을 수 없습니다."));
     }
 
@@ -104,7 +105,7 @@ public class PropertyComparisonPdfService {
         if (propertyIds == null || propertyIds.size() < MIN_PROPERTIES || propertyIds.size() > MAX_PROPERTIES
                 || propertyIds.stream().anyMatch(id -> id == null || id <= 0)
                 || new HashSet<>(propertyIds).size() != propertyIds.size()) {
-            throw new BusinessException(ErrorCode.PROPERTY_INPUT_INVALID,
+            throw new InvalidInputException(ErrorCode.PROPERTY_INPUT_INVALID,
                     "비교할 서로 다른 매물을 2개 이상 5개 이하로 선택해야 합니다.");
         }
     }

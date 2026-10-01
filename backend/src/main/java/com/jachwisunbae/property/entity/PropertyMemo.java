@@ -1,7 +1,7 @@
 package com.jachwisunbae.property.entity;
 
+import com.jachwisunbae.common.exception.client.InvalidInputException;
 import com.jachwisunbae.common.exception.errorcode.ErrorCode;
-import com.jachwisunbae.common.validation.DomainPreconditions;
 
 record PropertyMemo(String value) {
 
@@ -15,8 +15,9 @@ record PropertyMemo(String value) {
 
     private static String validateMemo(final String memo) {
         String value = validateEmpty(memo);
-        DomainPreconditions.require(value.length() <= 2000, ErrorCode.PROPERTY_MEMO_INVALID,
-                "자유 메모는 2,000자 이하여야 합니다.");
+        if (value.length() > 2000) {
+            throw new InvalidInputException(ErrorCode.PROPERTY_MEMO_INVALID, "자유 메모는 2,000자 이하여야 합니다.");
+        }
         return value;
     }
 

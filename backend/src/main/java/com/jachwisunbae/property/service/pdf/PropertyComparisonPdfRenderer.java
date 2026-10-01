@@ -2,8 +2,9 @@ package com.jachwisunbae.property.service.pdf;
 
 import com.openhtmltopdf.outputdevice.helper.BaseRendererBuilder.FontStyle;
 import com.openhtmltopdf.pdfboxout.PdfRendererBuilder;
-import com.jachwisunbae.common.exception.BusinessException;
+import com.openhtmltopdf.util.XRRuntimeException;
 import com.jachwisunbae.common.exception.errorcode.ErrorCode;
+import com.jachwisunbae.common.exception.server.InternalSystemException;
 import com.jachwisunbae.property.service.pdf.model.PropertyComparisonRecord;
 import com.jachwisunbae.property.service.pdf.view.PropertyComparisonPdfView;
 import java.io.ByteArrayOutputStream;
@@ -51,8 +52,10 @@ public class PropertyComparisonPdfRenderer {
             builder.toStream(output);
             builder.run();
             return output.toByteArray();
-        } catch (IOException | RuntimeException exception) {
-            throw new BusinessException(ErrorCode.PROPERTY_COMPARISON_EXPORT_FAILED,
+        } catch (IOException | XRRuntimeException exception) {
+            // PDF 생성은 외부 시스템이 아니라 서버 내부 작업이다. 렌더러가 알리는 실패(IOException, XRRuntimeException)만
+            // 바꾸고, 우리 코드의 오류는 RuntimeException으로 잡지 않고 그대로 드러낸다.
+            throw new InternalSystemException(ErrorCode.PROPERTY_COMPARISON_EXPORT_FAILED,
                 "매물 비교 PDF를 생성하지 못했습니다.", exception);
         }
     }
@@ -65,7 +68,8 @@ public class PropertyComparisonPdfRenderer {
     private InputStream requiredResource(final String path) {
         InputStream input = getClass().getResourceAsStream(path);
         if (input == null) {
-            throw new IllegalStateException("PDF 글꼴 리소스를 찾을 수 없습니다: " + path);
+            throw new InternalSystemException(ErrorCode.PROPERTY_COMPARISON_EXPORT_FAILED,
+                "PDF 글꼴 리소스를 찾을 수 없습니다: " + path);
         }
         return input;
     }
