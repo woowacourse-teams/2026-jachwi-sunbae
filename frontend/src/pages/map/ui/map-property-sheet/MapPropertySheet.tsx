@@ -1,4 +1,4 @@
-import type { CSSProperties, PointerEvent, RefObject } from 'react';
+import type { PointerEvent, RefObject } from 'react';
 
 import type { PropertySummary } from '@/features/property/model/Property';
 import PropertyCard from '@/features/property/ui/property-card/PropertyCard';
@@ -10,7 +10,7 @@ export type MapPropertySheetStage = 'closed' | 'mid' | 'full';
 type MapPropertySheetProps = {
   sheetRef: RefObject<HTMLElement | null>;
   stage: MapPropertySheetStage;
-  dragHeight: number | null;
+  isDragging: boolean;
   properties: PropertySummary[];
   selectedPropertyId: number | null;
   onDragStart: (event: PointerEvent<HTMLButtonElement>) => void;
@@ -23,7 +23,7 @@ type MapPropertySheetProps = {
 const MapPropertySheet = ({
   sheetRef,
   stage,
-  dragHeight,
+  isDragging,
   properties,
   selectedPropertyId,
   onDragStart,
@@ -35,8 +35,7 @@ const MapPropertySheet = ({
   <section
     ref={sheetRef}
     className={`${styles.sheet} ${stage === 'closed' ? styles.collapsed : stage === 'mid' ? styles.mid : styles.full}`}
-    style={dragHeight === null ? undefined : ({ height: `${dragHeight}px` } as CSSProperties)}
-    data-dragging={dragHeight === null ? undefined : 'true'}
+    data-dragging={isDragging || undefined}
     aria-label="지도 주변 매물 목록"
   >
     <button

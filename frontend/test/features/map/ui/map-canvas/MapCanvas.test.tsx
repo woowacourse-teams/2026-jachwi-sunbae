@@ -128,7 +128,7 @@ describe('Naver 지도 상태 동기화', () => {
     await waitFor(() => expect(resizeCallbacks).toHaveLength(1));
 
     expect(() => resizeCallbacks[0]()).not.toThrow();
-    expect(maps[0].refresh).toHaveBeenCalled();
+    await waitFor(() => expect(maps[0].refresh).toHaveBeenCalled());
   });
 
   it('앱 확대 단계를 반대 방향인 Naver zoom으로 바꿔 전달한다', async () => {

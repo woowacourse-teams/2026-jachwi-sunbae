@@ -151,7 +151,7 @@ const MapPage = () => {
             selectedCategories={selectedCategories}
             categoryCounts={categoryCounts}
             sheetStage={sheet.sheetStage}
-            dragHeight={sheet.dragHeight}
+            isDragging={sheet.isDragging}
             isLocating={mapLocation.locationStatus === 'locating'}
             onSelectRadius={selectRadius}
             onToggleCategory={filters.toggleCategory}
@@ -176,7 +176,7 @@ const MapPage = () => {
             <MapPropertySheet
               sheetRef={sheet.sheetRef}
               stage={sheet.sheetStage}
-              dragHeight={sheet.dragHeight}
+              isDragging={sheet.isDragging}
               properties={visibleProperties}
               selectedPropertyId={selectedPropertyId}
               onDragStart={sheet.handleDragStart}

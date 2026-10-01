@@ -229,3 +229,17 @@ button.clusterMarker::before {
   transform: translateX(-50%);
   pointer-events: none;
 }
+
+/* WebView에서 지도 이동 중 DOM 마커의 그림자·캡션 합성 비용을 줄인다. */
+:global([data-map-gesture='true']) .marker {
+  box-shadow: none;
+  filter: none;
+}
+
+:global([data-map-gesture='true']) .propertyMarker::before {
+  box-shadow: none;
+}
+
+:global([data-map-gesture='true']) .markerCaption {
+  visibility: hidden;
+}

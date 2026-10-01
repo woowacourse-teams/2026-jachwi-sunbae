@@ -131,7 +131,7 @@ const naverEngine = (clientId: string): LiveEngine => ({
   addListener: (map, event, callback) =>
     window.naver!.maps.Event.addListener(map, event, (value) => callback(value?.coord?.lat(), value?.coord?.lng())),
   removeListener: (listener) => {
-    void listener;
+    if (listener !== undefined && window.naver?.maps !== undefined) window.naver.maps.Event.removeListener(listener);
   },
   createOverlay: (map, marker, content, zIndex) => {
     const overlay = new window.naver!.maps.OverlayView();
@@ -220,6 +220,7 @@ const MapCanvas = ({
   const circlesRef = useRef<LiveOverlay[]>([]);
   const callbackRef = useRef({ onSelectLocation, onCenterChange, onLevelChange, onSelectMarker });
   const [mapReady, setMapReady] = useState(false);
+  const [isMapGestureActive, setIsMapGestureActive] = useState(false);
   const [sdkError, setSdkError] = useState(false);
   // 남한 밖 좌표를 받아도 지도는 남한 안만 비춘다.
   const boundedCenter = useMemo(() => clampToSouthKorea(center), [center.latitude, center.longitude]);
@@ -232,6 +233,7 @@ const MapCanvas = ({
     if (!liveMode || containerRef.current === null) return;
     let disposed = false;
     let map: LiveMap | null = null;
+    let listeners: unknown[] = [];
 
     setSdkError(false);
     setMapReady(false);
@@ -241,16 +243,27 @@ const MapCanvas = ({
         if (disposed || containerRef.current === null) return;
         map = engine.createMap(containerRef.current, boundedCenter, level);
         mapRef.current = map;
-        engine.addListener(map, 'click', (latitude, longitude) => {
-          if (latitude !== undefined && longitude !== undefined)
-            callbackRef.current.onSelectLocation?.(latitude, longitude);
-        });
-        engine.addListener(map, 'idle', () => {
-          if (map === null) return;
-          const nextCenter = engine.getCenter(map);
-          callbackRef.current.onCenterChange?.(nextCenter.latitude, nextCenter.longitude);
-          callbackRef.current.onLevelChange?.(engine.getZoom(map));
-        });
+        const setGestureActive = (active: boolean) => setIsMapGestureActive(active);
+
+        listeners.push(
+          engine.addListener(map, 'dragstart', () => setGestureActive(true)),
+          engine.addListener(map, 'zoomstart', () => setGestureActive(true)),
+          engine.addListener(map, 'dragend', () => setGestureActive(false)),
+          engine.addListener(map, 'zoomend', () => setGestureActive(false)),
+        );
+        listeners.push(
+          engine.addListener(map, 'click', (latitude, longitude) => {
+            if (latitude !== undefined && longitude !== undefined)
+              callbackRef.current.onSelectLocation?.(latitude, longitude);
+          }),
+          engine.addListener(map, 'idle', () => {
+            setGestureActive(false);
+            if (map === null) return;
+            const nextCenter = engine.getCenter(map);
+            callbackRef.current.onCenterChange?.(nextCenter.latitude, nextCenter.longitude);
+            callbackRef.current.onLevelChange?.(engine.getZoom(map));
+          }),
+        );
         setMapReady(true);
       })
       .catch(() => {
@@ -259,6 +272,9 @@ const MapCanvas = ({
 
     return () => {
       disposed = true;
+      listeners.forEach((listener) => engine.removeListener(listener));
+      listeners = [];
+      setIsMapGestureActive(false);
       overlaysRef.current.forEach(({ overlay }) => overlay.setMap(null));
       overlaysRef.current.clear();
       circlesRef.current.forEach((circle) => circle.setMap(null));
@@ -288,11 +304,19 @@ const MapCanvas = ({
     )
       return;
     const map = mapRef.current;
+    let relayoutFrame: number | null = null;
     const observer = new ResizeObserver(() => {
-      engine.relayout(map);
+      if (relayoutFrame !== null) return;
+      relayoutFrame = window.requestAnimationFrame(() => {
+        relayoutFrame = null;
+        engine.relayout(map);
+      });
     });
     observer.observe(containerRef.current);
-    return () => observer.disconnect();
+    return () => {
+      observer.disconnect();
+      if (relayoutFrame !== null) window.cancelAnimationFrame(relayoutFrame);
+    };
   }, [engine, liveMode, mapReady]);
 
   useEffect(() => {
@@ -349,6 +373,7 @@ const MapCanvas = ({
   return (
     <div
       className={`${styles.canvas} ${liveMode ? styles.live : styles.demo}`}
+      data-map-gesture={isMapGestureActive || undefined}
       aria-label={liveMode ? engine.label : '데모 지도'}
       onClick={(event) => {
         if (liveMode || !interactive || onSelectLocation === undefined) return;
