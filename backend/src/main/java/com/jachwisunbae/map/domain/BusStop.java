@@ -32,6 +32,10 @@ public class BusStop {
                 validateText(cityCode, "정류장 도시 코드는 필수입니다."));
     }
 
+    public double distanceMetersFrom(BigDecimal latitude, BigDecimal longitude) {
+        return GeoDistance.meters(latitude, longitude, this.latitude, this.longitude);
+    }
+
     private static String validateText(String value, String message) {
         if (value == null || value.isBlank()) {
             throw new IllegalArgumentException(message);
