@@ -43,6 +43,8 @@ jobs:
           VERSION: ${{ steps.metadata.outputs.version }}
           NOTES_FILE: ${{ runner.temp }}/release-notes.md
         run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           TAG="v${VERSION}"
           if git rev-parse "${TAG}^{commit}" >/dev/null 2>&1; then
             TAG_SHA="$(git rev-list -n 1 "${TAG}")"
