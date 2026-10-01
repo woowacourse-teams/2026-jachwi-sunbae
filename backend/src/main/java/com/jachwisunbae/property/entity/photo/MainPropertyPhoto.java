@@ -1,8 +1,6 @@
 package com.jachwisunbae.property.entity.photo;
 
 import lombok.Getter;
-import com.jachwisunbae.common.exception.errorcode.ErrorCode;
-import com.jachwisunbae.common.validation.DomainPreconditions;
 
 @Getter
 public class MainPropertyPhoto {
@@ -26,7 +24,9 @@ public class MainPropertyPhoto {
     }
 
     private static Long validateId(final Long id) {
-        return DomainPreconditions.requireNonNull(id, ErrorCode.PROPERTY_INPUT_INVALID,
-                "대표 사진과 매물 ID는 필수입니다.");
+        if (id == null) {
+            throw new IllegalArgumentException("대표 사진과 매물 ID는 필수입니다.");
+        }
+        return id;
     }
 }

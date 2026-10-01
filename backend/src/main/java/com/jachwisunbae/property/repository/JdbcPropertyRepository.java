@@ -1,5 +1,8 @@
 package com.jachwisunbae.property.repository;
 
+import com.jachwisunbae.common.exception.client.ClientException;
+import com.jachwisunbae.common.exception.errorcode.ErrorCode;
+import com.jachwisunbae.common.exception.server.DataInconsistencyException;
 import com.jachwisunbae.property.entity.Property;
 import com.jachwisunbae.property.repository.query.PropertyListItemQuery;
 import com.jachwisunbae.property.type.RoomOption;
@@ -226,25 +229,31 @@ public class JdbcPropertyRepository implements PropertyRepository {
         Date availableMoveInDate = rs.getDate("available_move_in_date");
         Timestamp visitScheduledAt = rs.getTimestamp("visit_scheduled_at");
         Timestamp createdAt = rs.getTimestamp("created_at");
-        return Property.reconstruct(
-            propertyId,
-            rs.getLong("member_id"),
-            rs.getString("name"),
-            rs.getObject("deposit_amount", Long.class),
-            rs.getObject("monthly_rent_amount", Long.class),
-            rs.getString("address"),
-            rs.getBigDecimal("latitude"),
-            rs.getBigDecimal("longitude"),
-            availableMoveInDate == null ? null : availableMoveInDate.toLocalDate(),
-            rs.getObject("maintenance_fee_amount", Long.class),
-            visitScheduledAt == null ? null : visitScheduledAt.toLocalDateTime(),
-            findRoomOptions(propertyId),
-            findUtilityOptions(propertyId),
-            rs.getString("discovery_source"),
-            rs.getString("memo"),
-            createdAt.toLocalDateTime(),
-            createdAt.toLocalDateTime()
-        );
+        try {
+            return Property.reconstruct(
+                propertyId,
+                rs.getLong("member_id"),
+                rs.getString("name"),
+                rs.getObject("deposit_amount", Long.class),
+                rs.getObject("monthly_rent_amount", Long.class),
+                rs.getString("address"),
+                rs.getBigDecimal("latitude"),
+                rs.getBigDecimal("longitude"),
+                availableMoveInDate == null ? null : availableMoveInDate.toLocalDate(),
+                rs.getObject("maintenance_fee_amount", Long.class),
+                visitScheduledAt == null ? null : visitScheduledAt.toLocalDateTime(),
+                findRoomOptions(propertyId),
+                findUtilityOptions(propertyId),
+                rs.getString("discovery_source"),
+                rs.getString("memo"),
+                createdAt.toLocalDateTime(),
+                createdAt.toLocalDateTime()
+            );
+        } catch (ClientException exception) {
+            // DB에 저장된 매물이 입력 규칙을 만족하지 않는 것은 사용자 요청이 아니라 서버 데이터 문제다.
+            throw new DataInconsistencyException(ErrorCode.INTERNAL_SERVER_ERROR,
+                "propertyId=" + propertyId + " 저장된 매물 데이터가 매물 규칙을 만족하지 않습니다.", exception);
+        }
     }
 
     private void insertPropertyDetails(final long propertyId, final Property property) {

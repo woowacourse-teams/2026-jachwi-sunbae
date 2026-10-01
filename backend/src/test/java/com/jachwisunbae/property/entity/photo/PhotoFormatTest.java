@@ -4,7 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import com.jachwisunbae.common.exception.BusinessException;
+import com.jachwisunbae.common.exception.client.InvalidInputException;
 import com.jachwisunbae.common.exception.errorcode.ErrorCode;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
@@ -82,8 +82,8 @@ class PhotoFormatTest {
 
     private void assertUnsupported(final org.assertj.core.api.ThrowableAssert.ThrowingCallable callable) {
         assertThatThrownBy(callable)
-            .isInstanceOf(BusinessException.class)
-            .extracting("code")
+            .isInstanceOf(InvalidInputException.class)
+            .extracting("errorCode")
             .isEqualTo(ErrorCode.PHOTO_CONTENT_TYPE_UNSUPPORTED);
     }
 
