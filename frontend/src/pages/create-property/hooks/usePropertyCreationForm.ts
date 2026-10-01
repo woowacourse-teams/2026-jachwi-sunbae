@@ -71,6 +71,21 @@ export const usePropertyCreationForm = (routeState: PropertyCreationRouteState) 
     trackPostHogEvent('property_creation_started');
   }, []);
 
+  useEffect(() => {
+    if (location.locationStatus !== 'ready') return;
+    const address =
+      location.selectedLocation.roadAddress ??
+      location.selectedLocation.jibunAddress ??
+      location.selectedLocation.address;
+    if (address !== null && address !== undefined && address !== '') search.setInitialQuery(address);
+  }, [
+    location.locationStatus,
+    location.selectedLocation.address,
+    location.selectedLocation.jibunAddress,
+    location.selectedLocation.roadAddress,
+    search.setInitialQuery,
+  ]);
+
   const changeMoney = (field: 'depositAmount' | 'monthlyRentAmount', formatted: string) => {
     setValues((current) => ({ ...current, [field]: formatted }));
     setErrors((current) => ({ ...current, [field]: undefined }));

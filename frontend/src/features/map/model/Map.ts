@@ -1,5 +1,21 @@
 export type MapCategory = 'HOSPITAL' | 'TRANSPORT' | 'SCHOOL' | 'CONVENIENCE' | 'AGENCY';
 
+export type MapMarker = {
+  id: string;
+  latitude: number;
+  longitude: number;
+  label: string;
+  /** 마커 아래에 노출할 짧은 문구. 없으면 label을 쓴다. */
+  caption?: string;
+  tone?: 'property' | 'current' | 'place' | 'selected' | 'cluster' | 'propertyCluster';
+  category?: MapCategory;
+  count?: number;
+  placeId?: string;
+  /** 마커 안에 넣을 매물 사진. 인증이 끝난 blob URL만 받는다. */
+  photoUrl?: string;
+  actionable?: boolean;
+};
+
 export type MapAddress = {
   address: string | null;
   roadAddress: string | null;

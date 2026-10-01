@@ -1,4 +1,4 @@
-import type { CSSProperties } from 'react';
+import type { CSSProperties, KeyboardEvent } from 'react';
 import { useLocation } from 'react-router-dom';
 
 import MoneyField from '@/features/property/ui/money-field/MoneyField';
@@ -26,6 +26,11 @@ const CreatePropertyPage = () => {
   const form = usePropertyCreationForm(routeState);
   const { values, errors, revealedStep, nameStep } = form;
   const isNameStep = revealedStep >= nameStep;
+  const submitOnKeyboardEnter = (event: KeyboardEvent<HTMLInputElement>) => {
+    if (event.key !== 'Enter') return;
+    event.preventDefault();
+    event.currentTarget.form?.requestSubmit();
+  };
 
   return (
     <main className={styles.page}>
@@ -43,24 +48,30 @@ const CreatePropertyPage = () => {
           onSubmit={form.submitStep}
         >
           <MoneyField
-            label="보증금"
+            label="보증금 입력"
             fieldClassName={styles.depositField}
             fieldSize="large"
-            placeholder="예: 1,000"
+            floatingLabel
+            placeholder="보증금 입력"
             value={values.depositAmount}
             onValueChange={(value) => form.changeMoney('depositAmount', value)}
             error={errors.depositAmount}
+            enterKeyHint="next"
+            onKeyDown={submitOnKeyboardEnter}
             autoFocus
           />
           {revealedStep >= 1 && (
             <MoneyField
-              label="월세"
+              label="월세 입력"
               fieldClassName={styles.rentField}
               fieldSize="large"
-              placeholder="예: 55"
+              floatingLabel
+              placeholder="월세 입력"
               value={values.monthlyRentAmount}
               onValueChange={(value) => form.changeMoney('monthlyRentAmount', value)}
               error={errors.monthlyRentAmount}
+              enterKeyHint="next"
+              onKeyDown={submitOnKeyboardEnter}
               autoFocus={revealedStep === 1}
             />
           )}
@@ -69,15 +80,18 @@ const CreatePropertyPage = () => {
           )}
           {isNameStep && (
             <TextField
-              label="매물 이름"
+              label="매물 이름 입력"
               fieldClassName={styles.nameField}
               fieldSize="large"
-              placeholder="예: 신림역 3번출구 햇빛 잘 드는 원룸"
+              floatingLabel
+              placeholder="매물 이름 입력"
               maxLength={30}
               value={values.name}
               onFocus={form.focusName}
               onChange={form.changeName}
               error={errors.name}
+              enterKeyHint="done"
+              onKeyDown={submitOnKeyboardEnter}
             />
           )}
           {form.createError !== null && (
@@ -88,11 +102,13 @@ const CreatePropertyPage = () => {
           <p className={styles.stepNotice}>
             {stepNotice(revealedStep, isNameStep && form.location.status === 'ready')}
           </p>
-          <BottomActionArea>
-            <Button variant="primary" type="submit" fullWidth isLoading={form.isCreating}>
-              {isNameStep ? '매물 등록' : '다음'}
-            </Button>
-          </BottomActionArea>
+          {keyboardInset === 0 && (
+            <BottomActionArea>
+              <Button variant="primary" type="submit" fullWidth isLoading={form.isCreating}>
+                {isNameStep ? '매물 등록' : '다음'}
+              </Button>
+            </BottomActionArea>
+          )}
         </form>
       </div>
     </main>

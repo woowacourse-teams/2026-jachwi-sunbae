@@ -95,6 +95,7 @@ const CONTRACT = {
   MemberDetailResponse: ['id', 'name', 'passwordProtected'],
   SystemCheckItemResponse: ['id', 'stage', 'itemType', 'question'],
   UserChecklistSummaryResponse: ['id', 'name', 'stage', 'itemCount'],
+  UserChecklistItemResponse: ['id', 'systemCheckItemId', 'itemType', 'question', 'displayOrder', 'active'],
 } as const;
 
 const server = setupServer(...handlers);
@@ -188,6 +189,11 @@ describe('목 응답은 배포된 dev 계약과 같은 필드를 내려준다', 
   it('GET /api/checklists', async () => {
     const data = (await readData('/api/checklists?stage=ON_SITE')) as { items: unknown[] };
     expectShape(data.items[0], 'UserChecklistSummaryResponse');
+  });
+
+  it('GET /api/checklists/{id}', async () => {
+    const data = (await readData('/api/checklists/7')) as { items: unknown[] };
+    expectShape(data.items[0], 'UserChecklistItemResponse');
   });
 
   it('GET /api/properties/export.csv 는 BOM 붙은 text/csv 를 내려준다', async () => {

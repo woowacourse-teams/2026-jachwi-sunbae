@@ -303,25 +303,25 @@ describe('FE-2 등록·수정·메모', () => {
       // 1. 보증금 → 월세 → 지도 → 매물 이름 순으로, 다음을 눌렀을 때만 한 단계씩 열린다.
       expect(await screen.findByRole('button', { name: '다음' })).toBeEnabled();
       expect(navigator.geolocation.getCurrentPosition).not.toHaveBeenCalled();
-      await user.type(screen.getByLabelText('보증금 (만원)'), '1000');
-      expect(screen.queryByLabelText('월세 (만원)')).not.toBeInTheDocument();
+      await user.type(screen.getByLabelText('보증금 입력 (만원)'), '1000');
+      expect(screen.queryByLabelText('월세 입력 (만원)')).not.toBeInTheDocument();
       await user.click(screen.getByRole('button', { name: '다음' }));
-      expect(screen.getByLabelText('월세 (만원)')).toBeInTheDocument();
+      expect(screen.getByLabelText('월세 입력 (만원)')).toBeInTheDocument();
       await user.click(screen.getByRole('button', { name: '다음' }));
-      expect(screen.getByLabelText('월세 (만원)')).toHaveAttribute('aria-invalid', 'true');
+      expect(screen.getByLabelText('월세 입력 (만원)')).toHaveAttribute('aria-invalid', 'true');
       expect(screen.getByText('월세를 입력해 주세요.')).toBeInTheDocument();
-      await user.type(screen.getByLabelText('월세 (만원)'), '55');
+      await user.type(screen.getByLabelText('월세 입력 (만원)'), '55');
       await user.click(screen.getByRole('button', { name: '다음' }));
       expect(await screen.findByRole('region', { name: '매물 위치 선택' })).toBeInTheDocument();
-      expect(screen.queryByLabelText('매물 이름')).not.toBeInTheDocument();
+      expect(screen.queryByLabelText('매물 이름 입력')).not.toBeInTheDocument();
       await user.click(screen.getByRole('button', { name: '다음' }));
-      expect(screen.getByLabelText('매물 이름')).toBeInTheDocument();
-      await user.type(screen.getByLabelText('매물 이름'), '신림역 원룸');
+      expect(screen.getByLabelText('매물 이름 입력')).toBeInTheDocument();
+      await user.type(screen.getByLabelText('매물 이름 입력'), '신림역 원룸');
       const createButton = await screen.findByRole('button', { name: '매물 등록' });
       await waitFor(() => expect(createButton).toBeEnabled());
       await user.click(createButton);
 
-      expect(await screen.findAllByRole('heading', { name: '신림역 원룸', level: 1 })).toHaveLength(2);
+      expect(await screen.findAllByRole('heading', { name: '신림역 원룸', level: 1 })).toHaveLength(1);
       await waitFor(() => expect(requestBody).toBeDefined());
       expect(requestBody).toMatchObject({
         name: '신림역 원룸',
@@ -358,14 +358,14 @@ describe('FE-2 등록·수정·메모', () => {
       const user = userEvent.setup();
       renderAuthenticated('/properties/new');
 
-      await user.type(await screen.findByLabelText('보증금 (만원)'), '1000');
+      await user.type(await screen.findByLabelText('보증금 입력 (만원)'), '1000');
       expect(navigator.geolocation.getCurrentPosition).not.toHaveBeenCalled();
       await user.click(screen.getByRole('button', { name: '다음' }));
-      await user.type(screen.getByLabelText('월세 (만원)'), '55');
+      await user.type(screen.getByLabelText('월세 입력 (만원)'), '55');
       await user.click(screen.getByRole('button', { name: '다음' }));
       expect(await screen.findByRole('region', { name: '매물 위치 선택' })).toBeInTheDocument();
       await user.click(screen.getByRole('button', { name: '다음' }));
-      await user.type(screen.getByLabelText('매물 이름'), '신림역 원룸');
+      await user.type(screen.getByLabelText('매물 이름 입력'), '신림역 원룸');
 
       await user.click(await screen.findByRole('button', { name: '매물 등록' }));
 
@@ -391,7 +391,7 @@ describe('FE-2 등록·수정·메모', () => {
     renderAuthenticated('/properties/10/edit');
 
     await user.click(await screen.findByRole('button', { name: '변경사항 저장' }));
-    expect(await screen.findAllByRole('heading', { name: '신림역 원룸', level: 1 })).toHaveLength(2);
+    expect(await screen.findAllByRole('heading', { name: '신림역 원룸', level: 1 })).toHaveLength(1);
     expect(updateCalls).toBe(1);
     expect(updateBody).toEqual({
       name: propertyDetailFixture.name,
@@ -457,7 +457,7 @@ describe('FE-2 등록·수정·메모', () => {
     await user.type(discoverySource, 'https://new.example.com/listing');
     await user.click(screen.getByRole('button', { name: '부가 정보 저장' }));
 
-    expect(await screen.findAllByRole('heading', { name: '신림역 원룸', level: 1 })).toHaveLength(2);
+    expect(await screen.findAllByRole('heading', { name: '신림역 원룸', level: 1 })).toHaveLength(1);
     expect(requestBody).toEqual({
       name: propertyDetailFixture.name,
       depositAmount: propertyDetailFixture.depositAmount,
@@ -538,7 +538,7 @@ describe('FE-2 등록·수정·메모', () => {
     expect(await screen.findByText(/부가 정보를 저장하지 못했어요/)).toBeInTheDocument();
     expect(discoverySource).toHaveValue('작성 중인 내용');
     await user.click(screen.getByRole('button', { name: '부가 정보 저장' }));
-    expect(await screen.findAllByRole('heading', { name: '신림역 원룸', level: 1 })).toHaveLength(2);
+    expect(await screen.findAllByRole('heading', { name: '신림역 원룸', level: 1 })).toHaveLength(1);
     expect(saveAttempts).toBe(2);
   });
 
@@ -863,7 +863,7 @@ describe('FE-2 사진과 삭제 확인', () => {
     const dialog = screen.getByRole('dialog');
     await user.click(within(dialog).getByRole('button', { name: '매물 삭제' }));
     expect(await within(dialog).findByText(/매물은 그대로 유지/)).toBeInTheDocument();
-    expect(screen.getAllByRole('heading', { name: '신림역 원룸', level: 1 })).toHaveLength(2);
+    expect(screen.getAllByRole('heading', { name: '신림역 원룸', level: 1 })).toHaveLength(1);
   });
 
   it('PROPERTY_NOT_FOUND를 네트워크 오류와 구분해 목록 이동을 제공한다', async () => {

@@ -58,7 +58,6 @@ const finalChecklistDetail = (overrides: Record<string, unknown> = {}) => ({
   items: [
     {
       id: 701,
-      origin: 'PROVIDED',
       systemCheckItemId: 101,
       itemType: 'CORE',
       question: onlineItemFixture.question,
@@ -67,7 +66,6 @@ const finalChecklistDetail = (overrides: Record<string, unknown> = {}) => ({
     },
     {
       id: 702,
-      origin: 'PROVIDED',
       systemCheckItemId: 102,
       itemType: 'OPTIONAL',
       question: secondOnlineItemFixture.question,
@@ -190,13 +188,20 @@ describe('체크리스트 탐색과 편집', () => {
     const cancelButton = screen.getByRole('button', { name: '취소' });
     const addSelectedButton = screen.getByRole('button', { name: '선택한 0개 항목 추가' });
     const searchResultsHeading = screen.getByRole('heading', { name: '검색 결과' });
+    const resultItems = screen.getAllByRole('checkbox');
     expect(cancelButton.compareDocumentPosition(searchResultsHeading) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(
       addSelectedButton.compareDocumentPosition(searchResultsHeading) & Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeTruthy();
+    expect(resultItems[0]).toHaveAccessibleName(secondOnlineItemFixture.question);
+    expect(resultItems[1]).toHaveAccessibleName(onlineItemFixture.question);
+    expect(resultItems[1]).toBeDisabled();
+    expect(screen.getAllByText('이미 추가됨')).toHaveLength(1);
     expect(optionalItem).not.toBeChecked();
     expect(screen.queryByLabelText('내 질문 직접 추가')).not.toBeInTheDocument();
     await user.click(optionalItem);
+    expect(optionalItem).toBeChecked();
+    expect(screen.getByRole('button', { name: '선택한 1개 항목 추가' })).toBeEnabled();
     await user.click(screen.getByRole('button', { name: '선택한 1개 항목 추가' }));
     expect(screen.getByText(secondOnlineItemFixture.question)).toBeInTheDocument();
 

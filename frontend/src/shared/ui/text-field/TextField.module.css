@@ -11,13 +11,74 @@
 
 .requiredMarker {
   margin-right: 0.2rem;
-  color: var(--color-error);
+  /* 필수 표시 자체의 의미 색상은 라벨의 포커스 색과 분리한다. */
+  color: var(--color-danger, #c96b6b);
   font-size: 0.8rem;
   font-weight: 800;
 }
 
 .control {
   position: relative;
+}
+
+/* 비어 있을 때는 placeholder를 입력칸 안에 보여주고, 포커스/입력 시 라벨을 현재 라벨 위치로 올린다. */
+.field[data-floating-label='true'] {
+  gap: 0.3rem;
+}
+
+.field[data-floating-label='true'] .control {
+  padding-top: 0.72rem;
+}
+
+.field[data-floating-label='true'] .control input {
+  caret-color: var(--color-brand-yellow);
+  line-height: 1.6;
+}
+
+.floatingLabel {
+  position: absolute;
+  top: 1.7rem;
+  left: 0;
+  z-index: 1;
+  color: var(--color-placeholder);
+  font-size: 0.72rem;
+  font-weight: 500;
+  line-height: 1.45;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-50%);
+  transition:
+    top 0.16s ease,
+    color 0.16s ease,
+    opacity 0.16s ease,
+    transform 0.16s ease;
+  will-change: top, opacity, transform;
+}
+
+.field[data-floating-label='true']:focus-within .floatingLabel,
+.field[data-floating-label='true']:has(input:not(:placeholder-shown)) .floatingLabel,
+.field[data-floating-label='true']:has(input[aria-invalid='true']) .floatingLabel {
+  top: 0.92rem;
+  color: var(--color-muted);
+  font-size: 0.72rem;
+  font-weight: 500;
+  opacity: 1;
+  transform: translateY(-50%);
+}
+
+/* :has(input:not(:placeholder-shown))의 우선순위가 더 높으므로 포커스된 input을 직접 기준으로 삼는다. */
+.field[data-floating-label='true']:focus-within .floatingLabel,
+.field[data-floating-label='true']:has(input:focus) .floatingLabel {
+  color: var(--color-muted);
+}
+
+/* 포커스·입력으로 라벨 색이 바뀌어도 필수 표시는 계속 의미 색을 유지한다. */
+.field[data-floating-label='true'] .floatingLabel .requiredMarker {
+  color: var(--color-danger, #c96b6b);
+}
+
+.field[data-floating-label='true'] .control input:focus::placeholder {
+  color: transparent;
 }
 
 .control input,
@@ -46,7 +107,17 @@
 
 .field[data-size='large'] .control input {
   min-height: 3.25rem;
-  font-size: 0.95rem;
+  font-size: 1.15rem;
+}
+
+.field[data-size='large'][data-floating-label='true'] .floatingLabel {
+  top: 2rem;
+}
+
+.field[data-size='large'][data-floating-label='true']:focus-within .floatingLabel,
+.field[data-size='large'][data-floating-label='true']:has(input:not(:placeholder-shown)) .floatingLabel,
+.field[data-size='large'][data-floating-label='true']:has(input[aria-invalid='true']) .floatingLabel {
+  top: 0.92rem;
 }
 
 /* 단위 표시가 붙는 칸만 오른쪽을 비워 글자가 겹치지 않게 한다. */
@@ -65,6 +136,27 @@
   background: transparent;
 }
 
+.field[data-floating-label='true'][data-variant='underline'] .control input {
+  min-height: 2.4rem;
+  padding-bottom: 0.38rem;
+}
+
+.field[data-floating-label='true'][data-size='large'][data-variant='underline'] .control input {
+  min-height: 2.8rem;
+  padding-bottom: 0;
+}
+
+.field[data-floating-label='true'][data-variant='box'] .floatingLabel {
+  left: 0.75rem;
+}
+
+.field[data-floating-label='true'][data-variant='box']:focus-within .floatingLabel,
+.field[data-floating-label='true'][data-variant='box']:has(input:not(:placeholder-shown)) .floatingLabel,
+.field[data-floating-label='true'][data-variant='box']:has(input[aria-invalid='true']) .floatingLabel {
+  padding: 0 0.2rem;
+  background: var(--color-surface);
+}
+
 .field[data-variant='underline'] .control input:focus-visible,
 .field[data-variant='underline'] .control textarea:focus-visible {
   border-bottom-color: var(--color-brand-yellow);
@@ -79,6 +171,10 @@
 
 .field:has(.control input[aria-invalid='true']) > label,
 .control input[aria-invalid='true'] {
+  color: var(--color-danger, #c96b6b);
+}
+
+.field[data-floating-label='true']:has(input[aria-invalid='true']) .floatingLabel {
   color: var(--color-danger, #c96b6b);
 }
 
@@ -114,6 +210,10 @@
   font-size: 0.82rem;
   transform: translateY(-50%);
   pointer-events: none;
+}
+
+.field[data-size='large'][data-variant='underline'] .suffix {
+  top: calc(50% + 0.4rem);
 }
 
 .help,

@@ -200,6 +200,8 @@ Uncaught TypeError: (0 , u.jsxDEV) is not a function
 
 빌드·타입·린트·테스트가 모두 통과하므로 CI로는 걸러지지 않는다. 운영 번들을 실제 브라우저에서 열어봐야 드러난다.
 
+Storybook도 GitHub Pages에 정적 배포하므로 같은 규칙을 적용한다. `.storybook/main.ts`의 Babel React preset은 `development: false`로 고정해 `jsxDEV`를 생성하지 않는다. 이를 개발 모드로 바꾸면 Storybook 빌드는 성공해도 Pages에서 컴포넌트를 열 때 같은 오류가 재발할 수 있다.
+
 ## 빌드 환경의 Node 버전
 
 파이프라인은 `.nvmrc`의 버전을 공식 tarball로 내려받아 **절대 경로로 실행한다.**

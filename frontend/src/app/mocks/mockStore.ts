@@ -101,7 +101,8 @@ export const checklistDetail = (checklist: MockChecklist) => ({
   name: checklist.name,
   stage: checklist.stage,
   itemCount: checklist.items.length,
-  items: checklist.items.map(({ stage: _stage, ...item }) => item),
+  // dev API의 사용자 체크리스트 조회 응답에는 origin이 없다.
+  items: checklist.items.map(({ stage: _stage, origin: _origin, ...item }) => item),
 });
 
 export type MockPhoto = {
