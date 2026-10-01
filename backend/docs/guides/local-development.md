@@ -34,6 +34,15 @@ docker compose ps
 MySQL과 MinIO가 healthy여야 한다. 빈 MySQL 볼륨은 [초기화 SQL](../../src/main/resources/db/init/)로 자동 초기화된다. 초기화 SQL은 기존 볼륨에 다시 적용되지
 않으며, 볼륨을 삭제하면 로컬 데이터도 사라진다.
 
+초기화 SQL이 바뀐 뒤 예전 볼륨으로 실행해 `Unknown column` 같은 스키마 오류가 나면 MySQL 볼륨만 다시 만든다. `docker compose down -v`는 MinIO 사진 볼륨까지 지우므로 쓰지 않는다.
+
+```bash
+docker compose stop mysql
+docker compose rm -f mysql
+docker volume rm jachwi-sunbae-backend_mysql-data
+docker compose up -d mysql
+```
+
 ### 버스정류장 데이터
 
 주변 분석의 교통은 `bus_stops` 테이블의 버스정류장으로 조회한다.
