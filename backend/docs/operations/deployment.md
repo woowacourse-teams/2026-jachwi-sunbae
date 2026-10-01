@@ -7,7 +7,8 @@
 
 ## 배포 경로
 
-브랜치 병합이 트리거다. `main`과 `develop`은 필수 상태 검사를 통과한 PR만 병합할 수 있다. 액세스 키를 만들 수 없으므로 GitHub Actions가 AWS에 직접 배포하지 않고, 제공된 service role로 동작하는 AWS 네이티브 파이프라인을 쓴다.
+브랜치 병합이 트리거다. `main`과 `develop`은 필수 상태 검사를 통과한 PR만 병합할 수 있다. 액세스 키를 만들 수 없으므로 GitHub Actions가 AWS에 직접 배포하지 않고, 제공된
+service role로 동작하는 AWS 네이티브 파이프라인을 쓴다.
 
 ```text
 develop 병합                       main 병합
@@ -27,10 +28,10 @@ develop 병합                       main 병합
 
 CodeDeploy 배포 그룹이 **EC2 태그**로 대상을 고른다.
 
-| 환경 | 태그 | EC2 |
-| --- | --- | --- |
+| 환경 | 태그                              | EC2                               |
+|------|-----------------------------------|-----------------------------------|
 | prod | `DeployTarget=jachwi-sunbae-prod` | `i-0f602d10ed2ace6c7` `t4g.small` |
-| dev | `DeployTarget=jachwi-sunbae-dev` | `i-068617b197557da19` `t4g.micro` |
+| dev  | `DeployTarget=jachwi-sunbae-dev`  | `i-068617b197557da19` `t4g.micro` |
 
 **인스턴스를 새로 만들 때 이 태그를 틀리면 배포가 두 환경으로 나간다.** 태그 값이 배포 격리의 유일한 기준이다.
 
@@ -38,10 +39,10 @@ CodeDeploy 배포 그룹이 **EC2 태그**로 대상을 고른다.
 
 **ALB는 하나다.** 443 리스너의 호스트 기반 규칙이 요청을 나눈다.
 
-| 우선순위 | 조건 | 대상 그룹 |
-| --- | --- | --- |
-| 1 | `Host = dev-api.jachwi-sunbae.kr` | `jachwi-sunbae-dev-tg` |
-| 기본 | 그 외 전부 | `jachwi-sunbe-tg` (prod) |
+| 우선순위 | 조건                              | 대상 그룹                |
+|----------|-----------------------------------|--------------------------|
+| 1        | `Host = dev-api.jachwi-sunbae.kr` | `jachwi-sunbae-dev-tg`   |
+| 기본     | 그 외 전부                        | `jachwi-sunbe-tg` (prod) |
 
 **기본 작업을 바꾸지 않는다.** 조건에 걸리지 않는 요청은 prod로 간다. 기본 작업을 dev로 바꾸면 prod가 끊긴다.
 
@@ -49,33 +50,36 @@ CodeDeploy 배포 그룹이 **EC2 태그**로 대상을 고른다.
 
 ## 저장소에 있는 것
 
-| 파일 | 역할 |
-| --- | --- |
-| `backend/deploy/appspec.yml` | CodeDeploy 훅 순서를 정의한다 |
-| `backend/deploy/jachwi-sunbae.service` | systemd 유닛 |
-| `backend/deploy/scripts/` | 배포 훅 스크립트 |
+| 파일                                   | 역할                          |
+|----------------------------------------|-------------------------------|
+| `backend/deploy/appspec.yml`           | CodeDeploy 훅 순서를 정의한다 |
+| `backend/deploy/jachwi-sunbae.service` | systemd 유닛                  |
+| `backend/deploy/scripts/`              | 배포 훅 스크립트              |
 
 ## 빌드 검증
 
-배포 빌드는 `clean bootJar -x test`로 실행 가능한 JAR를 만든다. GitHub Actions는 PR과 `main`·`develop` push에서 `clean build`를 실행한다. 두 브랜치는 보호 규칙에 따라 필수 검사를 통과하지 않으면 병합할 수 없으므로 CodePipeline이 받는 커밋은 이미 전체 단위·통합 테스트를 통과한 상태다.
+배포 빌드는 `clean bootJar -x test`로 실행 가능한 JAR를 만든다. GitHub Actions는 PR과 `main`·`develop` push에서 `clean build`를 실행한다. 두 브랜치는
+보호 규칙에 따라 필수 검사를 통과하지 않으면 병합할 수 없으므로 CodePipeline이 받는 커밋은 이미 전체 단위·통합 테스트를 통과한 상태다.
 
 ## 배포 훅
 
-| 훅 | 하는 일 |
-| --- | --- |
-| `ApplicationStop` | 서비스 중지를 요청한다. **직전 리비전의 스크립트가 실행되므로 첫 배포에는 실행되지 않는다.** 교체를 이 훅에 의존하지 않는다 |
-| `BeforeInstall` | `/opt/jachwi-sunbae`를 비운다. 이 배포가 만들지 않은 파일이 남아 있으면 CodeDeploy가 실패한다 |
-| `AfterInstall` | 환경변수 파일과 실행 사용자의 존재를 확인하고, 권한을 맞추고, systemd 유닛을 설치한다 |
-| `ApplicationStart` | 서비스를 **재시작**한다. 실제 프로세스 교체를 보장하는 단계다 |
-| `ValidateService` | `/actuator/health`가 `UP`이고 `/actuator/info`의 `build.commit`이 이번 배포 SHA와 같은지 확인한다. 실패하면 배포를 중단하고 최근 로그를 남긴다 |
+| 훅                 | 하는 일                                                                                                                                        |
+|--------------------|------------------------------------------------------------------------------------------------------------------------------------------------|
+| `ApplicationStop`  | 서비스 중지를 요청한다. **직전 리비전의 스크립트가 실행되므로 첫 배포에는 실행되지 않는다.** 교체를 이 훅에 의존하지 않는다                    |
+| `BeforeInstall`    | `/opt/jachwi-sunbae`를 비운다. 이 배포가 만들지 않은 파일이 남아 있으면 CodeDeploy가 실패한다                                                  |
+| `AfterInstall`     | 환경변수 파일과 실행 사용자의 존재를 확인하고, 권한을 맞추고, systemd 유닛을 설치한다                                                          |
+| `ApplicationStart` | 서비스를 **재시작**한다. 실제 프로세스 교체를 보장하는 단계다                                                                                  |
+| `ValidateService`  | `/actuator/health`가 `UP`이고 `/actuator/info`의 `build.commit`이 이번 배포 SHA와 같은지 확인한다. 실패하면 배포를 중단하고 최근 로그를 남긴다 |
 
 `AfterInstall`은 `/var/log/jachwi-sunbae`와 archive 디렉터리를 만들고 `jachwi` 사용자에게만 쓰기 권한을 준다.
 
 ## 프로세스 자동 재시작
 
-systemd는 Java 프로세스가 비정상 종료되면 5초 뒤 재시작한다. 5분 동안 5번 연속 기동에 실패하면 무한 재시작으로 장애 원인을 덮지 않도록 멈춘다. `ExecStopPost`는 종료 결과와 exit status를 `/var/log/jachwi-sunbae/service-events.log`에 JSON으로 기록한다.
+systemd는 Java 프로세스가 비정상 종료되면 5초 뒤 재시작한다. 5분 동안 5번 연속 기동에 실패하면 무한 재시작으로 장애 원인을 덮지 않도록 멈춘다. `ExecStopPost`는 종료 결과와 exit
+status를 `/var/log/jachwi-sunbae/service-events.log`에 JSON으로 기록한다.
 
-정상 배포의 SIGTERM은 실패가 아니므로 자동 재시작하지 않는다. 배포의 `ApplicationStart`가 새 리비전을 명시적으로 시작한다. EC2 자체의 중지나 AWS 호스트 장애는 systemd가 복구할 수 없다.
+정상 배포의 SIGTERM은 실패가 아니므로 자동 재시작하지 않는다. 배포의 `ApplicationStart`가 새 리비전을 명시적으로 시작한다. EC2 자체의 중지나 AWS 호스트 장애는 systemd가 복구할 수
+없다.
 
 지속 장애의 원인을 해결한 뒤 재시작 제한 상태를 해제한다.
 
@@ -88,11 +92,14 @@ sudo systemctl start jachwi-sunbae.service
 
 `ApplicationStart`는 `systemctl start`가 아니라 `systemctl restart`를 쓴다.
 
-`start`는 서비스가 이미 `active`이면 아무 일도 하지 않는다. `ApplicationStop`이 어떤 이유로든 중지에 실패하면 옛 프로세스가 그대로 남고 새 jar는 실행되지 않는다. 그 상태에서 `ValidateService`가 health를 확인하면 **옛 프로세스가 응답해 배포가 성공으로 기록된다.** 실제로는 아무것도 바뀌지 않았는데 초록불이 뜬다.
+`start`는 서비스가 이미 `active`이면 아무 일도 하지 않는다. `ApplicationStop`이 어떤 이유로든 중지에 실패하면 옛 프로세스가 그대로 남고 새 jar는 실행되지 않는다. 그 상태에서
+`ValidateService`가 health를 확인하면 **옛 프로세스가 응답해 배포가 성공으로 기록된다.** 실제로는 아무것도 바뀌지 않았는데 초록불이 뜬다.
 
-실제로 이 일이 있었다. `stop.sh`가 `systemctl list-unit-files` 출력을 grep해 서비스 존재를 검사했는데 그 검사가 어긋나 중지를 건너뛰었고, 이어진 배포가 1초 만에 health를 통과했다.
+실제로 이 일이 있었다. `stop.sh`가 `systemctl list-unit-files` 출력을 grep해 서비스 존재를 검사했는데 그 검사가 어긋나 중지를 건너뛰었고, 이어진 배포가 1초 만에 health를
+통과했다.
 
-`ApplicationStop`에 기대는 설계 자체가 옳지 않다. 이 훅은 **직전 리비전의 스크립트**로 실행되므로 첫 배포에서는 아예 실행되지 않고, 직전 리비전의 스크립트가 잘못돼 있으면 동작하지도 않는다. 프로세스 교체는 `restart`가 보장한다.
+`ApplicationStop`에 기대는 설계 자체가 옳지 않다. 이 훅은 **직전 리비전의 스크립트**로 실행되므로 첫 배포에서는 아예 실행되지 않고, 직전 리비전의 스크립트가 잘못돼 있으면 동작하지도 않는다.
+프로세스 교체는 `restart`가 보장한다.
 
 ## 이번 리비전이 실행됐는지 확인하는 방법
 
@@ -101,30 +108,35 @@ sudo systemctl start jachwi-sunbae.service
 - Gradle `buildInfo`의 `build.commit`: 실행 중인 애플리케이션이 `/actuator/info`로 응답한다.
 - `deployment-revision.txt`: CodeDeploy가 이번 산출물과 함께 `/opt/jachwi-sunbae`에 배치한다.
 
-`ValidateService`는 health가 `UP`이어도 두 SHA가 다르면 즉시 실패한다. 옛 프로세스가 응답하거나 다른 산출물이 배포된 경우를 성공으로 기록하지 않는다. `deployment-revision.txt`가 없거나 SHA 형식이 아니어도 실패한다.
+`ValidateService`는 health가 `UP`이어도 두 SHA가 다르면 즉시 실패한다. 옛 프로세스가 응답하거나 다른 산출물이 배포된 경우를 성공으로 기록하지 않는다.
+`deployment-revision.txt`가 없거나 SHA 형식이 아니어도 실패한다.
 
 ## 애플리케이션 포트
 
 **운영에서 애플리케이션은 80을 듣는다.** 로컬 기본값 8080과 다르다.
 
-`project-app` 보안 그룹은 `project-lb`에서 오는 80과 443만 허용한다. 8080은 열려 있지 않고, 공용 보안 그룹이라 규칙을 추가하면 다른 팀 인스턴스에도 열린다. 그래서 규칙을 바꾸지 않고 애플리케이션을 80으로 옮겼다.
+`project-app` 보안 그룹은 `project-lb`에서 오는 80과 443만 허용한다. 8080은 열려 있지 않고, 공용 보안 그룹이라 규칙을 추가하면 다른 팀 인스턴스에도 열린다. 그래서 규칙을 바꾸지
+않고 애플리케이션을 80으로 옮겼다.
 
-비루트 계정은 1024 미만 포트에 바인딩할 수 없으므로 systemd 유닛에서 `AmbientCapabilities=CAP_NET_BIND_SERVICE`를 준다. EC2 안에서 iptables로 80을 8080으로 넘기는 방법도 있지만, 그 규칙은 저장소에 남지 않고 재부팅 시 사라져 따로 영속화해야 한다.
+비루트 계정은 1024 미만 포트에 바인딩할 수 없으므로 systemd 유닛에서 `AmbientCapabilities=CAP_NET_BIND_SERVICE`를 준다. EC2 안에서 iptables로 80을
+8080으로 넘기는 방법도 있지만, 그 규칙은 저장소에 남지 않고 재부팅 시 사라져 따로 영속화해야 한다.
 
-포트를 바꾸면 세 곳을 함께 고친다. `application-prod.yml`의 `server.port`, `scripts/validate.sh`의 `HEALTH_URL`, ALB 대상 그룹의 포트다. **대상 그룹은 만든 뒤 포트를 바꿀 수 없다.**
+포트를 바꾸면 세 곳을 함께 고친다. `application-prod.yml`의 `server.port`, `scripts/validate.sh`의 `HEALTH_URL`, ALB 대상 그룹의 포트다. **대상
+그룹은 만든 뒤 포트를 바꿀 수 없다.**
 
 ## 서버에 있어야 하는 것
 
 배포는 다음을 전제한다. 없으면 `AfterInstall`에서 멈춘다.
 
-| 대상 | 내용 |
-| --- | --- |
-| `/etc/jachwi-sunbae/app.env` | 운영 환경변수. `0600`, 소유자 `root:root`. **환경마다 값이 다르다** |
-| 사용자 `jachwi` | 애플리케이션 실행 계정. 로그인 셸이 없다 |
-| 디렉터리 `/opt/jachwi-sunbae` | 배포 대상 |
-| CodeDeploy 에이전트 | `systemctl status codedeploy-agent`가 `active` |
+| 대상                          | 내용                                                                |
+|-------------------------------|---------------------------------------------------------------------|
+| `/etc/jachwi-sunbae/app.env`  | 운영 환경변수. `0600`, 소유자 `root:root`. **환경마다 값이 다르다** |
+| 사용자 `jachwi`               | 애플리케이션 실행 계정. 로그인 셸이 없다                            |
+| 디렉터리 `/opt/jachwi-sunbae` | 배포 대상                                                           |
+| CodeDeploy 에이전트           | `systemctl status codedeploy-agent`가 `active`                      |
 
-**환경변수 파일은 배포 산출물에 넣지 않는다.** CodeDeploy가 덮어쓰는 경로 밖에 두어 배포마다 값이 사라지지 않게 한다. systemd가 `EnvironmentFile`로 root 권한에서 읽은 뒤 `jachwi`로 내려가므로 애플리케이션 계정에 읽기 권한을 주지 않는다.
+**환경변수 파일은 배포 산출물에 넣지 않는다.** CodeDeploy가 덮어쓰는 경로 밖에 두어 배포마다 값이 사라지지 않게 한다. systemd가 `EnvironmentFile`로 root 권한에서 읽은 뒤
+`jachwi`로 내려가므로 애플리케이션 계정에 읽기 권한을 주지 않는다.
 
 애플리케이션은 CORS 허용 Origin과 인증·저장소 설정을 환경변수로 사용한다. 배포 전에 필요한 값을 환경변수 파일에 채우고, 새 환경변수를 도입할 때 배포 환경도 함께 갱신한다.
 
@@ -150,16 +162,57 @@ sudo systemctl start jachwi-sunbae.service
 
 3. dev 애플리케이션 DB 계정에 서비스 실행에 필요한 `SELECT`, `INSERT`, `UPDATE`, `DELETE` 권한이 있는지 확인한다.
 4. `/etc/jachwi-sunbae/app.env`에 dev DB·JWT·CORS·선택한 지도 공급자 인증 정보·S3 접두사를 dev 환경에 맞게 설정한다. 정적 AWS 키는 두지 않는다.
-5. 버스정류소 API 승인이 끝나지 않았다면 `BUS_STOP_PROVIDER=none`으로 둔다.
-6. 프론트 dev `Commands` 액션에 `API_BASE_URL=https://dev-api.jachwi-sunbae.kr`, `MAP_PROVIDER_MODE`, 선택한 지도 공급자의 공개 키, 운영과 같은 `POSTHOG_PROJECT_TOKEN`, `POSTHOG_HOST=https://us.i.posthog.com`을 주입한다. PostHog 데이터는 `environment=development` 속성으로 운영 데이터와 구분한다.
+5. `bus_stops` 테이블과 정류장 데이터가 적재되어 있는지 확인한다. 없으면 [버스정류장 데이터 적재](#버스정류장-데이터-적재)를 먼저 진행한다.
+6. 프론트 dev `Commands` 액션에 `API_BASE_URL=https://dev-api.jachwi-sunbae.kr`, `MAP_PROVIDER_MODE`, 선택한 지도 공급자의 공개 키, 운영과 같은
+   `POSTHOG_PROJECT_TOKEN`, `POSTHOG_HOST=https://us.i.posthog.com`을 주입한다. PostHog 데이터는 `environment=development` 속성으로
+   운영 데이터와 구분한다.
 
-애플리케이션은 배포 중 RDS 스키마를 자동 변경하지 않는다. `db/init`은 빈 로컬 MySQL을 만들기 위한 기준선이므로 기존 RDS에 직접 실행하지 않는다. 스키마 전환이 필요한 배포는 백업, 데이터 덤프, 새 스키마 생성, 데이터 적재, 무결성 검증을 별도 작업으로 수행하고 결과를 배포 이슈에 기록한다.
+애플리케이션은 배포 중 RDS 스키마를 자동 변경하지 않는다. `db/init`은 빈 로컬 MySQL을 만들기 위한 기준선이므로 기존 RDS에 직접 실행하지 않는다. 스키마 전환이 필요한 배포는 백업, 데이터 덤프,
+새 스키마 생성, 데이터 적재, 무결성 검증을 별도 작업으로 수행하고 결과를 배포 이슈에 기록한다.
 
 prod 전환은 dev 전환과 보관 데이터 확인이 끝난 뒤에만 진행한다. prod DB에서도 배포 직전에 최신 자동 백업 복구 지점을 확인하고, 복구 지점 식별자와 확인 시각을 배포 이슈에 남긴다.
 
+## 버스정류장 데이터 적재
+
+| 항목              | 현재 값                                                     |
+|-------------------|-------------------------------------------------------------|
+| 적재한 스냅샷     | `국토교통부_전국 버스정류장 위치정보_20251031.csv`          |
+| 원본 행 / 적재 행 | 227,065 / 227,053 (빈 좌표 5행, 국내 범위 밖 좌표 7행 제외) |
+| 갱신 주기         | 연 1회 수동. 새 스냅샷이 공개되면 같은 절차로 다시 적재한다 |
+
+애플리케이션은 이 테이블을 조회만 한다.
+테이블이 없으면 교통 조회가 실패하므로 **애플리케이션 배포 전에 적재한다.**
+dev에서 먼저 진행하고 확인한 뒤 prod에 같은 순서로 진행한다.
+
+1. 최신 자동 백업 복구 지점을 확인하고 배포 이슈에 기록한다.
+2. 처음 적재할 때만 관리자 계정으로 테이블을 만든다. `db/init/001-schema.sql` 전체가 아니라 `bus_stops`의 `CREATE TABLE` 문만 실행한다. 애플리케이션 DB 계정에는
+   `CREATE` 권한이 없다.
+3. 로컬에서 CSV (EUC-KR)로 적재 SQL을 만든다. 출력의 적재 행 수와 제외 행 목록을 확인한다.
+
+   ```bash
+   python3 backend/scripts/bus-stops/generate_bus_stops_sql.py "<CSV 경로>" --output bus-stops.sql
+   ```
+
+4. RDS에 접속할 수 있는 EC2로 SQL 파일을 옮겨 실행한다. SQL은 한 트랜잭션 안에서 기존 정류장을 지우고 다시 넣으므로, 실패하면 이전 데이터가 그대로 남는다.
+
+   ```bash
+   mysql -h "$DB_HOST" -u "$DB_USERNAME" -p "$DB_NAME" < bus-stops.sql
+   ```
+
+5. 적재 결과를 확인하고 행 수를 배포 이슈에 기록한다.
+
+   ```sql
+   SELECT COUNT(*), COUNT(DISTINCT node_id) FROM bus_stops;
+   ```
+
+6. 애플리케이션을 배포한 뒤 `/etc/jachwi-sunbae/app.env`에서 더 이상 쓰지 않는 `BUS_STOP_PROVIDER`, `DATA_GO_KR_SERVICE_KEY`를 지운다.
+
+갱신할 때는 2번을 건너뛰고 3~5번만 진행한다. 애플리케이션 재시작은 필요 없다. 적재한 스냅샷이 바뀌면 위 표를 함께 고친다.
+
 ## 빌드를 CodeBuild가 아니라 Commands로 하는 이유
 
-별도 CodeBuild 프로젝트를 두지 않고 CodePipeline의 `Commands` 액션을 쓴다. 같은 계정의 다른 팀이 CodeBuild 경로에서 막혔기 때문이다. `codebuild-project` 서비스 role에 파이프라인 `SourceArtifact`를 읽을 `s3:GetObject` 권한이 없어 빌드 입력을 내려받지 못했고, 팀은 role 정책을 바꿀 수 없다.
+별도 CodeBuild 프로젝트를 두지 않고 CodePipeline의 `Commands` 액션을 쓴다. 같은 계정의 다른 팀이 CodeBuild 경로에서 막혔기 때문이다. `codebuild-project` 서비스
+role에 파이프라인 `SourceArtifact`를 읽을 `s3:GetObject` 권한이 없어 빌드 입력을 내려받지 못했고, 팀은 role 정책을 바꿀 수 없다.
 
 `Commands`는 파이프라인 서비스 role을 그대로 쓰므로 이 문제를 겪지 않는다. 대신 빌드 정의가 저장소가 아니라 콘솔에 있다. 파이프라인 설정을 바꾸면 이 문서를 함께 고친다.
 
@@ -172,13 +225,14 @@ prod 전환은 dev 전환과 보관 데이터 확인이 끝난 뒤에만 진행�
 5. `-plain.jar`가 아닌 jar를 `app.jar`로 복사한다.
 6. `backend/deploy/`의 내용을 작업 디렉터리 루트로 옮긴다. **`appspec.yml`이 아티팩트 최상단에 없으면 CodeDeploy가 배포를 시작하지 못한다.**
 
-Commands 액션은 GitHub 소스를 직접 받는 CodeBuild 프로젝트가 아니라 `SourceArtifact`를 입력으로 받는다. 이 구성에서는 `CODEBUILD_RESOLVED_SOURCE_VERSION`이 자동으로 제공되지 않으므로 Source 작업의 출력 변수를 Build 작업에 명시적으로 연결한다.
+Commands 액션은 GitHub 소스를 직접 받는 CodeBuild 프로젝트가 아니라 `SourceArtifact`를 입력으로 받는다. 이 구성에서는
+`CODEBUILD_RESOLVED_SOURCE_VERSION`이 자동으로 제공되지 않으므로 Source 작업의 출력 변수를 Build 작업에 명시적으로 연결한다.
 
-| 설정 위치 | 값 |
-| --- | --- |
-| Source 작업 변수 네임스페이스 | `SourceVariables` |
-| Build 작업 환경 변수 이름 | `SOURCE_COMMIT_ID` |
-| Build 작업 환경 변수 값 | `#{SourceVariables.CommitId}` |
+| 설정 위치                     | 값                            |
+|-------------------------------|-------------------------------|
+| Source 작업 변수 네임스페이스 | `SourceVariables`             |
+| Build 작업 환경 변수 이름     | `SOURCE_COMMIT_ID`            |
+| Build 작업 환경 변수 값       | `#{SourceVariables.CommitId}` |
 
 빌드 명령에는 다음 검증과 파일 생성을 포함한다.
 
@@ -189,7 +243,8 @@ SOURCE_COMMIT_ID="${REVISION}" ./backend/gradlew -p backend --no-daemon --max-wo
 printf '%s\n' "${REVISION}" > deployment-revision.txt
 ```
 
-출력 아티팩트 `BuildArtifact`에는 `app.jar`, `deployment-revision.txt`, `appspec.yml`, `jachwi-sunbae.service`, `scripts/**/*`가 들어간다. 이 목록을 비워두면 Deploy 단계의 입력이 저장소 원본으로 잡혀 배포가 실패한다.
+출력 아티팩트 `BuildArtifact`에는 `app.jar`, `deployment-revision.txt`, `appspec.yml`, `jachwi-sunbae.service`, `scripts/**/*`가
+들어간다. 이 목록을 비워두면 Deploy 단계의 입력이 저장소 원본으로 잡혀 배포가 실패한다.
 
 ## 로그 확인
 
