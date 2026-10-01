@@ -9,6 +9,7 @@ import java.time.LocalDateTime;
 @Getter
 public class SystemCheckItem {
 
+    private static final int MAX_QUESTION_LENGTH = 200;
     private final Long id;
     private final CheckStage stage;
     private final CheckItemType itemType;
@@ -28,23 +29,28 @@ public class SystemCheckItem {
                                               final CheckItemType itemType, final String question,
                                               final LocalDateTime deletedAt) {
         // 시스템 체크 항목은 서버가 제공하는 시드 데이터다. 값이 어긋나면 서버 데이터 문제다.
-        return new SystemCheckItem(id,
-                requireNonNull(stage, "체크 단계는 필수입니다."),
-                requireNonNull(itemType, "시스템 항목 유형은 필수입니다."),
-                requireTrimmed(question, 200, "질문은 trim 후 1자 이상 200자 이하여야 합니다."), deletedAt);
+        return new SystemCheckItem(id, validateStage(stage), validateItemType(itemType),
+                validateQuestion(question), deletedAt);
     }
 
-    private static <T> T requireNonNull(final T value, final String message) {
-        if (value == null) {
-            throw new IllegalArgumentException(message);
+    private static CheckStage validateStage(final CheckStage stage) {
+        if (stage == null) {
+            throw new IllegalArgumentException("체크 단계는 필수입니다.");
         }
-        return value;
+        return stage;
     }
 
-    private static String requireTrimmed(final String value, final int maxLength, final String message) {
-        if (value == null || value.isBlank() || value.trim().length() > maxLength) {
-            throw new IllegalArgumentException(message);
+    private static CheckItemType validateItemType(final CheckItemType itemType) {
+        if (itemType == null) {
+            throw new IllegalArgumentException("시스템 항목 유형은 필수입니다.");
         }
-        return value.trim();
+        return itemType;
+    }
+
+    private static String validateQuestion(final String question) {
+        if (question == null || question.isBlank() || question.trim().length() > MAX_QUESTION_LENGTH) {
+            throw new IllegalArgumentException("질문은 trim 후 1자 이상 200자 이하여야 합니다.");
+        }
+        return question.trim();
     }
 }

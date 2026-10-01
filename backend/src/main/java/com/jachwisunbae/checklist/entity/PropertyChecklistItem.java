@@ -9,6 +9,7 @@ import com.jachwisunbae.common.exception.errorcode.ErrorCode;
 public class PropertyChecklistItem {
 
     private static final int MAX_MEMO_LENGTH = 500;
+    private static final int MAX_QUESTION_LENGTH = 200;
     private final Long id;
     private final Long propertyChecklistId;
     private final Long systemCheckItemId;
@@ -94,7 +95,7 @@ public class PropertyChecklistItem {
     }
 
     private static String validateQuestion(final String question) {
-        if (question == null || question.isBlank() || question.trim().length() > 200) {
+        if (question == null || question.isBlank() || question.trim().length() > MAX_QUESTION_LENGTH) {
             throw new IllegalArgumentException("스냅샷 질문은 trim 후 1자 이상 200자 이하여야 합니다.");
         }
         return question.trim();
