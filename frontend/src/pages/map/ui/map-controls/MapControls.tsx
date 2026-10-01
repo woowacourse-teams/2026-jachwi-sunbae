@@ -1,5 +1,3 @@
-import type { CSSProperties } from 'react';
-
 import type { MapCategory } from '@/features/map/model/Map';
 import MapCategoryRail from '@/features/map/ui/map-category-rail/MapCategoryRail';
 import MapRadiusSelector from '@/features/map/ui/map-radius-selector/MapRadiusSelector';
@@ -17,7 +15,7 @@ type MapControlsProps = {
   selectedCategories: MapCategory[];
   categoryCounts: Partial<Record<MapCategory, number>>;
   sheetStage: MapPropertySheetStage;
-  dragHeight: number | null;
+  isDragging: boolean;
   isLocating: boolean;
   onSelectRadius: (radius: MapRadius) => void;
   onToggleCategory: (category: MapCategory) => void;
@@ -31,7 +29,7 @@ const MapControls = ({
   selectedCategories,
   categoryCounts,
   sheetStage,
-  dragHeight,
+  isDragging,
   isLocating,
   onSelectRadius,
   onToggleCategory,
@@ -70,12 +68,7 @@ const MapControls = ({
       </button>
     </div>
     {!isAddMode && (
-      <div
-        className={styles.addPropertyAction}
-        data-sheet={sheetStage}
-        data-dragging={dragHeight === null ? undefined : 'true'}
-        style={dragHeight === null ? undefined : ({ '--sheet-height': `${dragHeight}px` } as CSSProperties)}
-      >
+      <div className={styles.addPropertyAction} data-sheet={sheetStage} data-dragging={isDragging || undefined}>
         <PageAction placement="inline" onClick={onEnterAddMode} aria-label="지도에서 매물 추가">
           매물 추가
         </PageAction>
