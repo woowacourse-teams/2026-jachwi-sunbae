@@ -2,12 +2,14 @@ package com.jachwisunbae.checklist.entity;
 
 import lombok.Getter;
 import com.jachwisunbae.checklist.type.CheckStatus;
+import com.jachwisunbae.common.exception.client.InvalidInputException;
 import com.jachwisunbae.common.exception.errorcode.ErrorCode;
-import com.jachwisunbae.common.validation.DomainPreconditions;
 
 @Getter
 public class PropertyChecklistItem {
 
+    private static final int MAX_MEMO_LENGTH = 500;
+    private static final int MAX_QUESTION_LENGTH = 200;
     private final Long id;
     private final Long propertyChecklistId;
     private final Long systemCheckItemId;
@@ -54,25 +56,34 @@ public class PropertyChecklistItem {
         this.displayOrder = validateOrder(displayOrder);
     }
 
+    // ID, 표시 순서, 질문은 서버가 스냅샷으로 복사해 넣는 값이다. 어긋나면 서버 코드 문제다.
     private static Long validateId(final Long id) {
-        return DomainPreconditions.requireNonNull(id, ErrorCode.PROPERTY_CHECKLIST_ITEM_NOT_FOUND,
-                "매물 체크 항목 ID는 필수입니다.");
+        if (id == null) {
+            throw new IllegalArgumentException("매물 체크 항목 ID는 필수입니다.");
+        }
+        return id;
     }
 
     private static Integer validateOrder(final Integer order) {
-        return DomainPreconditions.requirePositive(order, ErrorCode.PROPERTY_CHECK_RESULT_INVALID,
-                "표시 순서는 양수여야 합니다.");
+        if (order == null || order <= 0) {
+            throw new IllegalArgumentException("표시 순서는 양수여야 합니다: " + order);
+        }
+        return order;
     }
 
+    // 체크 상태와 메모는 사용자가 매물 체크 항목에서 직접 바꾸는 값이다.
     private static CheckStatus validateStatus(final CheckStatus status) {
-        return DomainPreconditions.requireNonNull(status, ErrorCode.PROPERTY_CHECK_RESULT_INVALID,
-                "체크 상태는 필수입니다.");
+        if (status == null) {
+            throw new InvalidInputException(ErrorCode.PROPERTY_CHECK_RESULT_INVALID, "체크 상태는 필수입니다.");
+        }
+        return status;
     }
 
     private static String validateMemo(final String memo) {
         String value = defaultMemo(memo);
-        DomainPreconditions.require(value.length() <= 500, ErrorCode.PROPERTY_CHECK_RESULT_INVALID,
-                "항목 메모는 500자 이하여야 합니다.");
+        if (value.length() > MAX_MEMO_LENGTH) {
+            throw new InvalidInputException(ErrorCode.PROPERTY_CHECK_RESULT_INVALID, "항목 메모는 500자 이하여야 합니다.");
+        }
         return value;
     }
 
@@ -84,7 +95,9 @@ public class PropertyChecklistItem {
     }
 
     private static String validateQuestion(final String question) {
-        return DomainPreconditions.requireTrimmed(question, 1, 200, ErrorCode.PROPERTY_CHECK_RESULT_INVALID,
-                "스냅샷 질문은 trim 후 1자 이상 200자 이하여야 합니다.");
+        if (question == null || question.isBlank() || question.trim().length() > MAX_QUESTION_LENGTH) {
+            throw new IllegalArgumentException("스냅샷 질문은 trim 후 1자 이상 200자 이하여야 합니다.");
+        }
+        return question.trim();
     }
 }

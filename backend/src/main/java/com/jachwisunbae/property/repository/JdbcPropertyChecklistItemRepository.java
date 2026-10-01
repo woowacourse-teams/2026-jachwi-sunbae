@@ -3,7 +3,12 @@ package com.jachwisunbae.property.repository;
 import com.jachwisunbae.checklist.entity.PropertyChecklistItem;
 import com.jachwisunbae.checklist.type.CheckStatus;
 import com.jachwisunbae.checklist.type.CheckStage;
+import com.jachwisunbae.common.exception.client.ClientException;
+import com.jachwisunbae.common.exception.errorcode.ErrorCode;
+import com.jachwisunbae.common.exception.server.DataInconsistencyException;
 import com.jachwisunbae.property.repository.query.PropertyChecklistItemStateQuery;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -72,17 +77,27 @@ public class JdbcPropertyChecklistItemRepository implements PropertyChecklistIte
                 JOIN properties p ON p.id = pc.property_id
                 WHERE p.id = ? AND p.member_id = ? AND pc.id = ? AND pci.id = ?
                 """;
-        return jdbcTemplate.query(sql,
-            (rs, row) -> PropertyChecklistItem.reconstruct(
-                rs.getLong("id"),
+        return jdbcTemplate.query(sql, (rs, row) -> mapItem(rs, propertyChecklistId),
+            propertyId, memberId, propertyChecklistId, itemId).stream().findFirst();
+    }
+
+    // DB에 저장된 체크 항목이 입력 규칙(메모 길이 등)을 만족하지 않는 것은 사용자 요청이 아니라 서버 데이터 문제다.
+    private PropertyChecklistItem mapItem(final ResultSet rs, final long propertyChecklistId) throws SQLException {
+        long itemId = rs.getLong("id");
+        try {
+            return PropertyChecklistItem.reconstruct(
+                itemId,
                 propertyChecklistId,
                 rs.getObject("system_check_item_id", Long.class),
                 rs.getInt("display_order"),
                 CheckStatus.valueOf(rs.getString("status")),
                 rs.getString("memo"),
                 rs.getString("question")
-            ),
-            propertyId, memberId, propertyChecklistId, itemId).stream().findFirst();
+            );
+        } catch (ClientException exception) {
+            throw new DataInconsistencyException(ErrorCode.INTERNAL_SERVER_ERROR,
+                "propertyChecklistItemId=" + itemId + " 저장된 체크 항목 데이터가 규칙을 만족하지 않습니다.", exception);
+        }
     }
 
     @Override

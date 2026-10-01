@@ -2,7 +2,6 @@ package com.jachwisunbae.common.web.error;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.jachwisunbae.common.exception.BusinessException;
 import com.jachwisunbae.common.exception.JachwiException;
 import com.jachwisunbae.common.exception.client.AuthenticationFailedException;
 import com.jachwisunbae.common.exception.client.AuthorizationFailedException;
@@ -33,7 +32,7 @@ class GlobalExceptionHandlerTest {
 
     private static final String DEBUG_MESSAGE = "내부 원인 propertyId=7 errCd=-401";
 
-    private final GlobalExceptionHandler handler = new GlobalExceptionHandler(new DomainErrorHttpMapper());
+    private final GlobalExceptionHandler handler = new GlobalExceptionHandler();
 
     static Stream<Arguments> exceptionsAndStatuses() {
         ErrorCode code = ErrorCode.PROPERTY_NOT_FOUND;
@@ -65,16 +64,6 @@ class GlobalExceptionHandlerTest {
 
         assertThat(response.getBody()).isEqualTo(new ErrorResponse(ErrorCode.MAP_PROVIDER_UNAVAILABLE.name(),
                 ErrorCode.MAP_PROVIDER_UNAVAILABLE.publicMessage()));
-    }
-
-    @Test
-    @DisplayName("레거시 BusinessException은 ErrorCode마다 정한 상태와 공개 메시지로 응답한다")
-    void respondsLegacyBusinessExceptionWithPublicMessage() {
-        ResponseEntity<ErrorResponse> response = handler.handleBusinessException(
-                new BusinessException(ErrorCode.DUPLICATE_CHECK_ITEM, DEBUG_MESSAGE));
-
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
-        assertThat(response.getBody().message()).isEqualTo(ErrorCode.DUPLICATE_CHECK_ITEM.publicMessage());
     }
 
     @Test

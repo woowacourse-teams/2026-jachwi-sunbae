@@ -6,6 +6,9 @@ import com.jachwisunbae.checklist.repository.query.UserChecklistItemDetail;
 import com.jachwisunbae.checklist.repository.query.UserChecklistSummaryQuery;
 import com.jachwisunbae.checklist.type.CheckItemType;
 import com.jachwisunbae.checklist.type.CheckStage;
+import com.jachwisunbae.common.exception.client.ClientException;
+import com.jachwisunbae.common.exception.errorcode.ErrorCode;
+import com.jachwisunbae.common.exception.server.DataInconsistencyException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.support.GeneratedKeyHolder;
@@ -22,12 +25,21 @@ public class JdbcUserChecklistRepository implements UserChecklistRepository {
 
     private final JdbcTemplate jdbcTemplate;
 
-    private final RowMapper<UserChecklist> checklistRowMapper = (rs, row) -> UserChecklist.reconstruct(
-        rs.getLong("id"),
-        rs.getLong("member_id"),
-        rs.getString("name"),
-        CheckStage.valueOf(rs.getString("stage"))
-    );
+    // DB에 저장된 체크리스트가 입력 규칙(이름 길이 등)을 만족하지 않는 것은 사용자 요청이 아니라 서버 데이터 문제다.
+    private final RowMapper<UserChecklist> checklistRowMapper = (rs, row) -> {
+        long checklistId = rs.getLong("id");
+        try {
+            return UserChecklist.reconstruct(
+                checklistId,
+                rs.getLong("member_id"),
+                rs.getString("name"),
+                CheckStage.valueOf(rs.getString("stage"))
+            );
+        } catch (ClientException exception) {
+            throw new DataInconsistencyException(ErrorCode.INTERNAL_SERVER_ERROR,
+                "checklistId=" + checklistId + " 저장된 체크리스트 데이터가 체크리스트 규칙을 만족하지 않습니다.", exception);
+        }
+    };
 
     private final RowMapper<UserChecklistItem> itemRowMapper = (rs, row) -> UserChecklistItem.reconstruct(
         rs.getLong("id"),
