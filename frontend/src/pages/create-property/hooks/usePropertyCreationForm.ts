@@ -105,6 +105,10 @@ export const usePropertyCreationForm = (routeState: PropertyCreationRouteState) 
   const submitProperty = async () => {
     const validationErrors = validatePropertyForm(values);
     setErrors(validationErrors);
+    if (validationErrors.address !== undefined) {
+      setCreateError(validationErrors.address);
+      return;
+    }
     if (Object.keys(validationErrors).length > 0) return;
     if (location.locationStatus !== 'ready') {
       setCreateError(
@@ -137,9 +141,19 @@ export const usePropertyCreationForm = (routeState: PropertyCreationRouteState) 
   const submitStep = (event: FormEvent) => {
     event.preventDefault();
     const next: PropertyFormErrors = {};
-    if (values.depositAmount.length === 0) next.depositAmount = '보증금을 입력해 주세요.';
-    if (revealedStep >= 1 && values.monthlyRentAmount.length === 0) next.monthlyRentAmount = '월세를 입력해 주세요.';
-    if (revealedStep >= nameStep && values.name.trim().length === 0) next.name = '매물 이름을 입력해 주세요.';
+    const validationErrors = validatePropertyForm(values);
+    if (values.depositAmount.length === 0 || validationErrors.depositAmount !== undefined) {
+      next.depositAmount = validationErrors.depositAmount ?? '보증금을 입력해 주세요.';
+    }
+    if (
+      revealedStep >= 1 &&
+      (values.monthlyRentAmount.length === 0 || validationErrors.monthlyRentAmount !== undefined)
+    ) {
+      next.monthlyRentAmount = validationErrors.monthlyRentAmount ?? '월세를 입력해 주세요.';
+    }
+    if (revealedStep >= nameStep && (values.name.trim().length === 0 || validationErrors.name !== undefined)) {
+      next.name = validationErrors.name ?? '매물 이름을 입력해 주세요.';
+    }
     setErrors(next);
     if (Object.keys(next).length > 0) return;
     if (revealedStep === 0) {
