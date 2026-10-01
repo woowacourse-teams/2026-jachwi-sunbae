@@ -189,7 +189,7 @@ DB에 저장된 데이터가 애플리케이션이 기대하는 상태를 만족
 
 자취선배가 의존하는 외부 시스템이 정상적인 결과를 제공하지 못했을 때 사용한다.
 
-- Kakao Local, 행정안전부 주소, SGIS, TAGO API 실패
+- Kakao Local, 행정안전부 주소, SGIS API 실패
 - S3 요청 실패
 
 외부 시스템이 HTTP 4xx를 반환해도 자취선배 사용자의 잘못이라는 뜻은 아니다. 예를 들어 서버의 API Key가 잘못되어 외부 API가 `401`을 반환했다면 사용자의 인증 실패가 아니라 서버 또는 외부 의존성 문제다. 외부 응답 상태를 클라이언트에 그대로 전달하지 않는다.
@@ -433,7 +433,7 @@ DB 예외 메시지나 드라이버 오류 문구를 파싱해서 제약 종류�
 
 ## 15. 외부 API 예외
 
-외부 API Client는 외부 시스템과의 통신 실패를 애플리케이션이 이해할 수 있는 서버 예외로 변환한다. 대상은 Kakao, SGIS, 행정안전부 주소 API, TAGO, S3 등이다.
+외부 API Client는 외부 시스템과의 통신 실패를 애플리케이션이 이해할 수 있는 서버 예외로 변환한다. 대상은 Kakao, SGIS, 행정안전부 주소 API, S3 등이다.
 
 ### 15.1. RuntimeException 전체를 외부 장애로 변환하지 않는다
 
@@ -469,17 +469,19 @@ try {
 
 ## 16. 대체 처리 (Fallback)
 
-외부 시스템이 실패해도 일부 기능만 제외하고 정상 결과를 반환할 수 있다. 예를 들어 주변 시설 검색은 성공했지만 TAGO 버스정류장 조회가 실패하면, 제품 정책상 버스정류장 없이 결과를 제공한다.
+외부 시스템이 실패해도 일부 기능만 제외하고 정상 결과를 반환할 수 있다. 예를 들어 주요 결과는 성공했지만 부가 정보를 주는 외부 API가 실패하면, 제품 정책에 따라 부가 정보 없이 결과를 제공할 수 있다.
 
 이때 **예상한 외부 장애만** 잡는다.
 
 ```java
 try {
-    busStopProvider.nearby(...);
+    supplementProvider.find(...);
 } catch (UpstreamServiceException exception) {
     log.warn(...);
 }
 ```
+
+우리 DB에서 조회하는 데이터는 외부 장애가 아니므로 대체 처리하지 않는다. 예를 들어 버스정류장은 서비스 DB에서 조회하므로, 조회가 실패하면 그대로 `500`으로 드러낸다.
 
 `catch (RuntimeException)`으로 모든 예외를 잡아 우리 코드의 `NullPointerException`까지 대체 처리로 숨기지 않는다.
 
@@ -562,7 +564,6 @@ try {
 | 손상된 DB 비밀번호 해시 | 저장된 해시 검증 실패 → `DataInconsistencyException` | `500` |
 | 존재하지 않는 매물 | `PropertyService` → `ResourceNotFoundException(PROPERTY_NOT_FOUND)` | `404` |
 | SGIS 장애 | `SgisAddressClient` → `UpstreamServiceException(MAP_PROVIDER_UNAVAILABLE)` | `502` |
-| TAGO 장애 | `TagoBusStopProvider` → `UpstreamServiceException`, `MapService`가 이 예외만 잡고 `WARN` 로그 | Kakao 결과만 `200` |
 | 우리 코드의 `NullPointerException` | 잡지 않음 → `GlobalExceptionHandler` | `500` |
 
 ### 하지 않는 것
