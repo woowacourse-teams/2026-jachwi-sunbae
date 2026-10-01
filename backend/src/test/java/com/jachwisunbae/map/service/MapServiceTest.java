@@ -5,7 +5,6 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.jachwisunbae.common.exception.client.InvalidInputException;
 import com.jachwisunbae.common.exception.errorcode.ErrorCode;
-import com.jachwisunbae.common.exception.server.UpstreamServiceException;
 import com.jachwisunbae.map.domain.NearbyPlace;
 import com.jachwisunbae.map.provider.BusStopProvider;
 import com.jachwisunbae.map.provider.NearbyPlaceProvider;
@@ -17,7 +16,6 @@ import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.assertj.core.api.ThrowableAssert.ThrowingCallable;
@@ -28,6 +26,7 @@ class MapServiceTest {
 
     private static final BigDecimal LATITUDE = new BigDecimal("37.406");
     private static final BigDecimal LONGITUDE = new BigDecimal("127.088");
+    private static final BusStopProvider NO_BUS_STOPS = (latitude, longitude, radius) -> List.of();
 
     private final NearbyPlace hospital = place("kakao:2", "판교병원", MapCategory.HOSPITAL);
     private final NearbyPlace busStop = place("tago:31:1", "판교역 정류장", MapCategory.TRANSPORT);
@@ -39,7 +38,7 @@ class MapServiceTest {
         MapService service = new MapService(new DemoAddressProvider(), (latitude, longitude, radius, categories) -> {
             requested.add(categories);
             return List.of(hospital);
-        }, Optional.of((latitude, longitude, radius) -> List.of(busStop)));
+        }, (latitude, longitude, radius) -> List.of(busStop));
 
         NearbyResult response = service.nearby(LATITUDE, LONGITUDE, 500, EnumSet.allOf(MapCategory.class));
 
@@ -58,7 +57,7 @@ class MapServiceTest {
         MapService service = new MapService(new DemoAddressProvider(), (latitude, longitude, radius, categories) -> {
             nearbyCalls.incrementAndGet();
             return List.of(hospital);
-        }, Optional.of((latitude, longitude, radius) -> List.of(busStop)));
+        }, (latitude, longitude, radius) -> List.of(busStop));
 
         NearbyResult response = service.nearby(LATITUDE, LONGITUDE, 500, EnumSet.of(MapCategory.TRANSPORT));
 
@@ -70,10 +69,10 @@ class MapServiceTest {
     @DisplayName("교통 카테고리가 없으면 버스정류장을 조회하지 않는다")
     void busStopsAreNotRequestedWithoutTransportCategory() {
         AtomicInteger busStopCalls = new AtomicInteger();
-        MapService service = service(Optional.of((latitude, longitude, radius) -> {
+        MapService service = service((latitude, longitude, radius) -> {
             busStopCalls.incrementAndGet();
             return List.of(busStop);
-        }));
+        });
 
         NearbyResult response = service.nearby(LATITUDE, LONGITUDE, 500, EnumSet.of(MapCategory.HOSPITAL));
 
@@ -82,23 +81,11 @@ class MapServiceTest {
     }
 
     @Test
-    @DisplayName("버스정류장 외부 API가 실패해도 기존 시설 결과를 반환한다")
-    void busStopFailureKeepsNearbyPlaces() {
-        MapService service = service(Optional.of((latitude, longitude, radius) -> {
-            throw new UpstreamServiceException(ErrorCode.MAP_PROVIDER_UNAVAILABLE, "TAGO 장애");
-        }));
-
-        NearbyResult response = service.nearby(LATITUDE, LONGITUDE, 500, EnumSet.allOf(MapCategory.class));
-
-        assertThat(response.places()).containsExactly(hospital);
-    }
-
-    @Test
-    @DisplayName("외부 장애가 아닌 오류는 대체 처리로 숨기지 않는다")
-    void busStopBugIsNotHiddenByFallback() {
-        MapService service = service(Optional.of((latitude, longitude, radius) -> {
-            throw new IllegalStateException("우리 코드의 버그");
-        }));
+    @DisplayName("버스정류장 조회가 실패하면 대체 처리하지 않고 그대로 전파한다")
+    void busStopFailureIsNotHidden() {
+        MapService service = service((latitude, longitude, radius) -> {
+            throw new IllegalStateException("버스정류장 조회 실패");
+        });
 
         assertThatThrownBy(() -> service.nearby(LATITUDE, LONGITUDE, 500, EnumSet.allOf(MapCategory.class)))
                 .isInstanceOf(IllegalStateException.class);
@@ -112,7 +99,7 @@ class MapServiceTest {
             nearbyCalls.incrementAndGet();
             return List.of(hospital);
         };
-        MapService service = new MapService(new DemoAddressProvider(), nearbyPlaceProvider, Optional.empty());
+        MapService service = new MapService(new DemoAddressProvider(), nearbyPlaceProvider, NO_BUS_STOPS);
 
         service.nearby(LATITUDE, LONGITUDE, 500, EnumSet.allOf(MapCategory.class));
         service.nearby(LATITUDE, LONGITUDE, 500, EnumSet.allOf(MapCategory.class));
@@ -127,7 +114,7 @@ class MapServiceTest {
         MapService service = new MapService(new DemoAddressProvider(), (latitude, longitude, radius, categories) -> {
             requested.add(categories);
             return List.of();
-        }, Optional.empty());
+        }, NO_BUS_STOPS);
 
         service.nearby(LATITUDE, LONGITUDE, 500, null);
         service.nearby(LATITUDE, LONGITUDE, 500, Set.of());
@@ -143,7 +130,7 @@ class MapServiceTest {
         MapService service = new MapService(new DemoAddressProvider(), (latitude, longitude, radius, categories) -> {
             requested.add(categories);
             return List.of();
-        }, Optional.empty());
+        }, NO_BUS_STOPS);
         Set<MapCategory> categoriesWithNull = new HashSet<>();
         categoriesWithNull.add(MapCategory.HOSPITAL);
         categoriesWithNull.add(null);
@@ -156,7 +143,7 @@ class MapServiceTest {
     @Test
     @DisplayName("검색어, 좌표, 반경이 허용 범위를 벗어나면 사용자 입력 오류로 본다")
     void rejectsInvalidQueryAsInvalidInput() {
-        MapService service = service(Optional.empty());
+        MapService service = service(NO_BUS_STOPS);
 
         assertInvalidQuery(() -> service.geocode(" "));
         assertInvalidQuery(() -> service.reverseGeocode(new BigDecimal("91"), LONGITUDE));
@@ -169,7 +156,7 @@ class MapServiceTest {
                         assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.MAP_QUERY_INVALID));
     }
 
-    private MapService service(Optional<BusStopProvider> busStopProvider) {
+    private MapService service(BusStopProvider busStopProvider) {
         NearbyPlaceProvider nearbyPlaceProvider = (latitude, longitude, radius, categories) -> List.of(hospital);
         return new MapService(new DemoAddressProvider(), nearbyPlaceProvider, busStopProvider);
     }

@@ -9,12 +9,10 @@ import com.jachwisunbae.map.type.MapCategory;
 import java.math.BigDecimal;
 import java.util.Comparator;
 import java.util.List;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 // 서비스 DB에 적재한 전국 버스정류장에서 반경 안의 정류장을 찾는다.
 @Component
-@ConditionalOnProperty(name = "map.bus-stops.provider", havingValue = "db")
 public class DatabaseBusStopProvider implements BusStopProvider {
 
     private static final String BUS_STOP_LABEL = "버스정류소";

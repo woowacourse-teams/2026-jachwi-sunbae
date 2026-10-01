@@ -2,7 +2,6 @@ package com.jachwisunbae.map.service;
 
 import com.jachwisunbae.common.exception.client.InvalidInputException;
 import com.jachwisunbae.common.exception.errorcode.ErrorCode;
-import com.jachwisunbae.common.exception.server.UpstreamServiceException;
 import com.jachwisunbae.map.domain.MapAddress;
 import com.jachwisunbae.map.domain.NearbyPlace;
 import com.jachwisunbae.map.provider.AddressProvider;
@@ -10,8 +9,6 @@ import com.jachwisunbae.map.provider.BusStopProvider;
 import com.jachwisunbae.map.provider.NearbyPlaceProvider;
 import com.jachwisunbae.map.service.dto.result.NearbyResult;
 import com.jachwisunbae.map.type.MapCategory;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -21,7 +18,6 @@ import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.Set;
 
 
@@ -29,13 +25,12 @@ import java.util.Set;
 public class MapService {
 
     private static final Set<Integer> SUPPORTED_RADII = Set.of(500, 1000, 2000);
-    private static final Logger LOG = LoggerFactory.getLogger(MapService.class);
     private final AddressProvider addressProvider;
     private final NearbyPlaceProvider nearbyPlaceProvider;
-    private final Optional<BusStopProvider> busStopProvider;
+    private final BusStopProvider busStopProvider;
 
     public MapService(AddressProvider addressProvider, NearbyPlaceProvider nearbyPlaceProvider,
-                      Optional<BusStopProvider> busStopProvider) {
+                      BusStopProvider busStopProvider) {
         this.addressProvider = addressProvider;
         this.nearbyPlaceProvider = nearbyPlaceProvider;
         this.busStopProvider = busStopProvider;
@@ -80,7 +75,7 @@ public class MapService {
     private List<NearbyPlace> findPlaces(BigDecimal latitude, BigDecimal longitude, int radius, Set<MapCategory> categories) {
         List<NearbyPlace> places = new ArrayList<>(findFacilities(latitude, longitude, radius, categories));
         if (categories.contains(MapCategory.TRANSPORT)) {
-            places.addAll(findBusStops(latitude, longitude, radius));
+            places.addAll(busStopProvider.nearby(latitude, longitude, radius));
         }
         return List.copyOf(places);
     }
@@ -94,20 +89,6 @@ public class MapService {
             return List.of();
         }
         return nearbyPlaceProvider.nearby(latitude, longitude, radius, facilityCategories);
-    }
-
-    private List<NearbyPlace> findBusStops(BigDecimal latitude, BigDecimal longitude, int radius) {
-        if (busStopProvider.isEmpty()) {
-            return List.of();
-        }
-        try {
-            return busStopProvider.get().nearby(latitude, longitude, radius);
-        } catch (UpstreamServiceException exception) {
-            // 버스정류장 없이도 주변 시설 결과를 제공할 수 있어 외부 장애만 대체 처리한다.
-            // 우리 코드의 오류(NullPointerException 등)까지 숨기지 않도록 RuntimeException 전체를 잡지 않는다.
-            LOG.warn("버스정류장 조회에 실패해 주변 시설 검색 결과만 반환합니다.", exception);
-            return List.of();
-        }
     }
 
     private void validateNearbyQuery(BigDecimal latitude, BigDecimal longitude, int radius) {
