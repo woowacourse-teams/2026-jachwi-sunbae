@@ -65,7 +65,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             return true;
         }
         if (("/api/check-items".equals(path)
-                || path.startsWith("/api/maps/")) && "GET".equals(request.getMethod())) {
+                || path.startsWith("/api/maps/")
+                || path.startsWith("/api/guest/")) && "GET".equals(request.getMethod())) {
             return true;
         }
         return path.startsWith("/api/auth/");

@@ -70,6 +70,8 @@ class JwtAuthenticationFilterTest {
         assertPassed(request("POST", "/api/auth/nickname"));
         assertPassed(request("GET", "/api/check-items"));
         assertPassed(request("GET", "/api/maps/geocode"));
+        assertPassed(request("GET", "/api/guest/properties"));
+        assertPassed(request("GET", "/api/guest/checklists"));
         assertPassed(request("GET", "/actuator/health"));
         assertPassed(preflight);
     }
@@ -78,6 +80,12 @@ class JwtAuthenticationFilterTest {
     @DisplayName("체크 항목도 조회가 아니면 토큰이 필요하다")
     void requiresTokenForNonGetCheckItems() throws Exception {
         assertUnauthorized(request("POST", "/api/check-items"));
+    }
+
+    @Test
+    @DisplayName("게스트 API도 조회가 아니면 토큰이 필요하다")
+    void requiresTokenForNonGetGuest() throws Exception {
+        assertUnauthorized(request("POST", "/api/guest/properties"));
     }
 
     private void assertPassed(MockHttpServletRequest request) throws Exception {
