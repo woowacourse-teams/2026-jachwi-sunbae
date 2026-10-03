@@ -69,7 +69,11 @@ dev와 prod EC2는 모두 Spring의 `prod` 프로필을 사용한다. `DEPLOYMEN
 | `/var/log/jachwi-sunbae/application.log` | 애플리케이션·요청·예외 JSON | 10MB 단위, 최대 14일·1GB |
 | `/var/log/jachwi-sunbae/service-events.log` | systemd가 기록한 프로세스 종료 결과 | 종료당 한 줄을 누적하고 CloudWatch에서 7일 보존 |
 
-요청 로그에는 `request_id`, `http_method`, `path`, `status`, `duration_ms`만 넣는다. 쿼리 문자열, Authorization 헤더, 요청·응답 본문은 기록하지 않는다. 애플리케이션 내부 예외 로그도 같은 `request_id`를 가지므로 요청 완료 로그와 연결할 수 있다.
+요청 로그에는 `request_id`, `http_method`, `path`, `status`, `duration_ms`를 기본 필드로 넣는다. 쿼리 문자열, Authorization 헤더, 요청·응답 본문은 기록하지 않는다. 애플리케이션 내부 예외 로그도 같은 `request_id`를 가지므로 요청 완료 로그와 연결할 수 있다.
+
+서버 예외로 실패한 요청 로그에는 `error_type`과 `message`의 `HTTP request failed: <오류 메시지>`를 기록한다. 따라서 5xx 요청 목록에서 오류 메시지를 바로 확인할 수 있다. 자세한 호출 위치와 원인은 같은 `request_id`의 예외 로그에 있는 `error.stack_trace`를 확인한다. 예외 객체 없이 5xx 상태만 반환된 경우에는 원인 메시지가 없으므로 `HTTP request failed`만 남는다. HTTP 응답에는 내부 오류 메시지 대신 공개 오류 메시지를 사용한다.
+
+4xx 요청 로그의 `message`에는 응답의 공개 오류 메시지를 기록한다. 예를 들어 사진 등록 한도 초과는 `등록할 수 있는 사진 개수를 초과했습니다.`, 인증 실패는 `인증 정보를 확인할 수 없습니다.`로 표시된다. 필드별 검증 사유는 HTTP 오류 응답의 `errors`에서 확인한다. 4xx는 `INFO`, 5xx는 `ERROR` 수준으로 남긴다.
 
 `X-Request-Id`는 서버가 매 요청마다 새로 만들고 응답 헤더로 반환한다. 사용자가 전달한 값을 신뢰해 재사용하지 않는다.
 
@@ -171,8 +175,17 @@ sudo tail -n 100 /opt/aws/amazon-cloudwatch-agent/logs/amazon-cloudwatch-agent.l
 ### 최근 5xx 요청
 
 ```text
-fields @timestamp, request_id, http_method, path, status, duration_ms, message
+fields @timestamp, request_id, http_method, path, status, duration_ms, message, error_type
 | filter status >= 500
+| sort @timestamp desc
+| limit 100
+```
+
+### 최근 4xx 요청
+
+```text
+fields @timestamp, request_id, http_method, path, status, duration_ms, message
+| filter status >= 400 and status < 500
 | sort @timestamp desc
 | limit 100
 ```
@@ -180,7 +193,7 @@ fields @timestamp, request_id, http_method, path, status, duration_ms, message
 ### 요청 ID로 전체 흐름 추적
 
 ```text
-fields @timestamp, `log.level`, `log.logger`, message, status, duration_ms
+fields @timestamp, `log.level`, `log.logger`, message, error.message, error.stack_trace, status, duration_ms
 | filter request_id = "확인할-요청-ID"
 | sort @timestamp asc
 ```
