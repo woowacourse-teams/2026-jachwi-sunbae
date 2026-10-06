@@ -23,6 +23,10 @@
 
 - [제품 문서 안내](docs/product/README.md) — 기능별 요구사항·정책·인수 기준
 
+### QA
+
+- [QA 안내](docs/qa/README.md) — 정답 기준, 사용자 흐름, Scenario, 실행 결과 형식과 판정 기준
+
 ### 개발과 운영
 
 - [컨벤션](docs/convention/README.md) — 브랜치·커밋, 이슈·PR, 코드 리뷰
@@ -42,7 +46,8 @@
 ├── mobile/               # React Native 기반 iOS WebView 앱 셸
 ├── docs/
 │   ├── convention/       # 저장소 공통 규칙
-│   └── product/          # 제품 기능 명세
+│   ├── product/          # 제품 기능 명세
+│   └── qa/               # QA 기준 및 사용자 흐름 및 Scenario
 ├── .editorconfig
 ├── .gitignore
 ├── AGENTS.md
