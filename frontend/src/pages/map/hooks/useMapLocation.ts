@@ -62,6 +62,7 @@ const useMapLocation = () => {
         writeLastMapCenter(coordinate);
         setLocationLabel('현재 위치');
         setLocationStatus('ready');
+        return coordinate;
       } catch (error) {
         setLocationFailure(error instanceof MapLocationError ? error.reason : 'unavailable');
         // 이미 거부된 권한은 눌러도 창이 뜨지 않는다. 버튼을 내놓을지 여기서 가른다.
@@ -81,6 +82,7 @@ const useMapLocation = () => {
           setLocationLabel('우테코 판교사옥');
         }
         setLocationStatus('fallback');
+        return null;
       }
     },
     [],
