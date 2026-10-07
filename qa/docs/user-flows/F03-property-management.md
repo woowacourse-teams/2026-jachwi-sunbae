@@ -5,7 +5,7 @@
 | 사용자 목적 | 저장한 후보의 정보를 다시 보고, 바뀐 내용을 고치고, 생각을 메모로 남기고, 필요 없어진 후보를 지운다. |
 | 진입점 | 매물 목록, 매물 상세 |
 | 선행 Flow | F02 |
-| 관련 명세 | [매물](../../product/specs/property.md), [지도](../../product/specs/map.md), [공통 삭제 정책](../../product/README.md#공통-삭제-정책) |
+| 관련 명세 | [매물](../../../docs/product/specs/property.md), [지도](../../../docs/product/specs/map.md), [공통 삭제 정책](../../../docs/product/README.md#공통-삭제-정책) |
 
 ## 핵심 흐름
 

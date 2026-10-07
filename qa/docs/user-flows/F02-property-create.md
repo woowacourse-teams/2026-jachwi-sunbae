@@ -5,7 +5,7 @@
 | 사용자 목적 | 새로 발견한 집을 나중에 다시 보고 비교할 수 있도록 저장한다. |
 | 진입점 | 매물 목록의 매물 추가 |
 | 선행 Flow | F01 |
-| 관련 명세 | [매물](../../product/specs/property.md), [지도](../../product/specs/map.md), [체크리스트](../../product/specs/checklist.md) |
+| 관련 명세 | [매물](../../../docs/product/specs/property.md), [지도](../../../docs/product/specs/map.md), [체크리스트](../../../docs/product/specs/checklist.md) |
 
 ## 핵심 흐름
 
@@ -44,7 +44,7 @@
 
 | ID | 상황 | 근거 | 상태 |
 | --- | --- | --- | --- |
-| [F02-S01](../scenarios/F02-S01-property-create.md) | 정상 매물 등록 후 재조회 | `AC-PROP-003`, `REQ-PROP-009` | 초안 |
+| [F02-S01](../scenarios/F02-S01-property-create.md) | 정상 매물 등록 후 재조회 | `AC-PROP-003`, `REQ-PROP-009` | 자동화 |
 | [F02-S02](../scenarios/F02-S02-property-create-missing-amount.md) | 보증금·월세 누락 등록 | `AC-PROP-002` | 초안 |
 
 ## QA 메모
