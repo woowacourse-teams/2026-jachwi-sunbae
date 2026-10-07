@@ -10,7 +10,7 @@ import type { WatchedRequest } from './api';
 
 export const RUNS_DIR = resolve(__dirname, '../runs');
 
-export type EvidenceKind = '스크린샷' | 'API' | '콘솔' | '네트워크' | '트레이스';
+export type EvidenceKind = '스크린샷' | 'API' | '콘솔' | '네트워크' | '기록' | '트레이스';
 
 export type EvidenceRecord = {
   id: string;
@@ -116,6 +116,13 @@ export class EvidenceCollector {
       JSON.stringify({ watched: label, count: requests.length, requests: masked }, null, 2),
     );
     this.records.push({ id, kind: '네트워크', file, description: `${description}: ${label} ${requests.length}건` });
+  }
+
+  /** Scenario의 Required Evidence로 브라우저 안에서 모은 기록을 저장한다. 기록이 없었으면 0건으로 남는다. */
+  log(id: string, name: string, entries: unknown[], description: string): void {
+    const file = this.reserve(`${id}-${name}`, 'json');
+    writeFileSync(resolve(this.runDir, file), JSON.stringify({ count: entries.length, entries }, null, 2));
+    this.records.push({ id, kind: '기록', file, description: `${description}: ${entries.length}건` });
   }
 
   /** Scenario의 Required Evidence로 API 요청과 응답을 저장한다. */

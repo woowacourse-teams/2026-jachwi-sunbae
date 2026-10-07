@@ -120,6 +120,11 @@ export class ScenarioRun {
     return requests;
   }
 
+  /** Scenario의 Required Evidence로 브라우저 안에서 모은 기록(예: 위치 권한 요청 호출)을 저장한다. */
+  captureLog(evidenceId: string, name: string, entries: unknown[]): void {
+    this.evidence.log(evidenceId, name, entries, this.requiredEvidence(evidenceId).text);
+  }
+
   /** Expected 하나를 판정한다. 판정 중 예외가 나면 실패로 기록한다. */
   async check(expectedId: string, judge: () => Promise<ExpectedOutcome>): Promise<void> {
     const definition = this.scenario.expected.find((expected) => expected.id === expectedId);

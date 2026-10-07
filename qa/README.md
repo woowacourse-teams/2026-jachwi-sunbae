@@ -166,7 +166,7 @@ npm run render -- runs/<Run ID>    # AI 분석 없이 Run Report만 다시 만�
 | `QA_AI_ANALYSIS` | `failed` | AI 분석 대상. `failed`는 PASS가 아닌 Run만, `always`는 모든 Run, `off`는 분석하지 않음 |
 | `QA_AI_MODEL` | `claude-sonnet-5-5` | 분석에 쓸 모델 ID. 기본값은 고정이며 모델 비교 실험에만 바꾼다([DL-002](docs/decision-log/DL-002-analysis-model.md)). 예: `claude-opus-5-5` |
 | `QA_AI_TIMEOUT_MS` | `300000` | AI 분석 제한 시간 |
-| `QA_FAULT` | 없음 | 의도적으로 주입할 결함 이름. 예: `detail-rent` |
+| `QA_FAULT` | 없음 | 의도적으로 주입할 결함 이름. 예: `detail-rent`, `geocode-down` |
 
 `.env.example`을 `.env`로 복사해 설정하거나 셸 환경변수로 넘긴다. 둘 다 있으면 셸 환경변수가 우선한다. `.env`는 커밋하지 않는다.
 
@@ -212,7 +212,7 @@ await run.execute(async () => {
 
 | 계층 | 수집 방법 | 파일 |
 | --- | --- | --- |
-| Scenario 지정 | 테스트에서 `run.captureScreen(EV ID, focus)`, `run.captureApi(EV ID, response)`, `run.captureRequests(EV ID, watch)` 호출. 설명은 Scenario 문서의 Required Evidence에서 가져온다. 확인 대상이 안쪽 스크롤 영역에 있으면 전체 페이지 스크린샷에 찍히지 않으므로 `focus`로 그 요소까지 스크롤한 뒤 찍는다. `captureRequests`는 `watchRequests`로 감시한 요청의 본문과 응답 상태를 기록하며, 요청이 없으면 0건으로 남는다 | `EV1-api.json`, `EV2-screen.png`, `EV5-requests.json` |
+| Scenario 지정 | 테스트에서 `run.captureScreen(EV ID, focus)`, `run.captureApi(EV ID, response)`, `run.captureRequests(EV ID, watch)` 호출. 설명은 Scenario 문서의 Required Evidence에서 가져온다. 확인 대상이 안쪽 스크롤 영역에 있으면 전체 페이지 스크린샷에 찍히지 않으므로 `focus`로 그 요소까지 스크롤한 뒤 찍는다. `captureRequests`는 `watchRequests`로 감시한 요청의 본문과 응답 상태를 기록하며, 요청이 없으면 0건으로 남는다. 브라우저 안에서 모은 기록(예: 위치 권한 요청 호출)은 `run.captureLog(EV ID, 이름, 기록)`으로 남긴다 | `EV1-api.json`, `EV2-screen.png`, `EV5-requests.json`, `EV4-geolocation-calls.json` |
 | 항상 | 실행이 끝나면 마지막 화면 저장 | `EV+1-final-screen.png` |
 | 실패 시 추가 | 최종 판정이 `PASS`가 아니면 콘솔, 네트워크 기록, trace 저장 | `EV+2-console.json`, `EV+3-network.json`, `EV+4-trace.zip` |
 
@@ -253,6 +253,7 @@ await run.execute(async () => {
 | 이름 | 바꾸는 것 |
 | --- | --- |
 | `detail-rent` | 매물 상세 조회 응답의 월세를 실제 값의 1/10로 바꾼다 |
+| `geocode-down` | 좌표의 주소 변환 응답을 503으로 바꿔 외부 주소 API 장애를 흉내 낸다. 사전 조건 실패가 `BLOCKED`로 기록되는지 확인한다 |
 
 ```bash
 QA_FAULT=detail-rent npx playwright test tests/F02-S01-property-create.spec.ts
