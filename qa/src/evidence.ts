@@ -3,6 +3,8 @@ import { resolve } from 'node:path';
 
 import type { Page, Response } from '@playwright/test';
 
+import type { WatchedRequest } from './api';
+
 // qa/docs/report-schema.md 3. Evidence: 항상 수집, Scenario 지정, 실패 시 추가 수집의 세 계층으로 모은다.
 // Run마다 `qa/runs/{Run ID}/evidence/`에 파일로 남기고, 인증 정보는 가린다.
 
@@ -103,6 +105,13 @@ export class EvidenceCollector {
     const file = this.reserve(`${id}-screen`, 'png');
     await this.page.screenshot({ path: resolve(this.runDir, file), fullPage: true });
     this.records.push({ id, kind: '스크린샷', file, description: `${description} (${new URL(this.page.url()).pathname})` });
+  }
+
+  /** Scenario의 Required Evidence로 감시한 요청 기록을 저장한다. 요청이 없었으면 0건으로 남는다. */
+  requests(id: string, label: string, requests: WatchedRequest[], description: string): void {
+    const file = this.reserve(`${id}-requests`, 'json');
+    writeFileSync(resolve(this.runDir, file), JSON.stringify({ watched: label, count: requests.length, requests }, null, 2));
+    this.records.push({ id, kind: '네트워크', file, description: `${description}: ${label} ${requests.length}건` });
   }
 
   /** Scenario의 Required Evidence로 API 요청과 응답을 저장한다. */

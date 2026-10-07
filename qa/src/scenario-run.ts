@@ -3,6 +3,7 @@ import { relative, resolve } from 'node:path';
 
 import type { Page, Response, TestInfo } from '@playwright/test';
 
+import type { RequestWatch, WatchedRequest } from './api';
 import { qaConfig } from './config';
 import { EvidenceCollector, type EvidenceRecord, RUNS_DIR } from './evidence';
 import { type ActiveFault, activeFault } from './faults';
@@ -106,6 +107,13 @@ export class ScenarioRun {
   /** Scenario의 Required Evidence로 API 요청과 응답을 저장한다. 설명은 Scenario 문서에서 가져온다. */
   async captureApi(evidenceId: string, response: Response): Promise<void> {
     await this.evidence.api(evidenceId, response, this.requiredEvidence(evidenceId).text);
+  }
+
+  /** Scenario의 Required Evidence로 감시한 요청 기록을 저장한다. 요청이 "없었음"도 Evidence로 남는다. */
+  async captureRequests(evidenceId: string, watch: RequestWatch): Promise<WatchedRequest[]> {
+    const requests = await watch.stop();
+    this.evidence.requests(evidenceId, watch.label, requests, this.requiredEvidence(evidenceId).text);
+    return requests;
   }
 
   /** Expected 하나를 판정한다. 판정 중 예외가 나면 실패로 기록한다. */
