@@ -29,8 +29,8 @@ CodeDeploy 배포 그룹이 **EC2 태그**로 대상을 고른다.
 
 | 환경 | 태그 | EC2 |
 | --- | --- | --- |
-| prod | `DeployTarget=jachwi-sunbae-prod` | `i-0f602d10ed2ace6c7` `t4g.small` |
-| dev | `DeployTarget=jachwi-sunbae-dev` | `i-068617b197557da19` `t4g.micro` |
+| prod | `DeployTarget=jachwi-sunbae-prod` | `i-0ee91aab315b53005`. Vault 인증은 이 인스턴스 ID에 제한한다 |
+| dev | `DeployTarget=jachwi-sunbae-dev` | ASG `jachwi-sunbae-dev-asg`, `t4g.micro`. 인스턴스 ID는 교체 시 바뀐다 |
 
 **인스턴스를 새로 만들 때 이 태그를 틀리면 배포가 두 환경으로 나간다.** 태그 값이 배포 격리의 유일한 기준이다.
 
@@ -54,9 +54,9 @@ CodeDeploy 배포 그룹이 **EC2 태그**로 대상을 고른다.
 | `backend/deploy/appspec.yml` | CodeDeploy 훅 순서를 정의한다 |
 | `backend/deploy/jachwi-sunbae.service` | systemd 유닛 |
 | `backend/deploy/scripts/` | 배포 훅 스크립트 |
-| `backend/deploy/scripts/prepare_vault.sh` | dev 배포 전에 Vault 클라이언트 도구와 공개 인증서를 준비한다 |
+| `backend/deploy/scripts/prepare_vault.sh` | dev·prod 배포 전에 Vault 클라이언트 도구와 공개 인증서를 준비한다 |
 | `backend/deploy/scripts/certs/vault-ca.crt` | 배포 산출물에 포함하는 Vault 공개 인증서. TLS 개인키는 포함하지 않는다 |
-| `backend/deploy/scripts/fetch_env.sh` | dev EC2 신원으로 Vault에 인증하고 환경변수 파일을 갱신한다 |
+| `backend/deploy/scripts/fetch_env.sh` | `dev` 또는 `prod` 인자로 해당 환경의 Vault 역할에 인증하고 환경변수 파일을 갱신한다 |
 
 ## 빌드 검증
 
@@ -68,7 +68,7 @@ CodeDeploy 배포 그룹이 **EC2 태그**로 대상을 고른다.
 | --- | --- |
 | `ApplicationStop` | 서비스 중지를 요청한다. **직전 리비전의 스크립트가 실행되므로 첫 배포에는 실행되지 않는다.** 교체를 이 훅에 의존하지 않는다 |
 | `BeforeInstall` | `/opt/jachwi-sunbae`를 비운다. 이 배포가 만들지 않은 파일이 남아 있으면 CodeDeploy가 실패한다 |
-| `AfterInstall` | dev는 Vault 도구·인증서를 준비하고 환경변수를 가져온 뒤 파일과 실행 사용자를 확인한다. prod는 기존 환경변수 파일을 확인한다. 이후 권한을 맞추고 systemd 유닛을 설치한다 |
+| `AfterInstall` | 배포 그룹으로 dev·prod를 선택하고 Vault 도구·인증서를 준비한 뒤 해당 환경변수를 가져온다. 파일과 실행 사용자를 확인하고 권한을 맞추며 systemd 유닛을 설치한다 |
 | `ApplicationStart` | 서비스를 **재시작**한다. 실제 프로세스 교체를 보장하는 단계다 |
 | `ValidateService` | `/actuator/health`가 `UP`이고 `/actuator/info`의 `build.commit`이 이번 배포 SHA와 같은지 확인한다. 실패하면 배포를 중단하고 최근 로그를 남긴다 |
 
@@ -118,33 +118,35 @@ sudo systemctl start jachwi-sunbae.service
 
 ## 서버에 있어야 하는 것
 
-배포 전에 다음을 준비한다. dev의 환경변수 파일은 `AfterInstall`에서 생성하고, prod는 기존 파일을 사용한다.
+배포 전에 다음을 준비한다. 이 리비전의 배포 훅은 dev·prod 모두 환경변수 파일을 `AfterInstall`에서 생성한다.
 
 | 대상 | 내용 |
 | --- | --- |
-| `/etc/jachwi-sunbae/app.env` | 환경별 설정. dev는 Vault에서 생성·갱신하고, prod는 미리 준비한다. `0600`, 소유자 `root:root` |
+| `/etc/jachwi-sunbae/app.env` | 환경별 Vault 설정으로 생성·갱신한다. `0600`, 소유자 `root:root` |
 | 사용자 `jachwi` | 애플리케이션 실행 계정. 로그인 셸이 없다 |
 | 디렉터리 `/opt/jachwi-sunbae` | 배포 대상 |
 | CodeDeploy 에이전트 | `systemctl status codedeploy-agent`가 `active` |
 
 **환경변수 파일은 배포 산출물에 넣지 않는다.** CodeDeploy가 덮어쓰는 경로 밖에 두어 배포마다 값이 사라지지 않게 한다. systemd가 `EnvironmentFile`로 root 권한에서 읽은 뒤 `jachwi`로 내려가므로 애플리케이션 계정에 읽기 권한을 주지 않는다.
 
-애플리케이션은 CORS 허용 Origin과 인증·저장소 설정을 환경변수로 사용한다. dev는 Vault에 저장한 설정을 갱신하고, prod는 서버의 환경변수 파일을 갱신한다. 새 환경변수를 도입할 때 코드와 환경별 설정을 함께 준비한다.
+애플리케이션은 CORS 허용 Origin과 인증·저장소 설정을 환경변수로 사용한다. dev·prod 각각의 Vault 경로에서 설정을 관리한다. 새 환경변수를 도입할 때 코드와 환경별 설정을 함께 준비한다.
 
 `SPRING_PROFILES_ACTIVE`는 dev와 prod 모두 `prod`로 둔다. 이 프로필은 애플리케이션이 80 포트를 사용하게 한다.
 
-## dev 환경변수를 Vault에서 가져오기
+## dev·prod 환경변수를 Vault에서 가져오기
 
 ### 적용 상태와 배포 순서
 
-2026-10-07 기준 dev EC2에서 Vault 인증, 다운로드, 원본 파일과의 해시 일치, 인증 재시도 코드의 정상 실행을 확인했다. Vault 서버의 ASG 허용 목록 갱신 타이머도 수동 실행과 주기 실행을 확인했다. **저장소의 배포 훅 연결은 준비 단계이며, 실제 CodeDeploy 배포와 새 ASG 인스턴스의 복구는 아직 검증하지 않았다.**
+2026-10-07 dev 배포에 Vault 연결을 적용했다. 기존 AMI로 생성한 인스턴스의 자동 배포 `d-T38S07W7L` 성공에 이어, `app.env`와 인증 nonce를 제외한 AMI로 새 인스턴스를 생성했다. **새 인스턴스의 Vault 허용 목록 반영, 환경변수 다운로드, CodeDeploy 자동 배포, 서비스 기동과 ALB 헬스 체크를 확인했다.** prod는 아직 기존 파일을 사용한다.
 
-두 환경의 배포 훅은 공유하지만, `DEPLOYMENT_GROUP_NAME`으로 Vault 적용 여부를 구분한다.
+이 리비전은 prod 배포 훅도 Vault에 연결한다. 위 내용은 실제 배포 검증 상태이며, prod의 이 리비전 CodeDeploy 검증은 병합·배포 후에 진행한다.
+
+두 환경의 배포 훅은 공유하며, `DEPLOYMENT_GROUP_NAME`으로 환경을 선택하고 `fetch_env.sh`에 전달한다. 스크립트는 `dev` 또는 `prod` 인자 하나만 허용하며, 잘못된 인자는 인증이나 파일 작업 전에 오류로 종료한다.
 
 | CodeDeploy 배포 그룹 | 환경변수 준비 방법 |
 | --- | --- |
-| `jachwi-sunbae-dev-group` | `fetch_env.sh`로 Vault에서 가져온다 |
-| `jachwi-sunbae-codeDeploy-group` | 서버의 기존 `app.env`를 사용한다. Vault 등록·인증 검증 후 연결 예정이다 |
+| `jachwi-sunbae-dev-group` | `fetch_env.sh dev`: `jachwi-dev` 역할, `secret/jachwi-sunbae/dev` |
+| `jachwi-sunbae-codeDeploy-group` | `fetch_env.sh prod`: `jachwi-prod` 역할, `secret/jachwi-sunbae/prod` |
 | 그 외 또는 배포 그룹 미설정 | 오류로 종료한다 |
 
 ```text
@@ -152,7 +154,7 @@ AfterInstall (제한 시간 420초)
   → prepare_vault.sh (전체 실행 제한 180초, 종료 유예 5초)
     → 필요한 클라이언트 도구와 Vault CLI 2.1.1 설치
     → 공개 인증서 검증 및 서버에 배치
-  → fetch_env.sh (전체 실행 제한 180초, 종료 유예 5초)
+  → fetch_env.sh dev 또는 prod (전체 실행 제한 180초, 종료 유예 5초)
     → IMDSv2로 EC2 신원 정보 조회
     → Vault 인증: 최대 6회, 실패 사이에 10초 대기
     → 임시 파일에 app.env 다운로드
@@ -165,29 +167,72 @@ ValidateService
   → health=UP 및 배포 SHA 일치 확인
 ```
 
-### dev EC2 준비 사항
+### 앱 EC2 준비 사항
 
 | 준비 항목 | 용도 |
 | --- | --- |
 | Vault CLI `2.1.1`, `jq`, `openssl`, `curl`, `timeout` | 인증, 응답 처리, nonce 생성, 신원 조회, 실행 시간 제한 |
 | `/etc/jachwi-sunbae/vault-ca.crt` | Vault HTTPS 인증서 검증용 공개 인증서 |
-| Vault `https://10.0.100.209:8200`으로의 접속 | dev EC2에서 Vault API 사용 |
+| Vault `https://10.0.100.209:8200`으로의 접속 | dev·prod EC2에서 Vault API 사용 |
 | IMDSv2 접근 | AWS가 서명한 EC2 신원 정보 조회 |
 | `/etc/jachwi-sunbae/vault-ec2-nonce` | 같은 인스턴스의 재인증에 사용. 최초 실행 시 생성하며 이후 유지한다 |
 
-새 ASG 인스턴스에서는 dev `AfterInstall`이 `prepare_vault.sh`를 먼저 실행한다. 필요한 도구가 없으면 `dnf`로 설치하고, Vault 패키지가 `2.1.1`이 아니면 공식 Amazon Linux 저장소에서 해당 버전 설치를 시도한다. 이미 같은 버전이 있으면 Vault 패키지 설치를 생략한다. 더 높은 버전이 설치된 경우 자동 다운그레이드를 보장하지 않으며, 최종 버전 검사가 실패하면 배포를 중단한다.
+dev·prod `AfterInstall`은 `prepare_vault.sh`를 먼저 실행한다. 필요한 도구가 없으면 `dnf`로 설치하고, Vault 패키지가 `2.1.1`이 아니면 공식 Amazon Linux 저장소에서 해당 버전 설치를 시도한다. 이미 같은 버전이 있으면 Vault 패키지 설치를 생략한다. 더 높은 버전이 설치된 경우 자동 다운그레이드를 보장하지 않으며, 최종 버전 검사가 실패하면 배포를 중단한다.
 
 이 준비 과정은 Amazon Linux 2023과 공식 패키지 저장소로의 HTTPS 접속을 전제로 한다. 새 인스턴스에는 기존 Java 런타임, `jachwi` 사용자, CodeDeploy 에이전트도 필요하다. 이 항목은 `prepare_vault.sh`에서 설치하지 않는다.
 
 공개 인증서는 `scripts/certs/vault-ca.crt`로 배포 산출물에 포함한다. 준비 스크립트는 인증서의 유효성과 Vault IP `10.0.100.209` 일치를 검사하고, 성공했을 때 `/etc/jachwi-sunbae/vault-ca.crt`를 `root:root`, `0644`로 교체한다. `app.env`와 기존 nonce는 변경하지 않으며 앱 EC2의 Vault 서버 서비스는 시작하지 않는다.
 
-설치와 다운로드에 각각 최대 180초 및 종료 유예 5초를 배정하고, 나머지 설치 작업 시간을 고려해 `AfterInstall` 제한을 420초로 둔다. 새 인스턴스에서의 설치와 실제 복구는 별도 검증이 필요하다.
+설치와 다운로드에 각각 최대 180초 및 종료 유예 5초를 배정하고, 나머지 설치 작업 시간을 고려해 `AfterInstall` 제한을 420초로 둔다. 이번 ASG 검증에는 Vault CLI가 이미 설치된 AMI를 사용했다. CLI가 없는 새 OS에서 패키지를 설치하는 경로까지 실제 EC2에서 검증한 것은 아니다.
 
 환경변수 값과 Vault 토큰은 AMI·저장소·배포 산출물에 넣지 않는다. 인증서의 공개 부분은 배포할 수 있지만 Vault TLS 개인키는 앱 서버로 전달하지 않는다. nonce는 인스턴스별로 생성하므로 AMI에서 제외한다.
 
+### prod Vault 등록과 인증 검증
+
+2026-10-07에 현재 prod EC2의 `/etc/jachwi-sunbae/app.env` 전체 내용을 KV v2의 `secret/jachwi-sunbae/prod`에 `app_env` 필드로 등록했다. 최초 등록 버전은 `1`이다. 등록과 검증은 prod EC2에서 인증서를 검증한 HTTPS 요청으로 수행했으며, 비밀값을 콘솔 출력이나 배포 산출물에 넣지 않았다.
+
+| 항목 | 설정 |
+| --- | --- |
+| AWS EC2 인증 역할 | `jachwi-prod` |
+| 허용 인스턴스 | `i-0ee91aab315b53005` |
+| 추가 인증 조건 | 계정 `843255971531`, 리전 `ap-northeast-2`, VPC `vpc-004e154d9f1f3f5cd`, 서브넷 `subnet-0e693cde6a836c0b8` |
+| 읽기 정책 | `jachwi-prod-read`: `secret/data/jachwi-sunbae/prod`의 `read`만 허용 |
+| 토큰 수명 | TTL·최대 TTL 모두 `300`초, 기본 정책 미부여 |
+| 클라이언트 파일 | 공개 인증서 `vault-ca.crt`는 `0644`, 인스턴스별 `vault-ec2-nonce`는 `0600`, 소유자는 `root:root` |
+
+초기 등록 동안만 `jachwi-prod-import` 정책으로 prod 경로에 쓰기를 허용했다. 등록 후 역할을 `jachwi-prod-read`로 전환하고 임시 등록 토큰을 폐기했으며, import 정책도 `deny`로 변경했다. 검증에 사용한 임시 환경변수 파일과 로그인 응답 파일은 정리했다.
+
+검증 결과는 다음과 같다.
+
+- 읽기 전용 토큰으로 가져온 `app_env`와 기존 prod 파일이 `cmp` 비교에서 일치했다.
+- 폐기한 임시 토큰으로 prod 비밀값을 조회하면 HTTP `403`이 반환됐다.
+- prod 읽기 토큰으로 dev 비밀값을 조회하거나 prod 비밀값에 쓰기를 요청하면 HTTP `403`이 반환됐다.
+- prod 애플리케이션은 `active`, `/actuator/health`는 `UP`이었다.
+
+현재 운영 중인 prod 리비전은 기존 `app.env`를 사용한다. 이 리비전의 `AfterInstall`은 prod Vault 연결을 포함하지만 실제 prod CodeDeploy 배포 검증은 아직 수행하지 않았다. 인증 역할은 현재 인스턴스 ID에 제한되어 있으므로 prod EC2를 교체하면 허용 ID도 갱신해야 한다.
+
+### dev ASG의 AMI와 시작 템플릿
+
+AMI 생성 작업은 서비스 중인 EC2에서 진행하지 않는다. 기존 dev가 ALB에서 `healthy`인지 확인한 뒤 테스트 인스턴스를 ASG에서 분리하고, 연결 종료 대기가 끝나 ALB에서도 제외된 후 작업했다. 분리할 때 원하는 용량을 함께 줄여 불필요한 대체 인스턴스 생성을 막았다.
+
+작업용 인스턴스에서는 앱 서비스를 중지하고 자동 시작을 해제했다. `app.env`, 과거 `app.env` 백업, 인스턴스별 nonce와 발견된 셸 이력을 EBS에 저장되지 않는 `/run`의 `tmpfs`로 옮겼다. Java, 실행 사용자, 공개 인증서, CodeDeploy·SSM·CloudWatch 에이전트는 유지했다. 이후 해당 인스턴스를 재부팅하는 방식으로 AMI를 생성했다. 이는 파일 경로에서의 제외이며, 과거 비밀값의 디스크 완전 소거를 검증한 것은 아니다.
+
+| 항목 | 2026-10-07 검증 구성 |
+| --- | --- |
+| AMI | `ami-010ffe62c648da620` (`jachwi-sunbae-dev-vault-base-20261007`) |
+| AMI 스냅샷 | `snap-048fcbe9701fad2f8` |
+| 시작 템플릿 | `lt-001ccfbad12f1545b` / `jachwi-sunbae-dev-lt`, 버전 `10` |
+| ASG | `jachwi-sunbae-dev-asg`. 검증 후 최소·원하는·최대 용량을 각각 `1`로 복원했다 |
+| 검증 인스턴스 | `i-082f3f62bf20385e0`, `10.0.20.110` |
+| 자동 배포 | [CodeDeploy `d-NAY58TW7L`](https://ap-northeast-2.console.aws.amazon.com/codesuite/codedeploy/deployments/d-NAY58TW7L?region=ap-northeast-2) |
+
+AMI와 스냅샷에는 `Service=techcourse`, `Role=techcourse-etc`, `ProjectTeam=jachwi-sunbae`를 지정했다. 시작 템플릿은 EC2와 EBS에도 같은 필수 태그를 부여한다. ASG는 `$Latest` 대신 검증한 버전 `10`을 명시해, 새 버전 생성만으로 복구 구성이 바뀌지 않게 했다.
+
+새 EC2의 앱은 부팅만으로 시작하지 않는다. CodeDeploy `AfterInstall`이 Vault에서 `app.env`를 생성하고 systemd 유닛의 자동 시작을 활성화한 뒤, `ApplicationStart`에서 서비스를 시작한다. 따라서 코드 배포 성공과 Vault 설정 다운로드 성공이 모두 필요하다. 환경변수 변경만으로 AMI를 다시 만들 필요는 없다. Java·에이전트 등 기반 구성을 변경할 때는 새 AMI 검증이 필요하다.
+
 ### 저장 경로와 인증 권한
 
-dev 설정은 KV v2의 `secret/jachwi-sunbae/dev` 경로에서 `app_env` 항목에 파일 내용 그대로 저장한다. dev 인증 역할 `jachwi-dev`는 `jachwi-dev-read` 정책을 부여하며, 이 정책은 `secret/data/jachwi-sunbae/dev`의 읽기만 허용한다. 발급 토큰의 기본·최대 유효기간은 5분이다.
+환경별 설정은 KV v2의 `secret/jachwi-sunbae/dev`와 `secret/jachwi-sunbae/prod` 경로에서 `app_env` 항목에 파일 내용 그대로 저장한다. 인증 역할 `jachwi-dev`와 `jachwi-prod`는 각각 같은 환경의 읽기 정책만 부여한다. 정책 경로는 `secret/data/jachwi-sunbae/dev`와 `secret/data/jachwi-sunbae/prod`이고 발급 토큰의 기본·최대 유효기간은 5분이다.
 
 공용 `ec2-project` IAM 역할만으로 팀을 구분하지 않는다. Vault는 계정·리전·VPC·서브넷과 허용된 EC2 인스턴스 ID를 함께 검사한다. 이 구성은 공용 AWS 계정의 관리 권한까지 팀별로 격리하는 것은 아니다.
 
@@ -202,18 +247,20 @@ Vault 서버의 `jachwi-sync-dev-asg.timer`는 이전 실행 종료 약 30초 �
 
 다운로드는 같은 디렉터리의 임시 파일에 저장한다. 파일이 비어 있지 않고 `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USERNAME`, `DB_PASSWORD`, `JWT_SECRET` 항목이 있는지 검사한 뒤 기존 파일을 교체한다. 항목 존재 검사는 값의 유효성이나 앱 기동 성공까지 보장하지 않으므로 `ValidateService`에서 추가 확인한다.
 
-인증·다운로드·검사 실패 시 임시 파일을 제거하고 기존 `app.env`를 보존한다. dev `AfterInstall`도 실패하므로 `ApplicationStart`로 넘어가지 않는다. **앞선 `ApplicationStop`에서 앱이 이미 중지됐을 수 있으므로 파일 보존이 서비스 무중단을 의미하지는 않는다.**
+인증·다운로드·검사 실패 시 임시 파일을 제거하고 기존 `app.env`를 보존한다. dev·prod `AfterInstall`도 실패하므로 `ApplicationStart`로 넘어가지 않는다. **앞선 `ApplicationStop`에서 앱이 이미 중지됐을 수 있으므로 파일 보존이 서비스 무중단을 의미하지는 않는다.**
 
-Vault 설정을 바꿔도 실행 중인 앱에 바로 반영되지는 않는다. 배포 훅 연결 후에는 dev EC2에서 다음 순서로 수동 반영할 수 있다.
+Vault 설정을 바꿔도 실행 중인 앱에 바로 반영되지는 않는다. 이 리비전 배포 후에는 앱 EC2에서 환경을 명시해 다음 순서로 수동 반영할 수 있다. 아래 예시는 dev이며 prod는 인자를 `prod`로 바꾼다.
 
 ```bash
-sudo timeout --kill-after=5s 180s bash /opt/jachwi-sunbae/scripts/fetch_env.sh \
+sudo timeout --kill-after=5s 180s bash /opt/jachwi-sunbae/scripts/fetch_env.sh dev \
   && sudo systemctl restart jachwi-sunbae.service
 ```
 
 다운로드가 성공했을 때만 재시작한다. `app.env` 삭제나 `systemctl restart`만으로 Vault 다운로드가 실행되는 구성은 아니다.
 
 ### 변경 검증
+
+환경 분기 변경은 격리된 임시 디렉터리에서 IMDS·Vault·systemd 명령을 대체하여 12개 시나리오를 검증했다. dev·prod 역할과 비밀값 경로 선택, 인자 누락·미지원 환경·초과 인자 거부, 다운로드 실패·필수 키 누락 시 기존 파일 보존과 임시 파일 정리, 두 배포 그룹의 훅 실행 순서, 미지원 배포 그룹 거부, 준비·다운로드 실패 시 훅 중단을 확인했다. 이 검증은 실제 AWS·Vault 통합 배포를 대신하지 않는다.
 
 저장소 루트에서 다음 검사를 실행한다.
 
@@ -224,7 +271,28 @@ bash -n backend/deploy/scripts/after_install.sh
 git diff --check
 ```
 
-현재까지의 서버 검증은 dev의 직접 실행과 동일한 인스턴스 목록 갱신에 대한 확인이다. 다음 검증에는 dev CodeDeploy 성공, `ValidateService`의 health·SHA 확인, 새 ASG 인스턴스에서의 허용 목록 반영·환경변수 생성·서비스 기동을 포함한다.
+환경변수 파일을 제외한 AMI에서 생성한 `i-082f3f62bf20385e0`에 대해 다음 결과를 확인했다. 비밀값이나 Vault 토큰의 내용은 출력하지 않았다.
+
+| 검증 항목 | 확인 결과 |
+| --- | --- |
+| Vault 인증 허용 목록 | ASG 생성 후 새 인스턴스 ID가 자동 반영됐다 |
+| CodeDeploy | ASG가 실행한 `d-NAY58TW7L`이 `Succeeded`. `AfterInstall`, `ApplicationStart`, `ValidateService`도 모두 `Succeeded`. 2026-10-07 13:07:27~13:08:41 KST, 약 74초 |
+| 환경변수 다운로드 | 해당 배포의 `scripts.log`에 `Vault에서 dev app.env를 갱신했습니다.` 기록 |
+| 파일 권한 | `app.env`와 nonce는 `600 root:root`, 공개 인증서는 `644 root:root` |
+| 서비스 / 헬스 | `jachwi-sunbae.service=active`, `/actuator/health`의 `status=UP` |
+| 실행 버전 | `/actuator/info`의 `build.commit`과 `deployment-revision.txt`가 `b439a1494b57a83591d6f6f07f22b6f890036c46`으로 일치 |
+| ALB | 새 인스턴스가 `healthy` |
+
+SSM 검증 명령 `5808ed3d-5338-431f-9c1e-38f366f66158`도 `Success`, 종료 코드 `0`을 반환했다. 이 검증은 기존 dev를 유지한 채 두 번째 인스턴스를 추가해서 진행했다. prod 적용과 Vault 서버 장애 시 복구는 이 검증 범위에 포함하지 않는다.
+
+검증 후 기존 dev를 ASG에서 분리해 원하는 용량을 줄였고, ALB의 연결 종료 대기가 끝난 뒤 중지했다. 최종 ASG는 새 인스턴스 한 대만 `InService`, `Healthy`이며 Vault 허용 목록에도 이 ID만 남아 있다. 공개 dev 주소의 `/actuator/health`도 `UP`을 확인했다.
+
+| 보관 인스턴스 | 최종 상태와 용도 |
+| --- | --- |
+| `i-03524d449110c0d08` (`jachwi-sunbae-dev-rollback`) | `stopped`. 기존 dev 복구용. ASG와 일반 CodeDeploy 배포 대상에서 제외 |
+| `i-08b93ed167aeb8b26` (`jachwi-sunbae-dev-ami-builder`) | `stopped`. AMI 생성 작업용. ASG와 일반 CodeDeploy 배포 대상에서 제외 |
+
+두 인스턴스의 EBS는 보관 중이므로 스토리지 비용이 계속 발생한다. 인스턴스를 다시 켜는 것만으로 ASG나 Vault 허용 목록에 복귀하지는 않는다. 롤백 시에는 시작 템플릿 버전, ASG 용량·연결, 배포 대상 태그를 함께 확인한다.
 
 ### MVP1 첫 dev 배포 전 확인
 
