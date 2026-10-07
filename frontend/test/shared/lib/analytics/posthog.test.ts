@@ -9,6 +9,7 @@ const { mockPostHog } = vi.hoisted(() => ({
     init: vi.fn(),
     opt_out_capturing: vi.fn(),
     reset: vi.fn(),
+    get_property: vi.fn(),
   },
 }));
 
@@ -76,7 +77,11 @@ describe('PostHog 제품 분석', () => {
     expect(capturePostHogException(error, { source: 'api_request' })).toBe(true);
 
     await vi.waitFor(() => {
-      expect(mockPostHog.captureException).toHaveBeenCalledWith(error, { source: 'api_request' });
+      expect(mockPostHog.captureException).toHaveBeenCalledWith(error, {
+        source: 'api_request',
+        error_category: 'uncaught',
+        severity: 'P0',
+      });
     });
   });
 

@@ -122,7 +122,6 @@ export const usePropertyCreationForm = (routeState: PropertyCreationRouteState) 
     if (input === null) return;
     setCreateError(null);
     trackPostHogEvent(stepEvents.name);
-    trackPostHogEvent('property_creation_submitted');
     const { selectedLocation } = location;
     try {
       const created = await createProperty.mutateAsync({
@@ -133,7 +132,6 @@ export const usePropertyCreationForm = (routeState: PropertyCreationRouteState) 
       });
       navigate(`/properties/${created.propertyId}`, { replace: true });
     } catch {
-      trackPostHogEvent('property_creation_failed', { error_kind: 'server' });
       setCreateError('매물을 등록하지 못했어요. 입력한 정보는 유지되니 다시 시도해 주세요.');
     }
   };

@@ -1,9 +1,11 @@
-import { useMutation } from '@tanstack/react-query';
+import type { InfiniteData } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 import { queryClient } from '@/shared/api/queryClient';
 import { usePublicConfig } from '@/shared/config/PublicConfigContext';
+import { trackPostHogEvent } from '@/shared/lib/analytics/posthog';
 
-import type { PropertyBasicInfo, PropertyDetail } from '../model/Property';
+import type { PropertyBasicInfo, PropertyDetail, PropertyPage } from '../model/Property';
 import type {
   PropertyInputDto,
   SavePropertyMemoDocumentRequestDto,
@@ -21,11 +23,23 @@ import { propertyQueryKeys } from './propertyQueryKeys';
 
 export const useCreateProperty = () => {
   const config = usePublicConfig();
+  const client = useQueryClient();
   return useMutation({
     mutationFn: (request: PropertyInputDto) => createProperty(config, request),
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: propertyQueryKeys.lists() });
+    onMutate: () => {
+      const total = client.getQueryData<InfiniteData<PropertyPage>>(propertyQueryKeys.list(''))?.pages[0]
+        ?.totalElements;
+      trackPostHogEvent('property_creation_submitted');
+      return { firstProperty: total === undefined ? undefined : total === 0 };
     },
+    onSuccess: async (created, _request, context) => {
+      trackPostHogEvent('property_created', {
+        property_id: created.propertyId,
+        ...(context?.firstProperty === undefined ? {} : { first_property: context.firstProperty }),
+      });
+      await client.invalidateQueries({ queryKey: propertyQueryKeys.lists() });
+    },
+    onError: () => trackPostHogEvent('property_creation_failed', { error_kind: 'request' }),
   });
 };
 
