@@ -376,6 +376,39 @@ describe('FE-2 등록·수정·메모', () => {
     }
   });
 
+  it('모바일에서는 첫 입력에 자동 포커스하지 않고 키패드 확인으로 다음 단계로 이동한다', async () => {
+    const matchMedia = vi.spyOn(window, 'matchMedia').mockImplementation(
+      (query) =>
+        ({
+          matches: query === '(max-width: 430px)',
+          media: query,
+          onchange: null,
+          addListener: () => undefined,
+          removeListener: () => undefined,
+          addEventListener: () => undefined,
+          removeEventListener: () => undefined,
+          dispatchEvent: () => false,
+        }) as MediaQueryList,
+    );
+
+    try {
+      const user = userEvent.setup();
+      renderAuthenticated('/properties/new');
+
+      const depositField = await screen.findByLabelText('보증금 입력 (만원)');
+      expect(depositField).not.toHaveFocus();
+      expect(screen.queryByRole('button', { name: '다음' })).not.toBeInTheDocument();
+
+      await user.type(depositField, '1000');
+      await user.keyboard('{Enter}');
+
+      expect(await screen.findByLabelText('월세 입력 (만원)')).toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: '다음' })).not.toBeInTheDocument();
+    } finally {
+      matchMedia.mockRestore();
+    }
+  });
+
   it('수정은 변경이 없어도 전체 필드를 보내고 상세 화면으로 돌아간다', async () => {
     let updateCalls = 0;
     let updateBody: unknown;

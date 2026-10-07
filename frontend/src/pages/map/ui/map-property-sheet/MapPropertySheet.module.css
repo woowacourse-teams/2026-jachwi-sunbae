@@ -6,6 +6,7 @@
   z-index: 30;
   display: flex;
   width: 100%;
+  height: calc(100% - 4.25rem);
   max-width: var(--app-max-width);
   max-height: calc(100% - 4.25rem);
   flex-direction: column;
@@ -17,27 +18,17 @@
   border-radius: 1.25rem 1.25rem 0 0;
   background: var(--color-surface, #fff);
   box-shadow: 0 -0.4rem 1.5rem rgb(0 0 0 / 12%);
-  transition: height 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  transform: translate3d(0, calc(100% - 4rem), 0);
+  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: transform;
 }
 
 .sheet[data-dragging='true'] {
   transition: none;
 }
 
-.collapsed {
-  height: 4rem;
-}
-
 .collapsed .header {
   padding-block: 0.5rem 0.65rem;
-}
-
-.mid {
-  height: min(34%, 18rem);
-}
-
-.full {
-  height: calc(100% - 4.25rem);
 }
 
 .header {

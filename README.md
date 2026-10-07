@@ -23,6 +23,10 @@
 
 - [제품 문서 안내](docs/product/README.md) — 기능별 요구사항·정책·인수 기준
 
+### QA
+
+- [QA 안내](qa/README.md) — AI E2E QA 사이클, 정답 기준, 사용자 흐름, Scenario, 실행 결과 형식과 판정 기준, 실행 방법
+
 ### 개발과 운영
 
 - [컨벤션](docs/convention/README.md) — 브랜치·커밋, 이슈·PR, 코드 리뷰
@@ -40,6 +44,7 @@
 ├── backend/              # Spring Boot, MySQL, MinIO, CodeDeploy 파일
 ├── frontend/             # React, TypeScript, Webpack, S3·CloudFront 배포 파일
 ├── mobile/               # React Native 기반 iOS WebView 앱 셸
+├── qa/                   # AI E2E QA 기준 문서(docs/)와 Playwright 실행 코드
 ├── docs/
 │   ├── convention/       # 저장소 공통 규칙
 │   └── product/          # 제품 기능 명세

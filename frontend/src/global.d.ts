@@ -48,8 +48,8 @@ type NaverMapsNamespace = {
     fillOpacity: number;
   }) => NaverOverlay;
   Event: {
-    addListener: (target: object, eventName: string, callback: (event: { coord: NaverLatLng }) => void) => void;
-    removeListener: (target: object, eventName: string, callback: (event: { coord: NaverLatLng }) => void) => void;
+    addListener: (target: object, eventName: string, callback: (event?: { coord?: NaverLatLng }) => void) => unknown;
+    removeListener: (listener: unknown) => void;
   };
 };
 

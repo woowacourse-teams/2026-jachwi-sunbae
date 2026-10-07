@@ -29,8 +29,6 @@ const useMapProperties = (viewportCenter: MapCoordinate, mapLevel: number) => {
     if (property?.location.latitude == null || property.location.longitude == null) return undefined;
     return { latitude: property.location.latitude, longitude: property.location.longitude, label: property.name };
   }, []);
-  const propertyPhotoUrls = usePropertyPhotoObjectUrls(mapped);
-
   const visibleProperties = useMemo(() => {
     const { latSpan, lngSpan } = getViewportSpan(mapLevel);
     return mapped.filter((item) => {
@@ -41,10 +39,14 @@ const useMapProperties = (viewportCenter: MapCoordinate, mapLevel: number) => {
     });
   }, [mapped, mapLevel, viewportCenter.latitude, viewportCenter.longitude]);
 
+  // 지도 밖 매물의 사진까지 미리 받으면 WebView 메모리와 이미지 디코딩 비용이 커진다.
+  // 현재 화면에 표시될 매물만 사진 마커에 사용한다.
+  const propertyPhotoUrls = usePropertyPhotoObjectUrls(visibleProperties);
+
   const propertyMarkers = useMemo<MapMarker[]>(
     () =>
       clusterProperties(
-        mapped.map((item) => ({
+        visibleProperties.map((item) => ({
           propertyId: item.propertyId,
           name: item.name,
           latitude: item.location.latitude ?? PANGYO_MAP_CENTER.latitude,
@@ -54,7 +56,7 @@ const useMapProperties = (viewportCenter: MapCoordinate, mapLevel: number) => {
         })),
         mapLevel,
       ),
-    [mapLevel, mapped, propertyPhotoUrls],
+    [mapLevel, propertyPhotoUrls, visibleProperties],
   );
 
   return { getFallbackCoordinate, visibleProperties, propertyMarkers };
