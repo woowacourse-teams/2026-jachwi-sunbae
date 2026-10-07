@@ -39,7 +39,7 @@ const judgeDetailScreen = async (page: Page, propertyName: string): Promise<Expe
 };
 
 test('F02-S01 정상 매물 등록 후 재조회', async ({ page, member }, testInfo) => {
-  const run = ScenarioRun.start('F02-S01', member, testInfo);
+  const run = ScenarioRun.start('F02-S01', member, page, testInfo);
   const propertyName = `F02-S01 ${member.runId}`;
 
   await run.execute(async () => {
@@ -76,6 +76,7 @@ test('F02-S01 정상 매물 등록 후 재조회', async ({ page, member }, test
       await page.getByRole('button', { name: '매물 등록' }).click();
       return responsePromise;
     });
+    await run.captureApi('EV1', createResponse);
     const propertyId = (await readJson<PropertyBody>(createResponse))?.data?.id ?? null;
 
     await test.step('이동한 화면 확인', async () => {
@@ -89,6 +90,7 @@ test('F02-S01 정상 매물 등록 후 재조회', async ({ page, member }, test
         return pathname === `/properties/${propertyId}` ? pass(actual) : fail(actual);
       });
       await run.check('E2', () => judgeDetailScreen(page, propertyName));
+      await run.captureScreen('EV2');
     });
 
     if (propertyId === null) {
@@ -99,6 +101,7 @@ test('F02-S01 정상 매물 등록 후 재조회', async ({ page, member }, test
       const detailResponsePromise = page.waitForResponse(isApiResponse('GET', `/api/properties/${propertyId}`));
       await page.reload();
       const detailResponse = await detailResponsePromise;
+      await run.captureApi('EV3', detailResponse);
 
       await run.check('E3', async () => {
         const data = (await readJson<PropertyBody>(detailResponse))?.data;
@@ -114,6 +117,7 @@ test('F02-S01 정상 매물 등록 후 재조회', async ({ page, member }, test
         if (!apiMatches || screen.verdict === 'FAIL') return fail(actual);
         return screen.verdict === 'NEEDS_REVIEW' ? needsReview(actual) : pass(actual);
       });
+      await run.captureScreen('EV3');
     });
 
     await test.step('매물 목록으로 이동', async () => {
@@ -141,6 +145,7 @@ test('F02-S01 정상 매물 등록 후 재조회', async ({ page, member }, test
           ? pass(actual)
           : needsReview(actual);
       });
+      await run.captureScreen('EV4');
     });
   });
 });

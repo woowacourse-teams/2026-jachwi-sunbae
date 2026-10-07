@@ -1,6 +1,10 @@
-import type { TestInfo } from '@playwright/test';
+import { writeFileSync } from 'node:fs';
+import { relative, resolve } from 'node:path';
+
+import type { Page, Response, TestInfo } from '@playwright/test';
 
 import { qaConfig } from './config';
+import { EvidenceCollector, type EvidenceRecord, RUNS_DIR } from './evidence';
 import type { QaMember } from './member';
 import { loadScenario, type ScenarioDoc } from './scenario-doc';
 
@@ -26,6 +30,8 @@ export type ExpectedResult = {
   verdict: Verdict;
   judgedBy: '코드';
   actual: string;
+  /** 이 Expected의 근거로 수집한 Evidence ID */
+  evidence: string[];
 };
 
 export type ScenarioResult = {
@@ -39,11 +45,18 @@ export type ScenarioResult = {
   durationMs: number;
   verdict: Verdict;
   expected: ExpectedResult[];
+  /** 저장소 루트 기준 Run 디렉터리 */
+  runDir: string;
+  evidence: EvidenceRecord[];
+  /** Scenario가 요구했지만 수집하지 못한 Evidence ID */
+  missingEvidence: string[];
 };
 
 // docs/qa/report-schema.md 4.2: 사람이 먼저 봐야 할 결과를 앞에 둔다.
 const VERDICT_PRIORITY: Verdict[] = ['FAIL', 'NEEDS_REVIEW', 'BLOCKED', 'PASS'];
 const RUNNABLE_STATUSES = new Set(['승인', '자동화']);
+
+const REPOSITORY_ROOT = resolve(__dirname, '../..');
 
 const firstLine = (error: unknown): string =>
   (error instanceof Error ? error.message : String(error)).split('\n')[0].replace(/\u001b\[[0-9;]*m/g, '');
@@ -52,23 +65,38 @@ const firstLine = (error: unknown): string =>
 export class ScenarioRun {
   private readonly results = new Map<string, ExpectedResult>();
 
+  private readonly evidence: EvidenceCollector;
+
   private constructor(
     readonly scenario: ScenarioDoc,
     private readonly member: QaMember,
+    page: Page,
     private readonly testInfo: TestInfo,
-  ) {}
+  ) {
+    this.evidence = new EvidenceCollector(resolve(RUNS_DIR, this.runName), page);
+  }
 
-  static start(scenarioId: string, member: QaMember, testInfo: TestInfo): ScenarioRun {
+  static start(scenarioId: string, member: QaMember, page: Page, testInfo: TestInfo): ScenarioRun {
     const scenario = loadScenario(scenarioId);
     // docs/qa/scenarios/README.md: 자동화는 승인된 Scenario만 한다.
     if (!RUNNABLE_STATUSES.has(scenario.status)) {
       throw new Error(`${scenarioId}의 상태가 '${scenario.status}'입니다. 승인된 Scenario만 실행합니다.`);
     }
-    return new ScenarioRun(scenario, member, testInfo);
+    return new ScenarioRun(scenario, member, page, testInfo);
   }
 
   get runName(): string {
     return `${this.scenario.id}-${this.member.runId}`;
+  }
+
+  /** Scenario의 Required Evidence로 현재 화면을 저장한다. 설명은 Scenario 문서에서 가져온다. */
+  async captureScreen(evidenceId: string): Promise<void> {
+    await this.evidence.screen(evidenceId, this.requiredEvidence(evidenceId).text);
+  }
+
+  /** Scenario의 Required Evidence로 API 요청과 응답을 저장한다. 설명은 Scenario 문서에서 가져온다. */
+  async captureApi(evidenceId: string, response: Response): Promise<void> {
+    await this.evidence.api(evidenceId, response, this.requiredEvidence(evidenceId).text);
   }
 
   /** Expected 하나를 판정한다. 판정 중 예외가 나면 실패로 기록한다. */
@@ -91,6 +119,7 @@ export class ScenarioRun {
       verdict: outcome.verdict,
       judgedBy: '코드',
       actual: outcome.actual,
+      evidence: [],
     });
   }
 
@@ -118,10 +147,17 @@ export class ScenarioRun {
           stepError === null
             ? '이 Expected를 확인하는 코드가 실행되지 않았다.'
             : `단계 실행이 멈춰 확인하지 못했다: ${firstLine(stepError)}`,
+        evidence: [],
       });
     }
 
-    const result = this.toResult();
+    await this.evidence.finalScreen();
+    let result = this.toResult();
+    if (result.verdict !== 'PASS') {
+      this.evidence.writeDiagnostics();
+      result = { ...result, evidence: [...this.evidence.records] };
+    }
+    writeFileSync(resolve(this.evidence.runDir, 'result.json'), JSON.stringify(result, null, 2));
     await this.testInfo.attach('scenario-result.json', {
       body: JSON.stringify(result, null, 2),
       contentType: 'application/json',
@@ -137,7 +173,13 @@ export class ScenarioRun {
   }
 
   private toResult(): ScenarioResult {
-    const expected = this.scenario.expected.map((definition) => this.results.get(definition.id)!);
+    const collectedIds = new Set(this.evidence.records.map((record) => record.id));
+    const expected = this.scenario.expected.map((definition) => ({
+      ...this.results.get(definition.id)!,
+      evidence: this.scenario.requiredEvidence
+        .filter((evidence) => evidence.targets.includes(definition.id) && collectedIds.has(evidence.id))
+        .map((evidence) => evidence.id),
+    }));
     const verdict = VERDICT_PRIORITY.find((candidate) => expected.some((item) => item.verdict === candidate)) ?? 'PASS';
     const finishedAt = new Date();
 
@@ -157,6 +199,19 @@ export class ScenarioRun {
       durationMs: finishedAt.getTime() - this.member.startedAt.getTime(),
       verdict,
       expected,
+      runDir: relative(REPOSITORY_ROOT, this.evidence.runDir),
+      evidence: [...this.evidence.records],
+      missingEvidence: this.scenario.requiredEvidence
+        .map((evidence) => evidence.id)
+        .filter((evidenceId) => !collectedIds.has(evidenceId)),
     };
+  }
+
+  private requiredEvidence(evidenceId: string): ScenarioDoc['requiredEvidence'][number] {
+    const evidence = this.scenario.requiredEvidence.find((item) => item.id === evidenceId);
+    if (evidence === undefined) {
+      throw new Error(`${evidenceId}가 ${this.scenario.path}의 Required Evidence에 없습니다.`);
+    }
+    return evidence;
   }
 }

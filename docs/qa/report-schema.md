@@ -49,7 +49,7 @@ Run Report는 공통 뼈대에 Scenario별 내용을 채워 만든다.
 
 | 열 | 내용 |
 | --- | --- |
-| ID | Scenario의 Evidence ID. 실패 시 추가 수집한 Evidence는 `EV+1`부터 붙인다. |
+| ID | Scenario의 Evidence ID. Scenario 밖에서 수집한 Evidence(마지막 화면, 실패 시 추가 수집)는 `EV+1`부터 붙인다. |
 | 종류 | 스크린샷, API, 콘솔, 네트워크, 트레이스, 서버 로그 |
 | 위치 | 파일 경로 또는 링크 |
 | 설명 | 무엇을 보여주는지 한 줄 |
@@ -91,13 +91,15 @@ AI 판단이 `수정` 또는 `기각`이면 [판단 기록](decision-log/README.
 | --- | --- | --- |
 | 항상 | 모든 실행 | 실행 정보, Expected별 결과, 마지막 화면 스크린샷 |
 | Scenario 지정 | 모든 실행 | Scenario의 Required Evidence |
-| 실패 시 추가 | `FAIL`·`NEEDS_REVIEW`·`BLOCKED` | 실패 시점 스크린샷, 브라우저 콘솔, 네트워크 전체 기록, 브라우저 트레이스, 요청 ID와 서버 로그(확인 가능한 경우) |
+| 실패 시 추가 | `FAIL`·`NEEDS_REVIEW`·`BLOCKED` | 브라우저 콘솔, 네트워크 기록(API와 문서 요청, 실패한 요청), 브라우저 트레이스 |
 
 목표는 Evidence를 많이 모으는 것이 아니라 판정에 필요한 Evidence를 충분히 모으는 것이다.
 
+API Evidence와 네트워크 기록에는 응답 헤더의 요청 ID(`X-Request-Id`)를 남긴다. 서버 로그는 자동으로 수집하지 않고, 필요하면 요청 ID로 찾는다.
+
 ### 3.2. 보관
 
-- Run Report와 Evidence 파일은 Git에 커밋하지 않는다. 저장 위치는 Evidence 수집 기능을 만들 때 정한다.
+- Run마다 `qa/runs/{Run ID}/`에 실행 결과(`result.json`)와 Evidence(`evidence/`)를 저장한다. Git에 커밋하지 않는다.
 - 비밀번호, 인증 토큰, 쿠키는 Evidence에 남기지 않거나 가린다.
 
 ## 4. 판정

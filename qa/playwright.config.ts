@@ -13,7 +13,7 @@ export default defineConfig({
   // 불안정한 결과를 재시도로 가리지 않고 그대로 드러낸다.
   retries: 0,//실패한 테스트 전체를 자동으로 다시 실행X.
   forbidOnly: Boolean(process.env.CI),
-  reporter: [['list'], ['html', { open: 'never' }]],
+  reporter: [['list'], ['html', { open: 'never' }], ['./src/reporter.ts']],
     //결과를 두가지 형태로 동시에 출력
     //list - 터미널에 테스트별 진행상황과 성공 및 실패 표시
     //html - 브라우저에서 확인할 수 있는 HTML 라포트 생성

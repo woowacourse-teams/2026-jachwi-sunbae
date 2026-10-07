@@ -44,10 +44,11 @@ npm run typecheck    # 타입 검사
 
 | 위치 | 내용 |
 | --- | --- |
-| `test-results/` | 실패한 테스트의 스크린샷과 trace |
+| `runs/{Run ID}/` | Scenario 실행 결과(`result.json`)와 Evidence(`evidence/`) |
+| `test-results/` | Playwright가 남기는 실패 테스트의 스크린샷과 trace |
 | `playwright-report/` | HTML 리포트 |
 
-Git에 포함하지 않는다. trace는 `npx playwright show-trace <trace.zip 경로>`로 연다.
+모두 Git에 포함하지 않는다. trace는 `npx playwright show-trace <trace.zip 경로>`로 연다.
 
 ## Scenario 자동화
 
@@ -63,8 +64,24 @@ await run.execute(async () => {
     // 사용자 행동
   });
   await run.check('E1', async () => (조건 ? pass('실제 결과') : fail('실제 결과')));
+  await run.captureScreen('EV2');
 });
 ```
+
+## Evidence 수집
+
+[QA 실행 결과 형식](../docs/qa/report-schema.md#3-evidence)의 세 계층을 따른다.
+
+| 계층 | 수집 방법 | 파일 |
+| --- | --- | --- |
+| Scenario 지정 | 테스트에서 `run.captureScreen(EV ID)`, `run.captureApi(EV ID, response)` 호출. 설명은 Scenario 문서의 Required Evidence에서 가져온다 | `EV1-api.json`, `EV2-screen.png` |
+| 항상 | 실행이 끝나면 마지막 화면 저장 | `EV+1-final-screen.png` |
+| 실패 시 추가 | 최종 판정이 `PASS`가 아니면 콘솔, 네트워크 기록, trace 저장 | `EV+2-console.json`, `EV+3-network.json`, `EV+4-trace.zip` |
+
+- Scenario 문서에 없는 EV ID로 수집하면 오류가 난다. 요구한 Evidence를 수집하지 못하면 `result.json`의 `missingEvidence`에 남는다.
+- API Evidence와 네트워크 기록에는 요청 ID(`X-Request-Id`)를 남겨 서버 로그와 대조할 수 있게 한다.
+- 요청과 응답 본문의 토큰, 비밀번호, 쿠키 값은 `***`로 가린다.
+- trace는 테스트가 끝난 뒤 만들어지므로 `src/reporter.ts`가 Run 디렉터리로 옮긴다.
 
 ## 디렉터리 구조
 
@@ -78,7 +95,9 @@ qa/
 │   ├── fixtures.ts        # 공통 fixture
 │   ├── api.ts             # API 응답 대기와 본문 읽기
 │   ├── scenario-doc.ts    # Scenario 문서 읽기
-│   └── scenario-run.ts    # Expected 판정 기록
+│   ├── scenario-run.ts    # Expected 판정 기록
+│   ├── evidence.ts        # Evidence 수집과 민감 정보 가림
+│   └── reporter.ts        # Run 마무리(trace 이동, 결과 요약)
 └── tests/
     ├── smoke.spec.ts                    # 실행 환경 점검
     └── F02-S01-property-create.spec.ts  # F02-S01 정상 매물 등록 후 재조회
