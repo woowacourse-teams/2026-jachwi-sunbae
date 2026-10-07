@@ -45,25 +45,51 @@ const environmentLabel = (baseUrl: string): string => {
 const numbered = (items: string[]): string => items.map((item, index) => `${index + 1}. ${item}`).join('\n');
 const ids = (values: string[]): string => (values.length === 0 ? '-' : values.join(', '));
 
+type HumanJudgment = {
+  /** Run 판정 표: 필드 → 내용 */
+  run: Record<string, string>;
+  /** 항목별 판단 표: 항목 → [AI 판단, 판정, 최종 심각도, 조치] */
+  items: Record<string, string[]>;
+  /** 항목별 판단의 기준이 된 AI 분석 시각. 이전 리포트에는 없다. */
+  analyzedAt: string | null;
+};
+
+const ANALYSIS_MARKER = /<!-- 판단 기준 AI 분석: (.+?) -->/;
+
+const ITEM_COLUMNS = ['AI 판단', '판정', '최종 심각도', '조치'] as const;
+
+const splitRow = (line: string): string[] =>
+  line
+    .replace(/^\||\|$/g, '')
+    .split(/(?<!\\)\|/)
+    .map((value) => value.trim());
+
 /** 이미 있는 report.md에서 사람이 채운 사람 판정 값을 읽는다. */
-const readHumanJudgment = (reportPath: string): Record<string, string> => {
-  if (!existsSync(reportPath)) return {};
+const readHumanJudgment = (reportPath: string): HumanJudgment => {
+  const judgment: HumanJudgment = { run: {}, items: {}, analyzedAt: null };
+  if (!existsSync(reportPath)) return judgment;
   const markdown = readFileSync(reportPath, 'utf-8');
   const start = markdown.indexOf('## 사람 판정');
-  if (start < 0) return {};
+  if (start < 0) return judgment;
   const end = markdown.indexOf('\n## ', start + 1);
-  const rows = markdown
-    .slice(start, end < 0 ? undefined : end)
-    .split('\n')
-    .filter((line) => line.startsWith('|'))
-    .slice(2)
-    .map((line) =>
-      line
-        .replace(/^\||\|$/g, '')
-        .split(/(?<!\\)\|/)
-        .map((value) => value.trim()),
-    );
-  return Object.fromEntries(rows.filter(([field]) => (HUMAN_FIELDS as readonly string[]).includes(field)));
+  const section = markdown.slice(start, end < 0 ? undefined : end);
+  judgment.analyzedAt = ANALYSIS_MARKER.exec(section)?.[1] ?? null;
+
+  let header: string | null = null;
+  for (const line of section.split('\n')) {
+    if (!line.startsWith('|')) {
+      header = null;
+      continue;
+    }
+    const cells = splitRow(line);
+    if (header === null) {
+      header = cells[0];
+    } else if (!cells.every((value) => /^-+$/.test(value))) {
+      if (header === '필드' && (HUMAN_FIELDS as readonly string[]).includes(cells[0])) judgment.run[cells[0]] = cells[1] ?? '';
+      if (header === '항목') judgment.items[cells[0]] = cells.slice(2);
+    }
+  }
+  return judgment;
 };
 
 const runInformation = (result: ScenarioResult, runDir: string): string => {
@@ -178,14 +204,92 @@ const aiAnalysis = (analysis: AnalysisRecord | null, runDir: string): string => 
   return sections.join('\n\n');
 };
 
-const humanJudgment = (preserved: Record<string, string>, runDir: string): string =>
-  [
-    `판정은 \`CONFIRMED_BUG\`, \`NOT_A_BUG\`, \`SPEC_GAP\`, \`TEST_ISSUE\`, \`ENV_ISSUE\` 중 하나다. AI 판단은 \`수용\`, \`수정\`, \`기각\` 중 하나다. 수정하거나 기각하면 [판단 기록](${relative(runDir, resolve(REPOSITORY_ROOT, 'docs/qa/decision-log/README.md'))})을 남긴다.`,
+/** 값이 있는 줄만 `**제목** 내용` 형식으로 이어 붙인다. */
+const labeled = (entries: [string, string | undefined][]): string =>
+  entries
+    .filter(([, value]) => value !== undefined && value.length > 0)
+    .map(([label, value]) => `**${label}** ${value}`)
+    .join('\n');
+
+/** 사람이 하나씩 판단해야 하는 AI의 주장: Expected 판정 초안과 기타 관찰 */
+const judgmentItems = (analysis: AnalysisRecord | null): { key: string; proposal: string }[] => {
+  if (analysis === null || analysis.analysis === null) return [];
+  return [
+    ...analysis.analysis.expectedReviews.map((review) => ({
+      key: `Expected ${review.id} 판정 초안`,
+      proposal: labeled([
+        ['제안', review.verdict],
+        ['정리', review.reason],
+        ['Evidence', ids(review.evidence)],
+        ['확인 방법', review.howToVerify],
+      ]),
+    })),
+    ...analysis.analysis.otherObservations.map((item, index) => ({
+      key: `기타 관찰 ${index + 1}`,
+      proposal: labeled([
+        [
+          '제안',
+          item.suggestedVerdict === undefined
+            ? undefined
+            : `${item.suggestedVerdict}, 심각도 ${item.suggestedSeverity ?? '-'}`,
+        ],
+        ['정리', item.text],
+        ['근거', ids(item.basis)],
+        ['Evidence', ids(item.evidence)],
+        ['확인 방법', item.howToVerify],
+      ]),
+    })),
+  ];
+};
+
+/** 이전 리포트의 항목별 판단을 옮길 수 있는지. AI 분석이 바뀌었으면 같은 항목 이름이 다른 주장을 가리킬 수 있다. */
+const canCarryItems = (preserved: HumanJudgment, analysis: AnalysisRecord | null): boolean =>
+  preserved.analyzedAt === null || preserved.analyzedAt === analysis?.analyzedAt;
+
+const humanJudgment = (preserved: HumanJudgment, analysis: AnalysisRecord | null, runDir: string): string => {
+  const decisionLog = relative(runDir, resolve(REPOSITORY_ROOT, 'docs/qa/decision-log/README.md'));
+  const lines = [
+    `판정은 \`CONFIRMED_BUG\`, \`NOT_A_BUG\`, \`SPEC_GAP\`, \`TEST_ISSUE\`, \`ENV_ISSUE\` 중 하나다. AI 판단은 \`수용\`, \`수정\`, \`기각\` 중 하나다. 수정하거나 기각하면 [판단 기록](${decisionLog})을 남긴다.`,
     '',
+    '### Run 판정',
+    '',
+    'Run 전체의 결함 여부다. AI 판단은 판정 제안과 원인 가설에 대한 판단이다.',
+    '',
+    ...(analysis?.analysis
+      ? [
+          `> **AI 제안** ${analysis.analysis.suggestedHumanVerdict.value}, 심각도 ${analysis.analysis.proposedSeverity.level}, 확신도 ${analysis.analysis.confidence}. ${analysis.analysis.suggestedHumanVerdict.reason}`,
+          '',
+        ]
+      : []),
     '| 필드 | 내용 |',
     '| --- | --- |',
-    ...HUMAN_FIELDS.map((field) => `| ${field} | ${preserved[field] ?? ''} |`),
-  ].join('\n');
+    ...HUMAN_FIELDS.map((field) => `| ${field} | ${preserved.run[field] ?? ''} |`),
+  ];
+
+  const items = judgmentItems(analysis);
+  const carry = canCarryItems(preserved, analysis);
+  if (!carry && Object.values(preserved.items).some((values) => values.some((value) => value.length > 0))) {
+    console.warn(`AI 분석이 바뀌어 이전 항목별 판단을 옮기지 않았습니다. 이전 분석 시각: ${preserved.analyzedAt}`);
+  }
+  if (items.length > 0) {
+    lines.push(
+      '',
+      '### 항목별 판단',
+      '',
+      'AI가 낸 Expected 판정 초안과 기타 관찰을 하나씩 판단한다. Expected의 판정은 `PASS`, `FAIL`, `NEEDS_REVIEW`, 기타 관찰의 판정은 사람 판정값이다.',
+      '',
+      `<!-- 판단 기준 AI 분석: ${analysis?.analyzedAt} -->`,
+      '',
+      `| 항목 | AI 제안과 정리 | ${ITEM_COLUMNS.join(' | ')} |`,
+      `| --- | --- | ${ITEM_COLUMNS.map(() => '---').join(' | ')} |`,
+      ...items.map(({ key, proposal }) => {
+        const values = ITEM_COLUMNS.map((_, index) => (carry ? (preserved.items[key]?.[index] ?? '') : ''));
+        return `| ${key} | ${cell(proposal)} | ${values.join(' | ')} |`;
+      }),
+    );
+  }
+  return lines.join('\n');
+};
 
 const faultBanner = (result: ScenarioResult): string =>
   result.faultInjection === null
@@ -230,7 +334,7 @@ ${aiAnalysis(analysis, runDir)}
 
 ## 사람 판정
 
-${humanJudgment(preserved, runDir)}
+${humanJudgment(preserved, analysis, runDir)}
 `;
   writeFileSync(reportPath, markdown);
   return reportPath;

@@ -13,20 +13,37 @@ const STANDARD_DOCS = ['docs/qa/source-of-truth.md', 'docs/qa/report-schema.md',
 const SPEC_ID = /\b(?:REQ|POL|AC)-[A-Z]+-\d{2,3}\b/g;
 const INLINE_LIMIT = 15_000;
 const TIMEOUT_MS = Number(process.env.QA_AI_TIMEOUT_MS) || 300_000;
+// 분석 기준이 Claude Code 기본 모델 변경에 따라 바뀌지 않도록 모델 ID를 고정한다. (DL-002)
+const DEFAULT_MODEL = 'claude-sonnet-5-5';
+const analysisModel = (): string => process.env.QA_AI_MODEL?.trim() || DEFAULT_MODEL;
+
+type Severity = 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW' | 'NONE';
+type HumanVerdict = 'CONFIRMED_BUG' | 'NOT_A_BUG' | 'SPEC_GAP' | 'TEST_ISSUE' | 'ENV_ISSUE';
 
 export type AiAnalysis = {
   summary: string;
   basis: string[];
   hypotheses: { text: string; evidence: string[] }[];
-  proposedSeverity: { level: 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW' | 'NONE'; reason: string };
+  proposedSeverity: { level: Severity; reason: string };
   confidence: '높음' | '중간' | '낮음';
-  suggestedHumanVerdict: {
-    value: 'CONFIRMED_BUG' | 'NOT_A_BUG' | 'SPEC_GAP' | 'TEST_ISSUE' | 'ENV_ISSUE';
-    reason: string;
-  };
+  suggestedHumanVerdict: { value: HumanVerdict; reason: string };
   followUp: string[];
-  expectedReviews: { id: string; verdict: 'PASS' | 'FAIL' | 'NEEDS_REVIEW'; reason: string; evidence: string[] }[];
-  otherObservations: { text: string; basis: string[]; evidence: string[] }[];
+  // howToVerify, suggestedVerdict, suggestedSeverity는 나중에 추가한 필드라 이전 분석 결과에는 없을 수 있다.
+  expectedReviews: {
+    id: string;
+    verdict: 'PASS' | 'FAIL' | 'NEEDS_REVIEW';
+    reason: string;
+    evidence: string[];
+    howToVerify?: string;
+  }[];
+  otherObservations: {
+    text: string;
+    basis: string[];
+    evidence: string[];
+    suggestedVerdict?: HumanVerdict;
+    suggestedSeverity?: Severity;
+    howToVerify?: string;
+  }[];
 };
 
 export type AnalysisRecord = {
@@ -42,6 +59,9 @@ export type AnalysisRecord = {
 };
 
 const stringArray = { type: 'array', items: { type: 'string' } };
+// 근거 칸과 Evidence 칸에는 ID만 넣게 한다. 문장을 넣으면 출력 단계에서 거부된다. (DL-002)
+const specIdArray = { type: 'array', items: { type: 'string', pattern: '^(REQ|POL|AC)-[A-Z]+-[0-9]{2,3}$' } };
+const evidenceIdArray = { type: 'array', items: { type: 'string', pattern: '^EV\\+?[0-9]+$' } };
 const withEvidence = (properties: Record<string, unknown>) => ({
   type: 'object',
   additionalProperties: false,
@@ -51,8 +71,8 @@ const withEvidence = (properties: Record<string, unknown>) => ({
 
 const ANALYSIS_SCHEMA = withEvidence({
   summary: { type: 'string' },
-  basis: stringArray,
-  hypotheses: { type: 'array', items: withEvidence({ text: { type: 'string' }, evidence: stringArray }) },
+  basis: specIdArray,
+  hypotheses: { type: 'array', items: withEvidence({ text: { type: 'string' }, evidence: evidenceIdArray }) },
   proposedSeverity: withEvidence({
     level: { enum: ['CRITICAL', 'HIGH', 'MEDIUM', 'LOW', 'NONE'] },
     reason: { type: 'string' },
@@ -69,12 +89,20 @@ const ANALYSIS_SCHEMA = withEvidence({
       id: { type: 'string' },
       verdict: { enum: ['PASS', 'FAIL', 'NEEDS_REVIEW'] },
       reason: { type: 'string' },
-      evidence: stringArray,
+      evidence: evidenceIdArray,
+      howToVerify: { type: 'string' },
     }),
   },
   otherObservations: {
     type: 'array',
-    items: withEvidence({ text: { type: 'string' }, basis: stringArray, evidence: stringArray }),
+    items: withEvidence({
+      text: { type: 'string' },
+      basis: specIdArray,
+      evidence: evidenceIdArray,
+      suggestedVerdict: { enum: ['CONFIRMED_BUG', 'NOT_A_BUG', 'SPEC_GAP', 'TEST_ISSUE', 'ENV_ISSUE'] },
+      suggestedSeverity: { enum: ['CRITICAL', 'HIGH', 'MEDIUM', 'LOW', 'NONE'] },
+      howToVerify: { type: 'string' },
+    }),
   },
 });
 
@@ -118,9 +146,9 @@ export const buildPrompt = (result: ScenarioResult, runDir: string): string => {
 1. 정답 근거는 아래 "QA 기준"과 "제품 명세"뿐이다. 현재 구현의 동작, 일반 상식, 다른 서비스의 관례를 정답 근거로 쓰지 않는다.
 2. 모든 주장(원인 가설, Expected 판정 초안, 기타 관찰)에는 Evidence ID(예: EV1, EV+2)를 붙인다. Evidence로 뒷받침할 수 없는 주장은 쓰지 않는다.
 3. 명세 ID(REQ, POL, AC)는 아래 제품 명세에 실제로 있는 것만 쓴다. 위반한 명세 ID를 지목할 수 없으면 FAIL이 아니라 NEEDS_REVIEW다.
-4. 코드가 PASS나 FAIL로 판정한 Expected는 다시 판정하지 않는다. 판정이 NEEDS_REVIEW인 Expected만 expectedReviews에 판정 초안을 낸다. BLOCKED인 Expected는 원인 가설에서 다룬다.
+4. 코드가 PASS나 FAIL로 판정한 Expected는 다시 판정하지 않는다. 판정이 NEEDS_REVIEW인 Expected만 expectedReviews에 판정 초안을 내고, 사람이 그 초안을 확인할 방법(howToVerify)을 함께 쓴다. BLOCKED인 Expected는 원인 가설에서 다룬다.
 5. 코드의 판정 자체가 잘못됐을 수 있다. Evidence가 Scenario의 기대 결과와 일치하는데 코드가 FAIL로 판정했다면 그 가능성을 원인 가설로 쓰고 suggestedHumanVerdict를 TEST_ISSUE로 제안한다.
-6. Expected 밖이지만 Evidence에서 명세와 다른 점을 발견하면 otherObservations에 근거 명세 ID와 함께 남긴다. 판정하지 않는다.
+6. Expected 밖이지만 Evidence에서 명세와 다른 점을 발견하면 otherObservations에 근거 명세 ID와 함께 남긴다. 최종 판정은 사람이 하지만, 사람 판정값 제안(suggestedVerdict), 심각도 제안(suggestedSeverity), 사람이 확인할 방법(howToVerify)을 함께 낸다. 명세와 다르지 않은 정상 동작은 기타 관찰로 쓰지 않는다.
 7. 스크린샷(png)은 Read 도구로 직접 열어 확인한다. 다른 파일을 찾거나 수정하지 않는다.
 8. 최종 판정은 사람이 한다. 너는 초안과 가설만 낸다. 한국어로 간결하게 쓴다.
 9. 최종 판정이 PASS인 Run이면 원인 가설은 비우고, proposedSeverity는 NONE, suggestedHumanVerdict는 NOT_A_BUG로 둔다. 이때는 기타 관찰을 찾는 데 집중한다.
@@ -180,7 +208,8 @@ const runClaude = (prompt: string, runDir: string): Promise<CliOutput> =>
       '--no-session-persistence',
       '--add-dir',
       runDir,
-      ...(process.env.QA_AI_MODEL?.trim() ? ['--model', process.env.QA_AI_MODEL.trim()] : []),
+      '--model',
+      analysisModel(),
     ];
     const child = spawn('claude', args, { cwd: REPOSITORY_ROOT, stdio: ['pipe', 'pipe', 'pipe'] });
     let stdout = '';

@@ -34,7 +34,7 @@ npm run render -- runs/<Run ID>    # AI 분석 없이 Run Report만 다시 만�
 | --- | --- | --- |
 | `QA_BASE_URL` | `https://dev.jachwi-sunbae.kr` | QA 대상 프론트엔드 URL. 로컬은 `http://localhost:3000` |
 | `QA_AI_ANALYSIS` | `failed` | AI 분석 대상. `failed`는 PASS가 아닌 Run만, `always`는 모든 Run, `off`는 분석하지 않음 |
-| `QA_AI_MODEL` | Claude Code 기본 모델 | 분석에 쓸 모델. 예: `sonnet` |
+| `QA_AI_MODEL` | `claude-sonnet-5-5` | 분석에 쓸 모델 ID. 기본값은 고정이며 모델 비교 실험에만 바꾼다([DL-002](../docs/qa/decision-log/DL-002-analysis-model.md)). 예: `claude-opus-5-5` |
 | `QA_AI_TIMEOUT_MS` | `300000` | AI 분석 제한 시간 |
 | `QA_FAULT` | 없음 | 의도적으로 주입할 결함 이름. 예: `detail-rent` |
 
@@ -96,7 +96,8 @@ await run.execute(async () => {
 
 - 입력은 QA 기준 문서(`source-of-truth.md`, `report-schema.md`), 제품 명세 전체, Scenario 문서, `result.json`, Evidence다. 근거 문서를 요약하지 않고 원문으로 넘긴다.
 - AI에게는 읽기 도구(Read)만 주고, `--restricted`로 실행 도구와 사용자, 프로젝트 설정을 막는다. 스크린샷은 AI가 직접 열어 본다.
-- 응답 형식은 JSON Schema로 강제하고, `report-schema.md`의 AI 분석 항목을 따른다.
+- 응답 형식은 JSON Schema로 강제하고, `report-schema.md`의 AI 분석 항목을 따른다. 근거 칸과 Evidence 칸에는 ID 형식만 허용한다.
+- 기타 관찰과 Expected 판정 초안마다 판정 제안, 심각도 제안, 사람이 확인할 방법을 함께 받는다.
 - AI가 인용한 명세 ID와 Evidence ID가 실제로 있는지 코드가 확인해 `validation`에 남긴다.
 - 의도적 결함 주입 여부(`faultInjection`)는 AI에게 넘기지 않는다.
 
@@ -112,7 +113,7 @@ await run.execute(async () => {
 - 코드 판정(`result.json`)과 AI 분석(`analysis.json`)을 합친다. 코드가 `NEEDS_REVIEW`로 넘긴 Expected에는 AI 판정 초안을 함께 보여준다.
 - 대상 버전은 실행 대상 백엔드의 `/actuator/info`에서 읽은 버전과 커밋이다.
 - 의도적 결함을 주입한 Run이면 맨 위에 표시한다.
-- 사람 판정은 `report.md`의 사람 판정 표에서 직접 채운다. `npm run analyze`나 `npm run render`로 다시 만들어도 채운 값은 유지된다.
+- 사람 판정은 `report.md`에서 직접 채운다. Run 판정 표와, AI가 낸 Expected 판정 초안과 기타 관찰마다 한 줄씩 생기는 항목별 판단 표가 있다. `npm run analyze`나 `npm run render`로 다시 만들어도 채운 값은 유지된다.
 
 ## 의도적 결함 주입
 

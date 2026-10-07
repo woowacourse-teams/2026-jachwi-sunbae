@@ -16,9 +16,17 @@ type PropertyListBody = { data: { totalCount: number; items: PropertyData[] } };
 const isSameAmount = (actual: number | undefined, manwon: number): boolean =>
   actual === manwon || actual === manwon * 10_000;
 
-// 화면 금액 표기 형식도 명세가 정하지 않았다. `500만원` 형식만 코드로 확인하고, 그 밖의 형식은 NEEDS_REVIEW로 넘긴다.
-const hasManwonText = (text: string, manwon: number): boolean =>
-  new RegExp(`(?<![\\d,])${manwon}\\s*만\\s*원`).test(text);
+// 화면 금액 표기 형식도 명세가 정하지 않았다. `500만원 / 50만원`처럼 보증금과 월세를 만원 단위로 나란히 보여주는
+// 형식만 코드가 읽는다. 읽을 수 있으면 값을 비교해 PASS나 FAIL로 판정하고, 읽을 수 없는 형식은 NEEDS_REVIEW로 넘긴다.
+// docs/qa/decision-log/DL-001-amount-mismatch-fail.md
+const MANWON_PAIR = /(\d[\d,]*)\s*만\s*원\s*\/\s*(?:월세\s*)?(\d[\d,]*)\s*만\s*원/;
+
+const judgeAmounts = (text: string, actual: string): ExpectedOutcome => {
+  const match = MANWON_PAIR.exec(text);
+  if (match === null) return needsReview(actual);
+  const [deposit, monthlyRent] = [match[1], match[2]].map((value) => Number(value.replaceAll(',', '')));
+  return deposit === DEPOSIT_MANWON && monthlyRent === MONTHLY_RENT_MANWON ? pass(actual) : fail(actual);
+};
 
 const isShown = (locator: Locator): Promise<boolean> =>
   locator
@@ -31,11 +39,8 @@ const judgeDetailScreen = async (page: Page, propertyName: string): Promise<Expe
     return fail(`상세 화면에 이름 "${propertyName}"이 보이지 않는다.`);
   }
   const text = await page.locator('body').innerText();
-  const amountLine = text.split('\n').find((line) => /만\s*원/.test(line)) ?? '(금액 표기 없음)';
-  const actual = `이름 "${propertyName}" 표시, 금액 "${amountLine.trim()}"`;
-  return hasManwonText(text, DEPOSIT_MANWON) && hasManwonText(text, MONTHLY_RENT_MANWON)
-    ? pass(actual)
-    : needsReview(actual);
+  const amountText = MANWON_PAIR.exec(text)?.[0] ?? '(보증금과 월세 표기를 찾지 못함)';
+  return judgeAmounts(text, `이름 "${propertyName}" 표시, 금액 "${amountText}"`);
 };
 
 test('F02-S01 정상 매물 등록 후 재조회', async ({ page, member }, testInfo) => {
@@ -141,9 +146,7 @@ test('F02-S01 정상 매물 등록 후 재조회', async ({ page, member }, test
         const screenMatches = cardCount === 1 && cardText.includes(propertyName);
         const apiMatches = listData === null || listData === undefined || listData.totalCount === 1;
         if (!screenMatches || !apiMatches) return fail(actual);
-        return hasManwonText(cardText, DEPOSIT_MANWON) && hasManwonText(cardText, MONTHLY_RENT_MANWON)
-          ? pass(actual)
-          : needsReview(actual);
+        return judgeAmounts(cardText, actual);
       });
       await run.captureScreen('EV4');
     });

@@ -45,4 +45,7 @@ Scenario, Run Report 형식, AI 분석 방식, 자동화 코드 중 무엇을 �
 
 ## 목록
 
-아직 기록이 없다.
+| ID | 결정 | 관련 Run |
+| --- | --- | --- |
+| [DL-001](DL-001-amount-mismatch-fail.md) | 화면 금액이 입력값과 다르면 코드가 FAIL로 판정한다 | `F02-S01-261007-095253` |
+| [DL-002](DL-002-analysis-model.md) | AI 분석 모델은 Claude Code 기본 모델을 유지한다 | `F02-S01-261007-095253` |
