@@ -1,7 +1,7 @@
 type PostHogClient = (typeof import('posthog-js'))['default'];
 type PostHogAction = (client: PostHogClient) => void;
 export type PostHogErrorSeverity = 'P0' | 'P1' | 'P2';
-export type PostHogErrorCategory = 'uncaught' | 'render' | 'api_server' | 'api_contract' | 'network';
+export type PostHogErrorCategory = 'uncaught' | 'render' | 'api_server' | 'api_contract' | 'network' | 'chunk_load';
 type PostHogSessionContext = {
   environment: 'production' | 'development';
   app_version: string;
@@ -15,6 +15,16 @@ let lastTrackedPath: string | null = null;
 let postHogClient: PostHogClient | null = null;
 let postHogClientPromise: Promise<void> | null = null;
 let pendingActions: PostHogAction[] = [];
+
+const isChunkLoadError = (error: unknown): boolean => {
+  if (typeof error !== 'object' || error === null) return false;
+
+  if ('name' in error && error.name === 'ChunkLoadError') return true;
+  if ('type' in error && error.type === 'ChunkLoadError') return true;
+
+  const message = 'message' in error ? error.message : 'value' in error ? error.value : undefined;
+  return typeof message === 'string' && /^Loading (?:CSS )?chunk \S+ failed\b/.test(message);
+};
 
 const isHttpUrl = (value: string): boolean => {
   try {
@@ -50,12 +60,15 @@ const initializePostHogClient = (
     before_send: (event) => {
       if (event === null || event.event !== '$exception') return event;
 
+      const exceptionList: unknown = event.properties.$exception_list;
+      const isChunkFailure = Array.isArray(exceptionList) && exceptionList.some(isChunkLoadError);
+
       return {
         ...event,
         properties: {
           ...event.properties,
-          error_category: event.properties.error_category ?? 'uncaught',
-          severity: event.properties.severity ?? 'P0',
+          error_category: isChunkFailure ? 'chunk_load' : (event.properties.error_category ?? 'uncaught'),
+          severity: isChunkFailure ? 'P2' : (event.properties.severity ?? 'P0'),
         },
       };
     },
@@ -151,7 +164,10 @@ export const getPostHogPlatform = (): PostHogSessionContext['platform'] => {
 export const capturePostHogException = (error: unknown, properties?: Record<string, unknown>): boolean => {
   if (!trackingEnabled) return false;
 
-  return runPostHogAction((client) => client.captureException(error, properties));
+  const exceptionProperties = isChunkLoadError(error)
+    ? { ...properties, error_category: 'chunk_load', severity: 'P2' }
+    : properties;
+  return runPostHogAction((client) => client.captureException(error, exceptionProperties));
 };
 
 export const identifyPostHogMember = (memberId: number, nickname?: string): boolean => {
