@@ -50,7 +50,6 @@ map:
 transit:
   gtfs:
     directory: ${GTFS_DIRECTORY:}
-    import-on-startup: ${GTFS_IMPORT_ON_STARTUP:false}
 
 management:
   endpoints:
