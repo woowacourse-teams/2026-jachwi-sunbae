@@ -26,6 +26,7 @@
 ### QA
 
 - [QA 안내](docs/qa/README.md) — 정답 기준, 사용자 흐름, Scenario, 실행 결과 형식과 판정 기준
+- [QA 실행 코드](qa/README.md) — Playwright 설치, 실행, 환경변수
 
 ### 개발과 운영
 
@@ -44,6 +45,7 @@
 ├── backend/              # Spring Boot, MySQL, MinIO, CodeDeploy 파일
 ├── frontend/             # React, TypeScript, Webpack, S3·CloudFront 배포 파일
 ├── mobile/               # React Native 기반 iOS WebView 앱 셸
+├── qa/                   # Playwright 기반 AI E2E QA 실행 코드
 ├── docs/
 │   ├── convention/       # 저장소 공통 규칙
 │   ├── product/          # 제품 기능 명세
