@@ -195,6 +195,7 @@ npm run render -- runs/<Run ID>    # AI 분석 없이 Run Report만 다시 만�
 - 상태가 `승인` 또는 `자동화`인 Scenario만 실행한다.
 - Expected마다 `pass`, `fail`, `needsReview`로 판정하고 실제 결과를 문장으로 남긴다. 단계가 중간에 멈추면 확인하지 못한 Expected는 `BLOCKED`다.
 - 최종 판정이 `PASS`가 아니면 테스트를 실패로 표시해 스크린샷과 trace를 남긴다.
+- 회원이 필요하면 fixture를 쓴다. `member`는 화면에서 시작한 새 회원 `qa-{runId}`, `otherMember`는 같은 Run의 두 번째 회원 `qa-{runId}-b`로 화면 없이 API로 시작한다. 화면에서 할 수 없는 시도(다른 회원의 자원 접근 등)는 `callApi`로 API를 직접 호출한다.
 
 ```ts
 await run.execute(async () => {
@@ -212,7 +213,7 @@ await run.execute(async () => {
 
 | 계층 | 수집 방법 | 파일 |
 | --- | --- | --- |
-| Scenario 지정 | 테스트에서 `run.captureScreen(EV ID, focus)`, `run.captureApi(EV ID, response)`, `run.captureRequests(EV ID, watch)` 호출. 설명은 Scenario 문서의 Required Evidence에서 가져온다. 확인 대상이 안쪽 스크롤 영역에 있으면 전체 페이지 스크린샷에 찍히지 않으므로 `focus`로 그 요소까지 스크롤한 뒤 찍는다. `captureRequests`는 `watchRequests`로 감시한 요청의 본문과 응답 상태를 기록하며, 요청이 없으면 0건으로 남는다. 브라우저 안에서 모은 기록(예: 위치 권한 요청 호출)은 `run.captureLog(EV ID, 이름, 기록)`으로 남긴다 | `EV1-api.json`, `EV2-screen.png`, `EV5-requests.json`, `EV4-geolocation-calls.json` |
+| Scenario 지정 | 테스트에서 `run.captureScreen(EV ID, focus)`, `run.captureApi(EV ID, response)`, `run.captureRequests(EV ID, watch)` 호출. 설명은 Scenario 문서의 Required Evidence에서 가져온다. 확인 대상이 안쪽 스크롤 영역에 있으면 전체 페이지 스크린샷에 찍히지 않으므로 `focus`로 그 요소까지 스크롤한 뒤 찍는다. `captureRequests`는 `watchRequests`로 감시한 요청의 본문과 응답 상태를 기록하며, 요청이 없으면 0건으로 남는다. 브라우저 안에서 모은 기록(예: 위치 권한 요청 호출)은 `run.captureLog(EV ID, 이름, 기록)`으로, `callApi`로 직접 호출한 요청과 응답은 `run.captureApiCall(EV ID, call)`로 남긴다. 인증 토큰은 `Bearer ***`로 가린다 | `EV1-api.json`, `EV2-screen.png`, `EV5-requests.json`, `EV4-geolocation-calls.json` |
 | 항상 | 실행이 끝나면 마지막 화면 저장 | `EV+1-final-screen.png` |
 | 실패 시 추가 | 최종 판정이 `PASS`가 아니면 콘솔, 네트워크 기록, trace 저장 | `EV+2-console.json`, `EV+3-network.json`, `EV+4-trace.zip` |
 
@@ -265,10 +266,10 @@ QA_FAULT=detail-rent npx playwright test tests/F02-S01-property-create.spec.ts
 | --- | --- |
 | `src/config.ts` | 환경변수, 운영 실행 차단 |
 | `src/run-id.ts` | runId 생성 |
-| `src/member.ts` | 새 회원으로 시작(F01) |
-| `src/fixtures.ts` | 공통 fixture |
+| `src/member.ts` | 새 회원으로 시작(F01). 화면으로 시작하거나 API로 시작 |
+| `src/fixtures.ts` | 공통 fixture(`member`, `otherMember`) |
 | `src/property-form.ts` | 매물 등록 화면의 입력란과 조작, 사전 조건용 매물 등록, 입력란 오류 안내 읽기 |
-| `src/api.ts` | API 응답 대기와 본문 읽기, 요청 감시 |
+| `src/api.ts` | API 응답 대기와 본문 읽기, 요청 감시, API 직접 호출 |
 | `src/scenario-doc.ts` | Scenario 문서 읽기 |
 | `src/scenario-run.ts` | Expected 판정 기록 |
 | `src/evidence.ts` | Evidence 수집과 민감 정보 가림 |

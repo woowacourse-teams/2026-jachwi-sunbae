@@ -1,4 +1,4 @@
-import type { Page, Request, Response } from '@playwright/test';
+import type { APIRequestContext, Page, Request, Response } from '@playwright/test';
 
 /** `page.waitForResponse`에 넘길 API 응답 조건. 경로는 쿼리를 제외하고 정확히 비교한다. */
 export const isApiResponse =
@@ -68,4 +68,52 @@ export const watchRequests = (
       );
     },
   };
+};
+
+/** 화면을 거치지 않고 보낸 API 요청과 응답. 인증 토큰 값은 담지 않는다. */
+export type ApiCall = {
+  method: string;
+  url: string;
+  /** 인증 헤더를 붙였는지 */
+  authenticated: boolean;
+  requestBody: unknown;
+  status: number;
+  requestId: string | null;
+  responseText: string;
+};
+
+/**
+ * API를 직접 호출한다. 화면에서 할 수 없는 시도(다른 회원의 자원 접근 등)를 할 때 쓴다.
+ * 상태 코드와 관계없이 응답을 돌려준다.
+ */
+export const callApi = async (
+  request: APIRequestContext,
+  method: string,
+  url: string,
+  options: { token?: string; body?: unknown } = {},
+): Promise<ApiCall> => {
+  const response = await request.fetch(url, {
+    method,
+    headers: options.token === undefined ? {} : { Authorization: `Bearer ${options.token}` },
+    data: options.body,
+    failOnStatusCode: false,
+  });
+  return {
+    method,
+    url,
+    authenticated: options.token !== undefined,
+    requestBody: options.body ?? null,
+    status: response.status(),
+    requestId: response.headers()['x-request-id'] ?? null,
+    responseText: await response.text().catch(() => ''),
+  };
+};
+
+/** 직접 호출한 응답의 본문을 JSON으로 읽는다. 본문이 없거나 JSON이 아니면 null이다. */
+export const parseApiCall = <T>(call: ApiCall): T | null => {
+  try {
+    return JSON.parse(call.responseText) as T;
+  } catch {
+    return null;
+  }
 };

@@ -3,7 +3,7 @@ import { relative, resolve } from 'node:path';
 
 import type { Locator, Page, Response, TestInfo } from '@playwright/test';
 
-import type { RequestWatch, WatchedRequest } from './api';
+import type { ApiCall, RequestWatch, WatchedRequest } from './api';
 import { qaConfig } from './config';
 import { EvidenceCollector, type EvidenceRecord, RUNS_DIR } from './evidence';
 import { type ActiveFault, activeFault } from './faults';
@@ -118,6 +118,11 @@ export class ScenarioRun {
     const requests = await watch.stop();
     this.evidence.requests(evidenceId, watch.label, requests, this.requiredEvidence(evidenceId).text);
     return requests;
+  }
+
+  /** Scenario의 Required Evidence로 직접 호출한 API 요청과 응답을 저장한다. 설명은 Scenario 문서에서 가져온다. */
+  captureApiCall(evidenceId: string, call: ApiCall): void {
+    this.evidence.apiCall(evidenceId, call, this.requiredEvidence(evidenceId).text);
   }
 
   /** Scenario의 Required Evidence로 브라우저 안에서 모은 기록(예: 위치 권한 요청 호출)을 저장한다. */
