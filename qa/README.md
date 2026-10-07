@@ -6,6 +6,7 @@
 
 - Node 22.23.x (`.nvmrc`)
 - Playwright, 모바일 화면(Pixel 7, Chromium)
+- AI 분석: 로그인된 Claude Code CLI(`claude -p`)
 - 기본 대상은 DEV(`https://dev.jachwi-sunbae.kr`)다. 운영 URL을 지정하면 실행하지 않는다.
 
 ## 설치
@@ -23,6 +24,7 @@ npm run test:smoke   # 실행 환경 점검
 npm test             # 전체 테스트
 npm run report       # 마지막 실행의 HTML 리포트 열기
 npm run typecheck    # 타입 검사
+npm run analyze -- runs/<Run ID>   # 저장된 Run을 다시 AI 분석
 ```
 
 ## 환경변수
@@ -30,6 +32,10 @@ npm run typecheck    # 타입 검사
 | 이름 | 기본값 | 설명 |
 | --- | --- | --- |
 | `QA_BASE_URL` | `https://dev.jachwi-sunbae.kr` | QA 대상 프론트엔드 URL. 로컬은 `http://localhost:3000` |
+| `QA_AI_ANALYSIS` | `failed` | AI 분석 대상. `failed`는 PASS가 아닌 Run만, `always`는 모든 Run, `off`는 분석하지 않음 |
+| `QA_AI_MODEL` | Claude Code 기본 모델 | 분석에 쓸 모델. 예: `sonnet` |
+| `QA_AI_TIMEOUT_MS` | `300000` | AI 분석 제한 시간 |
+| `QA_FAULT` | 없음 | 의도적으로 주입할 결함 이름. 예: `detail-rent` |
 
 `.env.example`을 `.env`로 복사해 설정하거나 셸 환경변수로 넘긴다. 둘 다 있으면 셸 환경변수가 우선한다. `.env`는 커밋하지 않는다.
 
@@ -44,7 +50,7 @@ npm run typecheck    # 타입 검사
 
 | 위치 | 내용 |
 | --- | --- |
-| `runs/{Run ID}/` | Scenario 실행 결과(`result.json`)와 Evidence(`evidence/`) |
+| `runs/{Run ID}/` | Scenario 실행 결과(`result.json`), Evidence(`evidence/`), AI 분석(`analysis.json`) |
 | `test-results/` | Playwright가 남기는 실패 테스트의 스크린샷과 trace |
 | `playwright-report/` | HTML 리포트 |
 
@@ -83,6 +89,33 @@ await run.execute(async () => {
 - 요청과 응답 본문의 토큰, 비밀번호, 쿠키 값은 `***`로 가린다.
 - trace는 테스트가 끝난 뒤 만들어지므로 `src/reporter.ts`가 Run 디렉터리로 옮긴다.
 
+## AI 분석
+
+테스트가 모두 끝나면 `src/reporter.ts`가 Run마다 `claude -p`로 분석을 요청한다.
+
+- 입력은 QA 기준 문서(`source-of-truth.md`, `report-schema.md`), 제품 명세 전체, Scenario 문서, `result.json`, Evidence다. 근거 문서를 요약하지 않고 원문으로 넘긴다.
+- AI에게는 읽기 도구(Read)만 주고, `--restricted`로 실행 도구와 사용자, 프로젝트 설정을 막는다. 스크린샷은 AI가 직접 열어 본다.
+- 응답 형식은 JSON Schema로 강제하고, `report-schema.md`의 AI 분석 항목을 따른다.
+- AI가 인용한 명세 ID와 Evidence ID가 실제로 있는지 코드가 확인해 `validation`에 남긴다.
+- 의도적 결함 주입 여부(`faultInjection`)는 AI에게 넘기지 않는다.
+
+| 파일 | 내용 |
+| --- | --- |
+| `analysis.json` | 분석 결과, 사용 모델, 소요 시간, 비용, 인용 검증 결과 |
+| `analysis-prompt.md` | AI에게 보낸 프롬프트 원문 |
+
+## 의도적 결함 주입
+
+실제 결함 없이 실패 경로를 확인하거나, 원인을 아는 실패로 AI 분석이 맞는지 채점할 때 쓴다. 제품 코드와 DEV 데이터는 바꾸지 않고 브라우저가 받는 응답만 바꾼다. 주입한 결함은 `result.json`의 `faultInjection`에 남는다.
+
+| 이름 | 바꾸는 것 |
+| --- | --- |
+| `detail-rent` | 매물 상세 조회 응답의 월세를 실제 값의 1/10로 바꾼다 |
+
+```bash
+QA_FAULT=detail-rent npx playwright test tests/F02-S01-property-create.spec.ts
+```
+
 ## 디렉터리 구조
 
 ```text
@@ -97,7 +130,10 @@ qa/
 │   ├── scenario-doc.ts    # Scenario 문서 읽기
 │   ├── scenario-run.ts    # Expected 판정 기록
 │   ├── evidence.ts        # Evidence 수집과 민감 정보 가림
-│   └── reporter.ts        # Run 마무리(trace 이동, 결과 요약)
+│   ├── faults.ts          # 의도적 결함 주입
+│   ├── ai-analysis.ts     # claude -p 분석과 인용 검증
+│   ├── analyze-cli.ts     # 저장된 Run 재분석 명령
+│   └── reporter.ts        # Run 마무리(trace 이동, AI 분석, 결과 요약)
 └── tests/
     ├── smoke.spec.ts                    # 실행 환경 점검
     └── F02-S01-property-create.spec.ts  # F02-S01 정상 매물 등록 후 재조회

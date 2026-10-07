@@ -1,5 +1,6 @@
 import { test as base } from '@playwright/test';
 
+import { applyFault } from './faults';
 import { type QaMember, startAsNewMember } from './member';
 import { nextRunId } from './run-id';
 
@@ -14,6 +15,8 @@ type QaFixtures = {
 export const test = base.extend<QaFixtures>({
   context: async ({ context }, use) => {
     await context.route(ANALYTICS_URL, (route) => route.abort());
+    // QA_FAULT를 지정하면 의도적 결함을 주입한다. 지정하지 않으면 아무것도 바꾸지 않는다.
+    await applyFault(context);
     await use(context);
   },
   member: async ({ page }, use) => {

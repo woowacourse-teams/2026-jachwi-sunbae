@@ -5,6 +5,7 @@ import type { Page, Response, TestInfo } from '@playwright/test';
 
 import { qaConfig } from './config';
 import { EvidenceCollector, type EvidenceRecord, RUNS_DIR } from './evidence';
+import { type ActiveFault, activeFault } from './faults';
 import type { QaMember } from './member';
 import { loadScenario, type ScenarioDoc } from './scenario-doc';
 
@@ -50,6 +51,8 @@ export type ScenarioResult = {
   evidence: EvidenceRecord[];
   /** Scenario가 요구했지만 수집하지 못한 Evidence ID */
   missingEvidence: string[];
+  /** 의도적으로 주입한 결함. AI 분석에는 전달하지 않는다. */
+  faultInjection: ActiveFault | null;
 };
 
 // docs/qa/report-schema.md 4.2: 사람이 먼저 봐야 할 결과를 앞에 둔다.
@@ -204,6 +207,7 @@ export class ScenarioRun {
       missingEvidence: this.scenario.requiredEvidence
         .map((evidence) => evidence.id)
         .filter((evidenceId) => !collectedIds.has(evidenceId)),
+      faultInjection: activeFault(),
     };
   }
 

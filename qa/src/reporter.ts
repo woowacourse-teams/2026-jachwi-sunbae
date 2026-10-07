@@ -3,10 +3,12 @@ import { resolve } from 'node:path';
 
 import type { Reporter, TestCase, TestResult } from '@playwright/test/reporter';
 
+import { analyzeRun, type AnalysisRecord } from './ai-analysis';
 import type { ScenarioResult } from './scenario-run';
 
 // 테스트가 끝난 뒤 Run 디렉터리를 마무리한다.
 // trace는 테스트가 끝난 뒤에 만들어지므로 테스트 안이 아니라 리포터에서 Run 디렉터리로 옮긴다.
+// 모든 테스트가 끝나면 AI 분석을 실행한다. QA_AI_ANALYSIS: failed(기본, PASS가 아닌 Run만), always, off
 
 const REPOSITORY_ROOT = resolve(__dirname, '../..');
 
@@ -31,6 +33,24 @@ const attachTrace = (scenarioResult: ScenarioResult, result: TestResult): void =
   writeFileSync(resultFile, JSON.stringify(saved, null, 2));
 };
 
+const AI_ANALYSIS_MODES = ['failed', 'always', 'off'] as const;
+type AiAnalysisMode = (typeof AI_ANALYSIS_MODES)[number];
+
+const aiAnalysisMode = (): AiAnalysisMode => {
+  const mode = process.env.QA_AI_ANALYSIS?.trim() || 'failed';
+  if (!(AI_ANALYSIS_MODES as readonly string[]).includes(mode)) {
+    throw new Error(`알 수 없는 QA_AI_ANALYSIS '${mode}'. 사용 가능: ${AI_ANALYSIS_MODES.join(', ')}`);
+  }
+  return mode as AiAnalysisMode;
+};
+
+const describeAnalysis = (record: AnalysisRecord): string => {
+  if (record.analysis === null) return `AI 분석 실패: ${record.error}`;
+  const { proposedSeverity, confidence, suggestedHumanVerdict } = record.analysis;
+  const seconds = Math.round(record.durationMs / 1000);
+  return `AI 분석 완료(${seconds}초): 판정 제안 ${suggestedHumanVerdict.value}, 제안 심각도 ${proposedSeverity.level}, 확신도 ${confidence}`;
+};
+
 class QaRunReporter implements Reporter {
   private readonly runs: ScenarioResult[] = [];
 
@@ -43,11 +63,18 @@ class QaRunReporter implements Reporter {
     this.runs.push(scenarioResult);
   }
 
-  onEnd(): void {
+  async onEnd(): Promise<void> {
     if (this.runs.length === 0) return;
+    const mode = aiAnalysisMode();
+
     console.log('\nQA Run');
     for (const run of this.runs) {
       console.log(`  ${run.verdict.padEnd(12)} ${run.runName}  ${run.runDir}`);
+      if (mode === 'off' || (mode === 'failed' && run.verdict === 'PASS')) continue;
+
+      console.log('    AI 분석 중...');
+      const record = await analyzeRun(resolve(REPOSITORY_ROOT, run.runDir));
+      console.log(`    ${describeAnalysis(record)}`);
     }
   }
 
