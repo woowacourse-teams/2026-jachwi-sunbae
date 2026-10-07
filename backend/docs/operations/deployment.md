@@ -4,12 +4,60 @@
 
 ## 1. 배포 환경과 요청 경로
 
+### 전체 배포 흐름
+
+작업 브랜치에서 PR을 생성하고 GitHub Actions의 필수 검사를 통과한 뒤 병합한다. **`develop` 병합은 dev 배포, `main` 병합은 prod 배포를 시작한다.** dev에서 검증한 변경을 `main`에 반영하면 prod 파이프라인이 같은 방식으로 빌드·배포한다.
+
+```text
+작업 브랜치 → PR → GitHub Actions 필수 검사 통과
+                    │
+        ┌───────────┴───────────┐
+        ▼                       ▼
+   develop 병합               main 병합
+        │                       │
+ jachwi-sunbae-dev-line    jachwi-sunbae-line
+        │                       │
+ Source: develop          Source: main
+        │                       │
+ Commands: Corretto 21 · bootJar · 소스 SHA 기록
+        │                       │
+ 환경별 BuildArtifact → S3 아티팩트 버킷
+        │                       │
+ CodeDeploy               CodeDeploy
+ jachwi-sunbae-dev-group   jachwi-sunbae-codeDeploy-group
+        │                       │
+ dev 태그의 ASG EC2        prod 태그의 EC2
+        └───────────┬───────────┘
+                    ▼
+ ApplicationStop → DownloadBundle → BeforeInstall → Install
+                    ▼
+ AfterInstall: 배포 환경 선택 → Vault 설정 다운로드 → 유닛 설치
+                    ▼
+ ApplicationStart: systemd restart
+                    ▼
+ ValidateService: 서비스 active · health UP · 배포 SHA 일치
+                    ▼
+ 배포 성공 확인 → ALB 대상 상태와 환경별 API 응답 확인
+```
+
+GitHub Actions는 검사, CodePipeline은 소스 조회·빌드·배포 연결, CodeDeploy 에이전트는 EC2에서 산출물 설치와 훅 실행을 담당한다. `DownloadBundle`과 `Install`은 CodeDeploy가 수행하는 단계이며 별도 사용자 스크립트가 아니다. 첫 배포에서는 `ApplicationStop`이 실행되지 않는다.
+
+### 환경별 파이프라인과 대상
+
 | 환경 | 브랜치 | CodePipeline | CodeDeploy 배포 그룹 | EC2 선택 태그 |
 | --- | --- | --- | --- | --- |
 | dev | `develop` | `jachwi-sunbae-dev-line` | `jachwi-sunbae-dev-group` | `DeployTarget=jachwi-sunbae-dev` |
 | prod | `main` | `jachwi-sunbae-line` | `jachwi-sunbae-codeDeploy-group` | `DeployTarget=jachwi-sunbae-prod` |
 
 dev는 `jachwi-sunbae-dev-asg`, prod는 현재 단일 EC2를 사용한다. CodeDeploy가 태그로 대상을 선택하므로 새 인스턴스에도 환경에 맞는 태그를 지정한다.
+
+### 사용자 요청 경로
+
+```text
+클라이언트 HTTPS 요청 → 공유 ALB:443 → 호스트 규칙
+  ├─ dev-api.jachwi-sunbae.kr → dev 대상 그룹 → dev EC2:80
+  └─ 기본 작업              → prod 대상 그룹 → prod EC2:80
+```
 
 공유 ALB의 443 리스너는 호스트로 요청을 나누며 인증서는 SNI로 함께 연결한다.
 
@@ -21,12 +69,6 @@ dev는 `jachwi-sunbae-dev-asg`, prod는 현재 단일 EC2를 사용한다. CodeD
 조건에 해당하지 않는 요청도 prod로 간다. dev 규칙을 수정할 때 기본 작업을 바꾸지 않는다.
 
 ## 2. CI와 빌드 산출물
-
-```text
-PR → GitHub Actions 검사 → develop / main 병합
-  → CodePipeline Source → Commands 빌드 → S3 BuildArtifact
-  → CodeDeploy → 해당 환경의 EC2
-```
 
 GitHub Actions는 PR과 `main`·`develop` push에서 `clean build`를 실행한다. 병합 전에 필수 검사를 통과해야 하므로 배포 빌드는 `clean bootJar -x test`로 JAR를 만든다.
 
