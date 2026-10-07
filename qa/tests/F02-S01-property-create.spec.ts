@@ -4,7 +4,7 @@ import { isApiResponse, readJson } from '../src/api';
 import { expect, test } from '../src/fixtures';
 import { type ExpectedOutcome, fail, needsReview, pass, ScenarioRun } from '../src/scenario-run';
 
-// docs/qa/scenarios/F02-S01-property-create.md
+// qa/docs/scenarios/F02-S01-property-create.md
 const DEPOSIT_MANWON = 500;
 const MONTHLY_RENT_MANWON = 50;
 
@@ -18,7 +18,7 @@ const isSameAmount = (actual: number | undefined, manwon: number): boolean =>
 
 // 화면 금액 표기 형식도 명세가 정하지 않았다. `500만원 / 50만원`처럼 보증금과 월세를 만원 단위로 나란히 보여주는
 // 형식만 코드가 읽는다. 읽을 수 있으면 값을 비교해 PASS나 FAIL로 판정하고, 읽을 수 없는 형식은 NEEDS_REVIEW로 넘긴다.
-// docs/qa/decision-log/DL-001-amount-mismatch-fail.md
+// qa/docs/decision-log/DL-001-amount-mismatch-fail.md
 const MANWON_PAIR = /(\d[\d,]*)\s*만\s*원\s*\/\s*(?:월세\s*)?(\d[\d,]*)\s*만\s*원/;
 
 const judgeAmounts = (text: string, actual: string): ExpectedOutcome => {

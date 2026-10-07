@@ -5,7 +5,7 @@
 | 사용자 목적 | 집의 실제 모습을 사진으로 남기고, 대표 사진으로 후보를 구분한다. |
 | 진입점 | 매물 상세의 사진 영역 |
 | 선행 Flow | F02 |
-| 관련 명세 | [사진](../../product/specs/photo.md), [공통 삭제 정책](../../product/README.md#공통-삭제-정책) |
+| 관련 명세 | [사진](../../../docs/product/specs/photo.md), [공통 삭제 정책](../../../docs/product/README.md#공통-삭제-정책) |
 
 ## 핵심 흐름
 

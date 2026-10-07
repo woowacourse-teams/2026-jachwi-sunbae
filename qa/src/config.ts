@@ -5,7 +5,7 @@ import { resolve } from 'node:path';
 const ENV_FILE = resolve(__dirname, '../.env');
 const DEFAULT_BASE_URL = 'https://dev.jachwi-sunbae.kr';
 
-// docs/qa/README.md: 운영 데이터에 테스트 회원과 매물이 생기지 않도록 운영에서는 QA를 실행하지 않는다.
+// qa/README.md: 운영 데이터에 테스트 회원과 매물이 생기지 않도록 운영에서는 QA를 실행하지 않는다.
 const PRODUCTION_HOSTS = new Set(['jachwi-sunbae.kr', 'www.jachwi-sunbae.kr']);
 
 if (existsSync(ENV_FILE)) {

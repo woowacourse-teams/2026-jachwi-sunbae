@@ -5,7 +5,7 @@
 | 사용자 목적 | 새로 발견한 집을 나중에 다시 보고 비교할 수 있도록 저장한다. |
 | 진입점 | 매물 목록의 매물 추가 |
 | 선행 Flow | F01 |
-| 관련 명세 | [매물](../../product/specs/property.md), [지도](../../product/specs/map.md), [체크리스트](../../product/specs/checklist.md) |
+| 관련 명세 | [매물](../../../docs/product/specs/property.md), [지도](../../../docs/product/specs/map.md), [체크리스트](../../../docs/product/specs/checklist.md) |
 
 ## 핵심 흐름
 

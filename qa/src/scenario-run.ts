@@ -11,7 +11,7 @@ import { loadScenario, type ScenarioDoc } from './scenario-doc';
 
 // Expected별 판정(PASS, FAIL, NEEDS_REVIEW, BLOCKED)과 실제 결과 문장, 소요 시간을 JSON으로 남긴다.
 // 승인이나 자동화 상태가 아닌 Scenario는 실행을 거부한다.
-/** docs/qa/report-schema.md 4.1 Expected 판정값 */
+/** qa/docs/report-schema.md 4.1 Expected 판정값 */
 export type Verdict = 'PASS' | 'FAIL' | 'NEEDS_REVIEW' | 'BLOCKED';
 
 export type ExpectedOutcome = {
@@ -60,7 +60,7 @@ export type ScenarioResult = {
   faultInjection: ActiveFault | null;
 };
 
-// docs/qa/report-schema.md 4.2: 사람이 먼저 봐야 할 결과를 앞에 둔다.
+// qa/docs/report-schema.md 4.2: 사람이 먼저 봐야 할 결과를 앞에 둔다.
 const VERDICT_PRIORITY: Verdict[] = ['FAIL', 'NEEDS_REVIEW', 'BLOCKED', 'PASS'];
 const RUNNABLE_STATUSES = new Set(['승인', '자동화']);
 
@@ -87,7 +87,7 @@ export class ScenarioRun {
 
   static start(scenarioId: string, member: QaMember, page: Page, testInfo: TestInfo): ScenarioRun {
     const scenario = loadScenario(scenarioId);
-    // docs/qa/scenarios/README.md: 자동화는 승인된 Scenario만 한다.
+    // qa/docs/scenarios/README.md: 자동화는 승인된 Scenario만 한다.
     if (!RUNNABLE_STATUSES.has(scenario.status)) {
       throw new Error(`${scenarioId}의 상태가 '${scenario.status}'입니다. 승인된 Scenario만 실행합니다.`);
     }

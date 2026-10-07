@@ -3,7 +3,7 @@ import { relative, resolve } from 'node:path';
 
 // Scenario 문서(Markdown)에서 상태와 Expected 표를 직접 읽는다.
 // 기대 결과를 코드에 다시 적지 않아서, 문서를 고치면 실행 결과에도 그대로 반영된다.
-const SCENARIO_DIR = resolve(__dirname, '../../docs/qa/scenarios');
+const SCENARIO_DIR = resolve(__dirname, '../docs/scenarios');
 const REPOSITORY_ROOT = resolve(__dirname, '../..');
 
 export type ScenarioExpected = {
@@ -55,7 +55,7 @@ const readTable = (markdown: string, heading: string | null): string[][] => {
 };
 
 /**
- * `docs/qa/scenarios/`의 Scenario 문서를 읽는다.
+ * `qa/docs/scenarios/`의 Scenario 문서를 읽는다.
  * Expected와 Required Evidence를 코드에 다시 적지 않고 문서에서 가져와 문서와 실행 결과가 어긋나지 않게 한다.
  */
 export const loadScenario = (scenarioId: string): ScenarioDoc => {

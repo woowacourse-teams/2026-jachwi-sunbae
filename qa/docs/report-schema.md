@@ -190,7 +190,7 @@ AI는 이 기준으로 제안 심각도를 내고, 사람이 영향 범위를 �
 | 필드 | 내용 |
 | --- | --- |
 | Run ID | F02-S01-261007-095253 |
-| Scenario | [F02-S01 정상 매물 등록 후 재조회](../../../docs/qa/scenarios/F02-S01-property-create.md) (자동화) |
+| Scenario | [F02-S01 정상 매물 등록 후 재조회](../../docs/scenarios/F02-S01-property-create.md) (자동화) |
 | 환경 | DEV, https://dev.jachwi-sunbae.kr |
 | 대상 버전 | 확인 불가 |
 | 실행 방식 | 자동, Playwright 1.63.0 |
@@ -252,7 +252,7 @@ AI는 이 기준으로 제안 심각도를 내고, 사람이 영향 범위를 �
 
 ## 사람 판정
 
-판정은 `CONFIRMED_BUG`, `NOT_A_BUG`, `SPEC_GAP`, `TEST_ISSUE`, `ENV_ISSUE` 중 하나다. AI 판단은 `수용`, `수정`, `기각` 중 하나다. 수정하거나 기각하면 [판단 기록](../../../docs/qa/decision-log/README.md)을 남긴다.
+판정은 `CONFIRMED_BUG`, `NOT_A_BUG`, `SPEC_GAP`, `TEST_ISSUE`, `ENV_ISSUE` 중 하나다. AI 판단은 `수용`, `수정`, `기각` 중 하나다. 수정하거나 기각하면 [판단 기록](../../docs/decision-log/README.md)을 남긴다.
 
 | 필드 | 내용 |
 | --- | --- |

@@ -9,7 +9,7 @@ const formatter = new Intl.DateTimeFormat('en-CA', {
   hourCycle: 'h23',
 });
 
-/** docs/qa/README.md의 `runId` 형식(`YYMMDD-HHmmss`, 한국 시간)으로 만든다. */
+/** qa/README.md의 `runId` 형식(`YYMMDD-HHmmss`, 한국 시간)으로 만든다. */
 export const formatRunId = (date: Date): string => {
   const parts = Object.fromEntries(formatter.formatToParts(date).map((part) => [part.type, part.value]));
   return `${parts.year}${parts.month}${parts.day}-${parts.hour}${parts.minute}${parts.second}`;

@@ -4,7 +4,7 @@ import { relative, resolve } from 'node:path';
 import type { AnalysisRecord } from './ai-analysis';
 import type { ScenarioResult } from './scenario-run';
 
-// docs/qa/report-schema.md 형식의 Run Report(report.md)를 만든다.
+// qa/docs/report-schema.md 형식의 Run Report(report.md)를 만든다.
 // 사람 판정은 report.md에서 직접 채운다. 리포트를 다시 만들어도 채운 값은 유지한다.
 
 const REPOSITORY_ROOT = resolve(__dirname, '../..');
@@ -247,7 +247,7 @@ const canCarryItems = (preserved: HumanJudgment, analysis: AnalysisRecord | null
   preserved.analyzedAt === null || preserved.analyzedAt === analysis?.analyzedAt;
 
 const humanJudgment = (preserved: HumanJudgment, analysis: AnalysisRecord | null, runDir: string): string => {
-  const decisionLog = relative(runDir, resolve(REPOSITORY_ROOT, 'docs/qa/decision-log/README.md'));
+  const decisionLog = relative(runDir, resolve(REPOSITORY_ROOT, 'qa/docs/decision-log/README.md'));
   const lines = [
     `판정은 \`CONFIRMED_BUG\`, \`NOT_A_BUG\`, \`SPEC_GAP\`, \`TEST_ISSUE\`, \`ENV_ISSUE\` 중 하나다. AI 판단은 \`수용\`, \`수정\`, \`기각\` 중 하나다. 수정하거나 기각하면 [판단 기록](${decisionLog})을 남긴다.`,
     '',

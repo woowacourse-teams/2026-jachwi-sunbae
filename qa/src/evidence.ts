@@ -3,7 +3,7 @@ import { resolve } from 'node:path';
 
 import type { Page, Response } from '@playwright/test';
 
-// docs/qa/report-schema.md 3. Evidence: 항상 수집, Scenario 지정, 실패 시 추가 수집의 세 계층으로 모은다.
+// qa/docs/report-schema.md 3. Evidence: 항상 수집, Scenario 지정, 실패 시 추가 수집의 세 계층으로 모은다.
 // Run마다 `qa/runs/{Run ID}/evidence/`에 파일로 남기고, 인증 정보는 가린다.
 
 export const RUNS_DIR = resolve(__dirname, '../runs');

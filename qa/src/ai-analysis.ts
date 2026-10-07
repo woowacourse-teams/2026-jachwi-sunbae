@@ -4,12 +4,12 @@ import { resolve } from 'node:path';
 
 import type { ScenarioResult } from './scenario-run';
 
-// docs/qa/report-schema.md 2.6 AI 분석: Run의 결과와 Evidence를 `claude -p`로 분석한다.
+// qa/docs/report-schema.md 2.6 AI 분석: Run의 결과와 Evidence를 `claude -p`로 분석한다.
 // AI는 판정 초안과 원인 가설만 낸다. 최종 판정은 사람이 한다.
 
 const REPOSITORY_ROOT = resolve(__dirname, '../..');
 const SPEC_DIR = resolve(REPOSITORY_ROOT, 'docs/product/specs');
-const STANDARD_DOCS = ['docs/qa/source-of-truth.md', 'docs/qa/report-schema.md', 'docs/product/README.md'];
+const STANDARD_DOCS = ['qa/docs/source-of-truth.md', 'qa/docs/report-schema.md', 'docs/product/README.md'];
 const SPEC_ID = /\b(?:REQ|POL|AC)-[A-Z]+-\d{2,3}\b/g;
 const INLINE_LIMIT = 15_000;
 const TIMEOUT_MS = Number(process.env.QA_AI_TIMEOUT_MS) || 300_000;
