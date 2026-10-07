@@ -47,6 +47,10 @@ map:
   connect-timeout-millis: ${MAP_CONNECT_TIMEOUT_MILLIS:2000}
   read-timeout-millis: ${MAP_READ_TIMEOUT_MILLIS:5000}
 
+transit:
+  gtfs:
+    directory: ${GTFS_DIRECTORY:}
+
 management:
   endpoints:
     web:
