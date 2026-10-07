@@ -110,7 +110,11 @@ export class EvidenceCollector {
   /** Scenario의 Required Evidence로 감시한 요청 기록을 저장한다. 요청이 없었으면 0건으로 남는다. */
   requests(id: string, label: string, requests: WatchedRequest[], description: string): void {
     const file = this.reserve(`${id}-requests`, 'json');
-    writeFileSync(resolve(this.runDir, file), JSON.stringify({ watched: label, count: requests.length, requests }, null, 2));
+    const masked = requests.map((request) => ({ ...request, body: parseBody(request.body) }));
+    writeFileSync(
+      resolve(this.runDir, file),
+      JSON.stringify({ watched: label, count: requests.length, requests: masked }, null, 2),
+    );
     this.records.push({ id, kind: '네트워크', file, description: `${description}: ${label} ${requests.length}건` });
   }
 

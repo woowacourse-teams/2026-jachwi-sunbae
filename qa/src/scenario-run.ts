@@ -1,7 +1,7 @@
 import { writeFileSync } from 'node:fs';
 import { relative, resolve } from 'node:path';
 
-import type { Page, Response, TestInfo } from '@playwright/test';
+import type { Locator, Page, Response, TestInfo } from '@playwright/test';
 
 import type { RequestWatch, WatchedRequest } from './api';
 import { qaConfig } from './config';
@@ -99,8 +99,12 @@ export class ScenarioRun {
     return `${this.scenario.id}-${this.member.runId}`;
   }
 
-  /** Scenario의 Required Evidence로 현재 화면을 저장한다. 설명은 Scenario 문서에서 가져온다. */
-  async captureScreen(evidenceId: string): Promise<void> {
+  /**
+   * Scenario의 Required Evidence로 현재 화면을 저장한다. 설명은 Scenario 문서에서 가져온다.
+   * 확인 대상이 안쪽 스크롤 영역에 있으면 전체 페이지 스크린샷에 찍히지 않으므로 focus로 그 요소까지 스크롤한다.
+   */
+  async captureScreen(evidenceId: string, focus?: Locator): Promise<void> {
+    if (focus !== undefined) await focus.scrollIntoViewIfNeeded().catch(() => undefined);
     await this.evidence.screen(evidenceId, this.requiredEvidence(evidenceId).text);
   }
 

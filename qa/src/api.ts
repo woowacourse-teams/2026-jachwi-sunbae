@@ -21,6 +21,8 @@ export type WatchedRequest = {
   /** 응답을 받지 못했으면 null이다. */
   status: number | null;
   requestId: string | null;
+  /** 요청 본문. 없으면 null이다. */
+  body: string | null;
 };
 
 export type RequestWatch = {
@@ -30,16 +32,26 @@ export type RequestWatch = {
   stop: () => Promise<WatchedRequest[]>;
 };
 
-/** 지정한 요청을 감시한다. 요청이 "없었음"을 확인할 때도 쓴다. */
-export const watchRequests = (page: Page, method: string, pathname: string): RequestWatch => {
+/**
+ * 지정한 요청을 감시한다. 요청이 "없었음"을 확인할 때도 쓴다.
+ * 경로에 ID가 섞여 정확히 비교할 수 없으면 정규식과 함께 읽을 수 있는 경로 이름을 넘긴다.
+ */
+export const watchRequests = (
+  page: Page,
+  method: string,
+  pathname: string | RegExp,
+  pathLabel: string = String(pathname),
+): RequestWatch => {
+  const matches = (requestPath: string): boolean =>
+    typeof pathname === 'string' ? requestPath === pathname : pathname.test(requestPath);
   const requests: Request[] = [];
   const onRequest = (request: Request): void => {
-    if (request.method() === method && new URL(request.url()).pathname === pathname) requests.push(request);
+    if (request.method() === method && matches(new URL(request.url()).pathname)) requests.push(request);
   };
   page.on('request', onRequest);
 
   return {
-    label: `${method} ${pathname}`,
+    label: `${method} ${pathLabel}`,
     stop: async () => {
       page.off('request', onRequest);
       return Promise.all(
@@ -50,6 +62,7 @@ export const watchRequests = (page: Page, method: string, pathname: string): Req
             url: request.url(),
             status: response?.status() ?? null,
             requestId: response?.headers()['x-request-id'] ?? null,
+            body: request.postData(),
           };
         }),
       );

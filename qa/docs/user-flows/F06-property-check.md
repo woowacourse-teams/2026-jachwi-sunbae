@@ -38,4 +38,4 @@
 
 | ID | 상황 | 근거 | 상태 |
 | --- | --- | --- | --- |
-| [F06-S01](../scenarios/F06-S01-check-status-progress.md) | 체크 상태 저장과 진행 현황 집계 | `AC-CHECK-007` | 초안 |
+| [F06-S01](../scenarios/F06-S01-check-status-progress.md) | 체크 상태 저장과 진행 현황 집계 | `AC-CHECK-007` | 자동화 |

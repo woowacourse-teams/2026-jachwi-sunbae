@@ -212,7 +212,7 @@ await run.execute(async () => {
 
 | 계층 | 수집 방법 | 파일 |
 | --- | --- | --- |
-| Scenario 지정 | 테스트에서 `run.captureScreen(EV ID)`, `run.captureApi(EV ID, response)`, `run.captureRequests(EV ID, watch)` 호출. 설명은 Scenario 문서의 Required Evidence에서 가져온다. `captureRequests`는 `watchRequests`로 감시한 요청을 기록하며, 요청이 없으면 0건으로 남는다 | `EV1-api.json`, `EV2-screen.png`, `EV5-requests.json` |
+| Scenario 지정 | 테스트에서 `run.captureScreen(EV ID, focus)`, `run.captureApi(EV ID, response)`, `run.captureRequests(EV ID, watch)` 호출. 설명은 Scenario 문서의 Required Evidence에서 가져온다. 확인 대상이 안쪽 스크롤 영역에 있으면 전체 페이지 스크린샷에 찍히지 않으므로 `focus`로 그 요소까지 스크롤한 뒤 찍는다. `captureRequests`는 `watchRequests`로 감시한 요청의 본문과 응답 상태를 기록하며, 요청이 없으면 0건으로 남는다 | `EV1-api.json`, `EV2-screen.png`, `EV5-requests.json` |
 | 항상 | 실행이 끝나면 마지막 화면 저장 | `EV+1-final-screen.png` |
 | 실패 시 추가 | 최종 판정이 `PASS`가 아니면 콘솔, 네트워크 기록, trace 저장 | `EV+2-console.json`, `EV+3-network.json`, `EV+4-trace.zip` |
 
@@ -266,7 +266,7 @@ QA_FAULT=detail-rent npx playwright test tests/F02-S01-property-create.spec.ts
 | `src/run-id.ts` | runId 생성 |
 | `src/member.ts` | 새 회원으로 시작(F01) |
 | `src/fixtures.ts` | 공통 fixture |
-| `src/property-form.ts` | 매물 등록 화면의 입력란과 조작, 입력란 오류 안내 읽기 |
+| `src/property-form.ts` | 매물 등록 화면의 입력란과 조작, 사전 조건용 매물 등록, 입력란 오류 안내 읽기 |
 | `src/api.ts` | API 응답 대기와 본문 읽기, 요청 감시 |
 | `src/scenario-doc.ts` | Scenario 문서 읽기 |
 | `src/scenario-run.ts` | Expected 판정 기록 |
