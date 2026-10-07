@@ -10,7 +10,8 @@
     "test:smoke": "playwright test tests/smoke.spec.ts",
     "typecheck": "tsc --noEmit",
     "report": "playwright show-report",
-    "analyze": "tsx src/analyze-cli.ts"
+    "analyze": "tsx src/analyze-cli.ts",
+    "render": "tsx src/analyze-cli.ts --no-ai"
   },
   "devDependencies": {
     "@playwright/test": "1.63.0",

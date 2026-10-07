@@ -1,14 +1,16 @@
 import { copyFileSync, existsSync, readFileSync, writeFileSync } from 'node:fs';
-import { resolve } from 'node:path';
+import { relative, resolve } from 'node:path';
 
 import type { Reporter, TestCase, TestResult } from '@playwright/test/reporter';
 
 import { analyzeRun, type AnalysisRecord } from './ai-analysis';
+import { writeReport } from './report';
 import type { ScenarioResult } from './scenario-run';
 
 // 테스트가 끝난 뒤 Run 디렉터리를 마무리한다.
 // trace는 테스트가 끝난 뒤에 만들어지므로 테스트 안이 아니라 리포터에서 Run 디렉터리로 옮긴다.
-// 모든 테스트가 끝나면 AI 분석을 실행한다. QA_AI_ANALYSIS: failed(기본, PASS가 아닌 Run만), always, off
+// 모든 테스트가 끝나면 AI 분석을 실행하고 Run Report(report.md)를 만든다.
+// QA_AI_ANALYSIS: failed(기본, PASS가 아닌 Run만), always, off
 
 const REPOSITORY_ROOT = resolve(__dirname, '../..');
 
@@ -69,12 +71,13 @@ class QaRunReporter implements Reporter {
 
     console.log('\nQA Run');
     for (const run of this.runs) {
-      console.log(`  ${run.verdict.padEnd(12)} ${run.runName}  ${run.runDir}`);
-      if (mode === 'off' || (mode === 'failed' && run.verdict === 'PASS')) continue;
-
-      console.log('    AI 분석 중...');
-      const record = await analyzeRun(resolve(REPOSITORY_ROOT, run.runDir));
-      console.log(`    ${describeAnalysis(record)}`);
+      console.log(`  ${run.verdict.padEnd(12)} ${run.runName}`);
+      const runDir = resolve(REPOSITORY_ROOT, run.runDir);
+      if (mode === 'always' || (mode === 'failed' && run.verdict !== 'PASS')) {
+        console.log('    AI 분석 중...');
+        console.log(`    ${describeAnalysis(await analyzeRun(runDir))}`);
+      }
+      console.log(`    Run Report: ${relative(REPOSITORY_ROOT, writeReport(runDir))}`);
     }
   }
 

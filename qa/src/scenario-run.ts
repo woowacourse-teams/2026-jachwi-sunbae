@@ -39,7 +39,12 @@ export type ScenarioResult = {
   runName: string;
   runId: string;
   scenario: { id: string; title: string; status: string; path: string };
-  environment: { baseUrl: string };
+  environment: {
+    baseUrl: string;
+    apiOrigin: string;
+    /** DEV 백엔드의 `/actuator/info`. 조회하지 못하면 null이다. */
+    backendBuild: { version: string; commit: string } | null;
+  };
   member: { nickname: string; memberId: number };
   startedAt: string;
   finishedAt: string;
@@ -69,11 +74,12 @@ export class ScenarioRun {
   private readonly results = new Map<string, ExpectedResult>();
 
   private readonly evidence: EvidenceCollector;
+  private backendBuild: ScenarioResult['environment']['backendBuild'] = null;
 
   private constructor(
     readonly scenario: ScenarioDoc,
     private readonly member: QaMember,
-    page: Page,
+    private readonly page: Page,
     private readonly testInfo: TestInfo,
   ) {
     this.evidence = new EvidenceCollector(resolve(RUNS_DIR, this.runName), page);
@@ -155,6 +161,7 @@ export class ScenarioRun {
     }
 
     await this.evidence.finalScreen();
+    this.backendBuild = await this.fetchBackendBuild();
     let result = this.toResult();
     if (result.verdict !== 'PASS') {
       this.evidence.writeDiagnostics();
@@ -195,7 +202,7 @@ export class ScenarioRun {
         status: this.scenario.status,
         path: this.scenario.path,
       },
-      environment: { baseUrl: qaConfig.baseUrl },
+      environment: { baseUrl: qaConfig.baseUrl, apiOrigin: this.member.apiOrigin, backendBuild: this.backendBuild },
       member: { nickname: this.member.nickname, memberId: this.member.memberId },
       startedAt: this.member.startedAt.toISOString(),
       finishedAt: finishedAt.toISOString(),
@@ -209,6 +216,18 @@ export class ScenarioRun {
         .filter((evidenceId) => !collectedIds.has(evidenceId)),
       faultInjection: activeFault(),
     };
+  }
+
+  /** 실행 대상 백엔드의 빌드 버전과 커밋. Run Report의 대상 버전으로 쓴다. */
+  private async fetchBackendBuild(): Promise<ScenarioResult['environment']['backendBuild']> {
+    try {
+      const response = await this.page.request.get(`${this.member.apiOrigin}/actuator/info`, { timeout: 5_000 });
+      const body = (await response.json()) as { build?: { version?: string; commit?: string } };
+      const { version, commit } = body.build ?? {};
+      return version && commit ? { version, commit } : null;
+    } catch {
+      return null;
+    }
   }
 
   private requiredEvidence(evidenceId: string): ScenarioDoc['requiredEvidence'][number] {

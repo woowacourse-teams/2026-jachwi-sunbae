@@ -8,6 +8,8 @@ export type QaMember = {
   memberId: number;
   /** 로그인을 시작한 시각. 수동 실행과 같은 기준으로 소요 시간을 잰다. */
   startedAt: Date;
+  /** 프론트엔드가 호출하는 API 서버 주소. 예: https://dev-api.jachwi-sunbae.kr */
+  apiOrigin: string;
 };
 
 type LoginResponseBody = {
@@ -38,5 +40,11 @@ export const startAsNewMember = async (page: Page, runId: string): Promise<QaMem
 
   await expect(page).toHaveURL(/\/properties$/);
 
-  return { runId, nickname, memberId: body.data.member.memberId, startedAt };
+  return {
+    runId,
+    nickname,
+    memberId: body.data.member.memberId,
+    startedAt,
+    apiOrigin: new URL(loginResponse.url()).origin,
+  };
 };

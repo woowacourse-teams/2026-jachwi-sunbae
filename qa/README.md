@@ -24,7 +24,8 @@ npm run test:smoke   # 실행 환경 점검
 npm test             # 전체 테스트
 npm run report       # 마지막 실행의 HTML 리포트 열기
 npm run typecheck    # 타입 검사
-npm run analyze -- runs/<Run ID>   # 저장된 Run을 다시 AI 분석
+npm run analyze -- runs/<Run ID>   # 저장된 Run을 다시 AI 분석하고 Run Report를 다시 만듦
+npm run render -- runs/<Run ID>    # AI 분석 없이 Run Report만 다시 만듦
 ```
 
 ## 환경변수
@@ -50,7 +51,7 @@ npm run analyze -- runs/<Run ID>   # 저장된 Run을 다시 AI 분석
 
 | 위치 | 내용 |
 | --- | --- |
-| `runs/{Run ID}/` | Scenario 실행 결과(`result.json`), Evidence(`evidence/`), AI 분석(`analysis.json`) |
+| `runs/{Run ID}/` | Run Report(`report.md`), 실행 결과(`result.json`), Evidence(`evidence/`), AI 분석(`analysis.json`) |
 | `test-results/` | Playwright가 남기는 실패 테스트의 스크린샷과 trace |
 | `playwright-report/` | HTML 리포트 |
 
@@ -104,6 +105,15 @@ await run.execute(async () => {
 | `analysis.json` | 분석 결과, 사용 모델, 소요 시간, 비용, 인용 검증 결과 |
 | `analysis-prompt.md` | AI에게 보낸 프롬프트 원문 |
 
+## Run Report
+
+테스트가 모두 끝나면 Run마다 `runs/{Run ID}/report.md`를 만든다. 형식은 [QA 실행 결과 형식](../docs/qa/report-schema.md#2-run-report-구조)을 따른다.
+
+- 코드 판정(`result.json`)과 AI 분석(`analysis.json`)을 합친다. 코드가 `NEEDS_REVIEW`로 넘긴 Expected에는 AI 판정 초안을 함께 보여준다.
+- 대상 버전은 실행 대상 백엔드의 `/actuator/info`에서 읽은 버전과 커밋이다.
+- 의도적 결함을 주입한 Run이면 맨 위에 표시한다.
+- 사람 판정은 `report.md`의 사람 판정 표에서 직접 채운다. `npm run analyze`나 `npm run render`로 다시 만들어도 채운 값은 유지된다.
+
 ## 의도적 결함 주입
 
 실제 결함 없이 실패 경로를 확인하거나, 원인을 아는 실패로 AI 분석이 맞는지 채점할 때 쓴다. 제품 코드와 DEV 데이터는 바꾸지 않고 브라우저가 받는 응답만 바꾼다. 주입한 결함은 `result.json`의 `faultInjection`에 남는다.
@@ -132,8 +142,9 @@ qa/
 │   ├── evidence.ts        # Evidence 수집과 민감 정보 가림
 │   ├── faults.ts          # 의도적 결함 주입
 │   ├── ai-analysis.ts     # claude -p 분석과 인용 검증
-│   ├── analyze-cli.ts     # 저장된 Run 재분석 명령
-│   └── reporter.ts        # Run 마무리(trace 이동, AI 분석, 결과 요약)
+│   ├── report.ts          # Run Report(report.md) 생성
+│   ├── analyze-cli.ts     # 저장된 Run 재분석과 Run Report 재생성 명령
+│   └── reporter.ts        # Run 마무리(trace 이동, AI 분석, Run Report 생성)
 └── tests/
     ├── smoke.spec.ts                    # 실행 환경 점검
     └── F02-S01-property-create.spec.ts  # F02-S01 정상 매물 등록 후 재조회
