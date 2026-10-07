@@ -2,6 +2,7 @@ package com.jachwisunbae.transit.provider.gtfs.sample;
 
 import com.jachwisunbae.transit.domain.DepartureSchedule;
 import com.jachwisunbae.transit.domain.GtfsRoute;
+import com.jachwisunbae.transit.domain.Seconds;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -18,13 +19,13 @@ class Headways {
 
     List<GtfsRoute> applyTo(final List<GtfsRoute> routes) {
         return routes.stream()
-                .map(route -> route.withWaitSeconds(waitSecondsOf(route.routeId())))
+                .map(route -> route.withWaitTime(waitTimeOf(route.routeId())))
                 .toList();
     }
 
-    private int waitSecondsOf(final String routeId) {
+    private Seconds waitTimeOf(final String routeId) {
         return Optional.ofNullable(departuresByRoute.get(routeId))
-                .map(departures -> new DepartureSchedule(departures).waitSeconds())
-                .orElse(GtfsRoute.DEFAULT_WAIT_SECONDS);
+                .map(departures -> new DepartureSchedule(departures).waitTime())
+                .orElse(GtfsRoute.DEFAULT_WAIT_TIME);
     }
 }

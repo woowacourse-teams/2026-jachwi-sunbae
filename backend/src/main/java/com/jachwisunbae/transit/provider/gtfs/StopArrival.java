@@ -1,6 +1,7 @@
 package com.jachwisunbae.transit.provider.gtfs;
 
 import com.jachwisunbae.transit.domain.GtfsEdge;
+import com.jachwisunbae.transit.domain.Seconds;
 
 record StopArrival(String stopId, int arrivalSeconds) {
 
@@ -13,6 +14,6 @@ record StopArrival(String stopId, int arrivalSeconds) {
 
     GtfsEdge edgeTo(final StopArrival next, final String routeId) {
         int travelSeconds = Math.max(MINIMUM_TRAVEL_SECONDS, next.arrivalSeconds - arrivalSeconds);
-        return new GtfsEdge(routeId, stopId, next.stopId, travelSeconds);
+        return new GtfsEdge(routeId, stopId, next.stopId, new Seconds(travelSeconds));
     }
 }

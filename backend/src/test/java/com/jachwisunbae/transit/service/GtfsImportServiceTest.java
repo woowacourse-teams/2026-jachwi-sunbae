@@ -3,9 +3,11 @@ package com.jachwisunbae.transit.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import com.jachwisunbae.transit.domain.Coordinate;
 import com.jachwisunbae.transit.domain.GtfsFeed;
 import com.jachwisunbae.transit.domain.GtfsRoute;
 import com.jachwisunbae.transit.domain.GtfsStop;
+import com.jachwisunbae.transit.domain.Seconds;
 import com.jachwisunbae.transit.provider.gtfs.GtfsFeedReader;
 import com.jachwisunbae.transit.repository.GtfsNetworkRepository;
 import com.jachwisunbae.transit.service.dto.result.GtfsImportResult;
@@ -24,8 +26,9 @@ import org.springframework.transaction.support.TransactionTemplate;
 class GtfsImportServiceTest {
 
     private static final GtfsFeed FEED = new GtfsFeed(
-            List.of(new GtfsRoute("R1", "1호선", "서울 1호선", 1, 300)),
-            List.of(new GtfsStop("S1", "서울역", 37.55, 126.97), new GtfsStop("S2", "시청", 37.56, 126.97)),
+            List.of(new GtfsRoute("R1", "1호선", "서울 1호선", 1, new Seconds(300))),
+            List.of(new GtfsStop("S1", "서울역", new Coordinate(37.55, 126.97)),
+                    new GtfsStop("S2", "시청", new Coordinate(37.56, 126.97))),
             List.of(),
             List.of());
 

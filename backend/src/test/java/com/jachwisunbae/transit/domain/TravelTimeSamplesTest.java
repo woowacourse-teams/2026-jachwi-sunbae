@@ -11,11 +11,11 @@ class TravelTimeSamplesTest {
     @DisplayName("홀수 개 이동 시간은 가운데 값을 대표 이동 시간으로 쓴다")
     void usesMiddleValueForOddSamples() {
         TravelTimeSamples samples = new TravelTimeSamples();
-        samples.add(300);
-        samples.add(60);
-        samples.add(120);
+        samples.add(new Seconds(300));
+        samples.add(new Seconds(60));
+        samples.add(new Seconds(120));
 
-        assertThat(samples.median()).isEqualTo(120);
+        assertThat(samples.median()).isEqualTo(new Seconds(120));
     }
 
     @Test
@@ -23,10 +23,10 @@ class TravelTimeSamplesTest {
     void roundsAverageOfMiddleValuesForEvenSamples() {
         TravelTimeSamples samples = new TravelTimeSamples();
         for (int seconds : new int[]{30, 61, 90, 200, 10}) {
-            samples.add(seconds);
+            samples.add(new Seconds(seconds));
         }
-        samples.add(70);
+        samples.add(new Seconds(70));
 
-        assertThat(samples.median()).isEqualTo(66);
+        assertThat(samples.median()).isEqualTo(new Seconds(66));
     }
 }

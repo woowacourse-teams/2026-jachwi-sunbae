@@ -13,20 +13,20 @@ class DepartureScheduleTest {
     void usesHalfOfMedianHeadway() {
         DepartureSchedule schedule = new DepartureSchedule(List.of(28_800, 30_000, 31_200, 30_000));
 
-        assertThat(schedule.waitSeconds()).isEqualTo(600);
+        assertThat(schedule.waitTime()).isEqualTo(new Seconds(600));
     }
 
     @Test
     @DisplayName("대기 시간은 2분 이상 15분 이하로 제한한다")
     void clampsWaitSeconds() {
-        assertThat(new DepartureSchedule(List.of(0, 120, 240)).waitSeconds()).isEqualTo(120);
-        assertThat(new DepartureSchedule(List.of(0, 7_200)).waitSeconds()).isEqualTo(900);
+        assertThat(new DepartureSchedule(List.of(0, 120, 240)).waitTime()).isEqualTo(new Seconds(120));
+        assertThat(new DepartureSchedule(List.of(0, 7_200)).waitTime()).isEqualTo(new Seconds(900));
     }
 
     @Test
     @DisplayName("쓸 수 있는 운행 간격이 없으면 10분 간격으로 보고 5분을 기다린다")
     void usesDefaultHeadwayWithoutUsableGaps() {
-        assertThat(new DepartureSchedule(List.of(28_800)).waitSeconds()).isEqualTo(300);
-        assertThat(new DepartureSchedule(List.of(0, 30, 10_000)).waitSeconds()).isEqualTo(300);
+        assertThat(new DepartureSchedule(List.of(28_800)).waitTime()).isEqualTo(new Seconds(300));
+        assertThat(new DepartureSchedule(List.of(0, 30, 10_000)).waitTime()).isEqualTo(new Seconds(300));
     }
 }

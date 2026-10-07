@@ -8,19 +8,19 @@ public class TravelTimeSamples {
     private int[] values = new int[4];
     private int size;
 
-    public void add(final int seconds) {
+    public void add(final Seconds travelTime) {
         if (size == values.length) {
             values = Arrays.copyOf(values, values.length * 2);
         }
-        values[size++] = seconds;
+        values[size++] = travelTime.value();
     }
 
-    public int median() {
+    public Seconds median() {
         Arrays.sort(values, 0, size);
         int middle = size / 2;
         if (size % 2 == 1) {
-            return values[middle];
+            return new Seconds(values[middle]);
         }
-        return (int) Math.round((values[middle - 1] + values[middle]) / 2.0);
+        return new Seconds((int) Math.round((values[middle - 1] + values[middle]) / 2.0));
     }
 }

@@ -1,4 +1,4 @@
 package com.jachwisunbae.transit.domain;
 
-public record GtfsStop(String stopId, String stopName, double latitude, double longitude) {
+public record GtfsStop(String stopId, String stopName, Coordinate coordinate) {
 }

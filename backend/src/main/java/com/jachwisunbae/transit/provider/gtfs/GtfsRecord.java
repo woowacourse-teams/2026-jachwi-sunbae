@@ -1,8 +1,10 @@
 package com.jachwisunbae.transit.provider.gtfs;
 
+import com.jachwisunbae.transit.domain.Coordinate;
 import com.jachwisunbae.transit.domain.GtfsRoute;
 import com.jachwisunbae.transit.domain.GtfsStop;
 import com.jachwisunbae.transit.domain.GtfsTransfer;
+import com.jachwisunbae.transit.domain.Seconds;
 import com.jachwisunbae.transit.provider.gtfs.sample.UsedStops;
 import java.util.Optional;
 import java.util.Set;
@@ -37,15 +39,16 @@ class GtfsRecord {
             return Optional.empty();
         }
         return Optional.of(new GtfsRoute(text("route_id"), text("route_short_name"), text("route_long_name"),
-                Integer.parseInt(routeType), GtfsRoute.DEFAULT_WAIT_SECONDS));
+                Integer.parseInt(routeType), GtfsRoute.DEFAULT_WAIT_TIME));
     }
 
     Optional<GtfsStop> toStop(final UsedStops usedStops) {
         if (!usedStops.contains(text("stop_id"))) {
             return Optional.empty();
         }
-        return Optional.of(new GtfsStop(text("stop_id"), text("stop_name"),
-                Double.parseDouble(text("stop_lat")), Double.parseDouble(text("stop_lon"))));
+        Coordinate coordinate = new Coordinate(Double.parseDouble(text("stop_lat")),
+                Double.parseDouble(text("stop_lon")));
+        return Optional.of(new GtfsStop(text("stop_id"), text("stop_name"), coordinate));
     }
 
     Optional<GtfsTransfer> toTransfer(final UsedStops usedStops) {
@@ -54,6 +57,7 @@ class GtfsRecord {
         if (!usedStops.contains(from) || !usedStops.contains(to)) {
             return Optional.empty();
         }
-        return Optional.of(new GtfsTransfer(from, to, Integer.parseInt(text("min_transfer_time"))));
+        Seconds transferTime = new Seconds(Integer.parseInt(text("min_transfer_time")));
+        return Optional.of(new GtfsTransfer(from, to, transferTime));
     }
 }

@@ -43,7 +43,7 @@ public class JdbcGtfsNetworkRepository implements GtfsNetworkRepository {
             statement.setString(2, route.shortName());
             statement.setString(3, route.longName());
             statement.setInt(4, route.routeType());
-            statement.setInt(5, route.waitSeconds());
+            statement.setInt(5, route.waitTime().value());
         });
     }
 
@@ -55,8 +55,8 @@ public class JdbcGtfsNetworkRepository implements GtfsNetworkRepository {
         jdbcTemplate.batchUpdate(sql, stops, BATCH_SIZE, (statement, stop) -> {
             statement.setString(1, stop.stopId());
             statement.setString(2, stop.stopName());
-            statement.setDouble(3, stop.latitude());
-            statement.setDouble(4, stop.longitude());
+            statement.setDouble(3, stop.coordinate().latitude());
+            statement.setDouble(4, stop.coordinate().longitude());
         });
     }
 
@@ -69,7 +69,7 @@ public class JdbcGtfsNetworkRepository implements GtfsNetworkRepository {
             statement.setString(1, edge.routeId());
             statement.setString(2, edge.fromStopId());
             statement.setString(3, edge.toStopId());
-            statement.setInt(4, edge.seconds());
+            statement.setInt(4, edge.travelTime().value());
         });
     }
 
@@ -84,7 +84,7 @@ public class JdbcGtfsNetworkRepository implements GtfsNetworkRepository {
         jdbcTemplate.batchUpdate(sql, transfers, BATCH_SIZE, (statement, transfer) -> {
             statement.setString(1, transfer.fromStopId());
             statement.setString(2, transfer.toStopId());
-            statement.setInt(3, transfer.seconds());
+            statement.setInt(3, transfer.transferTime().value());
         });
     }
 }

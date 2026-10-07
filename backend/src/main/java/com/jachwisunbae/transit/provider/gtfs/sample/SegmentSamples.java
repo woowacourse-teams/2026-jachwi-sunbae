@@ -11,7 +11,7 @@ class SegmentSamples {
 
     void add(final GtfsEdge sample) {
         timesBySegment.computeIfAbsent(sample.segmentKey(), ignored -> new EdgeTimes(sample))
-                .add(sample.seconds());
+                .add(sample.travelTime());
     }
 
     List<GtfsEdge> medianEdges() {

@@ -5,11 +5,13 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.jachwisunbae.common.exception.errorcode.ErrorCode;
 import com.jachwisunbae.common.exception.server.InternalSystemException;
+import com.jachwisunbae.transit.domain.Coordinate;
 import com.jachwisunbae.transit.domain.GtfsEdge;
 import com.jachwisunbae.transit.domain.GtfsFeed;
 import com.jachwisunbae.transit.domain.GtfsRoute;
 import com.jachwisunbae.transit.domain.GtfsStop;
 import com.jachwisunbae.transit.domain.GtfsTransfer;
+import com.jachwisunbae.transit.domain.Seconds;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -63,12 +65,12 @@ class GtfsFeedReaderTest {
 
         GtfsFeed feed = reader.read(directory);
 
-        assertThat(feed.routes()).containsExactly(new GtfsRoute("Q1", "1호선", "서울 1호선", 1, 600));
+        assertThat(feed.routes()).containsExactly(new GtfsRoute("Q1", "1호선", "서울 1호선", 1, new Seconds(600)));
         assertThat(feed.stops()).containsExactly(
-                new GtfsStop("P0", "서울역", 37.55, 126.97),
-                new GtfsStop("P1", "시청", 37.56, 126.97));
-        assertThat(feed.edges()).containsExactly(new GtfsEdge("Q1", "P0", "P1", 120));
-        assertThat(feed.transfers()).containsExactly(new GtfsTransfer("P0", "P1", 180));
+                new GtfsStop("P0", "서울역", new Coordinate(37.55, 126.97)),
+                new GtfsStop("P1", "시청", new Coordinate(37.56, 126.97)));
+        assertThat(feed.edges()).containsExactly(new GtfsEdge("Q1", "P0", "P1", new Seconds(120)));
+        assertThat(feed.transfers()).containsExactly(new GtfsTransfer("P0", "P1", new Seconds(180)));
     }
 
     @Test
@@ -97,8 +99,8 @@ class GtfsFeedReaderTest {
 
         GtfsFeed feed = reader.read(directory);
 
-        assertThat(feed.routes()).extracting(GtfsRoute::waitSeconds).containsExactly(300);
-        assertThat(feed.edges()).containsExactly(new GtfsEdge("B1", "S1", "S2", 30));
+        assertThat(feed.routes()).extracting(GtfsRoute::waitTime).containsExactly(new Seconds(300));
+        assertThat(feed.edges()).containsExactly(new GtfsEdge("B1", "S1", "S2", new Seconds(30)));
     }
 
     @Test

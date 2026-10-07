@@ -19,10 +19,10 @@ public class DepartureSchedule {
         this.departureSeconds = departureSeconds;
     }
 
-    public int waitSeconds() {
+    public Seconds waitTime() {
         List<Integer> gaps = gaps();
         int medianHeadway = gaps.isEmpty() ? DEFAULT_HEADWAY_SECONDS : gaps.get(gaps.size() / 2);
-        return Math.max(MINIMUM_WAIT_SECONDS, Math.min(MAXIMUM_WAIT_SECONDS, medianHeadway / 2));
+        return new Seconds(Math.max(MINIMUM_WAIT_SECONDS, Math.min(MAXIMUM_WAIT_SECONDS, medianHeadway / 2)));
     }
 
     private List<Integer> gaps() {
