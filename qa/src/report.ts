@@ -23,19 +23,19 @@ const cell = (value: Cell): string =>
     .replace(/\r?\n/g, '<br>')
     .trim();
 
-const table = (headers: string[], rows: Cell[][]): string =>
+export const table = (headers: string[], rows: Cell[][]): string =>
   [
     `| ${headers.join(' | ')} |`,
     `| ${headers.map(() => '---').join(' | ')} |`,
     ...rows.map((row) => `| ${row.map(cell).join(' | ')} |`),
   ].join('\n');
 
-const kst = (iso: string): string =>
+export const kst = (iso: string): string =>
   new Intl.DateTimeFormat('sv-SE', { timeZone: 'Asia/Seoul', dateStyle: 'short', timeStyle: 'medium' }).format(
     new Date(iso),
   );
 
-const environmentLabel = (baseUrl: string): string => {
+export const environmentLabel = (baseUrl: string): string => {
   const host = new URL(baseUrl).hostname;
   if (host === 'dev.jachwi-sunbae.kr') return 'DEV';
   if (host === 'localhost' || host === '127.0.0.1') return '로컬';
