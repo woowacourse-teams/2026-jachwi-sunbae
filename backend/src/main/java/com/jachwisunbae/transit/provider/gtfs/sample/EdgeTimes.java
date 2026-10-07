@@ -4,20 +4,20 @@ import com.jachwisunbae.transit.domain.GtfsEdge;
 import com.jachwisunbae.transit.domain.Seconds;
 import com.jachwisunbae.transit.domain.TravelTimeSamples;
 
-class EdgeTimes {
+public class EdgeTimes {
 
     private final GtfsEdge segment;
     private final TravelTimeSamples samples = new TravelTimeSamples();
 
-    EdgeTimes(final GtfsEdge segment) {
+    public EdgeTimes(final GtfsEdge segment) {
         this.segment = segment;
     }
 
-    void add(final Seconds travelTime) {
+    public void add(final Seconds travelTime) {
         samples.add(travelTime);
     }
 
-    GtfsEdge toMedianEdge() {
+    public GtfsEdge toMedianEdge() {
         return segment.withTravelTime(samples.median());
     }
 }

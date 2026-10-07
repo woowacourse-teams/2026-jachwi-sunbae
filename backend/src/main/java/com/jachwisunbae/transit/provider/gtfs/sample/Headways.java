@@ -9,15 +9,15 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-class Headways {
+public class Headways {
 
     private final Map<String, List<Integer>> departuresByRoute = new HashMap<>();
 
-    void add(final String routeId, final int departureSeconds) {
+    public void add(final String routeId, final int departureSeconds) {
         departuresByRoute.computeIfAbsent(routeId, ignored -> new ArrayList<>()).add(departureSeconds);
     }
 
-    List<GtfsRoute> applyTo(final List<GtfsRoute> routes) {
+    public List<GtfsRoute> applyTo(final List<GtfsRoute> routes) {
         return routes.stream()
                 .map(route -> route.withWaitTime(waitTimeOf(route.routeId())))
                 .toList();

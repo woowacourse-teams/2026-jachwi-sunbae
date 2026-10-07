@@ -8,7 +8,7 @@ public class UsedStops {
 
     private final Set<String> stopIds = new HashSet<>();
 
-    void add(final String stopId) {
+    public void add(final String stopId) {
         stopIds.add(stopId);
     }
 

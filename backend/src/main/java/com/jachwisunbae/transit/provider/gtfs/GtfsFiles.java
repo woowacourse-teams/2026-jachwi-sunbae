@@ -14,7 +14,7 @@ import java.util.function.Function;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
 
-class GtfsFiles {
+public class GtfsFiles {
 
     private static final CSVFormat CSV = CSVFormat.DEFAULT.builder()
             .setHeader()
@@ -24,18 +24,18 @@ class GtfsFiles {
 
     private final Path directory;
 
-    GtfsFiles(final Path directory) {
+    public GtfsFiles(final Path directory) {
         this.directory = directory;
     }
 
-    <T> List<T> read(final String fileName, final Function<GtfsRecord, Optional<T>> mapper) {
+    public <T> List<T> read(final String fileName, final Function<GtfsRecord, Optional<T>> mapper) {
         List<T> rows = new ArrayList<>();
         forEach(fileName, record -> mapper.apply(record).ifPresent(rows::add));
         return rows;
     }
 
     // 람다 안에서 쓰도록 IOException을 UncheckedIOException으로 바꾼다. commons-csv도 행을 읽다 실패하면 같은 예외를 던진다.
-    void forEach(final String fileName, final Consumer<GtfsRecord> consumer) {
+    public void forEach(final String fileName, final Consumer<GtfsRecord> consumer) {
         try (CSVParser parser = open(directory.resolve(fileName))) {
             parser.forEach(row -> consumer.accept(new GtfsRecord(row)));
         } catch (IOException exception) {

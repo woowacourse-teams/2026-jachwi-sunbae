@@ -9,11 +9,11 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-class TripRoutes {
+public class TripRoutes {
 
     private final Map<String, String> routeIdsByTrip = new HashMap<>();
 
-    static TripRoutes read(final GtfsFiles files, final List<GtfsRoute> routes) {
+    public static TripRoutes read(final GtfsFiles files, final List<GtfsRoute> routes) {
         Set<String> routeIds = routes.stream()
                 .map(GtfsRoute::routeId)
                 .collect(Collectors.toSet());
@@ -22,7 +22,7 @@ class TripRoutes {
         return tripRoutes;
     }
 
-    StopTimeSamples collectStopTimes(final GtfsFiles files) {
+    public StopTimeSamples collectStopTimes(final GtfsFiles files) {
         StopTimeCollector collector = new StopTimeCollector();
         files.forEach("stop_times.txt", record -> routeOf(record)
                 .ifPresent(routeId -> collector.accept(routeId, record)));
