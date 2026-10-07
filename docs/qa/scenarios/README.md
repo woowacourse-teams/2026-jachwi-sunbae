@@ -87,6 +87,6 @@ Scenario는 [사용자 흐름](../user-flows/README.md) 안의 **한 가지 상�
 
 | ID | Flow | 상황 | 상태 |
 | --- | --- | --- | --- |
-| [F02-S01](F02-S01-property-create.md) | F02 후보 매물 등록 | 정상 매물 등록 후 재조회 | 초안 |
+| [F02-S01](F02-S01-property-create.md) | F02 후보 매물 등록 | 정상 매물 등록 후 재조회 | 자동화 |
 | [F02-S02](F02-S02-property-create-missing-amount.md) | F02 후보 매물 등록 | 보증금·월세 누락 등록 | 초안 |
 | [F06-S01](F06-S01-check-status-progress.md) | F06 매물 체크 기록 | 체크 상태 저장과 진행 현황 집계 | 초안 |

@@ -44,7 +44,7 @@
 
 | ID | 상황 | 근거 | 상태 |
 | --- | --- | --- | --- |
-| [F02-S01](../scenarios/F02-S01-property-create.md) | 정상 매물 등록 후 재조회 | `AC-PROP-003`, `REQ-PROP-009` | 초안 |
+| [F02-S01](../scenarios/F02-S01-property-create.md) | 정상 매물 등록 후 재조회 | `AC-PROP-003`, `REQ-PROP-009` | 자동화 |
 | [F02-S02](../scenarios/F02-S02-property-create-missing-amount.md) | 보증금·월세 누락 등록 | `AC-PROP-002` | 초안 |
 
 ## QA 메모

@@ -21,6 +21,9 @@ export default defineConfig({
     baseURL: qaConfig.baseUrl,
     locale: 'ko-KR',
     timezoneId: 'Asia/Seoul',
+    // 요소를 찾지 못할 때 테스트 전체 시간까지 기다리지 않고 원인을 바로 드러낸다.
+    actionTimeout: 15_000,
+    navigationTimeout: 30_000,
     trace: 'retain-on-failure',
     screenshot: 'only-on-failure',
   },

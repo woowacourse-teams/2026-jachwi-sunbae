@@ -1,9 +1,13 @@
 import { expect, type Page } from '@playwright/test';
 
+import { isApiResponse } from './api';
+
 export type QaMember = {
   runId: string;
   nickname: string;
   memberId: number;
+  /** 로그인을 시작한 시각. 수동 실행과 같은 기준으로 소요 시간을 잰다. */
+  startedAt: Date;
 };
 
 type LoginResponseBody = {
@@ -19,13 +23,12 @@ type LoginResponseBody = {
  */
 export const startAsNewMember = async (page: Page, runId: string): Promise<QaMember> => {
   const nickname = `qa-${runId}`;
+  const startedAt = new Date();
 
   await page.goto('/login');
   await page.getByLabel('이름 또는 닉네임').fill(nickname);
 
-  const loginResponsePromise = page.waitForResponse(
-    (response) => response.request().method() === 'POST' && new URL(response.url()).pathname === '/api/auth/nickname',
-  );
+  const loginResponsePromise = page.waitForResponse(isApiResponse('POST', '/api/auth/nickname'));
   await page.getByRole('button', { name: '이름으로 시작하기' }).click();
   const loginResponse = await loginResponsePromise;
 
@@ -35,5 +38,5 @@ export const startAsNewMember = async (page: Page, runId: string): Promise<QaMem
 
   await expect(page).toHaveURL(/\/properties$/);
 
-  return { runId, nickname, memberId: body.data.member.memberId };
+  return { runId, nickname, memberId: body.data.member.memberId, startedAt };
 };

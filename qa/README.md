@@ -49,6 +49,23 @@ npm run typecheck    # 타입 검사
 
 Git에 포함하지 않는다. trace는 `npx playwright show-trace <trace.zip 경로>`로 연다.
 
+## Scenario 자동화
+
+- 테스트 파일 이름은 Scenario ID로 시작한다. 예: `tests/F02-S01-property-create.spec.ts`
+- `ScenarioRun`이 `docs/qa/scenarios/`의 Scenario 문서에서 상태와 Expected를 읽는다. 기대 결과를 코드에 다시 적지 않아 문서와 실행 결과가 어긋나지 않는다.
+- 상태가 `승인` 또는 `자동화`인 Scenario만 실행한다.
+- Expected마다 `pass`, `fail`, `needsReview`로 판정하고 실제 결과를 문장으로 남긴다. 단계가 중간에 멈추면 확인하지 못한 Expected는 `BLOCKED`다.
+- 최종 판정이 `PASS`가 아니면 테스트를 실패로 표시해 스크린샷과 trace를 남긴다.
+
+```ts
+await run.execute(async () => {
+  await test.step('매물 등록', async () => {
+    // 사용자 행동
+  });
+  await run.check('E1', async () => (조건 ? pass('실제 결과') : fail('실제 결과')));
+});
+```
+
 ## 디렉터리 구조
 
 ```text
@@ -58,7 +75,11 @@ qa/
 │   ├── config.ts          # 환경변수, 운영 실행 차단
 │   ├── run-id.ts          # runId 생성
 │   ├── member.ts          # 새 회원으로 시작(F01)
-│   └── fixtures.ts        # 공통 fixture
+│   ├── fixtures.ts        # 공통 fixture
+│   ├── api.ts             # API 응답 대기와 본문 읽기
+│   ├── scenario-doc.ts    # Scenario 문서 읽기
+│   └── scenario-run.ts    # Expected 판정 기록
 └── tests/
-    └── smoke.spec.ts      # 실행 환경 점검
+    ├── smoke.spec.ts                    # 실행 환경 점검
+    └── F02-S01-property-create.spec.ts  # F02-S01 정상 매물 등록 후 재조회
 ```
