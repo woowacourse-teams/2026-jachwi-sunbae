@@ -1,7 +1,8 @@
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-import type { MapAddress } from '@/features/map/model/Map';
+import { getMapFocusCenter } from '@/features/map/lib/mapViewportFocus';
+import type { MapAddress, MapBounds } from '@/features/map/model/Map';
 import type { MapMarker } from '@/features/map/ui/map-canvas/MapCanvas';
 import MapCanvas from '@/features/map/ui/map-canvas/MapCanvas';
 
@@ -15,7 +16,6 @@ import useMapSheet from './hooks/useMapSheet';
 import MapAddPropertySheet from './ui/map-add-property-sheet/MapAddPropertySheet';
 import MapAddressSearch from './ui/map-address-search/MapAddressSearch';
 import MapControls from './ui/map-controls/MapControls';
-import MapLocationStatus from './ui/map-location-status/MapLocationStatus';
 import MapNearbyCountToast from './ui/map-nearby-count-toast/MapNearbyCountToast';
 import MapPropertySheet from './ui/map-property-sheet/MapPropertySheet';
 
@@ -29,21 +29,36 @@ const MapPage = () => {
   const navigate = useNavigate();
   const [mapLevel, setMapLevel] = useState(INITIAL_MAP_LEVEL);
   const [selectedPropertyId, setSelectedPropertyId] = useState<number | null>(null);
-  const sheet = useMapSheet();
+  const [bounds, setBounds] = useState<MapBounds | null>(null);
+  const updateBounds = useCallback((next: MapBounds) => {
+    setBounds((current) =>
+      current !== null &&
+      current.south === next.south &&
+      current.north === next.north &&
+      current.west === next.west &&
+      current.east === next.east
+        ? current
+        : next,
+    );
+  }, []);
   const search = useMapSearch();
   const filters = useMapFilters();
   const addMode = useAddPropertyMode();
+  const sheet = useMapSheet(!search.searchOpen && !addMode.isAddMode);
   const mapLocation = useMapLocation();
-  const { getFallbackCoordinate, visibleProperties, propertyMarkers } = useMapProperties(
-    mapLocation.viewportCenter,
-    mapLevel,
-  );
+  const [nearbyAnchor, setNearbyAnchor] = useState(mapLocation.viewportCenter);
+  const [hasNearbyAnchor, setHasNearbyAnchor] = useState(false);
+  const mapStageRef = useRef<HTMLElement | null>(null);
+  const { getFallbackCoordinate, mappedProperties, visibleProperties, propertyMarkers, isLoading, isError, retry } =
+    useMapProperties(mapLocation.viewportCenter, mapLevel, bounds, selectedPropertyId);
+  const selectedProperty = mappedProperties.find((property) => property.propertyId === selectedPropertyId);
+  // 추가 모드의 중앙 핀만 지도 이동을 따라간다. 일반 탐색 반경은 마지막 선택 좌표에 고정한다.
+  const nearbyCenter = addMode.isAddMode ? mapLocation.viewportCenter : nearbyAnchor;
   const { facilityMarkers, categoryCounts, circles } = useMapNearby(
-    mapLocation.viewportCenter,
+    nearbyCenter,
     mapLevel,
     filters.selectedCategories,
     filters.selectedRadius,
-    mapLocation.currentPosition,
   );
 
   const { currentPosition } = mapLocation;
@@ -58,10 +73,37 @@ const MapPage = () => {
     ];
   }, [currentPosition, facilityMarkers, propertyMarkers]);
 
-  const moveToCurrentLocation = () => void mapLocation.moveToCurrentLocation(getFallbackCoordinate);
+  const moveToCurrentLocation = () => {
+    void mapLocation.moveToCurrentLocation(getFallbackCoordinate).then((coordinate) => {
+      if (coordinate === null) return;
+      setSelectedPropertyId(null);
+      setNearbyAnchor(coordinate);
+      setHasNearbyAnchor(true);
+      filters.ensureRadius();
+    });
+  };
+
+  const selectProperty = (propertyId: number) => {
+    const property = mappedProperties.find((item) => item.propertyId === propertyId);
+    if (property?.location.latitude == null || property.location.longitude == null) return;
+    setSelectedPropertyId(propertyId);
+    const coordinate = { latitude: property.location.latitude, longitude: property.location.longitude };
+    setNearbyAnchor(coordinate);
+    setHasNearbyAnchor(true);
+    const viewport = mapStageRef.current?.getBoundingClientRect();
+    mapLocation.moveToCoordinate(
+      getMapFocusCenter(coordinate, mapLevel, viewport?.width || 390, viewport?.height || 640),
+    );
+    filters.ensureRadius();
+    sheet.previewSheet();
+  };
 
   const selectSearchedAddress = (address: MapAddress) => {
+    setSelectedPropertyId(null);
+    setNearbyAnchor({ latitude: address.latitude, longitude: address.longitude });
+    setHasNearbyAnchor(true);
     mapLocation.moveToAddress(address);
+    addMode.handleCenterChange(address);
     setMapLevel(INITIAL_MAP_LEVEL);
     search.closeSearch();
   };
@@ -72,15 +114,22 @@ const MapPage = () => {
       setMapLevel((current) => Math.max(1, current - 1));
       return;
     }
-    if (marker.id.startsWith(PROPERTY_MARKER_PREFIX)) {
-      setSelectedPropertyId(Number(marker.id.slice(PROPERTY_MARKER_PREFIX.length)));
-      sheet.expandSheet();
+    if (!addMode.isAddMode && marker.tone === 'property') {
+      selectProperty(Number(marker.id.slice(PROPERTY_MARKER_PREFIX.length)));
     }
   };
 
   const selectRadius = (radius: MapRadius) => {
-    if (filters.toggleRadius(radius)) setMapLevel(levelForRadius(radius));
-    setSelectedPropertyId(null);
+    if (!hasNearbyAnchor && !addMode.isAddMode) return;
+    if (!filters.toggleRadius(radius)) return;
+    const nextLevel = levelForRadius(radius);
+    setMapLevel(nextLevel);
+    if (!addMode.isAddMode && selectedPropertyId !== null) {
+      const viewport = mapStageRef.current?.getBoundingClientRect();
+      mapLocation.moveToCoordinate(
+        getMapFocusCenter(nearbyAnchor, nextLevel, viewport?.width || 390, viewport?.height || 640),
+      );
+    }
   };
 
   const changeCenter = (latitude: number, longitude: number) => {
@@ -90,15 +139,16 @@ const MapPage = () => {
   };
 
   const enterAddMode = () => {
-    filters.suspendRadius();
+    setHasNearbyAnchor(true);
+    filters.ensureRadius();
     setSelectedPropertyId(null);
     sheet.closeSheet();
     addMode.enter(mapLocation.viewportCenter);
   };
 
   const cancelAddMode = () => {
+    setNearbyAnchor(mapLocation.viewportCenter);
     addMode.cancel();
-    filters.restoreRadius();
   };
 
   const { selectedRadius, selectedCategories } = filters;
@@ -120,33 +170,37 @@ const MapPage = () => {
         onSelect={selectSearchedAddress}
       />
 
-      <MapLocationStatus
-        status={mapLocation.locationStatus}
-        failure={mapLocation.locationFailure}
-        canRetry={mapLocation.canRetryLocation}
-        permission={mapLocation.locationPermission}
-        onRetry={moveToCurrentLocation}
-      />
-
       {!search.searchOpen && (
-        <section className={styles.mapStage} aria-label="매물 지도">
+        <section ref={mapStageRef} className={styles.mapStage} aria-label="매물 지도">
           <MapCanvas
             center={mapLocation.viewportCenter}
             markers={markers}
             circles={circles}
-            radiusCenter={currentPosition ?? undefined}
+            radiusCenter={nearbyCenter}
             level={mapLevel}
             showRadiusLabels={false}
             showCenterPin={addMode.isAddMode}
+            interactive={!addMode.isAddMode}
             selectedMarkerId={
               selectedPropertyId === null ? undefined : `${PROPERTY_MARKER_PREFIX}${selectedPropertyId}`
             }
             onSelectMarker={selectMarker}
+            onSelectLocation={() => {
+              if (addMode.isAddMode || selectedPropertyId === null) return;
+              setSelectedPropertyId(null);
+              sheet.closeSheet();
+            }}
             onCenterChange={changeCenter}
             onLevelChange={setMapLevel}
+            onBoundsChange={updateBounds}
           />
           <MapControls
             isAddMode={addMode.isAddMode}
+            hasNearbyAnchor={hasNearbyAnchor}
+            locationStatus={mapLocation.locationStatus}
+            locationFailure={mapLocation.locationFailure}
+            canRetryLocation={mapLocation.canRetryLocation}
+            locationPermission={mapLocation.locationPermission}
             selectedRadius={selectedRadius}
             selectedCategories={selectedCategories}
             categoryCounts={categoryCounts}
@@ -158,8 +212,9 @@ const MapPage = () => {
             onMoveToCurrentLocation={moveToCurrentLocation}
             onEnterAddMode={enterAddMode}
           />
-          {currentPosition !== null && selectedRadius !== null && toastCategory !== undefined && (
+          {selectedRadius !== null && toastCategory !== undefined && (
             <MapNearbyCountToast
+              isAddMode={addMode.isAddMode}
               radius={selectedRadius}
               category={toastCategory}
               count={categoryCounts[toastCategory] ?? 0}
@@ -177,7 +232,10 @@ const MapPage = () => {
               sheetRef={sheet.sheetRef}
               stage={sheet.sheetStage}
               isDragging={sheet.isDragging}
-              properties={visibleProperties}
+              isLoading={isLoading}
+              isError={isError}
+              onRetry={() => void retry()}
+              properties={selectedProperty === undefined ? visibleProperties : [selectedProperty]}
               selectedPropertyId={selectedPropertyId}
               onDragStart={sheet.handleDragStart}
               onDragMove={sheet.handleDragMove}

@@ -5,17 +5,40 @@ import type { MapPropertySheetStage } from '../ui/map-property-sheet/MapProperty
 
 const SHEET_DRAG_THRESHOLD = 20;
 
+const sheetBottomInset = (sheet: HTMLElement | null): number => {
+  if (sheet === null) return 0;
+  const rem = Number.parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
+  return Math.max((Number.parseFloat(getComputedStyle(sheet).paddingBottom) || 0) - 0.5 * rem, 0);
+};
+
+const setSheetContentHeight = (sheet: HTMLElement, visibleHeight: number): void => {
+  const rem = Number.parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
+  const headerHeight = sheet.firstElementChild?.getBoundingClientRect().height || 2.25 * rem;
+  sheet.style.setProperty(
+    '--map-sheet-content-height',
+    `${Math.max(visibleHeight - sheetBottomInset(sheet) - headerHeight - 0.5 * rem, 0)}px`,
+  );
+};
+
 const sheetStageHeights = (sheetRef: React.RefObject<HTMLElement | null>): Record<MapPropertySheetStage, number> => {
   const stageHeight = sheetRef.current?.parentElement?.getBoundingClientRect().height ?? 0;
-  const rem = 16;
+  const rem = Number.parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
+  const fullHeight = sheetRef.current?.getBoundingClientRect().height || Math.max(stageHeight - 4.25 * rem, 0);
+  const sheet = sheetRef.current;
+  const bottomInset = sheetBottomInset(sheet);
+  const content = sheet?.querySelector<HTMLElement>('[data-sheet-content]');
+  const singleHeight =
+    sheet?.dataset.single === 'true' && content !== null && content !== undefined && !content.hidden
+      ? content.scrollHeight + (sheet.firstElementChild?.getBoundingClientRect().height || 2.25 * rem) + 0.5 * rem
+      : Infinity;
   return {
-    closed: 4 * rem,
-    mid: Math.min(stageHeight * 0.34, 18 * rem),
-    full: Math.max(stageHeight - 4.25 * rem, 0),
+    closed: Math.min(2.25 * rem + bottomInset, fullHeight),
+    mid: Math.min(Math.min(stageHeight * 0.34, 18 * rem, singleHeight) + bottomInset, fullHeight),
+    full: fullHeight,
   };
 };
 
-const useMapSheet = () => {
+const useMapSheet = (isVisible = true) => {
   const [sheetStage, setSheetStage] = useState<MapPropertySheetStage>('closed');
   const [isDragging, setIsDragging] = useState(false);
   const sheetRef = useRef<HTMLElement | null>(null);
@@ -43,11 +66,29 @@ const useMapSheet = () => {
     const heights = sheetStageHeights(sheetRef);
     const offset = Math.max(heights.full - heights[stage], 0);
     sheet.style.transform = `translate3d(0, ${offset}px, 0)`;
+    setSheetContentHeight(sheet, heights[stage]);
+    sheet.parentElement?.style.setProperty(
+      '--map-sheet-visible-height',
+      `${Math.max(heights[stage] - sheetBottomInset(sheet), 0)}px`,
+    );
   }, []);
 
   useLayoutEffect(() => {
+    if (!isVisible) return;
     syncSheetStageTransform(sheetStage);
-  }, [sheetStage, syncSheetStageTransform]);
+    const parent = sheetRef.current?.parentElement;
+    if (parent == null || typeof ResizeObserver === 'undefined') return;
+    const observer = new ResizeObserver(() => {
+      if (dragStartRef.current === null) syncSheetStageTransform(sheetStage);
+    });
+    observer.observe(parent);
+    const content = sheetRef.current?.querySelector<HTMLElement>('[data-sheet-content]');
+    if (content != null) observer.observe(content);
+    return () => {
+      observer.disconnect();
+      clearDragStyles();
+    };
+  }, [isVisible, sheetStage, syncSheetStageTransform, clearDragStyles]);
 
   const applyDragHeight = useCallback((clientY: number) => {
     const start = dragStartRef.current;
@@ -57,7 +98,11 @@ const useMapSheet = () => {
 
     const next = Math.min(Math.max(start.height + (start.y - clientY), heights.closed), heights.full);
     sheet.style.transform = `translate3d(0, ${Math.max(heights.full - next, 0)}px, 0)`;
-    sheet.parentElement?.style.setProperty('--map-sheet-drag-height', `${next}px`);
+    setSheetContentHeight(sheet, next);
+    sheet.parentElement?.style.setProperty(
+      '--map-sheet-drag-height',
+      `${Math.max(next - sheetBottomInset(sheet), 0)}px`,
+    );
   }, []);
 
   const scheduleDragHeight = useCallback(
@@ -153,6 +198,7 @@ const useMapSheet = () => {
   }, []);
 
   const expandSheet = useCallback(() => setSheetStage('full'), []);
+  const previewSheet = useCallback(() => setSheetStage('mid'), []);
   const closeSheet = useCallback(() => setSheetStage('closed'), []);
 
   return {
@@ -160,6 +206,7 @@ const useMapSheet = () => {
     sheetStage,
     isDragging,
     expandSheet,
+    previewSheet,
     closeSheet,
     handleDragStart,
     handleDragMove,
