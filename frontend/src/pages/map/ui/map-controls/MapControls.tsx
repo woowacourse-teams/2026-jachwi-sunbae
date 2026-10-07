@@ -7,7 +7,6 @@ import PageAction from '@/shared/ui/page-action/PageAction';
 
 import { type MapRadius, RADIUS_OPTIONS, radiusLabel } from '../../hooks/useMapNearby';
 import MapLocationStatus from '../map-location-status/MapLocationStatus';
-import type { MapPropertySheetStage } from '../map-property-sheet/MapPropertySheet';
 
 import styles from './MapControls.module.css';
 
@@ -21,8 +20,6 @@ type MapControlsProps = {
   selectedRadius: MapRadius | null;
   selectedCategories: MapCategory[];
   categoryCounts: Partial<Record<MapCategory, number>>;
-  sheetStage: MapPropertySheetStage;
-  isDragging: boolean;
   isLocating: boolean;
   onSelectRadius: (radius: MapRadius) => void;
   onToggleCategory: (category: MapCategory) => void;
@@ -40,8 +37,6 @@ const MapControls = ({
   selectedRadius,
   selectedCategories,
   categoryCounts,
-  sheetStage,
-  isDragging,
   isLocating,
   onSelectRadius,
   onToggleCategory,
@@ -51,7 +46,7 @@ const MapControls = ({
   <>
     <>
       <MapRadiusSelector
-        className={`${styles.radiusSelector} ${isAddMode ? styles.addMode : ''}`}
+        className={styles.radiusSelector}
         label="시설 확인 반경"
         disabled={!hasNearbyAnchor && !isAddMode}
         options={RADIUS_OPTIONS.map((value) => ({
@@ -88,7 +83,7 @@ const MapControls = ({
       </button>
     </div>
     {!isAddMode && (
-      <div className={styles.addPropertyAction} data-sheet={sheetStage} data-dragging={isDragging || undefined}>
+      <div className={styles.addPropertyAction}>
         <PageAction placement="inline" onClick={onEnterAddMode} aria-label="지도에서 매물 추가">
           매물 추가
         </PageAction>

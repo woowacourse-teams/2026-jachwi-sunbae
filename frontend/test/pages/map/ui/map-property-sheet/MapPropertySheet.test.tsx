@@ -18,7 +18,7 @@ it('닫힌 시트도 내부를 유지하고 드래그가 시작되면 내부 상
     onDragMove: vi.fn(),
     onDragEnd: vi.fn(),
     onDragCancel: vi.fn(),
-    onCycleStage: vi.fn(),
+    onToggle: vi.fn(),
   };
   const { container, rerender } = render(<MapPropertySheet {...props} />);
   const body = container.querySelector<HTMLElement>('[data-sheet-content]')!;

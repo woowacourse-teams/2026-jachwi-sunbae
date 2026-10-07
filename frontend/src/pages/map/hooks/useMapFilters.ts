@@ -5,10 +5,10 @@ import type { MapCategory } from '@/features/map/model/Map';
 
 import type { MapRadius } from './useMapNearby';
 
-const useMapFilters = () => {
-  const [selectedCategories, setSelectedCategories] = useState<MapCategory[]>([]);
+const useMapFilters = (initial?: { categories: MapCategory[]; radius: MapRadius | null }) => {
+  const [selectedCategories, setSelectedCategories] = useState<MapCategory[]>(initial?.categories ?? []);
   // 반경은 사용자가 직접 선택했을 때만 표시한다. 초기 화면에 현재 위치 기준 원을 자동으로 띄우지 않는다.
-  const [selectedRadius, setSelectedRadius] = useState<MapRadius | null>(null);
+  const [selectedRadius, setSelectedRadius] = useState<MapRadius | null>(initial?.radius ?? null);
 
   const toggleCategory = (category: MapCategory) =>
     setSelectedCategories((current) => selectSingleCategory(current, category));

@@ -1,5 +1,5 @@
-import { useCallback, useMemo, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 import { getMapFocusCenter } from '@/features/map/lib/mapViewportFocus';
 import type { MapAddress, MapBounds } from '@/features/map/model/Map';
@@ -13,6 +13,7 @@ import useMapNearby, { levelForRadius, type MapRadius } from './hooks/useMapNear
 import useMapProperties from './hooks/useMapProperties';
 import useMapSearch from './hooks/useMapSearch';
 import useMapSheet from './hooks/useMapSheet';
+import { readMapView, writeMapView } from './lib/mapViewState';
 import MapAddPropertySheet from './ui/map-add-property-sheet/MapAddPropertySheet';
 import MapAddressSearch from './ui/map-address-search/MapAddressSearch';
 import MapControls from './ui/map-controls/MapControls';
@@ -27,8 +28,10 @@ const PROPERTY_MARKER_PREFIX = 'property-';
 
 const MapPage = () => {
   const navigate = useNavigate();
-  const [mapLevel, setMapLevel] = useState(INITIAL_MAP_LEVEL);
-  const [selectedPropertyId, setSelectedPropertyId] = useState<number | null>(null);
+  const location = useLocation();
+  const [initialView] = useState(() => readMapView(location.key, location.state));
+  const [mapLevel, setMapLevel] = useState(initialView?.level ?? INITIAL_MAP_LEVEL);
+  const [selectedPropertyId, setSelectedPropertyId] = useState<number | null>(initialView?.selectedPropertyId ?? null);
   const [bounds, setBounds] = useState<MapBounds | null>(null);
   const updateBounds = useCallback((next: MapBounds) => {
     setBounds((current) =>
@@ -42,16 +45,40 @@ const MapPage = () => {
     );
   }, []);
   const search = useMapSearch();
-  const filters = useMapFilters();
+  const filters = useMapFilters(initialView);
   const addMode = useAddPropertyMode();
-  const sheet = useMapSheet(!search.searchOpen && !addMode.isAddMode);
-  const mapLocation = useMapLocation();
-  const [nearbyAnchor, setNearbyAnchor] = useState(mapLocation.viewportCenter);
-  const [hasNearbyAnchor, setHasNearbyAnchor] = useState(false);
+  const sheet = useMapSheet(!search.searchOpen && !addMode.isAddMode, initialView?.sheetStage);
+  const mapLocation = useMapLocation(initialView?.center);
+  const [nearbyAnchor, setNearbyAnchor] = useState(initialView?.nearbyAnchor ?? mapLocation.viewportCenter);
+  const [hasNearbyAnchor, setHasNearbyAnchor] = useState(initialView?.hasNearbyAnchor ?? false);
   const mapStageRef = useRef<HTMLElement | null>(null);
   const { getFallbackCoordinate, mappedProperties, visibleProperties, propertyMarkers, isLoading, isError, retry } =
     useMapProperties(mapLocation.viewportCenter, mapLevel, bounds, selectedPropertyId);
   const selectedProperty = mappedProperties.find((property) => property.propertyId === selectedPropertyId);
+  useEffect(() => {
+    if (addMode.isAddMode) return;
+    writeMapView(location.key, {
+      center: mapLocation.viewportCenter,
+      level: mapLevel,
+      selectedPropertyId,
+      nearbyAnchor,
+      hasNearbyAnchor,
+      radius: filters.selectedRadius,
+      categories: filters.selectedCategories,
+      sheetStage: sheet.sheetStage,
+    });
+  }, [
+    location.key,
+    mapLocation.viewportCenter,
+    mapLevel,
+    selectedPropertyId,
+    nearbyAnchor,
+    hasNearbyAnchor,
+    filters.selectedRadius,
+    filters.selectedCategories,
+    sheet.sheetStage,
+    addMode.isAddMode,
+  ]);
   // 추가 모드의 중앙 핀만 지도 이동을 따라간다. 일반 탐색 반경은 마지막 선택 좌표에 고정한다.
   const nearbyCenter = addMode.isAddMode ? mapLocation.viewportCenter : nearbyAnchor;
   const { facilityMarkers, categoryCounts, circles } = useMapNearby(
@@ -204,8 +231,6 @@ const MapPage = () => {
             selectedRadius={selectedRadius}
             selectedCategories={selectedCategories}
             categoryCounts={categoryCounts}
-            sheetStage={sheet.sheetStage}
-            isDragging={sheet.isDragging}
             isLocating={mapLocation.locationStatus === 'locating'}
             onSelectRadius={selectRadius}
             onToggleCategory={filters.toggleCategory}
@@ -241,7 +266,8 @@ const MapPage = () => {
               onDragMove={sheet.handleDragMove}
               onDragEnd={sheet.handleDragEnd}
               onDragCancel={sheet.handleDragCancel}
-              onCycleStage={sheet.cycleSheetStage}
+              onToggle={sheet.toggleSheet}
+              returnState={{ mapViewKey: location.key }}
             />
           )}
         </section>
