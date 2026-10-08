@@ -85,6 +85,8 @@ const nearbyResult = (radius: number) => ({
   ],
 });
 
+let visitNumber = 0;
+
 const renderAuthenticated = (path: string) => {
   setAuthentication({ accessToken: 'demo-token', tokenType: 'Bearer', expiresIn: 60 });
   server.use(
@@ -96,7 +98,7 @@ const renderAuthenticated = (path: string) => {
   return render(
     <StrictMode>
       <QueryClientProvider client={queryClient}>
-        <MemoryRouter initialEntries={[path]}>
+        <MemoryRouter initialEntries={[{ pathname: path, key: `map-route-visit-${++visitNumber}` }]}>
           <PublicConfigProvider config={config}>
             <AppRoutes />
           </PublicConfigProvider>
@@ -270,7 +272,7 @@ describe('MVP2 지도 화면', () => {
 
     expect(await within(sheet).findByText('현재 지도 화면에 등록된 매물이 없어요.')).toBeVisible();
 
-    expect(within(sheet).getByRole('button', { name: '지도 위 매물 목록 높이 변경' })).toHaveAttribute(
+    expect(within(sheet).getByRole('button', { name: '지도 위 매물 목록 닫기' })).toHaveAttribute(
       'aria-expanded',
       'true',
     );

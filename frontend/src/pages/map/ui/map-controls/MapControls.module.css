@@ -2,10 +2,6 @@
   top: 4.25rem;
 }
 
-.radiusSelector.addMode {
-  top: 7rem;
-}
-
 .categoryRail {
   top: 7rem !important;
   right: 0.85rem !important;
@@ -56,19 +52,7 @@
   z-index: 15;
   display: grid;
   justify-items: end;
-  --sheet-height: var(--map-sheet-drag-height, var(--map-sheet-visible-height, 2.25rem));
-
-  bottom: calc(min(var(--sheet-height), min(34%, 18rem)) + 0.75rem + var(--map-sheet-bottom, 0px));
-  transition: bottom 0.22s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.addPropertyAction[data-sheet='mid'],
-.addPropertyAction[data-sheet='full'] {
-  --sheet-height: var(--map-sheet-drag-height, var(--map-sheet-visible-height, min(34%, 18rem)));
-}
-
-.addPropertyAction[data-dragging='true'] {
-  transition: none;
+  bottom: calc(3rem + var(--map-sheet-bottom, 0px));
 }
 
 @media (max-width: 340px) {

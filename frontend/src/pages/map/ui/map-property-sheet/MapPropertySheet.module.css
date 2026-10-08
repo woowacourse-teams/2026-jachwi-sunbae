@@ -1,3 +1,11 @@
+.sheetViewport {
+  position: absolute;
+  inset: 0;
+  z-index: 30;
+  overflow: hidden;
+  pointer-events: none;
+}
+
 .sheet {
   position: absolute;
   right: 0;
@@ -20,6 +28,7 @@
   transform: translate3d(0, calc(100% - 2.25rem - var(--map-sheet-bottom, 0px)), 0);
   transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   will-change: transform;
+  pointer-events: auto;
 }
 
 .sheet[data-dragging='true'] {
@@ -68,11 +77,6 @@
   min-height: 0;
   flex: none;
   overflow: hidden;
-  transition: height 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.sheet[data-dragging='true'] .contentViewport {
-  transition: none;
 }
 
 .body {

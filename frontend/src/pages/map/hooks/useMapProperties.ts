@@ -4,7 +4,7 @@ import { clusterProperties } from '@/features/map/lib/mapClustering';
 import type { MapCoordinate } from '@/features/map/lib/mapLocation';
 import { PANGYO_MAP_CENTER } from '@/features/map/lib/mapLocation';
 import type { MapBounds } from '@/features/map/model/Map';
-import type { MapMarker } from '@/features/map/ui/map-canvas/MapCanvas';
+import type { MapMarker } from '@/features/map/model/Map';
 import { usePropertyList } from '@/features/property/api/useProperties';
 import { usePropertyPhotoObjectUrls } from '@/features/property/api/usePropertyPhotoObjectUrls';
 import type { PropertySummary } from '@/features/property/model/Property';

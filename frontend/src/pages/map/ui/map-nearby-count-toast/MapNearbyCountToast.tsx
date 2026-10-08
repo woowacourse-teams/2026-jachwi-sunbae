@@ -1,7 +1,7 @@
 import { getMapCategoryLabel } from '@/features/map/lib/mapPresentation';
 import type { MapCategory } from '@/features/map/model/Map';
 
-import { type MapRadius, radiusLabel } from '../../hooks/useMapNearby';
+import { type MapRadius, radiusLabel } from '../../lib/mapRadius';
 
 import styles from './MapNearbyCountToast.module.css';
 

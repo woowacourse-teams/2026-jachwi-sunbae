@@ -5,9 +5,8 @@ import MapRadiusSelector from '@/features/map/ui/map-radius-selector/MapRadiusSe
 import Icon from '@/shared/ui/icon/Icon';
 import PageAction from '@/shared/ui/page-action/PageAction';
 
-import { type MapRadius, RADIUS_OPTIONS, radiusLabel } from '../../hooks/useMapNearby';
+import { type MapRadius, RADIUS_OPTIONS, radiusLabel } from '../../lib/mapRadius';
 import MapLocationStatus from '../map-location-status/MapLocationStatus';
-import type { MapPropertySheetStage } from '../map-property-sheet/MapPropertySheet';
 
 import styles from './MapControls.module.css';
 
@@ -21,9 +20,6 @@ type MapControlsProps = {
   selectedRadius: MapRadius | null;
   selectedCategories: MapCategory[];
   categoryCounts: Partial<Record<MapCategory, number>>;
-  sheetStage: MapPropertySheetStage;
-  isDragging: boolean;
-  isLocating: boolean;
   onSelectRadius: (radius: MapRadius) => void;
   onToggleCategory: (category: MapCategory) => void;
   onMoveToCurrentLocation: () => void;
@@ -40,9 +36,6 @@ const MapControls = ({
   selectedRadius,
   selectedCategories,
   categoryCounts,
-  sheetStage,
-  isDragging,
-  isLocating,
   onSelectRadius,
   onToggleCategory,
   onMoveToCurrentLocation,
@@ -51,7 +44,7 @@ const MapControls = ({
   <>
     <>
       <MapRadiusSelector
-        className={`${styles.radiusSelector} ${isAddMode ? styles.addMode : ''}`}
+        className={styles.radiusSelector}
         label="시설 확인 반경"
         disabled={!hasNearbyAnchor && !isAddMode}
         options={RADIUS_OPTIONS.map((value) => ({
@@ -81,14 +74,14 @@ const MapControls = ({
         type="button"
         className={styles.currentLocationButton}
         aria-label="내 현재 위치로 이동"
-        disabled={isLocating}
+        disabled={locationStatus === 'locating'}
         onClick={onMoveToCurrentLocation}
       >
         <Icon name="target" size={22} />
       </button>
     </div>
     {!isAddMode && (
-      <div className={styles.addPropertyAction} data-sheet={sheetStage} data-dragging={isDragging || undefined}>
+      <div className={styles.addPropertyAction}>
         <PageAction placement="inline" onClick={onEnterAddMode} aria-label="지도에서 매물 추가">
           매물 추가
         </PageAction>
