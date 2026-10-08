@@ -3,16 +3,17 @@ import { useLocation, useNavigate } from 'react-router-dom';
 
 import { getMapFocusCenter } from '@/features/map/lib/mapViewportFocus';
 import type { MapAddress, MapBounds } from '@/features/map/model/Map';
-import type { MapMarker } from '@/features/map/ui/map-canvas/MapCanvas';
+import type { MapMarker } from '@/features/map/model/Map';
 import MapCanvas from '@/features/map/ui/map-canvas/MapCanvas';
 
 import useAddPropertyMode from './hooks/useAddPropertyMode';
 import useMapFilters from './hooks/useMapFilters';
 import useMapLocation from './hooks/useMapLocation';
-import useMapNearby, { levelForRadius, type MapRadius } from './hooks/useMapNearby';
+import useMapNearby from './hooks/useMapNearby';
 import useMapProperties from './hooks/useMapProperties';
 import useMapSearch from './hooks/useMapSearch';
 import useMapSheet from './hooks/useMapSheet';
+import { levelForRadius, type MapRadius } from './lib/mapRadius';
 import { readMapView, writeMapView } from './lib/mapViewState';
 import MapAddPropertySheet from './ui/map-add-property-sheet/MapAddPropertySheet';
 import MapAddressSearch from './ui/map-address-search/MapAddressSearch';
@@ -193,85 +194,86 @@ const MapPage = () => {
         onClose={search.closeSearch}
         onQueryChange={search.changeQuery}
         onSubmit={() => void search.submitSearch()}
-        onClear={search.clearSearch}
         onSelect={selectSearchedAddress}
       />
 
-      {!search.searchOpen && (
-        <section ref={mapStageRef} className={styles.mapStage} aria-label="매물 지도">
-          <MapCanvas
-            center={mapLocation.viewportCenter}
-            markers={markers}
-            circles={circles}
-            radiusCenter={nearbyCenter}
-            level={mapLevel}
-            showRadiusLabels={false}
-            showCenterPin={addMode.isAddMode}
-            interactive={!addMode.isAddMode}
-            selectedMarkerId={
-              selectedPropertyId === null ? undefined : `${PROPERTY_MARKER_PREFIX}${selectedPropertyId}`
-            }
-            onSelectMarker={selectMarker}
-            onSelectLocation={() => {
-              if (addMode.isAddMode || selectedPropertyId === null) return;
-              setSelectedPropertyId(null);
-              sheet.closeSheet();
-            }}
-            onCenterChange={changeCenter}
-            onLevelChange={setMapLevel}
-            onBoundsChange={updateBounds}
-          />
-          <MapControls
+      <section
+        ref={mapStageRef}
+        className={styles.mapStage}
+        aria-label="매물 지도"
+        data-search-open={search.searchOpen || undefined}
+        aria-hidden={search.searchOpen}
+        inert={search.searchOpen}
+      >
+        <MapCanvas
+          center={mapLocation.viewportCenter}
+          markers={markers}
+          circles={circles}
+          radiusCenter={nearbyCenter}
+          level={mapLevel}
+          showRadiusLabels={false}
+          showCenterPin={addMode.isAddMode}
+          interactive={!addMode.isAddMode}
+          selectedMarkerId={selectedPropertyId === null ? undefined : `${PROPERTY_MARKER_PREFIX}${selectedPropertyId}`}
+          onSelectMarker={selectMarker}
+          onSelectLocation={() => {
+            if (addMode.isAddMode || selectedPropertyId === null) return;
+            setSelectedPropertyId(null);
+            sheet.closeSheet();
+          }}
+          onCenterChange={changeCenter}
+          onLevelChange={setMapLevel}
+          onBoundsChange={updateBounds}
+        />
+        <MapControls
+          isAddMode={addMode.isAddMode}
+          hasNearbyAnchor={hasNearbyAnchor}
+          locationStatus={mapLocation.locationStatus}
+          locationFailure={mapLocation.locationFailure}
+          canRetryLocation={mapLocation.canRetryLocation}
+          locationPermission={mapLocation.locationPermission}
+          selectedRadius={selectedRadius}
+          selectedCategories={selectedCategories}
+          categoryCounts={categoryCounts}
+          onSelectRadius={selectRadius}
+          onToggleCategory={filters.toggleCategory}
+          onMoveToCurrentLocation={moveToCurrentLocation}
+          onEnterAddMode={enterAddMode}
+        />
+        {selectedRadius !== null && toastCategory !== undefined && (
+          <MapNearbyCountToast
             isAddMode={addMode.isAddMode}
-            hasNearbyAnchor={hasNearbyAnchor}
-            locationStatus={mapLocation.locationStatus}
-            locationFailure={mapLocation.locationFailure}
-            canRetryLocation={mapLocation.canRetryLocation}
-            locationPermission={mapLocation.locationPermission}
-            selectedRadius={selectedRadius}
-            selectedCategories={selectedCategories}
-            categoryCounts={categoryCounts}
-            isLocating={mapLocation.locationStatus === 'locating'}
-            onSelectRadius={selectRadius}
-            onToggleCategory={filters.toggleCategory}
-            onMoveToCurrentLocation={moveToCurrentLocation}
-            onEnterAddMode={enterAddMode}
+            radius={selectedRadius}
+            category={toastCategory}
+            count={categoryCounts[toastCategory] ?? 0}
           />
-          {selectedRadius !== null && toastCategory !== undefined && (
-            <MapNearbyCountToast
-              isAddMode={addMode.isAddMode}
-              radius={selectedRadius}
-              category={toastCategory}
-              count={categoryCounts[toastCategory] ?? 0}
-            />
-          )}
-          {addMode.isAddMode ? (
-            <MapAddPropertySheet
-              address={addMode.address}
-              status={addMode.addressStatus}
-              onCancel={cancelAddMode}
-              onConfirm={(address) => navigate('/properties/new', { state: { selectedLocation: address } })}
-            />
-          ) : (
-            <MapPropertySheet
-              sheetRef={sheet.sheetRef}
-              stage={sheet.sheetStage}
-              isDragging={sheet.isDragging}
-              isLoading={isLoading}
-              isError={isError}
-              onRetry={() => void retry()}
-              properties={selectedProperty === undefined ? visibleProperties : [selectedProperty]}
-              selectedPropertyId={selectedPropertyId}
-              onDragStart={sheet.handleDragStart}
-              onDragMove={sheet.handleDragMove}
-              onDragEnd={sheet.handleDragEnd}
-              onDragCancel={sheet.handleDragCancel}
-              onToggle={sheet.toggleSheet}
-              returnState={{ mapViewKey: location.key }}
-            />
-          )}
-        </section>
-      )}
+        )}
+        {addMode.isAddMode ? (
+          <MapAddPropertySheet
+            address={addMode.address}
+            status={addMode.addressStatus}
+            onCancel={cancelAddMode}
+            onConfirm={(address) => navigate('/properties/new', { state: { selectedLocation: address } })}
+          />
+        ) : (
+          <MapPropertySheet
+            sheetRef={sheet.sheetRef}
+            stage={sheet.sheetStage}
+            isDragging={sheet.isDragging}
+            isLoading={isLoading}
+            isError={isError}
+            onRetry={() => void retry()}
+            properties={selectedProperty === undefined ? visibleProperties : [selectedProperty]}
+            selectedPropertyId={selectedPropertyId}
+            onDragStart={sheet.handleDragStart}
+            onDragMove={sheet.handleDragMove}
+            onDragEnd={sheet.handleDragEnd}
+            onDragCancel={sheet.handleDragCancel}
+            onToggle={sheet.toggleSheet}
+            returnState={{ mapViewKey: location.key }}
+          />
+        )}
+      </section>
     </main>
   );
 };

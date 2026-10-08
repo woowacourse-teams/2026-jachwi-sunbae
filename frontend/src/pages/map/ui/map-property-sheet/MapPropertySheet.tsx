@@ -3,9 +3,9 @@ import type { PointerEvent, RefObject } from 'react';
 import type { PropertySummary } from '@/features/property/model/Property';
 import PropertyCard from '@/features/property/ui/property-card/PropertyCard';
 
-import styles from './MapPropertySheet.module.css';
+import type { MapPropertySheetStage } from '../../model/MapSheet';
 
-export type MapPropertySheetStage = 'closed' | 'mid' | 'full';
+import styles from './MapPropertySheet.module.css';
 
 type MapPropertySheetProps = {
   sheetRef: RefObject<HTMLElement | null>;

@@ -5,7 +5,7 @@ import MapRadiusSelector from '@/features/map/ui/map-radius-selector/MapRadiusSe
 import Icon from '@/shared/ui/icon/Icon';
 import PageAction from '@/shared/ui/page-action/PageAction';
 
-import { type MapRadius, RADIUS_OPTIONS, radiusLabel } from '../../hooks/useMapNearby';
+import { type MapRadius, RADIUS_OPTIONS, radiusLabel } from '../../lib/mapRadius';
 import MapLocationStatus from '../map-location-status/MapLocationStatus';
 
 import styles from './MapControls.module.css';
@@ -20,7 +20,6 @@ type MapControlsProps = {
   selectedRadius: MapRadius | null;
   selectedCategories: MapCategory[];
   categoryCounts: Partial<Record<MapCategory, number>>;
-  isLocating: boolean;
   onSelectRadius: (radius: MapRadius) => void;
   onToggleCategory: (category: MapCategory) => void;
   onMoveToCurrentLocation: () => void;
@@ -37,7 +36,6 @@ const MapControls = ({
   selectedRadius,
   selectedCategories,
   categoryCounts,
-  isLocating,
   onSelectRadius,
   onToggleCategory,
   onMoveToCurrentLocation,
@@ -76,7 +74,7 @@ const MapControls = ({
         type="button"
         className={styles.currentLocationButton}
         aria-label="내 현재 위치로 이동"
-        disabled={isLocating}
+        disabled={locationStatus === 'locating'}
         onClick={onMoveToCurrentLocation}
       >
         <Icon name="target" size={22} />

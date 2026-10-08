@@ -20,6 +20,8 @@ type NaverMap = {
   setCenter: (center: NaverLatLng) => void;
   setZoom: (zoom: number) => void;
   refresh: () => void;
+  autoResize: () => void;
+  destroy: () => void;
 };
 type NaverOverlay = {
   setMap: (map: NaverMap | null) => void;
@@ -35,7 +37,12 @@ type NaverMapsNamespace = {
   LatLngBounds: new (sw: NaverLatLng, ne: NaverLatLng) => NaverLatLngBounds;
   Map: new (
     container: HTMLElement,
-    options: { center: NaverLatLng; zoom: number; minZoom?: number; maxBounds?: NaverLatLngBounds },
+    options: {
+      center: NaverLatLng;
+      zoom: number;
+      minZoom?: number;
+      maxBounds?: NaverLatLngBounds;
+    },
   ) => NaverMap;
   OverlayView: new (...args: never[]) => NaverOverlay;
   Circle: new (options: {

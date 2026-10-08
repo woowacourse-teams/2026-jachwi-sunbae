@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { selectSingleCategory } from '@/features/map/lib/mapPresentation';
 import type { MapCategory } from '@/features/map/model/Map';
 
-import type { MapRadius } from './useMapNearby';
+import type { MapRadius } from '../lib/mapRadius';
 
 const useMapFilters = (initial?: { categories: MapCategory[]; radius: MapRadius | null }) => {
   const [selectedCategories, setSelectedCategories] = useState<MapCategory[]>(initial?.categories ?? []);

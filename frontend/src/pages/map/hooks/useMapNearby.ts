@@ -6,14 +6,10 @@ import { clusterNearbyPlaces } from '@/features/map/lib/mapClustering';
 import type { MapCoordinate } from '@/features/map/lib/mapLocation';
 import { ALL_MAP_CATEGORIES } from '@/features/map/lib/mapPresentation';
 import type { MapCategory } from '@/features/map/model/Map';
-import type { MapRadiusCircle } from '@/features/map/ui/map-canvas/MapCanvas';
+import type { MapRadiusCircle } from '@/features/map/model/MapCanvas';
 import { usePublicConfig } from '@/shared/config/PublicConfigContext';
 
-export const RADIUS_OPTIONS = [500, 1000, 2000] as const;
-export type MapRadius = (typeof RADIUS_OPTIONS)[number];
-
-export const radiusLabel = (radius: MapRadius): string => (radius === 500 ? '500m' : `${radius / 1000}km`);
-export const levelForRadius = (radius: MapRadius): number => (radius === 500 ? 5 : radius === 1000 ? 6 : 7);
+import { type MapRadius, RADIUS_OPTIONS, radiusLabel } from '../lib/mapRadius';
 
 const useMapNearby = (
   queryCenter: MapCoordinate,

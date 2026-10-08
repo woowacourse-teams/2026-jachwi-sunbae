@@ -47,6 +47,34 @@ const ReturnToMap = () => {
   );
 };
 
+it('주소 검색을 열고 닫아도 같은 지도 요소와 위치를 유지한다', async () => {
+  server.use(
+    http.get('*/api/properties', () => HttpResponse.json({ code: 'SUCCESS', data: { totalCount: 0, items: [] } })),
+  );
+  const user = userEvent.setup();
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  render(
+    <QueryClientProvider client={client}>
+      <MemoryRouter initialEntries={[{ pathname: '/map', key: 'map-search-lifecycle-test' }]}>
+        <PublicConfigProvider config={{ apiBaseUrl: 'http://localhost:8080', mapProviderMode: 'demo' }}>
+          <MapPage />
+        </PublicConfigProvider>
+      </MemoryRouter>
+    </QueryClientProvider>,
+  );
+  const map = screen.getByRole('region', { name: '매물 지도' });
+  const center = screen.getByLabelText('지도 중심').textContent;
+  await user.click(screen.getByRole('button', { name: '주소 또는 위치 검색' }));
+  expect(screen.getByLabelText('매물 지도')).toBe(map);
+  expect(map).toHaveAttribute('inert');
+  expect(screen.queryByText('검색 결과가 없습니다.')).not.toBeInTheDocument();
+  await user.click(screen.getByRole('button', { name: '뒤로 가기' }));
+  expect(screen.getByRole('region', { name: '매물 지도' })).toBe(map);
+  expect(map).not.toHaveAttribute('inert');
+  expect(screen.getByLabelText('지도 중심')).toHaveTextContent(center!);
+  client.clear();
+});
+
 it('추가 버튼은 그대로 두고 손잡이 클릭은 목록 열기와 닫기만 전환한다', async () => {
   server.use(
     http.get('*/api/properties', () => HttpResponse.json({ code: 'SUCCESS', data: { totalCount: 0, items: [] } })),

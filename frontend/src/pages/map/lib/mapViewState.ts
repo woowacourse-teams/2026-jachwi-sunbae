@@ -1,8 +1,8 @@
 import type { MapCoordinate } from '@/features/map/lib/mapLocation';
 import type { MapCategory } from '@/features/map/model/Map';
 
-import type { MapRadius } from '../hooks/useMapNearby';
-import type { MapPropertySheetStage } from '../ui/map-property-sheet/MapPropertySheet';
+import type { MapPropertySheetStage } from '../model/MapSheet';
+import type { MapRadius } from './mapRadius';
 
 export type MapViewState = {
   center: MapCoordinate;

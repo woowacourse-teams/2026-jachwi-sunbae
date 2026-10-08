@@ -1,7 +1,7 @@
 import type { PointerEvent } from 'react';
 import { useCallback, useLayoutEffect, useRef, useState } from 'react';
 
-import type { MapPropertySheetStage } from '../ui/map-property-sheet/MapPropertySheet';
+import type { MapPropertySheetStage } from '../model/MapSheet';
 
 const SHEET_DRAG_THRESHOLD = 20;
 
