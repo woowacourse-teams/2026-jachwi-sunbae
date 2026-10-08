@@ -41,6 +41,7 @@ Spring Boot 애플리케이션은 CORS 허용 Origin과 인증·저장소 설정
 | `DATA_GO_KR_SERVICE_KEY`     | 비움                    | `tago` 모드의 공공데이터포털 일반 인증키(Decoding)                                       |
 | `MAP_CONNECT_TIMEOUT_MILLIS` | `2000`                  | 지도 외부 공급자 연결 제한 시간                                                          |
 | `MAP_READ_TIMEOUT_MILLIS`    | `5000`                  | 지도 외부 공급자 응답 제한 시간                                                          |
+| `GTFS_DIRECTORY`             | 비움                    | KTDB GTFS 파일이 있는 디렉터리. `POST /api/gtfs-imports`가 이 경로를 읽는다              |
 | `DEPLOYMENT_ENVIRONMENT`     | `local`                 | 구조화 로그의 실행 환경. EC2에서는 `dev` 또는 `prod`를 사용한다                          |
 | `LOG_PATH`                   | `./logs`                | `prod` 프로필에서 JSON 로그 파일을 저장할 디렉터리                                       |
 
