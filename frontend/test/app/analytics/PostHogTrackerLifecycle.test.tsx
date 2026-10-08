@@ -49,7 +49,14 @@ describe('PostHogTracker 초기 수집 수명주기', () => {
         </MemoryRouter>
       </QueryClientProvider>,
     );
-    await vi.waitFor(() => expect(sdk.capture).toHaveBeenCalledWith('property_detail_viewed', { property_id: 1 }));
+    await vi.waitFor(() =>
+      expect(sdk.capture).toHaveBeenCalledWith('property_detail_viewed', {
+        property_id: 1,
+        environment: 'development',
+        app_version: '1.1.0',
+        platform: 'web',
+      }),
+    );
     expect(sdk.register).toHaveBeenCalledWith({
       environment: 'development',
       app_version: '1.1.0',
@@ -71,7 +78,14 @@ describe('PostHogTracker 초기 수집 수명주기', () => {
         </QueryClientProvider>
       </StrictMode>,
     );
-    await vi.waitFor(() => expect(sdk.capture).toHaveBeenCalledWith('$pageview', { path: '/privacy' }));
+    await vi.waitFor(() =>
+      expect(sdk.capture).toHaveBeenCalledWith('$pageview', {
+        path: '/privacy',
+        environment: 'development',
+        app_version: '1.1.0',
+        platform: 'web',
+      }),
+    );
     expect(sdk.init).toHaveBeenCalledOnce();
     expect(sdk.capture).toHaveBeenCalledOnce();
     expect(sdk.reset).not.toHaveBeenCalled();
@@ -90,7 +104,14 @@ describe('PostHogTracker 초기 수집 수명주기', () => {
     const rendered = render(view({ ...config, posthogProjectToken: '' }));
     expect(sdk.capture).not.toHaveBeenCalled();
     rendered.rerender(view(config));
-    await vi.waitFor(() => expect(sdk.capture).toHaveBeenCalledWith('$pageview', { path: '/' }));
+    await vi.waitFor(() =>
+      expect(sdk.capture).toHaveBeenCalledWith('$pageview', {
+        path: '/',
+        environment: 'development',
+        app_version: '1.1.0',
+        platform: 'web',
+      }),
+    );
     expect(sdk.register).toHaveBeenCalledWith({
       environment: 'development',
       app_version: '1.1.0',

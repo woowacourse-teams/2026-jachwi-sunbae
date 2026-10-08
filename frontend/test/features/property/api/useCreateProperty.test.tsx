@@ -29,7 +29,7 @@ const input: PropertyInputDto = {
   roomOptions: [],
   utilityOptions: [],
 };
-const setup = (total?: number) => {
+const setup = (total?: number, entrypoint: 'form' | 'map' = 'form') => {
   const client = new QueryClient({ defaultOptions: { mutations: { retry: false } } });
   if (total !== undefined)
     client.setQueryData<InfiniteData<PropertyPage>>(propertyQueryKeys.list(''), {
@@ -41,7 +41,7 @@ const setup = (total?: number) => {
       <PublicConfigProvider config={{ apiBaseUrl: 'http://localhost:8080' }}>{children}</PublicConfigProvider>
     </QueryClientProvider>
   );
-  return renderHook(() => useCreateProperty(), { wrapper });
+  return renderHook(() => useCreateProperty(entrypoint), { wrapper });
 };
 describe('매물 생성 공통 이벤트', () => {
   afterEach(() => vi.resetAllMocks());
@@ -52,8 +52,8 @@ describe('매물 생성 공통 이벤트', () => {
       await result.current.mutateAsync(input);
     });
     expect(trackEvent.mock.calls).toEqual([
-      ['property_creation_submitted'],
-      ['property_created', { property_id: 42, first_property: total === 0 }],
+      ['property_creation_submitted', { entrypoint: 'form' }],
+      ['property_created', { entrypoint: 'form', property_id: 42, first_property: total === 0 }],
     ]);
   });
   it('목록을 모르면 첫 매물이라고 추정하지 않는다', async () => {
@@ -62,7 +62,7 @@ describe('매물 생성 공통 이벤트', () => {
     await act(async () => {
       await result.current.mutateAsync(input);
     });
-    expect(trackEvent).toHaveBeenLastCalledWith('property_created', { property_id: 42 });
+    expect(trackEvent).toHaveBeenLastCalledWith('property_created', { entrypoint: 'form', property_id: 42 });
   });
   it('생성 실패는 실패 이벤트만 보내고 성공 이벤트는 보내지 않는다', async () => {
     createProperty.mockRejectedValue(new Error('server error'));
@@ -71,8 +71,19 @@ describe('매물 생성 공통 이벤트', () => {
       await expect(result.current.mutateAsync(input)).rejects.toThrow('server error');
     });
     expect(trackEvent.mock.calls).toEqual([
-      ['property_creation_submitted'],
-      ['property_creation_failed', { error_kind: 'request' }],
+      ['property_creation_submitted', { entrypoint: 'form' }],
+      ['property_creation_failed', { entrypoint: 'form', error_kind: 'request' }],
+    ]);
+  });
+  it('지도 진입도 제출과 저장 성공에 같은 진입 경로를 보낸다', async () => {
+    createProperty.mockResolvedValue({ propertyId: 42 });
+    const { result } = setup(undefined, 'map');
+    await act(async () => {
+      await result.current.mutateAsync(input);
+    });
+    expect(trackEvent.mock.calls).toEqual([
+      ['property_creation_submitted', { entrypoint: 'map' }],
+      ['property_created', { entrypoint: 'map', property_id: 42 }],
     ]);
   });
 });

@@ -122,7 +122,7 @@ describe('PostHog 제품 분석', () => {
     const serverError = { event: '$exception', properties: { error_category: 'api_server', severity: 'P1' } };
     expect(beforeSend(serverError)).toEqual(serverError);
     const pageview = { event: '$pageview', properties: {} };
-    expect(beforeSend(pageview)).toBe(pageview);
+    expect(beforeSend(pageview)).toEqual(pageview);
     expect(beforeSend(null)).toBeNull();
   });
 

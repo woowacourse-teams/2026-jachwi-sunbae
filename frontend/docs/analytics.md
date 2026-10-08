@@ -2,19 +2,19 @@
 
 ## 책임과 위치
 
-`src/shared/lib/analytics/posthog.ts`는 기존 호출부가 사용하는 안정된 진입점이다. SDK 설정 변경 시 페이지뷰·식별 캐시를 정리하고 테스트 상태 초기화를 조립한다. SDK는 정적으로 import하지 않는다.
+`src/shared/lib/analytics/posthog.ts`는 기존 호출부가 사용하는 안정된 진입점이다. SDK는 정적으로 import하지 않는다. 수명주기 상태는 한 런타임이 소유하며 파일별 전역 상태를 함께 초기화하는 조립 로직은 없앤다.
 
 | 모듈 (`shared/lib/analytics/posthog/`) | 책임 |
 | --- | --- |
-| `client.ts` | SDK lazy load, 초기화, 전송 큐, SDK 예외 격리 |
+| `runtime.ts` | SDK lazy load·초기화·큐·공통 속성·식별·페이지뷰 캐시의 단일 상태 소유자, 실패 진단 |
 | `configuration.ts` | 공개 설정 검증, 마스킹·자동 수집 옵션 |
-| `events.ts` | 기능 이벤트 전송, 연속 동일 경로 페이지뷰 중복 방지 |
-| `session.ts` | 익명/회원 식별, 환경·버전 공통 속성, 로그아웃 시 복원 |
 | `platform.ts` | 앱 주입 정보·전용 UA·브라우저 UA로 플랫폼 분류 |
 | `errorClassification.ts`, `exceptions.ts` | 순수 오류 분류와 오류 전송 |
 | `types.ts` | SDK·공통 속성·오류 등급 타입 |
 
 `app/analytics/PostHogTracker.tsx`는 React와 SDK 수명주기를 연결한다. 초기화·공통 속성·식별은 layout effect에서 처리해 페이지의 첫 effect 이벤트가 초기화보다 먼저 실행되어 버려지지 않게 한다. 페이지뷰는 그 이후 전송한다. 로그인은 수집의 전제 조건이 아니며 익명 방문에서도 경로와 기능 이벤트를 수집한다.
+
+등록·메모 이벤트 이름과 필수 속성 타입은 소유 기능의 `features/property/lib/propertyAnalytics.ts`에 둔다. 랜딩 CTA는 페이지의 `pages/landing/lib/landingAnalytics.ts`가 소유한다. shared는 도메인 이벤트 목록을 알지 않는다. 기존 이벤트 전체를 한 번에 이관하지 않고 이번에 정비한 경계부터 타입 계약을 적용한다. 제품 목표와 이벤트 해석은 [지표 기준](analytics-goals.md)을 따른다.
 
 ## 이벤트 추가·수정 기준
 
@@ -30,6 +30,10 @@
 SDK 로딩 중 액션은 순서대로 큐에 넣는다. 일시적인 import/초기화 실패 후에는 큐를 보존하고 다음 수집 요청에서 재시도한다. 큐는 메모리 증가를 막기 위해 100개로 제한한다. SDK 액션 하나가 예외를 던져도 다른 액션과 제품 동작을 중단시키지 않는다. SDK 호출 자체가 실패한 이벤트는 무한 재전송하지 않는다.
 
 수집 함수의 `true`는 SDK 호출 또는 큐 접수를 의미하며, 서버 수신 확인이 아니다. 토큰이 없거나 큐가 가득 찼거나 동기 SDK 호출이 실패하면 `false`다. ad blocker, 네트워크, 배포 설정 때문에 실제 수신이 누락되는 문제는 dev의 네트워크 요청과 PostHog 이벤트 수신을 별도로 대조해야 한다.
+
+`getPostHogDiagnostics()`는 `disabled/loading/ready/failed`, 대기 액션 수, SDK 액션 실패 수, 큐 초과 거절 수를 반환한다. 네트워크 전송 실패를 확인하는 카운터는 아니다. development에서 실패 사유만 경고하며 토큰·사용자 입력·예외 원문을 출력하지 않는다. 진단 자체를 PostHog에 보내는 재귀 수집은 하지 않는다.
+
+수동 기능 이벤트에 공통 속성을 직접 보강하고 `before_send`에서도 자동 수집·오류 이벤트를 보강한다. 속성 등록 실패나 reset으로 환경/버전이 빠지는 경우를 줄이고 호출부가 공통 값을 임의로 덮어쓰지 못하게 한다.
 
 익명 첫 방문·재마운트에는 무조건 `reset()`하지 않는다. 기존 SDK에 회원 식별이 남아 있거나 이번 실행에서 식별한 회원이 로그아웃할 때만 reset한다. SDK 로드 전에 로그아웃해도 큐에 reset을 넣고, reset 뒤 환경·버전·플랫폼을 다시 등록한다. 같은 회원과 닉네임의 반복 identify는 생략한다.
 
