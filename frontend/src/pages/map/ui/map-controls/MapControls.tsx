@@ -1,3 +1,4 @@
+import type { MapLocationFailure } from '@/features/map/lib/mapLocation';
 import type { MapCategory } from '@/features/map/model/Map';
 import MapCategoryRail from '@/features/map/ui/map-category-rail/MapCategoryRail';
 import MapRadiusSelector from '@/features/map/ui/map-radius-selector/MapRadiusSelector';
@@ -5,12 +6,18 @@ import Icon from '@/shared/ui/icon/Icon';
 import PageAction from '@/shared/ui/page-action/PageAction';
 
 import { type MapRadius, RADIUS_OPTIONS, radiusLabel } from '../../hooks/useMapNearby';
+import MapLocationStatus from '../map-location-status/MapLocationStatus';
 import type { MapPropertySheetStage } from '../map-property-sheet/MapPropertySheet';
 
 import styles from './MapControls.module.css';
 
 type MapControlsProps = {
   isAddMode: boolean;
+  hasNearbyAnchor: boolean;
+  locationStatus: 'ready' | 'locating' | 'fallback';
+  locationFailure: MapLocationFailure;
+  canRetryLocation: boolean;
+  locationPermission: PermissionState | 'unknown';
   selectedRadius: MapRadius | null;
   selectedCategories: MapCategory[];
   categoryCounts: Partial<Record<MapCategory, number>>;
@@ -25,6 +32,11 @@ type MapControlsProps = {
 
 const MapControls = ({
   isAddMode,
+  hasNearbyAnchor,
+  locationStatus,
+  locationFailure,
+  canRetryLocation,
+  locationPermission,
   selectedRadius,
   selectedCategories,
   categoryCounts,
@@ -37,26 +49,34 @@ const MapControls = ({
   onEnterAddMode,
 }: MapControlsProps) => (
   <>
-    {!isAddMode && (
-      <>
-        <MapRadiusSelector
-          label="시설 확인 반경"
-          options={RADIUS_OPTIONS.map((value) => ({
-            value,
-            label: radiusLabel(value),
-            isSelected: selectedRadius === value,
-          }))}
-          onSelect={onSelectRadius}
-        />
-        <MapCategoryRail
-          className={styles.categoryRail}
-          selectedCategories={selectedCategories}
-          counts={categoryCounts}
-          onToggle={onToggleCategory}
-        />
-      </>
-    )}
+    <>
+      <MapRadiusSelector
+        className={`${styles.radiusSelector} ${isAddMode ? styles.addMode : ''}`}
+        label="시설 확인 반경"
+        disabled={!hasNearbyAnchor && !isAddMode}
+        options={RADIUS_OPTIONS.map((value) => ({
+          value,
+          label: radiusLabel(value),
+          isSelected: selectedRadius === value,
+        }))}
+        onSelect={onSelectRadius}
+      />
+      <MapCategoryRail
+        className={styles.categoryRail}
+        selectedCategories={selectedCategories}
+        counts={categoryCounts}
+        onToggle={onToggleCategory}
+      />
+    </>
     <div className={styles.locationControls}>
+      <MapLocationStatus
+        className={styles.locationToast}
+        status={locationStatus}
+        failure={locationFailure}
+        canRetry={canRetryLocation}
+        permission={locationPermission}
+        onRetry={onMoveToCurrentLocation}
+      />
       <button
         type="button"
         className={styles.currentLocationButton}

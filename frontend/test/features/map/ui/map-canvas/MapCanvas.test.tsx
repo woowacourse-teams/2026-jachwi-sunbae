@@ -77,6 +77,7 @@ describe('Naver 지도 상태 동기화', () => {
       center: FakeLatLng;
       zoom: number;
       getCenter = () => this.center;
+      getBounds = () => new FakeLatLngBounds(new FakeLatLng(37, 126), new FakeLatLng(38, 128));
       getZoom = () => this.zoom;
       setCenter = vi.fn((center: FakeLatLng) => {
         this.center = center;
@@ -138,6 +139,17 @@ describe('Naver 지도 상태 동기화', () => {
     expect(maps[0].zoom).toBe(15);
   });
 
+  it('지도 생성 및 이동 완료 때 SDK의 실제 표시 경계를 전달한다', async () => {
+    const onBoundsChange = vi.fn();
+    renderWithConfig(<MapCanvas center={{ latitude: 37.5, longitude: 127 }} onBoundsChange={onBoundsChange} />);
+    await waitFor(() => expect(onBoundsChange).toHaveBeenCalledWith({ south: 37, west: 126, north: 38, east: 128 }));
+    const listener = vi.mocked(window.naver!.maps.Event.addListener).mock.calls.find((call) => call[1] === 'idle');
+    expect(listener).toBeDefined();
+    onBoundsChange.mockClear();
+    listener![2]();
+    expect(onBoundsChange).toHaveBeenCalledWith({ south: 37, west: 126, north: 38, east: 128 });
+  });
+
   it('중심 좌표만 갱신될 때 사용자가 바꾼 확대 단계를 되돌리지 않는다', async () => {
     const disconnect = vi.fn();
     let resizeObserverCount = 0;
@@ -177,7 +189,7 @@ describe('Naver 지도 상태 동기화', () => {
   });
 
   it('라이브 마커는 확대 중 레이아웃 대신 transform으로 위치를 갱신한다', async () => {
-    renderWithConfig(
+    const { rerender } = renderWithConfig(
       <MapCanvas
         center={{ latitude: 37.5665, longitude: 126.978 }}
         level={5}
@@ -199,8 +211,29 @@ describe('Naver 지도 상태 동기화', () => {
     expect(marker).toHaveStyle({
       left: '0px',
       top: '0px',
-      transform: 'translate3d(120px, 80px, 0) translate(-50%, -50%)',
+      transform: 'translate3d(120px, 80px, 0)',
       willChange: 'transform',
     });
+    expect(marker?.firstElementChild).toHaveStyle({ transform: 'translate(-50%, -120.710678%)' });
+    const content = marker?.firstElementChild as HTMLElement;
+    expect(content.style.getPropertyValue('--map-marker-scale')).toBe('0.88');
+    rerender(
+      <MapCanvas
+        center={{ latitude: 37.5665, longitude: 126.978 }}
+        level={1}
+        markers={[
+          {
+            id: 'property-10',
+            latitude: 37.5665,
+            longitude: 126.978,
+            label: '테스트 매물',
+            tone: 'property',
+          },
+        ]}
+      />,
+    );
+    await waitFor(() => expect(content.style.getPropertyValue('--map-marker-scale')).toBe('1.36'));
+    expect(overlayInstances).toHaveLength(1);
+    expect(marker?.firstElementChild).toBe(content);
   });
 });

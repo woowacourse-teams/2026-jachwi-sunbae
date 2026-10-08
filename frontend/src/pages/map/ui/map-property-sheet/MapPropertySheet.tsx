@@ -11,6 +11,9 @@ type MapPropertySheetProps = {
   sheetRef: RefObject<HTMLElement | null>;
   stage: MapPropertySheetStage;
   isDragging: boolean;
+  isLoading: boolean;
+  isError: boolean;
+  onRetry: () => void;
   properties: PropertySummary[];
   selectedPropertyId: number | null;
   onDragStart: (event: PointerEvent<HTMLButtonElement>) => void;
@@ -24,6 +27,9 @@ const MapPropertySheet = ({
   sheetRef,
   stage,
   isDragging,
+  isLoading,
+  isError,
+  onRetry,
   properties,
   selectedPropertyId,
   onDragStart,
@@ -34,14 +40,15 @@ const MapPropertySheet = ({
 }: MapPropertySheetProps) => (
   <section
     ref={sheetRef}
-    className={`${styles.sheet} ${stage === 'closed' ? styles.collapsed : stage === 'mid' ? styles.mid : styles.full}`}
+    className={`${styles.sheet} ${stage === 'closed' ? styles.collapsed : ''}`}
     data-dragging={isDragging || undefined}
+    data-single={selectedPropertyId !== null || undefined}
     aria-label="지도 주변 매물 목록"
   >
     <button
       type="button"
       className={styles.header}
-      aria-expanded={stage !== 'closed'}
+      aria-expanded={stage !== 'closed' || isDragging}
       aria-label={stage === 'closed' ? '지도 위 매물 목록 열기' : '지도 위 매물 목록 높이 변경'}
       onPointerDown={onDragStart}
       onPointerMove={onDragMove}
@@ -52,24 +59,38 @@ const MapPropertySheet = ({
       <div className={styles.grabber}>
         <span className={styles.handle} />
       </div>
-      <div className={styles.heading}>
-        <span>지도 위 매물</span>
-        <strong>{properties.length}개</strong>
-      </div>
     </button>
 
-    <div className={styles.body}>
-      {properties.length === 0 ? (
-        <div className={styles.empty}>현재 지도 화면에 등록된 매물이 없어요.</div>
-      ) : (
-        <ul className={styles.list}>
-          {properties.map((property) => (
-            <li key={property.propertyId} data-selected={property.propertyId === selectedPropertyId || undefined}>
-              <PropertyCard property={property} />
-            </li>
-          ))}
-        </ul>
-      )}
+    <div className={styles.contentViewport}>
+      <div
+        className={styles.body}
+        data-sheet-content
+        aria-hidden={stage === 'closed' && !isDragging}
+        inert={stage === 'closed' && !isDragging}
+      >
+        {isLoading ? (
+          <div className={styles.empty} role="status">
+            매물을 불러오는 중이에요.
+          </div>
+        ) : isError ? (
+          <div className={styles.empty} role="alert">
+            매물을 불러오지 못했어요.{' '}
+            <button type="button" onClick={onRetry}>
+              다시 시도
+            </button>
+          </div>
+        ) : properties.length === 0 ? (
+          <div className={styles.empty}>현재 지도 화면에 등록된 매물이 없어요.</div>
+        ) : (
+          <ul className={styles.list}>
+            {properties.map((property) => (
+              <li key={property.propertyId} data-selected={property.propertyId === selectedPropertyId || undefined}>
+                <PropertyCard property={property} />
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
     </div>
   </section>
 );
