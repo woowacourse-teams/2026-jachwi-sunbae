@@ -5,7 +5,7 @@ import { usePublicConfig } from '@/shared/config/PublicConfigContext';
 import StatusPanel from '@/shared/ui/status-panel/StatusPanel';
 
 import { clampToSouthKorea, SOUTH_KOREA_BOUNDS } from '../../lib/mapLocation';
-import type { MapMarker } from '../../model/Map';
+import type { MapBounds, MapMarker } from '../../model/Map';
 import MapMarkerView from '../map-marker/MapMarkerView';
 import { createMapMarkerElement } from '../map-marker/MapMarkerView';
 
@@ -31,6 +31,7 @@ type MapCanvasProps = {
   onSelectLocation?: (latitude: number, longitude: number) => void;
   onCenterChange?: (latitude: number, longitude: number) => void;
   onLevelChange?: (level: number) => void;
+  onBoundsChange?: (bounds: MapBounds) => void;
   radiusCenter?: { latitude: number; longitude: number };
 };
 
@@ -90,6 +91,7 @@ type LiveEngine = {
   latLng: (latitude: number, longitude: number) => LiveLatLng;
   getCenter: (map: LiveMap) => { latitude: number; longitude: number };
   getZoom: (map: LiveMap) => number;
+  getBounds: (map: LiveMap) => MapBounds;
   setCenter: (map: LiveMap, center: LiveLatLng) => void;
   setZoom: (map: LiveMap, level: number) => void;
   relayout: (map: LiveMap) => void;
@@ -125,6 +127,12 @@ const naverEngine = (clientId: string): LiveEngine => ({
     return { latitude: center.lat(), longitude: center.lng() };
   },
   getZoom: (map) => toMapLevel((map as NaverMap).getZoom()),
+  getBounds: (map) => {
+    const bounds = map.getBounds();
+    const sw = bounds.getSW();
+    const ne = bounds.getNE();
+    return { south: sw.lat(), west: sw.lng(), north: ne.lat(), east: ne.lng() };
+  },
   setCenter: (map, center) => (map as NaverMap).setCenter(center as NaverLatLng),
   setZoom: (map, level) => (map as NaverMap).setZoom(toNaverZoom(level)),
   relayout: (map) => (map as NaverMap).refresh(),
@@ -136,10 +144,20 @@ const naverEngine = (clientId: string): LiveEngine => ({
   createOverlay: (map, marker, content, zIndex) => {
     const overlay = new window.naver!.maps.OverlayView();
     const position = new window.naver!.maps.LatLng(marker.latitude, marker.longitude);
-    const element = content;
+    // SDK 좌표 이동과 버튼의 중심 정렬을 분리한다. SDK/버튼 스타일이 서로 간섭하지 않게 한다.
+    const element = document.createElement('div');
+    element.append(content);
+    content.style.position = 'absolute';
+    content.style.left = '0';
+    content.style.top = '0';
+    // 회전된 물방울의 끝은 원형 이미지 중심에서 높이의 sqrt(2)/2만큼 아래에 있다.
+    const isPin = marker.tone === 'property' || marker.tone === 'selected';
+    content.style.transform = isPin ? 'translate(-50%, -120.710678%)' : 'translate(-50%, -50%)';
     element.style.position = 'absolute';
     element.style.top = '0';
     element.style.left = '0';
+    element.style.width = '0';
+    element.style.height = '0';
     element.style.willChange = 'transform';
     element.style.zIndex = String(zIndex);
     overlay.setPosition?.(position);
@@ -150,7 +168,7 @@ const naverEngine = (clientId: string): LiveEngine => ({
         const pixel = projection.fromCoordToOffset(position);
         // 확대·이동 중 left/top을 바꾸면 WebView가 마커마다 레이아웃을 다시 계산한다.
         // 합성 단계에서 처리되는 transform으로 옮겨 지도 제스처의 메인 스레드 부담을 줄인다.
-        element.style.transform = `translate3d(${pixel.x}px, ${pixel.y}px, 0) translate(-50%, -50%)`;
+        element.style.transform = `translate3d(${pixel.x}px, ${pixel.y}px, 0)`;
       }
     };
     overlay.onRemove = () => element.remove();
@@ -193,7 +211,16 @@ const markerZIndex = (marker: MapMarker, selectedMarkerId: string | null): numbe
   return 5;
 };
 
+const markerScale = (marker: MapMarker, level: number): number =>
+  marker.tone === 'property' || marker.tone === 'selected' || marker.tone === 'propertyCluster'
+    ? Number(clamp(1 + (4 - level) * 0.12, 0.7, 1.36).toFixed(2))
+    : 1;
+
 const demoMarkerStyle = (marker: MapMarker, center: { latitude: number; longitude: number }): CSSProperties => ({
+  transform:
+    marker.tone === 'property' || marker.tone === 'selected'
+      ? 'translate(-50%, -120.710678%)'
+      : 'translate(-50%, -50%)',
   left: `${clamp(50 + (marker.longitude - center.longitude) * 3_100, 9, 91)}%`,
   top: `${clamp(50 - (marker.latitude - center.latitude) * 4_200, 10, 88)}%`,
 });
@@ -211,14 +238,15 @@ const MapCanvas = ({
   onSelectLocation,
   onCenterChange,
   onLevelChange,
+  onBoundsChange,
   radiusCenter = center,
 }: MapCanvasProps) => {
   const config = usePublicConfig();
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<LiveMap | null>(null);
-  const overlaysRef = useRef(new Map<string, { signature: string; overlay: LiveOverlay }>());
+  const overlaysRef = useRef(new Map<string, { signature: string; overlay: LiveOverlay; content: HTMLElement }>());
   const circlesRef = useRef<LiveOverlay[]>([]);
-  const callbackRef = useRef({ onSelectLocation, onCenterChange, onLevelChange, onSelectMarker });
+  const callbackRef = useRef({ onSelectLocation, onCenterChange, onLevelChange, onSelectMarker, onBoundsChange });
   const [mapReady, setMapReady] = useState(false);
   const [isMapGestureActive, setIsMapGestureActive] = useState(false);
   const [sdkError, setSdkError] = useState(false);
@@ -227,7 +255,7 @@ const MapCanvas = ({
   const engine = useMemo(() => naverEngine(config.naverMapClientId ?? ''), [config.naverMapClientId]);
   const liveMode = config.mapProviderMode === 'naver' && (config.naverMapClientId ?? '') !== '';
 
-  callbackRef.current = { onSelectLocation, onCenterChange, onLevelChange, onSelectMarker };
+  callbackRef.current = { onSelectLocation, onCenterChange, onLevelChange, onSelectMarker, onBoundsChange };
 
   useEffect(() => {
     if (!liveMode || containerRef.current === null) return;
@@ -262,9 +290,11 @@ const MapCanvas = ({
             const nextCenter = engine.getCenter(map);
             callbackRef.current.onCenterChange?.(nextCenter.latitude, nextCenter.longitude);
             callbackRef.current.onLevelChange?.(engine.getZoom(map));
+            callbackRef.current.onBoundsChange?.(engine.getBounds(map));
           }),
         );
         setMapReady(true);
+        callbackRef.current.onBoundsChange?.(engine.getBounds(map));
       })
       .catch(() => {
         if (!disposed) setSdkError(true);
@@ -310,6 +340,7 @@ const MapCanvas = ({
       relayoutFrame = window.requestAnimationFrame(() => {
         relayoutFrame = null;
         engine.relayout(map);
+        callbackRef.current.onBoundsChange?.(engine.getBounds(map));
       });
     });
     observer.observe(containerRef.current);
@@ -330,12 +361,13 @@ const MapCanvas = ({
     if (!liveMode || !mapReady || map === null) return;
     // 달라진 마커만 다시 그린다. 전부 지웠다 만들면 지도를 옮길 때마다 깜빡인다.
     const previous = overlaysRef.current;
-    const next = new Map<string, { signature: string; overlay: LiveOverlay }>();
+    const next = new Map<string, { signature: string; overlay: LiveOverlay; content: HTMLElement }>();
 
     markers.forEach((marker) => {
       const signature = markerSignature(marker, selectedMarkerId);
       const kept = previous.get(marker.id);
       if (kept !== undefined && kept.signature === signature) {
+        kept.content.style.setProperty('--map-marker-scale', String(markerScale(marker, level)));
         previous.delete(marker.id);
         next.set(marker.id, kept);
         return;
@@ -347,15 +379,17 @@ const MapCanvas = ({
       const content = createMapMarkerElement(marker, selectedMarkerId, (selected) =>
         callbackRef.current.onSelectMarker?.(selected),
       );
+      content.style.setProperty('--map-marker-scale', String(markerScale(marker, level)));
       next.set(marker.id, {
         signature,
+        content,
         overlay: engine.createOverlay(map, marker, content, markerZIndex(marker, selectedMarkerId)),
       });
     });
 
     previous.forEach(({ overlay }) => overlay.setMap(null));
     overlaysRef.current = next;
-  }, [engine, liveMode, mapReady, markers, selectedMarkerId]);
+  }, [engine, level, liveMode, mapReady, markers, selectedMarkerId]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -409,7 +443,16 @@ const MapCanvas = ({
           ))}
           {markers.map((marker) => {
             return (
-              <div key={marker.id} className={styles.demoMarkerPosition} style={demoMarkerStyle(marker, boundedCenter)}>
+              <div
+                key={marker.id}
+                className={styles.demoMarkerPosition}
+                style={
+                  {
+                    ...demoMarkerStyle(marker, boundedCenter),
+                    '--map-marker-scale': markerScale(marker, level),
+                  } as CSSProperties
+                }
+              >
                 <MapMarkerView marker={marker} selectedMarkerId={selectedMarkerId} onSelectMarker={onSelectMarker} />
               </div>
             );

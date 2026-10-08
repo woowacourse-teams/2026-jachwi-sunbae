@@ -14,6 +14,7 @@ interface Window {
 type NaverLatLng = { lat: () => number; lng: () => number };
 type NaverLatLngBounds = { getSW: () => NaverLatLng; getNE: () => NaverLatLng };
 type NaverMap = {
+  getBounds: () => NaverLatLngBounds;
   getCenter: () => NaverLatLng;
   getZoom: () => number;
   setCenter: (center: NaverLatLng) => void;
