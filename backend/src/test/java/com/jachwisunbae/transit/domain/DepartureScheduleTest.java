@@ -29,4 +29,12 @@ class DepartureScheduleTest {
         assertThat(new DepartureSchedule(List.of(28_800)).waitTime()).isEqualTo(new Seconds(300));
         assertThat(new DepartureSchedule(List.of(0, 30, 10_000)).waitTime()).isEqualTo(new Seconds(300));
     }
+
+    @Test
+    @DisplayName("운행 간격이 짝수 개면 이동 시간과 같은 중앙값 정의로 가운데 두 간격의 평균을 쓴다")
+    void usesSameMedianDefinitionAsTravelTime() {
+        DepartureSchedule schedule = new DepartureSchedule(List.of(0, 600, 1_800));
+
+        assertThat(schedule.waitTime()).isEqualTo(new Seconds(450));
+    }
 }

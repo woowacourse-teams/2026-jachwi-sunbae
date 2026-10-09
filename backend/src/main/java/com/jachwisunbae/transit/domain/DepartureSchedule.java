@@ -20,18 +20,16 @@ public class DepartureSchedule {
     }
 
     public Seconds waitTime() {
-        List<Integer> gaps = gaps();
-        int medianHeadway = gaps.isEmpty() ? DEFAULT_HEADWAY_SECONDS : gaps.get(gaps.size() / 2);
+        int[] gaps = gaps();
+        int medianHeadway = gaps.length == 0 ? DEFAULT_HEADWAY_SECONDS : Median.of(gaps);
         return new Seconds(Math.max(MINIMUM_WAIT_SECONDS, Math.min(MAXIMUM_WAIT_SECONDS, medianHeadway / 2)));
     }
 
-    private List<Integer> gaps() {
+    private int[] gaps() {
         List<Integer> sorted = departureSeconds.stream().distinct().sorted().toList();
         return IntStream.range(1, sorted.size())
                 .map(index -> sorted.get(index) - sorted.get(index - 1))
                 .filter(gap -> gap >= MINIMUM_GAP_SECONDS && gap <= MAXIMUM_GAP_SECONDS)
-                .sorted()
-                .boxed()
-                .toList();
+                .toArray();
     }
 }

@@ -16,11 +16,6 @@ public class TravelTimeSamples {
     }
 
     public Seconds median() {
-        Arrays.sort(values, 0, size);
-        int middle = size / 2;
-        if (size % 2 == 1) {
-            return new Seconds(values[middle]);
-        }
-        return new Seconds((int) Math.round((values[middle - 1] + values[middle]) / 2.0));
+        return new Seconds(Median.of(Arrays.copyOf(values, size)));
     }
 }
