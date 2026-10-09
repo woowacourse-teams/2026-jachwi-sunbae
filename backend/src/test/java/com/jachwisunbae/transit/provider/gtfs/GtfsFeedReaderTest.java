@@ -104,12 +104,81 @@ class GtfsFeedReaderTest {
     }
 
     @Test
+    @DisplayName("환승 불가 유형과 최소 환승 시간이 없는 환승은 적재하지 않는다")
+    void skipsTransfersWithoutUsableTime() throws IOException {
+        writeSingleTripFeed("""
+                trip_id,arrival_time,departure_time,stop_id,stop_sequence
+                T1,08:00:00,08:00:00,S1,1
+                T1,08:02:00,08:02:00,S2,2
+                """);
+        write("transfers.txt", """
+                from_stop_id,to_stop_id,transfer_type,min_transfer_time
+                S1,S2,2,180
+                S2,S1,3,60
+                S1,S1,0,
+                """);
+
+        GtfsFeed feed = reader.read(directory);
+
+        assertThat(feed.transfers()).containsExactly(new GtfsTransfer("S1", "S2", new Seconds(180)));
+    }
+
+    @Test
+    @DisplayName("한 운행편의 정차 기록이 흩어져 있으면 틀린 구간을 만들지 않고 적재를 멈춘다")
+    void failsWhenTripRowsAreNotContiguous() throws IOException {
+        writeSingleTripFeed("""
+                trip_id,arrival_time,departure_time,stop_id,stop_sequence
+                T1,08:00:00,08:00:00,S1,1
+                T2,08:10:00,08:10:00,S1,1
+                T1,08:02:00,08:02:00,S2,2
+                """);
+        write("transfers.txt", "from_stop_id,to_stop_id,transfer_type,min_transfer_time\n");
+
+        assertThatThrownBy(() -> reader.read(directory))
+                .isInstanceOf(InternalSystemException.class)
+                .hasMessageContaining("trip_id=T1");
+    }
+
+    @Test
+    @DisplayName("정차 순서가 증가하지 않으면 적재를 멈춘다")
+    void failsWhenStopSequenceDoesNotIncrease() throws IOException {
+        writeSingleTripFeed("""
+                trip_id,arrival_time,departure_time,stop_id,stop_sequence
+                T1,08:02:00,08:02:00,S2,2
+                T1,08:00:00,08:00:00,S1,1
+                """);
+        write("transfers.txt", "from_stop_id,to_stop_id,transfer_type,min_transfer_time\n");
+
+        assertThatThrownBy(() -> reader.read(directory))
+                .isInstanceOf(InternalSystemException.class)
+                .hasMessageContaining("stop_sequence");
+    }
+
+    @Test
     @DisplayName("GTFS 파일이 없으면 서버 내부 오류로 알린다")
     void failsWhenFeedFileIsMissing() {
         assertThatThrownBy(() -> reader.read(directory))
                 .isInstanceOf(InternalSystemException.class)
                 .extracting("errorCode")
                 .isEqualTo(ErrorCode.TRANSIT_FEED_READ_FAILURE);
+    }
+
+    private void writeSingleTripFeed(final String stopTimes) throws IOException {
+        write("routes.txt", """
+                route_id,route_short_name,route_long_name,route_type
+                B1,472,간선 472,3
+                """);
+        write("trips.txt", """
+                route_id,service_id,trip_id
+                B1,W,T1
+                B1,W,T2
+                """);
+        write("stop_times.txt", stopTimes);
+        write("stops.txt", """
+                stop_id,stop_name,stop_lat,stop_lon
+                S1,강남역,37.49,127.02
+                S2,역삼역,37.50,127.03
+                """);
     }
 
     private void write(final String fileName, final String content) throws IOException {

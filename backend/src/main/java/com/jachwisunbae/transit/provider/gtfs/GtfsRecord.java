@@ -14,6 +14,8 @@ public class GtfsRecord {
 
     // route_type 1은 지하철·도시철도, 3은 GTFS 표준 버스이고 KTDB 데이터는 버스에 0도 쓴다. 2(일반철도) 등은 뺀다.
     private static final Set<String> TRANSIT_ROUTE_TYPES = Set.of("0", "1", "3");
+    // GTFS transfer_type 3은 환승할 수 없는 정류장 쌍이다.
+    private static final String TRANSFER_NOT_POSSIBLE = "3";
 
     private final CSVRecord row;
 
@@ -23,6 +25,10 @@ public class GtfsRecord {
 
     public String text(final String column) {
         return row.get(column);
+    }
+
+    public int integer(final String column) {
+        return Integer.parseInt(text(column));
     }
 
     // GTFS 시각은 막차를 표현하려고 24시를 넘길 수 있어(예: 25:10:00) LocalTime으로 파싱하지 않는다.
@@ -54,10 +60,23 @@ public class GtfsRecord {
     public Optional<GtfsTransfer> toTransfer(final UsedStops usedStops) {
         String from = text("from_stop_id");
         String to = text("to_stop_id");
-        if (!usedStops.contains(from) || !usedStops.contains(to)) {
+        if (!usedStops.contains(from) || !usedStops.contains(to) || !hasTransferTime()) {
             return Optional.empty();
         }
-        Seconds transferTime = new Seconds(Integer.parseInt(text("min_transfer_time")));
+        Seconds transferTime = new Seconds(integer("min_transfer_time"));
         return Optional.of(new GtfsTransfer(from, to, transferTime));
+    }
+
+    // 환승 불가(3)이거나, 0·1처럼 최소 환승 시간이 비어 있을 수 있는 유형은 걸리는 시간을 알 수 없어 쓰지 않는다.
+    private boolean hasTransferTime() {
+        return !TRANSFER_NOT_POSSIBLE.equals(optionalText("transfer_type"))
+                && !optionalText("min_transfer_time").isBlank();
+    }
+
+    private String optionalText(final String column) {
+        if (!row.isMapped(column)) {
+            return "";
+        }
+        return row.get(column);
     }
 }
