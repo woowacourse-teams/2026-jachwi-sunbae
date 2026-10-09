@@ -85,9 +85,10 @@ AWS S3는 EC2 `ec2-project` instance role로 접근하므로 `PHOTO_STORAGE_ENDP
 `PHOTO_STORAGE_SECRET_KEY`를 EC2에 두지 않는다. 이 세 값은 로컬 MinIO에만 사용한다. 프론트엔드에는 지도 화면용 공개 Naver Maps Client ID만 빌드 타임에 주입한다.
 백엔드는 네이버 API를 사용하지 않는다.
 
-`db/init/001-schema.sql`과 `002-seed.sql`은 빈 로컬 MySQL 볼륨의 기준 스키마와 시스템 체크 항목을 만든다. `003-bus-stops-sample.sql`은 로컬 개발용
-버스정류장 샘플이다. 애플리케이션은 기동 중 스키마를 변경하지 않는다. dev·prod
-RDS를 이 기준선으로 전환할 때는 자동 백업의 최신 복구 지점을 먼저 확인하고, 별도의 데이터 이관 절차로 기존 회원·매물 데이터를 보존해야 한다.
+`src/main/resources/db/init/001-schema.sql`과 `002-seed.sql`은 로컬 Docker 초기화와 통합 테스트에서 공유하는 기준 스키마와 시스템 체크 항목이다.
+`docker/mysql/init/003-bus-stops-sample.sql`은 로컬 Docker 초기화 전용 버스정류장 샘플이며 애플리케이션 JAR에 포함하지 않는다.
+애플리케이션은 기동 중 스키마를 변경하지 않는다. 
+dev·prod RDS를 이 기준선으로 전환할 때는 자동 백업의 최신 복구 지점을 먼저 확인하고, 별도의 데이터 이관 절차로 기존 회원·매물 데이터를 보존해야 한다.
 
 새 환경변수를 도입하면 서버의 환경변수 파일도 함께 갱신한다.
 
