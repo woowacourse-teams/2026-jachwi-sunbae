@@ -231,8 +231,49 @@ MVP1 첫 dev 배포에서는 다음을 확인한다.
    WHERE main_photo.property_id <> photo.property_id;
    ```
 
-3. Vault에 dev DB·JWT·CORS·지도 공급자 인증 정보·S3 접두사를 준비한다. 정적 AWS 키는 두지 않는다. 버스정류소 API 미승인 시 `BUS_STOP_PROVIDER=none`으로 둔다.
-4. 프론트 dev Commands에 `API_BASE_URL=https://dev-api.jachwi-sunbae.kr`, `MAP_PROVIDER_MODE`, 지도 공급자 공개 키, 운영과 같은 `POSTHOG_PROJECT_TOKEN`, `POSTHOG_HOST=https://us.i.posthog.com`을 설정한다. PostHog는 `environment=development`로 구분한다.
+3. Vault에 dev DB·JWT·CORS·지도 공급자 인증 정보·S3 접두사를 준비한다. 정적 AWS 키는 두지 않는다.
+4. `bus_stops` 테이블과 전국 정류장 데이터, 앱 DB 계정의 조회 권한을 확인한다. 준비되지 않았다면 [버스정류장 데이터 적재](#버스정류장-데이터-적재)를 애플리케이션 배포 전에 완료한다.
+5. 프론트 dev Commands에 `API_BASE_URL=https://dev-api.jachwi-sunbae.kr`, `MAP_PROVIDER_MODE`, 지도 공급자 공개 키, 운영과 같은 `POSTHOG_PROJECT_TOKEN`, `POSTHOG_HOST=https://us.i.posthog.com`을 설정한다. PostHog는 `environment=development`로 구분한다.
+
+### 버스정류장 데이터 적재
+
+| 항목 | 기준 |
+| --- | --- |
+| 스냅샷 | `국토교통부_전국 버스정류장 위치정보_20251031.csv` |
+| 원본 행 / 예상 적재 행 | 227,065 / 227,053 (빈 좌표 5행, 국내 범위 밖 좌표 7행 제외) |
+| 갱신 주기 | 연 1회 수동. 새 스냅샷이 공개되면 같은 절차로 다시 적재한다 |
+
+애플리케이션은 `bus_stops`를 조회만 한다. 테이블이 없으면 교통 조회가 실패하므로 **애플리케이션 배포 전에 테이블 생성과 데이터 적재를 완료한다.**
+`develop` 병합은 dev 배포를 시작하므로 dev DB를 먼저 준비한다. dev 검증 후 prod DB도 준비하고 `main`으로 승격한다.
+
+1. 대상 환경의 DB와 최신 자동 백업 복구 지점을 확인하고, 식별자와 확인 시각을 배포 이슈에 기록한다.
+2. 처음 적재할 때만 관리자 계정으로 테이블을 만든다. [기준 스키마](../../src/main/resources/db/init/001-schema.sql) 전체가 아니라 `bus_stops`의 `CREATE TABLE` 문만 실행한다. 앱 DB 계정에는 `CREATE` 권한을 추가하지 않는다. 이미 테이블이 있으면 구조와 기존 데이터의 스냅샷을 확인한다.
+3. 저장소 루트에서 CSV (EUC-KR)로 적재 SQL을 만든다. 전체 SQL은 약 20MB이므로 저장소 밖에 두고 커밋하지 않는다. 전국 데이터를 만들 때는 지역 샘플용 `--around` 옵션을 사용하지 않는다. 출력의 적재 행 수와 제외 행 목록을 확인한다.
+
+   ```bash
+   python3 backend/scripts/bus-stops/generate_bus_stops_sql.py "<CSV 경로>" --output /tmp/bus-stops.sql
+   ```
+
+4. RDS에 접속할 수 있는 해당 환경의 EC2로 SQL 파일을 옮긴다. 아래 변수에는 대상 환경의 접속값을 사용하고, `DB_USERNAME`에는 적재에 필요한 `DELETE`, `INSERT` 권한이 있는 계정을 지정한다. 비밀번호는 `-p` 입력 요청에 입력한다.
+
+   ```bash
+   mysql -h "$DB_HOST" -P "$DB_PORT" -u "$DB_USERNAME" -p \
+     --default-character-set=utf8mb4 "$DB_NAME" < /tmp/bus-stops.sql
+   ```
+
+   SQL은 한 트랜잭션 안에서 기존 정류장을 지우고 다시 넣는다. InnoDB에서 커밋 전 오류로 배치 실행이 중단되고 연결이 종료되면 미커밋 변경은 롤백된다. 오류 후에도 실행을 계속하는 `--force` 옵션은 사용하지 않으며, 실행이 실패하면 원인과 DB 상태를 확인한 뒤 재시도한다.
+5. 실제 앱 DB 계정으로 접속해 조회 권한과 적재 결과를 확인한다. 위 스냅샷은 두 값 모두 `227053`이어야 한다. 사용한 스냅샷과 결과를 배포 이슈에 기록한다.
+
+   ```sql
+   SELECT COUNT(*) AS total_count,
+          COUNT(DISTINCT node_id) AS unique_node_count
+   FROM bus_stops;
+   ```
+
+6. 애플리케이션을 배포한 뒤 서비스 상태·health·실행 SHA와 실제 교통 조회를 확인한다. 같은 좌표에서 500m·1km·2km 반경을 각각 요청해 선택 반경이 반영되는지 확인한다.
+7. 새 버전의 동작을 확인한 뒤, 해당 환경의 Vault `app_env`에서 더 이상 쓰지 않는 `BUS_STOP_PROVIDER`, `DATA_GO_KR_SERVICE_KEY` 두 줄을 삭제하고 다른 설정은 유지한다. [Vault 환경변수 관리](#5-vault-환경변수-관리)에 따라 `fetch_env.sh dev` 또는 `fetch_env.sh prod`로 내려받고 성공했을 때 재시작한다. 서비스 중인 인스턴스별로 적용과 정상 동작을 확인한다. 서버의 `/etc/jachwi-sunbae/app.env`만 직접 수정하면 다음 배포에서 Vault 값으로 덮어써진다.
+
+데이터만 갱신할 때는 백업을 확인한 뒤 테이블 생성은 건너뛰고 3~5번을 진행한다. 데이터 갱신 자체에는 애플리케이션 재시작이 필요 없다. 적재한 스냅샷이 바뀌면 위 표도 함께 고친다.
 
 ## 8. 배포 확인과 로그
 
