@@ -38,7 +38,7 @@ public class GtfsImportService {
     // 빈 경로는 Path.of("")가 현재 디렉터리를 가리켜 디렉터리 검사를 통과하므로 따로 막는다.
     private Path feedDirectory() {
         if (directory.isBlank() || !Files.isDirectory(Path.of(directory))) {
-            throw new IllegalStateException("GTFS_DIRECTORY가 GTFS 파일이 있는 디렉터리가 아닙니다: " + directory);
+            throw new IllegalStateException("GTFS 파일이 있는 디렉터리가 아닙니다: " + directory);
         }
         return Path.of(directory);
     }
