@@ -36,7 +36,9 @@
 
 ## Scenario
 
-아직 작성하지 않았다.
+| ID | 상황 | 근거 | 상태 |
+| --- | --- | --- | --- |
+| [F03-S01](../scenarios/F03-S01-property-access-other-member.md) | 다른 회원의 매물 접근 | `AC-PROP-010`, `AC-AUTH-005` | 자동화 |
 
 ## QA 메모
 
