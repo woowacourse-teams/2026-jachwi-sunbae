@@ -1,4 +1,4 @@
-package com.jachwisunbae.transit.domain;
+package com.jachwisunbae.transit.domain.vo;
 
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;

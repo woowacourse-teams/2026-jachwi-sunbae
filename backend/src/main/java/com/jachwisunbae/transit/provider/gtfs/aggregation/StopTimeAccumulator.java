@@ -2,11 +2,11 @@ package com.jachwisunbae.transit.provider.gtfs.aggregation;
 
 import com.jachwisunbae.common.exception.errorcode.ErrorCode;
 import com.jachwisunbae.common.exception.server.InternalSystemException;
-import com.jachwisunbae.transit.domain.DepartureSchedule;
 import com.jachwisunbae.transit.domain.GtfsEdge;
 import com.jachwisunbae.transit.domain.GtfsRoute;
-import com.jachwisunbae.transit.domain.Seconds;
-import com.jachwisunbae.transit.domain.TravelTimeSamples;
+import com.jachwisunbae.transit.domain.collection.DepartureSchedule;
+import com.jachwisunbae.transit.domain.collection.TravelTimeSamples;
+import com.jachwisunbae.transit.domain.vo.Seconds;
 import com.jachwisunbae.transit.provider.gtfs.GtfsRecord;
 import java.util.ArrayList;
 import java.util.Collections;

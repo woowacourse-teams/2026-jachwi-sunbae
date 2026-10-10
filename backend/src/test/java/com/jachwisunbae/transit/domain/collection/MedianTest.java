@@ -1,4 +1,4 @@
-package com.jachwisunbae.transit.domain;
+package com.jachwisunbae.transit.domain.collection;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;

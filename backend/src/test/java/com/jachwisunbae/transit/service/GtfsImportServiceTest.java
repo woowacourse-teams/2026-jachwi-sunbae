@@ -3,11 +3,11 @@ package com.jachwisunbae.transit.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import com.jachwisunbae.transit.domain.Coordinate;
 import com.jachwisunbae.transit.domain.GtfsFeed;
 import com.jachwisunbae.transit.domain.GtfsRoute;
 import com.jachwisunbae.transit.domain.GtfsStop;
-import com.jachwisunbae.transit.domain.Seconds;
+import com.jachwisunbae.transit.domain.vo.Coordinate;
+import com.jachwisunbae.transit.domain.vo.Seconds;
 import com.jachwisunbae.transit.provider.gtfs.GtfsFeedReader;
 import com.jachwisunbae.transit.repository.GtfsNetworkRepository;
 import com.jachwisunbae.transit.service.dto.result.GtfsImportResult;

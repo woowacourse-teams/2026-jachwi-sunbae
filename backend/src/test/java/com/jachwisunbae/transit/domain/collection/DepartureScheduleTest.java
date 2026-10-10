@@ -1,7 +1,8 @@
-package com.jachwisunbae.transit.domain;
+package com.jachwisunbae.transit.domain.collection;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.jachwisunbae.transit.domain.vo.Seconds;
 import java.util.List;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;

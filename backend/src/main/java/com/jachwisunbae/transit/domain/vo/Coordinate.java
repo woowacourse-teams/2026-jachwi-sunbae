@@ -1,4 +1,4 @@
-package com.jachwisunbae.transit.domain;
+package com.jachwisunbae.transit.domain.vo;
 
 // WGS84 위도·경도다.
 public record Coordinate(double latitude, double longitude) {

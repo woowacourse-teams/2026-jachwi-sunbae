@@ -1,5 +1,6 @@
-package com.jachwisunbae.transit.domain;
+package com.jachwisunbae.transit.domain.collection;
 
+import com.jachwisunbae.transit.domain.vo.Seconds;
 import java.util.List;
 import java.util.stream.IntStream;
 

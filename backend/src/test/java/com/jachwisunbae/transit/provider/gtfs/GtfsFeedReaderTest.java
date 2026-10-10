@@ -5,13 +5,13 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.jachwisunbae.common.exception.errorcode.ErrorCode;
 import com.jachwisunbae.common.exception.server.InternalSystemException;
-import com.jachwisunbae.transit.domain.Coordinate;
 import com.jachwisunbae.transit.domain.GtfsEdge;
 import com.jachwisunbae.transit.domain.GtfsFeed;
 import com.jachwisunbae.transit.domain.GtfsRoute;
 import com.jachwisunbae.transit.domain.GtfsStop;
 import com.jachwisunbae.transit.domain.GtfsTransfer;
-import com.jachwisunbae.transit.domain.Seconds;
+import com.jachwisunbae.transit.domain.vo.Coordinate;
+import com.jachwisunbae.transit.domain.vo.Seconds;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;

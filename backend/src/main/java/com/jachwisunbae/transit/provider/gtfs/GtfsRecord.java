@@ -1,10 +1,10 @@
 package com.jachwisunbae.transit.provider.gtfs;
 
-import com.jachwisunbae.transit.domain.Coordinate;
 import com.jachwisunbae.transit.domain.GtfsRoute;
 import com.jachwisunbae.transit.domain.GtfsStop;
 import com.jachwisunbae.transit.domain.GtfsTransfer;
-import com.jachwisunbae.transit.domain.Seconds;
+import com.jachwisunbae.transit.domain.vo.Coordinate;
+import com.jachwisunbae.transit.domain.vo.Seconds;
 import org.apache.commons.csv.CSVRecord;
 
 // GTFS 파일의 한 행이다. 값을 읽어 도메인 객체로 바꾸기만 하고, 적재 대상인지는 GtfsFeedReader가 판단한다.
