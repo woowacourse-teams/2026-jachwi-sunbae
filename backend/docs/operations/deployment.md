@@ -287,33 +287,6 @@ printf '%s\n' "${REVISION}" > deployment-revision.txt
 
 출력 아티팩트 `BuildArtifact`에는 `app.jar`, `deployment-revision.txt`, `appspec.yml`, `jachwi-sunbae.service`, `scripts/**/*`가 들어간다. 이 목록을 비워두면 Deploy 단계의 입력이 저장소 원본으로 잡혀 배포가 실패한다.
 
-## GTFS 노선망 적재
-
-생활권 탐색에 쓰는 대중교통 노선망은 배포와 별도로, 운영자가 서버에서 `app.jar`를 적재 모드로 실행해 채운다. 기존 `gtfs_*` 데이터를 모두 지우고 새로 채우며, 실패하면 이전 노선망이 그대로 남는다.
-
-1. RDS에 `db/init/001-schema.sql`의 `gtfs_*` `CREATE TABLE`을 먼저 실행한다. 스키마는 자동으로 반영되지 않는다.
-2. KTDB GTFS 파일 5개(`routes.txt`, `trips.txt`, `stop_times.txt`, `stops.txt`, `transfers.txt`)를 EC2에 올리고 `jachwi` 계정이 읽을 수 있게 한다.
-3. 서비스와 같은 환경변수로 `app.jar`를 적재 모드로 실행한다.
-
-```bash
-sudo bash -c 'set -a; source /etc/jachwi-sunbae/app.env; set +a
-  runuser -u jachwi -- java -Xmx512m -jar /opt/jachwi-sunbae/app.jar \
-    --spring.main.web-application-type=none \
-    --transit.gtfs.import-on-startup=true \
-    --transit.gtfs.directory=/path/to/gtfs \
-    --logging.file.path=/var/log/jachwi-sunbae/gtfs-import'
-echo $?
-```
-
-| 옵션 | 이유 |
-| --- | --- |
-| `web-application-type=none` | 웹 서버를 띄우지 않아 서비스가 쓰는 80 포트와 겹치지 않는다 |
-| `transit.gtfs.import-on-startup=true` | `GtfsImportRunner`가 한 번 적재하고 프로세스를 끝낸다 |
-| `logging.file.path` | 서비스와 같은 로그 파일을 함께 쓰지 않도록 로그 디렉터리를 나눈다 |
-| `-Xmx512m` | 서비스 중인 애플리케이션과 같은 서버에서 도므로 힙을 따로 제한한다 |
-
-종료 코드는 성공 0, 실패 1이며 적재 건수와 실패 원인은 화면과 `/var/log/jachwi-sunbae/gtfs-import/application.log`에 남는다. 전국 데이터는 힙 512MB로 읽는 데 약 40초가 걸린다. dev(`t4g.micro`, 메모리 1GB)는 여유가 적으므로 트래픽이 없을 때 실행한다.
-
 ## 로그 확인
 
 ```bash

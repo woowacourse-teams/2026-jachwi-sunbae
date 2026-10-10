@@ -11,7 +11,9 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.stereotype.Component;
 
-// transit.gtfs.import-on-startup=true로 웹 서버 없이 애플리케이션을 띄울 때만 동작한다. (배포 문서의 GTFS 노선망 적재 참고)
+// transit.gtfs.import-on-startup=true로 애플리케이션을 띄울 때만 동작한다. 실행 예:
+// java -jar app.jar --spring.main.web-application-type=none \
+//     --transit.gtfs.import-on-startup=true --transit.gtfs.directory=<GTFS 디렉터리>
 // 노선망을 한 번 적재하고, 성공하면 0, 실패하면 1을 종료 코드로 남기고 프로세스를 끝낸다.
 @Component
 @ConditionalOnProperty(name = "transit.gtfs.import-on-startup", havingValue = "true")
