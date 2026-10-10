@@ -155,6 +155,26 @@ class GtfsFeedReaderTest {
     }
 
     @Test
+    @DisplayName("좌표가 범위를 벗어난 정류장이 있으면 파일과 줄 번호를 알리고 적재를 멈춘다")
+    void failsWhenStopCoordinateIsInvalid() throws IOException {
+        writeSingleTripFeed("""
+                trip_id,arrival_time,departure_time,stop_id,stop_sequence
+                T1,08:00:00,08:00:00,S1,1
+                T1,08:02:00,08:02:00,S2,2
+                """);
+        write("stops.txt", """
+                stop_id,stop_name,stop_lat,stop_lon
+                S1,강남역,37.49,127.02
+                S2,역삼역,127.03,37.50
+                """);
+        write("transfers.txt", "from_stop_id,to_stop_id,transfer_type,min_transfer_time\n");
+
+        assertThatThrownBy(() -> reader.read(directory))
+                .isInstanceOf(InternalSystemException.class)
+                .hasMessageContaining("stops.txt 3번째 줄");
+    }
+
+    @Test
     @DisplayName("GTFS 파일이 없으면 서버 내부 오류로 알린다")
     void failsWhenFeedFileIsMissing() {
         assertThatThrownBy(() -> reader.read(directory))

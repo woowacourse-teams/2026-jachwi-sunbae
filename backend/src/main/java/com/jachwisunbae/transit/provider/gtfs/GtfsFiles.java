@@ -1,5 +1,7 @@
 package com.jachwisunbae.transit.provider.gtfs;
 
+import com.jachwisunbae.common.exception.errorcode.ErrorCode;
+import com.jachwisunbae.common.exception.server.InternalSystemException;
 import java.io.IOException;
 import java.io.PushbackReader;
 import java.io.UncheckedIOException;
@@ -13,6 +15,7 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
+import org.apache.commons.csv.CSVRecord;
 
 public class GtfsFiles {
 
@@ -42,9 +45,20 @@ public class GtfsFiles {
     // 람다 안에서 쓰도록 IOException을 UncheckedIOException으로 바꾼다. commons-csv도 행을 읽다 실패하면 같은 예외를 던진다.
     public void forEach(final String fileName, final Consumer<GtfsRecord> consumer) {
         try (CSVParser parser = open(directory.resolve(fileName))) {
-            parser.forEach(row -> consumer.accept(new GtfsRecord(row)));
+            parser.forEach(row -> accept(fileName, row, consumer));
         } catch (IOException exception) {
             throw new UncheckedIOException(fileName + " 파일을 읽지 못했습니다.", exception);
+        }
+    }
+
+    // 컬럼이 없거나 숫자·좌표·시간 값이 잘못된 행은 파일 이름과 줄 번호를 남기고 적재를 멈춘다.
+    private void accept(final String fileName, final CSVRecord row, final Consumer<GtfsRecord> consumer) {
+        try {
+            consumer.accept(new GtfsRecord(row));
+        } catch (IllegalArgumentException exception) {
+            throw new InternalSystemException(ErrorCode.TRANSIT_FEED_READ_FAILURE,
+                    fileName + " " + (row.getRecordNumber() + 1) + "번째 줄의 값이 올바르지 않습니다. "
+                            + exception.getMessage(), exception);
         }
     }
 
