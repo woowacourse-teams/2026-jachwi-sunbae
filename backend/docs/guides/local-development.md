@@ -3,7 +3,7 @@
 ## 1. 준비물
 
 | 항목           | 기준                                       |
-|----------------|--------------------------------------------|
+| -------------- | ------------------------------------------ |
 | JDK            | Java 21                                    |
 | Docker         | MySQL·MinIO 컨테이너를 실행할 수 있는 버전 |
 | Node.js        | `frontend/.nvmrc`와 같은 버전              |
@@ -88,7 +88,7 @@ IntelliJ IDEA에서 애플리케이션이나 Gradle 작업을 직접 실행하�
 로컬 CORS는 `CORS_ALLOWED_ORIGINS=http://localhost:3000`을 사용한다.
 
 | 확인 항목    | 주소                                          |
-|--------------|-----------------------------------------------|
+| ------------ | --------------------------------------------- |
 | 서버 상태    | `http://localhost:8080/actuator/health`       |
 | Swagger UI   | `http://localhost:8080/swagger-ui/index.html` |
 | OpenAPI JSON | `http://localhost:8080/v3/api-docs`           |
@@ -122,8 +122,8 @@ npm run dev
 `JUSO_CONFIRM_KEY`, `SGIS_CONSUMER_KEY`, `SGIS_CONSUMER_SECRET`을 설정하고 백엔드를 다시 실행한다.
 
 실제 주변 시설을 확인할 때는 백엔드 `.env`에 `MAP_NEARBY_PROVIDER=kakao`와 `KAKAO_REST_API_KEY`를 설정하고 백엔드를 다시 실행한다.
-`MAP_NEARBY_PROVIDER`가 없으면 `demo` 주변 시설이 반환된다.    
-Kakao Developers 앱에 허용 IP를 설정했다면 현재 PC의 공인 IP를 등록해야 한다.    
+`MAP_NEARBY_PROVIDER`가 없으면 `demo` 주변 시설이 반환된다.  
+Kakao Developers 앱에 허용 IP를 설정했다면 현재 PC의 공인 IP를 등록해야 한다.  
 등록하지 않으면 주변 시설 조회가 503으로 실패하고 서버 로그에 `ip mismatched`가 남는다.
 
 ## 6. 검사

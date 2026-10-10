@@ -6,9 +6,7 @@
 
 ### 전체 배포 흐름
 
-
 작업 브랜치에서 PR을 생성하고 GitHub Actions의 필수 검사를 통과한 뒤 병합한다. **`develop` 병합은 dev 배포, `main` 병합은 prod 배포를 시작한다.** dev에서 검증한 변경을 `main`에 반영하면 prod 파이프라인이 같은 방식으로 빌드·배포한다.
-
 
 ```text
 작업 브랜치 → PR → GitHub Actions 필수 검사 통과
@@ -46,10 +44,10 @@ GitHub Actions는 검사, CodePipeline은 소스 조회·빌드·배포 연결, 
 
 ### 환경별 파이프라인과 대상
 
-| 환경 | 브랜치 | CodePipeline | CodeDeploy 배포 그룹 | EC2 선택 태그 |
-| --- | --- | --- | --- | --- |
-| dev | `develop` | `jachwi-sunbae-dev-line` | `jachwi-sunbae-dev-group` | `DeployTarget=jachwi-sunbae-dev` |
-| prod | `main` | `jachwi-sunbae-line` | `jachwi-sunbae-codeDeploy-group` | `DeployTarget=jachwi-sunbae-prod` |
+| 환경 | 브랜치    | CodePipeline             | CodeDeploy 배포 그룹             | EC2 선택 태그                     |
+| ---- | --------- | ------------------------ | -------------------------------- | --------------------------------- |
+| dev  | `develop` | `jachwi-sunbae-dev-line` | `jachwi-sunbae-dev-group`        | `DeployTarget=jachwi-sunbae-dev`  |
+| prod | `main`    | `jachwi-sunbae-line`     | `jachwi-sunbae-codeDeploy-group` | `DeployTarget=jachwi-sunbae-prod` |
 
 dev는 `jachwi-sunbae-dev-asg`, prod는 현재 단일 EC2를 사용한다. CodeDeploy가 태그로 대상을 선택하므로 새 인스턴스에도 환경에 맞는 태그를 지정한다.
 
@@ -63,13 +61,12 @@ dev는 `jachwi-sunbae-dev-asg`, prod는 현재 단일 EC2를 사용한다. CodeD
 
 공유 ALB의 443 리스너는 호스트로 요청을 나누며 인증서는 SNI로 함께 연결한다.
 
-| 요청 | 대상 그룹 |
-| --- | --- |
-| `dev-api.jachwi-sunbae.kr` | `jachwi-sunbae-dev-tg` |
+| 요청                                    | 대상 그룹                |
+| --------------------------------------- | ------------------------ |
+| `dev-api.jachwi-sunbae.kr`              | `jachwi-sunbae-dev-tg`   |
 | 기본 작업 — `api.jachwi-sunbae.kr` 포함 | `jachwi-sunbe-tg` (prod) |
 
 조건에 해당하지 않는 요청도 prod로 간다. dev 규칙을 수정할 때 기본 작업을 바꾸지 않는다.
-
 
 ## 2. CI와 빌드 산출물
 
@@ -79,12 +76,11 @@ GitHub Actions는 PR과 `main`·`develop` push에서 `clean build`를 실행한�
 
 Corretto 21을 준비하고 소스 SHA를 애플리케이션 빌드 정보와 `deployment-revision.txt`에 기록한다.
 
-
-| 설정 | 값 |
-| --- | --- |
-| Source 변수 네임스페이스 | `SourceVariables` |
-| Build 환경변수 | `SOURCE_COMMIT_ID=#{SourceVariables.CommitId}` |
-| 아티팩트 버킷 | `techcourse-project-2026-artifacts` |
+| 설정                     | 값                                             |
+| ------------------------ | ---------------------------------------------- |
+| Source 변수 네임스페이스 | `SourceVariables`                              |
+| Build 환경변수           | `SOURCE_COMMIT_ID=#{SourceVariables.CommitId}` |
+| 아티팩트 버킷            | `techcourse-project-2026-artifacts`            |
 
 ```bash
 REVISION="${SOURCE_COMMIT_ID:?source revision is missing}"
@@ -99,13 +95,13 @@ printf '%s\n' "${REVISION}" > deployment-revision.txt
 
 [appspec.yml](../../deploy/appspec.yml)이 순서와 제한 시간을 정의한다. 배포 경로는 `/opt/jachwi-sunbae`다.
 
-| 훅 | 처리 |
-| --- | --- |
-| `ApplicationStop` | 기존 서비스를 중지한다. 직전 리비전의 스크립트를 사용하며 첫 배포에는 실행되지 않는다 |
-| `BeforeInstall` | 배포 디렉터리를 비운다 |
-| `AfterInstall` | 환경별 Vault 도구·인증서와 `app.env`를 준비하고 사용자·권한 확인 후 systemd 유닛을 설치한다 |
-| `ApplicationStart` | `systemctl restart`로 새 애플리케이션을 실행한다 |
-| `ValidateService` | 서비스 실행, `health=UP`, 실행 SHA와 배포 SHA 일치를 확인한다 |
+| 훅                 | 처리                                                                                        |
+| ------------------ | ------------------------------------------------------------------------------------------- |
+| `ApplicationStop`  | 기존 서비스를 중지한다. 직전 리비전의 스크립트를 사용하며 첫 배포에는 실행되지 않는다       |
+| `BeforeInstall`    | 배포 디렉터리를 비운다                                                                      |
+| `AfterInstall`     | 환경별 Vault 도구·인증서와 `app.env`를 준비하고 사용자·권한 확인 후 systemd 유닛을 설치한다 |
+| `ApplicationStart` | `systemctl restart`로 새 애플리케이션을 실행한다                                            |
+| `ValidateService`  | 서비스 실행, `health=UP`, 실행 SHA와 배포 SHA 일치를 확인한다                               |
 
 과거 서비스 중지가 누락되어 `start`가 옛 프로세스를 유지하고, 그 health 응답으로 배포가 성공 처리된 경험이 있다. 이를 방지하려고 **명시적 restart와 SHA 비교**를 함께 사용한다.
 
@@ -123,12 +119,12 @@ EC2에는 Java 21, 실행 사용자 `jachwi`, CodeDeploy 에이전트와 배포 
 
 포트 변경 시 `application-prod.yml`, `validate.sh`의 확인 URL, ALB 대상 그룹을 함께 변경한다. 대상 그룹의 포트는 생성 후 변경할 수 없다.
 
-| 경로 | 권한·용도 |
-| --- | --- |
-| `/etc/jachwi-sunbae/app.env` | `0600 root:root`. systemd가 읽는 환경변수 |
-| `/etc/jachwi-sunbae/vault-ca.crt` | `0644 root:root`. Vault TLS 검증용 공개 인증서 |
-| `/etc/jachwi-sunbae/vault-ec2-nonce` | `0600 root:root`. 인스턴스별 재인증 값 |
-| `/var/log/jachwi-sunbae` | `0750 jachwi:jachwi`. 애플리케이션·종료 이벤트 로그 |
+| 경로                                 | 권한·용도                                           |
+| ------------------------------------ | --------------------------------------------------- |
+| `/etc/jachwi-sunbae/app.env`         | `0600 root:root`. systemd가 읽는 환경변수           |
+| `/etc/jachwi-sunbae/vault-ca.crt`    | `0644 root:root`. Vault TLS 검증용 공개 인증서      |
+| `/etc/jachwi-sunbae/vault-ec2-nonce` | `0600 root:root`. 인스턴스별 재인증 값              |
+| `/var/log/jachwi-sunbae`             | `0750 jachwi:jachwi`. 애플리케이션·종료 이벤트 로그 |
 
 ### 자동 재시작
 
@@ -151,10 +147,10 @@ EC2 자체의 중지·종료는 systemd로 복구할 수 없으며 ASG 구성에
 
 Vault 주소는 `https://10.0.100.209:8200`이다. KV v2의 `app_env` 필드에 환경변수 파일 전체를 저장한다.
 
-| 환경 | 스크립트 인자 | 인증 역할 / 읽기 정책 | 비밀값 경로 |
-| --- | --- | --- | --- |
-| dev | `dev` | `jachwi-dev` / `jachwi-dev-read` | `secret/jachwi-sunbae/dev` |
-| prod | `prod` | `jachwi-prod` / `jachwi-prod-read` | `secret/jachwi-sunbae/prod` |
+| 환경 | 스크립트 인자 | 인증 역할 / 읽기 정책              | 비밀값 경로                 |
+| ---- | ------------- | ---------------------------------- | --------------------------- |
+| dev  | `dev`         | `jachwi-dev` / `jachwi-dev-read`   | `secret/jachwi-sunbae/dev`  |
+| prod | `prod`        | `jachwi-prod` / `jachwi-prod-read` | `secret/jachwi-sunbae/prod` |
 
 AWS EC2 인증으로 계정·리전·VPC·서브넷과 허용 인스턴스 ID를 검사한다. 앱에는 해당 환경의 읽기만 허용하고 토큰은 최대 5분으로 제한한다. 공용 `ec2-project` IAM 역할만으로 팀을 구분하지 않으며, 공용 AWS 계정의 관리자 권한까지 격리하는 구성은 아니다.
 
@@ -237,11 +233,11 @@ MVP1 첫 dev 배포에서는 다음을 확인한다.
 
 ### 버스정류장 데이터 적재
 
-| 항목 | 기준 |
-| --- | --- |
-| 스냅샷 | `국토교통부_전국 버스정류장 위치정보_20251031.csv` |
+| 항목                   | 기준                                                        |
+| ---------------------- | ----------------------------------------------------------- |
+| 스냅샷                 | `국토교통부_전국 버스정류장 위치정보_20251031.csv`          |
 | 원본 행 / 예상 적재 행 | 227,065 / 227,053 (빈 좌표 5행, 국내 범위 밖 좌표 7행 제외) |
-| 갱신 주기 | 연 1회 수동. 새 스냅샷이 공개되면 같은 절차로 다시 적재한다 |
+| 갱신 주기              | 연 1회 수동. 새 스냅샷이 공개되면 같은 절차로 다시 적재한다 |
 
 애플리케이션은 `bus_stops`를 조회만 한다. 테이블이 없으면 교통 조회가 실패하므로 **애플리케이션 배포 전에 테이블 생성과 데이터 적재를 완료한다.**
 `develop` 병합은 dev 배포를 시작하므로 dev DB를 먼저 준비한다. dev 검증 후 prod DB도 준비하고 `main`으로 승격한다.
@@ -262,6 +258,7 @@ MVP1 첫 dev 배포에서는 다음을 확인한다.
    ```
 
    SQL은 한 트랜잭션 안에서 기존 정류장을 지우고 다시 넣는다. InnoDB에서 커밋 전 오류로 배치 실행이 중단되고 연결이 종료되면 미커밋 변경은 롤백된다. 오류 후에도 실행을 계속하는 `--force` 옵션은 사용하지 않으며, 실행이 실패하면 원인과 DB 상태를 확인한 뒤 재시도한다.
+
 5. 실제 앱 DB 계정으로 접속해 조회 권한과 적재 결과를 확인한다. 위 스냅샷은 두 값 모두 `227053`이어야 한다. 사용한 스냅샷과 결과를 배포 이슈에 기록한다.
 
    ```sql

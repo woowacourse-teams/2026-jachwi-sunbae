@@ -1,12 +1,12 @@
 # Markdown 작성 규칙
 
-개발자와 AI가 작성하는 Markdown은 저장소 루트의 Prettier 설정으로 정렬한다.    
+개발자와 AI가 작성하는 Markdown은 저장소 루트의 Prettier 설정으로 정렬한다.  
 IDE의 저장 시 자동 포맷팅은 편의 기능이며, 최종 기준은 루트에서 실행한 `npm run format:docs:check` 결과다.
 
 ## 설치와 실행
 
-Node.js는 [frontend/.nvmrc](../../frontend/.nvmrc)에 지정한 버전을 사용한다. 
-아래 명령은 모두 **저장소 루트**에서 실행한다. 
+Node.js는 [frontend/.nvmrc](../../frontend/.nvmrc)에 지정한 버전을 사용한다.
+아래 명령은 모두 **저장소 루트**에서 실행한다.
 
 최초 사용하거나 루트 의존성이 바뀌면 설치한다.
 
@@ -30,7 +30,7 @@ npm run format:docs:check
 
 ## Markdown CI
 
-[markdown-format.yml](../../.github/workflows/markdown-format.yml)의 워크플로 이름은 `Markdown CI`, 검사 이름은 `Check Markdown`이다. 
+[markdown-format.yml](../../.github/workflows/markdown-format.yml)의 워크플로 이름은 `Markdown CI`, 검사 이름은 `Check Markdown`이다.
 Backend CI, Frontend CI와 별도로 루트 의존성을 설치하고 `npm run format:docs:check`를 실행한다.
 
 - `main`, `develop` 대상 PR과 두 브랜치의 push에서 실행한다.
@@ -48,5 +48,5 @@ git diff
 npm run format:docs:check
 ```
 
-검사가 통과하면 정렬된 파일을 커밋하고 다시 push한다. `prettier`를 찾을 수 없으면 루트에서 `npm ci`를 먼저 실행한다.    
+검사가 통과하면 정렬된 파일을 커밋하고 다시 push한다. `prettier`를 찾을 수 없으면 루트에서 `npm ci`를 먼저 실행한다.  
 포맷팅 후에도 검사에 실패하면 로그에서 Markdown 구문 오류나 설치 실패 여부를 확인한다.
