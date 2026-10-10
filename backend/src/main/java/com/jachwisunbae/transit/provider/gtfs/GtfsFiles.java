@@ -8,9 +8,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
 
@@ -28,9 +28,14 @@ public class GtfsFiles {
         this.directory = directory;
     }
 
-    public <T> List<T> read(final String fileName, final Function<GtfsRecord, Optional<T>> mapper) {
+    public <T> List<T> read(final String fileName, final Predicate<GtfsRecord> filter,
+                            final Function<GtfsRecord, T> mapper) {
         List<T> rows = new ArrayList<>();
-        forEach(fileName, record -> mapper.apply(record).ifPresent(rows::add));
+        forEach(fileName, record -> {
+            if (filter.test(record)) {
+                rows.add(mapper.apply(record));
+            }
+        });
         return rows;
     }
 

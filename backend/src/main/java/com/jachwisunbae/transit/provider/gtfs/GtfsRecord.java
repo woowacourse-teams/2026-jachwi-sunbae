@@ -5,17 +5,10 @@ import com.jachwisunbae.transit.domain.GtfsRoute;
 import com.jachwisunbae.transit.domain.GtfsStop;
 import com.jachwisunbae.transit.domain.GtfsTransfer;
 import com.jachwisunbae.transit.domain.Seconds;
-import com.jachwisunbae.transit.provider.gtfs.sample.UsedStops;
-import java.util.Optional;
-import java.util.Set;
 import org.apache.commons.csv.CSVRecord;
 
+// GTFS 파일의 한 행이다. 값을 읽어 도메인 객체로 바꾸기만 하고, 적재 대상인지는 GtfsFeedReader가 판단한다.
 public class GtfsRecord {
-
-    // route_type 1은 지하철·도시철도, 3은 GTFS 표준 버스이고 KTDB 데이터는 버스에 0도 쓴다. 2(일반철도) 등은 뺀다.
-    private static final Set<String> TRANSIT_ROUTE_TYPES = Set.of("0", "1", "3");
-    // GTFS transfer_type 3은 환승할 수 없는 정류장 쌍이다.
-    private static final String TRANSFER_NOT_POSSIBLE = "3";
 
     private final CSVRecord row;
 
@@ -24,6 +17,14 @@ public class GtfsRecord {
     }
 
     public String text(final String column) {
+        return row.get(column);
+    }
+
+    // 파일에 컬럼이 없어도 되는 값은 빈 문자열로 읽는다.
+    public String optionalText(final String column) {
+        if (!row.isMapped(column)) {
+            return "";
+        }
         return row.get(column);
     }
 
@@ -39,44 +40,19 @@ public class GtfsRecord {
                 + Integer.parseInt(parts[2]);
     }
 
-    public Optional<GtfsRoute> toRoute() {
-        String routeType = text("route_type");
-        if (!TRANSIT_ROUTE_TYPES.contains(routeType)) {
-            return Optional.empty();
-        }
-        return Optional.of(new GtfsRoute(text("route_id"), text("route_short_name"), text("route_long_name"),
-                Integer.parseInt(routeType), GtfsRoute.DEFAULT_WAIT_TIME));
+    // 탑승 대기 시간은 stop_times.txt를 읽은 뒤 운행 간격으로 다시 채운다.
+    public GtfsRoute toRoute() {
+        return new GtfsRoute(text("route_id"), text("route_short_name"), text("route_long_name"),
+                integer("route_type"), GtfsRoute.DEFAULT_WAIT_TIME);
     }
 
-    public Optional<GtfsStop> toStop(final UsedStops usedStops) {
-        if (!usedStops.contains(text("stop_id"))) {
-            return Optional.empty();
-        }
+    public GtfsStop toStop() {
         Coordinate coordinate = new Coordinate(Double.parseDouble(text("stop_lat")),
                 Double.parseDouble(text("stop_lon")));
-        return Optional.of(new GtfsStop(text("stop_id"), text("stop_name"), coordinate));
+        return new GtfsStop(text("stop_id"), text("stop_name"), coordinate);
     }
 
-    public Optional<GtfsTransfer> toTransfer(final UsedStops usedStops) {
-        String from = text("from_stop_id");
-        String to = text("to_stop_id");
-        if (!usedStops.contains(from) || !usedStops.contains(to) || !hasTransferTime()) {
-            return Optional.empty();
-        }
-        Seconds transferTime = new Seconds(integer("min_transfer_time"));
-        return Optional.of(new GtfsTransfer(from, to, transferTime));
-    }
-
-    // 환승 불가(3)이거나, 0·1처럼 최소 환승 시간이 비어 있을 수 있는 유형은 걸리는 시간을 알 수 없어 쓰지 않는다.
-    private boolean hasTransferTime() {
-        return !TRANSFER_NOT_POSSIBLE.equals(optionalText("transfer_type"))
-                && !optionalText("min_transfer_time").isBlank();
-    }
-
-    private String optionalText(final String column) {
-        if (!row.isMapped(column)) {
-            return "";
-        }
-        return row.get(column);
+    public GtfsTransfer toTransfer() {
+        return new GtfsTransfer(text("from_stop_id"), text("to_stop_id"), new Seconds(integer("min_transfer_time")));
     }
 }
