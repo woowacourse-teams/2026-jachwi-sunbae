@@ -8,7 +8,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.support.TransactionTemplate;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class GtfsImportService {
@@ -16,22 +16,21 @@ public class GtfsImportService {
     private final String directory;
     private final GtfsFeedReader feedReader;
     private final GtfsNetworkRepository networkRepository;
-    private final TransactionTemplate transactionTemplate;
 
     public GtfsImportService(@Value("${transit.gtfs.directory:}") final String directory,
                              final GtfsFeedReader feedReader,
-                             final GtfsNetworkRepository networkRepository,
-                             final TransactionTemplate transactionTemplate) {
+                             final GtfsNetworkRepository networkRepository) {
         this.directory = directory;
         this.feedReader = feedReader;
         this.networkRepository = networkRepository;
-        this.transactionTemplate = transactionTemplate;
     }
 
-    // 전국 GTFS는 파일을 읽는 데 수십 초가 걸려 DB 커넥션을 오래 잡지 않도록 읽은 뒤 교체만 트랜잭션으로 묶는다.
+    // 파일을 모두 읽은 뒤 기존 노선망 삭제와 새 노선망 저장을 한 트랜잭션으로 처리한다.
+    // 읽기나 저장 중 실패하면 롤백되어 이전 노선망이 그대로 남는다.
+    @Transactional
     public GtfsImportResult importFeed() {
         GtfsFeed feed = feedReader.read(feedDirectory());
-        transactionTemplate.executeWithoutResult(status -> networkRepository.replace(feed));
+        networkRepository.replace(feed);
         return new GtfsImportResult(feed.routes().size(), feed.stops().size(),
                 feed.edges().size(), feed.transfers().size());
     }

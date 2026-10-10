@@ -17,11 +17,6 @@ import java.util.List;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
-import org.springframework.transaction.TransactionDefinition;
-import org.springframework.transaction.TransactionStatus;
-import org.springframework.transaction.support.AbstractPlatformTransactionManager;
-import org.springframework.transaction.support.DefaultTransactionStatus;
-import org.springframework.transaction.support.TransactionTemplate;
 
 class GtfsImportServiceTest {
 
@@ -46,8 +41,7 @@ class GtfsImportServiceTest {
     @Test
     @DisplayName("GTFS를 읽어 노선망을 교체하고 적재 건수를 돌려준다")
     void replacesNetworkWithFeed() {
-        GtfsImportService service = new GtfsImportService(directory.toString(), reader, repository,
-                new TransactionTemplate(new NoOpTransactionManager()));
+        GtfsImportService service = new GtfsImportService(directory.toString(), reader, repository);
 
         GtfsImportResult result = service.importFeed();
 
@@ -58,12 +52,10 @@ class GtfsImportServiceTest {
     @Test
     @DisplayName("GTFS 디렉터리가 비어 있거나 존재하지 않으면 적재하지 않는다")
     void rejectsMissingDirectory() {
-        TransactionTemplate transactionTemplate = new TransactionTemplate(new NoOpTransactionManager());
-
-        assertThatThrownBy(() -> new GtfsImportService("", reader, repository, transactionTemplate).importFeed())
+        assertThatThrownBy(() -> new GtfsImportService("", reader, repository).importFeed())
                 .isInstanceOf(IllegalStateException.class);
-        assertThatThrownBy(() -> new GtfsImportService(directory.resolve("none").toString(), reader, repository,
-                transactionTemplate).importFeed())
+        assertThatThrownBy(() -> new GtfsImportService(directory.resolve("none").toString(), reader, repository)
+                .importFeed())
                 .isInstanceOf(IllegalStateException.class);
         assertThat(repository.replacedFeeds).isEmpty();
     }
@@ -75,26 +67,6 @@ class GtfsImportServiceTest {
         @Override
         public void replace(final GtfsFeed feed) {
             replacedFeeds.add(feed);
-        }
-    }
-
-    private static class NoOpTransactionManager extends AbstractPlatformTransactionManager {
-
-        @Override
-        protected Object doGetTransaction() {
-            return new Object();
-        }
-
-        @Override
-        protected void doBegin(final Object transaction, final TransactionDefinition definition) {
-        }
-
-        @Override
-        protected void doCommit(final DefaultTransactionStatus status) {
-        }
-
-        @Override
-        protected void doRollback(final DefaultTransactionStatus status) {
         }
     }
 }
