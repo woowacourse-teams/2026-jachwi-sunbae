@@ -90,10 +90,10 @@ Scenario는 [사용자 흐름](../user-flows/README.md) 안의 **한 가지 상�
 
 자동화한 Scenario는 5개이고, 이 Scenario들이 근거로 삼는 인수 기준은 명세의 52개 중 7개다(2026-10-07 기준). 최신 값은 일괄 실행 요약의 검증 범위에서 확인한다.
 
-| ID | Flow | 상황 | 상태 |
-| --- | --- | --- | --- |
-| [F02-S01](F02-S01-property-create.md) | F02 후보 매물 등록 | 정상 매물 등록 후 재조회 | 자동화 |
-| [F02-S02](F02-S02-property-create-missing-amount.md) | F02 후보 매물 등록 | 보증금·월세 누락 등록 | 자동화 |
+| ID                                                     | Flow               | 상황                                | 상태   |
+| ------------------------------------------------------ | ------------------ | ----------------------------------- | ------ |
+| [F02-S01](F02-S01-property-create.md)                  | F02 후보 매물 등록 | 정상 매물 등록 후 재조회            | 자동화 |
+| [F02-S02](F02-S02-property-create-missing-amount.md)   | F02 후보 매물 등록 | 보증금·월세 누락 등록               | 자동화 |
 | [F02-S03](F02-S03-property-create-default-location.md) | F02 후보 매물 등록 | 주소를 고르지 않은 등록의 기본 위치 | 자동화 |
-| [F03-S01](F03-S01-property-access-other-member.md) | F03 매물 정보 관리 | 다른 회원의 매물 접근 | 자동화 |
-| [F06-S01](F06-S01-check-status-progress.md) | F06 매물 체크 기록 | 체크 상태 저장과 진행 현황 집계 | 자동화 |
+| [F03-S01](F03-S01-property-access-other-member.md)     | F03 매물 정보 관리 | 다른 회원의 매물 접근               | 자동화 |
+| [F06-S01](F06-S01-check-status-progress.md)            | F06 매물 체크 기록 | 체크 상태 저장과 진행 현황 집계     | 자동화 |
