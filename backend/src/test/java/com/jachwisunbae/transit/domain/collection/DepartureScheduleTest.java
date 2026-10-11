@@ -12,7 +12,15 @@ class DepartureScheduleTest {
     @Test
     @DisplayName("운행 간격 중앙값의 절반을 탑승 대기 시간으로 쓴다")
     void usesHalfOfMedianHeadway() {
-        DepartureSchedule schedule = new DepartureSchedule(List.of(28_800, 30_000, 31_200, 30_000));
+        DepartureSchedule schedule = new DepartureSchedule(List.of(28_800, 30_000, 31_200));
+
+        assertThat(schedule.waitTime()).isEqualTo(new Seconds(600));
+    }
+
+    @Test
+    @DisplayName("같은 시각에 출발하는 운행편은 0초 간격이 되어 1분 미만 규칙으로 제외된다")
+    void ignoresDeparturesAtSameTime() {
+        DepartureSchedule schedule = new DepartureSchedule(List.of(28_800, 30_000, 30_000, 31_200, 31_200));
 
         assertThat(schedule.waitTime()).isEqualTo(new Seconds(600));
     }
