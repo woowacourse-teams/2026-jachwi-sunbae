@@ -124,6 +124,29 @@ class GtfsFeedReaderTest {
     }
 
     @Test
+    @DisplayName("같은 정류장 쌍의 환승이 여러 번 나오면 가장 짧은 환승 시간만 남긴다")
+    void keepsShortestDuplicateTransfer() throws IOException {
+        writeSingleTripFeed("""
+                trip_id,arrival_time,departure_time,stop_id,stop_sequence
+                T1,08:00:00,08:00:00,S1,1
+                T1,08:02:00,08:02:00,S2,2
+                """);
+        write("transfers.txt", """
+                from_stop_id,to_stop_id,transfer_type,min_transfer_time
+                S1,S2,2,300
+                S1,S2,2,120
+                S2,S1,2,60
+                S1,S2,2,240
+                """);
+
+        GtfsFeed feed = reader.read(directory);
+
+        assertThat(feed.transfers()).containsExactly(
+                new GtfsTransfer("S1", "S2", new Seconds(120)),
+                new GtfsTransfer("S2", "S1", new Seconds(60)));
+    }
+
+    @Test
     @DisplayName("한 운행편의 정차 기록이 흩어져 있으면 틀린 구간을 만들지 않고 적재를 멈춘다")
     void failsWhenTripRowsAreNotContiguous() throws IOException {
         writeSingleTripFeed("""

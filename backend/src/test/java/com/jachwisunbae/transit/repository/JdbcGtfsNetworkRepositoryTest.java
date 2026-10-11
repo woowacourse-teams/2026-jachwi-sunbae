@@ -26,7 +26,9 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 class JdbcGtfsNetworkRepositoryTest {
 
     @Container
-    private static final MySQLContainer<?> MYSQL = new MySQLContainer<>("mysql:8.4.10");
+    // 운영과 같이 배치 저장을 여러 행 INSERT로 묶어 보내는 설정으로 검증한다.
+    private static final MySQLContainer<?> MYSQL = new MySQLContainer<>("mysql:8.4.10")
+            .withUrlParam("rewriteBatchedStatements", "true");
 
     private static JdbcTemplate jdbcTemplate;
     private static JdbcGtfsNetworkRepository repository;
@@ -64,21 +66,6 @@ class JdbcGtfsNetworkRepositoryTest {
                 "SELECT latitude FROM gtfs_stops WHERE stop_id = 'S1'", Double.class))
                 .isEqualTo(37.5546788);
         assertThat(jdbcTemplate.queryForObject("SELECT travel_seconds FROM gtfs_edges", Integer.class))
-                .isEqualTo(120);
-    }
-
-    @Test
-    @DisplayName("같은 정류장 쌍의 환승이 여러 번 나오면 가장 짧은 환승 시간을 남긴다")
-    void keepsShortestDuplicateTransfer() {
-        repository.replace(new GtfsFeed(
-                List.of(),
-                List.of(new GtfsStop("S1", "서울역", new Coordinate(37.55, 126.97)),
-                        new GtfsStop("S2", "시청", new Coordinate(37.56, 126.97))),
-                List.of(),
-                List.of(new GtfsTransfer("S1", "S2", new Seconds(300)), new GtfsTransfer("S1", "S2", new Seconds(120)),
-                        new GtfsTransfer("S1", "S2", new Seconds(240)))));
-
-        assertThat(jdbcTemplate.queryForObject("SELECT transfer_seconds FROM gtfs_transfers", Integer.class))
                 .isEqualTo(120);
     }
 }

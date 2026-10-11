@@ -10,6 +10,7 @@ import com.jachwisunbae.transit.provider.gtfs.aggregation.StopTimeAccumulator;
 import java.io.UncheckedIOException;
 import java.nio.file.Path;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -44,8 +45,8 @@ public class GtfsFeedReader {
                 .toList();
         List<GtfsStop> stops = files.read("stops.txt",
                 record -> usedStopIds.contains(record.text("stop_id")), GtfsRecord::toStop);
-        List<GtfsTransfer> transfers = files.read("transfers.txt",
-                record -> isUsableTransfer(record, usedStopIds), GtfsRecord::toTransfer);
+        List<GtfsTransfer> transfers = shortestPerStopPair(files.read("transfers.txt",
+                record -> isUsableTransfer(record, usedStopIds), GtfsRecord::toTransfer));
         return new GtfsFeed(routesWithWaitTime, stops, stopTimes.medianEdges(), transfers);
     }
 
@@ -86,5 +87,20 @@ public class GtfsFeedReader {
                 && usedStopIds.contains(record.text("to_stop_id"))
                 && !TRANSFER_NOT_POSSIBLE.equals(record.optionalText("transfer_type"))
                 && !record.optionalText("min_transfer_time").isBlank();
+    }
+
+    // transfers.txt에 같은 정류장 쌍이 여러 번 나오면 가장 짧은 환승 시간을 남긴다.
+    private List<GtfsTransfer> shortestPerStopPair(final List<GtfsTransfer> transfers) {
+        Map<List<String>, GtfsTransfer> transfersByStopPair = new LinkedHashMap<>();
+        transfers.forEach(transfer -> transfersByStopPair.merge(
+                List.of(transfer.fromStopId(), transfer.toStopId()), transfer, GtfsFeedReader::shorter));
+        return List.copyOf(transfersByStopPair.values());
+    }
+
+    private static GtfsTransfer shorter(final GtfsTransfer current, final GtfsTransfer candidate) {
+        if (candidate.transferTime().value() < current.transferTime().value()) {
+            return candidate;
+        }
+        return current;
     }
 }

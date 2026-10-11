@@ -36,7 +36,8 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 class GtfsImportServiceTransactionTest {
 
     @Container
-    private static final MySQLContainer<?> MYSQL = new MySQLContainer<>("mysql:8.4.10");
+    private static final MySQLContainer<?> MYSQL = new MySQLContainer<>("mysql:8.4.10")
+            .withUrlParam("rewriteBatchedStatements", "true");
 
     private static final GtfsFeed EXISTING_FEED = new GtfsFeed(
             List.of(new GtfsRoute("OLD", "구노선", "구노선", 3, new Seconds(300))),

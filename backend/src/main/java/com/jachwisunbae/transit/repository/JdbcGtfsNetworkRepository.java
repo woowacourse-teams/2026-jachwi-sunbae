@@ -73,13 +73,10 @@ public class JdbcGtfsNetworkRepository implements GtfsNetworkRepository {
         });
     }
 
-    // transfers.txt에 같은 정류장 쌍이 여러 번 나오면 가장 짧은 환승 시간을 남긴다.
     private void insertTransfers(final List<GtfsTransfer> transfers) {
         String sql = """
                 INSERT INTO gtfs_transfers (from_stop_id, to_stop_id, transfer_seconds)
-                VALUES (?, ?, ?) AS incoming
-                ON DUPLICATE KEY UPDATE
-                    transfer_seconds = LEAST(gtfs_transfers.transfer_seconds, incoming.transfer_seconds)
+                VALUES (?, ?, ?)
                 """;
         jdbcTemplate.batchUpdate(sql, transfers, BATCH_SIZE, (statement, transfer) -> {
             statement.setString(1, transfer.fromStopId());
