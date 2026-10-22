@@ -74,43 +74,13 @@ const renderRoutes = (path: string) => {
 };
 
 describe('닉네임 인증 흐름', () => {
-  it('비인증 사용자도 동네 찾기 시안과 공통 하단탭을 볼 수 있다', async () => {
+  it('비인증 사용자도 동네 찾기 시안을 바텀탭 없이 볼 수 있다', async () => {
     renderRoutes('/neighborhoods');
 
     expect(await screen.findByRole('heading', { name: '자취할 동네를 찾아보세요' })).toBeInTheDocument();
-    expect(screen.getByRole('navigation', { name: '주요 메뉴' })).toBeInTheDocument();
+    expect(screen.queryByRole('navigation', { name: '주요 메뉴' })).not.toBeInTheDocument();
     expect(screen.queryByRole('textbox', { name: '이름 또는 닉네임' })).not.toBeInTheDocument();
   });
-  it('공개 소개 화면에서 핵심 가치와 사용 방법을 확인하고 닉네임 시작 화면으로 이동한다', async () => {
-    const user = userEvent.setup();
-    renderRoutes('/intro');
-
-    expect(
-      await screen.findByRole('heading', {
-        name: /집은 짧게 보지만,\s*놓친 문제는 매일 반복됩니다\.\s*돈을 잃지 않는 방을 고르세요\./,
-      }),
-    ).toBeInTheDocument();
-    expect(screen.getByText('집을 구하는 사람을 위한 · 매물의 기록과 관리')).toBeInTheDocument();
-    expect(screen.getByText('매물의 기록과 관리 · 후보 매물 A')).toBeInTheDocument();
-    expect(screen.getByText('매물의 기록과 관리 순서')).toBeInTheDocument();
-    expect(screen.getByText('2년이면 120만원')).toBeInTheDocument();
-    expect(screen.getByText('사진 4장')).toBeInTheDocument();
-    expect(screen.getByText('5/8 확인')).toBeInTheDocument();
-    expect(
-      screen.getByRole('heading', {
-        name: '방을 등록하고, 돈이 새는 질문부터 확인하고, 마지막에 비교하세요.',
-      }),
-    ).toBeInTheDocument();
-    expect(screen.getByText('지도나 주소로 매물 등록')).toBeInTheDocument();
-    expect(screen.getByText('돈 새는 질문부터 기록')).toBeInTheDocument();
-    expect(screen.getByText('후보 매물 전체를 PDF로 비교')).toBeInTheDocument();
-    expect(screen.getByText('자취선배는 계약 후를 살아갈 임차인의 편입니다.')).toBeInTheDocument();
-    expect(screen.queryByRole('textbox', { name: '이름 또는 닉네임' })).not.toBeInTheDocument();
-
-    await user.click(screen.getByRole('link', { name: '내 방에서 돈 새는 곳 확인하기' }));
-    expect(await screen.findByRole('heading', { name: '자취선배 시작하기' })).toBeInTheDocument();
-  });
-
   it('비인증 사용자에게 닉네임과 선택 비밀번호 입력을 표시한다', () => {
     renderRoutes('/login');
 
@@ -165,11 +135,11 @@ describe('닉네임 인증 흐름', () => {
     expect(screen.queryByRole('link', { name: '자취선배 소개' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: '사용 안내 다시 보기' })).not.toBeInTheDocument();
   });
-  it('로그인한 사용자는 랜딩에 들어와도 매물 목록으로 이동한다', async () => {
+  it('로그인한 사용자는 랜딩에 들어와도 홈으로 이동한다', async () => {
     setAuthentication({ accessToken: 'valid-token', tokenType: 'Bearer', expiresIn: 60 });
     server.use(http.get(`${config.apiBaseUrl}/api/members/me`, () => HttpResponse.json(successEnvelope(member))));
     renderRoutes('/landing');
-    expect(await screen.findByRole('heading', { name: '내 매물' })).toBeInTheDocument();
+    expect(await screen.findByRole('region', { name: '자취선배 주요 기능' })).toBeInTheDocument();
     expect(screen.queryByRole('heading', { name: '이렇게 사용해요' })).not.toBeInTheDocument();
   });
   it('소개는 로그인 없이 별도 주소에서 볼 수 있다', async () => {
@@ -185,7 +155,7 @@ describe('닉네임 인증 흐름', () => {
     expect(await screen.findByRole('button', { name: '이름으로 시작하기' })).toBeInTheDocument();
     expect(screen.getByTestId('route-path')).toHaveTextContent('/login');
   });
-  it('공개 탐색 후 로그인해도 등록 폼이 아닌 매물 목록으로 이동한다', async () => {
+  it('공개 탐색 후 로그인해도 등록 폼이 아닌 홈으로 이동한다', async () => {
     const user = userEvent.setup();
     startExploration('commute', true);
     completeExploration(3);
@@ -213,12 +183,12 @@ describe('닉네임 인증 흐름', () => {
     renderRoutes('/login');
     await user.type(screen.getByRole('textbox', { name: '이름 또는 닉네임' }), '로컬시안');
     await user.click(screen.getByRole('button', { name: '이름으로 시작하기' }));
-    expect(await screen.findByRole('heading', { name: '내 매물' })).toBeInTheDocument();
-    expect(screen.getByTestId('route-path')).toHaveTextContent('/properties');
+    expect(await screen.findByRole('region', { name: '자취선배 주요 기능' })).toBeInTheDocument();
+    expect(screen.getByTestId('route-path')).toHaveTextContent(/^\/$/);
     expect(screen.queryByLabelText(/보증금 입력/)).not.toBeInTheDocument();
   });
 
-  it('비밀번호 없이 닉네임으로 시작해 토큰을 저장하고 매물 목록으로 이동한다', async () => {
+  it('비밀번호 없이 닉네임으로 시작해 토큰을 저장하고 홈으로 이동한다', async () => {
     const user = userEvent.setup();
     let loginRequest: unknown;
     server.use(
@@ -239,7 +209,7 @@ describe('닉네임 인증 흐름', () => {
     await user.type(screen.getByRole('textbox', { name: '이름 또는 닉네임' }), '자취초보');
     await user.click(screen.getByRole('button', { name: '이름으로 시작하기' }));
 
-    expect(await screen.findByRole('heading', { name: '내 매물' })).toBeInTheDocument();
+    expect(await screen.findByRole('region', { name: '자취선배 주요 기능' })).toBeInTheDocument();
     expect(loginRequest).toEqual({ nickname: '자취초보' });
     expect(getAccessToken()).toBe('nickname-access-token');
   });
@@ -266,7 +236,7 @@ describe('닉네임 인증 흐름', () => {
     await user.type(screen.getByLabelText(/비밀번호/), 'room-safe-2026');
     await user.click(screen.getByRole('button', { name: '이름으로 시작하기' }));
 
-    expect(await screen.findByRole('heading', { name: '내 매물' })).toBeInTheDocument();
+    expect(await screen.findByRole('region', { name: '자취선배 주요 기능' })).toBeInTheDocument();
     expect(loginRequest).toEqual({ nickname: '안전한방', password: 'room-safe-2026' });
   });
 
@@ -323,7 +293,7 @@ describe('닉네임 인증 흐름', () => {
 
     renderRoutes('/');
 
-    expect(await screen.findByRole('heading', { name: '내 매물' })).toBeInTheDocument();
+    expect(await screen.findByRole('region', { name: '자취선배 주요 기능' })).toBeInTheDocument();
   });
 
   it('현재 회원 조회가 401이면 토큰을 지우고 시작 화면으로 이동한다', async () => {
@@ -358,7 +328,7 @@ describe('닉네임 인증 흐름', () => {
     server.use(http.get(`${config.apiBaseUrl}/api/members/me`, () => HttpResponse.json(successEnvelope(member))));
     renderRoutes('/');
 
-    await user.click(await screen.findByRole('link', { name: '마이' }));
+    await user.click(await screen.findByRole('link', { name: '마이페이지' }));
     await user.click(await screen.findByRole('button', { name: '로그아웃' }));
 
     expect(await screen.findByRole('button', { name: '이름으로 시작하기' })).toBeInTheDocument();

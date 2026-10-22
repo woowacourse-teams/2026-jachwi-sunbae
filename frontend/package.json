@@ -1,6 +1,6 @@
 {
   "name": "2026-jachwi-sunbae",
-  "version": "2.0.1",
+  "version": "2.1.0",
   "description": "",
   "main": "main.js",
   "directories": {
@@ -19,7 +19,9 @@
     "storybook": "storybook dev -p 6006",
     "storybook:build": "storybook build",
     "format": "prettier . --write --ignore-unknown",
-    "format:check": "prettier . --check --ignore-unknown"
+    "format:check": "prettier . --check --ignore-unknown",
+    "test:mutation": "stryker run",
+    "test:mutation:changed": "node scripts/mutation-changed.mjs"
   },
   "keywords": [],
   "author": "",
@@ -40,6 +42,8 @@
     "@eslint/js": "10.0.1",
     "@storybook/addon-a11y": "^10.6.1",
     "@storybook/react-webpack5": "^10.6.1",
+    "@stryker-mutator/core": "^10.0.0",
+    "@stryker-mutator/vitest-runner": "^10.0.0",
     "@testing-library/jest-dom": "^7.0.1",
     "@testing-library/react": "^16.3.2",
     "@testing-library/user-event": "^14.6.3",
@@ -59,6 +63,9 @@
     "prettier": "3.9.6",
     "storybook": "^10.6.1",
     "style-loader": "^4.0.0",
+    "topojson-client": "^3.1.0",
+    "topojson-server": "^3.0.1",
+    "topojson-simplify": "^3.0.3",
     "typescript": "6.0.3",
     "typescript-eslint": "8.65.0",
     "vitest": "^4.1.10",

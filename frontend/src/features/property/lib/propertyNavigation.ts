@@ -1,10 +1,20 @@
-export type PropertyReturnPath = '/map' | '/properties';
+import { HOME_PATH, RECORDS_PATH } from '@/shared/lib/navigation/appPaths';
 
-/** 상세 직접 진입은 목록으로, 지도 카드에서 진입한 경우에는 지도로 돌아간다. */
-export const getPropertyReturnPath = (state: unknown): PropertyReturnPath =>
-  typeof state === 'object' && state !== null && 'returnTo' in state && state.returnTo === '/map'
-    ? '/map'
-    : '/properties';
+export type PropertyReturnPath = '/map' | typeof HOME_PATH | typeof RECORDS_PATH;
+
+/**
+ * 홈·지도에서 진입한 경우에는 진입한 화면으로 돌아간다.
+ * 직접 진입은 `fallback`(기본: 기록 화면)으로 돌아간다. 지도 주소(`/map/:propertyId`)로 연 상세는 지도로 돌아간다.
+ */
+export const getPropertyReturnPath = (
+  state: unknown,
+  fallback: PropertyReturnPath = RECORDS_PATH,
+): PropertyReturnPath => {
+  if (typeof state !== 'object' || state === null || !('returnTo' in state)) return fallback;
+  if (state.returnTo === '/map' || state.returnTo === HOME_PATH || state.returnTo === RECORDS_PATH)
+    return state.returnTo;
+  return fallback;
+};
 
 export const getPropertyReturnState = (state: unknown): unknown =>
   typeof state === 'object' && state !== null && 'returnState' in state ? state.returnState : undefined;

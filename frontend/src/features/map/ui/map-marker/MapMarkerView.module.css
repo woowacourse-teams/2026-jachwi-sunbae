@@ -26,7 +26,7 @@ button.clusterMarker::before {
   content: '';
 }
 
-/* 검정 물방울 핀 안에 대표 사진 또는 오리 로고를 표시한다. */
+/* 파란 물방울 핀 안에 자취선배 로고를 표시한다. */
 .propertyMarker {
   z-index: 8;
   width: calc(2.35rem * var(--map-marker-scale, 1));
@@ -42,13 +42,68 @@ button.clusterMarker::before {
   z-index: 1;
 }
 
+.markerSummaryCard {
+  position: absolute;
+  z-index: 3;
+  left: 50%;
+  bottom: calc(100% + 0.45rem);
+  display: grid;
+  box-sizing: border-box;
+  width: 6.5rem;
+  height: 2.8rem;
+  padding: 0.3rem 0.25rem;
+  overflow: hidden;
+  border: 1px solid #d8dbe0;
+  border-radius: 1.05rem;
+  background: #fff;
+  box-shadow: 0 0.3rem 0.85rem rgb(25 30 40 / 24%);
+  color: #25282d;
+  text-align: center;
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+.markerSummaryCard::after {
+  position: absolute;
+  bottom: -0.6rem;
+  left: calc(50% - 0.3rem);
+  width: 0.55rem;
+  height: 0.55rem;
+  border-right: 1px solid #d8dbe0;
+  border-bottom: 1px solid #d8dbe0;
+  background: #fff;
+  content: '';
+  transform: rotate(45deg);
+}
+
+.markerSummaryCard strong,
+.markerSummaryCard small {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.markerSummaryCard strong {
+  font-size: 0.78rem;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.markerSummaryCard small {
+  color: #626975;
+  font-size: 0.66rem;
+  line-height: 1.3;
+}
+
 .propertyMarker::before,
 .selectedMarker::before {
   position: absolute;
   z-index: 0;
   inset: 0;
   border-radius: 50% 50% 50% 0;
-  background: var(--color-ink, #212124);
+  background: var(--color-brand-blue, #6b9ae6);
   content: '';
   transform: rotate(-45deg);
   pointer-events: none;
@@ -59,7 +114,7 @@ button.clusterMarker::before {
   position: relative;
   z-index: 1;
   box-sizing: border-box;
-  border: 2px solid var(--color-ink, #212124);
+  border: 2px solid var(--color-brand-blue, #6b9ae6);
 }
 
 .propertyMarker.activeMarker .markerPhoto,
@@ -134,9 +189,9 @@ button.clusterMarker::before {
   z-index: 8;
   width: calc(2.35rem * var(--map-marker-scale, 1));
   height: calc(2.35rem * var(--map-marker-scale, 1));
-  border: 2px solid var(--color-ink, #212124);
+  border: 2px solid var(--color-brand-blue, #6b9ae6);
   border-radius: 0.6rem;
-  background: var(--color-ink, #212124);
+  background: var(--color-brand-blue, #6b9ae6);
 }
 
 .propertyClusterMarker .markerCount {

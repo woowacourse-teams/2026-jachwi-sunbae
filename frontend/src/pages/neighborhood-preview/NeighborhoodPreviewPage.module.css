@@ -19,8 +19,47 @@
   bottom: calc(env(safe-area-inset-bottom) + 15rem);
 }
 .mapSearch {
+  display: flex;
   width: 100%;
   min-width: 0;
+  align-items: center;
+  gap: 0.5rem;
+}
+.mapSearch > :last-child {
+  flex: 1;
+}
+.mapBack {
+  display: grid;
+  flex: none;
+  box-sizing: border-box;
+  width: 2.75rem;
+  height: 2.75rem;
+  padding: 0;
+  place-items: center;
+  border: 1px solid #e3e5e9;
+  border-radius: 50%;
+  background: white;
+  box-shadow: 0 2px 10px #00000018;
+  color: #383c43;
+  cursor: pointer;
+}
+/* 데스크탑 헤더 안에서는 그림자 없이 회색 칸으로 둔다. */
+.headerMapSearch {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  align-items: center;
+  gap: 0.5rem;
+}
+.headerMapSearch > :last-child {
+  flex: 1;
+  background: var(--color-card-surface);
+  box-shadow: none;
+}
+.headerMapSearch .mapBack {
+  width: 2.5rem;
+  height: 2.5rem;
+  box-shadow: none;
 }
 .mapOption {
   width: 100%;
@@ -408,31 +447,11 @@
   color: var(--color-muted);
 }
 .areaCards {
-  display: flex;
-  gap: 0.55rem;
-  overflow-x: auto;
-  scroll-snap-type: x proximity;
-  scroll-padding-inline: 0.5rem;
   padding: 0 0.5rem 0.5rem;
-  scrollbar-width: none;
-  cursor: grab;
-  user-select: none;
-  touch-action: pan-x pan-y;
-}
-.areaCards[data-dragging='true'] {
-  cursor: grabbing;
-  scroll-snap-type: none;
-}
-.areaCards[data-dragging='true'] .areaCard {
-  cursor: grabbing;
-}
-.areaCards::-webkit-scrollbar {
-  display: none;
+  scroll-padding-inline: 0.5rem;
 }
 .areaCard {
   flex: 0 0 8.5rem;
-  cursor: grab;
-  scroll-snap-align: start;
 }
 .resultControls {
   position: absolute;
@@ -547,7 +566,7 @@
   background: white;
   box-shadow: 0 0.2rem 0.6rem rgb(0 0 0 / 8%);
 }
-.searchHeader[data-tutorial-step='location'] .activeSearchField {
+[data-tutorial-step='location'] > .activeSearchField {
   outline: 2px solid var(--color-brand-yellow);
   outline-offset: 2px;
 }
@@ -753,4 +772,11 @@
   background: white;
   border-radius: 0.75rem;
   font-size: 0.8rem;
+}
+/* 분석 중·실패 화면은 지도를 없애지 않고 덮는다. 지도는 뒤에서 계속 준비된다. */
+.mapOverlay {
+  position: absolute;
+  inset: 0;
+  z-index: 40;
+  background: var(--color-surface, #fff);
 }

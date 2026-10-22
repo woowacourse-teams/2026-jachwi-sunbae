@@ -25,32 +25,35 @@ const TopNavigation = ({
   navigationIcon = 'arrow-left',
   endSlot,
   className,
-}: TopNavigationProps) => (
-  <header
-    className={`${styles.root} ${className ?? ''}`}
-    data-has-back={backTo !== undefined || onBack !== undefined ? 'true' : 'false'}
-  >
-    <div className={styles.leading}>
-      {onBack !== undefined ? (
-        <button className={styles.backLink} type="button" aria-label={backLabel} onClick={onBack}>
-          <Icon name={navigationIcon} size={21} />
-        </button>
-      ) : backTo !== undefined ? (
-        <Link className={styles.backLink} to={backTo} aria-label={backLabel}>
-          <Icon name={navigationIcon} size={21} />
-        </Link>
-      ) : null}
-      <h1 className={styles.title} title={title}>
-        {title}
-      </h1>
-    </div>
-    {(meta !== undefined || endSlot !== undefined) && (
-      <div className={styles.endSlot}>
-        {meta !== undefined && <span className={styles.meta}>{meta}</span>}
-        {endSlot}
+}: TopNavigationProps) => {
+  const backPath = backTo;
+  return (
+    <header
+      className={`${styles.root} ${className ?? ''}`}
+      data-has-back={backTo !== undefined || onBack !== undefined ? 'true' : 'false'}
+    >
+      <div className={styles.leading}>
+        {onBack !== undefined ? (
+          <button className={styles.backLink} type="button" aria-label={backLabel} onClick={onBack}>
+            <Icon name={navigationIcon} size={21} />
+          </button>
+        ) : backPath !== undefined ? (
+          <Link className={styles.backLink} to={backPath} aria-label={backLabel}>
+            <Icon name={navigationIcon} size={21} />
+          </Link>
+        ) : null}
+        <h1 className={styles.title} title={title}>
+          {title}
+        </h1>
       </div>
-    )}
-  </header>
-);
+      {(meta !== undefined || endSlot !== undefined) && (
+        <div className={styles.endSlot}>
+          {meta !== undefined && <span className={styles.meta}>{meta}</span>}
+          {endSlot}
+        </div>
+      )}
+    </header>
+  );
+};
 
 export default TopNavigation;

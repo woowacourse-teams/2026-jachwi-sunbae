@@ -1,78 +1,133 @@
 .page {
-  display: grid;
   min-height: 100svh;
-  place-items: stretch center;
-  background: var(--color-canvas);
+  background: var(--color-surface);
+  color: var(--color-ink);
 }
 
-.card {
+/* 글자 크기는 당근 로그인(SEED 디자인 시스템)의 제목 26px·본문 16px·버튼 18px·보조 14px에 맞춘다.
+ * 모든 화면에서 한 열을 가로 가운데에 두고, 로고·안내 카드·입력을 위에서부터 쌓는다. */
+.layout {
   display: flex;
-  width: min(100%, var(--app-max-width));
+  width: min(100%, 29rem);
   min-height: 100svh;
+  box-sizing: border-box;
   flex-direction: column;
-  justify-content: center;
-  padding: 2rem 1.25rem;
-  background: var(--color-canvas);
+  margin: 0 auto;
+  padding: max(0.85rem, env(safe-area-inset-top)) 1.75rem max(1.25rem, env(safe-area-inset-bottom));
 }
 
-.heroLogo {
+/* 노란 안내 카드는 로고 바로 아래에 두고, 개인정보 안내만 화면 맨 아래로 민다. */
+.content {
+  margin-top: 1.2rem;
+  padding-bottom: 1.5rem;
+}
+
+.topBar {
   display: flex;
   align-items: center;
-  justify-content: center;
-  margin-bottom: 2rem;
 }
 
-.heroLogo img {
+.logo {
   display: block;
-  width: auto;
-  height: 9.5rem;
-  max-width: 100%;
-  object-fit: contain;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 0.75rem;
 }
 
-.actions {
-  display: grid;
-  gap: 0.85rem;
+.intro {
+  position: relative;
+  overflow: hidden;
+  min-height: 12rem;
+  padding: 1.35rem 1.15rem;
+  border-radius: var(--radius-card);
+  background: var(--color-card-brand-surface);
+  color: var(--color-on-card-accent);
 }
 
-/* 라벨을 입력칸 위가 아니라 왼쪽에 세운다. */
-.inlineField {
-  grid-template-columns: 7rem minmax(0, 1fr);
-  align-items: center;
-  column-gap: 0.75rem;
-  row-gap: 0.25rem;
-}
-
-.inlineField > label {
-  font-size: 0.82rem;
-}
-
-/* 도움말·오류는 입력칸 아래에만 붙인다. */
-.inlineField > p {
-  grid-column: 2;
+.introTitle {
+  position: relative;
+  z-index: 1;
   margin: 0;
+  font-size: 1.625rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 2.1875rem;
+}
+
+.introDescription {
+  position: relative;
+  z-index: 1;
+  max-width: 14.5rem;
+  margin: 0.5rem 0 0;
+  font-size: 1rem;
+  font-weight: 400;
+  line-height: 1.5rem;
+  opacity: 0.95;
+  word-break: keep-all;
+}
+
+/* 사용방법 카드처럼 오리가 카드 아래에서 고개를 내민다. 그림의 잘린 오른쪽 끝은 카드 밖으로 숨긴다. */
+.introGoose {
+  position: absolute;
+  right: -1rem;
+  bottom: -2.6rem;
+  width: 5.6rem;
+  height: auto;
+  pointer-events: none;
+  animation: goose-peek 640ms cubic-bezier(0.34, 1.4, 0.64, 1) 300ms 1 backwards;
+}
+
+@keyframes goose-peek {
+  from {
+    transform: translateY(110%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  margin-top: 4.5rem;
+}
+
+/* 두 칸을 좁은 간격으로 가까이 붙여 한 묶음으로 보이게 한다. */
+.credentials {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.credential > label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
 }
 
 .sharedWarning {
+  display: flex;
+  gap: 0.45rem;
+  align-items: flex-start;
   margin: 0;
-  padding: 0.65rem 0.85rem;
-  border-radius: var(--radius-sm);
-  background: var(--color-surface-muted);
+  padding: 0 0.25rem;
   color: var(--color-muted);
-  font-size: 0.78rem;
-  line-height: 1.45;
-  text-align: left;
+  font-size: 0.875rem;
+  line-height: 1.1875rem;
+  word-break: keep-all;
 }
 
-.loginButton {
-  min-height: 3.2rem;
-  border-radius: var(--radius-md);
-  font-size: 0.88rem;
-  font-weight: 700;
+.sharedWarning svg {
+  flex: none;
+  margin-top: 0.1rem;
 }
 
-.loginButton:hover:not(:disabled) {
-  transform: translateY(-1px);
+/* 시작 버튼은 입력 아래에 조금 띄워 두고, 공유 안내보다 위에 둔다. */
+.footer {
+  margin-top: 0.75rem;
 }
 
 .loginButton:disabled {
@@ -81,28 +136,21 @@
 }
 
 .agreement {
-  margin: 0.5rem auto 0;
+  margin: auto auto 0;
   color: var(--color-placeholder);
-  font-size: 0.75rem;
-  line-height: 1.5;
+  font-size: 0.875rem;
+  line-height: 1.1875rem;
   text-align: center;
 }
 
 .agreement a {
-  color: var(--color-primary-dark);
+  color: var(--color-ink);
   font-weight: 700;
   text-decoration: underline;
 }
 
-@media (min-width: 700px) {
-  .page {
-    padding: 1.5rem 1rem;
-    place-items: center;
-  }
-
-  .card {
-    min-height: auto;
-    border-radius: var(--radius-lg);
-    box-shadow: var(--shadow-app-shell);
+@media (prefers-reduced-motion: reduce) {
+  .introGoose {
+    animation: none;
   }
 }

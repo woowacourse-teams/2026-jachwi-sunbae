@@ -114,6 +114,8 @@ assets/jachwi-sunbae-logo.2e4dac46707736dbc407.png
 
 `publish.sh`는 해시가 붙은 JS·CSS·이미지에 `Cache-Control: public,max-age=31536000,immutable`을 설정한다. 내용이 바뀌면 URL도 바뀌므로 1년 동안 다시 검증하지 않아도 이전 버전과 충돌하지 않는다. 반면 `index.html`은 `Cache-Control: no-cache,max-age=0,must-revalidate`로 올려 매번 최신 해시 파일명을 재검증한다.
 
+파비콘처럼 `index.html`이 직접 가리키는 이미지도 `public/`에 두지 않고 템플릿에서 `require`로 불러와 해시 파일명으로 내보낸다. `public/`은 개발 서버에서만 제공되고 운영 `dist`로 복사되지 않으며, 해시 없는 파일은 위 1년 캐시 때문에 바꿔도 반영되지 않는다.
+
 개발 빌드에는 해시를 붙이지 않는다. 파일명이 매번 바뀌면 dev-server의 HMR이 불편하다.
 
 ## 배포 성공 판정
@@ -136,13 +138,17 @@ assets/jachwi-sunbae-logo.2e4dac46707736dbc407.png
 
 ## SPA 폴백
 
-react-router의 클라이언트 라우팅을 쓴다. `/intro`, `/properties/1`, `/map` 같은 경로는 S3에 실제 객체가 없으므로, CloudFront에서 403·404 응답을 `/index.html`(상태 200)로 매핑해야 한다.
+react-router의 클라이언트 라우팅을 쓴다. `/landing`, `/properties/1`, `/map` 같은 경로는 S3에 실제 객체가 없으므로, CloudFront에서 403·404 응답을 `/index.html`(상태 200)로 매핑해야 한다.
 
-이게 없으면 소개 QR의 `/intro` 직접 진입과 매물·지도 화면 새로고침이 깨진다.
+이게 없으면 광고 링크의 `/landing` 직접 진입과 매물·지도 화면 새로고침이 깨진다.
 
 ## 행정동 경계 자산
 
 원본은 `frontend/data/admin-dongs.geojson`입니다. Webpack 빌드가 내용 해시 파일명, gzip 파일, `dist/boundaries/manifest.json`을 자동 생성합니다. 프론트는 고정 manifest URL만 사용합니다. 경계는 초기 JS 번들에 포함되지 않으며 조회 시 다운로드합니다.
+
+빌드에서 시도 코드(행정동 코드 앞 두 자리)마다 파일을 하나씩 생성하고 `manifest.files`에 시도 코드를 키로 기록합니다. 통근 검색 결과에 나온 시도 파일만 병렬로 받으며 파일별 해시를 캐시 키로 사용합니다. 구 앱/manifest 호환용 `manifest.file`과 전국 파일도 유지합니다. 따라서 배포에는 분할 파일과 전국 파일 모두 포함되어야 합니다. `publish.sh`의 `*.geojson.gz` 업로드가 분할 파일도 포함하므로 별도 AWS 설정 변경은 필요하지 않습니다. 법정동 자산은 이 분할의 대상이 아닙니다.
+
+지역별 파일에는 빌드에서 계산한 줌별 단순화 정점 인덱스(`lod`)도 포함됩니다. 원본 좌표와 함께 같은 해시 파일에 배포되므로 별도 LOD URL이나 무효화 경로는 없습니다. 개발 의존성의 `topojson-server`, `topojson-client`, `topojson-simplify`가 빌드 시 필요하며 브라우저에서 단순화하지 않습니다. 표시 등급과 보호 기준은 [통근 지도 행정동 경계](commute-boundaries.md#줌별-경계-정밀도)를 참고합니다.
 
 `publish.sh`는 일반 sync에서 `boundaries/*`를 제외하고 gzip 데이터를 동일한 `.geojson` 키에 `Content-Encoding: gzip`, `Content-Type: application/geo+json`, 1년 immutable 캐시로 먼저 업로드합니다. 원본이 약 28.65MB여서 CloudFront 자동 압축 크기 제한에 의존하지 않습니다. manifest는 경계 업로드 후 `no-cache,max-age=0,must-revalidate`로 교체하고 `/boundaries/manifest.json`을 무효화합니다. 이전 해시 경계 파일은 자동 삭제하지 않으며 사용 여부를 확인한 뒤 별도 정리합니다. 이 스크립트 변경만으로 AWS 배포가 실행되는 것은 아닙니다.
 

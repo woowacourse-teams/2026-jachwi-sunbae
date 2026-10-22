@@ -6,6 +6,7 @@ import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { beforeEach, expect, it, vi } from 'vitest';
 
 import { commuteBoundaryFixtures } from '@/app/mocks/fixtures/commuteBoundaryFixtures';
+import { successEnvelope } from '@/app/mocks/fixtures/propertyFixtures';
 import { createCommuteAreaHandlers } from '@/app/mocks/handlers/commuteAreaHandlers';
 import NeighborhoodEntryPage from '@/pages/neighborhood-entry/NeighborhoodEntryPage';
 import NeighborhoodPreviewPage from '@/pages/neighborhood-preview/NeighborhoodPreviewPage';
@@ -29,30 +30,39 @@ vi.mock('@/features/map/lib/mapLocation', async (importOriginal) => ({
   readGeolocationPermission: vi.fn(),
   requestCurrentMapLocation: vi.fn(),
 }));
-vi.mock('@/features/map/ui/map-canvas/MapCanvas', () => ({
-  default: (props: MapCanvasProps) => (
-    <div>
-      <button onClick={() => props.onSelectLocation?.(37.4, 127.12)}>지도에서 위치 찍기</button>
-      {props.onSelectLocation && (
-        <button onClick={() => props.onSelectLocation?.(37.45, 127.15)}>다른 위치 찍기</button>
-      )}
-      <output aria-label="지도 시점">{JSON.stringify({ center: props.center, level: props.level })}</output>
-      <output aria-label="목적지 좌표">{JSON.stringify(props.markers)}</output>
-      <output aria-label="지도 스타일">{props.customStyleId}</output>
-      {props.coordinateAction && (
-        <button onClick={props.coordinateAction.onClick} disabled={props.coordinateAction.disabled}>
-          {props.coordinateAction.label}
-        </button>
-      )}
-      {props.regions?.map((region) => (
-        <button key={region.id} onClick={() => props.onSelectRegion?.(region.id)}>
-          {region.name}
-        </button>
-      ))}
-    </div>
-  ),
-}));
+const mapMounts = vi.hoisted(() => ({ count: 0 }));
+vi.mock('@/features/map/ui/map-canvas/MapCanvas', async () => {
+  const { useEffect } = await import('react');
+  const MockMapCanvas = (props: MapCanvasProps) => {
+    useEffect(() => {
+      mapMounts.count += 1;
+    }, []);
+    return (
+      <div>
+        <button onClick={() => props.onSelectLocation?.(37.4, 127.12)}>지도에서 위치 찍기</button>
+        {props.onSelectLocation && (
+          <button onClick={() => props.onSelectLocation?.(37.45, 127.15)}>다른 위치 찍기</button>
+        )}
+        <output aria-label="지도 시점">{JSON.stringify({ center: props.center, level: props.level })}</output>
+        <output aria-label="목적지 좌표">{JSON.stringify(props.markers)}</output>
+        <output aria-label="지도 스타일">{props.customStyleId}</output>
+        {props.coordinateAction && (
+          <button onClick={props.coordinateAction.onClick} disabled={props.coordinateAction.disabled}>
+            {props.coordinateAction.label}
+          </button>
+        )}
+        {props.regions?.map((region) => (
+          <button key={region.id} onClick={() => props.onSelectRegion?.(region.id)}>
+            {region.name}
+          </button>
+        ))}
+      </div>
+    );
+  };
+  return { default: MockMapCanvas };
+});
 beforeEach(() => {
+  mapMounts.count = 0;
   vi.mocked(trackPostHogEvent).mockClear();
   vi.mocked(readGeolocationPermission).mockResolvedValue('prompt');
   vi.mocked(requestCurrentMapLocation).mockReset();
@@ -285,12 +295,22 @@ it('지도에서 찍으면 선택 위치로 확대하고 바텀시트에서 필�
   expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
   expect(screen.getByLabelText('목적지 좌표')).toHaveTextContent('37.4');
 });
-it('검색으로도 위치를 선택할 수 있다', async () => {
-  show();
+it.each([false, true])('로그인 여부와 관계없이 주소 검색 결과로 위치를 선택한다 (공개 탐색: %s)', async (isPublic) => {
+  server.use(
+    http.get('http://localhost:8080/api/maps/geocode', ({ request }) => {
+      expect(new URL(request.url).searchParams.get('query')).toBe('신논현역');
+      return HttpResponse.json(
+        successEnvelope([{ roadAddress: '서울 강남구 봉은사로 102', latitude: 37.5045, longitude: 127.0249 }]),
+      );
+    }),
+  );
+  show('commute', isPublic);
   const user = userEvent.setup();
-  await user.type(screen.getByRole('textbox', { name: '출퇴근 장소' }), '판교');
+  await user.type(screen.getByRole('textbox', { name: '출퇴근 장소' }), '신논현역');
   await user.keyboard('{Enter}');
-  expect(screen.getByRole('button', { name: '통근 40분 이내' })).toBeInTheDocument();
+  await user.click(await screen.findByRole('button', { name: '서울 강남구 봉은사로 102' }));
+  expect(screen.getByLabelText('목적지 좌표')).toHaveTextContent('37.5045');
+  expect(screen.getByLabelText('지도 시점')).toHaveTextContent('"level":4');
 });
 it('통근 필터·조회·동네 선택 및 닫기에도 결과와 시점을 유지한다', async () => {
   show();
@@ -502,6 +522,52 @@ it('경계는 조회 버튼 이후에만 원본을 받고 다시 조회하면 �
     server.events.removeListener('request:start', track);
   }
 });
+it('분할 manifest에서는 결과에 나온 시도 파일만 받아 합치고 재조회 시 각 파일의 캐시를 재사용한다', async () => {
+  const files = {
+    '11': 'admin-dongs.11.20250630.111111111111.geojson',
+    '23': 'admin-dongs.23.20250630.333333333333.geojson',
+    '31': 'admin-dongs.31.20250630.222222222222.geojson',
+  };
+  const requested: string[] = [];
+  server.use(
+    http.get('*/boundaries/manifest.json', () =>
+      HttpResponse.json({ version: '20250630', file: 'admin-dongs.20250630.123456abcdef.geojson', files }),
+    ),
+    http.get('*/boundaries/:filename', ({ params }) => {
+      const filename = String(params.filename);
+      requested.push(filename);
+      const prefix = filename.split('.')[1];
+      return HttpResponse.json({
+        type: 'FeatureCollection',
+        features: commuteBoundaryFixtures
+          .filter((fixture) => fixture.sourceCode.startsWith(prefix))
+          .map((fixture) => ({
+            type: 'Feature',
+            properties: {
+              code: fixture.sourceCode,
+              name: fixture.fullName.split(' ').at(-1),
+              fullName: fixture.fullName,
+              baseDate: '20250630',
+            },
+            geometry: fixture.boundary,
+          })),
+      });
+    }),
+  );
+  show();
+  const user = await choosePoint();
+  await user.click(screen.getByRole('button', { name: '선택한 조건으로 찾기' }));
+  await screen.findByRole('region', { name: '행정동 프리셋 지도' });
+  expect(requested.sort()).toEqual([files['11'], files['31']]);
+  expect(screen.getByRole('button', { name: '역삼1동' })).toBeInTheDocument();
+  expect(screen.getByRole('button', { name: '정자동' })).toBeInTheDocument();
+  await user.click(screen.getByRole('button', { name: '다시 선택하기' }));
+  await user.click(screen.getByRole('button', { name: '지도에서 위치 찍기' }));
+  await user.click(screen.getByRole('button', { name: '선택한 조건으로 찾기' }));
+  await screen.findByRole('region', { name: '행정동 프리셋 지도' });
+  expect(requested).toHaveLength(2);
+});
+
 it('manifest의 해시가 바뀌면 이전 경계 캐시 대신 새 파일을 받는다', async () => {
   let file = 'admin-dongs.20250630.123456abcdef.geojson';
   server.use(http.get('*/boundaries/manifest.json', () => HttpResponse.json({ version: '20250630', file })));
@@ -549,4 +615,19 @@ it('결과 지도 클릭은 목적지·결과를 유지하고 다시 선택하�
   expect(screen.queryByRole('complementary', { name: '선택한 동네 정보' })).not.toBeInTheDocument();
   expect(screen.getByLabelText('목적지 좌표')).toHaveTextContent('37.4');
   expect(screen.getByRole('button', { name: '선택한 조건으로 찾기' })).toBeEnabled();
+});
+
+it('위치 선택·분석·결과·다시 선택하기 내내 지도를 새로 만들지 않는다', async () => {
+  server.use(...createCommuteAreaHandlers({ delayMs: 50 }));
+  show();
+  const user = await choosePoint();
+  await user.click(screen.getByRole('button', { name: '선택한 조건으로 찾기' }));
+  expect(await screen.findByRole('heading', { name: '주변 동네를 분석하고 있어요' })).toBeInTheDocument();
+  // 분석 화면이 덮고 있는 동안에도 지도는 남아 있고, 찾기 버튼은 꺼진다.
+  expect(screen.getByRole('region', { name: '지도에서 목적지 선택' })).toBeInTheDocument();
+  expect(screen.queryByRole('button', { name: '선택한 조건으로 찾기' })).not.toBeInTheDocument();
+  await screen.findByRole('region', { name: '행정동 프리셋 지도' });
+  await user.click(screen.getByRole('button', { name: '다시 선택하기' }));
+  expect(await screen.findByRole('region', { name: '지도에서 목적지 선택' })).toBeInTheDocument();
+  expect(mapMounts.count).toBe(1);
 });
