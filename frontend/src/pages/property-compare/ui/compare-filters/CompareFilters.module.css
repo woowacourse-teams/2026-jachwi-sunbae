@@ -67,9 +67,9 @@
 }
 
 .chips button[aria-pressed='true'] {
-  border-color: var(--color-brand-blue);
-  background: color-mix(in srgb, var(--color-brand-blue) 10%, #fff);
-  color: var(--color-brand-blue);
+  border-color: var(--color-brand-green);
+  background: color-mix(in srgb, var(--color-brand-green) 10%, #fff);
+  color: var(--color-brand-green);
   font-weight: 600;
 }
 

@@ -42,7 +42,7 @@
 
 /* 선택한 줄은 옅은 파란 바탕으로 표시한다. */
 .row[data-selected='true'] {
-  background: color-mix(in srgb, var(--color-brand-blue) 10%, transparent);
+  background: color-mix(in srgb, var(--color-brand-green) 10%, transparent);
 }
 
 .row:has(input:focus-visible) {
@@ -67,8 +67,8 @@
 }
 
 .row[data-selected='true'] .checkmark {
-  border-color: var(--color-brand-blue);
-  background: var(--color-brand-blue);
+  border-color: var(--color-brand-green);
+  background: var(--color-brand-green);
 }
 
 .thumbnail {

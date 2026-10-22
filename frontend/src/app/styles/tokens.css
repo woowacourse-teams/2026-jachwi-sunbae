@@ -10,8 +10,8 @@
   --color-brand-800: #1f1f1f;
   --color-brand-900: #111;
   --color-brand-yellow: #f5b91e;
-  /* 오리 부리보다 채도를 조금 낮춘 파랑. 안내 카드처럼 노랑과 짝을 이루는 보조 브랜드색이다. */
-  --color-brand-blue: #6b9ae6;
+  /* 채도를 조금 낮춘 초록. 안내 카드처럼 노랑과 짝을 이루는 보조 브랜드색이다. */
+  --color-brand-green: #3d9e6f;
   --color-danger: #c96b6b;
 
   /* Change this single accent to retheme selected tabs, progress indicators and soft actions together. */
@@ -60,9 +60,9 @@
   --color-error-surface: #f1f1f1;
   --color-success: #333;
   --color-success-surface: #f1f1f1;
-  /* 체크 상태: 괜찮음은 브랜드 파랑, 주의는 빨강, 미확인은 회색. */
-  --color-check-good: var(--color-brand-blue);
-  --color-check-good-ink: #3f6fc4;
+  /* 체크 상태: 괜찮음은 브랜드 초록, 주의는 빨강, 미확인은 회색. */
+  --color-check-good: var(--color-brand-green);
+  --color-check-good-ink: #2f7d57;
   --color-check-caution: #ef7b7b;
   --color-check-caution-ink: #d14d4d;
   --color-check-unconfirmed: #c6c6c6;
@@ -72,10 +72,10 @@
   --color-card-surface: #f1f2f4;
   --color-card-surface-hover: #e8ebef;
   --color-card-brand-surface: var(--color-brand-yellow);
-  --color-card-informative-surface: var(--color-brand-blue);
+  --color-card-informative-surface: var(--color-brand-green);
   --color-on-card-accent: #fff;
   --color-page-subtle: #f0f2f5;
-  --color-price: #5279d2;
+  --color-price: #2f8a5f;
 
   --color-overlay: rgb(17 20 29 / 56%);
   --color-overlay-strong: rgb(17 20 29 / 78%);

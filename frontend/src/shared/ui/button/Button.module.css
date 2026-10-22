@@ -46,12 +46,12 @@
 }
 
 .primary {
-  background: var(--color-brand-blue);
+  background: var(--color-brand-green);
   color: var(--color-on-card-accent);
 }
 
 .primary:hover:not(:disabled) {
-  background: color-mix(in srgb, var(--color-brand-blue) 88%, black);
+  background: color-mix(in srgb, var(--color-brand-green) 88%, black);
 }
 
 .soft {

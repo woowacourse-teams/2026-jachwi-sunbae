@@ -70,12 +70,12 @@
 }
 
 .nav a[aria-current='page'] {
-  color: var(--color-brand-blue);
+  color: var(--color-brand-green);
   font-weight: 700;
 }
 
 .nav a[aria-current='page']:hover {
-  color: var(--color-brand-blue);
+  color: var(--color-brand-green);
 }
 
 /* 메뉴와 구분되도록 마이페이지는 메뉴에서 조금 떨어뜨린다. */

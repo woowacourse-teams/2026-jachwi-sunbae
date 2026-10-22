@@ -21,7 +21,7 @@
   cursor: pointer;
 }
 .districts button[aria-pressed='true'] {
-  background: #648fff;
+  background: #3d9e6f;
   color: white;
 }
 .districts[data-over-map='true'] button:not([aria-pressed='true']) {
