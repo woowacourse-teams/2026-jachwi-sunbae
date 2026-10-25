@@ -155,8 +155,11 @@ KTDB 데이터의 342건은 모두 `transfer_type` 2이고 `min_transfer_time`�
 ```bash
 sudo /opt/jachwi-sunbae/scripts/import-transit-network.sh \
   --transit.admin-dong.file=/path/to/admin-dongs.geojson \
-  --transit.gtfs.directory=/path/to/gtfs
+  --transit.gtfs.directory=/path/to/gtfs \
+  --transit.admin-legal-dong.file=/path/to/KIKmix.20260701
 ```
+
+`--transit.admin-legal-dong.file`은 선택이다. 넘기면 GTFS 적재 뒤에 행정기관·관할구역 연계표를 읽어 동네 월세 시세에 쓰는 행정동–관할 법정동 연결을 다시 적재한다([생활권 탐색 명세](commute-area.md)의 `POL-COMMUTE-030`, `POL-COMMUTE-031`).
 
 | 단계 | 읽는 파일        | 하는 일                                                                              | 결과                 |
 | ---- | ---------------- | ------------------------------------------------------------------------------------ | -------------------- |
