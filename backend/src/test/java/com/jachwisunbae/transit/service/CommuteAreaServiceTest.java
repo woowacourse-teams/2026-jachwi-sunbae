@@ -2,10 +2,15 @@ package com.jachwisunbae.transit.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.mock;
 
 import com.jachwisunbae.common.exception.client.BusinessRuleViolationException;
 import com.jachwisunbae.common.exception.errorcode.ErrorCode;
 import com.jachwisunbae.common.exception.server.ServiceUnavailableException;
+import com.jachwisunbae.rental.domain.AdminDongRent;
+import com.jachwisunbae.rental.domain.AdminDongRents;
+import com.jachwisunbae.rental.service.AdminDongRentService;
 import com.jachwisunbae.transit.domain.CommuteArea;
 import com.jachwisunbae.transit.domain.GtfsEdge;
 import com.jachwisunbae.transit.domain.GtfsFeed;
@@ -15,7 +20,10 @@ import com.jachwisunbae.transit.domain.vo.Coordinate;
 import com.jachwisunbae.transit.domain.vo.Seconds;
 import com.jachwisunbae.transit.service.dto.result.CommuteAreaSearchResult;
 import java.time.Clock;
+import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -30,8 +38,15 @@ class CommuteAreaServiceTest {
     private static final String GYEONGGI_DONG = "31000001";
 
     private final InMemoryGtfsNetworkRepository networkRepository = new InMemoryGtfsNetworkRepository();
+    private final AdminDongRentService adminDongRentService = mock(AdminDongRentService.class);
     private final CommuteAreaService service = new CommuteAreaService(
-            new TransitNetworkCache(new TransitNetworkLoader(networkRepository), Clock.systemUTC()));
+            new TransitNetworkCache(new TransitNetworkLoader(networkRepository), Clock.systemUTC()),
+            adminDongRentService);
+
+    @BeforeEach
+    void setUpRents() {
+        given(adminDongRentService.findRents()).willReturn(AdminDongRents.empty());
+    }
 
     @Test
     @DisplayName("갈 수 있는 정류장을 행정동으로 묶고 통근 시간이 짧은 동네부터 돌려준다")
@@ -45,6 +60,19 @@ class CommuteAreaServiceTest {
         CommuteArea far = result.areas().get(1);
         assertThat(far.stations()).extracting(station -> station.stop().stopId()).containsExactly("B", "C");
         assertThat(far.commuteMinutes()).isEqualTo(far.stations().getFirst().travelMinutes());
+    }
+
+    @Test
+    @DisplayName("시세를 포함한 탐색만 행정동별 월세 시세를 담고, 기존 탐색은 시세를 담지 않는다")
+    void includesRents() {
+        networkRepository.replace(feed());
+        AdminDongRents rents = new AdminDongRents(LocalDate.of(2026, 4, 25), LocalDate.of(2026, 10, 25),
+                Map.of(NEAR_DONG, new AdminDongRent(List.of(new AdminDongRent.LegalDong("1162010200", "신림동")), 450_000,
+                        5_000_000, 12)));
+        given(adminDongRentService.findRents()).willReturn(rents);
+
+        assertThat(service.searchWithRents(DESTINATION, 60, 2).rents()).isSameAs(rents);
+        assertThat(service.search(DESTINATION, 60, 2).rents().isEmpty()).isTrue();
     }
 
     @Test

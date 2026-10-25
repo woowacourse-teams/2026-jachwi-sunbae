@@ -2,12 +2,12 @@ package com.jachwisunbae.rental.service;
 
 import com.jachwisunbae.common.exception.client.InvalidInputException;
 import com.jachwisunbae.common.exception.errorcode.ErrorCode;
+import com.jachwisunbae.rental.domain.RecentRentalPeriod;
 import com.jachwisunbae.rental.repository.JdbcRentalTransactionRepository;
 import com.jachwisunbae.rental.repository.query.RentalTransactionEntry;
 import com.jachwisunbae.rental.service.dto.result.RentalTransactionPage;
 import java.time.Clock;
 import java.time.LocalDate;
-import java.time.ZoneId;
 import java.util.List;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Isolation;
@@ -16,7 +16,6 @@ import org.springframework.transaction.annotation.Transactional;
 // 법정동의 최근 6개월 거래와 수집 정보를 페이지로 조회한다.
 @Service
 public class RentalTransactionQueryService {
-    private static final ZoneId KOREA = ZoneId.of("Asia/Seoul");
     private final JdbcRentalTransactionRepository repository;
     private final Clock clock;
 
@@ -28,8 +27,9 @@ public class RentalTransactionQueryService {
     @Transactional(readOnly = true, isolation = Isolation.REPEATABLE_READ)
     public RentalTransactionPage findTransactions(final String legalDongCode, final int page, final int size) {
         validateQuery(legalDongCode, page, size);
-        LocalDate queryEndDate = LocalDate.now(clock.withZone(KOREA));
-        LocalDate queryStartDate = queryEndDate.minusMonths(6);
+        RecentRentalPeriod period = RecentRentalPeriod.of(clock);
+        LocalDate queryStartDate = period.startDate();
+        LocalDate queryEndDate = period.endDate();
         long totalTransactionCount = repository.countByLegalDongCode(legalDongCode, queryStartDate, queryEndDate);
         List<RentalTransactionEntry> items = findTransactionEntries(
             legalDongCode, queryStartDate, queryEndDate, page, size, totalTransactionCount);

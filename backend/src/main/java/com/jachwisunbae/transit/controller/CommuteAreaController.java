@@ -4,6 +4,7 @@ import com.jachwisunbae.common.web.ApiResponse;
 import com.jachwisunbae.transit.controller.dto.request.CommuteAreaSearchRequest;
 import com.jachwisunbae.transit.controller.dto.request.CommuteRouteRequest;
 import com.jachwisunbae.transit.controller.dto.response.CommuteAreaSearchResponse;
+import com.jachwisunbae.transit.controller.dto.response.CommuteRentAreaSearchResponse;
 import com.jachwisunbae.transit.controller.dto.response.CommuteRouteResponse;
 import com.jachwisunbae.transit.service.CommuteAreaService;
 import com.jachwisunbae.transit.service.CommuteRouteService;
@@ -29,13 +30,24 @@ public class CommuteAreaController {
         this.commuteRouteService = commuteRouteService;
     }
 
+    @Deprecated
     @GetMapping
-    @Operation(summary = "생활권 탐색", description = "목적지까지 대중교통으로 최대 통근 시간 안에 갈 수 있는 동네를 "
-            + "행정동 코드별 정류장과 함께 조회합니다.")
+    @Operation(summary = "생활권 탐색 (사용 중단)", deprecated = true, description = "목적지까지 대중교통으로 최대 통근 시간 안에 "
+            + "갈 수 있는 동네를 행정동 코드별 정류장과 함께 조회합니다. 동네 월세 시세가 함께 필요하면 "
+            + "GET /api/commute-areas/with-rents를 사용합니다. 응답 형식은 바꾸지 않고 유지합니다.")
     public ApiResponse<CommuteAreaSearchResponse> search(
             @Valid @ModelAttribute final CommuteAreaSearchRequest request) {
         return ApiResponse.of(CommuteAreaSearchResponse.from(commuteAreaService.search(request.destination(),
                 request.maxMinutes(), request.maxTransfers())));
+    }
+
+    @GetMapping("/with-rents")
+    @Operation(summary = "시세를 포함한 생활권 탐색", description = "생활권 탐색 결과의 동네마다 대표 법정동의 최근 6개월 "
+            + "월세 실거래 시세(월세·보증금 중앙값, 거래 수)를 함께 조회합니다. 거래가 적은 동네는 rent가 null입니다.")
+    public ApiResponse<CommuteRentAreaSearchResponse> searchWithRents(
+            @Valid @ModelAttribute final CommuteAreaSearchRequest request) {
+        return ApiResponse.of(CommuteRentAreaSearchResponse.from(commuteAreaService.searchWithRents(
+                request.destination(), request.maxMinutes(), request.maxTransfers())));
     }
 
     @GetMapping("/route")

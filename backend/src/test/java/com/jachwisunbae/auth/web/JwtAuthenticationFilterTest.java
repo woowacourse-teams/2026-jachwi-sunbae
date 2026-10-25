@@ -78,6 +78,7 @@ class JwtAuthenticationFilterTest {
         assertPassed(request("GET", "/api/maps/geocode"));
         assertPassed(request("GET", "/api/commute-areas"));
         assertPassed(request("GET", "/api/commute-areas/route"));
+        assertPassed(request("GET", "/api/commute-areas/with-rents"));
         assertPassed(request("GET", "/api/guest/properties"));
         assertPassed(request("GET", "/api/guest/checklists"));
         assertPassed(request("GET", "/actuator/health"));
