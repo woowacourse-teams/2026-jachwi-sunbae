@@ -17,7 +17,6 @@ import java.util.Map;
 import java.util.Optional;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.springframework.dao.DataAccessResourceFailureException;
 
 class AdminDongRentServiceTest {
 
@@ -31,19 +30,8 @@ class AdminDongRentServiceTest {
             Map.of("11230640", new AdminDongRent("11230640", List.of("역삼동"), 780_000, 10_000_000, 5)));
         given(rentRepository.findAll()).willReturn(rents);
 
-        service.load();
-
+        assertThat(service.load()).isEqualTo(1);
         assertThat(service.findRents()).isSameAs(rents);
-    }
-
-    @Test
-    @DisplayName("시세를 읽지 못하면 시세 없이 응답한다")
-    void respondsWithoutRentsOnFailure() {
-        given(rentRepository.findAll()).willThrow(new DataAccessResourceFailureException("DB 연결 실패"));
-
-        service.load();
-
-        assertThat(service.findRents().byAdminDong()).isEmpty();
     }
 
     @Test
