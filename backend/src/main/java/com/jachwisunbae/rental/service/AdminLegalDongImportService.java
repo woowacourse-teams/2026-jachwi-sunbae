@@ -3,6 +3,7 @@ package com.jachwisunbae.rental.service;
 import com.jachwisunbae.rental.domain.AdminLegalDongMatcher;
 import com.jachwisunbae.rental.domain.KikMixRow;
 import com.jachwisunbae.rental.importer.KikMixReader;
+import com.jachwisunbae.rental.repository.JdbcAdminDongRentRepository;
 import com.jachwisunbae.rental.repository.JdbcAdminLegalDongRepository;
 import com.jachwisunbae.transit.domain.AdminDong;
 import com.jachwisunbae.transit.repository.AdminDongRepository;
@@ -20,6 +21,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 // 행정기관·관할구역 연계표(KIKmix)를 읽어 적재된 행정동과 관할 법정동의 연결을 전체 교체한다.
 // 행정동 경계를 먼저 적재해야 하고, 경계의 기준일에 유효했던 연계표 행으로 잇는다.
+// 연결이 바뀌면 이미 적재된 월세 거래로 행정동 시세도 다시 계산한다.
 @Service
 public class AdminLegalDongImportService {
 
@@ -28,13 +30,16 @@ public class AdminLegalDongImportService {
     private final String file;
     private final AdminDongRepository adminDongRepository;
     private final JdbcAdminLegalDongRepository adminLegalDongRepository;
+    private final JdbcAdminDongRentRepository rentRepository;
 
     public AdminLegalDongImportService(@Value("${transit.admin-legal-dong.file:}") final String file,
                                        final AdminDongRepository adminDongRepository,
-                                       final JdbcAdminLegalDongRepository adminLegalDongRepository) {
+                                       final JdbcAdminLegalDongRepository adminLegalDongRepository,
+                                       final JdbcAdminDongRentRepository rentRepository) {
         this.file = file;
         this.adminDongRepository = adminDongRepository;
         this.adminLegalDongRepository = adminLegalDongRepository;
+        this.rentRepository = rentRepository;
     }
 
     public boolean hasFile() {
@@ -54,6 +59,7 @@ public class AdminLegalDongImportService {
             throw new IllegalStateException("관할 법정동을 하나도 잇지 못했습니다. 연계표 파일을 확인해 주세요: " + file);
         }
         adminLegalDongRepository.replace(result.links());
+        rentRepository.refresh();
         result.unmatched().forEach(adminDong -> LOG.warn("연계표에서 찾지 못한 행정동입니다. code={}, name={}",
             adminDong.code(), adminDong.fullName()));
         return result;

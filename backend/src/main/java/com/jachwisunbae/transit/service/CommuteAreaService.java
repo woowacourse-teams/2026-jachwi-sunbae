@@ -36,7 +36,7 @@ public class CommuteAreaService {
                 AdminDongRents.empty());
     }
 
-    // 동네마다 대표 법정동의 월세 시세를 함께 담는다.
+    // 동네마다 관할 법정동 거래로 낸 월세 시세를 함께 담는다.
     public CommuteAreaSearchResult searchWithRents(final Coordinate destination, final int maxMinutes,
                                                    final int maxTransfers) {
         return new CommuteAreaSearchResult(maxMinutes, findAreas(destination, maxMinutes, maxTransfers),

@@ -66,13 +66,12 @@ class CommuteAreaServiceTest {
     @DisplayName("시세를 포함한 탐색만 행정동별 월세 시세를 담고, 기존 탐색은 시세를 담지 않는다")
     void includesRents() {
         networkRepository.replace(feed());
-        AdminDongRents rents = new AdminDongRents(LocalDate.of(2026, 4, 25), LocalDate.of(2026, 10, 25),
-                Map.of(NEAR_DONG, new AdminDongRent(List.of(new AdminDongRent.LegalDong("1162010200", "신림동")), 450_000,
-                        5_000_000, 12)));
+        AdminDongRents rents = new AdminDongRents(LocalDate.of(2026, 3, 30), LocalDate.of(2026, 9, 30),
+                Map.of(NEAR_DONG, new AdminDongRent(NEAR_DONG, List.of("신림동"), 450_000, 5_000_000, 12)));
         given(adminDongRentService.findRents()).willReturn(rents);
 
         assertThat(service.searchWithRents(DESTINATION, 60, 2).rents()).isSameAs(rents);
-        assertThat(service.search(DESTINATION, 60, 2).rents().isEmpty()).isTrue();
+        assertThat(service.search(DESTINATION, 60, 2).rents().byAdminDong()).isEmpty();
     }
 
     @Test

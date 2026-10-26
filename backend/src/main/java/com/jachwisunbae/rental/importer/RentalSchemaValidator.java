@@ -8,6 +8,9 @@ import org.springframework.jdbc.core.JdbcTemplate;
 public class RentalSchemaValidator {
     private static final Map<String, String> REQUIRED_COLUMNS = Map.of(
         "legal_dongs", "code, name",
+        "admin_legal_dongs", "admin_dong_code, legal_dong_code, legal_dong_name",
+        "admin_dong_rents", "admin_dong_code, legal_dong_names, monthly_rent_krw, deposit_krw, transaction_count, "
+            + "rent_start_date, rent_end_date",
         "rental_datasets", "dataset_key, transaction_sha256, legal_dong_sha256, contract_from, contract_to, "
             + "collected_at, imported_at, row_count",
         "rental_transactions", "id, dataset_key, legal_dong_code, housing_type, deposit_amount_krw, "
@@ -24,7 +27,8 @@ public class RentalSchemaValidator {
         var tables = jdbcTemplate.queryForList("""
             SELECT TABLE_NAME FROM information_schema.TABLES
             WHERE TABLE_SCHEMA = DATABASE() AND TABLE_TYPE = 'BASE TABLE' AND ENGINE = 'InnoDB'
-                AND TABLE_NAME IN ('legal_dongs', 'rental_datasets', 'rental_transactions')
+                AND TABLE_NAME IN ('legal_dongs', 'rental_datasets', 'rental_transactions', 'admin_legal_dongs',
+                    'admin_dong_rents')
             """, String.class);
         if (!tables.containsAll(REQUIRED_COLUMNS.keySet())) {
             throw new IllegalStateException("월세 적재용 InnoDB 테이블이 준비되지 않았습니다. "

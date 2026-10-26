@@ -42,8 +42,9 @@ public class CommuteAreaController {
     }
 
     @GetMapping("/with-rents")
-    @Operation(summary = "시세를 포함한 생활권 탐색", description = "생활권 탐색 결과의 동네마다 대표 법정동의 최근 6개월 "
-            + "월세 실거래 시세(월세·보증금 중앙값, 거래 수)를 함께 조회합니다. 거래가 적은 동네는 rent가 null입니다.")
+    @Operation(summary = "시세를 포함한 생활권 탐색", description = "생활권 탐색 결과의 동네마다 관할 법정동의 월세 "
+            + "실거래를 합친 시세(월세·보증금 중앙값, 거래 수)를 함께 조회합니다. 기간은 수집된 거래의 마지막 계약일부터 "
+            + "6개월이고, 거래가 5건보다 적은 동네는 금액과 거래 수가 null입니다.")
     public ApiResponse<CommuteRentAreaSearchResponse> searchWithRents(
             @Valid @ModelAttribute final CommuteAreaSearchRequest request) {
         return ApiResponse.of(CommuteRentAreaSearchResponse.from(commuteAreaService.searchWithRents(

@@ -10,55 +10,49 @@ import org.junit.jupiter.api.Test;
 
 class AdminDongRentsTest {
 
-    private static final LocalDate START = LocalDate.of(2026, 4, 25);
-    private static final LocalDate END = LocalDate.of(2026, 10, 25);
-
-    // 서원동은 신림동 하나를, 종로1·2·3·4가동은 관철동·관수동·인사동을 관할한다.
-    private final List<AdminLegalDong> links = List.of(
-        new AdminLegalDong("11210630", "1162010200", "신림동"),
-        new AdminLegalDong("11010615", "1111013800", "관철동"),
-        new AdminLegalDong("11010615", "1111013900", "관수동"),
-        new AdminLegalDong("11010615", "1111013700", "인사동"));
-
     @Test
-    @DisplayName("관할 법정동 거래의 월세·보증금 중앙값과 거래 수를 붙인다")
-    void attachesMedian() {
-        List<RentalPricePoint> prices = new ArrayList<>();
+    @DisplayName("행정동 거래의 월세·보증금 중앙값과 거래 수를 낸다")
+    void calculatesMedian() {
+        List<AdminDongRents.Deal> deals = new ArrayList<>();
         for (long rent : new long[] {400_000, 500_000, 450_000, 700_000, 300_000}) {
-            prices.add(new RentalPricePoint("1162010200", rent, rent * 10));
+            deals.add(new AdminDongRents.Deal("11210630", "신림동", rent, rent * 10));
         }
 
-        AdminDongRent rent = AdminDongRents.of(links, prices, START, END).find("11210630").orElseThrow();
-
-        assertThat(rent).isEqualTo(new AdminDongRent(List.of(new AdminDongRent.LegalDong("1162010200", "신림동")),
-            450_000, 4_500_000, 5));
+        assertThat(AdminDongRents.calculate(deals))
+            .containsExactly(new AdminDongRent("11210630", List.of("신림동"), 450_000, 4_500_000, 5));
     }
 
     @Test
     @DisplayName("여러 법정동을 관할하는 행정동은 거래를 모두 합치고 거래가 있던 법정동을 거래가 많은 순서로 담는다")
     void poolsLegalDongs() {
-        List<RentalPricePoint> prices = List.of(new RentalPricePoint("1111013900", 500_000, 0),
-            new RentalPricePoint("1111013800", 600_000, 0), new RentalPricePoint("1111013800", 700_000, 0),
-            new RentalPricePoint("1111013800", 800_000, 0), new RentalPricePoint("1111013900", 900_000, 0));
+        List<AdminDongRents.Deal> deals = List.of(new AdminDongRents.Deal("11010615", "관수동", 500_000, 0),
+            new AdminDongRents.Deal("11010615", "관철동", 600_000, 0),
+            new AdminDongRents.Deal("11010615", "관철동", 700_000, 0),
+            new AdminDongRents.Deal("11010615", "관철동", 800_000, 0),
+            new AdminDongRents.Deal("11010615", "관수동", 900_000, 0));
 
-        AdminDongRent rent = AdminDongRents.of(links, prices, START, END).find("11010615").orElseThrow();
+        AdminDongRent rent = AdminDongRents.calculate(deals).getFirst();
 
         assertThat(rent.transactionCount()).isEqualTo(5);
         assertThat(rent.monthlyRentKrw()).isEqualTo(700_000);
-        assertThat(rent.legalDongs()).extracting(AdminDongRent.LegalDong::name).containsExactly("관철동", "관수동");
+        assertThat(rent.legalDongNames()).containsExactly("관철동", "관수동");
     }
 
     @Test
     @DisplayName("합친 거래가 5건보다 적으면 시세를 내지 않는다")
     void skipsFewTransactions() {
-        List<RentalPricePoint> prices = List.of(new RentalPricePoint("1162010200", 500_000, 0),
-            new RentalPricePoint("1162010200", 500_000, 0), new RentalPricePoint("1162010200", 500_000, 0),
-            new RentalPricePoint("1162010200", 500_000, 0));
+        List<AdminDongRents.Deal> deals = List.of(new AdminDongRents.Deal("11210630", "신림동", 500_000, 0),
+            new AdminDongRents.Deal("11210630", "신림동", 500_000, 0),
+            new AdminDongRents.Deal("11210630", "신림동", 500_000, 0),
+            new AdminDongRents.Deal("11210630", "신림동", 500_000, 0));
 
-        AdminDongRents rents = AdminDongRents.of(links, prices, START, END);
+        assertThat(AdminDongRents.calculate(deals)).isEmpty();
+    }
 
-        assertThat(rents.find("11210630")).isEmpty();
-        assertThat(rents.queryStartDate()).isEqualTo(START);
+    @Test
+    @DisplayName("기간은 마지막 계약일부터 6개월 전까지다")
+    void startsSixMonthsBefore() {
+        assertThat(AdminDongRents.startDateOf(LocalDate.of(2026, 9, 30))).isEqualTo(LocalDate.of(2026, 3, 30));
     }
 
     @Test
