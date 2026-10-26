@@ -28,13 +28,16 @@ public class AdminLegalDongImportService {
     private final String file;
     private final AdminDongRepository adminDongRepository;
     private final JdbcAdminDongRentRepository rentRepository;
+    private final AdminDongRentService adminDongRentService;
 
     public AdminLegalDongImportService(@Value("${transit.admin-legal-dong.file:}") final String file,
                                        final AdminDongRepository adminDongRepository,
-                                       final JdbcAdminDongRentRepository rentRepository) {
+                                       final JdbcAdminDongRentRepository rentRepository,
+                                       final AdminDongRentService adminDongRentService) {
         this.file = file;
         this.adminDongRepository = adminDongRepository;
         this.rentRepository = rentRepository;
+        this.adminDongRentService = adminDongRentService;
     }
 
     public boolean hasFile() {
@@ -53,7 +56,7 @@ public class AdminLegalDongImportService {
             throw new IllegalStateException("관할 법정동을 하나도 잇지 못했습니다. 연계표 파일을 확인해 주세요: " + file);
         }
         rentRepository.replaceLinks(links);
-        rentRepository.refresh();
+        adminDongRentService.refresh();
         Set<String> linked = links.stream().map(AdminLegalDong::adminDongCode).collect(Collectors.toSet());
         adminDongs.stream().filter(adminDong -> !linked.contains(adminDong.code())).forEach(adminDong ->
             LOG.warn("연계표에서 찾지 못한 행정동입니다. code={}, name={}", adminDong.code(), adminDong.fullName()));

@@ -5,6 +5,7 @@ import com.jachwisunbae.rental.domain.RentalSnapshot;
 import com.jachwisunbae.rental.domain.RentalTransaction;
 import com.jachwisunbae.rental.repository.JdbcAdminDongRentRepository;
 import com.jachwisunbae.rental.repository.JdbcRentalTransactionRepository;
+import com.jachwisunbae.rental.service.AdminDongRentService;
 import com.jachwisunbae.rental.service.RentalImportService;
 import java.io.IOException;
 import java.io.InputStream;
@@ -119,7 +120,8 @@ public class RentalImportCommand {
         JdbcTemplate jdbcTemplate = new JdbcTemplate(dataSource);
         new RentalSchemaValidator().validate(jdbcTemplate);
         JdbcRentalTransactionRepository repository = new JdbcRentalTransactionRepository(jdbcTemplate);
-        RentalImportService service = new RentalImportService(repository, new JdbcAdminDongRentRepository(jdbcTemplate),
+        RentalImportService service = new RentalImportService(repository,
+            new AdminDongRentService(new JdbcAdminDongRentRepository(jdbcTemplate)),
             new TransactionTemplate(new DataSourceTransactionManager(dataSource)));
         return service.importSnapshot(snapshot, transactions);
     }

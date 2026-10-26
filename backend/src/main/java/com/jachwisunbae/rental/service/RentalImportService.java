@@ -2,7 +2,6 @@ package com.jachwisunbae.rental.service;
 
 import com.jachwisunbae.rental.domain.RentalSnapshot;
 import com.jachwisunbae.rental.domain.RentalTransaction;
-import com.jachwisunbae.rental.repository.JdbcAdminDongRentRepository;
 import com.jachwisunbae.rental.repository.JdbcRentalTransactionRepository;
 import java.util.List;
 import java.util.Objects;
@@ -12,15 +11,15 @@ import org.springframework.transaction.support.TransactionTemplate;
 // 수집본 검증과 전체 교체, 행정동 월세 시세 재계산을 하나의 트랜잭션으로 실행한다.
 public class RentalImportService {
     private final JdbcRentalTransactionRepository repository;
-    private final JdbcAdminDongRentRepository rentRepository;
+    private final AdminDongRentService adminDongRentService;
     private final TransactionTemplate transactionTemplate;
 
     public RentalImportService(
-        final JdbcRentalTransactionRepository repository, final JdbcAdminDongRentRepository rentRepository,
+        final JdbcRentalTransactionRepository repository, final AdminDongRentService adminDongRentService,
         final TransactionTemplate transactionTemplate
     ) {
         this.repository = repository;
-        this.rentRepository = rentRepository;
+        this.adminDongRentService = adminDongRentService;
         this.transactionTemplate = transactionTemplate;
     }
 
@@ -43,7 +42,7 @@ public class RentalImportService {
         repository.deleteByDatasetKey(snapshot.datasetKey());
         repository.saveAll(snapshot.datasetKey(), transactions);
         repository.updateSnapshot(snapshot, transactions.size());
-        rentRepository.refresh();
+        adminDongRentService.refresh();
         return true;
     }
 
