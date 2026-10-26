@@ -2,6 +2,7 @@ package com.jachwisunbae.rental.repository;
 
 import com.jachwisunbae.rental.domain.AdminDongRent;
 import com.jachwisunbae.rental.domain.AdminDongRents;
+import com.jachwisunbae.rental.domain.AdminLegalDong;
 import com.jachwisunbae.rental.domain.RentalSnapshot;
 import java.time.LocalDate;
 import java.util.Arrays;
@@ -11,7 +12,7 @@ import java.util.Map;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
 
-// 행정동별 월세 시세를 다시 계산해 저장하고 읽는다.
+// 행정동과 관할 법정동의 연결을 교체하고, 그 연결로 행정동별 월세 시세를 다시 계산해 저장하고 읽는다.
 @Repository
 public class JdbcAdminDongRentRepository {
 
@@ -19,6 +20,17 @@ public class JdbcAdminDongRentRepository {
 
     public JdbcAdminDongRentRepository(final JdbcTemplate jdbcTemplate) {
         this.jdbcTemplate = jdbcTemplate;
+    }
+
+    public void replaceLinks(final List<AdminLegalDong> links) {
+        jdbcTemplate.update("DELETE FROM admin_legal_dongs");
+        jdbcTemplate.batchUpdate("""
+            INSERT INTO admin_legal_dongs (admin_dong_code, legal_dong_code, legal_dong_name) VALUES (?, ?, ?)
+            """, links, 1000, (statement, link) -> {
+                statement.setString(1, link.adminDongCode());
+                statement.setString(2, link.legalDongCode());
+                statement.setString(3, link.legalDongName());
+            });
     }
 
     // 적재된 월세 수집본의 마지막 계약일부터 6개월 동안의 거래로 시세를 전부 다시 계산한다.

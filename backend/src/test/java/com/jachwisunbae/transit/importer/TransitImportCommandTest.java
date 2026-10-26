@@ -6,12 +6,10 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.jachwisunbae.rental.domain.AdminLegalDongMatcher;
 import com.jachwisunbae.rental.service.AdminLegalDongImportService;
 import com.jachwisunbae.transit.service.AdminDongImportService;
 import com.jachwisunbae.transit.service.GtfsImportService;
 import com.jachwisunbae.transit.service.dto.result.GtfsImportResult;
-import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -27,7 +25,7 @@ class TransitImportCommandTest {
     void setUp() {
         when(adminDongImportService.importBoundaries()).thenReturn(1);
         when(gtfsImportService.importFeed()).thenReturn(new GtfsImportResult(1, 1, 1, 1, 1));
-        when(adminLegalDongImportService.importLinks()).thenReturn(new AdminLegalDongMatcher.Result(List.of(), List.of()));
+        when(adminLegalDongImportService.importLinks()).thenReturn(3);
     }
 
     @Test

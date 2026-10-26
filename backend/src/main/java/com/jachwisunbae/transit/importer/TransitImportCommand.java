@@ -1,7 +1,6 @@
 package com.jachwisunbae.transit.importer;
 
 import com.jachwisunbae.JachwiSunbaeBackendApplication;
-import com.jachwisunbae.rental.domain.AdminLegalDongMatcher;
 import com.jachwisunbae.rental.service.AdminLegalDongImportService;
 import com.jachwisunbae.transit.service.AdminDongImportService;
 import com.jachwisunbae.transit.service.GtfsImportService;
@@ -45,9 +44,8 @@ public class TransitImportCommand {
                 gtfsResult.matchedStopCount());
 
         if (adminLegalDongImportService.hasFile()) {
-            AdminLegalDongMatcher.Result linkResult = adminLegalDongImportService.importLinks();
-            LOG.info("행정동의 관할 법정동 연결을 적재했습니다. links={}, unmatchedAdminDongs={}",
-                    linkResult.links().size(), linkResult.unmatched().size());
+            LOG.info("행정동의 관할 법정동 연결과 월세 시세를 적재했습니다. links={}",
+                    adminLegalDongImportService.importLinks());
         }
     }
 
