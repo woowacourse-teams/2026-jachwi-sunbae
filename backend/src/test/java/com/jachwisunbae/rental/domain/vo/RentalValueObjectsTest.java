@@ -1,8 +1,9 @@
-package com.jachwisunbae.rental.domain;
+package com.jachwisunbae.rental.domain.vo;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import com.jachwisunbae.rental.domain.AreaBasis;
 import java.math.BigDecimal;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;

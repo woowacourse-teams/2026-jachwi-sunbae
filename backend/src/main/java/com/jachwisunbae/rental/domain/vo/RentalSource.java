@@ -1,4 +1,4 @@
-package com.jachwisunbae.rental.domain;
+package com.jachwisunbae.rental.domain.vo;
 
 // 거래 출처를 추적할 원본 파일명과 행 번호를 검증한다.
 public record RentalSource(String sourceFile, long sourceRowNumber) {

@@ -1,4 +1,4 @@
-package com.jachwisunbae.rental.domain;
+package com.jachwisunbae.rental.domain.vo;
 
 // 거래를 집계할 공식 법정동 코드와 전체 이름을 검증한다.
 public record LegalDong(String code, String name) {

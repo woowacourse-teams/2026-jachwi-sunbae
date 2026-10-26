@@ -1,4 +1,4 @@
-package com.jachwisunbae.rental.domain;
+package com.jachwisunbae.rental.domain.vo;
 
 // 원 단위 보증금과 월세의 금액 조건을 검증한다.
 public record RentalPrice(long depositAmountKrw, long monthlyRentAmountKrw) {

@@ -1,5 +1,6 @@
-package com.jachwisunbae.rental.domain;
+package com.jachwisunbae.rental.domain.vo;
 
+import com.jachwisunbae.rental.domain.AreaBasis;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 
