@@ -1,14 +1,15 @@
 package com.jachwisunbae.rental.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.BDDMockito.given;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
-import com.jachwisunbae.rental.domain.AdminDongRent;
 import com.jachwisunbae.rental.domain.AdminDongRents;
+import com.jachwisunbae.rental.domain.vo.AdminDongDeal;
+import com.jachwisunbae.rental.domain.vo.AdminDongRent;
 import com.jachwisunbae.rental.repository.JdbcAdminDongRentRepository;
 import java.time.LocalDate;
 import java.util.Collections;
@@ -41,7 +42,7 @@ class AdminDongRentServiceTest {
         LocalDate startDate = LocalDate.of(2026, 3, 30);
         given(rentRepository.findRentEndDate()).willReturn(Optional.of(endDate));
         given(rentRepository.findDeals(startDate, endDate)).willReturn(Collections.nCopies(5,
-            new AdminDongRents.Deal("11230640", "역삼동", 780_000, 10_000_000)));
+            new AdminDongDeal("11230640", "역삼동", 780_000, 10_000_000)));
 
         service.refresh();
 

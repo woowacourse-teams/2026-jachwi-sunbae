@@ -1,4 +1,4 @@
-package com.jachwisunbae.rental.domain;
+package com.jachwisunbae.rental.domain.vo;
 
 import java.util.List;
 

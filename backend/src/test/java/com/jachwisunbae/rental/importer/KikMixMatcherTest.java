@@ -4,7 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.tuple;
 
-import com.jachwisunbae.rental.domain.AdminLegalDong;
+import com.jachwisunbae.rental.domain.vo.AdminLegalDong;
 import com.jachwisunbae.transit.domain.AdminDong;
 import com.jachwisunbae.transit.domain.vo.AdminDongBoundary;
 import java.nio.charset.Charset;

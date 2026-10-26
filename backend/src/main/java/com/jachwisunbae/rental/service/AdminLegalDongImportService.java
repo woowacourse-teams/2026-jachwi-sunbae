@@ -1,6 +1,6 @@
 package com.jachwisunbae.rental.service;
 
-import com.jachwisunbae.rental.domain.AdminLegalDong;
+import com.jachwisunbae.rental.domain.vo.AdminLegalDong;
 import com.jachwisunbae.rental.importer.KikMixMatcher;
 import com.jachwisunbae.rental.repository.JdbcAdminDongRentRepository;
 import com.jachwisunbae.transit.domain.AdminDong;

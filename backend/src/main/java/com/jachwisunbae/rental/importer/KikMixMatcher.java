@@ -1,6 +1,6 @@
 package com.jachwisunbae.rental.importer;
 
-import com.jachwisunbae.rental.domain.AdminLegalDong;
+import com.jachwisunbae.rental.domain.vo.AdminLegalDong;
 import com.jachwisunbae.transit.domain.AdminDong;
 import java.io.IOException;
 import java.nio.charset.Charset;

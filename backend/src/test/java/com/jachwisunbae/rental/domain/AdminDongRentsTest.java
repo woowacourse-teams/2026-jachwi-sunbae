@@ -2,6 +2,8 @@ package com.jachwisunbae.rental.domain;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.jachwisunbae.rental.domain.vo.AdminDongDeal;
+import com.jachwisunbae.rental.domain.vo.AdminDongRent;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
@@ -13,9 +15,9 @@ class AdminDongRentsTest {
     @Test
     @DisplayName("행정동 거래의 월세·보증금 중앙값과 거래 수를 낸다")
     void calculatesMedian() {
-        List<AdminDongRents.Deal> deals = new ArrayList<>();
+        List<AdminDongDeal> deals = new ArrayList<>();
         for (long rent : new long[] {400_000, 500_000, 450_000, 700_000, 300_000}) {
-            deals.add(new AdminDongRents.Deal("11210630", "신림동", rent, rent * 10));
+            deals.add(new AdminDongDeal("11210630", "신림동", rent, rent * 10));
         }
 
         assertThat(AdminDongRents.calculate(deals))
@@ -25,11 +27,11 @@ class AdminDongRentsTest {
     @Test
     @DisplayName("여러 법정동을 관할하는 행정동은 거래를 모두 합치고 거래가 있던 법정동을 거래가 많은 순서로 담는다")
     void poolsLegalDongs() {
-        List<AdminDongRents.Deal> deals = List.of(new AdminDongRents.Deal("11010615", "관수동", 500_000, 0),
-            new AdminDongRents.Deal("11010615", "관철동", 600_000, 0),
-            new AdminDongRents.Deal("11010615", "관철동", 700_000, 0),
-            new AdminDongRents.Deal("11010615", "관철동", 800_000, 0),
-            new AdminDongRents.Deal("11010615", "관수동", 900_000, 0));
+        List<AdminDongDeal> deals = List.of(new AdminDongDeal("11010615", "관수동", 500_000, 0),
+            new AdminDongDeal("11010615", "관철동", 600_000, 0),
+            new AdminDongDeal("11010615", "관철동", 700_000, 0),
+            new AdminDongDeal("11010615", "관철동", 800_000, 0),
+            new AdminDongDeal("11010615", "관수동", 900_000, 0));
 
         AdminDongRent rent = AdminDongRents.calculate(deals).getFirst();
 
@@ -41,10 +43,10 @@ class AdminDongRentsTest {
     @Test
     @DisplayName("합친 거래가 5건보다 적으면 시세를 내지 않는다")
     void skipsFewTransactions() {
-        List<AdminDongRents.Deal> deals = List.of(new AdminDongRents.Deal("11210630", "신림동", 500_000, 0),
-            new AdminDongRents.Deal("11210630", "신림동", 500_000, 0),
-            new AdminDongRents.Deal("11210630", "신림동", 500_000, 0),
-            new AdminDongRents.Deal("11210630", "신림동", 500_000, 0));
+        List<AdminDongDeal> deals = List.of(new AdminDongDeal("11210630", "신림동", 500_000, 0),
+            new AdminDongDeal("11210630", "신림동", 500_000, 0),
+            new AdminDongDeal("11210630", "신림동", 500_000, 0),
+            new AdminDongDeal("11210630", "신림동", 500_000, 0));
 
         assertThat(AdminDongRents.calculate(deals)).isEmpty();
     }

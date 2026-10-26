@@ -1,9 +1,10 @@
 package com.jachwisunbae.rental.repository;
 
-import com.jachwisunbae.rental.domain.AdminDongRent;
 import com.jachwisunbae.rental.domain.AdminDongRents;
-import com.jachwisunbae.rental.domain.AdminLegalDong;
 import com.jachwisunbae.rental.domain.RentalSnapshot;
+import com.jachwisunbae.rental.domain.vo.AdminDongDeal;
+import com.jachwisunbae.rental.domain.vo.AdminDongRent;
+import com.jachwisunbae.rental.domain.vo.AdminLegalDong;
 import java.time.LocalDate;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -40,13 +41,13 @@ public class JdbcAdminDongRentRepository {
             """, LocalDate.class, RentalSnapshot.DATASET_KEY).stream().findFirst();
     }
 
-    public List<AdminDongRents.Deal> findDeals(final LocalDate startDate, final LocalDate endDate) {
+    public List<AdminDongDeal> findDeals(final LocalDate startDate, final LocalDate endDate) {
         return jdbcTemplate.query("""
             SELECT l.admin_dong_code, l.legal_dong_name, t.monthly_rent_amount_krw, t.deposit_amount_krw
             FROM admin_legal_dongs l
             JOIN rental_transactions t ON t.legal_dong_code = l.legal_dong_code
             WHERE t.dataset_key = ? AND t.contract_date BETWEEN ? AND ?
-            """, (rs, index) -> new AdminDongRents.Deal(rs.getString("admin_dong_code"), rs.getString("legal_dong_name"),
+            """, (rs, index) -> new AdminDongDeal(rs.getString("admin_dong_code"), rs.getString("legal_dong_name"),
                 rs.getLong("monthly_rent_amount_krw"), rs.getLong("deposit_amount_krw")),
             RentalSnapshot.DATASET_KEY, startDate, endDate);
     }

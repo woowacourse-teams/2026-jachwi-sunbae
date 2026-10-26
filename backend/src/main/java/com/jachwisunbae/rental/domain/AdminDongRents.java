@@ -1,5 +1,7 @@
 package com.jachwisunbae.rental.domain;
 
+import com.jachwisunbae.rental.domain.vo.AdminDongDeal;
+import com.jachwisunbae.rental.domain.vo.AdminDongRent;
 import java.time.LocalDate;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -29,9 +31,9 @@ public record AdminDongRents(LocalDate startDate, LocalDate endDate, Map<String,
         return endDate.minusMonths(MONTHS);
     }
 
-    public static List<AdminDongRent> calculate(final List<Deal> deals) {
-        Map<String, List<Deal>> dealsByAdminDong = deals.stream()
-            .collect(Collectors.groupingBy(Deal::adminDongCode, LinkedHashMap::new, Collectors.toList()));
+    public static List<AdminDongRent> calculate(final List<AdminDongDeal> deals) {
+        Map<String, List<AdminDongDeal>> dealsByAdminDong = deals.stream()
+            .collect(Collectors.groupingBy(AdminDongDeal::adminDongCode, LinkedHashMap::new, Collectors.toList()));
         return dealsByAdminDong.entrySet().stream()
             .filter(entry -> entry.getValue().size() >= MIN_TRANSACTIONS)
             .map(entry -> toRent(entry.getKey(), entry.getValue()))
@@ -42,16 +44,16 @@ public record AdminDongRents(LocalDate startDate, LocalDate endDate, Map<String,
         return Optional.ofNullable(byAdminDong.get(adminDongCode));
     }
 
-    private static AdminDongRent toRent(final String adminDongCode, final List<Deal> deals) {
+    private static AdminDongRent toRent(final String adminDongCode, final List<AdminDongDeal> deals) {
         Map<String, Long> countsByLegalDong = deals.stream()
-            .collect(Collectors.groupingBy(Deal::legalDongName, Collectors.counting()));
+            .collect(Collectors.groupingBy(AdminDongDeal::legalDongName, Collectors.counting()));
         List<String> legalDongNames = countsByLegalDong.keySet().stream()
             .sorted(Comparator.comparing((String name) -> -countsByLegalDong.get(name))
                 .thenComparing(Function.identity()))
             .toList();
         return new AdminDongRent(adminDongCode, legalDongNames,
-            median(deals.stream().mapToLong(Deal::monthlyRentKrw).toArray()),
-            median(deals.stream().mapToLong(Deal::depositKrw).toArray()), deals.size());
+            median(deals.stream().mapToLong(AdminDongDeal::monthlyRentKrw).toArray()),
+            median(deals.stream().mapToLong(AdminDongDeal::depositKrw).toArray()), deals.size());
     }
 
     // 짝수 개면 가운데 두 값의 평균을 반올림한다.
@@ -63,9 +65,5 @@ public record AdminDongRents(LocalDate startDate, LocalDate endDate, Map<String,
             return sorted[middle];
         }
         return Math.round((sorted[middle - 1] + sorted[middle]) / 2.0);
-    }
-
-    // 관할 법정동에서 맺어진 거래 한 건을 행정동 기준으로 본 것이다.
-    public record Deal(String adminDongCode, String legalDongName, long monthlyRentKrw, long depositKrw) {
     }
 }

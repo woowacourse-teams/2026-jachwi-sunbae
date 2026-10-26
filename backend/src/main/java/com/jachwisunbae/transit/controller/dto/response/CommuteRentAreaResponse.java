@@ -1,7 +1,7 @@
 package com.jachwisunbae.transit.controller.dto.response;
 
-import com.jachwisunbae.rental.domain.AdminDongRent;
 import com.jachwisunbae.rental.domain.AdminDongRents;
+import com.jachwisunbae.rental.domain.vo.AdminDongRent;
 import com.jachwisunbae.transit.domain.CommuteArea;
 import java.util.List;
 import java.util.Optional;
