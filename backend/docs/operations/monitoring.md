@@ -111,6 +111,50 @@ Dev와 Prod는 각각 Spring의 `dev`·`prod` 프로필을 사용하며 두 프�
 
 `X-Request-Id`는 서버가 매 요청마다 새로 만들고 응답 헤더로 반환한다. 사용자가 전달한 값을 신뢰해 재사용하지 않는다.
 
+### 기상청 API 요청 실패
+
+기상청 클라이언트는 실패한 요청마다 `weather-kma-request-failed`를 WARN으로 한 번 기록한다. 콘솔에서는 메시지 뒤의 키·값으로, dev·prod ECS JSON에서는 개별 필드로 확인한다. 기존 `weather-collection-end`와 `weather-scheduled-collection-failed`는 수집 전체의 결과를 계속 기록한다.
+
+| 필드          | 의미                                                                           |
+| ------------- | ------------------------------------------------------------------------------ |
+| `publishedAt` | 요청한 발표시각. KST를 나타내는 `+09:00` 포함                                  |
+| `forecastAt`  | 요청한 예보 대상시각. KST를 나타내는 `+09:00` 포함                             |
+| `element`     | 요청한 기상 요소 (`TMP`, `PTY`, `TMX` 등)                                      |
+| `errorCode`   | 애플리케이션 오류 코드. 기상청 응답 본문의 오류 코드를 추출한 값이 아님        |
+| `httpStatus`  | 실제 수신한 HTTP 상태. 상태를 받기 전에 실패하면 `null`                        |
+| `durationMs`  | 요청 시작부터 실패까지의 밀리초. 응답 본문 읽기·파싱을 포함하고 DB 저장은 제외 |
+
+| 실패 상황                                          | `errorCode`                    | `httpStatus`                          |
+| -------------------------------------------------- | ------------------------------ | ------------------------------------- |
+| HTTP 200 외의 응답                                 | `WEATHER_PROVIDER_UNAVAILABLE` | 수신한 상태 (예: `403`, `429`, `503`) |
+| 상태 수신 전 연결 오류·시간 초과 등                | `WEATHER_PROVIDER_UNAVAILABLE` | `null`                                |
+| HTTP 200의 본문을 읽던 중 오류·시간 초과           | `WEATHER_PROVIDER_UNAVAILABLE` | `200`                                 |
+| HTTP 200이지만 빈 응답·잘못된 RAW·유효값 없는 응답 | `WEATHER_RESPONSE_INVALID`     | `200`                                 |
+
+다음은 HTTP 503으로 실패한 경우의 예시이며 실제 장애 기록은 아니다.
+
+```text
+weather-kma-request-failed publishedAt="2026-10-27T05:00+09:00" forecastAt="2026-10-27T07:00+09:00" element="PTY" errorCode="WEATHER_PROVIDER_UNAVAILABLE" httpStatus="503" durationMs="1250"
+```
+
+로그에는 위 메타데이터만 추가하며 요청 URL·인증키·응답 원문·원본 예외 메시지와 스택은 전달하지 않는다. 실패는 기존처럼 예외로 전파하고, 성공한 요청과 인증키 누락으로 HTTP 호출 전에 거부한 요청에는 이 실패 로그를 남기지 않는다.
+
+서버에서는 아래 명령으로 개별 요청 실패와 수집 결과를 함께 확인한다.
+
+```bash
+sudo journalctl -u jachwi-sunbae.service --since "24 hours ago" --no-pager \
+  | grep -E 'weather-kma-request-failed|weather-collection-end|weather-scheduled-collection-failed'
+```
+
+CloudWatch Logs Insights에서는 다음 쿼리로 요청별 실패 정보를 조회한다.
+
+```text
+fields @timestamp, publishedAt, forecastAt, element, errorCode, httpStatus, durationMs
+| filter message = "weather-kma-request-failed"
+| sort @timestamp desc
+| limit 100
+```
+
 ## 새 EC2 적용 점검
 
 `/etc/jachwi-sunbae/app.env`에 `DEPLOYMENT_ENVIRONMENT`와 `LOG_PATH`를 환경에 맞게 추가한다.
