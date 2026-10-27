@@ -45,6 +45,7 @@ dependencies {
 	implementation 'com.google.firebase:firebase-admin:9.11.0'
 	implementation 'org.springframework.boot:spring-boot-starter-validation'
 	implementation 'org.springframework.boot:spring-boot-starter-web'
+	implementation 'org.jsoup:jsoup:1.23.2'
 	implementation 'org.springframework.security:spring-security-crypto'
 	implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.9.0'
 	implementation platform('software.amazon.awssdk:bom:2.41.24')
@@ -91,4 +92,19 @@ tasks.register('importTransitNetwork', JavaExec) {
 	description = '행정동 경계와 GTFS 파일을 목적지 탐색용 노선망으로 적재한다.'
 	classpath = sourceSets.main.runtimeClasspath
 	mainClass = 'com.jachwisunbae.transit.importer.TransitImportCommand'
+}
+
+tasks.register('collectEmart24Promotions', JavaExec) {
+	group = 'application'
+	description = '이마트24 공개 행사상품을 명시적으로 수집하고 결과를 출력한다.'
+	classpath = sourceSets.main.runtimeClasspath
+	mainClass = 'com.jachwisunbae.promotion.provider.emart24.Emart24PromotionCollectionCommand'
+}
+
+tasks.register('storeEmart24PromotionsLocally', JavaExec) {
+	group = 'application'
+	description = '새 로컬 MySQL 컨테이너에서 행사상품 수집·중복 제거·저장을 검증한다.'
+	dependsOn tasks.named('testClasses')
+	classpath = sourceSets.test.runtimeClasspath
+	mainClass = 'com.jachwisunbae.promotion.collector.PromotionLocalCollectionCommand'
 }
