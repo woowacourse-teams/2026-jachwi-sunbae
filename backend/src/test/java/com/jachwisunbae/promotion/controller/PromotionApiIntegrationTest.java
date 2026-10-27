@@ -18,6 +18,8 @@ import com.jachwisunbae.common.web.ApiResponse;
 import com.jachwisunbae.promotion.controller.dto.response.PromotionProductsResponse;
 import com.jachwisunbae.promotion.domain.ConvenienceBrand;
 import com.jachwisunbae.promotion.domain.PromotionProduct;
+import com.jachwisunbae.promotion.domain.ProductCategory;
+import com.jachwisunbae.promotion.provider.seveneleven.SevenElevenPromotionClient;
 import com.jachwisunbae.promotion.provider.emart24.Emart24PromotionClient;
 import com.jachwisunbae.promotion.repository.JdbcPromotionProductRepository;
 import com.jachwisunbae.promotion.service.PromotionCollectionService;
@@ -79,6 +81,8 @@ class PromotionApiIntegrationTest {
     private PromotionCollectionService collection;
     @MockitoBean
     private Emart24PromotionClient client;
+    @MockitoBean
+    private SevenElevenPromotionClient sevenClient;
 
     @DynamicPropertySource
     static void database(final DynamicPropertyRegistry registry) {
@@ -94,7 +98,7 @@ class PromotionApiIntegrationTest {
 
     @AfterEach
     void verifiesReadOnlyRequestDoesNotCollect() {
-        verifyNoInteractions(collection, client);
+        verifyNoInteractions(collection, client, sevenClient);
     }
 
     @Test
@@ -123,6 +127,25 @@ class PromotionApiIntegrationTest {
                 .andExpect(jsonPath("$.data.products[0].length()").value(5))
                 .andExpect(jsonPath("$.data.products[0].id").doesNotExist())
                 .andExpect(jsonPath("$.data.products[0].brand").doesNotExist())
+                .andExpect(jsonPath("$.data.collectedAt").value("2026-10-27T14:14:47+09:00"));
+    }
+
+    @Test
+    void returnsSevenElevenUnknownCategoryAndOfficialSourceWithoutCollecting() throws Exception {
+        PromotionProduct base = product("검증용 세븐일레븐");
+        PromotionProduct seven = new PromotionProduct(ConvenienceBrand.SEVEN_ELEVEN, base.name(), base.price(),
+                base.imageUrl(), ProductCategory.UNKNOWN, base.promotionType());
+        repository.replaceByBrand(ConvenienceBrand.SEVEN_ELEVEN, List.of(seven), COLLECTED_AT);
+        repository.replaceByBrand(BRAND, List.of(product("다른 브랜드")), COLLECTED_AT.plusHours(1));
+
+        mvc.perform(get("/api/promotions").param("brand", "SEVEN_ELEVEN").header("Authorization", bearer()))
+                .andExpect(status().isOk())
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.header()
+                        .string("X-Promotion-Source", "https://www.7-eleven.co.kr/product/presentList.asp"))
+                .andExpect(jsonPath("$.data.brand").value("SEVEN_ELEVEN"))
+                .andExpect(jsonPath("$.data.count").value(1))
+                .andExpect(jsonPath("$.data.products[0].name").value("검증용 세븐일레븐"))
+                .andExpect(jsonPath("$.data.products[0].category").value("UNKNOWN"))
                 .andExpect(jsonPath("$.data.collectedAt").value("2026-10-27T14:14:47+09:00"));
     }
 

@@ -2,6 +2,7 @@ package com.jachwisunbae.promotion.provider.emart24;
 
 import com.jachwisunbae.common.exception.errorcode.ErrorCode;
 import com.jachwisunbae.common.exception.server.UpstreamServiceException;
+import com.jachwisunbae.promotion.domain.ConvenienceBrand;
 import com.jachwisunbae.promotion.domain.PromotionProduct;
 import com.jachwisunbae.promotion.provider.PromotionFetcher;
 import java.util.ArrayList;
@@ -29,6 +30,11 @@ public class Emart24PromotionFetcher implements PromotionFetcher {
         }
         this.client = client;
         this.maxPageCount = maxPageCount;
+    }
+
+    @Override
+    public ConvenienceBrand brand() {
+        return ConvenienceBrand.EMART24;
     }
 
     @Override

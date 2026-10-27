@@ -10,7 +10,7 @@ public record PromotionProductResponse(
         @Schema(description = "상품명") String name,
         @Schema(description = "원 단위 판매가격", example = "2500") int price,
         @Schema(description = "공식 상품 이미지 URL") String imageUrl,
-        @Schema(description = "공통 상품 카테고리") ProductCategory category,
+        @Schema(description = "공통 상품 카테고리. 공식 분류를 확인할 수 없으면 UNKNOWN(미분류)") ProductCategory category,
         @Schema(description = "공통 행사 유형") PromotionType promotionType
 ) {
 

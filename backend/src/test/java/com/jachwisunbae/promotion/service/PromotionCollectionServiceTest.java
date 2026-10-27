@@ -28,6 +28,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.boot.test.system.CapturedOutput;
@@ -42,7 +43,15 @@ class PromotionCollectionServiceTest {
 
     private final PromotionFetcher fetcher = mock(PromotionFetcher.class);
     private final JdbcPromotionProductRepository repository = mock(JdbcPromotionProductRepository.class);
-    private final PromotionCollectionService service = new PromotionCollectionService(fetcher, repository, CLOCK);
+    private final Clock clock = mock(Clock.class);
+    private PromotionCollectionService service;
+
+    @BeforeEach
+    void setUp() {
+        when(fetcher.brand()).thenReturn(BRAND);
+        when(clock.instant()).thenReturn(CLOCK.instant());
+        service = new PromotionCollectionService(List.of(fetcher), repository, clock);
+    }
 
     @Test
     @DisplayName("모든 필드가 같은 항목만 제거하고 첫 수집 순서·같은 이름의 다른 행사·다른 가격을 유지한다")
@@ -52,7 +61,7 @@ class PromotionCollectionServiceTest {
         when(fetcher.fetch()).thenReturn(raw);
         when(repository.replaceByBrand(BRAND, expected, COLLECTED_AT)).thenReturn(4);
 
-        service.collect();
+        service.collect(BRAND);
 
         verify(repository).replaceByBrand(BRAND, expected, COLLECTED_AT);
         assertThat(output).contains("rawCount=7 duplicateCount=1 uniqueCount=6",
@@ -70,26 +79,29 @@ class PromotionCollectionServiceTest {
         PromotionProduct name = product("다른 이름");
         when(fetcher.fetch()).thenReturn(List.of(base, image, category, name, base));
 
-        service.collect();
+        service.collect(BRAND);
 
         verify(repository).replaceByBrand(BRAND, List.of(base, image, category, name), COLLECTED_AT);
     }
 
     @Test
-    @DisplayName("수집이 실패하면 저장소를 호출하지 않고 다음 정상 수집을 허용한다")
+    @DisplayName("수집 실패 후 당일 재시도는 생략하고 다음 날 정상 수집을 허용한다")
     void doesNotStoreFailedCollectionAndReleasesGuard(final CapturedOutput output) {
         UpstreamServiceException failure = new UpstreamServiceException(ErrorCode.PROMOTION_PROVIDER_UNAVAILABLE,
                 "전체 HTML은 로그에 남기지 않는다");
         when(fetcher.fetch()).thenThrow(failure).thenReturn(List.of(product("정상 상품")));
 
-        assertThatThrownBy(service::collect).isSameAs(failure);
+        assertThatThrownBy(() -> service.collect(BRAND)).isSameAs(failure);
         verifyNoInteractions(repository);
         assertThat(output).contains("success=false exceptionType=UpstreamServiceException")
                 .doesNotContain("success=true", "전체 HTML은 로그에 남기지 않는다");
 
-        service.collect();
+        service.collect(BRAND);
+        verify(fetcher).fetch();
+        when(clock.instant()).thenReturn(CLOCK.instant().plusSeconds(86400));
+        service.collect(BRAND);
 
-        verify(repository).replaceByBrand(BRAND, List.of(product("정상 상품")), COLLECTED_AT);
+        verify(repository).replaceByBrand(BRAND, List.of(product("정상 상품")), COLLECTED_AT.plusDays(1));
     }
 
     @Test
@@ -97,7 +109,7 @@ class PromotionCollectionServiceTest {
     void rejectsEmptyCollection() {
         when(fetcher.fetch()).thenReturn(List.of());
 
-        assertThatThrownBy(service::collect).isInstanceOfSatisfying(UpstreamServiceException.class,
+        assertThatThrownBy(() -> service.collect(BRAND)).isInstanceOfSatisfying(UpstreamServiceException.class,
                 exception -> assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.PROMOTION_RESPONSE_INVALID));
         verifyNoInteractions(repository);
     }
@@ -110,7 +122,7 @@ class PromotionCollectionServiceTest {
                 base.imageUrl(), base.category(), base.promotionType());
         when(fetcher.fetch()).thenReturn(List.of(base, otherBrand));
 
-        assertThatThrownBy(service::collect).isInstanceOf(UpstreamServiceException.class);
+        assertThatThrownBy(() -> service.collect(BRAND)).isInstanceOf(UpstreamServiceException.class);
         verifyNoInteractions(repository);
     }
 
@@ -119,14 +131,16 @@ class PromotionCollectionServiceTest {
     void reportsStorageFailureAndReleasesGuard(final CapturedOutput output) {
         when(fetcher.fetch()).thenReturn(List.of(product("상품")));
         IllegalStateException failure = new IllegalStateException("storage failure");
-        when(repository.replaceByBrand(eq(BRAND), any(), eq(COLLECTED_AT))).thenThrow(failure).thenReturn(1);
+        when(repository.replaceByBrand(eq(BRAND), any(), any())).thenThrow(failure).thenReturn(1);
 
-        assertThatThrownBy(service::collect).isSameAs(failure);
+        assertThatThrownBy(() -> service.collect(BRAND)).isSameAs(failure);
         assertThat(output).contains("success=false exceptionType=IllegalStateException").doesNotContain("success=true");
 
-        service.collect();
-
-        verify(repository, times(2)).replaceByBrand(BRAND, List.of(product("상품")), COLLECTED_AT);
+        service.collect(BRAND);
+        verify(repository).replaceByBrand(BRAND, List.of(product("상품")), COLLECTED_AT);
+        when(clock.instant()).thenReturn(CLOCK.instant().plusSeconds(86400));
+        service.collect(BRAND);
+        verify(repository).replaceByBrand(BRAND, List.of(product("상품")), COLLECTED_AT.plusDays(1));
     }
 
     @Test
@@ -140,10 +154,10 @@ class PromotionCollectionServiceTest {
             return List.of(product("상품"));
         });
         try (var executor = Executors.newSingleThreadExecutor()) {
-            var running = executor.submit(service::collect);
+            var running = executor.submit(() -> service.collect(BRAND));
             try {
                 assertThat(entered.await(5, TimeUnit.SECONDS)).isTrue();
-                service.collect();
+                service.collect(BRAND);
                 verify(fetcher).fetch();
                 verifyNoInteractions(repository);
                 assertThat(output).contains("promotion-collection-skipped brand=EMART24 reason=already-running");
@@ -153,5 +167,28 @@ class PromotionCollectionServiceTest {
             running.get(5, TimeUnit.SECONDS);
         }
         verify(repository).replaceByBrand(BRAND, List.of(product("상품")), COLLECTED_AT);
+    }
+
+    @Test
+    void limitsEachBrandToOneAttemptPerKstDateEvenIfUtcDateIsSame(final CapturedOutput output) {
+        when(fetcher.fetch()).thenReturn(List.of(product("상품")));
+        when(clock.instant()).thenReturn(Instant.parse("2026-10-27T14:59:59Z"));
+        service.collect(BRAND);
+        service.collect(BRAND);
+        verify(fetcher).fetch();
+        assertThat(output).contains("reason=already-attempted-today");
+
+        when(clock.instant()).thenReturn(Instant.parse("2026-10-27T15:00:00Z"));
+        service.collect(BRAND);
+
+        verify(fetcher, times(2)).fetch();
+        verify(repository).replaceByBrand(BRAND, List.of(product("상품")), LocalDateTime.of(2026, 10, 28, 0, 0));
+    }
+
+    @Test
+    void rejectsDuplicateOrUnregisteredBrand() {
+        assertThatThrownBy(() -> new PromotionCollectionService(List.of(fetcher, fetcher), repository, clock))
+                .isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> service.collect(ConvenienceBrand.GS25)).isInstanceOf(IllegalArgumentException.class);
     }
 }

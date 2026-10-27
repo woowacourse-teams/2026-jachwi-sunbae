@@ -50,7 +50,7 @@ GET https://emart24.co.kr/goods/event?page=1&base_category_seq=1
 | 세일      | 4              | `SALE`               |
 | 골라담기  | 12             | `PICK_AND_MIX`       |
 
-두 매핑은 공식 화면의 필터 링크에서 확인했다. 숫자 코드는 제공자 내부에서만 사용하고, `전체`는 상품 분류에 넣지 않는다. 다른 브랜드는 공통 브랜드 enum에만 정의하며 실제 수집 구현은 이마트24 하나다.
+두 매핑은 공식 화면의 필터 링크에서 확인했다. 숫자 코드는 제공자 내부에서만 사용하고, `전체`는 상품 분류에 넣지 않는다. 세븐일레븐 수집은 [세븐일레븐 개발 가이드](seven-eleven-promotions.md)를 참고한다. 이마트24의 카테고리·행사 매핑은 그대로 유지한다.
 
 ## HTML 해석과 실패 기준
 
@@ -129,9 +129,9 @@ promotionType=TWO_PLUS_ONE
 ## 구현 경계와 후속 고려 사항
 
 - `promotion/domain`: 공통 불변 상품 모델, 분류·혜택·브랜드.
-- `PromotionFetcher`: 전체 수집 결과를 공통 모델 목록으로 제공하는 최소 경계.
+- `PromotionFetcher`: `brand()`로 담당 브랜드를 밝히고 전체 수집 결과를 공통 모델 목록으로 제공하는 최소 경계.
 - `provider/emart24`: 외부 코드 매핑, HTTP 요청, 순수 HTML 파싱, 페이지 순회와 수동 명령.
-- `service/PromotionCollectionService`: 전체 수집, 정확히 같은 항목의 중복 제거, 저장 요청과 단일 Service의 중복 실행 제어.
+- `service/PromotionCollectionService`: 브랜드별 전체 수집, 정확히 같은 항목의 중복 제거, 저장 요청과 단일 Service의 브랜드별 중복·당일 반복 실행 제어.
 - `repository/JdbcPromotionProductRepository`: 브랜드별 트랜잭션 교체, 저장 결과 조회와 마지막 정상 수집 시각 조회.
 - `collector/PromotionCollectionScheduler`: 설정이 활성화된 경우 매일 한국시간 오전 4시에 Service 호출.
 - `controller/PromotionController`와 `service/PromotionQueryService`: 저장된 브랜드별 전체 목록 조회와 응답 DTO 변환. 수집·저장 경로를 호출하지 않는다.
@@ -142,7 +142,8 @@ promotion/
 ├── domain/                  기존 공통 모델·enum
 ├── provider/
 │   ├── PromotionFetcher
-│   └── emart24/             기존 HTTP·파서·전체 페이지 수집·출력 명령
+│   ├── emart24/             기존 HTTP·파서·전체 페이지 수집·출력 명령
+│   └── seveneleven/         세븐일레븐 HTTP·파서·행사 탭별 페이지 수집
 ├── service/
 │   ├── PromotionCollectionService
 │   ├── PromotionQueryService
@@ -182,7 +183,7 @@ promotion/
 ```text
 PromotionFetcher.fetch()                 전체 HTTP 요청·파싱, 트랜잭션 밖
     ↓ 전체 수집 성공
-PromotionCollectionService.collect()     빈 목록·브랜드 검증, 전체 필드 중복 제거
+PromotionCollectionService.collect(brand) 빈 목록·브랜드 검증, 전체 필드 중복 제거
     ↓ Spring Bean 사이 호출
 JdbcPromotionProductRepository.replaceByBrand()
     BEGIN
@@ -213,9 +214,9 @@ promotion:
 ./gradlew bootRun --args='--spring.profiles.active=local --promotion.collection.enabled=true'
 ```
 
-등록한 스케줄은 `@Scheduled(cron = "0 0 4 * * *", zone = "Asia/Seoul")`이다. 실패하면 Service는 실패 유형을 기록하고 예외를 전파한다. Scheduler는 경고를 남기며 다음 날 실행을 유지하고 즉시 재시도하지 않는다. 테스트에서는 실제 등록된 작업의 Runnable을 직접 실행하므로 오전 4시까지 기다리거나 외부 HTTP에 접근하지 않는다.
+등록한 스케줄은 `@Scheduled(cron = "0 0 4 * * *", zone = "Asia/Seoul")`이다. Service의 `collect()`는 주입된 브랜드별 Fetcher를 순차 실행하고, 한 브랜드의 예외를 기록한 뒤 다음 브랜드를 계속 실행한다. 특정 브랜드를 명시하는 `collect(brand)`는 실패를 호출자에게 전파한다. 실패한 브랜드를 당일 즉시 재시도하지 않는다. 테스트에서는 실제 등록된 작업의 Runnable을 직접 실행하므로 오전 4시까지 기다리거나 외부 HTTP에 접근하지 않는다.
 
-공유된 Service Bean의 `AtomicBoolean`은 수집과 저장이 끝날 때까지 겹치는 호출을 건너뛴다. 성공·실패 모두 `finally`에서 해제한다. 이 보호는 한 애플리케이션 인스턴스의 같은 Service에만 적용되며 **여러 JVM·인스턴스·별도 수동 명령 간 중복 실행을 보장하지 않는다.** 여러 인스턴스에서 flag를 켜면 각각 수집할 수 있다. 현재 분산 잠금·Quartz·Redis 등을 추가하지 않았으므로 자동 수집은 한 인스턴스에서만 활성화해야 한다.
+공유된 Service Bean은 브랜드별 실행 중 상태와 마지막 시도한 KST 날짜를 보관한다. 동기화된 짧은 상태 확인에서 겹치는 호출과 당일 반복 호출을 건너뛰고, 실패도 하루 1회 시도로 센다. `finally`에서 실행 중 상태만 해제하며 다음 KST 날짜에 다시 시도할 수 있다. 이 보호는 한 애플리케이션 인스턴스의 같은 Service에만 적용되며 **JVM 재시작·여러 인스턴스·별도 수동 명령 간 하루 1회를 보장하지 않는다.** 여러 인스턴스에서 flag를 켜면 각각 수집할 수 있다. 현재 분산 잠금·Quartz·Redis 등을 추가하지 않았으므로 자동 수집은 한 인스턴스에서만 활성화해야 한다.
 
 ## 로컬 MySQL 저장 확인
 
@@ -292,7 +293,7 @@ collectedAt=2026-10-27T14:14:47.603436 (KST)
 
 - 현재 동일성은 전체 필드 조합이다. 제공자별 영구 식별자, 행사 기간과 가격 변경 이력이 필요해지면 별도 정책과 저장 구조를 설계해야 한다.
 - 실제 사이트 전체 결과를 DB에 넣는 `--live` 경로는 이번에 재실행하지 않았다. 기존 실제 HTTP 파싱 검증과 새 fixture 기반 저장 검증을 구분한다.
-- 단일 인스턴스 실행 중 중복만 막는다. 다중 인스턴스의 잠금·실행 이력·장애 복구와 실패 알림은 후속 범위다.
+- 현재 Service는 단일 JVM에서 브랜드별 실행 중 중복과 KST 당일 반복을 막는다. 재시작·다중 인스턴스의 잠금·공유 실행 이력·장애 복구와 실패 알림은 후속 범위다.
 - 정상적으로 파싱되는 대폭 감소를 탐지하는 최소 상품 수 정책은 없다. 현재는 전체 수집 완료와 비어 있지 않은 결과만 저장하며 구조·페이지 수량 오류는 기존 파서가 거부한다.
 
 ## 행사상품 전체 조회 API
@@ -425,3 +426,7 @@ Swagger UI는 로컬 앱의 `/swagger-ui/index.html`에서 확인한다. `Promot
 - 기존 익명 로그인으로 받은 JWT로 dev API의 정상·빈 결과·인증 실패를 검증한다.
 
 이번 작업에서는 브랜치 병합·배포·실제 dev/prod DB 변경을 수행하지 않는다.
+
+## 세븐일레븐 연동 이후
+
+후속 실험에서 `PromotionFetcher.brand()`와 브랜드별 수집 목록을 추가했다. 이마트24 제공자의 HTTP·카테고리·파싱 규칙은 유지하며 Service의 당일 실행 정책만 두 브랜드에 공통 적용한다. `UNKNOWN`은 공식 카테고리를 확인하지 못한 세븐일레븐용이며 이마트24의 기존 네 분류는 유지한다. 위 테스트 수와 실제 수집 기록은 각 단계 당시 결과다. 최신 구현·검증 범위와 실제 전체 수집 중단 기록은 [세븐일레븐 가이드](seven-eleven-promotions.md)를 따른다.

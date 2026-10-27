@@ -4,11 +4,28 @@ import com.jachwisunbae.promotion.domain.ConvenienceBrand;
 import com.jachwisunbae.promotion.domain.ProductCategory;
 import com.jachwisunbae.promotion.domain.PromotionProduct;
 import com.jachwisunbae.promotion.domain.PromotionType;
+import com.jachwisunbae.promotion.provider.PromotionFetcher;
 import java.util.List;
+import java.util.function.Supplier;
 
 public final class PromotionProductsFixture {
 
     private PromotionProductsFixture() {
+    }
+
+    public static PromotionFetcher fetcher(final ConvenienceBrand brand,
+                                           final Supplier<List<PromotionProduct>> products) {
+        return new PromotionFetcher() {
+            @Override
+            public ConvenienceBrand brand() {
+                return brand;
+            }
+
+            @Override
+            public List<PromotionProduct> fetch() {
+                return products.get();
+            }
+        };
     }
 
     public static PromotionProduct product(final String name) {

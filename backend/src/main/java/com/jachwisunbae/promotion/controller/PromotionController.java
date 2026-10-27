@@ -12,6 +12,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -45,7 +46,10 @@ public class PromotionController {
     })
     public ApiResponse<PromotionProductsResponse> findByBrand(
             @Parameter(description = "조회할 브랜드(enum 이름, 대문자)", required = true, example = "EMART24")
-            @RequestParam final ConvenienceBrand brand) {
+            @RequestParam final ConvenienceBrand brand, final HttpServletResponse response) {
+        if (brand == ConvenienceBrand.SEVEN_ELEVEN) {
+            response.setHeader("X-Promotion-Source", "https://www.7-eleven.co.kr/product/presentList.asp");
+        }
         return ApiResponse.of(PromotionProductsResponse.from(service.findByBrand(brand)));
     }
 }

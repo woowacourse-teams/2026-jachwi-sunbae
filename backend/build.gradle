@@ -108,3 +108,11 @@ tasks.register('storeEmart24PromotionsLocally', JavaExec) {
 	classpath = sourceSets.test.runtimeClasspath
 	mainClass = 'com.jachwisunbae.promotion.collector.PromotionLocalCollectionCommand'
 }
+
+tasks.register('storeSevenElevenPromotionsLocally', JavaExec) {
+	group = 'application'
+	description = '세븐일레븐 수집·응답 재생·중복 제거·저장을 새 로컬 MySQL에서 검증한다.'
+	dependsOn tasks.named('testClasses')
+	classpath = sourceSets.test.runtimeClasspath
+	mainClass = 'com.jachwisunbae.promotion.provider.seveneleven.SevenElevenLocalCollectionCommand'
+}

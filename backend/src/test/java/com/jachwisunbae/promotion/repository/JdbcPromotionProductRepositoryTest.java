@@ -9,6 +9,8 @@ import static org.mockito.Mockito.when;
 import com.jachwisunbae.common.exception.server.UpstreamServiceException;
 import com.jachwisunbae.promotion.domain.ConvenienceBrand;
 import com.jachwisunbae.promotion.domain.PromotionProduct;
+import com.jachwisunbae.promotion.domain.ProductCategory;
+import com.jachwisunbae.promotion.collector.PromotionCollectionScheduler;
 import com.jachwisunbae.promotion.provider.PromotionFetcher;
 import com.jachwisunbae.promotion.service.PromotionCollectionService;
 import com.jachwisunbae.promotion.support.PromotionDatabaseTestConfiguration;
@@ -66,6 +68,7 @@ class JdbcPromotionProductRepositoryTest {
 
     @BeforeEach
     void setUp() {
+        when(fetcher.brand()).thenReturn(BRAND);
         openContext(false);
         jdbcTemplate.update("DELETE FROM promotion_products");
     }
@@ -197,17 +200,21 @@ class JdbcPromotionProductRepositoryTest {
         assertThat(repository.findByBrand(BRAND)).containsExactly(product("트랜잭션 밖에서 수집한 상품"));
     }
 
-    @Test
+    @ParameterizedTest
+    @ValueSource(booleans = {false, true})
     @DisplayName("HTTP 실패와 빈 수집 결과 모두 마지막 정상 DB 스냅샷을 유지한다")
-    void preservesStoredSnapshotWhenFetchFailsOrReturnsEmpty() {
+    void preservesStoredSnapshotWhenFetchFailsOrReturnsEmpty(final boolean empty) {
         repository.replaceByBrand(BRAND, List.of(product("보존 상품")), FIRST_AT);
         List<Map<String, Object>> before = rows();
-        when(fetcher.fetch()).thenThrow(new IllegalStateException("upstream failure")).thenReturn(List.of());
+        if (empty) {
+            when(fetcher.fetch()).thenReturn(List.of());
+        } else {
+            when(fetcher.fetch()).thenThrow(new IllegalStateException("upstream failure"));
+        }
         PromotionCollectionService service = context.getBean(PromotionCollectionService.class);
 
-        assertThatThrownBy(service::collect).isInstanceOf(IllegalStateException.class);
-        assertThat(rows()).isEqualTo(before);
-        assertThatThrownBy(service::collect).isInstanceOf(UpstreamServiceException.class);
+        assertThatThrownBy(() -> service.collect(BRAND))
+                .isInstanceOf(empty ? UpstreamServiceException.class : IllegalStateException.class);
         assertThat(rows()).isEqualTo(before);
     }
 
@@ -256,12 +263,63 @@ class JdbcPromotionProductRepositoryTest {
         return jdbcTemplate.queryForList("SELECT * FROM promotion_products ORDER BY id");
     }
 
-    private void openContext(final boolean rewriteBatches) {
+    @ParameterizedTest
+    @EnumSource(value = ConvenienceBrand.class, names = {"EMART24", "SEVEN_ELEVEN"})
+    @DisplayName("실제 스케줄러에서 한 브랜드 수집 실패와 무관하게 다른 브랜드는 독립적으로 갱신한다")
+    void schedulerKeepsFailedBrandAndUpdatesOtherBrand(final ConvenienceBrand failedBrand) {
+        PromotionFetcher seven = mock(PromotionFetcher.class);
+        when(seven.brand()).thenReturn(ConvenienceBrand.SEVEN_ELEVEN);
+        context.close();
+        openContext(true, seven);
+        PromotionProduct previousSeven = sevenProduct("이전 세븐일레븐");
+        repository.replaceByBrand(BRAND, List.of(product("이전 이마트24")), FIRST_AT);
+        repository.replaceByBrand(ConvenienceBrand.SEVEN_ELEVEN, List.of(previousSeven), FIRST_AT);
+        when(fetcher.fetch()).thenReturn(List.of(product("새 이마트24")));
+        when(seven.fetch()).thenReturn(List.of(sevenProduct("새 세븐일레븐"), sevenProduct("새 세븐일레븐")));
+        when((failedBrand == BRAND ? fetcher : seven).fetch()).thenThrow(new IllegalStateException("HTTP 실패"));
+
+        PromotionCollectionScheduler scheduler = new PromotionCollectionScheduler(context.getBean(PromotionCollectionService.class));
+        scheduler.collect();
+        scheduler.collect();
+
+        assertThat(repository.findByBrand(BRAND)).containsExactly(product(failedBrand == BRAND ? "이전 이마트24" : "새 이마트24"));
+        assertThat(repository.findByBrand(ConvenienceBrand.SEVEN_ELEVEN))
+                .containsExactly(sevenProduct(failedBrand == BRAND ? "새 세븐일레븐" : "이전 세븐일레븐"));
+        assertThat(repository.findLastCollectedAt(failedBrand)).contains(FIRST_AT);
+        org.mockito.Mockito.verify(fetcher).fetch();
+        org.mockito.Mockito.verify(seven).fetch();
+    }
+
+    @Test
+    void sevenElevenFailedSecondBatchPreservesBothBrandsAndTimestamp() {
+        repository.replaceByBrand(BRAND, List.of(product("보존 이마트24")), FIRST_AT);
+        repository.replaceByBrand(ConvenienceBrand.SEVEN_ELEVEN, List.of(sevenProduct("보존 세븐일레븐")), FIRST_AT);
+        var before = rows();
+        List<PromotionProduct> invalid = new ArrayList<>(IntStream.range(0, 1000)
+                .mapToObj(index -> sevenProduct("새 상품" + index)).toList());
+        invalid.add(sevenProduct("가".repeat(256)));
+
+        assertThatThrownBy(() -> repository.replaceByBrand(ConvenienceBrand.SEVEN_ELEVEN, invalid, FIRST_AT.plusDays(1)))
+                .isInstanceOf(DataIntegrityViolationException.class);
+
+        assertThat(rows()).isEqualTo(before);
+    }
+
+    private PromotionProduct sevenProduct(final String name) {
+        PromotionProduct base = product(name);
+        return new PromotionProduct(ConvenienceBrand.SEVEN_ELEVEN, name, base.price(), base.imageUrl(),
+                ProductCategory.UNKNOWN, base.promotionType());
+    }
+
+    private void openContext(final boolean rewriteBatches, final PromotionFetcher... additional) {
         DataSource dataSource = dataSource(rewriteBatches);
         context = new AnnotationConfigApplicationContext();
         context.registerBean(DataSource.class, () -> dataSource);
         context.registerBean(Clock.class, () -> CLOCK);
-        context.registerBean(PromotionFetcher.class, () -> fetcher);
+        context.registerBean("emart24Fetcher", PromotionFetcher.class, () -> fetcher);
+        for (PromotionFetcher extra : additional) {
+            context.registerBean(extra.brand().name(), PromotionFetcher.class, () -> extra);
+        }
         context.register(PromotionDatabaseTestConfiguration.class);
         context.refresh();
         repository = context.getBean(JdbcPromotionProductRepository.class);
