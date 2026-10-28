@@ -27,12 +27,6 @@ export const detailPage = css`
     margin: 0;
     font-size: 1.1rem;
   }
-
-  /* 데스크탑은 목록 옆 상세 칸(ListDetailLayout)을 채운다. 닫기는 칸 옆 지도 위 버튼이 맡는다. */
-  @media (min-width: 1024px) {
-    z-index: auto;
-    padding-top: 1.25rem;
-  }
 `;
 
 export const header = css`
@@ -53,45 +47,4 @@ export const header = css`
     color: inherit;
     cursor: pointer;
   }
-`;
-
-export const rent = css`
-  label: NeighborhoodRoutePage-rent;
-  display: grid;
-  gap: 0.25rem;
-  margin-bottom: 1rem;
-  padding: 0.9rem 1rem;
-  border-radius: 0.75rem;
-  background: var(--color-surface-muted);
-
-  & > span,
-  & > small {
-    color: var(--color-muted);
-    font-size: 0.8rem;
-  }
-
-  & > strong {
-    font-size: 1rem;
-  }
-`;
-
-export const address = css`
-  label: NeighborhoodRoutePage-address;
-  color: var(--color-muted);
-  line-height: 1.6;
-`;
-
-export const notice = css`
-  label: NeighborhoodRoutePage-notice;
-  color: var(--color-muted);
-  line-height: 1.6;
-  font-size: 0.8rem;
-  margin-top: 1.5rem;
-`;
-
-export const actions = css`
-  label: NeighborhoodRoutePage-actions;
-  display: grid;
-  gap: 0.5rem;
-  margin-top: 1rem;
 `;

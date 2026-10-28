@@ -66,28 +66,13 @@ export const root = cx(
       }
     }
 
-    /* 데스크탑은 화면 전체 폭에 공용 헤더를 두고, 지도가 아닌 화면의 내용만 48rem 가운데 열에 둔다. 홈과 같은 폭을 쓰는 화면(마이)은 폭을 스스로 정한다. */
-    @media (min-width: 1024px) {
-      &[data-design-shell='true'] {
-        width: 100%;
-        background: var(--color-canvas);
-      }
-    }
-
     /*
    * 지도가 아닌 앱 화면(체크리스트·방 비교·마이·매물 화면 등)은 휴대폰 기준 글자가 넓은 화면에서 너무 작아 보이므로,
-   * 이 화면이 열려 있는 동안 기준 글자 크기(rem)를 태블릿 112.5%, 데스크탑 125%로 올려 글자와 여백을 같은 비율로 키운다.
-   * 공용 데스크탑 헤더는 글자 크기를 px로 고정해 이 배율의 영향을 받지 않는다.
+   * 이 화면이 열려 있는 동안 기준 글자 크기(rem)를 태블릿부터 112.5%로 올려 글자와 여백을 같은 비율로 키운다(데스크탑 셸은 125%).
    */
     @media (min-width: 768px) {
       html:has(&[data-design-shell='true']:not([data-map-page='true'])) {
         font-size: 112.5%;
-      }
-    }
-
-    @media (min-width: 1024px) {
-      html:has(&[data-design-shell='true']:not([data-map-page='true'])) {
-        font-size: 125%;
       }
     }
   `,
@@ -130,63 +115,5 @@ export const content = css`
   .PropertyAppLayout-root[data-design-shell='true'][data-map-page='true'] & {
     --map-sheet-bottom: env(safe-area-inset-bottom);
     padding-bottom: 0;
-  }
-
-  @media (min-width: 1024px) {
-    .PropertyAppLayout-root[data-design-shell='true']:not([data-map-page='true']):not([data-home-width-page='true'])
-      &
-      > * {
-      width: min(100%, 48rem);
-      margin-right: auto;
-      margin-left: auto;
-    }
-  }
-`;
-
-/*
- * 하단바는 앱 셸이 아니라 화면에 고정한다.
- * 스크롤이 문서로 넘어가 셸이 튕기거나 당겨질 때(당겨서 새로고침 포함)도 제자리에 남는다.
- */
-export const bottomNavigation = css`
-  label: PropertyAppLayout-bottomNavigation;
-  position: fixed;
-  bottom: 0;
-  left: 50%;
-  z-index: 100;
-  display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
-  width: min(100%, var(--app-max-width));
-  transform: translateX(-50%);
-  min-height: calc(var(--bottom-navigation-height) + 1.1rem + env(safe-area-inset-bottom));
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-  border: 0;
-  border-top: 1px solid var(--color-border);
-  border-radius: 0;
-  background: var(--color-navigation-surface);
-
-  & a {
-    display: grid;
-    min-height: var(--bottom-navigation-height);
-    box-sizing: border-box;
-    padding: 0.3rem 0 calc(0.3rem + env(safe-area-inset-bottom));
-    place-items: center;
-    align-content: center;
-    gap: 0.16rem;
-    margin: 0;
-    border-radius: 0;
-    color: var(--color-muted);
-    font-size: 0.68rem;
-    font-weight: 800;
-    text-decoration: none;
-    transition:
-      color 180ms ease-out,
-      background-color 180ms ease-out;
-  }
-
-  & a[aria-current='page'] {
-    background: var(--color-primary);
-    color: var(--color-on-primary);
   }
 `;
