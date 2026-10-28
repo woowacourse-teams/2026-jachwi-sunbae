@@ -104,6 +104,20 @@ class JdbcPromotionProductRepositoryTest {
     }
 
     @Test
+    @DisplayName("한 브랜드를 교체해도 다른 브랜드의 목록과 수집 시각은 유지한다")
+    void replacesOnlyGivenBrand() {
+        repository.replaceByBrand(BRAND, List.of(product("이마트24 상품")), FIRST_AT);
+
+        repository.replaceByBrand(ConvenienceBrand.SEVEN_ELEVEN,
+                List.of(product(ConvenienceBrand.SEVEN_ELEVEN, "세븐일레븐 상품")), FIRST_AT.plusDays(1));
+
+        assertThat(repository.findByBrand(BRAND)).containsExactly(product("이마트24 상품"));
+        assertThat(repository.findLastCollectedAt(BRAND)).contains(FIRST_AT);
+        assertThat(repository.findByBrand(ConvenienceBrand.SEVEN_ELEVEN))
+                .containsExactly(product(ConvenienceBrand.SEVEN_ELEVEN, "세븐일레븐 상품"));
+    }
+
+    @Test
     @DisplayName("빈 목록으로는 기존 행을 지우지 않는다")
     void rejectsEmptyReplacement() {
         repository.replaceByBrand(BRAND, List.of(product("이전 상품")), FIRST_AT);

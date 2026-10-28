@@ -2,14 +2,15 @@ package com.jachwisunbae.promotion.controller;
 
 import static com.jachwisunbae.promotion.support.PromotionProductsFixture.product;
 import static org.hamcrest.Matchers.nullValue;
-import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.jachwisunbae.auth.token.JwtTokenProvider;
 import com.jachwisunbae.promotion.domain.ConvenienceBrand;
-import com.jachwisunbae.promotion.provider.PromotionFetcher;
+import com.jachwisunbae.promotion.provider.emart24.Emart24PromotionFetcher;
 import com.jachwisunbae.promotion.repository.JdbcPromotionProductRepository;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -26,7 +27,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.testcontainers.containers.MySQLContainer;
 import org.testcontainers.junit.jupiter.Container;
@@ -51,8 +52,9 @@ class PromotionApiIntegrationTest {
     private JdbcTemplate jdbc;
     @Autowired
     private JdbcPromotionProductRepository repository;
-    @MockitoBean
-    private PromotionFetcher fetcher;
+    // 수집 서비스가 생성 시 brand()를 읽으므로 실제 브랜드를 반환하는 Spy로 수집 호출만 감시한다.
+    @MockitoSpyBean
+    private Emart24PromotionFetcher fetcher;
 
     @DynamicPropertySource
     static void database(final DynamicPropertyRegistry registry) {
@@ -68,7 +70,7 @@ class PromotionApiIntegrationTest {
 
     @AfterEach
     void doesNotCollectOnRead() {
-        verifyNoInteractions(fetcher);
+        verify(fetcher, never()).fetch();
     }
 
     @Test

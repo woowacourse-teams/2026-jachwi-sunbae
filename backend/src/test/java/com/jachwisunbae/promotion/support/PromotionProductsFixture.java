@@ -11,7 +11,11 @@ public final class PromotionProductsFixture {
     }
 
     public static PromotionProduct product(final String name) {
-        return new PromotionProduct(ConvenienceBrand.EMART24, name, 3000, "https://example.com/product.jpg",
+        return product(ConvenienceBrand.EMART24, name);
+    }
+
+    public static PromotionProduct product(final ConvenienceBrand brand, final String name) {
+        return new PromotionProduct(brand, name, 3000, "https://example.com/product.jpg",
                 ProductCategory.MEAL, PromotionType.ONE_PLUS_ONE);
     }
 }

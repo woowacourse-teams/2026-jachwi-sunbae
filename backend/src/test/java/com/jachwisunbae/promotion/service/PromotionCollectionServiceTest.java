@@ -38,9 +38,15 @@ class PromotionCollectionServiceTest {
     private static final Clock CLOCK = Clock.fixed(Instant.parse("2026-10-27T04:00:00.123456Z"), ZoneOffset.UTC);
     private static final LocalDateTime COLLECTED_AT = LocalDateTime.of(2026, 10, 27, 13, 0, 0, 123456000);
 
-    private final PromotionFetcher fetcher = mock(PromotionFetcher.class);
+    private static final ConvenienceBrand OTHER_BRAND = ConvenienceBrand.SEVEN_ELEVEN;
+
+    private final PromotionFetcher fetcher = fetcher(BRAND);
+    private final PromotionFetcher otherFetcher = fetcher(OTHER_BRAND);
     private final JdbcPromotionProductRepository repository = mock(JdbcPromotionProductRepository.class);
-    private final PromotionCollectionService service = new PromotionCollectionService(fetcher, repository, CLOCK);
+    private final PromotionCollectionService service =
+            new PromotionCollectionService(List.of(fetcher), repository, CLOCK);
+    private final PromotionCollectionService multiBrandService =
+            new PromotionCollectionService(List.of(fetcher, otherFetcher), repository, CLOCK);
 
     @Test
     @DisplayName("모든 필드가 같은 항목만 제거하고 처음 수집한 순서로 KST 수집 시각과 함께 저장한다")
@@ -91,6 +97,69 @@ class PromotionCollectionServiceTest {
     }
 
     @Test
+    @DisplayName("다른 브랜드 상품이 섞인 수집 결과로는 기존 데이터 교체를 요청하지 않는다")
+    void rejectsOtherBrandProducts() {
+        when(fetcher.fetch()).thenReturn(List.of(product("상품"), product(OTHER_BRAND, "다른 브랜드 상품")));
+
+        assertThatThrownBy(service::collect).isInstanceOfSatisfying(UpstreamServiceException.class,
+                exception -> assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.PROMOTION_RESPONSE_INVALID));
+        verifyNoInteractions(repository);
+    }
+
+    @Test
+    @DisplayName("특정 브랜드를 지정하면 해당 브랜드의 수집기만 실행한다")
+    void collectsSelectedBrandOnly() {
+        when(otherFetcher.fetch()).thenReturn(List.of(product(OTHER_BRAND, "상품")));
+
+        multiBrandService.collect(OTHER_BRAND);
+
+        verify(fetcher, never()).fetch();
+        verify(repository).replaceByBrand(OTHER_BRAND, List.of(product(OTHER_BRAND, "상품")), COLLECTED_AT);
+    }
+
+    @Test
+    @DisplayName("등록된 수집기가 없는 브랜드는 수집하지 않는다")
+    void rejectsUnregisteredBrand() {
+        assertThatThrownBy(() -> service.collect(OTHER_BRAND)).isInstanceOf(IllegalArgumentException.class);
+
+        verifyNoInteractions(repository);
+    }
+
+    @Test
+    @DisplayName("같은 브랜드의 수집기가 둘이면 생성하지 않는다")
+    void rejectsDuplicateBrandFetchers() {
+        assertThatThrownBy(() -> new PromotionCollectionService(List.of(fetcher, fetcher(BRAND)), repository, CLOCK))
+                .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
+    @DisplayName("한 브랜드 수집이 실패해도 다른 브랜드를 저장하고 첫 실패를 전파한다")
+    void collectsOtherBrandsWhenOneFails() {
+        UpstreamServiceException failure = new UpstreamServiceException(ErrorCode.PROMOTION_PROVIDER_UNAVAILABLE,
+                "HTTP status=429");
+        when(fetcher.fetch()).thenThrow(failure);
+        when(otherFetcher.fetch()).thenReturn(List.of(product(OTHER_BRAND, "상품")));
+
+        assertThatThrownBy(multiBrandService::collect).isSameAs(failure);
+
+        verify(repository, never()).replaceByBrand(eq(BRAND), any(), any());
+        verify(repository).replaceByBrand(OTHER_BRAND, List.of(product(OTHER_BRAND, "상품")), COLLECTED_AT);
+    }
+
+    @Test
+    @DisplayName("저장된 목록이 없는 브랜드만 최초 수집을 실행한다")
+    void collectsInitiallyOnlyEmptyBrands() {
+        when(repository.findLastCollectedAt(BRAND)).thenReturn(Optional.of(COLLECTED_AT));
+        when(repository.findLastCollectedAt(OTHER_BRAND)).thenReturn(Optional.empty());
+        when(otherFetcher.fetch()).thenReturn(List.of(product(OTHER_BRAND, "상품")));
+
+        multiBrandService.collectIfEmpty();
+
+        verify(fetcher, never()).fetch();
+        verify(repository).replaceByBrand(OTHER_BRAND, List.of(product(OTHER_BRAND, "상품")), COLLECTED_AT);
+    }
+
+    @Test
     @DisplayName("저장된 목록이 없으면 최초 수집을 실행한다")
     void collectsInitiallyWhenEmpty() {
         when(repository.findLastCollectedAt(BRAND)).thenReturn(Optional.empty());
@@ -108,7 +177,7 @@ class PromotionCollectionServiceTest {
 
         service.collectIfEmpty();
 
-        verifyNoInteractions(fetcher);
+        verify(fetcher, never()).fetch();
         verify(repository, never()).replaceByBrand(any(), any(), any());
     }
 
@@ -122,5 +191,11 @@ class PromotionCollectionServiceTest {
         assertThatThrownBy(service::collect).isSameAs(failure);
 
         assertThat(output).contains("success=false exceptionType=IllegalStateException").doesNotContain("success=true");
+    }
+
+    private static PromotionFetcher fetcher(final ConvenienceBrand brand) {
+        PromotionFetcher fetcher = mock(PromotionFetcher.class);
+        when(fetcher.brand()).thenReturn(brand);
+        return fetcher;
     }
 }
