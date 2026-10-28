@@ -4,10 +4,11 @@ import ActionCard, { ActionCardIllustration } from '@/shared/ui/action-card/Acti
 
 import guideGoose from '../assets/guide-goose.webp';
 
-/** 홈 맨 위의 사용방법 카드. 기능 카드 묶음 위에 한 줄로 두고, 오른쪽 끝에서 오리가 고개를 내민다. */
+/** 홈 맨 위의 사용방법 카드. 기능 카드 묶음 위에 한 줄로 두고, 옅은 파랑 바탕의 오른쪽 끝에서 오리가 고개를 내민다. */
 const GuideCard = ({ className }: { className?: string }) => (
   <ActionCard
     title="사용방법 알아보기"
+    description="처음이라면 여기부터 보세요"
     aria-label="사용방법 알아보기"
     to="/guide"
     className={`${styles.guide} ${className ?? ''}`.trim()}
@@ -26,12 +27,19 @@ const guidePeekKeyframes = keyframes`
 
 const styles = {
   /* 기능 카드 묶음 밖에 있으므로 카드 글자 크기·여백을 묶음과 같게 직접 정한다. */
+  /*
+   * 회색 바탕에 검은 제목이면 아래 노랑·파랑 카드 사이에서 홀로 튀어, 옅은 파랑 바탕에 진한 파랑 제목과 회색 보조 문구를 둔다.
+   * 기능 카드 묶음 밖에 있으므로 카드 글자 크기·여백을 묶음과 같게 직접 정한다.
+   */
   guide: css`
     label: GuideCard-guide;
+    --action-card-surface: color-mix(in srgb, var(--color-brand-blue) 16%, #fff);
+    --action-card-ink: var(--color-brand-blue-ink);
     --action-card-title-size: 1.2rem;
+    --action-card-description-size: 0.78rem;
     --action-card-text-inset: 1.25rem;
     height: 5.2rem;
-    /* 흰 오리가 회색 카드에 묻히지 않게, 오리가 고개를 내미는 오른쪽 아래에 옅은 파란빛을 깐다. */
+    /* 흰 오리 윤곽이 바탕에 묻히지 않게, 오리가 고개를 내미는 오른쪽 끝에 조금 더 진한 파란빛을 깐다. */
     background:
       radial-gradient(
         circle 6.5rem at right 2.5rem top 72%,
@@ -40,6 +48,15 @@ const styles = {
         transparent 100%
       ),
       var(--action-card-surface);
+
+    & .ActionCard-text {
+      gap: 0.25rem;
+    }
+
+    & .ActionCard-description {
+      color: var(--color-muted);
+      opacity: 1;
+    }
 
     /* 오리는 처음 그려질 때 카드 아래 밖에 있다가 고개를 내밀며 들어온다. */
     & img {
@@ -54,7 +71,9 @@ const styles = {
 
     @media (min-width: 768px) {
       --action-card-title-size: 1.5rem;
-      --action-card-text-inset: 1.6rem;
+      --action-card-description-size: 0.9rem;
+      --action-card-text-inset: 1.4rem;
+      height: 6.2rem;
     }
   `,
 };

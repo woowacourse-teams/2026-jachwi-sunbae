@@ -15,6 +15,8 @@ injectGlobal`
   --color-brand-yellow: #f5b91e;
   /* 오리 부리보다 채도를 조금 낮춘 파랑. 안내 카드처럼 노랑과 짝을 이루는 보조 브랜드색이다. */
   --color-brand-blue: #6b9ae6;
+  /* 옅은 파랑 바탕 위에 올리는 진한 파랑 글자 */
+  --color-brand-blue-ink: #3f6fc4;
   --color-danger: #c96b6b;
 
   /* Change this single accent to retheme selected tabs, progress indicators and soft actions together. */
@@ -65,7 +67,7 @@ injectGlobal`
   --color-success-surface: #f1f1f1;
   /* 체크 상태: 괜찮음은 브랜드 파랑, 주의는 빨강, 미확인은 회색. */
   --color-check-good: var(--color-brand-blue);
-  --color-check-good-ink: #3f6fc4;
+  --color-check-good-ink: var(--color-brand-blue-ink);
   --color-check-caution: #ef7b7b;
   --color-check-caution-ink: #d14d4d;
   --color-check-unconfirmed: #c6c6c6;

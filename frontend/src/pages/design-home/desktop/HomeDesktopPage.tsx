@@ -29,14 +29,14 @@ const HomeDesktopPage = () => (
 
 const styles = {
   /*
-   * 데스크탑 홈: 공용 헤더 아래 본문을 64rem 안에 두고, 사용방법 카드는 두 열 전체 폭에,
+   * 데스크탑 홈: 공용 헤더 아래 본문을 64rem 안에 두고, 사용방법 카드는 아래 기능 카드와 같은 왼쪽 열 폭에,
    * 그 아래 왼쪽에 기능 카드, 오른쪽 19rem 열에 빠른 메뉴와 최근 기록을 둔다.
    */
   layout: css`
     label: HomeDesktopPage-layout;
     display: grid;
     grid-template-areas:
-      'guide guide'
+      'guide .'
       'features side';
     grid-template-columns: minmax(0, 1fr) 19rem;
     align-items: start;
