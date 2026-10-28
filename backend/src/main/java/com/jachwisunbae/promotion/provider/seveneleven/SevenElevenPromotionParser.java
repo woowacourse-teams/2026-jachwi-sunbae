@@ -59,6 +59,16 @@ public class SevenElevenPromotionParser {
 
     List<PromotionProduct> parseMore(final String html, final SevenElevenPromotionTab tab,
                                      final int page, final int expectedCount) {
+        return parseMore(html, tab, page, expectedCount, false);
+    }
+
+    List<PromotionProduct> parseMoreForPartialReplay(final String html, final SevenElevenPromotionTab tab,
+                                                   final int page, final int expectedCount) {
+        return parseMore(html, tab, page, expectedCount, true);
+    }
+
+    private List<PromotionProduct> parseMore(final String html, final SevenElevenPromotionTab tab,
+                                            final int page, final int expectedCount, final boolean allowShortPage) {
         Document document = document(html);
         if (page < 2 || expectedCount < 1 || expectedCount > tab.pageSize()
                 || number(require(document, "input#listPage").val()) != page + 1) {
@@ -67,7 +77,8 @@ public class SevenElevenPromotionParser {
         // 실제 listCnt는 일부 페이지에서 카드 누적 수와 달랐다. 종료 기준으로 사용하지 않는다.
         number(require(document, "input#listCnt").val());
         List<PromotionProduct> products = products(document.body(), tab);
-        if (products.size() != expectedCount) {
+        if (products.isEmpty() || products.size() > expectedCount
+                || (!allowShortPage && products.size() != expectedCount)) {
             throw invalid("더보기 상품 수가 남은 전체 수·페이지 크기와 다릅니다. tab=" + tab + ", page=" + page
                     + ", expectedCount=" + expectedCount + ", actualCount=" + products.size());
         }
