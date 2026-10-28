@@ -4,6 +4,8 @@ export type AppShellState = {
   isMapPage: boolean;
   isPropertyDetailPath: boolean;
   isHomeWidthPage: boolean;
+  /** 휴대폰 기준 폭보다 넓은 휴대폰에서도 양옆 빈칸 없이 화면을 채우는 화면(체크리스트 편집). */
+  isWidePage: boolean;
 };
 
 export const appShellAttributes = ({
@@ -11,10 +13,12 @@ export const appShellAttributes = ({
   isMapPage,
   isPropertyDetailPath,
   isHomeWidthPage,
+  isWidePage,
 }: AppShellState) => ({
   'data-design-shell': true,
   'data-full-screen': fullScreen || undefined,
   'data-map-page': isMapPage || undefined,
   'data-wide-property-page': isPropertyDetailPath || undefined,
   'data-home-width-page': isHomeWidthPage || undefined,
+  'data-wide-page': isWidePage || undefined,
 });

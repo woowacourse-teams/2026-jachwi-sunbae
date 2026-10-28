@@ -7,18 +7,18 @@ import PropertyAppLayout from '@/app/layouts/property-app-layout/PropertyAppLayo
 describe('모바일 앱 셸', () => {
   it('로그인 뒤 화면은 바텀탭 없이 홈으로 돌아가는 상단 바를 둔다', () => {
     render(
-      <MemoryRouter initialEntries={['/checklists']}>
+      <MemoryRouter initialEntries={['/compare/history']}>
         <Routes>
           <Route element={<Outlet context={{ memberId: 1, displayName: '이자취', passwordProtected: false }} />}>
             <Route element={<PropertyAppLayout />}>
-              <Route path="/checklists" element={<h1>체크리스트</h1>} />
+              <Route path="/compare/history" element={<h1>앱 화면</h1>} />
             </Route>
           </Route>
         </Routes>
       </MemoryRouter>,
     );
 
-    expect(screen.getByRole('heading', { name: '체크리스트' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: '앱 화면' })).toBeInTheDocument();
     expect(screen.queryByRole('navigation', { name: '주요 메뉴' })).not.toBeInTheDocument();
     expect(screen.getByRole('link', { name: '홈으로 돌아가기' })).toHaveAttribute('href', '/');
   });

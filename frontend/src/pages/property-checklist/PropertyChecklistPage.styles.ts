@@ -86,10 +86,14 @@ export const editAction = css`
 
 export const items = css`
   label: PropertyChecklistPage-items;
+  /* 항목을 카드로 띄우지 않고 둥근 묶음 하나에 붙여, 항목이 늘어도 한 화면에 더 많이 보이게 한다. */
   display: grid;
-  gap: 0.55rem;
+  overflow: hidden;
   margin: 0;
-  padding: 0;
+  border: 1px solid var(--color-border);
+  padding: 0 1rem;
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
   list-style: none;
 `;
 

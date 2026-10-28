@@ -105,7 +105,7 @@ const ResolvedPropertyChecklistPage = ({
             </Link>
           )}
           {detail.sourceChecklistId !== null && (
-            <IconButton label="체크리스트 항목 편집" to={`/checklists/${detail.sourceChecklistId}`}>
+            <IconButton label="체크리스트 항목 편집" to="/checklists">
               <Icon name="edit" size={16} />
             </IconButton>
           )}
