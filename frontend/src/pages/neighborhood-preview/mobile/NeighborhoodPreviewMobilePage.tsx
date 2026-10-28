@@ -5,6 +5,7 @@ import { SERVICE_MAP_STYLE_ID } from '@/features/map/lib/mapStyle';
 import MapCanvas from '@/features/map/ui/map-canvas/MapCanvas';
 import ExplorationRecordAction from '@/features/onboarding/ui/exploration-record-action/ExplorationRecordAction';
 import StreetMemoSheet from '@/features/street-memo/ui/street-memo-sheet/StreetMemoSheet';
+import { LogClick } from '@/shared/lib/analytics/logging';
 import BottomSheet from '@/shared/ui/bottom-sheet/BottomSheet';
 import { Button } from '@/shared/ui/button/Button';
 import HorizontalRail from '@/shared/ui/horizontal-rail/HorizontalRail';
@@ -90,19 +91,20 @@ const NeighborhoodPreviewMobilePage = ({ preview }: Props) => {
   const filterChips = (
     <div className={shared.filterChips} aria-label="탐색 조건">
       {filterCells.map((cell) => (
-        <button
-          key={cell.field}
-          type="button"
-          aria-label={cell.label}
-          aria-expanded={pickerField === cell.field}
-          onClick={() => setPickerField((open) => (open === cell.field ? null : cell.field))}
-        >
-          <span className={shared.filterCellTitle}>
-            {cell.title}
-            <Icon name="chevron-down" size={14} />
-          </span>
-          <span className={shared.filterCellValue}>{cell.value}</span>
-        </button>
+        <LogClick key={cell.field} event="neighborhood_condition_clicked" params={{ field: cell.field }}>
+          <button
+            type="button"
+            aria-label={cell.label}
+            aria-expanded={pickerField === cell.field}
+            onClick={() => setPickerField((open) => (open === cell.field ? null : cell.field))}
+          >
+            <span className={shared.filterCellTitle}>
+              {cell.title}
+              <Icon name="chevron-down" size={14} />
+            </span>
+            <span className={shared.filterCellValue}>{cell.value}</span>
+          </button>
+        </LogClick>
       ))}
     </div>
   );

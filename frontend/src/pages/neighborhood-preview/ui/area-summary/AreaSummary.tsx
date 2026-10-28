@@ -3,6 +3,7 @@ import { css } from '@emotion/css';
 import { formatManwon } from '@/features/map/api/commuteApi';
 import { mapCategoryIconSrc, stationIconSrc } from '@/features/map/lib/mapIconAssets';
 import type { NearbyAgency } from '@/features/map/model/Map';
+import { LogClick } from '@/shared/lib/analytics/logging';
 
 import type { AreaStation } from '../../hooks/useNeighborhoodPlaces';
 import type { NeighborhoodPreviewContext } from '../../hooks/useNeighborhoodPreview';
@@ -60,26 +61,30 @@ const AreaSummary = ({
     <div>
       {/* 데스크탑은 분할 버튼 대신 두 칸을 같은 너비로 나눈 밑줄 탭 네비게이션으로 나눈다. */}
       <div className={styles.tabs} role="tablist" aria-label={`${area.name} 주변 장소`}>
-        <button
-          type="button"
-          role="tab"
-          id="area-summary-stations"
-          aria-selected={tab === 'stations'}
-          aria-controls="area-summary-panel"
-          onClick={() => onTabChange('stations')}
-        >
-          정류장 {area.stations.length}
-        </button>
-        <button
-          type="button"
-          role="tab"
-          id="area-summary-agencies"
-          aria-selected={tab === 'agencies'}
-          aria-controls="area-summary-panel"
-          onClick={() => onTabChange('agencies')}
-        >
-          공인중개사 {agencies.length}
-        </button>
+        <LogClick event="neighborhood_area_places_tab_changed" params={{ tab: 'stations', layout: 'desktop' }}>
+          <button
+            type="button"
+            role="tab"
+            id="area-summary-stations"
+            aria-selected={tab === 'stations'}
+            aria-controls="area-summary-panel"
+            onClick={() => onTabChange('stations')}
+          >
+            정류장 {area.stations.length}
+          </button>
+        </LogClick>
+        <LogClick event="neighborhood_area_places_tab_changed" params={{ tab: 'agencies', layout: 'desktop' }}>
+          <button
+            type="button"
+            role="tab"
+            id="area-summary-agencies"
+            aria-selected={tab === 'agencies'}
+            aria-controls="area-summary-panel"
+            onClick={() => onTabChange('agencies')}
+          >
+            공인중개사 {agencies.length}
+          </button>
+        </LogClick>
       </div>
       <div
         id="area-summary-panel"
@@ -109,11 +114,13 @@ const AreaSummary = ({
           <ul className={styles.stations}>
             {agencies.map((agency) => (
               <li key={agency.providerPlaceId}>
-                <button type="button" onClick={() => onSelectAgency(agency)}>
-                  <img src={mapCategoryIconSrc('AGENCY')} alt="" draggable={false} decoding="async" />
-                  <span>{agency.name}</span>
-                  <small>{agency.address}</small>
-                </button>
+                <LogClick event="neighborhood_agency_selected" params={{ layout: 'desktop' }}>
+                  <button type="button" onClick={() => onSelectAgency(agency)}>
+                    <img src={mapCategoryIconSrc('AGENCY')} alt="" draggable={false} decoding="async" />
+                    <span>{agency.name}</span>
+                    <small>{agency.address}</small>
+                  </button>
+                </LogClick>
               </li>
             ))}
           </ul>
