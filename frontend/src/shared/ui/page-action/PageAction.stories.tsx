@@ -1,10 +1,9 @@
 import type { Meta, StoryObj } from '@storybook/react-webpack5';
-import { MemoryRouter } from 'react-router-dom';
 
 import PageAction from './PageAction';
 
 const meta = {
-  title: '공통/PageAction',
+  title: '공용/PageAction',
   component: PageAction,
   parameters: {
     layout: 'centered',
@@ -20,11 +19,7 @@ export const FloatingLink: Story = {
     children: '매물 추가',
     to: '/properties/new',
   },
-  render: () => (
-    <MemoryRouter initialEntries={['/properties']}>
-      <PageAction to="/properties/new">매물 추가</PageAction>
-    </MemoryRouter>
-  ),
+  render: () => <PageAction to="/properties/new">매물 추가</PageAction>,
 };
 
 export const InlineButton: Story = {

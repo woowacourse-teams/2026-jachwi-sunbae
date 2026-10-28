@@ -19,7 +19,7 @@ const iconNames: IconName[] = [
 ];
 
 const meta = {
-  title: '공통/Icon',
+  title: '공용/Icon',
   component: Icon,
   args: {
     name: 'plus',

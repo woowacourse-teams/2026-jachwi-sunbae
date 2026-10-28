@@ -11,7 +11,7 @@ const action = (
 );
 
 const meta = {
-  title: '공통/BottomActionArea',
+  title: '공용/BottomActionArea',
   component: BottomActionArea,
   args: {
     children: action,

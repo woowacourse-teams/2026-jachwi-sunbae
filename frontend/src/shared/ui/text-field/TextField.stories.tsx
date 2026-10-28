@@ -3,7 +3,7 @@ import type { Meta, StoryObj } from '@storybook/react-webpack5';
 import TextField from './TextField';
 
 const meta = {
-  title: '공통/TextField',
+  title: '공용/TextField',
   component: TextField,
   args: {
     label: '매물 이름',

@@ -4,7 +4,7 @@ import { useState } from 'react';
 import WheelPicker from './WheelPicker';
 
 const meta = {
-  title: '공통/WheelPicker',
+  title: '공용/WheelPicker',
   component: WheelPicker,
   args: {
     label: '통근 시간',

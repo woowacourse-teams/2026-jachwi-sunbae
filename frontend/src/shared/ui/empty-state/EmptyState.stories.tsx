@@ -1,5 +1,4 @@
 import type { Meta, StoryObj } from '@storybook/react-webpack5';
-import { MemoryRouter } from 'react-router-dom';
 
 import { ButtonLink } from '@/shared/ui/button/Button';
 import Icon from '@/shared/ui/icon/Icon';
@@ -7,7 +6,7 @@ import Icon from '@/shared/ui/icon/Icon';
 import EmptyState from './EmptyState';
 
 const meta = {
-  title: '공통/EmptyState',
+  title: '공용/EmptyState',
   component: EmptyState,
   args: {
     title: '저장한 매물이 없어요',
@@ -41,11 +40,9 @@ export const Plain: Story = {
 export const WithAction: Story = {
   args: {
     action: (
-      <MemoryRouter initialEntries={['/properties']}>
-        <ButtonLink to="/properties/new">
-          <Icon name="plus" size={15} />첫 매물 등록하기
-        </ButtonLink>
-      </MemoryRouter>
+      <ButtonLink to="/properties/new">
+        <Icon name="plus" size={15} />첫 매물 등록하기
+      </ButtonLink>
     ),
   },
 };

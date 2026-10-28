@@ -1,5 +1,4 @@
 import type { Meta, StoryObj } from '@storybook/react-webpack5';
-import { MemoryRouter } from 'react-router-dom';
 
 import iconMap from '@/shared/assets/illustrations/icon-map.webp';
 import goose from '@/shared/assets/jachwi-sunbae-goose.webp';
@@ -8,15 +7,13 @@ import ActionCard, { ActionCardIllustration } from './ActionCard';
 
 // to/onClick 유니언 props라 satisfies 대신 타입을 직접 지정한다.
 const meta: Meta<typeof ActionCard> = {
-  title: '공통/ActionCard',
+  title: '공용/ActionCard',
   component: ActionCard,
   decorators: [
     (Story) => (
-      <MemoryRouter>
-        <div style={{ display: 'grid', width: '11rem', height: '11rem' }}>
-          <Story />
-        </div>
-      </MemoryRouter>
+      <div style={{ display: 'grid', width: '11rem', height: '11rem' }}>
+        <Story />
+      </div>
     ),
   ],
   args: {

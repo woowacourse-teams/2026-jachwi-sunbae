@@ -1,10 +1,9 @@
 import type { Meta, StoryObj } from '@storybook/react-webpack5';
-import { MemoryRouter } from 'react-router-dom';
 
 import AddItemAction from './AddItemAction';
 
 const meta = {
-  title: '공통/AddItemAction',
+  title: '공용/AddItemAction',
   component: AddItemAction,
   parameters: {
     layout: 'padded',
@@ -27,11 +26,7 @@ export const Link: Story = {
     children: '새 항목 목록으로 이동',
     to: '/checklists/new/items',
   },
-  render: ({ children }) => (
-    <MemoryRouter initialEntries={['/checklists/new']}>
-      <AddItemAction to="/checklists/new/items">{children}</AddItemAction>
-    </MemoryRouter>
-  ),
+  render: ({ children }) => <AddItemAction to="/checklists/new/items">{children}</AddItemAction>,
 };
 
 export const Disabled: Story = {

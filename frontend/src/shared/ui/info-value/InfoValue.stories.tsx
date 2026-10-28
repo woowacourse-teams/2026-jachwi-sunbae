@@ -3,7 +3,7 @@ import type { Meta, StoryObj } from '@storybook/react-webpack5';
 import InfoValue from './InfoValue';
 
 const meta = {
-  title: '공통/InfoValue',
+  title: '공용/InfoValue',
   component: InfoValue,
   parameters: {
     layout: 'padded',

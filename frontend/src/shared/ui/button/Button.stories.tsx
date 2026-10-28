@@ -1,11 +1,10 @@
 import type { Meta, StoryObj } from '@storybook/react-webpack5';
-import { MemoryRouter } from 'react-router-dom';
 
 import Icon from '../icon/Icon';
 import { Button, ButtonLink } from './Button';
 
 const meta = {
-  title: '공통/Button',
+  title: '공용/Button',
   component: Button,
   args: {
     children: '저장하기',
@@ -48,12 +47,10 @@ export const Danger: Story = {
 
 export const Link: Story = {
   render: ({ children, variant, fullWidth }) => (
-    <MemoryRouter initialEntries={['/']}>
-      <ButtonLink to="/" variant={variant} fullWidth={fullWidth}>
-        <Icon name="plus" size={15} />
-        {children}
-      </ButtonLink>
-    </MemoryRouter>
+    <ButtonLink to="/" variant={variant} fullWidth={fullWidth}>
+      <Icon name="plus" size={15} />
+      {children}
+    </ButtonLink>
   ),
   args: {
     children: '매물 목록으로 이동',

@@ -1,6 +1,5 @@
 import { css } from '@emotion/css';
 import type { Meta, StoryObj } from '@storybook/react-webpack5';
-import { MemoryRouter } from 'react-router-dom';
 
 import HorizontalRail from '../horizontal-rail/HorizontalRail';
 import RailCard from './RailCard';
@@ -18,15 +17,13 @@ const styles = {
 
 // to/onSelect 유니언 props라 satisfies 대신 타입을 직접 지정한다.
 const meta: Meta<typeof RailCard> = {
-  title: '공통/RailCard',
+  title: '공용/RailCard',
   component: RailCard,
   decorators: [
     (Story) => (
-      <MemoryRouter>
-        <HorizontalRail aria-label="예시 레일">
-          <Story />
-        </HorizontalRail>
-      </MemoryRouter>
+      <HorizontalRail aria-label="예시 레일">
+        <Story />
+      </HorizontalRail>
     ),
   ],
   args: { className: styles.sample, children: '내용은 쓰는 쪽에서 그려요', onSelect: () => {} },

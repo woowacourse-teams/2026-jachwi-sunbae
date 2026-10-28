@@ -4,7 +4,7 @@ import type { Meta, StoryObj } from '@storybook/react-webpack5';
 import BottomSheet from './BottomSheet';
 
 const meta = {
-  title: '공통/BottomSheet',
+  title: '공용/BottomSheet',
   component: BottomSheet,
   args: { title: '상세 정보', children: <p>손잡이를 올리거나 눌러 패널 높이를 바꿀 수 있어요.</p>, onClose: () => {} },
   render: (args) => (

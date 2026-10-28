@@ -56,7 +56,7 @@ const styles = {
 };
 
 const meta = {
-  title: '공통/폼 선택 동작/SelectionControl',
+  title: '공용/SelectionControl',
   component: SelectionControl,
   argTypes: {
     children: { control: false },

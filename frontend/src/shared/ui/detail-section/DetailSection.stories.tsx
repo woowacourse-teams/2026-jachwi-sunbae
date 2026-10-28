@@ -5,7 +5,7 @@ import Icon from '../icon/Icon';
 import DetailSection from './DetailSection';
 
 const meta = {
-  title: '공통/DetailSection',
+  title: '공용/DetailSection',
   component: DetailSection,
   argTypes: {
     children: { control: false },

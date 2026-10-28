@@ -3,7 +3,7 @@ import type { Meta, StoryObj } from '@storybook/react-webpack5';
 import Toast from './Toast';
 
 const meta = {
-  title: '공통/Toast',
+  title: '공용/Toast',
   component: Toast,
   args: {
     isOpen: true,

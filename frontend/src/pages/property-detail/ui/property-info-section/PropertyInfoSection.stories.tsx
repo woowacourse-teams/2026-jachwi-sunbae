@@ -5,7 +5,7 @@ import InfoValue from '@/shared/ui/info-value/InfoValue';
 import PropertyInfoSection from './PropertyInfoSection';
 
 const meta = {
-  title: '매물 상세/PropertyInfoSection',
+  title: '페이지/매물 상세/PropertyInfoSection',
   component: PropertyInfoSection,
   argTypes: {
     children: { control: false },

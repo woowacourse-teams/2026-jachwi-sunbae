@@ -62,7 +62,7 @@ const sampleMarkers: Array<{ name: string; marker: MapMarker }> = [
 ];
 
 const meta = {
-  title: '지도/MapMarkerView',
+  title: '기능/지도/MapMarkerView',
   component: MapMarkerView,
   argTypes: {
     marker: { control: false },

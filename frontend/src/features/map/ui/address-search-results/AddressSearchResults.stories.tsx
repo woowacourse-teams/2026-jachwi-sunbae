@@ -3,7 +3,7 @@ import type { Meta, StoryObj } from '@storybook/react-webpack5';
 import AddressSearchResults from './AddressSearchResults';
 
 const meta = {
-  title: '지도/AddressSearchResults',
+  title: '기능/지도/AddressSearchResults',
   component: AddressSearchResults,
   args: { results: [], status: 'idle', onSelect: () => undefined },
   argTypes: { onSelect: { action: 'select address' } },

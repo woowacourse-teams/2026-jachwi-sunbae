@@ -4,7 +4,7 @@ import type { Meta, StoryObj } from '@storybook/react-webpack5';
 import RankedCard from './RankedCard';
 
 const meta = {
-  title: '공통/RankedCard',
+  title: '공용/RankedCard',
   component: RankedCard,
   parameters: { layout: 'padded' },
   args: { rank: 1, title: '역삼1동', value: 3, unit: '분', description: '역삼역에서 출발', onSelect: () => {} },

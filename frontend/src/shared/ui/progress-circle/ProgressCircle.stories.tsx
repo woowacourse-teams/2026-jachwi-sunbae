@@ -3,7 +3,7 @@ import type { Meta, StoryObj } from '@storybook/react-webpack5';
 import ProgressCircle from './ProgressCircle';
 
 const meta = {
-  title: '공통/ProgressCircle',
+  title: '공용/ProgressCircle',
   component: ProgressCircle,
   args: { size: 40, label: '로딩 중' },
 } satisfies Meta<typeof ProgressCircle>;

@@ -4,7 +4,7 @@ import { useState } from 'react';
 import SearchField from './SearchField';
 
 const meta = {
-  title: '공통/SearchField',
+  title: '공용/SearchField',
   component: SearchField,
   args: {
     label: '주소 검색',

@@ -3,7 +3,7 @@ import type { Meta, StoryObj } from '@storybook/react-webpack5';
 import ChecklistProgressBar from './ChecklistProgressBar';
 
 const meta = {
-  title: '체크리스트/ChecklistProgressBar',
+  title: '기능/체크리스트/ChecklistProgressBar',
   component: ChecklistProgressBar,
   parameters: {
     layout: 'padded',
