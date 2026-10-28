@@ -1,11 +1,10 @@
+import { css } from '@emotion/css';
 import { useState } from 'react';
 
 import { Button } from '@/shared/ui/button/Button';
 import WheelPicker from '@/shared/ui/wheel-picker/WheelPicker';
 
 import type { NeighborhoodPreviewContext } from './hooks/useNeighborhoodPreview';
-
-import styles from './NeighborhoodFilters.module.css';
 
 type FilterValues = Pick<
   NeighborhoodPreviewContext,
@@ -74,4 +73,36 @@ const NeighborhoodFilters = ({
     </div>
   );
 };
+
+const styles = {
+  editor: css`
+    label: NeighborhoodFilters-editor;
+    display: flex;
+    flex-direction: column;
+    min-height: 100%;
+    gap: 1rem;
+
+    & > * {
+      flex-shrink: 0;
+    }
+
+    & > button:last-child {
+      margin-top: auto;
+    }
+  `,
+
+  choices: css`
+    label: NeighborhoodFilters-choices;
+    display: flex;
+    gap: 0.6rem;
+    margin: 0.5rem 0 1rem;
+
+    & button {
+      display: flex;
+      flex: 1;
+      font-size: 0.8rem;
+    }
+  `,
+};
+
 export default NeighborhoodFilters;

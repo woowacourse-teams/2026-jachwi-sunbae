@@ -1,9 +1,8 @@
+import { css } from '@emotion/css';
 import type { LinkProps } from 'react-router-dom';
 
 import { Button, ButtonLink } from '../button/Button';
 import PlusIcon from '../icon/icons/PlusIcon';
-
-import styles from './AddItemAction.module.css';
 
 type AddItemActionProps = {
   children: string;
@@ -31,6 +30,23 @@ const AddItemAction = ({ children, disabled, to, onClick }: AddItemActionProps) 
       {content}
     </Button>
   );
+};
+
+const styles = {
+  action: css`
+    label: AddItemAction-action;
+    min-height: 2.95rem;
+    border: 1px dashed var(--color-border-strong);
+    background: var(--color-surface);
+    color: var(--color-ink-soft);
+    font-size: 0.8rem;
+
+    &:hover:not(:disabled) {
+      border-color: var(--color-muted);
+      background: var(--color-surface-neutral);
+      color: var(--color-ink);
+    }
+  `,
 };
 
 export default AddItemAction;

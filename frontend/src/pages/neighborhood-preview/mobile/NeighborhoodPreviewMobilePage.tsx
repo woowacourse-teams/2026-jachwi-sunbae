@@ -24,7 +24,7 @@ import NeighborhoodMapSearch from '../ui/map-search/NeighborhoodMapSearch';
 import MapTapHint from '../ui/map-tap-hint/MapTapHint';
 import NeighborhoodPlaceSheet from '../ui/place-panel/NeighborhoodPlaceSheet';
 
-import shared from '../NeighborhoodPreviewPage.module.css';
+import * as shared from '../NeighborhoodPreviewPage.styles';
 
 const CARD_RANKS = [1, 2, 3, 4, 5] as const;
 

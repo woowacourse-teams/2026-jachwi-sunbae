@@ -1,6 +1,6 @@
 import type { usePropertyMemo } from '@/features/property/api/useProperties';
 
-import styles from './PropertyMemoSection.module.css';
+import * as styles from './PropertyMemoSection.styles';
 
 type PropertyMemoQuery = ReturnType<typeof usePropertyMemo>;
 

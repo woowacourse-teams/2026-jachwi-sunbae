@@ -138,7 +138,7 @@ npm test
 npm run build
 ```
 
-공통 컴포넌트의 상태와 반응형 스타일은 Storybook에서 격리해 확인합니다.
+컴포넌트의 상태와 반응형 스타일은 Storybook에서 격리해 확인합니다. Storybook 트리는 폴더 구조와 같게 `페이지/<페이지명>`(페이지 전용 UI), `기능/<기능명>`(여러 페이지가 쓰는 도메인 UI), `공용`(도메인과 무관한 UI)으로 나눕니다.
 
 ```bash
 npm run storybook
@@ -151,6 +151,16 @@ npm run storybook:build
 - `.github/workflows/storybook-pages.yml`이 `develop` push마다 정적 Storybook을 빌드하고 배포합니다.
 
 Storybook에서는 구현 내부가 아니라 기본·로딩·에러·빈 상태처럼 사용자가 보는 상태를 확인합니다. 지도 SDK처럼 외부 환경에 의존하는 화면은 Storybook 대상에서 제외하고 별도 통합·E2E 테스트로 다룹니다.
+
+스토리는 컴포넌트와 같은 폴더의 `<Component>.stories.tsx`에 둡니다.
+
+- 제목은 `src/pages/<page>` → `페이지/<페이지명>/<Component>`, `src/features/<feature>` → `기능/<기능명>/<Component>`, `src/shared/ui` → `공용/<Component>`로 짓습니다. 페이지·기능 이름과 트리 순서는 `.storybook/preview.tsx`의 `storySort`에 둡니다.
+- `.storybook/preview.tsx`가 모든 스토리를 앱과 같은 Provider(공개 설정·React Query·라우터)로 감쌉니다. 스토리에서 라우터나 QueryClient를 다시 감싸지 않고 `parameters`로 필요한 상태를 줍니다.
+  - `route`: 처음 열 주소
+  - `routePath`: `useParams`가 필요할 때의 경로 패턴(예: `/properties/:propertyId`)
+  - `queryData`: `[queryKey, data]` 목록. 서버 요청 없이 Query Hook이 읽을 데이터를 캐시에 미리 넣습니다.
+- 데스크탑·휴대폰 화면을 나눈 페이지(홈·본 방 기록·동네 찾기·방 비교·마이)는 그 아래를 `데스크탑`·`휴대폰`·`공통`으로 나눕니다. `desktop/`·`mobile/` 폴더의 화면과 조각은 meta에 `globals: { viewport: { value: 'desktop' | 'mobile' } }`을 두어 그 화면 폭으로 엽니다. 툴바의 화면 폭은 휴대폰(390)·태블릿(820)·데스크탑(1440)입니다.
+- 값은 `args`로 넘겨 Controls 패널에서 바꿔 볼 수 있게 합니다. 콜백은 `fn()`(`storybook/test`)으로 두어 Actions 패널에 호출이 찍히게 하고, 컨트롤로 바꿀 수 없는 ReactNode·함수 props는 `argTypes`에서 `control: false`로 숨깁니다. `className`·`ref`는 전역에서 숨깁니다.
 
 `npm run build`는 번들 생성 전에 `npm run typecheck`를 실행합니다. 개발 중 타입 오류만 빠르게 확인하려면 `npm run typecheck`를 직접 실행합니다.
 

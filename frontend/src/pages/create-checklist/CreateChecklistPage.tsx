@@ -1,3 +1,4 @@
+import { css } from '@emotion/css';
 import { type ReactNode, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 
@@ -15,8 +16,6 @@ import { trackPostHogEvent } from '@/shared/lib/analytics/posthog';
 import TopNavigation from '@/shared/ui/top-navigation/TopNavigation';
 
 import ChecklistPresetStatus from './ui/checklist-preset-status/ChecklistPresetStatus';
-
-import styles from './CreateChecklistPage.module.css';
 
 /** 사용자 체크리스트는 현장 단계 하나뿐이라 단계 선택 화면 없이 바로 편집기로 들어간다. */
 const stage: ChecklistStage = USER_CHECKLIST_STAGE;
@@ -129,5 +128,25 @@ const NewChecklistNavigation = ({ returnPath = '/checklists' }: { returnPath?: s
     backTo={returnPath}
   />
 );
+
+const styles = {
+  page: css`
+    label: CreateChecklistPage-page;
+    background: var(--color-canvas);
+  `,
+
+  topNavigation: css`
+    label: CreateChecklistPage-topNavigation;
+    margin-bottom: 0;
+  `,
+
+  container: css`
+    label: CreateChecklistPage-container;
+
+    & > [data-full-bleed='true'] {
+      margin-top: -0.15rem;
+    }
+  `,
+};
 
 export default CreateChecklistPage;

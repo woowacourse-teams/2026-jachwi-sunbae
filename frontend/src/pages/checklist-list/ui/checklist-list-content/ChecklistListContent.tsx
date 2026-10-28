@@ -1,3 +1,5 @@
+import { css } from '@emotion/css';
+
 import { getChecklistErrorMessage } from '@/features/checklist/api/checklistErrorMessages';
 import type { useChecklistList } from '@/features/checklist/api/useChecklists';
 import useDelayedLoading from '@/shared/lib/hooks/useDelayedLoading';
@@ -5,8 +7,6 @@ import { Button, ButtonLink } from '@/shared/ui/button/Button';
 import ContentState from '@/shared/ui/content-state/ContentState';
 
 import ChecklistListCard from '../checklist-list-card/ChecklistListCard';
-
-import styles from './ChecklistListContent.module.css';
 
 type ChecklistListQuery = ReturnType<typeof useChecklistList>;
 
@@ -79,6 +79,31 @@ const ChecklistListContent = ({ list }: ChecklistListContentProps) => {
       )}
     </>
   );
+};
+
+const styles = {
+  list: css`
+    label: ChecklistListContent-list;
+    display: grid;
+    gap: 0.55rem;
+    margin: 0.7rem 1rem 0;
+    padding: 0;
+    list-style: none;
+  `,
+
+  emptyState: css`
+    label: ChecklistListContent-emptyState;
+    margin: 1rem;
+    padding: 1.2rem 0;
+    color: var(--color-muted);
+    font-size: 0.78rem;
+    text-align: center;
+  `,
+
+  createCard: css`
+    label: ChecklistListContent-createCard;
+    margin: 0.55rem 1rem 0;
+  `,
 };
 
 export default ChecklistListContent;

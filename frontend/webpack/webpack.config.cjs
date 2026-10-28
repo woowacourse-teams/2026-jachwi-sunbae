@@ -1,5 +1,4 @@
 const path = require('path');
-const CssMinimizerPlugin = require('css-minimizer-webpack-plugin');
 
 const { loadLocalEnv, readBuildEnvironment } = require('./build-environment.cjs');
 const { createModuleRules } = require('./webpack-rules.cjs');
@@ -34,11 +33,6 @@ module.exports = (_env, argv) => {
       publicPath: '/',
       clean: true,
     },
-    optimization: isProduction
-      ? {
-          minimizer: ['...', new CssMinimizerPlugin()],
-        }
-      : undefined,
     plugins: createPlugins({ isProduction, buildEnvironment }),
     module: {
       rules: createModuleRules(isProduction),
@@ -51,7 +45,7 @@ module.exports = (_env, argv) => {
     },
     performance: {
       hints: isProduction ? 'error' : false,
-      assetFilter: (assetFilename) => /\.(?:js|css)$/.test(assetFilename),
+      assetFilter: (assetFilename) => /\.js$/.test(assetFilename),
       maxAssetSize: 350 * 1024,
       maxEntrypointSize: 350 * 1024,
     },

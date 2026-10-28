@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom';
 
 import Icon from '@/shared/ui/icon/Icon';
 
-import styles from '../my-row-card/MyRowCard.module.css';
+import * as styles from '../my-row-card/MyRowCard.styles';
 
 /** 개인정보 처리방침으로 가는 카드. 계정 삭제 요청 카드와 같은 모양을 쓴다. */
 const PrivacyLinkCard = () => (

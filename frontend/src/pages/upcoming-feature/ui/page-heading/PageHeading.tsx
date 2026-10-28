@@ -1,7 +1,6 @@
+import { css } from '@emotion/css';
 import { useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
-
-import styles from './PageHeading.module.css';
 
 type PageHeadingProps = {
   title: string;
@@ -31,6 +30,37 @@ const PageHeading = ({ title, description, backTo, backLabel = '뒤로', focusOn
       {description !== undefined && <p>{description}</p>}
     </header>
   );
+};
+
+const styles = {
+  heading: css`
+    label: upcoming-feature-PageHeading-heading;
+    margin-bottom: 1.2rem;
+
+    & h1 {
+      margin: 0.4rem 0 0;
+      overflow-wrap: anywhere;
+      font-size: clamp(1.65rem, 7vw, 2.4rem);
+      letter-spacing: -0.05em;
+      line-height: 1.15;
+    }
+
+    & p {
+      margin: 0.55rem 0 0;
+      color: var(--color-ink-soft);
+      line-height: 1.55;
+    }
+  `,
+
+  backLink: css`
+    label: upcoming-feature-PageHeading-backLink;
+    display: inline-flex;
+    min-height: 2.75rem;
+    align-items: center;
+    color: var(--color-primary-dark);
+    font-weight: 750;
+    text-decoration: none;
+  `,
 };
 
 export default PageHeading;

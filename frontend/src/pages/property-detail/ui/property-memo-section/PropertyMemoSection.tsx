@@ -7,7 +7,7 @@ import DetailSection from '@/shared/ui/detail-section/DetailSection';
 
 import PropertyMemoContent from './PropertyMemoContent';
 
-import styles from './PropertyMemoSection.module.css';
+import * as styles from './PropertyMemoSection.styles';
 
 type PropertyMemoSectionProps = {
   propertyId: number;

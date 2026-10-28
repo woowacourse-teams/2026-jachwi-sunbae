@@ -1,3 +1,4 @@
+import { css } from '@emotion/css';
 import type { ReactNode } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 
@@ -13,8 +14,6 @@ import { parsePositiveId } from '@/features/property/lib/propertyFormat';
 import ContentState from '@/shared/ui/content-state/ContentState';
 import QueryState from '@/shared/ui/query-state/QueryState';
 import TopNavigation from '@/shared/ui/top-navigation/TopNavigation';
-
-import styles from './ChecklistDetailPage.module.css';
 
 const backToList = <Link to="/checklists">내 체크리스트로 돌아가기</Link>;
 const describeError = describeChecklistLoadError('체크리스트를 불러오지 못했어요.', {
@@ -109,5 +108,24 @@ const ChecklistEditorFrame = ({ children }: { children: ReactNode }) => (
     <div className={`page-container page-container--form ${styles.container}`}>{children}</div>
   </main>
 );
+
+const styles = {
+  page: css`
+    label: ChecklistDetailPage-page;
+    padding-right: 1rem;
+    padding-left: 1rem;
+    background: var(--color-canvas);
+  `,
+
+  container: css`
+    label: ChecklistDetailPage-container;
+    max-width: 42rem;
+  `,
+
+  topNavigation: css`
+    label: ChecklistDetailPage-topNavigation;
+    margin-bottom: 0;
+  `,
+};
 
 export default ChecklistDetailPage;

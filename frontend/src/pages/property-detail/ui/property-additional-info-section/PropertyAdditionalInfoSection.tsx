@@ -6,7 +6,7 @@ import InfoValue from '@/shared/ui/info-value/InfoValue';
 
 import PropertyInfoSection from '../property-info-section/PropertyInfoSection';
 
-import detailStyles from '@/shared/ui/detail-section/DetailSection.module.css';
+import * as detailStyles from '@/shared/ui/detail-section/DetailSection.styles';
 
 type PropertyAdditionalInfoSectionProps = {
   property: PropertyDetail;

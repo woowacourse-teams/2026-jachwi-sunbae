@@ -1,3 +1,4 @@
+import { css } from '@emotion/css';
 import { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 
@@ -13,8 +14,6 @@ import usePropertyMarkers from './hooks/usePropertyMarkers';
 import LocationAddressSheet from './ui/location-address-sheet/LocationAddressSheet';
 import LocationMapControls from './ui/location-map-controls/LocationMapControls';
 import MapAddressSearchPanel from './ui/map-address-search-panel/MapAddressSearchPanel';
-
-import styles from './MapLocationSelectPage.module.css';
 
 type RouteState = { returnTo?: string; initialLocation?: MapAddress; registrationDraft?: PropertyInputDto };
 
@@ -79,6 +78,45 @@ const MapLocationSelectPage = () => {
       </section>
     </main>
   );
+};
+
+const styles = {
+  page: css`
+    label: MapLocationSelectPage-page;
+    position: relative;
+    display: grid;
+    width: 100%;
+    height: 100%;
+    min-height: 0;
+    grid-template-rows: auto minmax(0, 1fr);
+    overflow: hidden;
+    background: var(--color-surface);
+  `,
+
+  mapNavigation: css`
+    label: MapLocationSelectPage-mapNavigation;
+    z-index: 40;
+    margin: 0;
+    padding: 0 1rem;
+    background: var(--color-surface);
+  `,
+
+  mapStage: css`
+    label: MapLocationSelectPage-mapStage;
+    position: relative;
+    width: 100%;
+    height: auto;
+    min-height: 0;
+    margin-left: 0;
+    overflow: hidden;
+    box-sizing: border-box;
+
+    & form[role='search'],
+    & form[role='search'] input,
+    & form[role='search'] button {
+      font-size: 0.875rem;
+    }
+  `,
 };
 
 export default MapLocationSelectPage;

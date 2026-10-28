@@ -3,7 +3,7 @@ import { useEffect, useId, useRef } from 'react';
 
 import { Button } from '../button/Button';
 
-import styles from './ConfirmDialog.module.css';
+import * as styles from './ConfirmDialog.styles';
 
 type ConfirmDialogProps = {
   isOpen: boolean;

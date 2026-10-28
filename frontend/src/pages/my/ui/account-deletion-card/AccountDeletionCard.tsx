@@ -4,7 +4,7 @@ import { createAccountDeletionMailto } from '@/shared/config/accountDeletion';
 import ConfirmDialog from '@/shared/ui/confirm-dialog/ConfirmDialog';
 import Icon from '@/shared/ui/icon/Icon';
 
-import styles from '../my-row-card/MyRowCard.module.css';
+import * as styles from '../my-row-card/MyRowCard.styles';
 
 type AccountDeletionCardProps = { memberId: number };
 

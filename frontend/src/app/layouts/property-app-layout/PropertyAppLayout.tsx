@@ -1,54 +1,48 @@
-import { Outlet, useLocation, useOutletContext } from 'react-router-dom';
+import { useLocation, useOutletContext } from 'react-router-dom';
 
 import type { Member } from '@/features/auth/model/Member';
 import useIsDesktop from '@/shared/lib/hooks/useIsDesktop';
-import { HOME_PATH } from '@/shared/lib/navigation/appPaths';
-import AppBar from '@/shared/ui/app-bar/AppBar';
-import DesktopHeader from '@/shared/ui/desktop-header/DesktopHeader';
 import { DesktopHeaderSlotProvider } from '@/shared/ui/desktop-header/DesktopHeaderSlot';
 
-import styles from './PropertyAppLayout.module.css';
+import type { AppShellState } from './appShell';
+import PropertyAppDesktopLayout from './desktop/PropertyAppDesktopLayout';
+import PropertyAppMobileLayout from './mobile/PropertyAppMobileLayout';
 
+/** 로그인 뒤 앱 화면의 셸. 화면 주소로 배치 상태를 정하고, 데스크탑·휴대폰 셸을 여기서 한 번만 고른다. */
 const PropertyAppLayout = () => {
   const member = useOutletContext<Member>();
   const location = useLocation();
-  // 데스크탑은 모든 화면 위에 홈 로고·주요 화면 메뉴가 있는 공용 헤더를 둔다.
   const isDesktop = useIsDesktop();
   const isPropertyDetailPath = /^\/properties\/\d+$/.test(location.pathname);
   const isMapPage = location.pathname === '/neighborhoods' || location.pathname.startsWith('/neighborhoods/areas/');
-  const fullScreen =
-    location.pathname === '/map/select-location' ||
-    location.pathname.startsWith('/properties/new') ||
-    isPropertyDetailPath ||
-    location.pathname === '/checklists/new' ||
-    /^\/checklists\/\d+$/.test(location.pathname) ||
-    /^\/properties\/\d+\/checklists\/\d+$/.test(location.pathname);
-
-  // 로그인 뒤 화면은 바텀탭 없이 홈으로 돌아가는 상단 바만 둔다.
-  // 방 비교는 자체 상단 내비게이션이 홈으로 돌아가므로 상단 바를 겹쳐 두지 않는다.
-  // 동네 찾기 지도는 지도·검색을 화면 위까지 쓰므로 상단 바를 두지 않는다.
-  const hidesDesignBar = location.pathname === '/compare' || isMapPage;
-  // 마이는 동네 찾기 등과 같은 "<" 상단 바를 쓰고, 그 옆에 화면 제목을 둔다.
-  const designBarTitle = location.pathname === '/me' ? '마이' : null;
+  const shell: AppShellState = {
+    fullScreen:
+      location.pathname === '/map/select-location' ||
+      location.pathname.startsWith('/properties/new') ||
+      isPropertyDetailPath ||
+      location.pathname === '/checklists/new' ||
+      /^\/checklists\/\d+$/.test(location.pathname) ||
+      /^\/properties\/\d+\/checklists\/\d+$/.test(location.pathname),
+    isMapPage,
+    isPropertyDetailPath,
+    isHomeWidthPage: location.pathname === '/me',
+  };
 
   return (
     <DesktopHeaderSlotProvider>
-      <div
-        className={styles.root}
-        data-design-shell
-        data-full-screen={fullScreen || undefined}
-        data-map-page={isMapPage || undefined}
-        data-wide-property-page={isPropertyDetailPath || undefined}
-        data-home-width-page={location.pathname === '/me' || undefined}
-      >
-        {isDesktop && <DesktopHeader />}
-        {!isDesktop && !fullScreen && !hidesDesignBar && (
-          <AppBar title={designBarTitle ?? undefined} backTo={HOME_PATH} backLabel="홈으로 돌아가기" />
-        )}
-        <div className={styles.content}>
-          <Outlet context={member} />
-        </div>
-      </div>
+      {isDesktop ? (
+        <PropertyAppDesktopLayout member={member} shell={shell} />
+      ) : (
+        // 방 비교는 자체 상단 내비게이션이 홈으로 돌아가므로 상단 바를 겹쳐 두지 않는다.
+        // 동네 찾기 지도는 지도·검색을 화면 위까지 쓰므로 상단 바를 두지 않는다.
+        // 마이는 동네 찾기 등과 같은 "<" 상단 바를 쓰고, 그 옆에 화면 제목을 둔다.
+        <PropertyAppMobileLayout
+          member={member}
+          shell={shell}
+          hidesAppBar={location.pathname === '/compare' || isMapPage}
+          appBarTitle={location.pathname === '/me' ? '마이' : undefined}
+        />
+      )}
     </DesktopHeaderSlotProvider>
   );
 };

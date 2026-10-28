@@ -14,7 +14,7 @@ import IconButton from '@/shared/ui/icon-button/IconButton';
 
 import PropertyChecklistItemControl from './ui/property-checklist-item-control/PropertyChecklistItemControl';
 
-import styles from './PropertyChecklistPage.module.css';
+import * as styles from './PropertyChecklistPage.styles';
 
 const PROPERTY_DETAIL_STATE = { from: 'property-detail' };
 const isFromPropertyDetail = (state: unknown) =>

@@ -3,7 +3,7 @@ import ProgressCircle from '@/shared/ui/progress-circle/ProgressCircle';
 
 import type { NeighborhoodPreviewContext } from '../../hooks/useNeighborhoodPreview';
 
-import shared from '../../NeighborhoodPreviewPage.module.css';
+import * as shared from '../../NeighborhoodPreviewPage.styles';
 
 type AnalysisOverlayProps = {
   preview: Pick<
