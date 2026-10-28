@@ -11,6 +11,7 @@ import useStreetMemoLayer from '@/features/street-memo/hooks/useStreetMemoLayer'
 import addProperty from '@/shared/assets/illustrations/add-property.webp';
 import addProperty2x from '@/shared/assets/illustrations/add-property@2x.webp';
 import { usePublicConfig } from '@/shared/config/PublicConfigContext';
+import { useLogger } from '@/shared/lib/analytics/logging';
 
 import type { RecordsState } from './useRecords';
 
@@ -46,6 +47,7 @@ const useRecordsMapLayers = (
   { onRegister, initialCategory = null, registeringAt = null }: Options,
 ) => {
   const config = usePublicConfig();
+  const { log } = useLogger();
   const { level } = records;
   const hasSelection = records.selected !== undefined;
   const closeSelection = () => records.setSelectedId(null);
@@ -121,13 +123,23 @@ const useRecordsMapLayers = (
             id: 'street-memo',
             label: '📝 메모 남기기',
             onSelect: () => {
+              log('map_coordinate_action_selected', { action: 'memo' });
               setTapPoint(null);
               closeSelection();
               memo.startDraft(tapPoint);
             },
           },
           ...(onRegister
-            ? [{ id: 'property', label: '🏠 여기에 매물 등록', onSelect: () => registerAt(tapPoint) }]
+            ? [
+                {
+                  id: 'property',
+                  label: '🏠 여기에 매물 등록',
+                  onSelect: () => {
+                    log('map_coordinate_action_selected', { action: 'property' });
+                    registerAt(tapPoint);
+                  },
+                },
+              ]
             : []),
         ];
 

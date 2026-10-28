@@ -1,6 +1,7 @@
 import { useState } from 'react';
 
 import PropertyCard from '@/features/property/ui/property-card/PropertyCard';
+import { LogClick } from '@/shared/lib/analytics/logging';
 import { RECORDS_PATH } from '@/shared/lib/navigation/appPaths';
 import EmptyState from '@/shared/ui/empty-state/EmptyState';
 import Icon from '@/shared/ui/icon/Icon';
@@ -44,15 +45,17 @@ const RecordList = ({ records, district, commute, onOpen, onNotice, className }:
           </button>
         </div>
         {commute !== undefined && commute.destinationName !== null ? (
-          <button
-            type="button"
-            className={styles.commuteToggle}
-            aria-pressed={commute.isShown}
-            title={`${commute.destinationName}까지 대중교통 통근 시간`}
-            onClick={commute.toggle}
-          >
-            {commute.isLoading ? '계산 중…' : '통근 시간'}
-          </button>
+          <LogClick event="property_commute_times_toggled" params={{ shown: !commute.isShown }}>
+            <button
+              type="button"
+              className={styles.commuteToggle}
+              aria-pressed={commute.isShown}
+              title={`${commute.destinationName}까지 대중교통 통근 시간`}
+              onClick={commute.toggle}
+            >
+              {commute.isLoading ? '계산 중…' : '통근 시간'}
+            </button>
+          </LogClick>
         ) : (
           <span className={styles.comingSoon}>필터 준비 중</span>
         )}

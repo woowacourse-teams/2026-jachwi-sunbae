@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 
 import type { MapBounds, MapMarker } from '@/features/map/model/Map';
+import { useLogger } from '@/shared/lib/analytics/logging';
 
 import { useStreetMemoMutations, useStreetMemos } from '../api/useStreetMemos';
 import type { StreetMemo, StreetMemoPreference } from '../model/StreetMemo';
@@ -25,6 +26,7 @@ const markerLabel = (memo: StreetMemo) =>
 const useStreetMemoLayer = (enabled: boolean, bounds: MapBounds | null) => {
   const { memos, isFailed } = useStreetMemos(enabled ? bounds : null);
   const { create, remove } = useStreetMemoMutations();
+  const { log } = useLogger();
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [draftPoint, setDraftPoint] = useState<Point | null>(null);
   // 방금 남긴 메모는 상세를 열지 않고, 그 자리에 글을 잠깐 띄웠다가 지운다.
@@ -85,7 +87,9 @@ const useStreetMemoLayer = (enabled: boolean, bounds: MapBounds | null) => {
       create.reset();
       remove.reset();
       setDraftPoint(null);
-      setSelectedId(Number(marker.id.slice(STREET_MEMO_MARKER_PREFIX.length)));
+      const id = Number(marker.id.slice(STREET_MEMO_MARKER_PREFIX.length));
+      log('street_memo_viewed', { preference: memos.find((memo) => memo.id === id)?.preference ?? null });
+      setSelectedId(id);
       return true;
     },
     startDraft: (point: Point) => {
@@ -99,6 +103,7 @@ const useStreetMemoLayer = (enabled: boolean, bounds: MapBounds | null) => {
         { ...draftPoint, memo, preference },
         {
           onSuccess: (saved) => {
+            log('street_memo_created', { preference: saved.preference, memo_length: saved.memo.length });
             setDraftPoint(null);
             setFlash(saved);
             onCreated?.(saved);
@@ -108,7 +113,13 @@ const useStreetMemoLayer = (enabled: boolean, bounds: MapBounds | null) => {
     },
     remove: () => {
       if (selectedMemo === null) return;
-      remove.mutate(selectedMemo.id, { onSuccess: close });
+      const { preference } = selectedMemo;
+      remove.mutate(selectedMemo.id, {
+        onSuccess: () => {
+          log('street_memo_deleted', { preference });
+          close();
+        },
+      });
     },
     close,
   };
