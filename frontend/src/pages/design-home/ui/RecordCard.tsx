@@ -11,7 +11,12 @@ const RecordCard = ({ className }: { className?: string }) => (
   <ActionCard
     tone="brand"
     size="large"
-    title="매물 기록하기"
+    title={
+      <>
+        방을 찾고 <br className={styles.mobileBreak} />
+        있어요
+      </>
+    }
     description="직접 본 매물을 기록해요"
     to="/properties"
     className={`${styles.record} ${className ?? ''}`.trim()}
@@ -111,6 +116,15 @@ const styles = {
       &:hover .RecordCard-scene img {
         transform: var(--lift);
       }
+    }
+  `,
+
+  mobileBreak: css`
+    label: RecordCard-mobileBreak;
+
+    /* 휴대폰은 카드 폭이 좁아 제목을 두 줄로 나누고, 태블릿 너비부터는 한 줄로 둔다. */
+    @media (min-width: 768px) {
+      display: none;
     }
   `,
 };

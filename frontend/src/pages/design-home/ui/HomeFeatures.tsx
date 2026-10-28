@@ -14,7 +14,6 @@ const HomeFeatures = ({ className }: { className?: string }) => (
     </div>
     <div className={styles.column}>
       <ActionCard
-        tone="informative"
         title={
           <>
             사용방법 <br className={styles.mobileBreak} />
@@ -27,9 +26,15 @@ const HomeFeatures = ({ className }: { className?: string }) => (
         illustration={<ActionCardIllustration src={guideGoose} width={200} height={294} placement="peek" />}
       />
       <ActionCard
-        title="동네 찾기"
+        tone="informative"
+        title={
+          <>
+            동네를 알아보는 <br className={styles.mobileBreak} />
+            중이에요
+          </>
+        }
         description="통근 시간과 월세 평균을 비교해요"
-        aria-label="동네 정보 찾기"
+        aria-label="동네를 알아보는 중이에요"
         to="/neighborhoods"
         className={styles.fill}
         illustration={<ActionCardIllustration src={cardNeighborhood} width={320} height={320} />}
@@ -111,7 +116,7 @@ const styles = {
   mobileBreak: css`
     label: HomeFeatures-mobileBreak;
 
-    /* 태블릿 너비부터는 카드가 넓어지므로 카드 글자를 키워 작아 보이지 않게 하고, 사용방법 제목은 한 줄로 둔다. */
+    /* 태블릿 너비부터는 카드가 넓어지므로 카드 글자를 키워 작아 보이지 않게 하고, 사용방법·동네 제목은 한 줄로 둔다. */
     @media (min-width: 768px) {
       display: none;
     }
