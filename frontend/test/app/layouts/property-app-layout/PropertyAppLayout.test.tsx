@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react';
 import { MemoryRouter, Outlet, Route, Routes } from 'react-router-dom';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import PropertyAppLayout from '@/app/layouts/property-app-layout/PropertyAppLayout';
 
@@ -40,4 +40,38 @@ describe('모바일 앱 셸', () => {
       expect(screen.queryByRole('link', { name: '홈으로 돌아가기' })).not.toBeInTheDocument();
     },
   );
+});
+
+describe('데스크탑 앱 셸', () => {
+  it('상단 바 대신 홈 로고·주요 화면 메뉴가 있는 공용 헤더를 둔다', () => {
+    const matchMedia = vi.spyOn(window, 'matchMedia').mockImplementation(
+      (query) =>
+        ({
+          matches: query === '(min-width: 1024px)',
+          media: query,
+          addEventListener: () => undefined,
+          removeEventListener: () => undefined,
+        }) as unknown as MediaQueryList,
+    );
+    try {
+      render(
+        <MemoryRouter initialEntries={['/checklists']}>
+          <Routes>
+            <Route element={<Outlet context={{ memberId: 1, displayName: '이자취', passwordProtected: false }} />}>
+              <Route element={<PropertyAppLayout />}>
+                <Route path="/checklists" element={<h1>체크리스트</h1>} />
+              </Route>
+            </Route>
+          </Routes>
+        </MemoryRouter>,
+      );
+      expect(screen.getByRole('navigation', { name: '주요 화면' })).toBeInTheDocument();
+      expect(screen.getByRole('link', { name: '마이페이지' })).toHaveAttribute('href', '/me');
+      // 홈으로 돌아가는 길은 헤더 로고 하나뿐이고, 휴대폰의 "<" 상단 바는 두지 않는다.
+      expect(screen.getAllByRole('link', { name: '홈으로 돌아가기' })).toHaveLength(1);
+      expect(screen.getByRole('heading', { name: '체크리스트' })).toBeInTheDocument();
+    } finally {
+      matchMedia.mockRestore();
+    }
+  });
 });
