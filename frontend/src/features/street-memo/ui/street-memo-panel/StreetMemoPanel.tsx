@@ -1,11 +1,11 @@
+import { css } from '@emotion/css';
+
 import Icon from '@/shared/ui/icon/Icon';
 import IconButton from '@/shared/ui/icon-button/IconButton';
 
 import type { StreetMemoLayer } from '../../hooks/useStreetMemoLayer';
 import type { StreetMemo } from '../../model/StreetMemo';
 import StreetMemoContent, { streetMemoTitle } from '../street-memo-content/StreetMemoContent';
-
-import * as styles from './StreetMemoPanel.styles';
 
 type Props = {
   layer: StreetMemoLayer;
@@ -32,6 +32,29 @@ const StreetMemoPanel = ({ layer, onCreated, showCloseButton = true, className }
       <StreetMemoContent layer={layer} onCreated={onCreated} />
     </section>
   );
+};
+
+const styles = {
+  panel: css`
+    label: StreetMemoPanel-panel;
+    display: grid;
+    align-content: start;
+    gap: 1rem;
+    padding: 1.25rem;
+  `,
+
+  header: css`
+    label: StreetMemoPanel-header;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+
+    & h2 {
+      margin: 0;
+      font-size: 1.125rem;
+    }
+  `,
 };
 
 export default StreetMemoPanel;

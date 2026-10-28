@@ -1,8 +1,7 @@
+import { css } from '@emotion/css';
 import type { ReactNode } from 'react';
 
 import Icon from '@/shared/ui/icon/Icon';
-
-import * as styles from './ListDetailLayout.styles';
 
 type ListDetailLayoutProps = {
   /** 왼쪽 칸. 목록이나 입력 폼을 둔다. */
@@ -44,6 +43,92 @@ const ListDetailLayout = ({
       </div>
     </div>
   );
+};
+
+const styles = {
+  layout: css`
+    label: ListDetailLayout-layout;
+    --list-detail-list-width: 24rem;
+    --list-detail-detail-width: 26rem;
+    display: grid;
+    grid-template-columns: var(--list-detail-list-width) minmax(0, 1fr);
+    height: 100%;
+    min-height: 0;
+
+    &[data-detail-open='true'] {
+      grid-template-columns: var(--list-detail-list-width) var(--list-detail-detail-width) minmax(0, 1fr);
+    }
+
+    /* 좁은 데스크탑에서는 세 칸을 모두 열어도 본문이 너무 좁아지지 않게 두 칸을 줄인다. */
+    @media (max-width: 1279px) {
+      --list-detail-list-width: 20rem;
+      --list-detail-detail-width: 23rem;
+    }
+  `,
+
+  list: css`
+    label: ListDetailLayout-list;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    overflow: hidden;
+    border-right: 1px solid #eceef1;
+    background: white;
+
+    & > * {
+      flex: 1;
+      min-height: 0;
+    }
+  `,
+
+  detail: css`
+    label: ListDetailLayout-detail;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    overflow: hidden;
+    border-right: 1px solid #eceef1;
+    background: white;
+
+    & > * {
+      flex: 1;
+      min-height: 0;
+    }
+  `,
+
+  main: css`
+    label: ListDetailLayout-main;
+    position: relative;
+    min-width: 0;
+    min-height: 0;
+  `,
+
+  /* 본문 위에 다른 안내가 있으면 화면에서 --list-detail-close-top으로 닫기 버튼을 내린다. */
+  close: css`
+    label: ListDetailLayout-close;
+    position: absolute;
+    top: var(--list-detail-close-top, 1rem);
+    left: 1rem;
+    z-index: 50;
+    display: grid;
+    width: 2.75rem;
+    height: 2.75rem;
+    padding: 0;
+    place-items: center;
+    border: 1px solid #e3e5e9;
+    border-radius: 0.6rem;
+    background: white;
+    box-shadow: 0 2px 10px rgb(0 0 0 / 12%);
+    color: #383c43;
+    cursor: pointer;
+
+    &:focus-visible {
+      outline: 2px solid #25282d;
+      outline-offset: 2px;
+    }
+  `,
 };
 
 export default ListDetailLayout;

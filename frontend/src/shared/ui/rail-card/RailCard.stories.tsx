@@ -1,10 +1,20 @@
+import { css } from '@emotion/css';
 import type { Meta, StoryObj } from '@storybook/react-webpack5';
 import { MemoryRouter } from 'react-router-dom';
 
 import HorizontalRail from '../horizontal-rail/HorizontalRail';
 import RailCard from './RailCard';
 
-import * as styles from './RailCard.stories.styles';
+const styles = {
+  sample: css`
+    label: RailCard.stories-sample;
+    flex: 0 0 9rem;
+    padding: 0.8rem;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-tile);
+    background: var(--color-surface);
+  `,
+};
 
 // to/onSelect 유니언 props라 satisfies 대신 타입을 직접 지정한다.
 const meta: Meta<typeof RailCard> = {

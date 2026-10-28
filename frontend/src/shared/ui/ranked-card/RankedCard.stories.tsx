@@ -1,8 +1,7 @@
+import { css } from '@emotion/css';
 import type { Meta, StoryObj } from '@storybook/react-webpack5';
 
 import RankedCard from './RankedCard';
-
-import * as styles from './RankedCard.stories.styles';
 
 const meta = {
   title: '공통/RankedCard',
@@ -28,4 +27,13 @@ export const AllRanks: Story = {
       ))}
     </div>
   ),
+};
+
+const styles = {
+  row: css`
+    label: RankedCard.stories-row;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+  `,
 };

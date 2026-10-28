@@ -1,3 +1,4 @@
+import { css } from '@emotion/css';
 import { Link, useParams } from 'react-router-dom';
 
 import { describePropertyLoadError } from '@/features/property/api/propertyErrorMessages';
@@ -7,8 +8,6 @@ import PropertyPhotoManager from '@/features/property/ui/property-photo-manager/
 import ContentState from '@/shared/ui/content-state/ContentState';
 import QueryState from '@/shared/ui/query-state/QueryState';
 import TopNavigation from '@/shared/ui/top-navigation/TopNavigation';
-
-import * as styles from './PropertyPhotosPage.styles';
 
 const backToList = <Link to="/">홈으로 돌아가기</Link>;
 const describeError = describePropertyLoadError('사진 목록을 불러오지 못했어요.');
@@ -44,6 +43,20 @@ const ResolvedPropertyPhotosPage = ({ propertyId }: { propertyId: number }) => {
       )}
     </QueryState>
   );
+};
+
+const styles = {
+  page: css`
+    label: PropertyPhotosPage-page;
+    min-height: 100%;
+    padding: 0 1rem 1.5rem;
+    background: var(--color-canvas);
+  `,
+
+  container: css`
+    label: PropertyPhotosPage-container;
+    padding: 0.45rem 0 2rem;
+  `,
 };
 
 export default PropertyPhotosPage;

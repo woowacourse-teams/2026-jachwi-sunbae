@@ -1,10 +1,10 @@
+import { css } from '@emotion/css';
+
 import { formatManwon } from '@/features/map/api/commuteApi';
 
 import type { AreaStation } from '../../hooks/useNeighborhoodPlaces';
 import type { NeighborhoodPreviewContext } from '../../hooks/useNeighborhoodPreview';
 import ListingLink from '../listing-link/ListingLink';
-
-import * as styles from './AreaSummary.styles';
 
 type Area = NonNullable<NeighborhoodPreviewContext['selected']>;
 type Props = {
@@ -53,5 +53,70 @@ const AreaSummary = ({ area, selectedStopId, onSelectStation, onOpenListing }: P
     <ListingLink areaName={area.name} center={area.center} onOpen={onOpenListing} />
   </section>
 );
+
+const styles = {
+  summary: css`
+    label: AreaSummary-summary;
+    display: grid;
+    gap: 1rem;
+    margin: -0.2rem 0 0.4rem;
+    padding: 1rem;
+    border-radius: 0.8rem;
+    background: var(--color-surface-muted);
+
+    & h3 {
+      margin: 0 0 0.5rem;
+      font-size: 0.8rem;
+      color: var(--color-ink-soft);
+    }
+  `,
+
+  rent: css`
+    label: AreaSummary-rent;
+    margin: 0;
+    font-size: 0.9rem;
+    font-weight: 700;
+  `,
+
+  stations: css`
+    label: AreaSummary-stations;
+    display: grid;
+    gap: 0.35rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+
+    & button {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 0.5rem;
+      width: 100%;
+      padding: 0.6rem 0.75rem;
+      border: 1px solid var(--color-border);
+      border-radius: 0.6rem;
+      background: white;
+      color: var(--color-ink);
+      font-size: 0.82rem;
+      text-align: left;
+      cursor: pointer;
+    }
+
+    & button:hover {
+      border-color: var(--color-ink-soft);
+    }
+
+    & button[aria-pressed='true'] {
+      border-color: var(--color-ink);
+      box-shadow: 0 0 0 1px var(--color-ink);
+    }
+
+    & small {
+      flex: none;
+      color: var(--color-muted);
+      font-size: 0.75rem;
+    }
+  `,
+};
 
 export default AreaSummary;

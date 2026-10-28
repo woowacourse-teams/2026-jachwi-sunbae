@@ -1,10 +1,9 @@
+import { css } from '@emotion/css';
 import { Link } from 'react-router-dom';
 
 import type { PropertyPhotoPreview } from '@/features/property/model/Property';
 import AuthenticatedPhoto from '@/features/property/ui/authenticated-photo/AuthenticatedPhoto';
 import Icon from '@/shared/ui/icon/Icon';
-
-import * as styles from './PropertyHeroPhoto.styles';
 
 type PropertyHeroPhotoProps = {
   propertyId: number;
@@ -61,5 +60,82 @@ const PropertyHeroPhoto = ({
     )}
   </section>
 );
+
+const styles = {
+  section: css`
+    label: PropertyHeroPhoto-section;
+    position: relative;
+    width: calc(100% + 2rem);
+    margin-left: -1rem;
+  `,
+
+  button: css`
+    label: PropertyHeroPhoto-button;
+    display: block;
+    width: 100%;
+    height: calc(11rem + var(--app-bar-height));
+    min-height: 0;
+    max-height: calc(11rem + var(--app-bar-height));
+    overflow: hidden;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: var(--color-surface-muted);
+    color: inherit;
+    cursor: pointer;
+    text-decoration: none;
+  `,
+
+  emptyButton: css`
+    label: PropertyHeroPhoto-emptyButton;
+    display: grid;
+    place-items: center;
+  `,
+
+  addLabel: css`
+    label: PropertyHeroPhoto-addLabel;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.6rem 0.8rem;
+    border-radius: 999px;
+    background: rgb(33 33 36 / 82%);
+    color: white;
+    font-size: 0.72rem;
+    font-weight: 750;
+  `,
+
+  photo: css`
+    label: PropertyHeroPhoto-photo;
+    display: block;
+    width: 100%;
+    height: 100%;
+    aspect-ratio: auto;
+    border-radius: 0;
+    object-fit: cover;
+  `,
+
+  backButton: css`
+    label: PropertyHeroPhoto-backButton;
+    position: absolute;
+    z-index: 2;
+    top: 0.75rem;
+    left: 0.75rem;
+    display: grid;
+    width: 2.5rem;
+    height: 2.5rem;
+    align-items: center;
+    justify-content: center;
+    border: 0;
+    background: transparent;
+    color: var(--color-ink);
+    text-decoration: none;
+
+    &:focus-visible {
+      outline: 2px solid var(--color-focus);
+      outline-offset: 2px;
+    }
+  `,
+};
 
 export default PropertyHeroPhoto;

@@ -1,3 +1,5 @@
+import { css } from '@emotion/css';
+
 import type { MapCoordinate } from '@/features/map/lib/mapLocation';
 import type { MapCategory } from '@/features/map/model/Map';
 import MapCanvas from '@/features/map/ui/map-canvas/MapCanvas';
@@ -13,8 +15,6 @@ import useNearbyAnalysis, {
 import MapNearbySheet from '../map-nearby-sheet/MapNearbySheet';
 import MapPlaceDetailCard from '../map-place-detail-card/MapPlaceDetailCard';
 import NearbyMapNotice from '../nearby-map-notice/NearbyMapNotice';
-
-import * as styles from './NearbyStage.styles';
 
 const EMPTY_COUNTS = { HOSPITAL: 0, TRANSPORT: 0, SCHOOL: 0, CONVENIENCE: 0, AGENCY: 0 };
 
@@ -97,6 +97,18 @@ const NearbyStage = ({
       )}
     </section>
   );
+};
+
+const styles = {
+  mapStage: css`
+    label: NearbyStage-mapStage;
+    position: relative;
+    width: 100%;
+    height: 100%;
+    min-height: 0;
+    overflow: hidden;
+    box-sizing: border-box;
+  `,
 };
 
 export default NearbyStage;

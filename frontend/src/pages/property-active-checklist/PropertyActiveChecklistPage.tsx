@@ -1,3 +1,4 @@
+import { css } from '@emotion/css';
 import { useMemo } from 'react';
 import { Link, useLocation, useParams, useSearchParams } from 'react-router-dom';
 
@@ -18,8 +19,6 @@ import QueryState from '@/shared/ui/query-state/QueryState';
 import useAutoOpenAppliedChecklist from './hooks/useAutoOpenAppliedChecklist';
 import useChecklistSelection, { SYSTEM_DEFAULT_ID } from './hooks/useChecklistSelection';
 import ActiveChecklistOptions from './ui/active-checklist-options/ActiveChecklistOptions';
-
-import * as styles from './PropertyActiveChecklistPage.styles';
 
 const readNewChecklistId = (state: unknown): number | null => {
   if (typeof state !== 'object' || state === null || !('newChecklistId' in state)) return null;
@@ -171,4 +170,32 @@ const PropertyActiveChecklistPage = () => {
     return <ContentState title="올바른 매물 체크리스트 주소가 아니에요.">{backToList}</ContentState>;
   return <ResolvedPropertyActiveChecklist key={params.stage} propertyId={propertyId} stage={params.stage} />;
 };
+
+const styles = {
+  description: css`
+    label: PropertyActiveChecklistPage-description;
+    margin: 0.9rem 0 0.75rem;
+    padding: 0;
+    color: var(--color-muted);
+    font-size: 0.82rem;
+    line-height: 1.5;
+  `,
+
+  loadMore: css`
+    label: PropertyActiveChecklistPage-loadMore;
+    display: grid;
+    gap: 0.45rem;
+    margin-top: 0.75rem;
+  `,
+
+  bottomAction: css`
+    label: PropertyActiveChecklistPage-bottomAction;
+
+    & > div {
+      margin-right: -1rem;
+      margin-left: -1rem;
+    }
+  `,
+};
+
 export default PropertyActiveChecklistPage;

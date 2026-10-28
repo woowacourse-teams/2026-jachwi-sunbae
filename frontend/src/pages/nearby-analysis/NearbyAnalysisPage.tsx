@@ -1,3 +1,4 @@
+import { css } from '@emotion/css';
 import { useParams, useSearchParams } from 'react-router-dom';
 
 import { readAreaNearbyBackPath, readAreaNearbyTarget } from '@/features/map/lib/areaNearbyTarget';
@@ -9,8 +10,6 @@ import InlineNotice from '@/shared/ui/inline-notice/InlineNotice';
 import TopNavigation from '@/shared/ui/top-navigation/TopNavigation';
 
 import NearbyStage from './ui/nearby-stage/NearbyStage';
-
-import * as styles from './NearbyAnalysisPage.styles';
 
 /** `/properties/:propertyId/nearby`는 매물 좌표로, `/explore/nearby`·`/neighborhoods/nearby`는 동네 좌표로 분석한다. */
 const NearbyAnalysisPage = () => {
@@ -99,6 +98,37 @@ const AreaNearbyAnalysisPage = () => {
       )}
     </main>
   );
+};
+
+const styles = {
+  page: css`
+    label: NearbyAnalysisPage-page;
+    position: relative;
+    display: grid;
+    width: 100%;
+    height: 100%;
+    min-height: 0;
+    grid-template-rows: auto minmax(0, 1fr);
+    overflow: hidden;
+    background: var(--color-surface);
+  `,
+
+  mapNavigation: css`
+    label: NearbyAnalysisPage-mapNavigation;
+    z-index: 40;
+    margin: 0;
+    padding: 0 1rem;
+    background: var(--color-surface);
+  `,
+
+  fullState: css`
+    label: NearbyAnalysisPage-fullState;
+    display: grid;
+    align-content: center;
+    gap: 1rem;
+    min-height: 0;
+    padding: 1rem;
+  `,
 };
 
 export default NearbyAnalysisPage;

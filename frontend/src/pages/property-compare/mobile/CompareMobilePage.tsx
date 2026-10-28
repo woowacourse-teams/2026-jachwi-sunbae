@@ -1,3 +1,5 @@
+import { css } from '@emotion/css';
+
 import { usePropertyList } from '@/features/property/api/useProperties';
 import InlineNotice from '@/shared/ui/inline-notice/InlineNotice';
 import TopNavigation from '@/shared/ui/top-navigation/TopNavigation';
@@ -9,7 +11,6 @@ import CompareLoadState from '../ui/compare-load-state/CompareLoadState';
 import ComparePropertyOption from '../ui/compare-property-option/ComparePropertyOption';
 
 import * as shared from '../ComparePage.styles';
-import * as styles from './CompareMobilePage.styles';
 
 /** 휴대폰·태블릿 비교할 매물 선택. 이어진 리스트에서 2~5개를 골라 PDF로 받는다. */
 const CompareMobilePage = () => {
@@ -61,6 +62,25 @@ const CompareMobilePage = () => {
       )}
     </main>
   );
+};
+
+const styles = {
+  /* 매물은 따로 떨어진 카드 대신 한 상자 안에 이어진 리스트로 두고, 항목 사이는 얇은 줄로 나눈다. */
+  propertyList: css`
+    label: CompareMobilePage-propertyList;
+    display: grid;
+    gap: 0;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    border-radius: var(--radius-md);
+    background: var(--color-surface);
+    list-style: none;
+
+    & > li + li {
+      border-top: 1px solid #e4e6ea;
+    }
+  `,
 };
 
 export default CompareMobilePage;

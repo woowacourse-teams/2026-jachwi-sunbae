@@ -1,3 +1,4 @@
+import { css } from '@emotion/css';
 import type { MouseEvent } from 'react';
 import { Link } from 'react-router-dom';
 
@@ -5,8 +6,6 @@ import type { PropertyDetail } from '@/features/property/model/Property';
 import AuthenticatedPhoto from '@/features/property/ui/authenticated-photo/AuthenticatedPhoto';
 import DetailSection from '@/shared/ui/detail-section/DetailSection';
 import Icon from '@/shared/ui/icon/Icon';
-
-import * as styles from './PropertyPhotoSection.styles';
 
 type PropertyPhotoSectionProps = {
   propertyId: number;
@@ -56,5 +55,60 @@ const PropertyPhotoSection = ({ propertyId, propertyName, photoPreview, onSelect
     )}
   </DetailSection>
 );
+
+const styles = {
+  grid: css`
+    label: PropertyPhotoSection-grid;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.35rem;
+  `,
+
+  thumbnailButton: css`
+    label: PropertyPhotoSection-thumbnailButton;
+    position: relative;
+    aspect-ratio: 1;
+    overflow: hidden;
+    padding: 0;
+    border: 0;
+    border-radius: var(--radius-sm);
+    background: var(--color-surface-disabled);
+    cursor: pointer;
+  `,
+
+  thumbnail: css`
+    label: PropertyPhotoSection-thumbnail;
+    width: 100%;
+    height: 100%;
+    padding: 0;
+    border-radius: 0;
+    object-fit: cover;
+  `,
+
+  moreOverlay: css`
+    label: PropertyPhotoSection-moreOverlay;
+    position: absolute;
+    inset: 0;
+    display: grid;
+    background: var(--color-overlay);
+    color: white;
+    font-size: 0.75rem;
+    font-weight: 800;
+    place-items: center;
+  `,
+
+  emptyLink: css`
+    label: PropertyPhotoSection-emptyLink;
+    display: flex;
+    min-height: 2.75rem;
+    align-items: center;
+    justify-content: center;
+    border: 1px dashed var(--color-border-strong);
+    border-radius: var(--radius-sm);
+    color: var(--color-muted);
+    font-size: 0.72rem;
+    text-decoration: none;
+  `,
+};
 
 export default PropertyPhotoSection;

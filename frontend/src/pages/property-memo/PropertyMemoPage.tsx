@@ -1,3 +1,4 @@
+import { css } from '@emotion/css';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 
 import { getPropertyErrorMessage } from '@/features/property/api/propertyErrorMessages';
@@ -7,8 +8,6 @@ import ContentState from '@/shared/ui/content-state/ContentState';
 import TopNavigation from '@/shared/ui/top-navigation/TopNavigation';
 
 import PropertyAdditionalInfoForm from './ui/property-additional-info-form/PropertyAdditionalInfoForm';
-
-import * as styles from './PropertyMemoPage.styles';
 
 const PropertyMemoPage = () => {
   const propertyId = parsePositiveId(useParams().propertyId);
@@ -53,6 +52,15 @@ const ResolvedPropertyMemoPage = ({ propertyId }: { propertyId: number }) => {
       />
     </main>
   );
+};
+
+const styles = {
+  page: css`
+    label: PropertyMemoPage-page;
+    min-height: 100%;
+    padding: 0 1rem 1.5rem;
+    background: var(--color-canvas);
+  `,
 };
 
 export default PropertyMemoPage;

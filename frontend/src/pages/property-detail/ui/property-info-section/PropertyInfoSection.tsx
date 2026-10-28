@@ -1,8 +1,7 @@
+import { css } from '@emotion/css';
 import type { ReactNode } from 'react';
 
 import DetailSection from '@/shared/ui/detail-section/DetailSection';
-
-import * as styles from './PropertyInfoSection.styles';
 
 type PropertyInfoSectionProps = {
   title: string;
@@ -19,5 +18,14 @@ const PropertyInfoSection = ({ title, label, action, children }: PropertyInfoSec
     <dl className={styles.summary}>{children}</dl>
   </DetailSection>
 );
+
+const styles = {
+  summary: css`
+    label: PropertyInfoSection-summary;
+    display: grid;
+    gap: 0;
+    margin: 0;
+  `,
+};
 
 export default PropertyInfoSection;

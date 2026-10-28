@@ -1,8 +1,8 @@
+import { css } from '@emotion/css';
+
 import IconBase from '@/shared/ui/icon/IconBase';
 
 import type { WeatherHour } from '../../model/weather';
-
-import * as styles from './WeatherSymbol.styles';
 
 type WeatherSymbolProps = { hour: Pick<WeatherHour, 'sky' | 'pty'>; size?: number };
 
@@ -30,6 +30,20 @@ const WeatherSymbol = ({ hour, size = 40 }: WeatherSymbolProps) => {
       </IconBase>
     </span>
   );
+};
+
+const styles = {
+  sun: css`
+    label: WeatherSymbol-sun;
+    display: inline-flex;
+    color: var(--color-brand-yellow);
+  `,
+
+  cloud: css`
+    label: WeatherSymbol-cloud;
+    display: inline-flex;
+    color: var(--color-check-good-ink);
+  `,
 };
 
 export default WeatherSymbol;

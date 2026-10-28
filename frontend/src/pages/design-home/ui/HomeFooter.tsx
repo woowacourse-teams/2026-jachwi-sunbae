@@ -1,6 +1,5 @@
+import { css, cx } from '@emotion/css';
 import { Link } from 'react-router-dom';
-
-import * as styles from './HomeFooter.styles';
 
 const FOOTER_LINKS = [
   { label: '사용 방법', to: '/guide' },
@@ -27,5 +26,75 @@ const HomeFooter = ({ className, alignStart = false }: HomeFooterProps) => (
     <small className={styles.copyright}>© 2026 자취선배</small>
   </footer>
 );
+
+const styles = {
+  // 다른 요소의 선택자에서 `.HomeFooter-footer`로 가리킨다.
+  footer: cx(
+    css`
+      label: HomeFooter-footer;
+      display: grid;
+      justify-items: center;
+      gap: 0.6rem;
+      margin-top: 2.5rem;
+      padding-top: 1.5rem;
+      padding-bottom: max(1.5rem, env(safe-area-inset-bottom));
+      border-top: 1px solid var(--color-border);
+      color: var(--color-placeholder);
+      font-size: 0.7rem;
+      line-height: 1.5;
+      text-align: center;
+
+      /* 데스크탑에서는 본문 왼쪽 끝에 맞춰 왼쪽 정렬한다. */
+      /* 데스크탑 홈에서는 왼쪽 정렬하고 위 여백을 넓힌다. */
+      &[data-align-start='true'] {
+        justify-items: start;
+        margin-top: 4rem;
+        padding-top: 2rem;
+        text-align: left;
+      }
+    `,
+    'HomeFooter-footer',
+  ),
+
+  slogan: css`
+    label: HomeFooter-slogan;
+    margin: 0;
+    color: var(--color-muted);
+  `,
+
+  links: css`
+    label: HomeFooter-links;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.25rem 1rem;
+
+    & a {
+      border-radius: 0.25rem;
+      color: var(--color-muted);
+      text-decoration: none;
+    }
+
+    & a:hover {
+      color: var(--color-ink);
+      text-decoration: underline;
+      text-underline-offset: 0.15rem;
+    }
+
+    & a:focus-visible {
+      outline: 2px solid var(--color-focus);
+      outline-offset: 2px;
+    }
+
+    .HomeFooter-footer[data-align-start='true'] & {
+      justify-content: flex-start;
+    }
+  `,
+
+  copyright: css`
+    label: HomeFooter-copyright;
+    font-size: inherit;
+  `,
+};
 
 export default HomeFooter;

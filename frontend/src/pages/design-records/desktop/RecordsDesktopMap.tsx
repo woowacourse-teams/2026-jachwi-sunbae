@@ -1,3 +1,4 @@
+import { css } from '@emotion/css';
 import type { ReactNode } from 'react';
 
 import MapCanvas from '@/features/map/ui/map-canvas/MapCanvas';
@@ -8,8 +9,6 @@ import Icon from '@/shared/ui/icon/Icon';
 import type { RecordsState } from '../hooks/useRecords';
 import type { RecordsMapLayers } from '../hooks/useRecordsMapLayers';
 import { recordsMapHint } from '../model/recordPresentation';
-
-import * as styles from './RecordsDesktopMap.styles';
 
 type Props = {
   records: RecordsState;
@@ -43,5 +42,85 @@ const RecordsDesktopMap = ({ records, layers, districts, className }: Props) => 
     <StreetMemoPanel layer={layers.memo} onCreated={layers.showMemos} className={styles.memoCard} />
   </section>
 );
+
+const styles = {
+  /* 데스크탑 본 방 기록 지도: 오른쪽 칸 전체. 동네 뱃지는 위에, 카테고리 레일·현재 위치는 오른쪽에, 메모 카드는 왼쪽 위에 띄운다. */
+  map: css`
+    label: RecordsDesktopMap-map;
+    position: relative;
+    min-width: 0;
+    min-height: 0;
+  `,
+
+  districts: css`
+    label: RecordsDesktopMap-districts;
+    position: absolute;
+    z-index: 10;
+    top: 0;
+    right: 0;
+    left: 0;
+    padding-top: 0.75rem;
+  `,
+
+  /* 동네 뱃지 줄 아래 오른쪽에 둔다. */
+  rail: css`
+    label: RecordsDesktopMap-rail;
+    top: 4.5rem;
+    right: 1rem;
+    z-index: 12;
+  `,
+
+  /* 메모 탭까지 여섯 칸인 레일 아래에 둔다. */
+  recenter: css`
+    label: RecordsDesktopMap-recenter;
+    position: absolute;
+    top: 20.1rem;
+    right: 1.15rem;
+    z-index: 12;
+    display: grid;
+    place-items: center;
+    width: 2.65rem;
+    height: 2.65rem;
+    border: 0;
+    border-radius: 50%;
+    color: #41444b;
+    background: #fff;
+    box-shadow: 0 2px 10px #00000016;
+    cursor: pointer;
+
+    &:focus-visible {
+      outline: 2px solid #25282d;
+      outline-offset: 3px;
+    }
+  `,
+
+  hint: css`
+    label: RecordsDesktopMap-hint;
+    position: absolute;
+    bottom: 2.75rem;
+    left: 1rem;
+    padding: 0.5rem 0.7rem;
+    border-radius: 0.5rem;
+    background: #ffffffed;
+    color: #92969d;
+    font-size: 0.8rem;
+  `,
+
+  /* 메모 카드는 오른쪽 레일을 가리지 않게 왼쪽 위, 동네 뱃지 아래에 띄운다. */
+  memoCard: css`
+    label: RecordsDesktopMap-memoCard;
+    position: absolute;
+    top: 4.5rem;
+    left: 1rem;
+    z-index: 30;
+    width: min(22rem, calc(100% - 6rem));
+    max-height: calc(100% - 6rem);
+    overflow-y: auto;
+    border: 1px solid var(--color-border);
+    border-radius: 1rem;
+    background: var(--color-surface);
+    box-shadow: 0 0.5rem 1.5rem rgb(0 0 0 / 14%);
+  `,
+};
 
 export default RecordsDesktopMap;

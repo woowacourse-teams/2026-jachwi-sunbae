@@ -1,4 +1,4 @@
-import * as styles from './MapRadiusSelector.styles';
+import { css } from '@emotion/css';
 
 export type MapRadiusOption<T extends number | string> = {
   value: T;
@@ -35,5 +35,43 @@ const MapRadiusSelector = <T extends number | string>({
     ))}
   </div>
 );
+
+const styles = {
+  filters: css`
+    label: MapRadiusSelector-filters;
+    position: absolute;
+    top: 4.25rem;
+    left: 0.85rem;
+    z-index: 26;
+    display: flex;
+    gap: 0.35rem;
+
+    & button {
+      min-width: 3.35rem;
+      min-height: 2rem;
+      padding: 0.35rem 0.55rem;
+      border: 1px solid rgb(221 220 212 / 88%);
+      border-radius: 999px;
+      background: rgb(255 255 255 / 94%);
+      box-shadow: 0 0.2rem 0.6rem rgb(42 48 35 / 12%);
+      color: var(--color-primary-dark, #1f1f1f);
+      font-size: 0.65rem;
+      font-weight: 850;
+      cursor: pointer;
+    }
+
+    & button[aria-pressed='true'] {
+      border-color: var(--color-primary, #555);
+      background: var(--color-primary, #555);
+      color: var(--color-on-primary, #fff);
+    }
+
+    & button:disabled {
+      opacity: 0.45;
+      cursor: default;
+      box-shadow: none;
+    }
+  `,
+};
 
 export default MapRadiusSelector;

@@ -1,8 +1,7 @@
+import { css } from '@emotion/css';
 import type { Meta, StoryObj } from '@storybook/react-webpack5';
 
 import BottomSheet from './BottomSheet';
-
-import * as styles from './BottomSheet.stories.styles';
 
 const meta = {
   title: '공통/BottomSheet',
@@ -18,3 +17,13 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 export const Default: Story = {};
+
+const styles = {
+  canvas: css`
+    label: BottomSheet.stories-canvas;
+    position: relative;
+    height: 35rem;
+    max-width: 26rem;
+    background: #e9ece8;
+  `,
+};

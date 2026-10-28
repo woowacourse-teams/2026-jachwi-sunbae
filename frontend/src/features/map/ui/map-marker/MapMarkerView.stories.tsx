@@ -1,10 +1,9 @@
+import { css } from '@emotion/css';
 import type { Meta, StoryObj } from '@storybook/react-webpack5';
 import type { CSSProperties } from 'react';
 
 import type { MapMarker } from '../../model/Map';
 import MapMarkerView from './MapMarkerView';
-
-import * as styles from './MapMarkerView.stories.styles';
 
 const sampleMarkers: Array<{ name: string; marker: MapMarker }> = [
   {
@@ -131,4 +130,37 @@ export const ZoomSizes: Story = {
       </div>
     </div>
   ),
+};
+
+const styles = {
+  stage: css`
+    label: MapMarkerView.stories-stage;
+    display: grid;
+    gap: 1rem;
+    padding: 1.5rem;
+    background:
+      linear-gradient(28deg, transparent 45%, rgb(255 255 255 / 82%) 46% 51%, transparent 52%),
+      repeating-linear-gradient(0deg, transparent 0 52px, rgb(160 151 128 / 20%) 53px 54px), #ece8dc;
+  `,
+
+  grid: css`
+    label: MapMarkerView.stories-grid;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+    gap: 2.6rem 1.5rem;
+    align-items: center;
+    justify-items: center;
+    min-height: 12rem;
+  `,
+
+  item: css`
+    label: MapMarkerView.stories-item;
+    display: grid;
+    min-width: 7rem;
+    justify-items: center;
+    gap: 0.75rem;
+    color: var(--color-muted);
+    font-size: 0.72rem;
+    font-weight: 700;
+  `,
 };

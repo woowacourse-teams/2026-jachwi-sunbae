@@ -1,11 +1,11 @@
+import { css } from '@emotion/css';
+
 import { formatManwon } from '@/features/map/api/commuteApi';
 import ExplorationRecordAction from '@/features/onboarding/ui/exploration-record-action/ExplorationRecordAction';
 
 import type { NeighborhoodPreviewContext } from '../../hooks/useNeighborhoodPreview';
 import ListingLink from '../listing-link/ListingLink';
 import RouteGuide from '../route-guide/RouteGuide';
-
-import * as styles from './RouteDetailBody.styles';
 
 type Props = {
   preview: NeighborhoodPreviewContext;
@@ -54,5 +54,42 @@ const RouteDetailBody = ({ preview, area }: Props) => (
     </div>
   </>
 );
+
+const styles = {
+  rent: css`
+    label: RouteDetailBody-rent;
+    display: grid;
+    gap: 0.25rem;
+    margin-bottom: 1rem;
+    padding: 0.9rem 1rem;
+    border-radius: 0.75rem;
+    background: var(--color-surface-muted);
+
+    & > span,
+    & > small {
+      color: var(--color-muted);
+      font-size: 0.8rem;
+    }
+
+    & > strong {
+      font-size: 1rem;
+    }
+  `,
+
+  notice: css`
+    label: RouteDetailBody-notice;
+    color: var(--color-muted);
+    line-height: 1.6;
+    font-size: 0.8rem;
+    margin-top: 1.5rem;
+  `,
+
+  actions: css`
+    label: RouteDetailBody-actions;
+    display: grid;
+    gap: 0.5rem;
+    margin-top: 1rem;
+  `,
+};
 
 export default RouteDetailBody;

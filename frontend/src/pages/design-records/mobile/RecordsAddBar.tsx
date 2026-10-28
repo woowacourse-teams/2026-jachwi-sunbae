@@ -1,11 +1,11 @@
+import { css } from '@emotion/css';
+
 import type { MapCoordinate } from '@/features/map/lib/mapLocation';
 import type { MapAddress } from '@/features/map/model/Map';
 import { Button } from '@/shared/ui/button/Button';
 import Toast from '@/shared/ui/toast/Toast';
 
 import type { RecordsAddKind } from '../hooks/useRecordsAddMode';
-
-import * as styles from './RecordsAddBar.styles';
 
 type Props = {
   kind: RecordsAddKind;
@@ -69,6 +69,36 @@ const RecordsAddBar = ({ kind, coordinate, address, status, onCancel, onConfirm 
       </div>
     </>
   );
+};
+
+const styles = {
+  toast: css`
+    label: RecordsAddBar-toast;
+
+    /* 추가 모드 안내 토스트는 헤더를 거둔 위쪽에 띄운다. 공용 토스트의 아래쪽 위치를 이기도록 태그까지 건다. */
+    aside& {
+      top: max(0.85rem, env(safe-area-inset-top));
+      bottom: auto;
+    }
+  `,
+
+  /* 추가 모드 아래쪽에는 막대 없이 버튼만 띄운다. */
+  actions: css`
+    label: RecordsAddBar-actions;
+    position: absolute;
+    right: 1rem;
+    bottom: max(1.5rem, env(safe-area-inset-bottom));
+    left: 1rem;
+    z-index: 30;
+    display: flex;
+    gap: 0.55rem;
+
+    & > button {
+      min-width: 0;
+      white-space: nowrap;
+      box-shadow: 0 4px 16px rgb(0 0 0 / 14%);
+    }
+  `,
 };
 
 export default RecordsAddBar;

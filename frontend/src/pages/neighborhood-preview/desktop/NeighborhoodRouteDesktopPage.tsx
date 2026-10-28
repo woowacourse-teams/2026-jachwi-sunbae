@@ -1,8 +1,9 @@
+import { css } from '@emotion/css';
+
 import type { NeighborhoodPreviewContext } from '../hooks/useNeighborhoodPreview';
 import RouteDetailBody from '../ui/route-detail/RouteDetailBody';
 
 import * as shared from '../NeighborhoodRoutePage.styles';
-import * as styles from './NeighborhoodRouteDesktopPage.styles';
 
 type Props = {
   preview: NeighborhoodPreviewContext;
@@ -18,5 +19,14 @@ const NeighborhoodRouteDesktopPage = ({ preview, area }: Props) => (
     <RouteDetailBody preview={preview} area={area} />
   </main>
 );
+
+const styles = {
+  /* 상세 칸 안에 있으므로 지도 위로 띄우지 않는다. */
+  root: css`
+    label: NeighborhoodRouteDesktopPage-root;
+    z-index: auto;
+    padding-top: 1.25rem;
+  `,
+};
 
 export default NeighborhoodRouteDesktopPage;
