@@ -68,7 +68,8 @@ public class SevenElevenPromotionParser {
         number(require(document, "input#listCnt").val());
         List<PromotionProduct> products = products(document.body(), tab);
         if (products.size() != expectedCount) {
-            throw invalid("더보기 상품 수가 남은 전체 수·페이지 크기와 다릅니다.");
+            throw invalid("더보기 상품 수가 남은 전체 수·페이지 크기와 다릅니다. tab=" + tab + ", page=" + page
+                    + ", expectedCount=" + expectedCount + ", actualCount=" + products.size());
         }
         return products;
     }

@@ -14,7 +14,11 @@ import com.jachwisunbae.promotion.domain.ConvenienceBrand;
 import org.jsoup.Jsoup;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.springframework.boot.test.system.CapturedOutput;
+import org.springframework.boot.test.system.OutputCaptureExtension;
 
+@ExtendWith(OutputCaptureExtension.class)
 class SevenElevenPromotionFetcherTest {
 
     private final SevenElevenPromotionClient client = mock(SevenElevenPromotionClient.class);
@@ -70,12 +74,15 @@ class SevenElevenPromotionFetcherTest {
     }
 
     @Test
-    void propagatesRequestFailureAndDoesNotRetry() {
+    void propagatesRequestFailureAndDoesNotRetry(final CapturedOutput output) {
         IllegalStateException failure = new IllegalStateException("timeout");
         when(client.fetchFirst(SevenElevenPromotionTab.ONE_PLUS_ONE)).thenReturn(first(SevenElevenPromotionTab.ONE_PLUS_ONE, 23));
         when(client.fetchMore(SevenElevenPromotionTab.ONE_PLUS_ONE, 2)).thenThrow(failure);
         assertThatThrownBy(fetcher::fetch).isSameAs(failure);
         verify(client).fetchMore(SevenElevenPromotionTab.ONE_PLUS_ONE, 2);
+        assertThat(output).contains("tab=ONE_PLUS_ONE page=1 pageCount=13 cumulativeCount=13 totalCount=23",
+                "promotion-fetch-failed brand=SEVEN_ELEVEN tab=ONE_PLUS_ONE page=2 exceptionType=IllegalStateException")
+                .doesNotContain("promotion-fetch-completed");
     }
 
     @Test

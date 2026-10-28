@@ -115,4 +115,16 @@ class SevenElevenPromotionParserTest {
         assertThatThrownBy(() -> parser.parseMore(html + html, SevenElevenPromotionTab.ONE_PLUS_ONE, 2, 10))
                 .isInstanceOf(UpstreamServiceException.class);
     }
+
+    @Test
+    void rejectsRealSaleResponseWithOnlySevenCardsBeforeAdvertisedTotal() {
+        // 2026-10-29: 총수 484, 47페이지까지 473건. 48페이지는 기대 10건 대신 7건을 반환했다.
+        String html = SevenElevenPromotionFixtures.html("sale-short-before-total");
+
+        assertThatThrownBy(() -> parser.parseMore(html, SevenElevenPromotionTab.SALE, 48, 10))
+                .isInstanceOfSatisfying(UpstreamServiceException.class, exception -> {
+                    assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.PROMOTION_RESPONSE_INVALID);
+                    assertThat(exception).hasMessageContaining("tab=SALE", "page=48", "expectedCount=10", "actualCount=7");
+                });
+    }
 }

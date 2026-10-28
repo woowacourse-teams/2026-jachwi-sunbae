@@ -1,5 +1,8 @@
 package com.jachwisunbae.promotion.collector;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.jachwisunbae.promotion.controller.PromotionController;
 import com.jachwisunbae.promotion.domain.ConvenienceBrand;
 import com.jachwisunbae.promotion.domain.ProductCategory;
 import com.jachwisunbae.promotion.domain.PromotionProduct;
@@ -9,6 +12,7 @@ import com.jachwisunbae.promotion.provider.emart24.Emart24PromotionClient;
 import com.jachwisunbae.promotion.provider.emart24.Emart24PromotionFetcher;
 import com.jachwisunbae.promotion.repository.JdbcPromotionProductRepository;
 import com.jachwisunbae.promotion.service.PromotionCollectionService;
+import com.jachwisunbae.promotion.service.PromotionQueryService;
 import com.jachwisunbae.promotion.support.PromotionDatabaseTestConfiguration;
 import com.jachwisunbae.promotion.support.PromotionProductsFixture;
 import java.time.Clock;
@@ -17,8 +21,12 @@ import java.util.Set;
 import javax.sql.DataSource;
 import org.flywaydb.core.Flyway;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
+import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
+import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.datasource.DriverManagerDataSource;
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
+import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.testcontainers.DockerClientFactory;
 import org.testcontainers.containers.MySQLContainer;
 
@@ -50,6 +58,7 @@ public class PromotionLocalCollectionCommand {
                 context.registerBean(Clock.class, Clock::systemUTC);
                 context.registerBean(PromotionFetcher.class, () -> fetcher);
                 context.register(PromotionDatabaseTestConfiguration.class);
+                context.register(PromotionQueryService.class);
                 context.refresh();
                 System.out.println("[" + brand + "] 로컬 저장 검증 database=promotion_local (일회용)");
                 JdbcPromotionProductRepository repository = context.getBean(JdbcPromotionProductRepository.class);
@@ -71,8 +80,31 @@ public class PromotionLocalCollectionCommand {
                         SELECT brand, COUNT(*) AS product_count, MAX(collected_at) AS last_collected_at
                         FROM promotion_products GROUP BY brand
                         """));
+                verifyApi(context.getBean(PromotionQueryService.class), brand, stored.size());
                 System.out.println("[" + brand + "] 로컬 저장 검증 완료 (명령 종료 시 일회용 DB 삭제)");
             }
+        }
+    }
+
+    private static void verifyApi(final PromotionQueryService service, final ConvenienceBrand brand, final int dbCount) {
+        try {
+            ObjectMapper mapper = Jackson2ObjectMapperBuilder.json()
+                    .featuresToDisable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS).build();
+            var response = MockMvcBuilders.standaloneSetup(new PromotionController(service))
+                    .setMessageConverters(new MappingJackson2HttpMessageConverter(mapper)).build()
+                    .perform(MockMvcRequestBuilders.get("/api/promotions").param("brand", brand.name()))
+                    .andReturn().getResponse();
+            var data = mapper.readTree(response.getContentAsByteArray()).path("data");
+            if (response.getStatus() != 200 || data.path("count").asInt(-1) != dbCount
+                    || data.path("products").size() != dbCount || !data.path("brand").asText().equals(brand.name())
+                    || !data.path("collectedAt").asText().endsWith("+09:00")) {
+                throw new IllegalStateException("조회 API의 브랜드·상품 수·KST 시각 형식이 실제 저장 결과와 다릅니다.");
+            }
+            System.out.println("API 검증(standalone MockMvc, JWT는 별도 통합 테스트): brand=" + brand
+                    + ", dbCount=" + dbCount + ", count=" + data.path("count").asInt()
+                    + ", collectedAt=" + data.path("collectedAt").asText());
+        } catch (Exception exception) {
+            throw new IllegalStateException("저장 후 조회 API 검증 실패", exception);
         }
     }
 

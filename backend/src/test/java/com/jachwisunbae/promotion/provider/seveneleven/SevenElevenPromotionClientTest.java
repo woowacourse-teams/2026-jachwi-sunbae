@@ -1,5 +1,31 @@
 package com.jachwisunbae.promotion.provider.seveneleven;
 
+import com.jachwisunbae.common.exception.server.UpstreamServiceException;
+import com.sun.net.httpserver.HttpServer;
+import java.net.InetSocketAddress;
+import java.net.SocketTimeoutException;
+import java.net.http.HttpClient;
+import java.net.http.HttpTimeoutException;
+import java.time.Duration;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
+import org.springframework.boot.test.system.CapturedOutput;
+import org.springframework.boot.test.system.OutputCaptureExtension;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatusCode;
+import org.springframework.http.MediaType;
+import org.springframework.http.client.JdkClientHttpRequestFactory;
+import org.springframework.test.web.client.MockRestServiceServer;
+import org.springframework.web.client.RestClient;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.content;
@@ -10,22 +36,8 @@ import static org.springframework.test.web.client.response.MockRestResponseCreat
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withStatus;
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withSuccess;
 
-import com.jachwisunbae.common.exception.server.UpstreamServiceException;
-import java.net.SocketTimeoutException;
-import java.time.Duration;
-import java.util.concurrent.atomic.AtomicLong;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.HttpStatusCode;
-import org.springframework.http.MediaType;
-import org.springframework.test.web.client.MockRestServiceServer;
-import org.springframework.web.client.RestClient;
 
+@ExtendWith(OutputCaptureExtension.class)
 class SevenElevenPromotionClientTest {
 
     private MockRestServiceServer server;
@@ -44,7 +56,7 @@ class SevenElevenPromotionClientTest {
     }
 
     @Test
-    void postsFirstTabAndThenObservedMoreFormWithOneSecondGap() {
+    void postsFirstTabAndThenObservedMoreFormWithOneSecondGap(final CapturedOutput output) {
         AtomicLong secondAt = new AtomicLong();
         server.expect(requestTo(SevenElevenPromotionClient.SOURCE_URL)).andExpect(method(HttpMethod.POST))
                 .andExpect(content().string("pTab=1")).andRespond(withSuccess("first", MediaType.TEXT_HTML));
@@ -60,6 +72,8 @@ class SevenElevenPromotionClientTest {
         long firstAt = System.nanoTime();
         assertThat(client.fetchMore(SevenElevenPromotionTab.SALE, 2)).isEqualTo("다음");
         assertThat(secondAt.get() - firstAt).isGreaterThanOrEqualTo(Duration.ofSeconds(1).toNanos());
+        assertThat(output).contains("tab=SALE page=2 status=200 success=true", "waitMillis=", "httpElapsedMillis=")
+                .doesNotContain("다음");
     }
 
     @ParameterizedTest
@@ -72,11 +86,13 @@ class SevenElevenPromotionClientTest {
     }
 
     @Test
-    void propagatesTimeout() {
+    void propagatesTimeout(final CapturedOutput output) {
         server.expect(requestTo(SevenElevenPromotionClient.SOURCE_URL))
                 .andRespond(withException(new SocketTimeoutException("read timeout")));
         assertThatThrownBy(() -> client.fetchFirst(SevenElevenPromotionTab.ONE_PLUS_ONE))
-                .isInstanceOf(UpstreamServiceException.class);
+                .isInstanceOf(UpstreamServiceException.class).hasMessageContaining("tab=ONE_PLUS_ONE", "page=1");
+        assertThat(output).contains("tab=ONE_PLUS_ONE page=1 success=false", "httpElapsedMillis=",
+                "causeType=SocketTimeoutException");
     }
 
     @Test
@@ -96,6 +112,43 @@ class SevenElevenPromotionClientTest {
             assertThat(Thread.currentThread().isInterrupted()).isTrue();
         } finally {
             Thread.interrupted();
+        }
+    }
+
+    @Test
+    void timesOutWaitingForLocalHttpResponseWithoutRetry(final CapturedOutput output) throws Exception {
+        CountDownLatch entered = new CountDownLatch(1);
+        CountDownLatch release = new CountDownLatch(1);
+        AtomicInteger requests = new AtomicInteger();
+        HttpServer local = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
+        local.createContext("/product/presentList.asp", exchange -> {
+            requests.incrementAndGet();
+            entered.countDown();
+            try {
+                release.await(5, TimeUnit.SECONDS);
+                exchange.sendResponseHeaders(200, -1);
+            } catch (InterruptedException exception) {
+                Thread.currentThread().interrupt();
+            } finally {
+                exchange.close();
+            }
+        });
+        local.start();
+        try {
+            JdkClientHttpRequestFactory factory = new JdkClientHttpRequestFactory(HttpClient.newHttpClient());
+            factory.setReadTimeout(Duration.ofMillis(200));
+            SevenElevenPromotionClient delayed = new SevenElevenPromotionClient(RestClient.builder()
+                    .baseUrl("http://127.0.0.1:" + local.getAddress().getPort()).requestFactory(factory).build());
+
+            assertThatThrownBy(() -> delayed.fetchFirst(SevenElevenPromotionTab.ONE_PLUS_ONE))
+                    .isInstanceOf(UpstreamServiceException.class).hasRootCauseInstanceOf(HttpTimeoutException.class);
+
+            assertThat(entered.await(1, TimeUnit.SECONDS)).isTrue();
+            assertThat(requests).hasValue(1);
+            assertThat(output).contains("tab=ONE_PLUS_ONE page=1 success=false", "causeType=HttpTimeoutException");
+        } finally {
+            release.countDown();
+            local.stop(0);
         }
     }
 }
