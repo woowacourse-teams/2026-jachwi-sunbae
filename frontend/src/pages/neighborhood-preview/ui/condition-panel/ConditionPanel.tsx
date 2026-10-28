@@ -1,6 +1,8 @@
 import { css } from '@emotion/css';
 
 import { Button } from '@/shared/ui/button/Button';
+import { SegmentedControl, SegmentedControlItem } from '@/shared/ui/segmented-control/SegmentedControl';
+import Slider from '@/shared/ui/slider/Slider';
 
 import type { NeighborhoodPreviewContext } from '../../hooks/useNeighborhoodPreview';
 import { MINUTE_OPTIONS, RENT_OPTIONS } from '../../NeighborhoodFilters';
@@ -27,96 +29,96 @@ type ConditionPanelProps = {
 };
 
 /**
- * 데스크탑 동네 찾기의 왼쪽 칸. 휴대폰은 지도 위 칩과 바텀시트로 조건을 고르지만,
+ * 데스크탑 동네 찾기의 왼쪽 칸. 휴대폰은 지도 아래 카드의 조건 칸을 눌러 휠로 고르지만,
  * 데스크탑은 본 방 기록처럼 왼쪽 칸에 출퇴근 장소·조건·찾기 버튼을 펼쳐 두고 지도는 위치를 찍는 데만 쓴다.
  */
-const ConditionPanel = ({ preview, disabled, onSubmit }: ConditionPanelProps) => (
-  <aside className={styles.panel} aria-label="탐색 조건">
-    <h2>어디로 출퇴근·통학하세요?</h2>
-    <section className={styles.place} aria-label="출퇴근 장소">
-      {preview.hasChosenMapPoint ? (
-        <>
-          <small>출퇴근 장소</small>
-          <strong>{preview.mapCandidate.name}</strong>
-        </>
-      ) : (
-        <p>위에서 학교·회사를 검색하거나 지도에서 위치를 골라주세요.</p>
-      )}
-    </section>
-    {!preview.hasChosenMapPoint &&
-      (preview.isSearching || preview.searchError || preview.addressResults.length > 0) && (
-        <div className={styles.addresses}>
-          {preview.isSearching && <p role="status">주소를 찾고 있어요.</p>}
-          {preview.searchError && <p role="alert">{preview.searchError}</p>}
-          {preview.addressResults.map((address) => (
-            <button
-              type="button"
-              key={`${address.latitude}-${address.longitude}`}
-              onClick={() => preview.selectAddress(address)}
-            >
-              {address.roadAddress ?? address.jibunAddress ?? address.address}
-            </button>
+const ConditionPanel = ({ preview, disabled, onSubmit }: ConditionPanelProps) => {
+  const rentIndex = Math.max(
+    0,
+    RENT_OPTIONS.findIndex((option) => option.value === preview.maxRent),
+  );
+  const rentOption = RENT_OPTIONS[rentIndex] ?? RENT_OPTIONS[0];
+  return (
+    <aside className={styles.panel} aria-label="탐색 조건">
+      <h2>어디로 출퇴근·통학하세요?</h2>
+      <section className={styles.place} aria-label="출퇴근 장소">
+        {preview.hasChosenMapPoint ? (
+          <>
+            <small>출퇴근 장소</small>
+            <strong>{preview.mapCandidate.name}</strong>
+          </>
+        ) : (
+          <p>위에서 학교·회사를 검색하거나 지도에서 위치를 골라주세요.</p>
+        )}
+      </section>
+      {!preview.hasChosenMapPoint &&
+        (preview.isSearching || preview.searchError || preview.addressResults.length > 0) && (
+          <div className={styles.addresses}>
+            {preview.isSearching && <p role="status">주소를 찾고 있어요.</p>}
+            {preview.searchError && <p role="alert">{preview.searchError}</p>}
+            {preview.addressResults.map((address) => (
+              <button
+                type="button"
+                key={`${address.latitude}-${address.longitude}`}
+                onClick={() => preview.selectAddress(address)}
+              >
+                {address.roadAddress ?? address.jibunAddress ?? address.address}
+              </button>
+            ))}
+          </div>
+        )}
+      <fieldset className={styles.field} disabled={disabled}>
+        <legend>통근 시간</legend>
+        <SegmentedControl
+          aria-label="최대 통근 시간"
+          value={String(preview.maxMinutes)}
+          onValueChange={(value) => preview.changeMaxMinutes(Number(value))}
+        >
+          {MINUTE_OPTIONS.map((option) => (
+            <SegmentedControlItem key={option.value} value={String(option.value)}>
+              {option.value}분
+            </SegmentedControlItem>
           ))}
-        </div>
-      )}
-    <fieldset className={styles.field} disabled={disabled}>
-      <legend>통근 시간</legend>
-      <div className={styles.choices} role="radiogroup" aria-label="최대 통근 시간">
-        {MINUTE_OPTIONS.map((option) => (
-          <Button
-            key={option.value}
-            role="radio"
-            aria-checked={preview.maxMinutes === option.value}
-            variant={preview.maxMinutes === option.value ? 'soft' : 'secondary'}
-            onClick={() => preview.changeMaxMinutes(option.value)}
-          >
-            {option.value}분
-          </Button>
-        ))}
-      </div>
-    </fieldset>
-    <fieldset className={styles.field} disabled={disabled}>
-      <legend>환승 횟수</legend>
-      <div className={styles.choices} role="radiogroup" aria-label="최대 환승 횟수">
-        {[0, 1, 2].map((count) => (
-          <Button
-            key={count}
-            role="radio"
-            aria-checked={preview.maxTransfers === count}
-            variant={preview.maxTransfers === count ? 'soft' : 'secondary'}
-            onClick={() => preview.changeMaxTransfers(count)}
-          >
-            {count === 0 ? '환승 없음' : `${count}회 이하`}
-          </Button>
-        ))}
-      </div>
-    </fieldset>
-    <fieldset className={styles.field} disabled={disabled}>
-      <legend>월세 시세</legend>
-      <select
-        className={styles.select}
-        aria-label="최대 월세 시세"
-        value={preview.maxRent}
-        onChange={(event) => preview.changeMaxRent(Number(event.target.value))}
+        </SegmentedControl>
+      </fieldset>
+      <fieldset className={styles.field} disabled={disabled}>
+        <legend>환승 횟수</legend>
+        <SegmentedControl
+          aria-label="최대 환승 횟수"
+          value={String(preview.maxTransfers)}
+          onValueChange={(value) => preview.changeMaxTransfers(Number(value))}
+        >
+          {[0, 1, 2].map((count) => (
+            <SegmentedControlItem key={count} value={String(count)}>
+              {count === 0 ? '환승 없음' : `${count}회 이하`}
+            </SegmentedControlItem>
+          ))}
+        </SegmentedControl>
+      </fieldset>
+      {/* 선택지가 여러 개라 버튼 대신 슬라이더로 고른다. 끌면서 바로 값을 보고 화살표 키로도 움직인다. */}
+      <Slider
+        label="월세 시세"
+        indicator={rentOption.label}
+        description="최근 6개월 실거래 월세 중앙값으로 걸러요."
+        min={0}
+        max={RENT_OPTIONS.length - 1}
+        values={[rentIndex]}
+        onValuesChange={([index]) => preview.changeMaxRent(RENT_OPTIONS[index ?? 0]?.value ?? 0)}
+        disabled={disabled}
+        getAriaLabel={() => '최대 월세 시세'}
+        getAriaValuetext={() => rentOption.label}
+      />
+      <Button
+        className={styles.submit}
+        fullWidth
+        disabled={disabled || !preview.hasChosenMapPoint || !preview.isValidCommuteTime}
+        onClick={onSubmit}
       >
-        {RENT_OPTIONS.map((option) => (
-          <option key={option.value} value={option.value}>
-            {option.label}
-          </option>
-        ))}
-      </select>
-      <small>최근 6개월 실거래 월세 중앙값으로 걸러요.</small>
-    </fieldset>
-    <Button
-      className={styles.submit}
-      fullWidth
-      disabled={disabled || !preview.hasChosenMapPoint || !preview.isValidCommuteTime}
-      onClick={onSubmit}
-    >
-      이 조건으로 동네 찾기
-    </Button>
-  </aside>
-);
+        이 조건으로 동네 찾기
+      </Button>
+    </aside>
+  );
+};
 
 const styles = {
   panel: css`
@@ -209,33 +211,10 @@ const styles = {
     }
   `,
 
-  choices: css`
-    label: ConditionPanel-choices;
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 0.4rem;
-
-    & button {
-      min-width: 0;
-      padding: 0.55rem 0.4rem;
-      font-size: 0.8rem;
-    }
-  `,
-
-  select: css`
-    label: ConditionPanel-select;
-    width: 100%;
-    padding: 0.7rem 0.8rem;
-    border: 1px solid var(--color-border);
-    border-radius: 0.6rem;
-    background: white;
-    color: var(--color-ink);
-    font-size: 0.85rem;
-  `,
-
+  /* 조건을 고른 흐름이 끊기지 않게 마지막 조건 바로 아래에 둔다. */
   submit: css`
     label: ConditionPanel-submit;
-    margin-top: auto;
+    margin-top: 0.25rem;
   `,
 };
 

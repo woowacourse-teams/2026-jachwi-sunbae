@@ -9,7 +9,7 @@ const value = {
   destination: { latitude: 37.4, longitude: 127.1, name: '목적지', address: '주소' },
   maxMinutes: 60,
   maxTransfers: 2,
-  maxRent: 0,
+  maxRent: 50,
   selectedId: '11230640',
   selectedStopId: 'test-stop',
 };
@@ -28,4 +28,15 @@ it('오래되거나 손상된 복원 정보는 무시한다', () => {
   expect(readNeighborhoodSearch('test-search')).toBeNull();
   sessionStorage.setItem('test-search', '{}');
   expect(readNeighborhoodSearch('test-search')).toBeNull();
+});
+it('월세 조건이 없던 때 저장한 검색은 전체 가격으로 복원한다', () => {
+  const legacy = {
+    destination: value.destination,
+    maxMinutes: value.maxMinutes,
+    maxTransfers: value.maxTransfers,
+    selectedId: value.selectedId,
+    selectedStopId: value.selectedStopId,
+  };
+  sessionStorage.setItem('test-search', JSON.stringify({ ...legacy, savedAt: Date.now() }));
+  expect(readNeighborhoodSearch('test-search')).toEqual({ ...legacy, maxRent: 0 });
 });

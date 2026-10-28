@@ -6,7 +6,7 @@ import StatusPanel from '@/shared/ui/status-panel/StatusPanel';
 
 import useNaverMap from '../../hooks/useNaverMap';
 import { clampToSouthKorea } from '../../lib/mapLocation';
-import { markerScale } from '../../lib/mapMarkerPresentation';
+import { markerAnchorTransform, markerScale } from '../../lib/mapMarkerPresentation';
 import { regionLabelPosition, regionSummaryRows } from '../../lib/mapRegionSummary';
 import type { MapMarker } from '../../model/Map';
 import type { MapCanvasProps } from '../../model/MapCanvas';
@@ -21,12 +21,7 @@ const EMPTY_CIRCLES: NonNullable<MapCanvasProps['circles']> = [];
 const clamp = (value: number, min: number, max: number): number => Math.min(Math.max(value, min), max);
 
 const demoMarkerStyle = (marker: MapMarker, center: { latitude: number; longitude: number }): CSSProperties => ({
-  transform:
-    marker.tone === 'property' || marker.tone === 'selected'
-      ? 'translate(-50%, -120.710678%)'
-      : marker.tone === 'destination' || marker.tone === 'flash'
-        ? 'translate(-50%, -100%)'
-        : 'translate(-50%, -50%)',
+  transform: markerAnchorTransform(marker),
   left: `${clamp(50 + (marker.longitude - center.longitude) * 3_100, 9, 91)}%`,
   top: `${clamp(50 - (marker.latitude - center.latitude) * 4_200, 10, 88)}%`,
 });

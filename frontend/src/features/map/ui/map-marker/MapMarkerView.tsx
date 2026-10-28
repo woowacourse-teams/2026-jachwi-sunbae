@@ -1,10 +1,9 @@
 import { css, cx, keyframes } from '@emotion/css';
 import { renderToStaticMarkup } from 'react-dom/server';
 
-import logoImage from '@/shared/assets/jachwi-sunbae-goose.webp';
-
+import { mapCategoryMarkerSrc, propertyMarkerSrc } from '../../lib/mapIconAssets';
+import { isPinMarker } from '../../lib/mapMarkerPresentation';
 import type { MapMarker } from '../../model/Map';
-import MapCategoryIcon from '../map-category-icon/MapCategoryIcon';
 
 type MapMarkerViewProps = {
   marker: MapMarker;
@@ -14,31 +13,35 @@ type MapMarkerViewProps = {
 
 const markerSymbol = (marker: MapMarker): string => {
   if (marker.tone === 'cluster' || marker.tone === 'propertyCluster') return String(marker.count ?? '');
-  if (marker.tone === 'property' || marker.tone === 'selected') return '⌂';
   return '•';
 };
 
 /** 현재 위치는 지도 앱 관례대로 글리프 없는 파란 점 하나로 그린다. */
 const isCurrentLocationDot = (marker: MapMarker): boolean => marker.tone === 'current';
 
-const usesCategoryIcon = (marker: MapMarker): boolean =>
-  (marker.tone === 'place' || marker.tone === 'cluster') && marker.category !== undefined;
+/** 시설 마커는 카테고리 핀을, 매물 마커는 집 핀을 쓴다. */
+const pinImageSrc = (marker: MapMarker): string =>
+  marker.category !== undefined && (marker.tone === 'place' || marker.tone === 'cluster')
+    ? mapCategoryMarkerSrc(marker.category, marker.variant)
+    : propertyMarkerSrc;
 
-/** 매물 군집은 로고 위 숫자 배지로 개별 매물과 구분한다. */
+/** 군집은 핀 위 숫자 배지로 개별 마커와 구분한다. */
 const usesCountBadge = (marker: MapMarker): boolean =>
   marker.count !== undefined && (marker.category !== undefined || marker.tone === 'propertyCluster');
 
 const markerClassName = (marker: MapMarker, selectedMarkerId: string | null | undefined): string =>
   [
     styles.marker,
-    marker.tone === 'property' ? styles.propertyMarker : '',
+    isPinMarker(marker) ? styles.pinMarker : '',
+    marker.image ? styles.imageMarker : '',
+    marker.appear ? styles.appearMarker : '',
+    marker.tone === 'property' || marker.tone === 'propertyCluster' ? styles.propertyMarker : '',
     marker.tone === 'current' ? styles.currentMarker : '',
     marker.tone === 'selected' ? styles.selectedMarker : '',
     marker.tone === 'destination' || marker.tone === 'flash' ? styles.destinationMarker : '',
     marker.tone === 'flash' ? styles.flashMarker : '',
     marker.tone === 'place' ? styles.placeMarker : '',
     marker.tone === 'cluster' ? styles.clusterMarker : '',
-    marker.tone === 'propertyCluster' ? styles.propertyClusterMarker : '',
     selectedMarkerId === marker.id ? styles.activeMarker : '',
   ]
     .filter(Boolean)
@@ -55,15 +58,22 @@ const MapMarkerView = ({ marker, selectedMarkerId = null, onSelectMarker }: MapM
           <small title={marker.summary.amount}>{marker.summary.amount}</small>
         </span>
       )}
-      {marker.tone === 'destination' || marker.tone === 'flash' ? (
+      {marker.image ? (
+        <img
+          className={styles.pinImage}
+          src={marker.image.src}
+          srcSet={marker.image.src2x ? `${marker.image.src} 1x, ${marker.image.src2x} 2x` : undefined}
+          alt=""
+          draggable={false}
+          decoding="async"
+        />
+      ) : marker.tone === 'destination' || marker.tone === 'flash' ? (
         <>
           <span className={styles.destinationLabel}>{marker.label}</span>
           <span className={styles.destinationTail} aria-hidden="true" />
         </>
-      ) : isCurrentLocationDot(marker) ? null : usesCategoryIcon(marker) && marker.category !== undefined ? (
-        <MapCategoryIcon category={marker.category} className={styles.categoryIcon} />
-      ) : marker.tone === 'property' || marker.tone === 'selected' || marker.tone === 'propertyCluster' ? (
-        <img className={styles.markerPhoto} src={logoImage} alt="" draggable={false} decoding="async" />
+      ) : isCurrentLocationDot(marker) ? null : isPinMarker(marker) ? (
+        <img className={styles.pinImage} src={pinImageSrc(marker)} alt="" draggable={false} decoding="async" />
       ) : (
         <span className={styles.markerIcon} aria-hidden="true">
           {markerSymbol(marker)}
@@ -143,6 +153,24 @@ const markerFlashKeyframes = keyframes`
   }
 `;
 
+const markerAppearKeyframes = keyframes`
+  from {
+    opacity: 0;
+    translate: 0 0.9rem;
+    scale: 0.85;
+  }
+  60% {
+    opacity: 1;
+    translate: 0 -0.2rem;
+    scale: 1.03;
+  }
+  to {
+    opacity: 1;
+    translate: 0 0;
+    scale: 1;
+  }
+`;
+
 const markerFlashFadeKeyframes = keyframes`
   0%,
   80% {
@@ -182,6 +210,56 @@ const styles = {
     }
   `,
 
+  /* 핀 이미지가 모양과 색을 모두 담으므로 기본 원형 배경과 테두리를 지운다. 아래 꼭짓점이 좌표를 가리킨다. */
+  // 다른 요소의 선택자에서 `.MapMarkerView-pinMarker`로 가리킨다.
+  pinMarker: cx(
+    css`
+      label: MapMarkerView-pinMarker;
+
+      & {
+        width: 2rem;
+        height: 2rem;
+        border: 0;
+        border-radius: 0;
+        background: transparent;
+        box-shadow: none;
+        filter: drop-shadow(0 0.2rem 0.35rem rgb(25 30 40 / 26%));
+        transform-origin: 50% 100%;
+      }
+    `,
+    'MapMarkerView-pinMarker',
+  ),
+
+  /* 새로 생긴 마커는 꼬리 끝을 축으로 아래에서 떠오르며 나타난다. */
+  appearMarker: css`
+    label: MapMarkerView-appearMarker;
+    transform-origin: 50% 100%;
+    animation: ${markerAppearKeyframes} 560ms cubic-bezier(0.22, 1, 0.36, 1) both;
+
+    @media (prefers-reduced-motion: reduce) {
+      animation: none;
+    }
+  `,
+
+  /* 그림 핀은 기호가 작아 보이지 않게 일반 핀보다 조금 크게 그린다. */
+  imageMarker: css`
+    label: MapMarkerView-imageMarker;
+
+    && {
+      width: 2.5rem;
+      height: 2.5rem;
+    }
+  `,
+
+  pinImage: css`
+    label: MapMarkerView-pinImage;
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    pointer-events: none;
+  `,
+
   placeMarker: css`
     label: MapMarkerView-placeMarker;
 
@@ -194,111 +272,45 @@ const styles = {
     & {
       z-index: 5;
     }
+  `,
 
-    &[data-category='HOSPITAL'] {
+  /* 카테고리가 없는 군집만 숫자를 담은 어두운 원으로 그린다. 카테고리 군집은 핀과 숫자 배지로 그린다. */
+  clusterMarker: css`
+    label: MapMarkerView-clusterMarker;
+
+    button&::before {
+      position: absolute;
+      inset: -0.55rem;
+      content: '';
+    }
+
+    & {
+      z-index: 5;
+      width: 1.95rem;
+      height: 1.95rem;
       background: #212124;
+      box-shadow:
+        0 0 0 0.22rem rgb(0 0 0 / 12%),
+        0 0.3rem 0.9rem rgb(0 0 0 / 18%);
     }
 
-    &[data-category='TRANSPORT'] {
-      background: #212124;
-    }
-
-    &[data-category='SCHOOL'] {
-      background: #ffbf00;
-      color: #212124;
-    }
-
-    &[data-category='CONVENIENCE'] {
-      background: #212124;
-    }
-
-    &[data-category='AGENCY'] {
-      background: #212124;
-    }
-
-    /* 거리 메모는 좋아요·싫어요를 색으로도 나누고, 내용은 마커 이름(aria-label)으로 읽는다. */
-    &[data-category='MEMO'][data-variant='positive'] {
-      background: var(--color-brand-blue, #6b9ae6);
-    }
-
-    &[data-category='MEMO'][data-variant='negative'] {
-      background: var(--color-danger, #c96b6b);
+    &.MapMarkerView-pinMarker {
+      width: 2.3rem;
+      height: 2.3rem;
+      background: transparent;
+      box-shadow: none;
     }
   `,
 
-  // 다른 요소의 선택자에서 `.MapMarkerView-clusterMarker`로 가리킨다.
-  clusterMarker: cx(
-    css`
-      label: MapMarkerView-clusterMarker;
-
-      button&::before {
-        position: absolute;
-        inset: -0.55rem;
-        content: '';
-      }
-
-      & {
-        z-index: 5;
-        width: 1.95rem;
-        height: 1.95rem;
-        border-width: 2px;
-        background: #212124;
-        box-shadow:
-          0 0 0 0.22rem rgb(0 0 0 / 12%),
-          0 0.3rem 0.9rem rgb(0 0 0 / 18%);
-      }
-
-      &[data-category='HOSPITAL'] {
-        background: #212124;
-      }
-
-      &[data-category='TRANSPORT'] {
-        background: #212124;
-      }
-
-      &[data-category='SCHOOL'] {
-        background: #ffbf00;
-        color: #212124;
-      }
-
-      &[data-category='CONVENIENCE'] {
-        background: #212124;
-      }
-
-      &[data-category='AGENCY'] {
-        background: #212124;
-      }
-    `,
-    'MapMarkerView-clusterMarker',
-  ),
-
-  /* 파란 물방울 핀 안에 자취선배 로고를 표시한다. */
   // 다른 요소의 선택자에서 `.MapMarkerView-propertyMarker`로 가리킨다.
   propertyMarker: cx(
     css`
       label: MapMarkerView-propertyMarker;
-      z-index: 8;
-      width: calc(2.35rem * var(--map-marker-scale, 1));
-      height: calc(2.35rem * var(--map-marker-scale, 1));
-      border: 0;
-      border-radius: 50%;
-      background: transparent;
-      box-shadow: none;
-      isolation: isolate;
 
-      & > * {
-        z-index: 1;
-      }
-
-      &::before {
-        position: absolute;
-        z-index: 0;
-        inset: 0;
-        border-radius: 50% 50% 50% 0;
-        background: var(--color-brand-blue, #6b9ae6);
-        content: '';
-        transform: rotate(-45deg);
-        pointer-events: none;
+      & {
+        z-index: 8;
+        width: calc(2.35rem * var(--map-marker-scale, 1));
+        height: calc(2.35rem * var(--map-marker-scale, 1));
       }
     `,
     'MapMarkerView-propertyMarker',
@@ -360,70 +372,17 @@ const styles = {
     }
   `,
 
-  // 다른 요소의 선택자에서 `.MapMarkerView-selectedMarker`로 가리킨다.
-  selectedMarker: cx(
-    css`
-      label: MapMarkerView-selectedMarker;
-
-      &::before {
-        position: absolute;
-        z-index: 0;
-        inset: 0;
-        border-radius: 50% 50% 50% 0;
-        background: var(--color-brand-blue, #6b9ae6);
-        content: '';
-        transform: rotate(-45deg);
-        pointer-events: none;
-      }
-
-      & {
-        z-index: 9;
-        width: calc(2.6rem * var(--map-marker-scale, 1));
-        height: calc(2.6rem * var(--map-marker-scale, 1));
-        background: transparent;
-        border: 0;
-        border-radius: 50%;
-        box-shadow: none;
-      }
-    `,
-    'MapMarkerView-selectedMarker',
-  ),
-
-  // 다른 요소의 선택자에서 `.MapMarkerView-markerPhoto`로 가리킨다.
-  markerPhoto: cx(
-    css`
-      label: MapMarkerView-markerPhoto;
-
-      .MapMarkerView-propertyMarker &,
-      .MapMarkerView-selectedMarker & {
-        position: relative;
-        z-index: 1;
-        box-sizing: border-box;
-        border: 2px solid var(--color-brand-blue, #6b9ae6);
-      }
-
-      & {
-        display: block;
-        width: 100%;
-        height: 100%;
-        border-radius: inherit;
-        background: var(--color-surface-muted, #f7f7f7);
-        object-fit: cover;
-        pointer-events: none;
-      }
-    `,
-    'MapMarkerView-markerPhoto',
-  ),
+  selectedMarker: css`
+    label: MapMarkerView-selectedMarker;
+    z-index: 9;
+    width: calc(2.6rem * var(--map-marker-scale, 1));
+    height: calc(2.6rem * var(--map-marker-scale, 1));
+  `,
 
   // 다른 요소의 선택자에서 `.MapMarkerView-activeMarker`로 가리킨다.
   activeMarker: cx(
     css`
       label: MapMarkerView-activeMarker;
-
-      .MapMarkerView-propertyMarker& .MapMarkerView-markerPhoto,
-      .MapMarkerView-selectedMarker& .MapMarkerView-markerPhoto {
-        border-width: 3px;
-      }
 
       & {
         outline: 1px solid #212124;
@@ -431,11 +390,10 @@ const styles = {
         scale: 1.08;
       }
 
-      .MapMarkerView-propertyMarker&,
-      .MapMarkerView-selectedMarker& {
-        border-width: 3px;
+      /* 핀은 테두리 대신 아래 꼭짓점을 기준으로 조금 키워 고른 것을 보여준다. */
+      &.MapMarkerView-pinMarker {
         outline: 0;
-        scale: 1;
+        scale: 1.15;
       }
     `,
     'MapMarkerView-activeMarker',
@@ -455,41 +413,8 @@ const styles = {
       0 0.15rem 0.5rem rgb(20 60 120 / 38%);
   `,
 
-  // 다른 요소의 선택자에서 `.MapMarkerView-propertyClusterMarker`로 가리킨다.
-  propertyClusterMarker: cx(
-    css`
-      label: MapMarkerView-propertyClusterMarker;
-
-      &.MapMarkerView-activeMarker {
-        border-width: 3px;
-        outline: 0;
-        scale: 1;
-      }
-
-      /* 매물 군집은 숫자 배지로 구분한다. */
-      & {
-        z-index: 8;
-        width: calc(2.35rem * var(--map-marker-scale, 1));
-        height: calc(2.35rem * var(--map-marker-scale, 1));
-        border: 2px solid var(--color-brand-blue, #6b9ae6);
-        border-radius: 0.6rem;
-        background: var(--color-brand-blue, #6b9ae6);
-      }
-    `,
-    'MapMarkerView-propertyClusterMarker',
-  ),
-
   markerCount: css`
     label: MapMarkerView-markerCount;
-
-    .MapMarkerView-propertyClusterMarker & {
-      right: -0.3rem;
-      bottom: -0.3rem;
-      min-width: 1.2rem;
-      height: 1.2rem;
-      font-size: 0.62rem;
-      font-weight: 850;
-    }
 
     & {
       position: absolute;
@@ -506,6 +431,17 @@ const styles = {
       font-size: 0.46rem;
       place-items: center;
     }
+
+    /* 핀 군집은 둥근 머리 오른쪽 위에 배지를 단다. */
+    .MapMarkerView-pinMarker & {
+      top: -0.25rem;
+      right: -0.35rem;
+      bottom: auto;
+      min-width: 1.2rem;
+      height: 1.2rem;
+      font-size: 0.62rem;
+      font-weight: 850;
+    }
   `,
 
   markerIcon: css`
@@ -513,15 +449,6 @@ const styles = {
     font-size: 0.78rem;
     font-weight: 900;
     line-height: 1;
-  `,
-
-  categoryIcon: css`
-    label: MapMarkerView-categoryIcon;
-    font-size: 0.78rem;
-
-    .MapMarkerView-clusterMarker & {
-      font-size: 0.72rem;
-    }
   `,
 
   markerCaption: css`
@@ -561,6 +488,49 @@ const styles = {
     background: transparent;
     box-shadow: none;
     filter: drop-shadow(0 0.2rem 0.45rem rgb(25 30 40 / 28%));
+
+    /* 말풍선(거리 메모 등)은 눌러도 테두리를 두지 않는다. 고른 메모는 옆 칸이나 시트에서 보여 준다. */
+    &.MapMarkerView-activeMarker {
+      outline: 0;
+      scale: 1;
+    }
+
+    /*
+     * 거리 메모 말풍선은 글이 잘리지 않게 넓게 두고 네 줄까지 보여 준다. 넘치면 넷째 줄 끝을 줄인다.
+     * 색 바탕 위 흰 글자가 뭉개지지 않게 굵기를 한 단계 낮추고 줄 간격과 안쪽 여백을 넉넉히 둔다.
+     */
+    &[data-category='MEMO'] .MapMarkerView-destinationLabel {
+      display: -webkit-box;
+      max-width: 16rem;
+      padding: 0.5rem 0.8rem;
+      border-radius: 0.8rem;
+      font-size: 0.82rem;
+      font-weight: 600;
+      line-height: 1.45;
+      letter-spacing: -0.01em;
+      text-align: center;
+      white-space: normal;
+      word-break: keep-all;
+      -webkit-box-orient: vertical;
+      -webkit-line-clamp: 4;
+    }
+
+    /* 거리 메모 말풍선은 좋아요(positive)를 파랑, 싫어요(negative)를 빨강으로 칠한다. */
+    &[data-variant='positive'] .MapMarkerView-destinationLabel {
+      background: var(--color-brand-blue-ink, #3f6fc4);
+    }
+
+    &[data-variant='positive'] .MapMarkerView-destinationTail {
+      border-top-color: var(--color-brand-blue-ink, #3f6fc4);
+    }
+
+    &[data-variant='negative'] .MapMarkerView-destinationLabel {
+      background: var(--color-check-caution-ink, #d14d4d);
+    }
+
+    &[data-variant='negative'] .MapMarkerView-destinationTail {
+      border-top-color: var(--color-check-caution-ink, #d14d4d);
+    }
   `,
 
   // 다른 요소의 선택자에서 `.MapMarkerView-destinationLabel`로 가리킨다.

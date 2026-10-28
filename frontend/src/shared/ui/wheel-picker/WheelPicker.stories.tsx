@@ -13,19 +13,24 @@ const meta = {
   title: '공용/WheelPicker',
   component: WheelPicker,
   args: {
-    label: '통근 시간',
+    'aria-label': '통근 시간',
     value: 60,
     options,
     onValueChange: fn(),
   },
   argTypes: {
-    label: { description: '목록을 화면 낭독기가 읽는 이름' },
+    'aria-label': { description: '목록을 화면 낭독기가 읽는 이름' },
     value: {
       control: 'select',
       options: options.map((option) => option.value),
       description: '고른 값. 굴려서 고르면 컨트롤 값도 함께 바뀐다.',
     },
     options: { control: 'object', description: '고를 수 있는 값과 보이는 이름 목록' },
+    size: {
+      control: 'inline-radio',
+      options: ['medium', 'small'],
+      description: 'small은 카드 안에 바로 펼칠 때 쓰는 낮은 높이(위아래 한 칸씩)',
+    },
     onValueChange: { control: false },
   },
   // 고른 값을 args에 되돌려 써서 컨트롤 패널과 화면이 같은 값을 보게 한다.

@@ -1,5 +1,6 @@
 import type { MapBounds, MapMarker } from '../model/Map';
 import { clampToSouthKorea, SOUTH_KOREA_BOUNDS } from './mapLocation';
+import { markerAnchorTransform } from './mapMarkerPresentation';
 const clamp = (value: number, min: number, max: number): number => Math.min(Math.max(value, min), max);
 const NAVER_ZOOM_BASE = 20;
 const MIN_NAVER_ZOOM = 6;
@@ -137,14 +138,7 @@ export const naverEngine = (clientId: string, customStyleId?: string): LiveEngin
     content.style.position = 'absolute';
     content.style.left = '0';
     content.style.top = '0';
-    // 회전된 물방울의 끝은 원형 이미지 중심에서 높이의 sqrt(2)/2만큼 아래에 있다.
-    const isPin = marker.tone === 'property' || marker.tone === 'selected';
-    // 말풍선 핀은 꼬리 끝(요소 아래 가운데)이 좌표에 오게 한다.
-    content.style.transform = isPin
-      ? 'translate(-50%, -120.710678%)'
-      : marker.tone === 'destination' || marker.tone === 'flash'
-        ? 'translate(-50%, -100%)'
-        : 'translate(-50%, -50%)';
+    content.style.transform = markerAnchorTransform(marker);
     element.style.position = 'absolute';
     element.style.top = '0';
     element.style.left = '0';

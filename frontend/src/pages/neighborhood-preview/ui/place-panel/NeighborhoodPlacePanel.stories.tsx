@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-webpack5';
+import { fn } from 'storybook/test';
 
 import type { CommuteRoute } from '@/features/map/api/commuteRouteApi';
 
@@ -73,7 +74,7 @@ const busStopPlace: NeighborhoodPlace = {
 
 const stationPlace: NeighborhoodPlace = {
   kind: 'station',
-  station: { stopId: 'BS_TAGO_11440002', name: '망원시장' },
+  station: { stopId: 'BS_TAGO_11440002', name: '망원시장', latitude: 37.5559, longitude: 126.9063 },
 };
 
 const agencyPlace: NeighborhoodPlace = {
@@ -118,6 +119,10 @@ const meta = {
       control: 'object',
       description: '목적지와 통근 조건. 바꾸면 미리 넣어 둔 경로 데이터와 키가 달라져 불러오는 중으로 보인다.',
     },
+    stationNav: {
+      control: 'object',
+      description: '동네 출발 정류장일 때 위에 두는 `<` `>` 넘기기. index는 0부터 센다. 없으면 버튼을 두지 않는다.',
+    },
   },
   args: {
     place: busStopPlace,
@@ -134,6 +139,14 @@ export const BusStop: Story = {};
 export const Station: Story = {
   args: {
     place: stationPlace,
+  },
+};
+
+/** 데스크탑 랭킹 요약에서 고른 출발 정류장. 같은 동네의 다른 출발 정류장으로 넘길 수 있다. */
+export const StationWithNavigation: Story = {
+  args: {
+    place: stationPlace,
+    stationNav: { index: 1, total: 4, onPrevious: fn(), onNext: fn() },
   },
 };
 

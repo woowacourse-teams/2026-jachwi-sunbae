@@ -1,5 +1,4 @@
 import type { Meta, StoryObj } from '@storybook/react-webpack5';
-import { fn } from 'storybook/test';
 
 import type { CommuteRoute } from '@/features/map/api/commuteRouteApi';
 
@@ -74,7 +73,7 @@ const busStopPlace: NeighborhoodPlace = {
 
 const stationPlace: NeighborhoodPlace = {
   kind: 'station',
-  station: { stopId: 'BS_TAGO_11440002', name: '망원시장' },
+  station: { stopId: 'BS_TAGO_11440002', name: '망원시장', latitude: 37.5559, longitude: 126.9063 },
 };
 
 const agencyPlace: NeighborhoodPlace = {
@@ -132,13 +131,6 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 export const BusStopRoute: Story = {};
-
-export const BusStopSummary: Story = {
-  args: {
-    phoneAction: 'call',
-    onOpenRoute: fn(),
-  },
-};
 
 export const Station: Story = {
   args: {

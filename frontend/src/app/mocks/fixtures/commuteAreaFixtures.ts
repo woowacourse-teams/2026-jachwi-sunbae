@@ -60,7 +60,7 @@ export const mockRequiredTransfers: Record<string, number> = {
   MOCK_JEONGJA: 1,
 };
 
-// 시세는 시안용 가상 값이다. 정자동은 거래가 5건보다 적어 서버가 금액을 비우는 경우를 보여준다.
+// 시세는 시안용 가상 값이다. 정자동은 거래가 5건보다 적어 서버가 금액을 비우는 경우로, 화면에서는 그리지 않는다.
 export const mockAreaRents: Record<
   string,
   { monthlyRentKrw: number; depositKrw: number; transactionCount: number; legalDongNames: string[] }

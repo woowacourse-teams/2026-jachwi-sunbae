@@ -17,8 +17,15 @@ export type MapMarker = {
   /** flash는 destination과 같은 말풍선을 잠깐 띄웠다가 위로 떠오르며 사라진다(방금 남긴 메모 등). */
   tone?: 'property' | 'current' | 'place' | 'selected' | 'destination' | 'flash' | 'cluster' | 'propertyCluster';
   category?: MapCategory;
-  /** 같은 카테고리 안에서 색으로 나눌 때 쓴다. 거리 메모의 좋아요(positive)·싫어요(negative). */
-  variant?: 'positive' | 'negative';
+  /** 주면 이 그림을 아래 가운데가 좌표를 가리키는 핀으로 그린다. 매물 등록, 메모를 남기려고 찍은 자리처럼 기호가 정해진 마커에 쓴다. */
+  image?: { src: string; src2x?: string };
+  /** 처음 그릴 때 아래에서 떠오르며 나타난다. 방금 남긴 메모처럼 새로 생긴 마커에 쓴다. */
+  appear?: boolean;
+  /**
+   * 같은 카테고리 안에서 그림을 나눌 때 쓴다. 거리 메모의 좋아요(positive)·싫어요(negative),
+   * 교통의 지하철역(subway). 교통에 값이 없으면 버스 정류장으로 그린다.
+   */
+  variant?: 'positive' | 'negative' | 'subway';
   count?: number;
   placeId?: string;
   actionable?: boolean;

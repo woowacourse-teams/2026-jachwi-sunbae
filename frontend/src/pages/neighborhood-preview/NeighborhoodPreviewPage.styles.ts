@@ -65,8 +65,9 @@ export const locationControls = css`
     bottom: calc(var(--map-sheet-bottom, 0px) + 13rem);
   }
 
+  /* 조건 칸 아래 피커(132px)와 그 간격만큼 카드가 높아진다. */
   &[data-filter-open='true'] {
-    bottom: calc(var(--map-sheet-bottom, 0px) + 32% + 1rem);
+    bottom: calc(var(--map-sheet-bottom, 0px) + 10.5rem + 132px + 0.75rem);
   }
 `;
 
@@ -922,38 +923,62 @@ export const locationStatus = css`
   color: var(--color-ink-soft);
 `;
 
+/* 통근, 환승, 월세를 한 상자의 세 칸으로 묶는다. 칸은 위에 항목, 아래에 값을 둔다. */
 export const filterChips = css`
   label: NeighborhoodPreviewPage-filterChips;
-  display: flex;
-  gap: 0.5rem;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   margin-top: 0.5rem;
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+  border-radius: 0.875rem;
+  background: white;
 
   & button {
-    width: 9.25rem;
-    flex: 0 0 9.25rem;
-    padding: 0.5rem 0.75rem;
-    border-radius: 2rem;
-    border-color: var(--color-border-strong);
-    font-size: 0.75rem;
-    font-weight: 600;
-    min-height: 2.25rem;
-    white-space: nowrap;
-  }
-
-  & button {
-    /* 통근·환승·월세 세 칩이 휴대폰 폭 안에 함께 들어가도록 남는 폭을 나눠 갖는다. */
-    width: auto;
-    flex: 1 1 0;
+    display: grid;
+    gap: 0.2rem;
     min-width: 0;
-    max-width: 9.25rem;
-    padding-inline: 0.65rem;
+    padding: 0.6rem 0.75rem;
+    border: 0;
+    background: transparent;
+    color: var(--color-ink);
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
   }
 
-  & button > span {
-    width: 100%;
-    justify-content: space-between;
-    gap: 0.25rem;
+  & button + button {
+    border-left: 1px solid var(--color-border);
   }
+
+  & button:hover,
+  & button[aria-expanded='true'] {
+    background: var(--color-card-surface-hover);
+  }
+
+  & button:focus-visible {
+    outline: 2px solid var(--color-focus);
+    outline-offset: -2px;
+  }
+`;
+
+export const filterCellTitle = css`
+  label: NeighborhoodPreviewPage-filterCellTitle;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: var(--color-muted);
+  font-size: 0.7rem;
+  font-weight: 500;
+`;
+
+export const filterCellValue = css`
+  label: NeighborhoodPreviewPage-filterCellValue;
+  overflow: hidden;
+  font-size: 0.875rem;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 `;
 
 export const filterBadge = css`
@@ -1009,19 +1034,31 @@ export const placesHint = css`
 export const searchCard = css`
   label: NeighborhoodPreviewPage-searchCard;
   position: absolute;
-  right: 1rem;
-  bottom: calc(var(--map-sheet-bottom, env(safe-area-inset-bottom)) + 1rem);
-  left: 1rem;
+  right: 0;
+  bottom: 0;
+  left: 0;
   z-index: 20;
-  max-width: 27rem;
+  display: grid;
+  gap: 0.75rem;
+  max-width: 30rem;
   margin: 0 auto;
-  border-radius: 0.75rem;
-  box-shadow: 0 4px 18px rgb(0 0 0 / 16%);
+  padding: 1.25rem 1rem calc(env(safe-area-inset-bottom) + 1rem);
+  border-radius: 1.25rem 1.25rem 0 0;
+  background: white;
+  box-shadow: 0 -4px 18px rgb(0 0 0 / 12%);
   animation: ${searchCardRiseKeyframes} 180ms ease-out;
 
   @media (prefers-reduced-motion: reduce) {
     animation: none;
   }
+`;
+
+export const searchCardTitle = css`
+  label: NeighborhoodPreviewPage-searchCardTitle;
+  margin: 0;
+  color: var(--color-ink);
+  font-size: 1rem;
+  font-weight: 700;
 `;
 
 /* 이름이 길면 이름만 줄이고 `에서 찾기`는 남긴다. */

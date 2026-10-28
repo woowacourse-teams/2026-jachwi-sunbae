@@ -74,7 +74,7 @@ const busStopPlace: NeighborhoodPlace = {
 
 const stationPlace: NeighborhoodPlace = {
   kind: 'station',
-  station: { stopId: 'BS_TAGO_11440002', name: '망원시장' },
+  station: { stopId: 'BS_TAGO_11440002', name: '망원시장', latitude: 37.5559, longitude: 126.9063 },
 };
 
 const agencyPlace: NeighborhoodPlace = {

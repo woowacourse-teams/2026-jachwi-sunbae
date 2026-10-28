@@ -1,6 +1,9 @@
 import { css, cx, keyframes } from '@emotion/css';
 
 import type { CommuteRoute } from '@/features/map/api/commuteRouteApi';
+import busIcon from '@/shared/assets/map-icons/route/route-bus.svg';
+import subwayIcon from '@/shared/assets/map-icons/route/route-subway.svg';
+import walkIcon from '@/shared/assets/map-icons/route/route-walk.svg';
 import { Button } from '@/shared/ui/button/Button';
 
 type RouteGuideProps = {
@@ -12,6 +15,9 @@ type RouteGuideProps = {
 
 const modeName = (type: CommuteRoute['legs'][number]['type']) =>
   type === 'WALK' ? '도보' : type === 'BUS' ? '버스' : '지하철';
+
+const modeIcon = (type: CommuteRoute['legs'][number]['type']) =>
+  type === 'WALK' ? walkIcon : type === 'BUS' ? busIcon : subwayIcon;
 
 /**
  * 출발 정류장에서 목적지까지의 대중교통 경로. 동네 상세와 지도에서 고른 정류장 정보가 함께 쓴다.
@@ -60,6 +66,7 @@ const RouteGuide = ({ route, isLoading, error, onRetry }: RouteGuideProps) => (
         <ol className={styles.legs}>
           {route.legs.map((leg, index) => (
             <li key={`${leg.type}-${index}`} data-type={leg.type}>
+              <img className={styles.legIcon} src={modeIcon(leg.type)} alt="" draggable={false} decoding="async" />
               <small>
                 {leg.type === 'WALK' ? '걷기' : `${leg.points[0].name} 승차`} · {leg.minutes}분
                 {leg.waitMinutes > 0 ? ` · 대기 ${leg.waitMinutes}분` : ''}
@@ -120,7 +127,7 @@ const styles = {
       position: relative;
       display: grid;
       gap: 0.3rem;
-      padding: 0 0 1.4rem 1.6rem;
+      padding: 0 0 1.4rem 2.2rem;
     }
 
     & > li[data-type='BUS'] {
@@ -134,9 +141,9 @@ const styles = {
     /* 구간 선. 걷기는 점선으로 그린다. */
     & > li::before {
       position: absolute;
-      top: 1rem;
+      top: 1.6rem;
       bottom: 0;
-      left: 0.33rem;
+      left: calc(0.75rem - 1.5px);
       width: 3px;
       border-radius: 999px;
       background: var(--leg-color);
@@ -149,20 +156,6 @@ const styles = {
 
     & > li:last-child::before {
       bottom: 0.6rem;
-    }
-
-    /* 구간 시작점. */
-    & > li::after {
-      position: absolute;
-      top: 0.2rem;
-      left: 0;
-      box-sizing: border-box;
-      width: 0.75rem;
-      height: 0.75rem;
-      border: 3px solid var(--leg-color);
-      border-radius: 50%;
-      background: white;
-      content: '';
     }
 
     & small {
@@ -178,6 +171,17 @@ const styles = {
       color: var(--color-ink-soft);
       font-size: 0.85rem;
     }
+  `,
+
+  /* 구간 시작점에 이동 수단 그림을 둔다. 가운데가 아래 구간 선과 맞는다. */
+  legIcon: css`
+    label: RouteGuide-legIcon;
+    position: absolute;
+    top: -0.1rem;
+    left: 0;
+    width: 1.5rem;
+    height: 1.5rem;
+    pointer-events: none;
   `,
 
   routeSegments: css`

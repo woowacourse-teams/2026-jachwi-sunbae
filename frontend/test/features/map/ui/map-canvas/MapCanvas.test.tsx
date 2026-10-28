@@ -486,7 +486,7 @@ describe('Naver 지도 상태 동기화', () => {
       transform: 'translate3d(120px, 80px, 0)',
       willChange: 'transform',
     });
-    expect(marker?.firstElementChild).toHaveStyle({ transform: 'translate(-50%, -120.710678%)' });
+    expect(marker?.firstElementChild).toHaveStyle({ transform: 'translate(-50%, -100%)' });
     const content = marker?.firstElementChild as HTMLElement;
     expect(content.style.getPropertyValue('--map-marker-scale')).toBe('0.88');
     rerender(
