@@ -100,6 +100,15 @@ const styles = {
   guide: css`
     label: HomeFeatures-guide;
     flex: 0 0 5.2rem;
+    /* 흰 오리가 회색 카드에 묻히지 않게, 오리가 고개를 내미는 오른쪽 아래에 옅은 파란빛을 깐다. */
+    background:
+      radial-gradient(
+        circle 7rem at 88% 72%,
+        color-mix(in srgb, var(--color-brand-blue) 50%, transparent),
+        color-mix(in srgb, var(--color-brand-blue) 18%, transparent) 55%,
+        transparent 100%
+      ),
+      var(--action-card-surface);
 
     /* 사용방법 카드의 오리는 처음 그려질 때 카드 아래 밖에 있다가 고개를 내밀며 들어온다. */
     & img {
