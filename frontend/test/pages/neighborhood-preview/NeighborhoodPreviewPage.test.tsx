@@ -631,6 +631,10 @@ it('데스크탑은 동네를 고르면 목록 옆 칸에 시세·출발 정류�
     expect(summary.getByRole('tab', { name: /^정류장/ })).toHaveAttribute('aria-selected', 'true');
     await user.click(summary.getByRole('tab', { name: /^공인중개사/ }));
     expect(summary.getByRole('tab', { name: /^공인중개사/ })).toHaveAttribute('aria-selected', 'true');
+    expect(trackPostHogEvent).toHaveBeenCalledWith('neighborhood_area_places_tab_changed', {
+      tab: 'agencies',
+      layout: 'desktop',
+    });
     await user.click(summary.getByRole('tab', { name: /^정류장/ }));
     expect(screen.queryByRole('main', { name: '역삼1동 대중교통 상세' })).not.toBeInTheDocument();
     expect(screen.queryByLabelText('대중교통 경로')).not.toBeInTheDocument();

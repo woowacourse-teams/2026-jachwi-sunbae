@@ -3,6 +3,7 @@ import { css } from '@emotion/css';
 import { formatManwon } from '@/features/map/api/commuteApi';
 import { mapCategoryIconSrc, stationIconSrc } from '@/features/map/lib/mapIconAssets';
 import type { NearbyAgency } from '@/features/map/model/Map';
+import { LogClick } from '@/shared/lib/analytics/logging';
 import BottomSheet from '@/shared/ui/bottom-sheet/BottomSheet';
 
 import { type NeighborhoodPlace, placeTitle } from '../../hooks/useNeighborhoodPlaces';
@@ -96,26 +97,30 @@ const AreaPlacesSheet = ({
             {overRent && <p className={styles.overRent}>{overRent}</p>}
           </section>
           <div className={styles.tabs} role="tablist" aria-label={`${area.name} 주변 장소`}>
-            <button
-              type="button"
-              role="tab"
-              id="area-places-stations"
-              aria-selected={tab === 'stations'}
-              aria-controls="area-places-panel"
-              onClick={() => setTab('stations')}
-            >
-              정류장 {area.stations.length}
-            </button>
-            <button
-              type="button"
-              role="tab"
-              id="area-places-agencies"
-              aria-selected={tab === 'agencies'}
-              aria-controls="area-places-panel"
-              onClick={() => setTab('agencies')}
-            >
-              공인중개사 {agencies.length}
-            </button>
+            <LogClick event="neighborhood_area_places_tab_changed" params={{ tab: 'stations', layout: 'mobile' }}>
+              <button
+                type="button"
+                role="tab"
+                id="area-places-stations"
+                aria-selected={tab === 'stations'}
+                aria-controls="area-places-panel"
+                onClick={() => setTab('stations')}
+              >
+                정류장 {area.stations.length}
+              </button>
+            </LogClick>
+            <LogClick event="neighborhood_area_places_tab_changed" params={{ tab: 'agencies', layout: 'mobile' }}>
+              <button
+                type="button"
+                role="tab"
+                id="area-places-agencies"
+                aria-selected={tab === 'agencies'}
+                aria-controls="area-places-panel"
+                onClick={() => setTab('agencies')}
+              >
+                공인중개사 {agencies.length}
+              </button>
+            </LogClick>
           </div>
           <div
             id="area-places-panel"
@@ -138,11 +143,13 @@ const AreaPlacesSheet = ({
               <ul className={styles.items}>
                 {agencies.map((agency) => (
                   <li key={agency.providerPlaceId}>
-                    <button type="button" onClick={() => onSelectAgency(agency)}>
-                      <img src={mapCategoryIconSrc('AGENCY')} alt="" draggable={false} decoding="async" />
-                      <span>{agency.name}</span>
-                      <small>{agency.address}</small>
-                    </button>
+                    <LogClick event="neighborhood_agency_selected" params={{ layout: 'mobile' }}>
+                      <button type="button" onClick={() => onSelectAgency(agency)}>
+                        <img src={mapCategoryIconSrc('AGENCY')} alt="" draggable={false} decoding="async" />
+                        <span>{agency.name}</span>
+                        <small>{agency.address}</small>
+                      </button>
+                    </LogClick>
                   </li>
                 ))}
               </ul>
