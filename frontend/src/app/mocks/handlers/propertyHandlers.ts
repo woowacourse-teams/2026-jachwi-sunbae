@@ -1,5 +1,7 @@
 import { http, HttpResponse } from 'msw';
 
+import { distanceMeters } from '@/features/map/lib/mapViewportQuery';
+
 import {
   createMockPhotoBytes,
   createPropertyResponse,
@@ -51,7 +53,47 @@ const propertyFromRequest = (body: PropertyWriteRequest) => ({
   utilityOptions: body.utilityOptions ?? [],
 });
 
+// 서버처럼 최대 60분·환승 2회로 고정한다. 시간은 직선거리 400m당 1분에 정류장까지 걷는 5분을 더해 어림한다.
+const COMMUTE_MAX_MINUTES = 60;
+const COMMUTE_MAX_TRANSFERS = 2;
+
 export const propertyHandlers = [
+  // `/api/properties/:propertyId`보다 먼저 두어야 `commute-times`를 매물 ID로 읽지 않는다.
+  http.get('*/api/properties/commute-times', ({ request }) => {
+    const params = new URL(request.url).searchParams;
+    const latitude = Number(params.get('latitude'));
+    const longitude = Number(params.get('longitude'));
+    if (
+      !params.has('latitude') ||
+      !params.has('longitude') ||
+      !Number.isFinite(latitude) ||
+      !Number.isFinite(longitude)
+    )
+      return failure('INVALID_REQUEST', 400);
+    return success({
+      maxMinutes: COMMUTE_MAX_MINUTES,
+      maxTransfers: COMMUTE_MAX_TRANSFERS,
+      properties: [...getMockProperties()]
+        .sort((a, b) => b.id - a.id)
+        .map((property) => {
+          if (property.latitude === null || property.longitude === null)
+            return {
+              propertyId: property.id,
+              propertyName: property.name,
+              status: 'NO_LOCATION',
+              commuteMinutes: null,
+            };
+          const minutes =
+            Math.round(
+              distanceMeters({ latitude, longitude }, { latitude: property.latitude, longitude: property.longitude }) /
+                400,
+            ) + 5;
+          return minutes > COMMUTE_MAX_MINUTES
+            ? { propertyId: property.id, propertyName: property.name, status: 'UNREACHABLE', commuteMinutes: null }
+            : { propertyId: property.id, propertyName: property.name, status: 'REACHABLE', commuteMinutes: minutes };
+        }),
+    });
+  }),
   http.get('*/api/properties', () =>
     success({
       totalCount: getMockProperties().length,

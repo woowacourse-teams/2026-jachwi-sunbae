@@ -8,12 +8,16 @@ import { isInBounds, viewportQuery } from '@/features/map/lib/mapViewportQuery';
 import type { MapAddress, MapBounds, MapCategory, MapMarker } from '@/features/map/model/Map';
 import type { MapCanvasProps, MapCoordinateMenu, MapTapAction } from '@/features/map/model/MapCanvas';
 import useStreetMemoLayer from '@/features/street-memo/hooks/useStreetMemoLayer';
+import addProperty from '@/shared/assets/illustrations/add-property.webp';
+import addProperty2x from '@/shared/assets/illustrations/add-property@2x.webp';
 import { usePublicConfig } from '@/shared/config/PublicConfigContext';
 
 import type { RecordsState } from './useRecords';
 
-const TAP_MARKER_ID = 'tap-point';
+const REGISTER_MARKER_ID = 'register-point';
 const NO_CATEGORIES: MapCategory[] = [];
+/** 거리 메모는 이 단계까지 확대했을 때만 띄운다. 멀리 축소하면 말풍선이 지도를 덮어서 숨긴다. */
+const MEMO_VISIBLE_LEVEL = 7;
 
 type MapPoint = { latitude: number; longitude: number };
 
@@ -25,6 +29,8 @@ type Options = {
   onRegister?: (location: MapAddress) => void;
   /** 처음 켜 둘 카테고리. 휴대폰은 거리 메모를 켠 채로 연다. */
   initialCategory?: MapCategory | null;
+  /** 매물 등록 칸을 연 위치. 등록하는 동안 그 자리에 집과 더하기 그림 핀을 둔다. */
+  registeringAt?: MapPoint | null;
 };
 
 const sameBounds = (a: MapBounds | null, b: MapBounds) =>
@@ -35,7 +41,10 @@ const sameBounds = (a: MapBounds | null, b: MapBounds) =>
  * 시설은 반경 원 없이 지금 지도 화면 안의 것만 보여주고, 카테고리는 한 번에 하나만 켠다.
  * 데스크탑·휴대폰 지도가 함께 쓰고, 지도 위 조작을 어디에 어떻게 놓을지는 각 화면의 지도 컴포넌트가 정한다.
  */
-const useRecordsMapLayers = (records: RecordsState, { onRegister, initialCategory = null }: Options) => {
+const useRecordsMapLayers = (
+  records: RecordsState,
+  { onRegister, initialCategory = null, registeringAt = null }: Options,
+) => {
   const config = usePublicConfig();
   const { level } = records;
   const hasSelection = records.selected !== undefined;
@@ -44,7 +53,7 @@ const useRecordsMapLayers = (records: RecordsState, { onRegister, initialCategor
   const [category, setCategory] = useState<MapCategory | null>(initialCategory);
   const [tapPoint, setTapPoint] = useState<MapPoint | null>(null);
   const [isResolvingAddress, setIsResolvingAddress] = useState(false);
-  const memo = useStreetMemoLayer(category === 'MEMO', bounds);
+  const memo = useStreetMemoLayer(category === 'MEMO' && level <= MEMO_VISIBLE_LEVEL, bounds);
 
   const facilityCategory = category !== null && category !== 'MEMO' ? category : null;
   const query = useMemo(() => (bounds ? viewportQuery(bounds) : null), [bounds]);
@@ -78,11 +87,19 @@ const useRecordsMapLayers = (records: RecordsState, { onRegister, initialCategor
     () => [
       ...facilityMarkers,
       ...memo.markers,
-      ...(tapPoint === null
+      ...(registeringAt === null
         ? []
-        : [{ ...tapPoint, id: TAP_MARKER_ID, label: '선택한 위치', tone: 'destination' as const }]),
+        : [
+            {
+              latitude: registeringAt.latitude,
+              longitude: registeringAt.longitude,
+              id: REGISTER_MARKER_ID,
+              label: '매물 등록 위치',
+              image: { src: addProperty, src2x: addProperty2x },
+            },
+          ]),
     ],
-    [facilityMarkers, memo.markers, tapPoint],
+    [facilityMarkers, memo.markers, registeringAt],
   );
 
   const registerAt = (point: MapPoint) => {
@@ -169,9 +186,8 @@ const useRecordsMapLayers = (records: RecordsState, { onRegister, initialCategor
     tapActions,
     isResolvingAddress,
     facilitiesFailed: facilityCategory !== null && nearby.isError,
-    coordinateMenu: (tapPoint === null
-      ? undefined
-      : { ...tapPoint, actions: tapActions, onClose: () => setTapPoint(null) }) satisfies MapCoordinateMenu | undefined,
+    coordinateMenu: (tapPoint === null ? undefined : { ...tapPoint, actions: tapActions }) satisfies
+      MapCoordinateMenu | undefined,
     /** 같은 카테고리를 다시 누르면 끈다. */
     toggleCategory: (next: MapCategory) => setCategory((current) => (current === next ? null : next)),
     /** 메모를 남기면 메모가 보이도록 메모 카테고리를 켠다. */

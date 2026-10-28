@@ -3,7 +3,8 @@ import { type MouseEventHandler, type ReactNode, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 
 import ChecklistProgressBar from '@/features/checklist/ui/checklist-progress-bar/ChecklistProgressBar';
-import mascotImage from '@/shared/assets/jachwi-sunbae-goose.webp';
+import placeholderImage from '@/shared/assets/property-placeholder-goose.webp';
+import placeholderImage2x from '@/shared/assets/property-placeholder-goose@2x.webp';
 
 import { formatManwon } from '../../lib/propertyFormat';
 import type { PropertyReturnPath } from '../../lib/propertyNavigation';
@@ -26,7 +27,8 @@ const PropertyPhotoThumbnail = ({ property, thumbnailUrl, onActivate }: Property
     <button type="button" className={styles.photo} aria-label={`${property.name} 상세 보기`} onClick={onActivate}>
       {contentUrl === undefined || failed ? (
         <div className={styles.emptyPhoto} role="img" aria-label="등록된 사진 없음">
-          <img src={mascotImage} alt="" />
+          {/* 사진이 없는 매물은 마스코트 오리로 채운다. */}
+          <img src={placeholderImage} srcSet={`${placeholderImage} 1x, ${placeholderImage2x} 2x`} alt="" />
         </div>
       ) : photo !== null ? (
         <AuthenticatedPhoto
@@ -54,6 +56,8 @@ type PropertyCardProps = {
   onOpen?: () => void;
   /** 카드 오른쪽 위에 둘 버튼(더보기 메뉴 등). */
   actions?: ReactNode;
+  /** 가격 아래 덧붙이는 한 줄. 본 방 기록은 출퇴근 장소까지 통근 시간을 둔다. */
+  meta?: ReactNode;
 };
 
 const PropertyCard = ({
@@ -65,6 +69,7 @@ const PropertyCard = ({
   to,
   onOpen,
   actions,
+  meta,
 }: PropertyCardProps) => {
   const navigate = useNavigate();
   const detailPath = to ?? `/properties/${property.propertyId}`;
@@ -99,6 +104,7 @@ const PropertyCard = ({
           <span className={styles.price}>
             보증금 {formatManwon(property.depositAmount)} / 월세 {formatManwon(property.monthlyRentAmount)}
           </span>
+          {meta !== undefined && <span className={styles.meta}>{meta}</span>}
           {property.location.address !== null && <small className={styles.address}>{property.location.address}</small>}
         </div>
         {onSiteStage !== undefined && (
@@ -225,6 +231,14 @@ const styles = {
     color: var(--color-ink, #212124);
     font-size: 0.8rem;
     font-weight: 400;
+  `,
+
+  meta: css`
+    label: PropertyCard-meta;
+    margin: 0;
+    color: var(--color-primary-strong, #1d4ed8);
+    font-size: 0.76rem;
+    font-weight: 600;
   `,
 
   address: css`
