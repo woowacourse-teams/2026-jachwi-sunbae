@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-webpack5';
+import { fn } from 'storybook/test';
 
 import { propertyQueryKeys } from '@/features/property/api/propertyQueryKeys';
 import type { PropertyPhotoPreview } from '@/features/property/model/Property';
@@ -20,12 +21,22 @@ const photos: PropertyPhotoPreview[] = [
 const meta = {
   title: '페이지/매물 상세/PropertyHeroPhoto',
   component: PropertyHeroPhoto,
+  argTypes: {
+    propertyId: { control: false, description: '사진을 불러올 매물 ID. 표본 사진 캐시는 10번에만 있다.' },
+    propertyName: { description: '사진 버튼 접근성 이름에 쓰는 매물 이름.' },
+    photos: { control: 'object', description: '대표 사진으로 쓸 사진 목록. 첫 장을 보여 준다.' },
+    backTo: { description: '뒤로 가기 버튼이 이동할 주소.' },
+    backState: { control: false },
+    showBackButton: { description: '왼쪽 위 뒤로 가기 버튼을 보일지.' },
+    onOpen: { description: '사진을 누르면 부른다(사진 뷰어 열기).' },
+  },
   args: {
     propertyId: 10,
     propertyName: '햇살 좋은 원룸',
     photos,
     backTo: '/properties',
-    onOpen: () => undefined,
+    showBackButton: true,
+    onOpen: fn(),
   },
   parameters: {
     layout: 'fullscreen',

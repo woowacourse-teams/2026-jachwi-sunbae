@@ -11,6 +11,7 @@ const meta = {
     option: {
       control: 'select',
       options: PROPERTY_OPTIONS.map((option) => option.key),
+      description: '아이콘을 보여 줄 방 옵션 키.',
     },
   },
   args: {
@@ -24,7 +25,11 @@ type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {};
 
+/** 모든 방 옵션 아이콘을 한눈에 본다. 목록 전체를 그리므로 컨트롤은 쓰지 않는다. */
 export const AllOptions: Story = {
+  parameters: {
+    controls: { disable: true },
+  },
   render: () => (
     <ul
       style={{

@@ -24,6 +24,17 @@ const meta = {
     alt: '햇살 좋은 원룸 대표 사진',
     errorMode: 'message',
   },
+  argTypes: {
+    propertyId: { control: false, description: '매물 ID. 표본 사진 캐시가 10번 매물·1번 사진 기준이라 고정한다.' },
+    photoId: { control: false, description: '사진 ID' },
+    contentUrl: { control: false, description: '사진 내용을 받을 주소' },
+    alt: { description: '사진 대체 텍스트' },
+    errorMode: {
+      control: 'inline-radio',
+      options: ['message', 'retry-only'],
+      description: '불러오지 못했을 때 안내 문구와 다시 시도를 함께 보일지, 다시 시도 버튼만 보일지',
+    },
+  },
   decorators: [
     (Story) => (
       <div style={{ width: '20rem' }}>

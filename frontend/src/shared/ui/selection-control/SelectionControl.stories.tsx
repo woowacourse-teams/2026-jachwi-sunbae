@@ -1,5 +1,7 @@
 import { css, cx } from '@emotion/css';
 import type { Meta, StoryObj } from '@storybook/react-webpack5';
+import { useArgs } from 'storybook/preview-api';
+import { fn } from 'storybook/test';
 
 import SelectionControl from './SelectionControl';
 
@@ -59,18 +61,39 @@ const meta = {
   title: '공용/SelectionControl',
   component: SelectionControl,
   argTypes: {
-    children: { control: false },
+    type: { control: 'inline-radio', options: ['checkbox', 'radio'], description: '체크박스인지 라디오인지' },
+    checked: { description: '선택 여부. 눌러서 바꾸면 컨트롤 값도 함께 바뀐다.' },
+    children: { control: 'text', description: '선택지 문구' },
     className: { control: false },
     markClassName: { control: false },
     mark: { control: false },
-    dataAttributes: { control: false },
+    dataAttributes: { control: 'object' },
+    onSelect: { control: false },
   },
   parameters: {
     layout: 'padded',
   },
   args: {
+    type: 'checkbox',
     checked: false,
-    onSelect: () => undefined,
+    disabled: false,
+    className: styles.option,
+    markClassName: styles.mark,
+    children: '채광과 방향을 확인했나요?',
+    onSelect: fn(),
+  },
+  // 누르면 checked를 args에 되돌려 써서 컨트롤 패널과 화면이 같은 상태를 보게 한다.
+  render: function ControlledSelection(args) {
+    const [, updateArgs] = useArgs<typeof args>();
+    return (
+      <SelectionControl
+        {...args}
+        onSelect={() => {
+          args.onSelect();
+          updateArgs({ checked: args.type === 'radio' ? true : !args.checked });
+        }}
+      />
+    );
   },
 } satisfies Meta<typeof SelectionControl>;
 
@@ -80,18 +103,9 @@ type Story = StoryObj<typeof meta>;
 
 export const Unchecked: Story = {};
 
-Unchecked.args = {
-  className: styles.option,
-  markClassName: styles.mark,
-  children: <span>채광과 방향을 확인했나요?</span>,
-};
-
 export const Checked: Story = {
   args: {
     checked: true,
-    className: styles.option,
-    markClassName: styles.mark,
-    children: <span>채광과 방향을 확인했나요?</span>,
   },
 };
 
@@ -99,9 +113,6 @@ export const Disabled: Story = {
   args: {
     checked: true,
     disabled: true,
-    className: styles.option,
-    markClassName: styles.mark,
-    children: <span>채광과 방향을 확인했나요?</span>,
   },
 };
 
@@ -111,8 +122,6 @@ export const Radio: Story = {
     name: 'checklist-stage',
     value: 'on-site',
     checked: true,
-    className: styles.option,
-    markClassName: styles.mark,
-    children: <span>현장 체크</span>,
+    children: '현장 체크',
   },
 };

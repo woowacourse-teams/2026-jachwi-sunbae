@@ -3,7 +3,7 @@ import type { Meta, StoryObj } from '@storybook/react-webpack5';
 import HomeFeatures from './HomeFeatures';
 
 const meta = {
-  title: '페이지/홈/HomeFeatures',
+  title: '페이지/홈/공통/HomeFeatures',
   component: HomeFeatures,
   parameters: {
     layout: 'padded',

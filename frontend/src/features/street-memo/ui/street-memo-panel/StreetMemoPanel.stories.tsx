@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-webpack5';
+import { fn } from 'storybook/test';
 
 import type { StreetMemoLayer } from '../../hooks/useStreetMemoLayer';
 import type { StreetMemo } from '../../model/StreetMemo';
@@ -33,11 +34,11 @@ const makeLayer = (overrides: Partial<StreetMemoLayer>): StreetMemoLayer => ({
   submitFailed: false,
   isRemoving: false,
   removeFailed: false,
-  selectMarker: () => false,
-  startDraft: () => undefined,
-  submit: () => undefined,
-  remove: () => undefined,
-  close: () => undefined,
+  selectMarker: fn(() => false),
+  startDraft: fn(),
+  submit: fn(),
+  remove: fn(),
+  close: fn(),
   ...overrides,
 });
 
@@ -46,9 +47,16 @@ const meta = {
   component: StreetMemoPanel,
   args: {
     layer: makeLayer({ mode: 'view', selectedMemo: likeMemo }),
+    onCreated: fn(),
+    showCloseButton: true,
   },
   argTypes: {
-    layer: { control: false },
+    layer: {
+      control: false,
+      description:
+        '화면이 useStreetMemoLayer로 만드는 메모 겹 상태. mode가 view면 고른 메모를, compose면 쓰기 폼을 그린다. 안의 함수는 Actions 패널에 찍힌다.',
+    },
+    onCreated: { description: '새 메모를 남겼을 때. 만든 메모를 넘긴다.' },
   },
   decorators: [
     (Story) => (

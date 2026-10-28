@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-webpack5';
+import { fn } from 'storybook/test';
 
 import { checklistQueryKeys } from '../../api/checklistQueryKeys';
 import type { CheckItem, CheckItemPage } from '../../model/checklistTypes';
@@ -47,8 +48,21 @@ const meta = {
     stage: 'ON_SITE',
     existingSourceIds: [],
     disabled: false,
-    onCancel: () => undefined,
-    onAdd: () => undefined,
+    onCancel: fn(),
+    onAdd: fn(),
+  },
+  argTypes: {
+    stage: {
+      control: false,
+      description: '검색할 체크리스트 단계. 표본 검색 결과가 현장(ON_SITE) 기준이라 고정한다.',
+    },
+    existingSourceIds: {
+      control: 'object',
+      description: '이미 체크리스트에 담긴 체크 항목 ID. 목록 아래로 내려가고 고를 수 없다.',
+    },
+    disabled: { description: '저장 중처럼 항목 추가를 막는다.' },
+    onCancel: { description: '닫기를 눌렀을 때' },
+    onAdd: { description: '고른 항목을 추가할 때. 고른 체크 항목 배열을 넘긴다.' },
   },
   parameters: {
     layout: 'fullscreen',

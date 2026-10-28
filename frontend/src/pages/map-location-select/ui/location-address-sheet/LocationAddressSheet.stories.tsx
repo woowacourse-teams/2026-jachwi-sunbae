@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-webpack5';
+import { fn } from 'storybook/test';
 
 import type { MapAddress } from '@/features/map/model/Map';
 
@@ -33,14 +34,30 @@ const meta = {
       </div>
     ),
   ],
+  argTypes: {
+    selected: {
+      control: 'object',
+      description: '지도 가운데 핀이 가리키는 주소. 주소가 비면 status에 따라 확인 중·실패 문구를 보여준다.',
+    },
+    status: {
+      control: 'inline-radio',
+      options: ['locating', 'geocoding', 'ready', 'error'],
+      description: '위치 확인 단계. ready일 때만 확정 버튼을 누를 수 있다.',
+    },
+    isEditing: { description: '이미 등록한 매물의 위치를 고치는 중인지. 버튼 문구가 바뀐다.' },
+    isCreating: { description: '매물을 등록하는 중인지. 등록하는 동안 버튼을 막는다.' },
+    hasCreateError: { description: '매물 만들기에 실패했는지.' },
+    onOpenSearch: { description: '주소 검색 열기' },
+    onConfirm: { description: '이 위치로 확정' },
+  },
   args: {
     selected: selectedAddress,
     status: 'ready',
     isEditing: false,
     isCreating: false,
     hasCreateError: false,
-    onOpenSearch: () => undefined,
-    onConfirm: () => undefined,
+    onOpenSearch: fn(),
+    onConfirm: fn(),
   },
 } satisfies Meta<typeof LocationAddressSheet>;
 

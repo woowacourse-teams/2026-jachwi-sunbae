@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-webpack5';
+import { fn } from 'storybook/test';
 
 import type { ChecklistEditorItem } from '../../model/ChecklistEditor';
 import ChecklistItemOrderList from './ChecklistItemOrderList';
@@ -44,12 +45,21 @@ const meta = {
     isDisabled: false,
     isInactive: (item) => item.origin === 'PROVIDED' && item.sourceCheckItemId === 199,
     registerFocusTarget: () => () => undefined,
-    onMove: () => undefined,
-    onReorder: () => undefined,
-    onRemove: () => undefined,
+    onMove: fn(),
+    onReorder: fn(),
+    onRemove: fn(),
   },
   argTypes: {
-    items: { control: false },
+    items: { control: 'object', description: '순서대로 그릴 편집 항목' },
+    isDisabled: { description: '저장 중처럼 순서 변경·삭제를 막는다.' },
+    isInactive: {
+      control: false,
+      description: '지금은 제공하지 않는 항목인지 판단한다. 표본은 199번 제공 항목을 비활성으로 본다.',
+    },
+    registerFocusTarget: { control: false, description: '이동 뒤 포커스를 옮길 요소를 등록한다.' },
+    onMove: { description: '키보드로 한 칸 옮길 때 (index, -1 | 1)' },
+    onReorder: { description: '끌어서 놓을 때 (옮긴 항목 키, 놓은 자리 항목 키)' },
+    onRemove: { description: '항목 제거를 눌렀을 때 (index)' },
   },
   decorators: [
     (Story) => (

@@ -1,14 +1,23 @@
 import type { Meta, StoryObj } from '@storybook/react-webpack5';
+import { fn } from 'storybook/test';
 
 import CompareActionBar from './CompareActionBar';
 
 const meta = {
-  title: '페이지/방 비교/CompareActionBar',
+  title: '페이지/방 비교/공통/CompareActionBar',
   component: CompareActionBar,
   args: {
     selectedCount: 3,
     isExporting: false,
-    onDownload: () => undefined,
+    onDownload: fn(),
+  },
+  argTypes: {
+    selectedCount: {
+      control: { type: 'range', min: 0, max: 5, step: 1 },
+      description: '고른 매물 수. 2개 미만이면 내려받기를 막는다.',
+    },
+    isExporting: { description: '비교표 이미지를 만드는 중인지' },
+    onDownload: { description: '비교표 내려받기 버튼을 누르면 부른다.' },
   },
   decorators: [
     (Story) => (

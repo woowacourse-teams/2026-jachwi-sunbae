@@ -1,15 +1,23 @@
 import type { Meta, StoryObj } from '@storybook/react-webpack5';
+import { fn } from 'storybook/test';
 
 import RecordDistricts from './RecordDistricts';
 
+const districts = ['전체', '역삼동', '서교동', '신림동', '삼평동'];
+
 const meta = {
-  title: '페이지/본 방 기록/RecordDistricts',
+  title: '페이지/본 방 기록/공통/RecordDistricts',
   component: RecordDistricts,
   args: {
-    districts: ['전체', '역삼동', '서교동', '신림동', '삼평동'],
+    districts,
     district: '전체',
     overMap: false,
-    onSelect: () => undefined,
+    onSelect: fn(),
+  },
+  argTypes: {
+    districts: { control: 'object', description: '뱃지로 보여 줄 동네 이름 목록' },
+    district: { control: 'select', options: districts, description: '지금 고른 동네' },
+    onSelect: { description: '뱃지를 누르면 그 동네 이름으로 부른다.' },
   },
   decorators: [
     (Story) => (

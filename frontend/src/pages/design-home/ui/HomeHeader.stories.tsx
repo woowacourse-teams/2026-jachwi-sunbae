@@ -3,7 +3,7 @@ import type { Meta, StoryObj } from '@storybook/react-webpack5';
 import HomeHeader from './HomeHeader';
 
 const meta = {
-  title: '페이지/홈/HomeHeader',
+  title: '페이지/홈/공통/HomeHeader',
   component: HomeHeader,
   decorators: [
     (Story) => (

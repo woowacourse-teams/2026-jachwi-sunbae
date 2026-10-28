@@ -31,7 +31,16 @@ const meta = {
     position: 1,
   },
   argTypes: {
-    photo: { control: false },
+    propertyId: { control: false, description: '매물 ID. 표본 사진 캐시가 10번 매물 기준이라 고정한다.' },
+    photo: {
+      control: 'object',
+      description:
+        '사진 정보. representative가 true면 대표 사진 표시가 붙는다. photoId를 바꾸면 캐시에 없어 대체 화면이 된다.',
+    },
+    position: {
+      control: { type: 'range', min: 1, max: 30, step: 1 },
+      description: '몇 번째 사진인지(접근성 이름에 쓴다)',
+    },
   },
   parameters: {
     queryData: [[propertyQueryKeys.photoContent(10, 1), samplePhoto]],

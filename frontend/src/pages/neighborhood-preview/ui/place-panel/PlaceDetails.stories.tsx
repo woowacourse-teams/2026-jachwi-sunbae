@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-webpack5';
+import { fn } from 'storybook/test';
 
 import type { CommuteRoute } from '@/features/map/api/commuteRouteApi';
 
@@ -96,7 +97,7 @@ const routeQueryData = [
 ];
 
 const meta = {
-  title: '페이지/동네 찾기/PlaceDetails',
+  title: '페이지/동네 찾기/공통/PlaceDetails',
   component: PlaceDetails,
   parameters: {
     queryData: routeQueryData,
@@ -108,6 +109,17 @@ const meta = {
       </div>
     ),
   ],
+  argTypes: {
+    place: {
+      control: 'object',
+      description: '지도에서 고른 장소. kind가 busStop·station이면 경로를, agency면 연락처를 보여준다.',
+    },
+    preview: {
+      control: 'object',
+      description: '목적지와 통근 조건. 바꾸면 미리 넣어 둔 경로 데이터와 키가 달라져 불러오는 중으로 보인다.',
+    },
+    phoneAction: { control: 'inline-radio', options: ['call', 'copy'] },
+  },
   args: {
     place: busStopPlace,
     preview,
@@ -124,7 +136,7 @@ export const BusStopRoute: Story = {};
 export const BusStopSummary: Story = {
   args: {
     phoneAction: 'call',
-    onOpenRoute: () => undefined,
+    onOpenRoute: fn(),
   },
 };
 

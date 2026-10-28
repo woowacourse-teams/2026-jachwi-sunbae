@@ -1,13 +1,18 @@
 import type { Meta, StoryObj } from '@storybook/react-webpack5';
+import { fn } from 'storybook/test';
 
 import RecordNotice from './RecordNotice';
 
 const meta = {
-  title: '페이지/본 방 기록/RecordNotice',
+  title: '페이지/본 방 기록/공통/RecordNotice',
   component: RecordNotice,
   args: {
     message: '기록을 삭제했어요.',
-    onClose: () => undefined,
+    onClose: fn(),
+  },
+  argTypes: {
+    message: { description: '띄울 안내 문구. 비우면 아무것도 그리지 않는다.' },
+    onClose: { description: '닫기 버튼을 누르면 부른다.' },
   },
   decorators: [
     (Story) => (

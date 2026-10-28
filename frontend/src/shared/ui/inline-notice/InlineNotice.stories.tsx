@@ -7,9 +7,11 @@ const meta = {
   component: InlineNotice,
   argTypes: {
     tone: {
-      control: 'select',
+      control: 'inline-radio',
       options: ['info', 'warning', 'error'],
+      description: '색. `error`는 경고(alert)로 바로 읽어 준다.',
     },
+    children: { control: 'text', description: '안내 문구' },
   },
   args: {
     children: '입력한 정보는 이 기기에만 저장돼요.',

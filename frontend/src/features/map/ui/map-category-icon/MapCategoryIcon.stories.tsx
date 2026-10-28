@@ -22,6 +22,7 @@ const meta = {
     category: {
       control: 'select',
       options: categories.map(({ category }) => category),
+      description: '그릴 시설 종류',
     },
   },
   decorators: [
@@ -39,7 +40,9 @@ type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {};
 
+/** 모든 종류를 한눈에 비교하는 모음이라 컨트롤을 따르지 않는다. */
 export const AllCategories: Story = {
+  parameters: { controls: { disable: true } },
   render: () => (
     <div style={{ display: 'flex', gap: '1.5rem' }}>
       {categories.map(({ category, label }) => (

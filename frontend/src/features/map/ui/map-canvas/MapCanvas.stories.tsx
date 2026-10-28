@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-webpack5';
+import { fn } from 'storybook/test';
 
 import type { MapMarker } from '../../model/Map';
 import type { MapRegion } from '../../model/MapCanvas';
@@ -69,11 +70,32 @@ const meta = {
   args: {
     center,
     level: 15,
+    interactive: false,
+    showCenterPin: false,
+    showRadiusLabels: false,
+    hideLoading: false,
+    onSelectMarker: fn(),
+    onSelectLocation: fn(),
+    onCenterChange: fn(),
+    onLevelChange: fn(),
+    onBoundsChange: fn(),
+    onSelectRegion: fn(),
   },
   argTypes: {
-    markers: { control: false },
-    circles: { control: false },
+    center: { control: 'object', description: '지도 가운데 좌표' },
+    level: { control: { type: 'range', min: 6, max: 21, step: 1 }, description: '확대 단계. 클수록 가깝다.' },
+    interactive: { description: '끌기·확대와 지도 찍기를 받는다.' },
+    showCenterPin: { description: '가운데 고정 핀을 그린다(위치 고르기 화면).' },
+    showRadiusLabels: { description: '반경 원에 거리 이름표를 붙인다.' },
+    selectedMarkerId: { control: 'text', description: '강조할 마커 ID' },
+    selectedRegionId: { control: 'text', description: '강조할 구역 ID' },
+    markers: { control: 'object', description: '지도 위 마커 목록' },
+    circles: { control: 'object', description: '반경 원 목록(500·1000·2000m)' },
     regions: { control: false },
+    coordinateMenu: { control: false },
+    coordinateAction: { control: false },
+    radiusCenter: { control: 'object', description: '반경 원의 중심. 없으면 center를 쓴다.' },
+    customStyleId: { control: 'text' },
   },
   parameters: {
     layout: 'fullscreen',
@@ -94,7 +116,6 @@ type Story = StoryObj<typeof meta>;
 export const Default: Story = {
   args: {
     markers: sampleMarkers,
-    onSelectMarker: () => undefined,
   },
 };
 
@@ -112,15 +133,14 @@ export const WithRadius: Story = {
 export const WithCoordinateMenu: Story = {
   args: {
     interactive: true,
-    onSelectLocation: () => undefined,
     coordinateMenu: {
       latitude: 37.4842,
       longitude: 126.9297,
       actions: [
-        { id: 'memo', label: '거리 메모 남기기', onSelect: () => undefined },
-        { id: 'nearby', label: '주변 시설 보기', onSelect: () => undefined },
+        { id: 'memo', label: '거리 메모 남기기', onSelect: fn() },
+        { id: 'nearby', label: '주변 시설 보기', onSelect: fn() },
       ],
-      onClose: () => undefined,
+      onClose: fn(),
     },
   },
 };
@@ -136,6 +156,5 @@ export const WithRegions: Story = {
   args: {
     regions: sampleRegions,
     selectedRegionId: 'sillim',
-    onSelectRegion: () => undefined,
   },
 };

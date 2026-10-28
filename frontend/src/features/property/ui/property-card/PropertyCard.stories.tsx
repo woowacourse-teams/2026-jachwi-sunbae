@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-webpack5';
+import { fn } from 'storybook/test';
 
 import { propertyQueryKeys } from '../../api/propertyQueryKeys';
 import type { PropertyChecklistProgress, PropertySummary } from '../../model/Property';
@@ -58,9 +59,23 @@ const meta = {
   component: PropertyCard,
   args: {
     property: sampleProperty,
+    onClick: fn(),
   },
   argTypes: {
-    property: { control: false },
+    property: {
+      control: 'object',
+      description: '카드에 그릴 매물 요약. 이름·금액·주소·체크리스트 진행률·사진 수가 여기서 나온다.',
+    },
+    to: { control: 'text', description: '상세 주소. 기본은 /properties/:propertyId' },
+    thumbnailUrl: { control: 'text', description: '대표 사진 대신 쓸 사진 주소' },
+    returnTo: {
+      control: 'inline-radio',
+      options: ['/', '/properties'],
+      description: '상세에서 돌아올 화면(홈·본 방 기록)',
+    },
+    onClick: { control: false, description: '본문 링크를 눌렀을 때' },
+    onOpen: { description: '주면 눌러도 상세로 이동하지 않고 이 함수를 부른다.' },
+    returnState: { control: false },
     actions: { control: false },
   },
   parameters: {

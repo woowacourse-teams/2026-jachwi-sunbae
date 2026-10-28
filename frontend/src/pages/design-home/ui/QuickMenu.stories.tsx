@@ -3,7 +3,7 @@ import type { Meta, StoryObj } from '@storybook/react-webpack5';
 import QuickMenu from './QuickMenu';
 
 const meta = {
-  title: '페이지/홈/QuickMenu',
+  title: '페이지/홈/공통/QuickMenu',
   component: QuickMenu,
   decorators: [
     (Story) => (

@@ -55,7 +55,7 @@ const rooms = [
 ];
 
 const meta = {
-  title: '페이지/홈/RecentRooms',
+  title: '페이지/홈/공통/RecentRooms',
   component: RecentRooms,
   args: {
     inSideColumn: false,

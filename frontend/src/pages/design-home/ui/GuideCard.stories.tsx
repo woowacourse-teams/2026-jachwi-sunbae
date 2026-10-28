@@ -3,7 +3,7 @@ import type { Meta, StoryObj } from '@storybook/react-webpack5';
 import GuideCard from './GuideCard';
 
 const meta = {
-  title: '페이지/홈/GuideCard',
+  title: '페이지/홈/공통/GuideCard',
   component: GuideCard,
   decorators: [
     (Story) => (

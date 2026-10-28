@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-webpack5';
+import { fn } from 'storybook/test';
 
 import type { PropertySummary } from '@/features/property/model/Property';
 
@@ -26,14 +27,16 @@ const property = (name: string, depositAmount: number, monthlyRentAmount: number
 });
 
 const meta = {
-  title: '페이지/본 방 기록/RecordsSelectedCard',
+  title: '페이지/본 방 기록/휴대폰/RecordsSelectedCard',
+  globals: { viewport: { value: 'mobile', isRotated: false } },
   component: RecordsSelectedCard,
   args: {
     record: recordPresentation(property('역삼역 햇살 원룸', 10_000_000, 650_000)),
-    onClose: () => undefined,
+    onClose: fn(),
   },
   argTypes: {
-    record: { control: false },
+    record: { control: 'object', description: '고른 기록의 요약(이름·가격·주소 등)' },
+    onClose: { description: '닫기 버튼을 누르면 부른다.' },
   },
   decorators: [
     (Story) => (

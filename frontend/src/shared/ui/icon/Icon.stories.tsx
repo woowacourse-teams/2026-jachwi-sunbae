@@ -15,7 +15,19 @@ const iconNames: IconName[] = [
   'trash',
   'close',
   'chevron-right',
+  'chevron-left',
+  'chevron-up',
+  'chevron-down',
+  'arrow-left',
+  'arrow-right',
   'external-link',
+  'link',
+  'image',
+  'info',
+  'locate',
+  'target',
+  'refresh',
+  'more-vertical',
 ];
 
 const meta = {
@@ -29,9 +41,11 @@ const meta = {
     name: {
       control: 'select',
       options: iconNames,
+      description: '그릴 아이콘 이름',
     },
     size: {
       control: { type: 'range', min: 12, max: 48, step: 2 },
+      description: '가로·세로 크기(px). 색은 글자색(currentColor)을 따른다.',
     },
   },
   parameters: {
@@ -45,7 +59,11 @@ type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {};
 
+/** 모든 아이콘. `size` 컨트롤로 한꺼번에 크기를 바꿔 본다. */
 export const Gallery: Story = {
+  argTypes: {
+    name: { control: false },
+  },
   render: ({ size }) => (
     <div
       style={{

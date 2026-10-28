@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-webpack5';
+import { fn } from 'storybook/test';
 
 import { propertyQueryKeys } from '../../api/propertyQueryKeys';
 import type { PropertyPhoto, PropertyPhotoList } from '../../model/Property';
@@ -31,7 +32,16 @@ const meta = {
     propertyId: 10,
     propertyName: '햇살 좋은 원룸',
     initialIndex: 0,
-    onClose: () => undefined,
+    onClose: fn(),
+  },
+  argTypes: {
+    propertyId: { control: false, description: '매물 ID. 표본 사진 캐시가 10번 매물 기준이라 고정한다.' },
+    propertyName: { description: '위에 보이는 매물 이름. 사진 대체 텍스트에도 쓴다.' },
+    initialIndex: {
+      control: { type: 'range', min: 0, max: 2, step: 1 },
+      description: '처음 보여줄 사진 순번(0부터). 표본 사진은 3장이다. 처음 그릴 때만 읽는다.',
+    },
+    onClose: { description: '닫기를 눌렀을 때' },
   },
   parameters: {
     layout: 'fullscreen',

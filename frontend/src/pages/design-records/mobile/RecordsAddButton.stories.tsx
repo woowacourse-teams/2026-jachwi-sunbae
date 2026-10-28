@@ -1,13 +1,18 @@
 import type { Meta, StoryObj } from '@storybook/react-webpack5';
+import { fn } from 'storybook/test';
 
 import RecordsAddButton from './RecordsAddButton';
 
 const meta = {
-  title: '페이지/본 방 기록/RecordsAddButton',
+  title: '페이지/본 방 기록/휴대폰/RecordsAddButton',
+  globals: { viewport: { value: 'mobile', isRotated: false } },
   component: RecordsAddButton,
   args: {
     hint: '+ 버튼으로 메모·매물을 추가해요',
-    onChoose: () => undefined,
+    onChoose: fn(),
+  },
+  argTypes: {
+    onChoose: { description: '펼친 메뉴에서 메모·매물 중 하나를 고르면 그 종류로 부른다.' },
   },
   decorators: [
     (Story) => (

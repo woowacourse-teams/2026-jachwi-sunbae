@@ -96,6 +96,20 @@ const meta = {
       </div>
     ),
   ],
+  argTypes: {
+    subjectId: { control: 'text', description: '매물 id 또는 동네 코드' },
+    center: {
+      control: 'object',
+      description: '중심 좌표. 바꾸면 미리 넣어 둔 시설 데이터와 키가 달라져 불러오는 중으로 보인다.',
+    },
+    initialCategories: {
+      control: 'check',
+      options: ['HOSPITAL', 'TRANSPORT', 'SCHOOL', 'CONVENIENCE', 'AGENCY'],
+      description: '처음 켜 둘 분류',
+    },
+    label: { description: '지도 영역의 접근성 이름' },
+    isSubjectPending: { description: '매물·동네 정보를 아직 불러오는 중인지' },
+  },
   args: {
     subjectId: 10,
     center,

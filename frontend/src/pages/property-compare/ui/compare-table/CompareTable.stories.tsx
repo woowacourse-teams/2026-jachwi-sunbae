@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-webpack5';
+import { fn } from 'storybook/test';
 
 import type { ChecklistStage } from '@/features/checklist/model/checklistTypes';
 import type {
@@ -62,16 +63,22 @@ const properties = [
 ];
 
 const meta = {
-  title: '페이지/방 비교/CompareTable',
+  title: '페이지/방 비교/공통/CompareTable',
   component: CompareTable,
   args: {
     properties,
     selectedIds: [1, 2],
     maxSelection: 5,
-    onToggle: () => undefined,
+    onToggle: fn(),
   },
   argTypes: {
     properties: { control: false },
+    selectedIds: { control: 'object', description: '고른 매물 번호 목록' },
+    maxSelection: {
+      control: { type: 'range', min: 1, max: 6, step: 1 },
+      description: '최대로 고를 수 있는 매물 수. 다 고르면 나머지 줄을 막는다.',
+    },
+    onToggle: { description: '줄을 누르면 그 매물 번호로 부른다.' },
   },
   parameters: {
     layout: 'padded',

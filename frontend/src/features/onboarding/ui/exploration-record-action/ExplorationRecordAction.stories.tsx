@@ -15,7 +15,10 @@ const meta = {
     },
   },
   argTypes: {
-    location: { control: false },
+    location: {
+      control: 'object',
+      description: '기록할 동네 위치. 누르면 이 위치를 저장해 두고 로그인 화면으로 간다.',
+    },
   },
   decorators: [
     (Story) => (

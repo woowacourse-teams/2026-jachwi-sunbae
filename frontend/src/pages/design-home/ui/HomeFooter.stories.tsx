@@ -3,7 +3,7 @@ import type { Meta, StoryObj } from '@storybook/react-webpack5';
 import HomeFooter from './HomeFooter';
 
 const meta = {
-  title: '페이지/홈/HomeFooter',
+  title: '페이지/홈/공통/HomeFooter',
   component: HomeFooter,
   args: {
     alignStart: false,

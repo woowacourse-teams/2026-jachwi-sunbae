@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-webpack5';
+import { fn } from 'storybook/test';
 
 import type { MapAddress } from '@/features/map/model/Map';
 
@@ -26,26 +27,32 @@ const searchResults: MapAddress[] = [
 const location = {
   selected: selectedAddress,
   status: 'ready' as const,
-  onCenterChange: () => undefined,
-  onMoveToCurrentLocation: () => undefined,
+  onCenterChange: fn().mockName('location.onCenterChange'),
+  onMoveToCurrentLocation: fn().mockName('location.onMoveToCurrentLocation'),
 };
 
 const search = {
   query: '',
   results: [],
   status: 'idle' as const,
-  onQueryChange: () => undefined,
-  onSubmit: () => undefined,
-  onClear: () => undefined,
-  onSelect: () => undefined,
+  onQueryChange: fn().mockName('search.onQueryChange'),
+  onSubmit: fn().mockName('search.onSubmit'),
+  onClear: fn().mockName('search.onClear'),
+  onSelect: fn().mockName('search.onSelect'),
 };
 
 const meta = {
   title: '페이지/매물 등록/PropertyLocationPicker',
   component: PropertyLocationPicker,
   argTypes: {
-    location: { control: false },
-    search: { control: false },
+    location: {
+      control: false,
+      description: '지도 가운데에 고른 주소와 주소 변환 상태(ready·loading·error), 지도 이동 콜백.',
+    },
+    search: {
+      control: false,
+      description: '주소 검색어·결과·검색 상태(idle·loading·error)와 검색 콜백.',
+    },
   },
   args: {
     location,

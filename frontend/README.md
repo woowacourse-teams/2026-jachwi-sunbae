@@ -159,6 +159,8 @@ Storybook에서는 구현 내부가 아니라 기본·로딩·에러·빈 상태
   - `route`: 처음 열 주소
   - `routePath`: `useParams`가 필요할 때의 경로 패턴(예: `/properties/:propertyId`)
   - `queryData`: `[queryKey, data]` 목록. 서버 요청 없이 Query Hook이 읽을 데이터를 캐시에 미리 넣습니다.
+- 데스크탑·휴대폰 화면을 나눈 페이지(홈·본 방 기록·동네 찾기·방 비교·마이)는 그 아래를 `데스크탑`·`휴대폰`·`공통`으로 나눕니다. `desktop/`·`mobile/` 폴더의 화면과 조각은 meta에 `globals: { viewport: { value: 'desktop' | 'mobile' } }`을 두어 그 화면 폭으로 엽니다. 툴바의 화면 폭은 휴대폰(390)·태블릿(820)·데스크탑(1440)입니다.
+- 값은 `args`로 넘겨 Controls 패널에서 바꿔 볼 수 있게 합니다. 콜백은 `fn()`(`storybook/test`)으로 두어 Actions 패널에 호출이 찍히게 하고, 컨트롤로 바꿀 수 없는 ReactNode·함수 props는 `argTypes`에서 `control: false`로 숨깁니다. `className`·`ref`는 전역에서 숨깁니다.
 
 `npm run build`는 번들 생성 전에 `npm run typecheck`를 실행합니다. 개발 중 타입 오류만 빠르게 확인하려면 `npm run typecheck`를 직접 실행합니다.
 

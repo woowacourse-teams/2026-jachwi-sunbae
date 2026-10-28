@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-webpack5';
+import { fn } from 'storybook/test';
 
 import MapCurrentLocationButton from './MapCurrentLocationButton';
 
@@ -7,7 +8,11 @@ const meta = {
   component: MapCurrentLocationButton,
   args: {
     isLocating: false,
-    onClick: () => undefined,
+    onClick: fn(),
+  },
+  argTypes: {
+    isLocating: { description: '현재 위치를 찾는 중. 버튼이 돌아가는 모양이 된다.' },
+    onClick: { description: '버튼을 눌렀을 때' },
   },
 } satisfies Meta<typeof MapCurrentLocationButton>;
 

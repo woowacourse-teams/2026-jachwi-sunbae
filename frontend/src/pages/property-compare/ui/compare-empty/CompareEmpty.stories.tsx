@@ -3,7 +3,7 @@ import type { Meta, StoryObj } from '@storybook/react-webpack5';
 import CompareEmpty from './CompareEmpty';
 
 const meta = {
-  title: '페이지/방 비교/CompareEmpty',
+  title: '페이지/방 비교/공통/CompareEmpty',
   component: CompareEmpty,
   decorators: [
     (Story) => (

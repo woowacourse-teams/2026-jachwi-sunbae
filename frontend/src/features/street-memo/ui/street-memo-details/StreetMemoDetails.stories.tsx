@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-webpack5';
+import { fn } from 'storybook/test';
 
 import StreetMemoDetails from './StreetMemoDetails';
 
@@ -16,10 +17,17 @@ const meta = {
     },
     isRemoving: false,
     removeFailed: false,
-    onRemove: () => undefined,
+    onRemove: fn(),
   },
   argTypes: {
-    memo: { control: false },
+    memo: {
+      control: 'object',
+      description:
+        '보여줄 메모. preference(LIKE·DISLIKE)로 좋아요·싫어요가 갈리고, isMine이면 내 메모 표시와 지우기 버튼이 붙는다.',
+    },
+    isRemoving: { description: '지우는 중. 지우기 확인 버튼이 "지우는 중…"으로 바뀐다.' },
+    removeFailed: { description: '지우지 못했다는 안내를 보인다.' },
+    onRemove: { description: '지우기를 확인했을 때' },
   },
   decorators: [
     (Story) => (

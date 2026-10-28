@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-webpack5';
+import { fn } from 'storybook/test';
 
 import type { PropertyDetail } from '@/features/property/model/Property';
 
@@ -24,9 +25,12 @@ const property: PropertyDetail = {
 const meta = {
   title: '페이지/매물 상세/PropertyAdditionalInfoSection',
   component: PropertyAdditionalInfoSection,
+  argTypes: {
+    property: { control: 'object', description: '표본 매물 상세 데이터. JSON으로 값을 바꿔 볼 수 있다.' },
+  },
   args: {
     property,
-    onEdit: () => undefined,
+    onEdit: fn(),
   },
   parameters: {
     layout: 'fullscreen',

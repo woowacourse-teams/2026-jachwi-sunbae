@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-webpack5';
+import { fn } from 'storybook/test';
 
 import MapRadiusSelector from './MapRadiusSelector';
 
@@ -12,11 +13,14 @@ const meta: Meta<typeof MapRadiusSelector<number>> = {
       { value: 1000, label: '1km', isSelected: false },
       { value: 2000, label: '2km', isSelected: false },
     ],
-    onSelect: () => undefined,
+    onSelect: fn(),
     disabled: false,
   },
   argTypes: {
-    options: { control: false },
+    label: { description: '선택 묶음의 접근성 이름' },
+    options: { control: 'object', description: '반경 선택지. isSelected가 true인 칸이 눌린 모양이 된다.' },
+    disabled: { description: '모든 선택지를 막는다.' },
+    onSelect: { description: '선택지를 눌렀을 때. 누른 값을 넘긴다.' },
   },
   decorators: [
     (Story) => (

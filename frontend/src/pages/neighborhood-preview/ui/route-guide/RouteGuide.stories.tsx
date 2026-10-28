@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-webpack5';
+import { fn } from 'storybook/test';
 
 import type { CommuteRoute } from '@/features/map/api/commuteRouteApi';
 
@@ -44,7 +45,7 @@ const route: CommuteRoute = {
 };
 
 const meta = {
-  title: '페이지/동네 찾기/RouteGuide',
+  title: '페이지/동네 찾기/공통/RouteGuide',
   component: RouteGuide,
   decorators: [
     (Story) => (
@@ -53,11 +54,17 @@ const meta = {
       </div>
     ),
   ],
+  argTypes: {
+    route: { control: 'object', description: '구간별 대중교통 경로' },
+    isLoading: { description: '경로를 불러오는 중인지' },
+    error: { control: 'text', description: '경로를 못 찾았을 때 보여줄 문구' },
+    onRetry: { description: '경로 다시 불러오기' },
+  },
   args: {
     route,
     isLoading: false,
     error: null,
-    onRetry: () => undefined,
+    onRetry: fn(),
   },
 } satisfies Meta<typeof RouteGuide>;
 

@@ -43,6 +43,10 @@ const meta = {
     propertyId: 10,
     showHeading: true,
   },
+  argTypes: {
+    propertyId: { control: false, description: '매물 ID. 표본 사진 캐시가 10번 매물 기준이라 고정한다.' },
+    showHeading: { description: '위에 "사진 관리" 제목을 보인다. 끄면 화면 읽기 프로그램에만 읽힌다.' },
+  },
   decorators: [
     (Story) => (
       <div style={{ width: '24rem' }}>

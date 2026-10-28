@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-webpack5';
+import { fn } from 'storybook/test';
 
 import MapAddressSearchPanel from './MapAddressSearchPanel';
 
@@ -15,10 +16,15 @@ const meta = {
       </div>
     ),
   ],
+  argTypes: {
+    isOpen: { description: '검색 패널을 열지. 닫으면 아무것도 그리지 않는다.' },
+    onClose: { description: '패널 닫기' },
+    onSelect: { description: '검색 결과에서 주소 하나를 골랐을 때' },
+  },
   args: {
     isOpen: true,
-    onClose: () => undefined,
-    onSelect: () => undefined,
+    onClose: fn(),
+    onSelect: fn(),
   },
 } satisfies Meta<typeof MapAddressSearchPanel>;
 

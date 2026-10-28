@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-webpack5';
+import { fn } from 'storybook/test';
 
 import NotificationToggle from './NotificationToggle';
 
@@ -9,7 +10,13 @@ const meta = {
     checked: false,
     disabled: false,
     message: null,
-    onToggle: () => undefined,
+    onToggle: fn(),
+  },
+  argTypes: {
+    checked: { description: '알림을 켠 상태' },
+    disabled: { description: '바꾸는 중처럼 스위치를 막는다.' },
+    message: { control: 'text' },
+    onToggle: { description: '스위치를 눌렀을 때' },
   },
   decorators: [
     (Story) => (

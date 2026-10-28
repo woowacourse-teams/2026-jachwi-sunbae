@@ -1,4 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-webpack5';
+import type { ComponentType } from 'react';
+import { fn } from 'storybook/test';
 
 import type { CommuteRoute } from '@/features/map/api/commuteRouteApi';
 
@@ -140,9 +142,19 @@ const preview: NeighborhoodPreviewContext = {
   openListing: () => true,
 };
 
+/** 이 본문이 `preview`에서 읽는 값만 컨트롤로 펼친다. 나머지는 위 기본값을 그대로 쓴다. */
+type StoryArgs = Pick<
+  NeighborhoodPreviewContext,
+  'rentPeriod' | 'route' | 'isRouteLoading' | 'routeError' | 'retryRoute' | 'isPublicExplore' | 'openListing'
+> & { area: Area };
+
 const meta = {
-  title: '페이지/동네 찾기/RouteDetailBody',
-  component: RouteDetailBody,
+  title: '페이지/동네 찾기/공통/RouteDetailBody',
+  // 컨트롤은 preview를 펼친 값으로 받아 render에서 다시 묶는다. props 모양이 달라 타입만 맞춰 주고, 문서는 실제 컴포넌트에서 읽는다.
+  component: RouteDetailBody as unknown as ComponentType<StoryArgs>,
+  parameters: {
+    controls: { exclude: ['preview', 'className', 'ref'] },
+  },
   decorators: [
     (Story) => (
       <div style={{ width: '24rem' }}>
@@ -150,11 +162,30 @@ const meta = {
       </div>
     ),
   ],
-  args: {
-    preview,
-    area,
+  render: ({ area: storyArea, ...overrides }) => (
+    <RouteDetailBody area={storyArea} preview={{ ...preview, ...overrides }} />
+  ),
+  argTypes: {
+    area: { control: 'object', description: '선택한 동네. rent가 null이면 시세 대신 거래가 적다는 안내를 보여준다.' },
+    rentPeriod: { control: 'object', description: '시세를 낸 계약 기간. null이면 기간 줄을 숨긴다.' },
+    route: { control: 'object', description: '출발 정류장에서 목적지까지 대중교통 경로' },
+    isRouteLoading: { description: '경로를 불러오는 중인지' },
+    routeError: { control: 'text', description: '경로를 불러오지 못했을 때 문구' },
+    isPublicExplore: { description: '로그인 없이 둘러보는 중인지. `이 동네에서 본 방 기록하기` 버튼이 함께 나온다.' },
+    retryRoute: { description: '경로 다시 불러오기' },
+    openListing: { description: '매물 보기 열기' },
   },
-} satisfies Meta<typeof RouteDetailBody>;
+  args: {
+    area,
+    rentPeriod: preview.rentPeriod,
+    route,
+    isRouteLoading: false,
+    routeError: null,
+    isPublicExplore: false,
+    retryRoute: fn(noopRefetch),
+    openListing: fn(() => true),
+  },
+} satisfies Meta<StoryArgs>;
 
 export default meta;
 
@@ -164,18 +195,22 @@ export const Default: Story = {};
 
 export const RouteLoading: Story = {
   args: {
-    preview: { ...preview, route: undefined, isRouteLoading: true },
+    route: undefined,
+    isRouteLoading: true,
   },
 };
 
 export const WithoutRent: Story = {
   args: {
-    preview: {
-      ...preview,
-      rentPeriod: null,
-      routeError: '경로를 불러오지 못했어요. 다른 정류장을 선택해 보세요.',
-      route: undefined,
-    },
+    rentPeriod: null,
+    routeError: '경로를 불러오지 못했어요. 다른 정류장을 선택해 보세요.',
+    route: undefined,
     area: { ...area, rent: null },
+  },
+};
+
+export const PublicExplore: Story = {
+  args: {
+    isPublicExplore: true,
   },
 };

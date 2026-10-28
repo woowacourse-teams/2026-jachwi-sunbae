@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-webpack5';
+import { fn } from 'storybook/test';
 
 import type { NeighborhoodPreviewContext } from '../../hooks/useNeighborhoodPreview';
 import AreaSummary from './AreaSummary';
@@ -35,7 +36,7 @@ const area: Area = {
 };
 
 const meta = {
-  title: '페이지/동네 찾기/AreaSummary',
+  title: '페이지/동네 찾기/공통/AreaSummary',
   component: AreaSummary,
   decorators: [
     (Story) => (
@@ -44,11 +45,22 @@ const meta = {
       </div>
     ),
   ],
+  argTypes: {
+    area: { control: 'object', description: '선택한 동네. rent가 null이면 시세 대신 거래가 적다는 안내를 보여준다.' },
+    selectedStopId: {
+      control: 'select',
+      options: ['BS_TAGO_11440001', 'BS_TAGO_11440002', '선택 안 함'],
+      mapping: { '선택 안 함': null },
+      description: '경로를 보고 있는 출발 정류장',
+    },
+    onSelectStation: { description: '출발 정류장 고르기' },
+    onOpenListing: { description: '매물 보기 열기' },
+  },
   args: {
     area,
     selectedStopId: 'BS_TAGO_11440001',
-    onSelectStation: () => undefined,
-    onOpenListing: () => undefined,
+    onSelectStation: fn(),
+    onOpenListing: fn(),
   },
 } satisfies Meta<typeof AreaSummary>;
 

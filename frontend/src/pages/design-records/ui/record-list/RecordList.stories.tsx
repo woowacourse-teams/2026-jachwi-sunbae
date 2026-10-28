@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-webpack5';
+import { fn } from 'storybook/test';
 
 import type { PropertyChecklistProgress, PropertySummary } from '@/features/property/model/Property';
 
@@ -58,15 +59,17 @@ const records = [
 ].map(recordPresentation);
 
 const meta = {
-  title: '페이지/본 방 기록/RecordList',
+  title: '페이지/본 방 기록/공통/RecordList',
   component: RecordList,
   args: {
     records,
     district: '전체',
-    onNotice: () => undefined,
+    onNotice: fn(),
   },
   argTypes: {
     records: { control: false },
+    district: { description: '고른 동네. 빈 목록 안내 문구에 쓴다.' },
+    onNotice: { description: '삭제 등 안내 문구를 띄울 때 부른다.' },
   },
   decorators: [
     (Story) => (
@@ -92,6 +95,6 @@ export const DistrictFiltered: Story = {
 
 export const OpensInPlace: Story = {
   args: {
-    onOpen: () => undefined,
+    onOpen: fn(),
   },
 };

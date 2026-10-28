@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-webpack5';
+import { fn } from 'storybook/test';
 
 import type { ChecklistStage } from '@/features/checklist/model/checklistTypes';
 import type {
@@ -53,16 +54,19 @@ const property = (
 });
 
 const meta = {
-  title: '페이지/방 비교/ComparePropertyOption',
+  title: '페이지/방 비교/공통/ComparePropertyOption',
   component: ComparePropertyOption,
   args: {
     property: property(1, '역삼역 햇살 원룸', 10_000_000, 650_000, '직방', [8, 12]),
     isSelected: false,
     isDisabled: false,
-    onToggle: () => undefined,
+    onToggle: fn(),
   },
   argTypes: {
-    property: { control: false },
+    property: { control: 'object', description: '보여 줄 매물 요약(이름·보증금·월세·체크리스트 단계)' },
+    isSelected: { description: '비교 대상으로 골랐는지' },
+    isDisabled: { description: '최대 개수를 다 골라 더 고를 수 없는지' },
+    onToggle: { description: '항목을 누르면 부른다.' },
   },
   decorators: [
     (Story) => (

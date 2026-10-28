@@ -3,7 +3,7 @@ import type { Meta, StoryObj } from '@storybook/react-webpack5';
 import RecordListSkeleton from './RecordListSkeleton';
 
 const meta = {
-  title: '페이지/본 방 기록/RecordListSkeleton',
+  title: '페이지/본 방 기록/공통/RecordListSkeleton',
   component: RecordListSkeleton,
   decorators: [
     (Story) => (

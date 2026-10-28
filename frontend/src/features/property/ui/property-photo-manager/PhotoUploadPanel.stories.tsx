@@ -9,6 +9,13 @@ const meta = {
     propertyId: 10,
     currentPhotoCount: 3,
   },
+  argTypes: {
+    propertyId: { control: false, description: '사진을 올릴 매물 ID' },
+    currentPhotoCount: {
+      control: { type: 'range', min: 0, max: 30, step: 1 },
+      description: '이미 올린 사진 수. 30장이면 더 올릴 수 없다는 안내가 나온다.',
+    },
+  },
   decorators: [
     (Story) => (
       <div

@@ -1,8 +1,9 @@
 import type { Meta, StoryObj } from '@storybook/react-webpack5';
+import { fn } from 'storybook/test';
 
 import { checklistQueryKeys } from '../../api/checklistQueryKeys';
 import type { CheckItem, ChecklistDetail, ChecklistItem } from '../../model/checklistTypes';
-import useChecklistDraft from '../../model/useChecklistDraft';
+import useChecklistDraft, { type ChecklistDraftInput } from '../../model/useChecklistDraft';
 import ChecklistEditor from './ChecklistEditor';
 
 const activeItems: CheckItem[] = [
@@ -86,21 +87,14 @@ type EditorStoryProps = {
   submitLabel: string;
   isSubmitting: boolean;
   serverError?: string;
+  onOpenItemPicker: () => void;
+  onSubmit: (input: ChecklistDraftInput) => Promise<ChecklistDetail>;
 };
 
-const EditorStory = ({ initialName, initialItems, submitLabel, isSubmitting, serverError }: EditorStoryProps) => {
+/** 편집 상태(draft)는 Hook이 만들므로, Hook에 넣을 처음 값과 편집기 props를 args로 받는다. */
+const EditorStory = ({ initialName, initialItems, isSubmitting, ...editorProps }: EditorStoryProps) => {
   const draft = useChecklistDraft({ initialName, initialItems, isSubmitting });
-  return (
-    <ChecklistEditor
-      stage="ON_SITE"
-      draft={draft}
-      submitLabel={submitLabel}
-      isSubmitting={isSubmitting}
-      serverError={serverError}
-      onOpenItemPicker={() => undefined}
-      onSubmit={() => Promise.resolve(savedDetail)}
-    />
-  );
+  return <ChecklistEditor stage="ON_SITE" draft={draft} isSubmitting={isSubmitting} {...editorProps} />;
 };
 
 const meta = {
@@ -111,9 +105,20 @@ const meta = {
     initialItems: savedItems,
     submitLabel: '체크리스트 저장',
     isSubmitting: false,
+    onOpenItemPicker: fn(),
+    onSubmit: fn(() => Promise.resolve(savedDetail)),
   },
   argTypes: {
-    initialItems: { control: false },
+    initialName: { description: '편집 상태 Hook에 넣는 처음 이름. 저장할 때 함께 보낸다.' },
+    initialItems: {
+      control: 'object',
+      description: '편집 상태 Hook에 넣는 처음 항목. 비활성(active: false) 제공 항목은 안내가 붙는다.',
+    },
+    submitLabel: { description: '아래 저장 버튼 문구' },
+    isSubmitting: { description: '저장 중. 버튼이 로딩 상태가 되고 편집을 막는다.' },
+    serverError: { control: 'text', description: '저장 실패 안내. 비우면 그리지 않는다.' },
+    onOpenItemPicker: { description: '체크 항목 추가를 눌렀을 때' },
+    onSubmit: { description: '저장할 때. 이름과 항목 순서를 넘기고 저장된 체크리스트를 돌려받는다.' },
   },
   parameters: {
     layout: 'fullscreen',

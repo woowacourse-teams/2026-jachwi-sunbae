@@ -13,6 +13,12 @@ const memo: PropertyMemoDocument = {
 const meta = {
   title: '페이지/매물 상세/PropertyMemoSection',
   component: PropertyMemoSection,
+  argTypes: {
+    propertyId: {
+      control: false,
+      description: '메모를 읽고 저장할 매물 ID. 표본 메모 캐시는 10번에만 넣어 두었다.',
+    },
+  },
   args: {
     propertyId: 10,
   },

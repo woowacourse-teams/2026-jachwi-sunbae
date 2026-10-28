@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-webpack5';
+import { fn } from 'storybook/test';
 
 import type { NearbyPlace } from '@/features/map/model/Map';
 
@@ -47,6 +48,20 @@ const meta = {
       </div>
     ),
   ],
+  argTypes: {
+    eyebrow: { description: '제목 위 작은 글씨(매물·동네 이름)' },
+    heading: { description: '시트 제목' },
+    counts: { control: 'object', description: '분류별 시설 수' },
+    selectedCategories: {
+      control: 'check',
+      options: ['HOSPITAL', 'TRANSPORT', 'SCHOOL', 'CONVENIENCE', 'AGENCY'],
+      description: '켜 둔 분류. 목록에는 이 분류의 장소만 나온다.',
+    },
+    places: { control: 'object', description: '목록에 보여줄 장소' },
+    expanded: { description: '시트를 펼쳐 장소 목록까지 보여줄지' },
+    onToggleExpanded: { description: '시트 펼치기·접기' },
+    onToggleCategory: { description: '분류 칩 켜기·끄기' },
+  },
   args: {
     eyebrow: '햇살 좋은 원룸',
     heading: '선택한 매물 주변 2km',
@@ -54,8 +69,8 @@ const meta = {
     selectedCategories: ['HOSPITAL', 'CONVENIENCE', 'SCHOOL'],
     places,
     expanded: false,
-    onToggleExpanded: () => undefined,
-    onToggleCategory: () => undefined,
+    onToggleExpanded: fn(),
+    onToggleCategory: fn(),
   },
 } satisfies Meta<typeof MapNearbySheet>;
 

@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-webpack5';
+import { fn } from 'storybook/test';
 
 import type { PropertyDetail } from '@/features/property/model/Property';
 
@@ -26,13 +27,15 @@ const meta = {
   component: PropertyAdditionalInfoForm,
   argTypes: {
     layout: {
-      control: 'select',
+      control: 'inline-radio',
       options: ['page', 'sheet'],
     },
+    property: { control: 'object', description: '폼 초기값으로 쓰는 매물 상세 데이터. JSON으로 값을 바꿔 볼 수 있다.' },
+    onSaved: { description: '저장 요청이 성공하면 부른다.' },
   },
   args: {
     property,
-    onSaved: () => undefined,
+    onSaved: fn(),
   },
   parameters: {
     layout: 'fullscreen',

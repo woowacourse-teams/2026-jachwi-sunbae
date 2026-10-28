@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-webpack5';
+import { fn } from 'storybook/test';
 
 import MapPlaceDetailCard from './MapPlaceDetailCard';
 
@@ -15,6 +16,11 @@ const meta = {
       </div>
     ),
   ],
+  argTypes: {
+    place: { control: 'object', description: '지도에서 고른 장소. 주소가 비면 `주소 정보 없음`으로 보여준다.' },
+    avoidControls: { description: '지도 오른쪽 버튼과 겹치지 않게 카드를 비켜 놓을지' },
+    onClose: { description: '카드 닫기' },
+  },
   args: {
     place: {
       providerPlaceId: 'story-hospital-1',
@@ -26,7 +32,7 @@ const meta = {
       distanceMeters: 320,
     },
     avoidControls: false,
-    onClose: () => undefined,
+    onClose: fn(),
   },
 } satisfies Meta<typeof MapPlaceDetailCard>;
 
@@ -37,6 +43,11 @@ type Story = StoryObj<typeof meta>;
 export const Default: Story = {};
 
 export const BusStopWithoutAddress: Story = {
+  argTypes: {
+    place: { control: 'object', description: '지도에서 고른 장소. 주소가 비면 `주소 정보 없음`으로 보여준다.' },
+    avoidControls: { description: '지도 오른쪽 버튼과 겹치지 않게 카드를 비켜 놓을지' },
+    onClose: { description: '카드 닫기' },
+  },
   args: {
     place: {
       providerPlaceId: 'story-bus-1',

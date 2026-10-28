@@ -8,7 +8,8 @@ const meta = {
   title: '페이지/매물 상세/PropertyInfoSection',
   component: PropertyInfoSection,
   argTypes: {
-    children: { control: false },
+    title: { description: '섹션 제목.' },
+    children: { control: false, description: '섹션 안에 넣을 정보 행들.' },
     action: { control: false },
   },
   parameters: {

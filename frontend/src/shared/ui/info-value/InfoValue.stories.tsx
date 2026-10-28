@@ -5,6 +5,10 @@ import InfoValue from './InfoValue';
 const meta = {
   title: '공용/InfoValue',
   component: InfoValue,
+  argTypes: {
+    label: { description: '왼쪽 라벨' },
+    value: { description: '오른쪽 값. 비우면 `emptyText`를 흐리게 보여 준다.' },
+  },
   parameters: {
     layout: 'padded',
   },

@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-webpack5';
+import { fn } from 'storybook/test';
 
 import { ApiError } from '@/features/auth/api/apiClient';
 import type { useChecklistPreset } from '@/features/checklist/api/useChecklists';
@@ -14,7 +15,7 @@ const createPresetQuery = (overrides: Partial<Record<keyof ChecklistPresetQuery,
     isPending: true,
     isError: false,
     error: null,
-    refetch: () => Promise.resolve(),
+    refetch: fn(() => Promise.resolve()).mockName('preset.refetch'),
     ...overrides,
   }) as unknown as ChecklistPresetQuery;
 
@@ -22,7 +23,11 @@ const meta = {
   title: '페이지/체크리스트 만들기/ChecklistPresetStatus',
   component: ChecklistPresetStatus,
   argTypes: {
-    preset: { control: false },
+    preset: {
+      control: false,
+      description:
+        '프리셋 조회 결과(useChecklistPreset). 불러오는 중이면 안내를, 실패하면 오류와 다시 시도 버튼을 보여 준다.',
+    },
   },
   args: {
     preset: createPresetQuery({}),

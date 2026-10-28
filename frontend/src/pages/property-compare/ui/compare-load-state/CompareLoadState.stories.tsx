@@ -17,14 +17,33 @@ const queryState = (state: Partial<PropertyListQuery>) =>
     ...state,
   }) as unknown as PropertyListQuery;
 
+/** 컨트롤에서 고를 수 있는 조회 상태. 고른 이름이 위 표본으로 바뀌어 넘어간다. */
+const states = {
+  loading: queryState({ isPending: true }),
+  error: queryState({ isError: true, error: new ApiError({ kind: 'network' }) } as Partial<PropertyListQuery>),
+  serverError: queryState({
+    isError: true,
+    error: new ApiError({ kind: 'server', status: 500 }),
+  } as Partial<PropertyListQuery>),
+  done: queryState({}),
+};
+
+/** args에는 상태 이름을 넣고, 그리기 직전에 `mapping`이 실제 조회 결과로 바꾼다. */
+const stateArg = (name: keyof typeof states) => name as unknown as PropertyListQuery;
+
 const meta = {
-  title: '페이지/방 비교/CompareLoadState',
+  title: '페이지/방 비교/공통/CompareLoadState',
   component: CompareLoadState,
   args: {
-    properties: queryState({ isPending: true }),
+    properties: stateArg('loading'),
   },
   argTypes: {
-    properties: { control: false },
+    properties: {
+      control: 'select',
+      options: Object.keys(states),
+      mapping: states,
+      description: '매물 목록 조회 상태. 불러오는 중·실패가 아니면(done) 아무것도 그리지 않는다.',
+    },
   },
   decorators: [
     (Story) => (
@@ -43,6 +62,6 @@ export const Loading: Story = {};
 
 export const WithError: Story = {
   args: {
-    properties: queryState({ isError: true, error: new ApiError({ kind: 'network' }) } as Partial<PropertyListQuery>),
+    properties: stateArg('error'),
   },
 };

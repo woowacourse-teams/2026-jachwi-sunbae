@@ -14,6 +14,12 @@ const meta = {
       cautionCount: 2,
       unconfirmedCount: 3,
     },
+    compact: false,
+  },
+  argTypes: {
+    progress: { control: 'object', description: '괜찮음·주의·미확인 개수. 막대 비율과 범례 숫자가 바뀐다.' },
+    compact: { description: '카드 안처럼 좁은 자리에 쓰는 작은 모양' },
+    trailing: { control: false },
   },
 } satisfies Meta<typeof ChecklistProgressBar>;
 

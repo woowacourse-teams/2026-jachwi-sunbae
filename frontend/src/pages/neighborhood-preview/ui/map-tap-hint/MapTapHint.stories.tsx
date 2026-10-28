@@ -3,7 +3,7 @@ import type { Meta, StoryObj } from '@storybook/react-webpack5';
 import MapTapHint from './MapTapHint';
 
 const meta = {
-  title: '페이지/동네 찾기/MapTapHint',
+  title: '페이지/동네 찾기/공통/MapTapHint',
   component: MapTapHint,
   parameters: {
     layout: 'fullscreen',

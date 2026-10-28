@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-webpack5';
+import { fn } from 'storybook/test';
 
 import MapCategoryRail from './MapCategoryRail';
 
@@ -7,7 +8,17 @@ const meta = {
   component: MapCategoryRail,
   args: {
     selectedCategories: [],
-    onToggle: () => undefined,
+    showMemo: false,
+    onToggle: fn(),
+  },
+  argTypes: {
+    selectedCategories: {
+      control: 'check',
+      options: ['HOSPITAL', 'TRANSPORT', 'SCHOOL', 'CONVENIENCE', 'AGENCY', 'MEMO'],
+      description: '켜 둔 시설 종류',
+    },
+    counts: { control: 'object', description: '종류별 개수. 켜 둔 탭 옆에 숫자로 보인다.' },
+    onToggle: { description: '탭을 눌렀을 때. 누른 종류를 넘긴다.' },
   },
   decorators: [
     (Story) => (

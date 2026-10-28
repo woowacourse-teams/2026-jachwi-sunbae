@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-webpack5';
+import { fn } from 'storybook/test';
 
 import type { ChecklistSummary } from '@/features/checklist/model/checklistTypes';
 
@@ -27,12 +28,30 @@ const checklists: ChecklistSummary[] = [
 const meta = {
   title: '페이지/체크리스트 진행/ActiveChecklistOptions',
   component: ActiveChecklistOptions,
+  argTypes: {
+    items: {
+      control: 'object',
+      description: '사용자가 만든 체크리스트 목록. 기본 체크리스트는 이 목록과 별개로 항상 맨 위에 보인다.',
+    },
+    selectedId: {
+      control: 'select',
+      options: [SYSTEM_DEFAULT_ID, 3, 8, null],
+      description: `선택된 체크리스트 ID. ${SYSTEM_DEFAULT_ID}은 기본 체크리스트다.`,
+    },
+    newlyCreatedId: {
+      control: 'select',
+      options: [null, 3, 8],
+      description: '방금 만든 체크리스트 ID. 해당 항목에 "방금 생성" 표시가 붙는다.',
+    },
+    isDisabled: { description: '저장 중처럼 선택을 막아야 할 때 켠다.' },
+    onSelect: { description: '체크리스트를 고르면 그 ID로 부른다.' },
+  },
   args: {
     items: checklists,
     selectedId: SYSTEM_DEFAULT_ID,
     newlyCreatedId: null,
     isDisabled: false,
-    onSelect: () => undefined,
+    onSelect: fn(),
   },
   decorators: [
     (Story) => (

@@ -3,7 +3,7 @@ import type { Meta, StoryObj } from '@storybook/react-webpack5';
 import RecordCard from './RecordCard';
 
 const meta = {
-  title: '페이지/홈/RecordCard',
+  title: '페이지/홈/공통/RecordCard',
   component: RecordCard,
   decorators: [
     (Story) => (
