@@ -1,7 +1,8 @@
-import { css, cx } from '@emotion/css';
+import { css } from '@emotion/css';
 
 import DesktopHeader from '@/shared/ui/desktop-header/DesktopHeader';
 
+import GuideCard from '../ui/GuideCard';
 import HomeFeatures from '../ui/HomeFeatures';
 import HomeFooter from '../ui/HomeFooter';
 import QuickMenu from '../ui/QuickMenu';
@@ -11,10 +12,10 @@ import * as shared from '../HomePage.styles';
 
 /** 데스크탑 홈. 다른 화면과 같은 공용 헤더를 쓰고, 기능 카드 옆 오른쪽 열에 빠른 메뉴·최근 기록을 둔다. */
 const HomeDesktopPage = () => (
-  <main className={`${shared.page} ${styles.root}`}>
+  <main className={shared.page}>
     <DesktopHeader />
     <div className={styles.layout}>
-      <p className={`${shared.tip} ${styles.tip}`}>계약 전, 놓친 문제는 없는지 확인해보세요.</p>
+      <GuideCard className={styles.guide} />
       <HomeFeatures className={styles.features} />
       <div className={styles.side}>
         <QuickMenu />
@@ -28,14 +29,14 @@ const HomeDesktopPage = () => (
 
 const styles = {
   /*
-   * 데스크탑 홈: 공용 헤더 아래 본문을 64rem 안에 두고, 안내 문구는 두 열 전체 폭(2/3로 줄여 가운데),
+   * 데스크탑 홈: 공용 헤더 아래 본문을 64rem 안에 두고, 사용방법 카드는 두 열 전체 폭에,
    * 그 아래 왼쪽에 기능 카드, 오른쪽 19rem 열에 빠른 메뉴와 최근 기록을 둔다.
    */
   layout: css`
     label: HomeDesktopPage-layout;
     display: grid;
     grid-template-areas:
-      'tip tip'
+      'guide guide'
       'features side';
     grid-template-columns: minmax(0, 1fr) 19rem;
     align-items: start;
@@ -46,23 +47,10 @@ const styles = {
     box-sizing: border-box;
   `,
 
-  // 다른 요소의 선택자에서 `.HomeDesktopPage-root`로 가리킨다.
-  root: cx(
-    css`
-      label: HomeDesktopPage-root;
-    `,
-    'HomeDesktopPage-root',
-  ),
-
-  tip: css`
-    label: HomeDesktopPage-tip;
-
-    .HomeDesktopPage-root & {
-      grid-area: tip;
-      justify-self: center;
-      width: calc(100% * 2 / 3);
-      text-align: center;
-    }
+  guide: css`
+    label: HomeDesktopPage-guide;
+    grid-area: guide;
+    margin-top: 1.2rem;
   `,
 
   features: css`
@@ -70,7 +58,7 @@ const styles = {
     grid-area: features;
   `,
 
-  /* 오른쪽 열은 기능 카드 위쪽에 맞춰 시작하고, 타일은 사용방법 카드 높이를 넘지 않게 한다. */
+  /* 오른쪽 열은 기능 카드 위쪽에 맞춰 시작하고, 빠른 메뉴 타일은 5rem을 넘지 않게 한다. */
   side: css`
     label: HomeDesktopPage-side;
     grid-area: side;

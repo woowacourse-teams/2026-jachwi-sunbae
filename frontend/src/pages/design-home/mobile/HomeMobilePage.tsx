@@ -1,5 +1,6 @@
-import { css, cx } from '@emotion/css';
+import { css } from '@emotion/css';
 
+import GuideCard from '../ui/GuideCard';
 import HomeFeatures from '../ui/HomeFeatures';
 import HomeFooter from '../ui/HomeFooter';
 import HomeHeader from '../ui/HomeHeader';
@@ -8,12 +9,12 @@ import RecentRooms from '../ui/RecentRooms';
 
 import * as shared from '../HomePage.styles';
 
-/** 휴대폰·태블릿 홈. 홈 전용 헤더 아래에 안내·기능 카드·빠른 메뉴·최근 기록을 한 열로 쌓는다. */
+/** 휴대폰·태블릿 홈. 홈 전용 헤더 아래에 사용방법 카드·기능 카드·빠른 메뉴·최근 기록을 한 열로 쌓는다. */
 const HomeMobilePage = () => (
-  <main className={`${shared.page} ${styles.root}`}>
+  <main className={shared.page}>
     <HomeHeader className={styles.topBar} />
     <div className={styles.container}>
-      <p className={`${shared.tip} ${styles.tip}`}>계약 전, 놓친 문제는 없는지 확인해보세요.</p>
+      <GuideCard className={styles.guide} />
       <HomeFeatures />
     </div>
     <div className={styles.side}>
@@ -25,7 +26,7 @@ const HomeMobilePage = () => (
 );
 
 const styles = {
-  /* 휴대폰·태블릿 홈: 로고·안내·기능 카드·빠른 메뉴·최근 기록을 한 열(최대 45rem)로 쌓는다. */
+  /* 휴대폰·태블릿 홈: 로고·사용방법 카드·기능 카드·빠른 메뉴·최근 기록을 한 열(최대 45rem)로 쌓는다. */
   topBar: css`
     label: HomeMobilePage-topBar;
     width: min(100%, 45rem);
@@ -98,23 +99,9 @@ const styles = {
     }
   `,
 
-  // 다른 요소의 선택자에서 `.HomeMobilePage-root`로 가리킨다.
-  root: cx(
-    css`
-      label: HomeMobilePage-root;
-    `,
-    'HomeMobilePage-root',
-  ),
-
-  tip: css`
-    label: HomeMobilePage-tip;
-
-    /* 안내 문구는 데스크탑처럼 가운데 정렬해 창 폭을 오가도 글자 위치가 튀지 않게 한다. */
-    @media (min-width: 768px) {
-      .HomeMobilePage-root & {
-        text-align: center;
-      }
-    }
+  guide: css`
+    label: HomeMobilePage-guide;
+    margin-top: 1.2rem;
   `,
 };
 

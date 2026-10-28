@@ -56,7 +56,6 @@ it('기능 카드, 빠른 메뉴 2개와 내 매물로 만든 최근 기록을 �
   // 시설·거리 메모 지도는 매물 기록 안으로 합쳐 홈에 따로 두지 않는다.
   expect(screen.queryByRole('link', { name: /인프라 보는 지도/ })).not.toBeInTheDocument();
   expect(screen.getByRole('link', { name: '자취선배 홈 새로고침' })).toHaveAttribute('href', '/');
-  expect(screen.getByText('계약 전, 놓친 문제는 없는지 확인해보세요.').tagName).toBe('P');
 });
 
 it.each([
