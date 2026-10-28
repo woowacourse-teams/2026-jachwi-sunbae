@@ -1,5 +1,6 @@
 import { css, keyframes } from '@emotion/css';
 
+import { LogClick } from '@/shared/lib/analytics/logging';
 import ActionCard, { ActionCardIllustration } from '@/shared/ui/action-card/ActionCard';
 
 import guideGoose from '../assets/guide-goose.webp';
@@ -10,16 +11,21 @@ import guideGoose2x from '../assets/guide-goose@2x.webp';
  * `자취선배가 처음이라면?`을 작은 글씨로 제목 위에 두어 `사용방법 알아보기`로 이어 읽게 한다.
  */
 const GuideCard = ({ className }: { className?: string }) => (
-  <ActionCard
-    title="사용방법 알아보기"
-    description="자취선배가 처음이라면?"
-    aria-label="사용방법 알아보기"
-    to="/guide"
-    className={`${styles.guide} ${className ?? ''}`.trim()}
-    illustration={
-      <ActionCardIllustration src={guideGoose} src2x={guideGoose2x} width={68} height={100} placement="peek" />
-    }
-  />
+  // 카드가 링크라 클릭을 감싸는 span에서 받아 기록한다. span은 배치에 끼어들지 않는다.
+  <LogClick event="usage_guide_card_clicked" params={{ entrypoint: 'home' }}>
+    <span style={{ display: 'contents' }}>
+      <ActionCard
+        title="사용방법 알아보기"
+        description="자취선배가 처음이라면?"
+        aria-label="사용방법 알아보기"
+        to="/guide"
+        className={`${styles.guide} ${className ?? ''}`.trim()}
+        illustration={
+          <ActionCardIllustration src={guideGoose} src2x={guideGoose2x} width={68} height={100} placement="peek" />
+        }
+      />
+    </span>
+  </LogClick>
 );
 
 const guidePeekKeyframes = keyframes`
