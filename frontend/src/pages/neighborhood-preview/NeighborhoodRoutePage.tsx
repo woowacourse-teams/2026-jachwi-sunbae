@@ -11,7 +11,7 @@ import type { NeighborhoodPreviewContext } from './hooks/useNeighborhoodPreview'
 import ListingLink from './ui/listing-link/ListingLink';
 import RouteGuide from './ui/route-guide/RouteGuide';
 
-import styles from './NeighborhoodRoutePage.module.css';
+import * as styles from './NeighborhoodRoutePage.styles';
 
 const NeighborhoodRoutePage = () => {
   const preview = useOutletContext<NeighborhoodPreviewContext>();

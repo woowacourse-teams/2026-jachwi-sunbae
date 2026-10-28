@@ -13,7 +13,7 @@ import ContentState from '@/shared/ui/content-state/ContentState';
 import QueryState from '@/shared/ui/query-state/QueryState';
 import TopNavigation from '@/shared/ui/top-navigation/TopNavigation';
 
-import styles from './EditPropertyPage.module.css';
+import * as styles from './EditPropertyPage.styles';
 
 const backToList = <Link to="/">홈으로 돌아가기</Link>;
 const describeError = describePropertyLoadError('매물 정보를 불러오지 못했어요.');

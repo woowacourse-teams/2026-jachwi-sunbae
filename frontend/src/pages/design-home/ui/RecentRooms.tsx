@@ -6,7 +6,7 @@ import HorizontalRail from '@/shared/ui/horizontal-rail/HorizontalRail';
 import Icon from '@/shared/ui/icon/Icon';
 import RailCard from '@/shared/ui/rail-card/RailCard';
 
-import styles from './RecentRooms.module.css';
+import * as styles from './RecentRooms.styles';
 
 const RECENT_ROOM_LIMIT = 5;
 

@@ -2,7 +2,7 @@ import TextField from '@/shared/ui/text-field/TextField';
 
 import type { ChecklistFilter, CompareFilters as Filters, RentLimit } from '../../lib/compareFilters';
 
-import styles from './CompareFilters.module.css';
+import * as styles from './CompareFilters.styles';
 
 const RENT_OPTIONS: Array<{ label: string; value: RentLimit }> = [
   { label: '전체', value: null },

@@ -16,7 +16,7 @@ import TopNavigation from '@/shared/ui/top-navigation/TopNavigation';
 
 import ChecklistPresetStatus from './ui/checklist-preset-status/ChecklistPresetStatus';
 
-import styles from './CreateChecklistPage.module.css';
+import * as styles from './CreateChecklistPage.styles';
 
 /** 사용자 체크리스트는 현장 단계 하나뿐이라 단계 선택 화면 없이 바로 편집기로 들어간다. */
 const stage: ChecklistStage = USER_CHECKLIST_STAGE;

@@ -5,7 +5,6 @@ const zlib = require('node:zlib');
 const path = require('node:path');
 const packageVersion = require('../package.json').version;
 const HtmlWebpackPlugin = require('html-webpack-plugin');
-const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 const { BundleAnalyzerPlugin } = require('webpack-bundle-analyzer');
 const { createBoundaryAssets } = require('./admin-boundary-assets.cjs');
 
@@ -72,14 +71,6 @@ const createPlugins = ({ isProduction, buildEnvironment }) => [
     filename: 'index.html',
     inject: true,
   }),
-  ...(isProduction
-    ? [
-        new MiniCssExtractPlugin({
-          filename: '[name].[contenthash].css',
-          chunkFilename: '[name].[contenthash].css',
-        }),
-      ]
-    : []),
   new BundleAnalyzerPlugin({
     analyzerMode: process.env.ANALYZE === 'true' ? 'static' : 'disabled',
     reportFilename: 'bundle-report.html',

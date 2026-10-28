@@ -19,7 +19,7 @@ import type {
 import { propertyFieldErrorMessage, toPropertyInputDto, validatePropertyForm } from '../../lib/propertyForm';
 import MoneyField from '../money-field/MoneyField';
 
-import styles from './PropertyForm.module.css';
+import * as styles from './PropertyForm.styles';
 
 type PropertyFormProps = {
   initialValues: PropertyFormValues;

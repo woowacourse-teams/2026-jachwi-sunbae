@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 
 import Icon from '../icon/Icon';
 
-import styles from './TopNavigation.module.css';
+import * as styles from './TopNavigation.styles';
 
 type TopNavigationProps = {
   title: string;

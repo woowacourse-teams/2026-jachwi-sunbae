@@ -6,7 +6,7 @@ import { getPropertyErrorMessage } from '../../api/propertyErrorMessages';
 import { usePropertyPhotos } from '../../api/useProperties';
 import AuthenticatedPhoto from '../authenticated-photo/AuthenticatedPhoto';
 
-import styles from './PropertyPhotoViewer.module.css';
+import * as styles from './PropertyPhotoViewer.styles';
 
 type PropertyPhotoViewerProps = {
   propertyId: number;

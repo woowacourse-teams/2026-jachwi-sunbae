@@ -2,7 +2,7 @@ import type { MapAddress } from '@/features/map/model/Map';
 
 import type { LocationSelectionStatus } from '../../hooks/useLocationSelection';
 
-import styles from './LocationAddressSheet.module.css';
+import * as styles from './LocationAddressSheet.styles';
 
 type LocationAddressSheetProps = {
   selected: MapAddress;

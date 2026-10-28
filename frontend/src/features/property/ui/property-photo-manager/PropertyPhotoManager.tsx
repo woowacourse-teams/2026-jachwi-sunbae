@@ -5,7 +5,7 @@ import { usePropertyPhotos } from '../../api/useProperties';
 import PhotoUploadPanel from './PhotoUploadPanel';
 import PropertyPhotoCard from './PropertyPhotoCard';
 
-import styles from './PropertyPhotoManager.module.css';
+import * as styles from './PropertyPhotoManager.styles';
 
 type PropertyPhotoManagerProps = {
   propertyId: number;

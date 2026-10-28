@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 
 import TopNavigation from '@/shared/ui/top-navigation/TopNavigation';
 
-import styles from './ChecklistPageLayout.module.css';
+import * as styles from './ChecklistPageLayout.styles';
 
 type ChecklistPageLayoutProps = {
   title: string;

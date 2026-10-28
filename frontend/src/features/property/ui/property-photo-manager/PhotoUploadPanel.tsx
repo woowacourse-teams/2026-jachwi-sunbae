@@ -4,7 +4,7 @@ import Icon from '@/shared/ui/icon/Icon';
 
 import { acceptedPhotoTypes, MAX_PROPERTY_PHOTOS, usePhotoUploadQueue } from '../../model/usePhotoUploadQueue';
 
-import styles from './PhotoUploadPanel.module.css';
+import * as styles from './PhotoUploadPanel.styles';
 
 type PhotoUploadPanelProps = {
   propertyId: number;

@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 
 import Icon from '@/shared/ui/icon/Icon';
 
-import styles from './ListDetailLayout.module.css';
+import * as styles from './ListDetailLayout.styles';
 
 type ListDetailLayoutProps = {
   /** 왼쪽 칸. 목록이나 입력 폼을 둔다. */

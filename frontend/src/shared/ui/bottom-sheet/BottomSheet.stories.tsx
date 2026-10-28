@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react-webpack5';
 
 import BottomSheet from './BottomSheet';
 
-import styles from './BottomSheet.stories.module.css';
+import * as styles from './BottomSheet.stories.styles';
 
 const meta = {
   title: '공통/BottomSheet',

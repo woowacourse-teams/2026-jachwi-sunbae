@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 
-import styles from './ShortcutTile.module.css';
+import * as styles from './ShortcutTile.styles';
 
 type ShortcutTileBaseProps = {
   /** 타일 아래에 보이는 기능 이름. 두 줄을 넘으면 말줄임한다. */

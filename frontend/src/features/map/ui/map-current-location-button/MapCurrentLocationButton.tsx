@@ -1,6 +1,6 @@
 import Icon from '@/shared/ui/icon/Icon';
 
-import styles from './MapCurrentLocationButton.module.css';
+import * as styles from './MapCurrentLocationButton.styles';
 
 type MapCurrentLocationButtonProps = {
   isLocating?: boolean;

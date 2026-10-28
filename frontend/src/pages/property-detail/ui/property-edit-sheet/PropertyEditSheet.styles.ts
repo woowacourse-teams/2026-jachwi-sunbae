@@ -1,0 +1,56 @@
+import { css } from '@emotion/css';
+
+export const layer = css`
+  label: PropertyEditSheet-layer;
+  position: fixed;
+  inset: 0 0 var(--keyboard-inset, 0px);
+  z-index: 60;
+`;
+
+export const backdrop = css`
+  label: PropertyEditSheet-backdrop;
+  position: absolute;
+  inset: 0;
+  background: rgb(0 0 0 / 40%);
+`;
+
+/* BottomSheet는 부모 높이 기준으로 자리를 잡으므로, 화면 가운데 폭 제한 틀 안에 둔다. */
+export const frame = css`
+  label: PropertyEditSheet-frame;
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: min(100%, 30rem);
+  transform: translateX(-50%);
+  pointer-events: none;
+
+  & > section {
+    pointer-events: auto;
+  }
+`;
+
+/* 필터 시트처럼 입력을 위에, 저장 버튼을 시트 맨 아래에 둔다. */
+export const editor = css`
+  label: PropertyEditSheet-editor;
+  display: flex;
+  min-height: 100%;
+  flex-direction: column;
+  gap: 1.25rem;
+
+  & > * {
+    flex-shrink: 0;
+  }
+
+  & > button:last-child {
+    margin-top: auto;
+  }
+`;
+
+export const errorNotice = css`
+  label: PropertyEditSheet-errorNotice;
+  margin: 0;
+  color: var(--color-error);
+  font-size: 0.8rem;
+  font-weight: 600;
+`;

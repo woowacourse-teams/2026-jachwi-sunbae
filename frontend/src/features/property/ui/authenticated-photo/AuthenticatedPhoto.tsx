@@ -1,7 +1,7 @@
 import { getPropertyErrorMessage } from '../../api/propertyErrorMessages';
 import { useAuthenticatedPhoto } from '../../api/useAuthenticatedPhoto';
 
-import './AuthenticatedPhoto.css';
+import './AuthenticatedPhoto.styles';
 
 type AuthenticatedPhotoProps = {
   propertyId: number;

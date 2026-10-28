@@ -1,0 +1,10 @@
+import { css } from '@emotion/css';
+
+export const sample = css`
+  label: RailCard.stories-sample;
+  flex: 0 0 9rem;
+  padding: 0.8rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-tile);
+  background: var(--color-surface);
+`;

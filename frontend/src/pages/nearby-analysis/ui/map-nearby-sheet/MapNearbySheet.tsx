@@ -4,7 +4,7 @@ import { ALL_MAP_CATEGORIES, getMapCategoryLabel } from '@/features/map/lib/mapP
 import type { MapCategory, NearbyPlace } from '@/features/map/model/Map';
 import Icon from '@/shared/ui/icon/Icon';
 
-import styles from './MapNearbySheet.module.css';
+import * as styles from './MapNearbySheet.styles';
 
 type MapNearbySheetProps = {
   eyebrow?: string;

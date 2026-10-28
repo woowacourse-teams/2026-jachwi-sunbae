@@ -6,7 +6,7 @@ import SelectionControl from '@/shared/ui/selection-control/SelectionControl';
 
 import { StageOverview } from '../compare-property-option/ComparePropertyOption';
 
-import styles from './CompareTable.module.css';
+import * as styles from './CompareTable.styles';
 
 type CompareTableProps = {
   properties: PropertySummary[];

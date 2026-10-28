@@ -1,4 +1,4 @@
-import styles from './RecordDistricts.module.css';
+import * as styles from './RecordDistricts.styles';
 
 type RecordDistrictsProps = {
   districts: string[];

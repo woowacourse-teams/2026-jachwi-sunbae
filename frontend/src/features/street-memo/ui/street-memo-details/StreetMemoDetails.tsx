@@ -4,7 +4,7 @@ import { Button } from '@/shared/ui/button/Button';
 
 import { PREFERENCE_LABELS, type StreetMemo } from '../../model/StreetMemo';
 
-import styles from './StreetMemoDetails.module.css';
+import * as styles from './StreetMemoDetails.styles';
 
 type Props = {
   memo: StreetMemo;

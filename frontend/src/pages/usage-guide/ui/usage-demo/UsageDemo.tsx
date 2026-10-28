@@ -6,7 +6,7 @@ import Icon from '@/shared/ui/icon/Icon';
 
 import { trackUsageGuideDemoInteraction } from '../../lib/usageGuideAnalytics';
 
-import styles from './UsageDemo.module.css';
+import * as styles from './UsageDemo.styles';
 
 const SAMPLE_NAME = '학교 앞 원룸';
 const STEP_TICKS = 34;
@@ -61,7 +61,7 @@ const DemoStep = ({ index, title, caption, action, children }: StepProps) => {
   const { ref, isRevealed, progress } = useRevealProgress();
   return (
     <article ref={ref} className={styles.step} data-revealed={isRevealed} aria-labelledby={`usage-step-${index}`}>
-      <div className={styles.stepText}>
+      <div>
         <p className={styles.stepLabel}>
           <span>{index + 1}</span>
           <strong id={`usage-step-${index}`}>{title}</strong>

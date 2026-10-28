@@ -11,8 +11,8 @@ import CompareFilters from '../ui/compare-filters/CompareFilters';
 import CompareLoadState from '../ui/compare-load-state/CompareLoadState';
 import CompareTable from '../ui/compare-table/CompareTable';
 
-import shared from '../ComparePage.module.css';
-import styles from './CompareDesktopPage.module.css';
+import * as shared from '../ComparePage.styles';
+import * as styles from './CompareDesktopPage.styles';
 
 /**
  * 데스크탑 비교할 매물 선택. 화면 위 헤더는 공용 데스크탑 헤더가 대신하고,

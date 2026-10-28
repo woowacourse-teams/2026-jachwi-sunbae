@@ -38,7 +38,7 @@ import PropertyHeroPhoto from './ui/property-hero-photo/PropertyHeroPhoto';
 import PropertyMemoSection from './ui/property-memo-section/PropertyMemoSection';
 import PropertyPhotoSection from './ui/property-photo-section/PropertyPhotoSection';
 
-import styles from './PropertyDetailPage.module.css';
+import * as styles from './PropertyDetailPage.styles';
 
 const describeError = describePropertyLoadError('매물 상세를 불러오지 못했어요.');
 

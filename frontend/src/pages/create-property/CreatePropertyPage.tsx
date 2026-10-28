@@ -13,7 +13,7 @@ import TopNavigation from '@/shared/ui/top-navigation/TopNavigation';
 import { type PropertyCreationRouteState, usePropertyCreationForm } from './hooks/usePropertyCreationForm';
 import PropertyLocationPicker from './ui/property-location-picker/PropertyLocationPicker';
 
-import styles from './CreatePropertyPage.module.css';
+import * as styles from './CreatePropertyPage.styles';
 
 const stepNotice = (revealedStep: number, isReadyToSubmit: boolean) => {
   if (isReadyToSubmit) return '필수 정보를 모두 입력했다면 매물을 등록해 주세요.';

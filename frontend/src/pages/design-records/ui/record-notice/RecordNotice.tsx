@@ -1,6 +1,6 @@
 import Icon from '@/shared/ui/icon/Icon';
 
-import styles from './RecordNotice.module.css';
+import * as styles from './RecordNotice.styles';
 
 type RecordNoticeProps = {
   message: string;

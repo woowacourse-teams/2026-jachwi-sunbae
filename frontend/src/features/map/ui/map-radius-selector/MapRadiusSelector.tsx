@@ -1,4 +1,4 @@
-import styles from './MapRadiusSelector.module.css';
+import * as styles from './MapRadiusSelector.styles';
 
 export type MapRadiusOption<T extends number | string> = {
   value: T;

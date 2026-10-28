@@ -3,7 +3,7 @@ import { useId } from 'react';
 
 import Icon from '../icon/Icon';
 
-import styles from './SearchField.module.css';
+import * as styles from './SearchField.styles';
 
 type SearchFieldProps = {
   label: string;

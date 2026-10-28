@@ -20,7 +20,7 @@ import RecordLoadError from '../ui/record-load-error/RecordLoadError';
 import RecordNotice from '../ui/record-notice/RecordNotice';
 import RecordsMobileMap from './RecordsMobileMap';
 
-import styles from './RecordsMobilePage.module.css';
+import * as styles from './RecordsMobilePage.styles';
 
 /**
  * 휴대폰·태블릿 본 방 기록. 위에서 지도·리스트를 바꿔 보고, 지도 보기에서는 헤더와 동네 뱃지를 지도 위에 띄운다.
@@ -65,7 +65,7 @@ const RecordsMobilePage = () => {
                 <Link className={styles.back} to={HOME_PATH} aria-label="홈으로 돌아가기">
                   <Icon name="chevron-left" size={24} />
                 </Link>
-                <nav className={styles.switch} aria-label="기록 보기 방식">
+                <nav className={styles.viewSwitch} aria-label="기록 보기 방식">
                   <button type="button" aria-pressed={view === 'map'} onClick={() => setView('map')}>
                     <Icon name="map" size={17} /> 지도
                   </button>

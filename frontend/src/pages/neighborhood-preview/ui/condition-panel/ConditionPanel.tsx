@@ -3,7 +3,7 @@ import { Button } from '@/shared/ui/button/Button';
 import type { NeighborhoodPreviewContext } from '../../hooks/useNeighborhoodPreview';
 import { MINUTE_OPTIONS, RENT_OPTIONS } from '../../NeighborhoodFilters';
 
-import styles from './ConditionPanel.module.css';
+import * as styles from './ConditionPanel.styles';
 
 type ConditionPanelProps = {
   preview: Pick<

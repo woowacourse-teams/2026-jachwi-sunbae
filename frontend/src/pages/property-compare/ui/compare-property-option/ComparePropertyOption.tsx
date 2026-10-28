@@ -4,7 +4,7 @@ import AuthenticatedPhoto from '@/features/property/ui/authenticated-photo/Authe
 import mascotImage from '@/shared/assets/jachwi-sunbae-goose.webp';
 import SelectionControl from '@/shared/ui/selection-control/SelectionControl';
 
-import styles from './ComparePropertyOption.module.css';
+import * as styles from './ComparePropertyOption.styles';
 
 type ComparePropertyOptionProps = {
   property: PropertySummary;

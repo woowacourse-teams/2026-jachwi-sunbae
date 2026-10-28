@@ -9,7 +9,7 @@ import type { PropertyReturnPath } from '../../lib/propertyNavigation';
 import type { PropertySummary } from '../../model/Property';
 import AuthenticatedPhoto from '../authenticated-photo/AuthenticatedPhoto';
 
-import styles from './PropertyCard.module.css';
+import * as styles from './PropertyCard.styles';
 
 type PropertyPhotoThumbnailProps = {
   property: PropertySummary;

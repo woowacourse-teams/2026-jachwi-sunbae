@@ -4,7 +4,7 @@ import SearchField from '@/shared/ui/search-field/SearchField';
 
 import type { NeighborhoodPreviewContext } from '../../hooks/useNeighborhoodPreview';
 
-import shared from '../../NeighborhoodPreviewPage.module.css';
+import * as shared from '../../NeighborhoodPreviewPage.styles';
 
 type NeighborhoodMapSearchProps = {
   preview: Pick<

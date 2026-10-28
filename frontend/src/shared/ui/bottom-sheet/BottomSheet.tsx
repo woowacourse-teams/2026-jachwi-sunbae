@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 
 import Icon from '../icon/Icon';
 
-import styles from './BottomSheet.module.css';
+import * as styles from './BottomSheet.styles';
 
 type BottomSheetProps = {
   title: string;

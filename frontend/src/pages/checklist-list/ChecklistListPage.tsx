@@ -4,7 +4,7 @@ import TopNavigation from '@/shared/ui/top-navigation/TopNavigation';
 
 import ChecklistListContent from './ui/checklist-list-content/ChecklistListContent';
 
-import styles from './ChecklistListPage.module.css';
+import * as styles from './ChecklistListPage.styles';
 
 /** 사용자 체크리스트는 현장 단계 하나만 제공하므로 단계 선택 탭이 없다. */
 const ChecklistListPage = () => {

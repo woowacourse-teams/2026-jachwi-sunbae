@@ -14,7 +14,7 @@ import ContentState from '@/shared/ui/content-state/ContentState';
 import QueryState from '@/shared/ui/query-state/QueryState';
 import TopNavigation from '@/shared/ui/top-navigation/TopNavigation';
 
-import styles from './ChecklistDetailPage.module.css';
+import * as styles from './ChecklistDetailPage.styles';
 
 const backToList = <Link to="/checklists">내 체크리스트로 돌아가기</Link>;
 const describeError = describeChecklistLoadError('체크리스트를 불러오지 못했어요.', {

@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react-webpack5';
 
 import RankedCard from './RankedCard';
 
-import styles from './RankedCard.stories.module.css';
+import * as styles from './RankedCard.stories.styles';
 
 const meta = {
   title: '공통/RankedCard',

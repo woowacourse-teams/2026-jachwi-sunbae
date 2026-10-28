@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 
 import DetailSection from '@/shared/ui/detail-section/DetailSection';
 
-import styles from './PropertyInfoSection.module.css';
+import * as styles from './PropertyInfoSection.styles';
 
 type PropertyInfoSectionProps = {
   title: string;

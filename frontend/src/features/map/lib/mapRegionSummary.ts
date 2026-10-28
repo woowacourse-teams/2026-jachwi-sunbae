@@ -1,6 +1,6 @@
 import type { MapRegion } from '../model/MapCanvas';
 
-import styles from '../ui/map-canvas/MapRegionSummary.module.css';
+import * as styles from '../ui/map-canvas/MapRegionSummary.styles';
 
 export const regionLabelPosition = (region: MapRegion) => {
   if (region.center) return region.center;

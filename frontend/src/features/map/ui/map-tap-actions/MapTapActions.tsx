@@ -1,6 +1,6 @@
 import type { MapTapAction } from '../../model/MapCanvas';
 
-import styles from './MapTapActions.module.css';
+import * as styles from './MapTapActions.styles';
 
 type Props = {
   actions: MapTapAction[];

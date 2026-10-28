@@ -4,7 +4,7 @@ import recordHouse from '../assets/record-house.webp';
 import recordNotebook from '../assets/record-notebook.webp';
 import recordPencil from '../assets/record-pencil.webp';
 
-import styles from './RecordCard.module.css';
+import * as styles from './RecordCard.styles';
 
 /** 홈의 대표 카드. 노트·연필·집을 카드 가장자리에 걸쳐 두고, 처음 그려질 때와 마우스를 올릴 때 조금씩 움직인다. */
 const RecordCard = ({ className }: { className?: string }) => (

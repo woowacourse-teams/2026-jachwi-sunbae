@@ -16,7 +16,7 @@ import RecordLoadError from '../ui/record-load-error/RecordLoadError';
 import RecordNotice from '../ui/record-notice/RecordNotice';
 import RecordsDesktopMap from './RecordsDesktopMap';
 
-import styles from './RecordsDesktopPage.module.css';
+import * as styles from './RecordsDesktopPage.styles';
 
 /**
  * 데스크탑 본 방 기록. 왼쪽 칸에 리스트, 오른쪽에 지도를 두고 보기 전환 없이 함께 본다.

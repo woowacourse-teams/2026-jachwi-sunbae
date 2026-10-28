@@ -1,6 +1,6 @@
 import Icon from '@/shared/ui/icon/Icon';
 
-import styles from './LocationMapControls.module.css';
+import * as styles from './LocationMapControls.styles';
 
 type LocationMapControlsProps = {
   isLocating: boolean;

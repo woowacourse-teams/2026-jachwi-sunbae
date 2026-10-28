@@ -6,7 +6,7 @@ import { HOME_PATH, RECORDS_PATH } from '@/shared/lib/navigation/appPaths';
 
 import { useRegisterDesktopHeaderSlot } from './DesktopHeaderSlot';
 
-import styles from './DesktopHeader.module.css';
+import * as styles from './DesktopHeader.styles';
 
 /** 데스크탑 헤더에서 바로 옮겨 갈 수 있는 주요 화면. */
 const DESKTOP_NAV_ITEMS = [

@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 
 import type { PropertyChecklistProgress } from '@/features/property/model/Property';
 
-import styles from './ChecklistProgressBar.module.css';
+import * as styles from './ChecklistProgressBar.styles';
 
 type ChecklistProgressBarProps = {
   progress: Pick<PropertyChecklistProgress, 'goodCount' | 'cautionCount' | 'unconfirmedCount'>;
@@ -29,7 +29,7 @@ const ChecklistProgressBar = ({ progress, compact = false, trailing }: Checklist
       label: '미확인',
       count: progress.unconfirmedCount,
       segmentClassName: styles.unconfirmedSegment,
-      itemClassName: styles.unconfirmedResult,
+      itemClassName: undefined,
     },
   ];
 

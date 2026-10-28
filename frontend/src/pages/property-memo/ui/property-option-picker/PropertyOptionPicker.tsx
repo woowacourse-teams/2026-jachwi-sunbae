@@ -5,7 +5,7 @@ import SelectionControl from '@/shared/ui/selection-control/SelectionControl';
 
 import PropertyOptionIcon from './PropertyOptionIcon';
 
-import styles from './PropertyOptionPicker.module.css';
+import * as styles from './PropertyOptionPicker.styles';
 
 type PickerOption = { key: string; label: string };
 
@@ -50,9 +50,7 @@ const PropertyOptionPicker = ({
               onChange(checked ? selected.filter((item) => item !== option.key) : [...selected, option.key])
             }
           >
-            {variant === 'icon' && (
-              <PropertyOptionIcon option={option.key as PropertyOptionKey} className={styles.icon} />
-            )}
+            {variant === 'icon' && <PropertyOptionIcon option={option.key as PropertyOptionKey} />}
             <span className={styles.optionLabel}>{option.label}</span>
           </SelectionControl>
         );

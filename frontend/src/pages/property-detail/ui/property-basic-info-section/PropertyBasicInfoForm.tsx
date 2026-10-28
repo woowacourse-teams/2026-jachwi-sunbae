@@ -19,7 +19,7 @@ import { trackPostHogEvent } from '@/shared/lib/analytics/posthog';
 import { Button } from '@/shared/ui/button/Button';
 import TextField from '@/shared/ui/text-field/TextField';
 
-import styles from '../property-edit-sheet/PropertyEditSheet.module.css';
+import * as styles from '../property-edit-sheet/PropertyEditSheet.styles';
 
 type PropertyBasicInfoFormProps = {
   property: PropertyDetail;

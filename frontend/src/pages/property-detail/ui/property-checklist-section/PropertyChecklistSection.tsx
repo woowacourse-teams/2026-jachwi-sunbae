@@ -11,7 +11,7 @@ import { Button, ButtonLink } from '@/shared/ui/button/Button';
 import DetailSection from '@/shared/ui/detail-section/DetailSection';
 import Icon from '@/shared/ui/icon/Icon';
 
-import styles from './PropertyChecklistSection.module.css';
+import * as styles from './PropertyChecklistSection.styles';
 
 type PropertyChecklistSectionProps = {
   propertyId: number;

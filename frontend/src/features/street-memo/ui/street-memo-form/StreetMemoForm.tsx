@@ -5,7 +5,7 @@ import TextAreaField from '@/shared/ui/text-field/TextAreaField';
 
 import { PREFERENCE_LABELS, type StreetMemoPreference } from '../../model/StreetMemo';
 
-import styles from './StreetMemoForm.module.css';
+import * as styles from './StreetMemoForm.styles';
 
 type Props = {
   isSubmitting: boolean;

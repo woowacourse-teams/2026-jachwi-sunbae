@@ -10,7 +10,7 @@ import type { MapCanvasProps } from '../model/MapCanvas';
 import { createMapCoordinateMenuElement } from '../ui/map-coordinate-menu/MapCoordinateMenu';
 import { createMapMarkerElement } from '../ui/map-marker/MapMarkerView';
 
-import actionStyles from '../ui/map-canvas/MapCanvas.module.css';
+import * as actionStyles from '../ui/map-canvas/MapCanvas.styles';
 const EMPTY_MARKERS: NonNullable<MapCanvasProps['markers']> = [];
 const EMPTY_CIRCLES: NonNullable<MapCanvasProps['circles']> = [];
 const EMPTY_REGIONS: NonNullable<MapCanvasProps['regions']> = [];

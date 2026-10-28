@@ -5,7 +5,7 @@ import Toast from '@/shared/ui/toast/Toast';
 
 import type { RecordsAddKind } from '../hooks/useRecordsAddMode';
 
-import styles from './RecordsAddBar.module.css';
+import * as styles from './RecordsAddBar.styles';
 
 type Props = {
   kind: RecordsAddKind;

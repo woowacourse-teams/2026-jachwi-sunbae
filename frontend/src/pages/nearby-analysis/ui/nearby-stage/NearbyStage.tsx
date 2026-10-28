@@ -14,7 +14,7 @@ import MapNearbySheet from '../map-nearby-sheet/MapNearbySheet';
 import MapPlaceDetailCard from '../map-place-detail-card/MapPlaceDetailCard';
 import NearbyMapNotice from '../nearby-map-notice/NearbyMapNotice';
 
-import styles from './NearbyStage.module.css';
+import * as styles from './NearbyStage.styles';
 
 const EMPTY_COUNTS = { HOSPITAL: 0, TRANSPORT: 0, SCHOOL: 0, CONVENIENCE: 0, AGENCY: 0 };
 

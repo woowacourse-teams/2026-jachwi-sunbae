@@ -1,7 +1,7 @@
 import type { InputHTMLAttributes, ReactNode } from 'react';
 import { useId } from 'react';
 
-import styles from './TextField.module.css';
+import * as styles from './TextField.styles';
 
 type TextFieldProps = Omit<InputHTMLAttributes<HTMLInputElement>, 'children'> & {
   label: string;

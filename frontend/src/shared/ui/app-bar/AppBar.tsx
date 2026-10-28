@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom';
 
 import Icon from '../icon/Icon';
 
-import styles from './AppBar.module.css';
+import * as styles from './AppBar.styles';
 
 type AppBarProps = {
   /** 가운데에 둘 화면 제목. 없으면 뒤로 가기만 둔다. */

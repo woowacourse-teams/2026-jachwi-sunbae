@@ -8,8 +8,8 @@ import { useRemovePropertyPhoto, useSetRepresentativePropertyPhoto } from '../..
 import type { PropertyPhoto } from '../../model/Property';
 import AuthenticatedPhoto from '../authenticated-photo/AuthenticatedPhoto';
 
-import styles from './PropertyPhotoCard.module.css';
-import dialogStyles from '@/shared/ui/confirm-dialog/ConfirmDialog.module.css';
+import * as styles from './PropertyPhotoCard.styles';
+import * as dialogStyles from '@/shared/ui/confirm-dialog/ConfirmDialog.styles';
 
 type PropertyPhotoCardProps = {
   propertyId: number;

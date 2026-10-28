@@ -3,7 +3,7 @@ import type { usePropertyList } from '@/features/property/api/useProperties';
 import { Button } from '@/shared/ui/button/Button';
 import InlineNotice from '@/shared/ui/inline-notice/InlineNotice';
 
-import styles from './CompareLoadState.module.css';
+import * as styles from './CompareLoadState.styles';
 
 /** 비교할 매물을 불러오는 중이거나 불러오지 못했을 때의 안내. 둘 다 아니면 그리지 않는다. */
 const CompareLoadState = ({ properties }: { properties: ReturnType<typeof usePropertyList> }) => {

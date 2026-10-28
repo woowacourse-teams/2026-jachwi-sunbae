@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 
 import Icon from '../icon/Icon';
 
-import styles from './TopNavigationMenu.module.css';
+import * as styles from './TopNavigationMenu.styles';
 
 type TopNavigationMenuProps = {
   children: ReactNode;

@@ -1,4 +1,4 @@
-import styles from './PageHeading.module.css';
+import * as styles from './PageHeading.styles';
 
 type PageHeadingProps = {
   title: string;

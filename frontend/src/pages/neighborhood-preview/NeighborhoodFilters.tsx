@@ -5,7 +5,7 @@ import WheelPicker from '@/shared/ui/wheel-picker/WheelPicker';
 
 import type { NeighborhoodPreviewContext } from './hooks/useNeighborhoodPreview';
 
-import styles from './NeighborhoodFilters.module.css';
+import * as styles from './NeighborhoodFilters.styles';
 
 type FilterValues = Pick<
   NeighborhoodPreviewContext,

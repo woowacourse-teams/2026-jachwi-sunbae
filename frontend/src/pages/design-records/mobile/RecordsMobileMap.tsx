@@ -12,7 +12,7 @@ import RecordsAddBar from './RecordsAddBar';
 import RecordsAddButton from './RecordsAddButton';
 import RecordsSelectedCard from './RecordsSelectedCard';
 
-import styles from './RecordsMobileMap.module.css';
+import * as styles from './RecordsMobileMap.styles';
 
 const ADD_POINT_MARKER_ID = 'add-point';
 

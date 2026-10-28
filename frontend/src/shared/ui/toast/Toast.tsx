@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 
-import styles from './Toast.module.css';
+import * as styles from './Toast.styles';
 
 type ToastProps = {
   title: string;

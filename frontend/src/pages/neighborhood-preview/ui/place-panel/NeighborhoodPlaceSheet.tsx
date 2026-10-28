@@ -7,7 +7,7 @@ import { type NeighborhoodPlace, placeTitle } from '../../hooks/useNeighborhoodP
 import type { NeighborhoodPreviewContext } from '../../hooks/useNeighborhoodPreview';
 import PlaceDetails from './PlaceDetails';
 
-import styles from './NeighborhoodPlacePanel.module.css';
+import * as styles from './NeighborhoodPlacePanel.styles';
 
 type Props = {
   place: NeighborhoodPlace;

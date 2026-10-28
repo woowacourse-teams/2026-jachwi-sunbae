@@ -1,7 +1,7 @@
 import { MAP_CATEGORY_OPTIONS } from '../../lib/mapPresentation';
 import type { MapCategory } from '../../model/Map';
 
-import styles from './MapCategoryRail.module.css';
+import * as styles from './MapCategoryRail.styles';
 
 type MapCategoryRailProps = {
   selectedCategories: MapCategory[];

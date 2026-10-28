@@ -3,7 +3,7 @@ import type { ReactNode } from 'react';
 import type { IconName } from '../icon/Icon';
 import Icon from '../icon/Icon';
 
-import styles from './EmptyState.module.css';
+import * as styles from './EmptyState.styles';
 
 type EmptyStateProps = {
   title: string;
@@ -14,7 +14,10 @@ type EmptyStateProps = {
 };
 
 const EmptyState = ({ title, description, action, icon = 'inbox', variant = 'card' }: EmptyStateProps) => (
-  <section className={`${styles.emptyState} ${styles[variant]}`} data-variant={variant}>
+  <section
+    className={variant === 'plain' ? `${styles.emptyState} ${styles.plain}` : styles.emptyState}
+    data-variant={variant}
+  >
     <span className={styles.icon} aria-hidden="true">
       <Icon name={icon} size={26} />
     </span>

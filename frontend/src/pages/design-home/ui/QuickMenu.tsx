@@ -3,7 +3,7 @@ import ShortcutTile from '@/shared/ui/shortcut-tile/ShortcutTile';
 import iconChecklist from '../assets/icon-checklist.webp';
 import iconCompare from '../assets/icon-compare.webp';
 
-import styles from './QuickMenu.module.css';
+import * as styles from './QuickMenu.styles';
 
 const QUICK_MENU_ITEMS = [
   { label: '체크리스트', to: '/checklists', icon: iconChecklist },

@@ -4,7 +4,7 @@ import type { CSSProperties } from 'react';
 import type { MapMarker } from '../../model/Map';
 import MapMarkerView from './MapMarkerView';
 
-import styles from './MapMarkerView.stories.module.css';
+import * as styles from './MapMarkerView.stories.styles';
 
 const sampleMarkers: Array<{ name: string; marker: MapMarker }> = [
   {

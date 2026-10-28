@@ -12,7 +12,7 @@ import TextField from '@/shared/ui/text-field/TextField';
 
 import PropertyOptionPicker from '../property-option-picker/PropertyOptionPicker';
 
-import styles from './PropertyAdditionalInfoForm.module.css';
+import * as styles from './PropertyAdditionalInfoForm.styles';
 
 type AdditionalInfoValues = {
   availableMoveInDate: string;

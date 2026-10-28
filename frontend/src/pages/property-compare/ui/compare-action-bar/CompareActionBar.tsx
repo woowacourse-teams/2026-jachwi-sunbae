@@ -2,7 +2,7 @@ import { Button } from '@/shared/ui/button/Button';
 
 import { MIN_SELECTION } from '../../hooks/usePropertyComparison';
 
-import styles from './CompareActionBar.module.css';
+import * as styles from './CompareActionBar.styles';
 
 type CompareActionBarProps = {
   selectedCount: number;

@@ -1,0 +1,79 @@
+import { css, keyframes } from '@emotion/css';
+
+const guidePeekKeyframes = keyframes`
+  from {
+    transform: translateY(110%);
+  }
+  to {
+    transform: translateY(0);
+  }
+`;
+
+/* 왼쪽 매물 기록 카드와 오른쪽 사용방법·동네 찾기 카드 묶음은 위아래 끝을 맞춰 같은 높이로 둔다. */
+/* 휴대폰 카드 글자는 기본보다 키우고, 대표 카드 글자는 조금 아래로 내린다. */
+export const features = css`
+  label: HomeFeatures-features;
+  --action-card-title-size: 1.2rem;
+  --action-card-description-size: 0.78rem;
+  --action-card-text-inset: 1.25rem;
+  --action-card-large-text-inset: 1.5rem;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.65rem;
+  /* 오른쪽 열이 사용방법·동네 찾기 두 장이라, 세 장일 때(27rem)보다 낮춰 카드가 길게 늘어나지 않게 한다. */
+  height: 19rem;
+  margin-top: 1.4rem;
+
+  @media (max-width: 360px) {
+    height: 17rem;
+  }
+
+  @media (min-width: 768px) {
+    --action-card-title-size: 1.5rem;
+    --action-card-description-size: 0.95rem;
+    --action-card-large-title-size: 2.3rem;
+    --action-card-large-description-size: 1.05rem;
+    --action-card-text-inset: 1.6rem;
+    --action-card-large-text-inset: 1.6rem;
+    height: 30rem;
+  }
+`;
+
+export const column = css`
+  label: HomeFeatures-column;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  min-width: 0;
+  min-height: 0;
+`;
+
+export const fill = css`
+  label: HomeFeatures-fill;
+  flex: 1;
+`;
+
+export const guide = css`
+  label: HomeFeatures-guide;
+  flex: 0 0 5.2rem;
+
+  /* 사용방법 카드의 오리는 처음 그려질 때 카드 아래 밖에 있다가 고개를 내밀며 들어온다. */
+  & img {
+    animation: ${guidePeekKeyframes} 560ms cubic-bezier(0.22, 1, 0.36, 1) 300ms 1 backwards;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    & img {
+      animation: none;
+    }
+  }
+`;
+
+export const mobileBreak = css`
+  label: HomeFeatures-mobileBreak;
+
+  /* 태블릿 너비부터는 카드가 넓어지므로 카드 글자를 키워 작아 보이지 않게 하고, 사용방법 제목은 한 줄로 둔다. */
+  @media (min-width: 768px) {
+    display: none;
+  }
+`;

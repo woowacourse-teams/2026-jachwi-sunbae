@@ -1,6 +1,6 @@
 import type { KeyboardEventHandler, PointerEventHandler, ReactNode, Ref } from 'react';
 
-import styles from './ChecklistItemRow.module.css';
+import * as styles from './ChecklistItemRow.styles';
 
 type ChecklistItemRowProps = {
   itemKey: string;

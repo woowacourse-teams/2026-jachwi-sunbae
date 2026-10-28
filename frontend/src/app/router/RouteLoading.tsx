@@ -1,6 +1,6 @@
 import ProgressCircle from '@/shared/ui/progress-circle/ProgressCircle';
 
-import styles from './RouteLoading.module.css';
+import * as styles from './RouteLoading.styles';
 
 const RouteLoading = () => (
   <div className={styles.loading}>

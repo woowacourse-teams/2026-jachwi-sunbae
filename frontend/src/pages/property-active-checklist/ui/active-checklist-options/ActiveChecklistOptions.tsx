@@ -3,7 +3,7 @@ import SelectionControl from '@/shared/ui/selection-control/SelectionControl';
 
 import { SYSTEM_DEFAULT_ID } from '../../hooks/useChecklistSelection';
 
-import styles from './ActiveChecklistOptions.module.css';
+import * as styles from './ActiveChecklistOptions.styles';
 
 type ActiveChecklistOptionsProps = {
   items: ChecklistSummary[];

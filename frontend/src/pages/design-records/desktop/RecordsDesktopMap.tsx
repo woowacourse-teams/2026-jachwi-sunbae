@@ -9,7 +9,7 @@ import type { RecordsState } from '../hooks/useRecords';
 import type { RecordsMapLayers } from '../hooks/useRecordsMapLayers';
 import { recordsMapHint } from '../model/recordPresentation';
 
-import styles from './RecordsDesktopMap.module.css';
+import * as styles from './RecordsDesktopMap.styles';
 
 type Props = {
   records: RecordsState;

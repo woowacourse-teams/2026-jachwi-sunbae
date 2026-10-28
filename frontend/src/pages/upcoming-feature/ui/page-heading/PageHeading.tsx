@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 
-import styles from './PageHeading.module.css';
+import * as styles from './PageHeading.styles';
 
 type PageHeadingProps = {
   title: string;

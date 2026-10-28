@@ -1,8 +1,8 @@
 import type { Preview } from '@storybook/react-webpack5';
 
-import '../src/app/styles/global.css';
-import '../src/app/styles/tokens.css';
-import '../src/app/styles/utilities.css';
+import '../src/app/styles/global.styles';
+import '../src/app/styles/tokens.styles';
+import '../src/app/styles/utilities.styles';
 
 const preview: Preview = {
   parameters: {

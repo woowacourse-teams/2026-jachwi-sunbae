@@ -1,6 +1,6 @@
 import type { MapCoordinateMenu as MapCoordinateMenuModel } from '../../model/MapCanvas';
 
-import styles from './MapCoordinateMenu.module.css';
+import * as styles from './MapCoordinateMenu.styles';
 
 type Props = {
   menu: MapCoordinateMenuModel;

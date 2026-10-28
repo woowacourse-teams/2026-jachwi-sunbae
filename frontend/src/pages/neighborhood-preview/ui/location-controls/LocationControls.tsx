@@ -2,7 +2,7 @@ import MapCurrentLocationButton from '@/features/map/ui/map-current-location-but
 
 import type { NeighborhoodPreviewContext } from '../../hooks/useNeighborhoodPreview';
 
-import shared from '../../NeighborhoodPreviewPage.module.css';
+import * as shared from '../../NeighborhoodPreviewPage.styles';
 
 type LocationControlsProps = {
   preview: Pick<NeighborhoodPreviewContext, 'isLocating' | 'locationError' | 'moveToCurrentLocation'>;

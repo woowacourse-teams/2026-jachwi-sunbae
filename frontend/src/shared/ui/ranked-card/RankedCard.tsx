@@ -6,7 +6,7 @@ import rank5 from '@/shared/assets/illustrations/rank-5.webp';
 
 import RailCard from '../rail-card/RailCard';
 
-import styles from './RankedCard.module.css';
+import * as styles from './RankedCard.styles';
 
 export type CardRank = 1 | 2 | 3 | 4 | 5;
 

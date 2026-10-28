@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 
-import styles from './ActionCard.module.css';
+import * as styles from './ActionCard.styles';
 
 /** 카드 바탕색과 글자색. `brand`는 대표 행동, `informative`는 안내, `neutral`은 일반 기능에 쓴다. */
 export type ActionCardTone = 'neutral' | 'brand' | 'informative';
@@ -40,7 +40,7 @@ const ActionCard = ({
   to,
   onClick,
 }: ActionCardProps) => {
-  const classes = [styles.card, styles[tone], styles[size], className].filter(Boolean).join(' ');
+  const classes = [styles.card, styles[tone], size === 'large' && styles.large, className].filter(Boolean).join(' ');
   const content = (
     <>
       <span className={styles.text}>

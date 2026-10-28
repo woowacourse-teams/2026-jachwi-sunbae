@@ -6,7 +6,7 @@ import SearchField from '@/shared/ui/search-field/SearchField';
 import type { AddressSearchStatus } from '../../hooks/useAddressSearch';
 import type { PropertyLocationStatus } from '../../hooks/usePropertyLocation';
 
-import styles from './PropertyLocationPicker.module.css';
+import * as styles from './PropertyLocationPicker.styles';
 
 type PropertyLocationPickerProps = {
   location: {

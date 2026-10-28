@@ -14,7 +14,7 @@ import LocationAddressSheet from './ui/location-address-sheet/LocationAddressShe
 import LocationMapControls from './ui/location-map-controls/LocationMapControls';
 import MapAddressSearchPanel from './ui/map-address-search-panel/MapAddressSearchPanel';
 
-import styles from './MapLocationSelectPage.module.css';
+import * as styles from './MapLocationSelectPage.styles';
 
 type RouteState = { returnTo?: string; initialLocation?: MapAddress; registrationDraft?: PropertyInputDto };
 

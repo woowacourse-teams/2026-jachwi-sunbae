@@ -6,7 +6,7 @@ import AddressSearchResults from '@/features/map/ui/address-search-results/Addre
 import Icon from '@/shared/ui/icon/Icon';
 import SearchField from '@/shared/ui/search-field/SearchField';
 
-import styles from './MapAddressSearchPanel.module.css';
+import * as styles from './MapAddressSearchPanel.styles';
 
 type MapAddressSearchPanelProps = {
   isOpen: boolean;

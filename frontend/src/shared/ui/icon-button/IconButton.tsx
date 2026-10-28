@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 
-import styles from './IconButton.module.css';
+import * as styles from './IconButton.styles';
 
 type IconButtonBaseProps = {
   label: string;

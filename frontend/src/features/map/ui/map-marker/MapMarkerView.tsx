@@ -5,7 +5,7 @@ import logoImage from '@/shared/assets/jachwi-sunbae-goose.webp';
 import type { MapMarker } from '../../model/Map';
 import MapCategoryIcon from '../map-category-icon/MapCategoryIcon';
 
-import styles from './MapMarkerView.module.css';
+import * as styles from './MapMarkerView.styles';
 
 type MapMarkerViewProps = {
   marker: MapMarker;

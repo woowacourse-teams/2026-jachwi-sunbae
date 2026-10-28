@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import iconProfile from '@/shared/assets/icon-profile.webp';
 import logo from '@/shared/assets/jachwi-sunbae-goose.webp';
 
-import styles from './HomeHeader.module.css';
+import * as styles from './HomeHeader.styles';
 
 const HomeHeader = ({ className }: { className?: string }) => {
   return (

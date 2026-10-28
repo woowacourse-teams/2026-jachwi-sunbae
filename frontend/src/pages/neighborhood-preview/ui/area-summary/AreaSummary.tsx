@@ -4,7 +4,7 @@ import type { AreaStation } from '../../hooks/useNeighborhoodPlaces';
 import type { NeighborhoodPreviewContext } from '../../hooks/useNeighborhoodPreview';
 import ListingLink from '../listing-link/ListingLink';
 
-import styles from './AreaSummary.module.css';
+import * as styles from './AreaSummary.styles';
 
 type Area = NonNullable<NeighborhoodPreviewContext['selected']>;
 type Props = {

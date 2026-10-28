@@ -6,9 +6,9 @@ import PostHogTracker from './analytics/PostHogTracker';
 import AppProviders from './providers/AppProviders';
 import AppRoutes from './router/AppRoutes';
 
-import './styles/tokens.css';
-import './styles/global.css';
-import './styles/utilities.css';
+import './styles/tokens.styles';
+import './styles/global.styles';
+import './styles/utilities.styles';
 
 type AppProps = {
   config?: PublicConfig;

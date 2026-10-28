@@ -2,7 +2,7 @@ import IconBase from '@/shared/ui/icon/IconBase';
 
 import type { WeatherHour } from '../../model/weather';
 
-import styles from './WeatherSymbol.module.css';
+import * as styles from './WeatherSymbol.styles';
 
 type WeatherSymbolProps = { hour: Pick<WeatherHour, 'sky' | 'pty'>; size?: number };
 

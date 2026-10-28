@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 
 import errorIllustration from '@/shared/assets/empty-property.jpg';
 
-import styles from './StatusPanel.module.css';
+import * as styles from './StatusPanel.styles';
 
 type StatusPanelProps = {
   title: string;
@@ -14,7 +14,7 @@ type StatusPanelProps = {
 
 const toneClassNames: Record<NonNullable<StatusPanelProps['tone']>, string> = {
   neutral: '',
-  error: styles.error,
+  error: '',
   success: styles.success,
 };
 

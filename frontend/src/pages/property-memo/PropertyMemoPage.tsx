@@ -8,7 +8,7 @@ import TopNavigation from '@/shared/ui/top-navigation/TopNavigation';
 
 import PropertyAdditionalInfoForm from './ui/property-additional-info-form/PropertyAdditionalInfoForm';
 
-import styles from './PropertyMemoPage.module.css';
+import * as styles from './PropertyMemoPage.styles';
 
 const PropertyMemoPage = () => {
   const propertyId = parsePositiveId(useParams().propertyId);

@@ -1,6 +1,6 @@
 import { Outlet } from 'react-router-dom';
 
-import styles from './PublicExploreLayout.module.css';
+import * as styles from './PublicExploreLayout.styles';
 
 const PublicExploreLayout = () => (
   <div className={styles.layout}>

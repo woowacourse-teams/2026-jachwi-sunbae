@@ -5,7 +5,7 @@ import { Link } from 'react-router-dom';
 import type { IconProps } from '../icon/IconBase';
 import { CloseIcon, MapIcon, PlusIcon } from '../icon/icons';
 
-import styles from './PageAction.module.css';
+import * as styles from './PageAction.styles';
 
 type PageActionProps = {
   children: ReactNode;

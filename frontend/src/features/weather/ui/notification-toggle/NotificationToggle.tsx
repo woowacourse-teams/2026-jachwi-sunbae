@@ -1,6 +1,6 @@
 import { useId } from 'react';
 
-import styles from './NotificationToggle.module.css';
+import * as styles from './NotificationToggle.styles';
 
 type NotificationToggleProps = {
   checked: boolean;

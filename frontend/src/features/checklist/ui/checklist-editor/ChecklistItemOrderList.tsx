@@ -3,7 +3,7 @@ import ChecklistItemRow from '@/features/checklist/ui/checklist-item-row/Checkli
 import type { ChecklistEditorItem } from '../../model/ChecklistEditor';
 import usePointerReorder from './usePointerReorder';
 
-import styles from './ChecklistEditor.module.css';
+import * as styles from './ChecklistEditor.styles';
 
 type ChecklistItemOrderListProps = {
   items: ChecklistEditorItem[];

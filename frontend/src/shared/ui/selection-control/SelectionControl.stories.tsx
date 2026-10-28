@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react-webpack5';
 
 import SelectionControl from './SelectionControl';
 
-import styles from './SelectionControl.stories.module.css';
+import * as styles from './SelectionControl.stories.styles';
 
 const meta = {
   title: '공통/폼 선택 동작/SelectionControl',

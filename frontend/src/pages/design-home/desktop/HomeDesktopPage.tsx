@@ -5,8 +5,8 @@ import HomeFooter from '../ui/HomeFooter';
 import QuickMenu from '../ui/QuickMenu';
 import RecentRooms from '../ui/RecentRooms';
 
-import shared from '../HomePage.module.css';
-import styles from './HomeDesktopPage.module.css';
+import * as shared from '../HomePage.styles';
+import * as styles from './HomeDesktopPage.styles';
 
 /** 데스크탑 홈. 다른 화면과 같은 공용 헤더를 쓰고, 기능 카드 옆 오른쪽 열에 빠른 메뉴·최근 기록을 둔다. */
 const HomeDesktopPage = () => (

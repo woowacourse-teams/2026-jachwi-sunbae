@@ -1,0 +1,13 @@
+import { css } from '@emotion/css';
+
+/* 공개 동네 탐색은 화면 전체가 지도라, 휴대폰 폭 기준보다 넓은 휴대폰에서도 양옆 빈칸 없이 채운다. */
+export const layout = css`
+  label: PublicExploreLayout-layout;
+  position: relative;
+  width: 100%;
+  height: 100dvh;
+  margin: auto;
+  overflow: hidden;
+  --map-sheet-bottom: 0px;
+  background: white;
+`;

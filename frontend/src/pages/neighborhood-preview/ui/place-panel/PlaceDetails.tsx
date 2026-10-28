@@ -7,7 +7,7 @@ import type { NeighborhoodPreviewContext } from '../../hooks/useNeighborhoodPrev
 import usePlaceRoute from '../../hooks/usePlaceRoute';
 import RouteGuide from '../route-guide/RouteGuide';
 
-import styles from './NeighborhoodPlacePanel.module.css';
+import * as styles from './NeighborhoodPlacePanel.styles';
 
 type Props = {
   place: NeighborhoodPlace;

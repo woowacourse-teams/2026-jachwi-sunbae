@@ -8,8 +8,8 @@ import CompareEmpty from '../ui/compare-empty/CompareEmpty';
 import CompareLoadState from '../ui/compare-load-state/CompareLoadState';
 import ComparePropertyOption from '../ui/compare-property-option/ComparePropertyOption';
 
-import shared from '../ComparePage.module.css';
-import styles from './CompareMobilePage.module.css';
+import * as shared from '../ComparePage.styles';
+import * as styles from './CompareMobilePage.styles';
 
 /** 휴대폰·태블릿 비교할 매물 선택. 이어진 리스트에서 2~5개를 골라 PDF로 받는다. */
 const CompareMobilePage = () => {

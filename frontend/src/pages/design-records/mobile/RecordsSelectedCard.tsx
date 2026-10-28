@@ -6,7 +6,7 @@ import Icon from '@/shared/ui/icon/Icon';
 
 import type { RecordsState } from '../hooks/useRecords';
 
-import styles from './RecordsSelectedCard.module.css';
+import * as styles from './RecordsSelectedCard.styles';
 
 type Props = {
   record: NonNullable<RecordsState['selected']>;

@@ -4,7 +4,7 @@ import Icon from '@/shared/ui/icon/Icon';
 
 import type { RecordsAddKind } from '../hooks/useRecordsAddMode';
 
-import styles from './RecordsAddButton.module.css';
+import * as styles from './RecordsAddButton.styles';
 
 type Props = {
   /** 펼치지 않았을 때 버튼 위에 띄우는 지도 안내. */

@@ -1,6 +1,6 @@
 import { useEffect, useId, useRef } from 'react';
 
-import styles from './WheelPicker.module.css';
+import * as styles from './WheelPicker.styles';
 
 export type WheelPickerOption = { value: number; label: string };
 type WheelPickerProps = {

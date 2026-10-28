@@ -13,8 +13,8 @@ import type { MapCanvasProps } from '../../model/MapCanvas';
 import MapCoordinateMenu from '../map-coordinate-menu/MapCoordinateMenu';
 import MapMarkerView from '../map-marker/MapMarkerView';
 
-import styles from './MapCanvas.module.css';
-import summaryStyles from './MapRegionSummary.module.css';
+import * as styles from './MapCanvas.styles';
+import * as summaryStyles from './MapRegionSummary.styles';
 
 const EMPTY_MARKERS: MapMarker[] = [];
 const EMPTY_CIRCLES: NonNullable<MapCanvasProps['circles']> = [];
@@ -79,7 +79,7 @@ const MapCanvas = ({
 
   return (
     <div
-      className={`${styles.canvas} ${liveMode ? styles.live : styles.demo}`}
+      className={liveMode ? styles.canvas : `${styles.canvas} ${styles.demo}`}
       ref={canvasRef}
       data-map-zoom-area=""
       aria-label={liveMode ? 'Naver 지도' : '데모 지도'}

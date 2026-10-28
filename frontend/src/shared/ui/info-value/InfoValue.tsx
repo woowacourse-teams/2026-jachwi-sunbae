@@ -1,4 +1,4 @@
-import styles from './InfoValue.module.css';
+import * as styles from './InfoValue.styles';
 
 export type InfoValueProps = {
   label: string;

@@ -11,7 +11,7 @@ import type { ChecklistDetail, ChecklistStage } from '../../model/checklistTypes
 import type { ChecklistDraft, ChecklistDraftInput } from '../../model/useChecklistDraft';
 import ChecklistItemOrderList from './ChecklistItemOrderList';
 
-import styles from './ChecklistEditor.module.css';
+import * as styles from './ChecklistEditor.styles';
 
 type ChecklistEditorProps = {
   stage: ChecklistStage;

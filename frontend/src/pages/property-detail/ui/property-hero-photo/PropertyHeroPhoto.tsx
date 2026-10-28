@@ -4,7 +4,7 @@ import type { PropertyPhotoPreview } from '@/features/property/model/Property';
 import AuthenticatedPhoto from '@/features/property/ui/authenticated-photo/AuthenticatedPhoto';
 import Icon from '@/shared/ui/icon/Icon';
 
-import styles from './PropertyHeroPhoto.module.css';
+import * as styles from './PropertyHeroPhoto.styles';
 
 type PropertyHeroPhotoProps = {
   propertyId: number;

@@ -8,7 +8,7 @@ import type { PropertyChecklistItem, PropertyChecklistItemStatus } from '@/featu
 import Icon from '@/shared/ui/icon/Icon';
 import SelectionControl from '@/shared/ui/selection-control/SelectionControl';
 
-import styles from './PropertyChecklistItemControl.module.css';
+import * as styles from './PropertyChecklistItemControl.styles';
 
 const STATUS_OPTIONS: Array<{ value: PropertyChecklistItemStatus; label: string }> = [
   { value: 'GOOD', label: '괜찮음' },

@@ -10,7 +10,7 @@ import TopNavigation from '@/shared/ui/top-navigation/TopNavigation';
 
 import NearbyStage from './ui/nearby-stage/NearbyStage';
 
-import styles from './NearbyAnalysisPage.module.css';
+import * as styles from './NearbyAnalysisPage.styles';
 
 /** `/properties/:propertyId/nearby`는 매물 좌표로, `/explore/nearby`·`/neighborhoods/nearby`는 동네 좌표로 분석한다. */
 const NearbyAnalysisPage = () => {

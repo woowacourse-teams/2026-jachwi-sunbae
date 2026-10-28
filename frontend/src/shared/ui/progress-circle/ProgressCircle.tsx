@@ -1,4 +1,4 @@
-import styles from './ProgressCircle.module.css';
+import * as styles from './ProgressCircle.styles';
 
 type ProgressCircleProps = { size?: 24 | 40; label?: string };
 const ProgressCircle = ({ size = 40, label = '화면을 불러오는 중이에요.' }: ProgressCircleProps) => (

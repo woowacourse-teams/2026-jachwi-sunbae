@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 
 import Icon from '../icon/Icon';
 
-import styles from './InlineNotice.module.css';
+import * as styles from './InlineNotice.styles';
 
 type InlineNoticeTone = 'info' | 'warning' | 'error';
 

@@ -1,6 +1,6 @@
 import type { MapCategory } from '../../model/Map';
 
-import styles from './MapCategoryIcon.module.css';
+import * as styles from './MapCategoryIcon.styles';
 
 type MapCategoryIconProps = {
   category: MapCategory;

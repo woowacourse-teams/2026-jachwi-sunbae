@@ -9,7 +9,7 @@ import TextAreaField from '@/shared/ui/text-field/TextAreaField';
 import TextField from '@/shared/ui/text-field/TextField';
 import TopNavigation from '@/shared/ui/top-navigation/TopNavigation';
 
-import styles from './ComponentCatalog.module.css';
+import * as styles from './ComponentCatalog.styles';
 
 const ComponentCatalog = () => {
   const [query, setQuery] = useState('신림역');

@@ -23,8 +23,8 @@ import NeighborhoodMapSearch from '../ui/map-search/NeighborhoodMapSearch';
 import MapTapHint from '../ui/map-tap-hint/MapTapHint';
 import NeighborhoodPlacePanel from '../ui/place-panel/NeighborhoodPlacePanel';
 
-import shared from '../NeighborhoodPreviewPage.module.css';
-import styles from './NeighborhoodPreviewDesktopPage.module.css';
+import * as shared from '../NeighborhoodPreviewPage.styles';
+import * as styles from './NeighborhoodPreviewDesktopPage.styles';
 
 const CARD_RANKS = [1, 2, 3, 4, 5] as const;
 

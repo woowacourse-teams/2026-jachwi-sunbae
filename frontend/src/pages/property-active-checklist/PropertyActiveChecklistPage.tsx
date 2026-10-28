@@ -19,7 +19,7 @@ import useAutoOpenAppliedChecklist from './hooks/useAutoOpenAppliedChecklist';
 import useChecklistSelection, { SYSTEM_DEFAULT_ID } from './hooks/useChecklistSelection';
 import ActiveChecklistOptions from './ui/active-checklist-options/ActiveChecklistOptions';
 
-import styles from './PropertyActiveChecklistPage.module.css';
+import * as styles from './PropertyActiveChecklistPage.styles';
 
 const readNewChecklistId = (state: unknown): number | null => {
   if (typeof state !== 'object' || state === null || !('newChecklistId' in state)) return null;

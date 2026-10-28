@@ -1,4 +1,4 @@
-import styles from './NearbyMapNotice.module.css';
+import * as styles from './NearbyMapNotice.styles';
 
 type NearbyMapNoticeProps = {
   isPropertyPending: boolean;

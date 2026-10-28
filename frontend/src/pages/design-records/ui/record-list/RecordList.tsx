@@ -7,7 +7,7 @@ import Icon from '@/shared/ui/icon/Icon';
 import type { RecordsState } from '../../hooks/useRecords';
 import RecordDeleteButton from './RecordDeleteButton';
 
-import styles from './RecordList.module.css';
+import * as styles from './RecordList.styles';
 
 type RecordListProps = {
   records: RecordsState['records'];

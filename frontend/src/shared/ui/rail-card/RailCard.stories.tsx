@@ -4,7 +4,7 @@ import { MemoryRouter } from 'react-router-dom';
 import HorizontalRail from '../horizontal-rail/HorizontalRail';
 import RailCard from './RailCard';
 
-import styles from './RailCard.stories.module.css';
+import * as styles from './RailCard.stories.styles';
 
 // to/onSelect 유니언 props라 satisfies 대신 타입을 직접 지정한다.
 const meta: Meta<typeof RailCard> = {

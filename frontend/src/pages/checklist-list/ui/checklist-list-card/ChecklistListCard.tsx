@@ -7,7 +7,7 @@ import type { ChecklistSummary } from '@/features/checklist/model/checklistTypes
 import ConfirmDialog from '@/shared/ui/confirm-dialog/ConfirmDialog';
 import Icon from '@/shared/ui/icon/Icon';
 
-import styles from './ChecklistListCard.module.css';
+import * as styles from './ChecklistListCard.styles';
 
 const ChecklistListCard = ({ checklist }: { checklist: ChecklistSummary }) => {
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
@@ -37,7 +37,7 @@ const ChecklistListCard = ({ checklist }: { checklist: ChecklistSummary }) => {
         </Link>
         <button
           ref={deleteButtonRef}
-          className={styles.delete}
+          className={styles.deleteButton}
           type="button"
           aria-label={`${checklist.name} 삭제`}
           onClick={() => setIsDeleteOpen(true)}

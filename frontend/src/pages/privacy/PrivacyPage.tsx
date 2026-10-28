@@ -4,7 +4,7 @@ import { createAccountDeletionMailto } from '@/shared/config/accountDeletion';
 import AppBar from '@/shared/ui/app-bar/AppBar';
 import { ButtonLink } from '@/shared/ui/button/Button';
 
-import styles from './PrivacyPage.module.css';
+import * as styles from './PrivacyPage.styles';
 
 const PrivacyPage = () => {
   const navigate = useNavigate();

@@ -3,7 +3,7 @@ import Icon from '@/shared/ui/icon/Icon';
 import type { AddressSearchStatus } from '../../model/AddressSearch';
 import type { MapAddress } from '../../model/Map';
 
-import styles from './AddressSearchResults.module.css';
+import * as styles from './AddressSearchResults.styles';
 
 type AddressSearchResultsProps = {
   results: MapAddress[];

@@ -1,4 +1,4 @@
-import styles from './MapTapHint.module.css';
+import * as styles from './MapTapHint.styles';
 
 /**
  * 위치를 고르기 전 화면 아래에 지도를 누르라는 안내를 띄운다. 처음 온 사람이 지도를 눌러야 하는지 몰라 멈추는 일이 많아서,

@@ -3,7 +3,7 @@ import type { LinkProps } from 'react-router-dom';
 import { Button, ButtonLink } from '../button/Button';
 import PlusIcon from '../icon/icons/PlusIcon';
 
-import styles from './AddItemAction.module.css';
+import * as styles from './AddItemAction.styles';
 
 type AddItemActionProps = {
   children: string;

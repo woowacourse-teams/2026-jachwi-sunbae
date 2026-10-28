@@ -8,8 +8,8 @@ import TopNavigation from '@/shared/ui/top-navigation/TopNavigation';
 import AccountDeletionCard from '../ui/account-deletion-card/AccountDeletionCard';
 import PrivacyLinkCard from '../ui/privacy-link-card/PrivacyLinkCard';
 
-import shared from '../MyPage.module.css';
-import styles from './MyDesktopPage.module.css';
+import * as shared from '../MyPage.styles';
+import * as styles from './MyDesktopPage.styles';
 
 /** 데스크탑 마이. 공용 헤더로 이동하므로 뒤로 가기 없이 제목만 두고, 홈과 같은 64rem 본문에 카드를 늘이지 않고 나란히 둔다. */
 const MyDesktopPage = () => {

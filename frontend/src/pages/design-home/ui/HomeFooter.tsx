@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 
-import styles from './HomeFooter.module.css';
+import * as styles from './HomeFooter.styles';
 
 const FOOTER_LINKS = [
   { label: '사용 방법', to: '/guide' },

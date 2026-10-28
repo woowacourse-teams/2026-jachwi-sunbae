@@ -7,7 +7,7 @@ import AppBar from '@/shared/ui/app-bar/AppBar';
 import DesktopHeader from '@/shared/ui/desktop-header/DesktopHeader';
 import { DesktopHeaderSlotProvider } from '@/shared/ui/desktop-header/DesktopHeaderSlot';
 
-import styles from './PropertyAppLayout.module.css';
+import * as styles from './PropertyAppLayout.styles';
 
 const PropertyAppLayout = () => {
   const member = useOutletContext<Member>();

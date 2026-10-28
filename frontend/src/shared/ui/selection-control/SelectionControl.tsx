@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 
-import styles from './SelectionControl.module.css';
+import * as styles from './SelectionControl.styles';
 
 type SelectionControlProps = {
   type?: 'checkbox' | 'radio';

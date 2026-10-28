@@ -4,7 +4,7 @@ import cardNeighborhood from '../assets/card-neighborhood.webp';
 import guideGoose from '../assets/guide-goose.webp';
 import RecordCard from './RecordCard';
 
-import styles from './HomeFeatures.module.css';
+import * as styles from './HomeFeatures.styles';
 
 /** 홈의 주요 기능 카드: 왼쪽 큰 매물 기록 카드, 오른쪽 사용방법·동네 찾기 카드. 시설·거리 메모 지도는 매물 기록 안에 있다. */
 const HomeFeatures = ({ className }: { className?: string }) => (

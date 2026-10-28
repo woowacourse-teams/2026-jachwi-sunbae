@@ -6,7 +6,7 @@ import AuthenticatedPhoto from '@/features/property/ui/authenticated-photo/Authe
 import DetailSection from '@/shared/ui/detail-section/DetailSection';
 import Icon from '@/shared/ui/icon/Icon';
 
-import styles from './PropertyPhotoSection.module.css';
+import * as styles from './PropertyPhotoSection.styles';
 
 type PropertyPhotoSectionProps = {
   propertyId: number;

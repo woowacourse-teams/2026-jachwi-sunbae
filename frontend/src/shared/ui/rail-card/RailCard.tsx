@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 
-import styles from './RailCard.module.css';
+import * as styles from './RailCard.styles';
 
 type RailCardBaseProps = {
   /** 카드 안의 내용. 모양(테두리·배경·여백·너비)은 내용을 그리는 쪽이 `className`으로 정한다. */

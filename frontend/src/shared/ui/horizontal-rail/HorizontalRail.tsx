@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 
 import useHorizontalDrag from '@/shared/lib/hooks/useHorizontalDrag';
 
-import styles from './HorizontalRail.module.css';
+import * as styles from './HorizontalRail.styles';
 
 type HorizontalRailProps = {
   /** 가로로 넘기는 카드들. 카드 너비는 각 카드가 정한다. */

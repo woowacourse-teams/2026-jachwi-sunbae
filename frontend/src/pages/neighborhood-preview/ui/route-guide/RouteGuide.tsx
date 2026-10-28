@@ -1,7 +1,7 @@
 import type { CommuteRoute } from '@/features/map/api/commuteRouteApi';
 import { Button } from '@/shared/ui/button/Button';
 
-import styles from './RouteGuide.module.css';
+import * as styles from './RouteGuide.styles';
 
 type RouteGuideProps = {
   route: CommuteRoute | undefined;

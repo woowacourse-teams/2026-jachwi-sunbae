@@ -6,7 +6,7 @@ import ContentState from '@/shared/ui/content-state/ContentState';
 
 import ChecklistListCard from '../checklist-list-card/ChecklistListCard';
 
-import styles from './ChecklistListContent.module.css';
+import * as styles from './ChecklistListContent.styles';
 
 type ChecklistListQuery = ReturnType<typeof useChecklistList>;
 

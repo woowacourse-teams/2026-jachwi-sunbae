@@ -4,7 +4,7 @@ import PageHeading from '@/shared/ui/page-heading/PageHeading';
 import { useUsageGuideViewTracking } from './lib/usageGuideAnalytics';
 import UsageDemo from './ui/usage-demo/UsageDemo';
 
-import styles from './UsageGuidePage.module.css';
+import * as styles from './UsageGuidePage.styles';
 
 const RECORD_NOTES = [
   '처음 들어오면 가입이나 로그인 없이 기록 공간이 바로 만들어져요.',

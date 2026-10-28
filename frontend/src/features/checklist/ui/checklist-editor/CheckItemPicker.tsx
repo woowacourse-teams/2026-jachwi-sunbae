@@ -8,7 +8,7 @@ import { getChecklistErrorMessage } from '../../api/checklistErrorMessages';
 import { useCheckItemSearch } from '../../api/useChecklists';
 import type { CheckItem, ChecklistStage } from '../../model/checklistTypes';
 
-import styles from './ChecklistEditor.module.css';
+import * as styles from './ChecklistEditor.styles';
 
 type CheckItemPickerProps = {
   stage: ChecklistStage;

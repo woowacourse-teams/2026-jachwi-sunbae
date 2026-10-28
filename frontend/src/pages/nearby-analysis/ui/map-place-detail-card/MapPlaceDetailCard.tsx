@@ -3,7 +3,7 @@ import type { NearbyPlace } from '@/features/map/model/Map';
 import MapCategoryIcon from '@/features/map/ui/map-category-icon/MapCategoryIcon';
 import Icon from '@/shared/ui/icon/Icon';
 
-import styles from './MapPlaceDetailCard.module.css';
+import * as styles from './MapPlaceDetailCard.styles';
 
 type MapPlaceDetailCardProps = {
   place: NearbyPlace;

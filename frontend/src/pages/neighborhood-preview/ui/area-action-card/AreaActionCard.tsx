@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 
 import Icon from '@/shared/ui/icon/Icon';
 
-import styles from './AreaActionCard.module.css';
+import * as styles from './AreaActionCard.styles';
 
 type AreaActionCardProps = {
   icon: ReactNode;
