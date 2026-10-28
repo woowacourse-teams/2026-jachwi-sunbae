@@ -66,6 +66,8 @@ const ActionCard = ({
 
 type ActionCardIllustrationProps = {
   src: string;
+  /** 고해상도 화면용 2배 이미지. 주면 `srcSet`으로 화면 배율에 맞춰 고른다. */
+  src2x?: string;
   /** 원본 이미지 크기. 그려지는 크기는 `placement`가 정한다. */
   width: number;
   height: number;
@@ -73,8 +75,21 @@ type ActionCardIllustrationProps = {
 };
 
 /** `ActionCard`의 `illustration`에 넣는 장식용 그림. 화면 낭독기는 읽지 않는다. */
-export const ActionCardIllustration = ({ src, width, height, placement = 'corner' }: ActionCardIllustrationProps) => (
-  <img className={`${styles.illustration} ${styles[placement]}`} src={src} alt="" width={width} height={height} />
+export const ActionCardIllustration = ({
+  src,
+  src2x,
+  width,
+  height,
+  placement = 'corner',
+}: ActionCardIllustrationProps) => (
+  <img
+    className={`${styles.illustration} ${styles[placement]}`}
+    src={src}
+    srcSet={src2x ? `${src} 1x, ${src2x} 2x` : undefined}
+    alt=""
+    width={width}
+    height={height}
+  />
 );
 
 const styles = {

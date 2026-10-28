@@ -29,14 +29,14 @@ const HomeDesktopPage = () => (
 
 const styles = {
   /*
-   * 데스크탑 홈: 공용 헤더 아래 본문을 64rem 안에 두고, 사용방법 카드는 아래 기능 카드와 같은 왼쪽 열 폭에,
+   * 데스크탑 홈: 공용 헤더 아래 본문을 64rem 안에 두고, 사용방법 카드는 두 열에 걸쳐 본문 가운데에,
    * 그 아래 왼쪽에 기능 카드, 오른쪽 19rem 열에 빠른 메뉴와 최근 기록을 둔다.
    */
   layout: css`
     label: HomeDesktopPage-layout;
     display: grid;
     grid-template-areas:
-      'guide .'
+      'guide guide'
       'features side';
     grid-template-columns: minmax(0, 1fr) 19rem;
     align-items: start;
@@ -50,12 +50,19 @@ const styles = {
   guide: css`
     label: HomeDesktopPage-guide;
     grid-area: guide;
+    justify-self: center;
+    width: min(100%, 40rem);
     margin-top: 1.2rem;
   `,
 
+  /*
+   * 노트북 화면에서도 푸터까지 한 화면에 들어오게 카드 높이를 화면 높이에 맞춘다.
+   * 카드 위(헤더, 사용방법 카드)와 아래(간격, 푸터)를 합친 약 25.5rem을 빼고, 18rem에서 24rem 사이로 둔다.
+   */
   features: css`
     label: HomeDesktopPage-features;
     grid-area: features;
+    height: clamp(18rem, calc(100dvh - 25.5rem), 24rem);
   `,
 
   /* 오른쪽 열은 기능 카드 위쪽에 맞춰 시작하고, 빠른 메뉴 타일은 5rem을 넘지 않게 한다. */

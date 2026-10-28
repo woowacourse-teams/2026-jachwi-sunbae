@@ -3,16 +3,22 @@ import { css, keyframes } from '@emotion/css';
 import ActionCard, { ActionCardIllustration } from '@/shared/ui/action-card/ActionCard';
 
 import guideGoose from '../assets/guide-goose.webp';
+import guideGoose2x from '../assets/guide-goose@2x.webp';
 
-/** 홈 맨 위의 사용방법 카드. 기능 카드 묶음 위에 한 줄로 두고, 옅은 파랑 바탕의 오른쪽 끝에서 오리가 고개를 내민다. */
+/**
+ * 홈 맨 위의 사용방법 카드. 기능 카드 묶음 위에 한 줄로 두고, 옅은 파랑 바탕의 오른쪽 끝에서 오리가 고개를 내민다.
+ * `자취선배가 처음이라면?`을 작은 글씨로 제목 위에 두어 `사용방법 알아보기`로 이어 읽게 한다.
+ */
 const GuideCard = ({ className }: { className?: string }) => (
   <ActionCard
     title="사용방법 알아보기"
-    description="처음이라면 여기부터 보세요"
+    description="자취선배가 처음이라면?"
     aria-label="사용방법 알아보기"
     to="/guide"
     className={`${styles.guide} ${className ?? ''}`.trim()}
-    illustration={<ActionCardIllustration src={guideGoose} width={200} height={294} placement="peek" />}
+    illustration={
+      <ActionCardIllustration src={guideGoose} src2x={guideGoose2x} width={68} height={100} placement="peek" />
+    }
   />
 );
 
@@ -53,7 +59,9 @@ const styles = {
       gap: 0.25rem;
     }
 
+    /* 보조 문구를 제목 위로 올려 질문 다음에 행동이 오게 한다. */
     & .ActionCard-description {
+      order: -1;
       color: var(--color-muted);
       opacity: 1;
     }
@@ -74,6 +82,17 @@ const styles = {
       --action-card-description-size: 0.9rem;
       --action-card-text-inset: 1.4rem;
       height: 6.2rem;
+    }
+
+    /* 데스크탑은 카드가 넓어 왼쪽에 붙은 글자가 비어 보여서, 글자를 카드 가운데에 둔다. */
+    @media (min-width: 1024px) {
+      & .ActionCard-text {
+        top: 50%;
+        left: 50%;
+        justify-items: center;
+        text-align: center;
+        transform: translate(-50%, -50%);
+      }
     }
   `,
 };

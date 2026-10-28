@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 
-import mascotImage from '@/shared/assets/empty-property.jpg';
+import StateIllustration from '@/shared/ui/state-illustration/StateIllustration';
 
 type ContentStateProps = {
   /** 화면 전체를 차지하는 상태인지. 목록 안에 끼워 넣을 때는 끈다. */
@@ -33,9 +33,7 @@ const ContentState = ({
       role={tone === 'error' ? 'alert' : loading ? 'status' : undefined}
     >
       {tone === 'error' && !loading ? (
-        <span className="content-state__mascot" aria-hidden="true">
-          <img src={mascotImage} alt="" />
-        </span>
+        <StateIllustration name="error" size={5.5} />
       ) : loading ? (
         <span className="content-state__skeleton" aria-hidden="true">
           <span />
