@@ -147,16 +147,31 @@ class PromotionCollectionServiceTest {
     }
 
     @Test
-    @DisplayName("최초 수집은 지정한 브랜드만 확인하고 다른 브랜드는 수집하지 않는다")
-    void collectsInitiallyOnlyGivenBrand() {
-        when(repository.findLastCollectedAt(BRAND)).thenReturn(Optional.empty());
-        when(fetcher.fetch()).thenReturn(List.of(product("상품")));
+    @DisplayName("저장된 목록이 없는 브랜드만 최초 수집을 실행한다")
+    void collectsInitiallyOnlyEmptyBrands() {
+        when(repository.findLastCollectedAt(BRAND)).thenReturn(Optional.of(COLLECTED_AT));
+        when(repository.findLastCollectedAt(OTHER_BRAND)).thenReturn(Optional.empty());
+        when(otherFetcher.fetch()).thenReturn(List.of(product(OTHER_BRAND, "상품")));
 
-        multiBrandService.collectIfEmpty(BRAND);
+        multiBrandService.collectIfEmpty();
 
-        verify(repository).replaceByBrand(BRAND, List.of(product("상품")), COLLECTED_AT);
-        verify(repository, never()).findLastCollectedAt(OTHER_BRAND);
-        verify(otherFetcher, never()).fetch();
+        verify(fetcher, never()).fetch();
+        verify(repository).replaceByBrand(OTHER_BRAND, List.of(product(OTHER_BRAND, "상품")), COLLECTED_AT);
+    }
+
+    @Test
+    @DisplayName("한 브랜드의 최초 수집이 실패해도 다른 빈 브랜드를 적재하고 첫 실패를 전파한다")
+    void collectsOtherEmptyBrandsWhenInitialCollectionFails() {
+        UpstreamServiceException failure = new UpstreamServiceException(ErrorCode.PROMOTION_PROVIDER_UNAVAILABLE,
+                "HTTP status=429");
+        when(repository.findLastCollectedAt(any())).thenReturn(Optional.empty());
+        when(fetcher.fetch()).thenThrow(failure);
+        when(otherFetcher.fetch()).thenReturn(List.of(product(OTHER_BRAND, "상품")));
+
+        assertThatThrownBy(multiBrandService::collectIfEmpty).isSameAs(failure);
+
+        verify(repository, never()).replaceByBrand(eq(BRAND), any(), any());
+        verify(repository).replaceByBrand(OTHER_BRAND, List.of(product(OTHER_BRAND, "상품")), COLLECTED_AT);
     }
 
     @Test
@@ -165,7 +180,7 @@ class PromotionCollectionServiceTest {
         when(repository.findLastCollectedAt(BRAND)).thenReturn(Optional.empty());
         when(fetcher.fetch()).thenReturn(List.of(product("상품")));
 
-        service.collectIfEmpty(BRAND);
+        service.collectIfEmpty();
 
         verify(repository).replaceByBrand(BRAND, List.of(product("상품")), COLLECTED_AT);
     }
@@ -175,7 +190,7 @@ class PromotionCollectionServiceTest {
     void skipsInitialCollectionWhenCollected() {
         when(repository.findLastCollectedAt(BRAND)).thenReturn(Optional.of(COLLECTED_AT));
 
-        service.collectIfEmpty(BRAND);
+        service.collectIfEmpty();
 
         verify(fetcher, never()).fetch();
         verify(repository, never()).replaceByBrand(any(), any(), any());
