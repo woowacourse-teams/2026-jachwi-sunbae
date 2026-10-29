@@ -51,6 +51,33 @@ export const comingSoon = css`
   font-weight: 600;
 `;
 
+/* 출퇴근 장소까지 통근 시간을 켜고 끄는 버튼. 켜면 파랗게 칠한다. */
+export const commuteToggle = css`
+  label: RecordList-commuteToggle;
+  flex: none;
+  padding: 0.45rem 0.7rem;
+  border: 1px solid #e3e5e9;
+  border-radius: 999px;
+  background: #fff;
+  color: #41444b;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+
+  &[aria-pressed='true'] {
+    border-color: var(--color-brand-blue-ink, #3f6fc4);
+    background: var(--color-brand-blue-ink, #3f6fc4);
+    color: #fff;
+  }
+`;
+
+export const commuteError = css`
+  label: RecordList-commuteError;
+  margin: -0.5rem 0 0.75rem;
+  color: var(--color-danger, #d14d4d);
+  font-size: 0.78rem;
+`;
+
 export const items = css`
   label: RecordList-items;
   list-style: none;

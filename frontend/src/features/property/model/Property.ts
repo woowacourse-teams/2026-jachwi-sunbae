@@ -59,6 +59,19 @@ export type PropertySummary = {
   photoCount: number;
 };
 
+/** 매물별 통근 시간. REACHABLE일 때만 분이 있고, 60분 안에 못 가면 UNREACHABLE, 위치가 없으면 NO_LOCATION이다. */
+export type PropertyCommuteStatus = 'REACHABLE' | 'UNREACHABLE' | 'NO_LOCATION';
+export type PropertyCommuteTime = {
+  propertyId: number;
+  status: PropertyCommuteStatus;
+  commuteMinutes: number | null;
+};
+export type PropertyCommuteTimes = {
+  maxMinutes: number;
+  maxTransfers: number;
+  properties: PropertyCommuteTime[];
+};
+
 export type PropertyPage = {
   content: PropertySummary[];
   page: number;

@@ -10,6 +10,35 @@ export const panel = css`
   color: var(--color-ink);
 `;
 
+export const stationNav = css`
+  label: NeighborhoodPlacePanel-stationNav;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0 0 0.75rem;
+  color: var(--color-ink-soft);
+  font-size: 0.8rem;
+  font-variant-numeric: tabular-nums;
+
+  & button {
+    display: grid;
+    width: 2rem;
+    height: 2rem;
+    padding: 0;
+    place-items: center;
+    border: 1px solid var(--color-border);
+    border-radius: 999px;
+    background: white;
+    color: var(--color-ink);
+    cursor: pointer;
+  }
+
+  & button:disabled {
+    opacity: 0.35;
+    cursor: default;
+  }
+`;
+
 export const title = css`
   label: NeighborhoodPlacePanel-title;
   margin: 0 0 0.4rem;
@@ -115,49 +144,5 @@ export const phone = css`
   & span {
     color: var(--color-muted);
     font-size: 0.75rem;
-  }
-`;
-
-export const summary = css`
-  label: NeighborhoodPlacePanel-summary;
-  margin: 0;
-  font-size: 1.05rem;
-  font-weight: 750;
-`;
-
-/* 휴대폰에서 정류장 경로를 전체 화면으로 여는 창. 동네 대중교통 상세와 같은 자리를 쓴다. */
-export const screen = css`
-  label: NeighborhoodPlacePanel-screen;
-  position: absolute;
-  inset: 0;
-  z-index: 45;
-  overflow-y: auto;
-  padding: 1rem 1.25rem calc(env(safe-area-inset-bottom) + 1.5rem);
-  background: white;
-  color: var(--color-ink);
-`;
-
-export const screenHeader = css`
-  label: NeighborhoodPlacePanel-screenHeader;
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
-  margin-bottom: 1rem;
-
-  & h1 {
-    margin: 0;
-    font-size: 1.1rem;
-  }
-
-  & button {
-    display: grid;
-    width: 2.5rem;
-    height: 2.5rem;
-    padding: 0;
-    place-items: center;
-    border: 0;
-    background: none;
-    color: inherit;
-    cursor: pointer;
   }
 `;

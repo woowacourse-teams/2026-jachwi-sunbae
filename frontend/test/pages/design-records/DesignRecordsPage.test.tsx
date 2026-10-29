@@ -134,6 +134,60 @@ it('리스트 메뉴의 삭제는 실제 매물 삭제 API를 호출한다', asy
   expect(removed).toHaveBeenCalledTimes(1);
 });
 
+it('출퇴근 장소를 정하지 않았으면 통근 시간을 부르지 않고, 리스트에 장소를 정하는 줄도 두지 않는다', async () => {
+  const user = userEvent.setup();
+  const requested = vi.fn();
+  server.use(
+    http.get('*/api/properties/commute-times', () => {
+      requested();
+      return new HttpResponse(null, { status: 500 });
+    }),
+  );
+  renderRecords();
+  await screen.findByText('신림역 원룸');
+  await user.click(screen.getByRole('button', { name: /리스트/ }));
+  expect(screen.queryByText(/출퇴근 장소를 정하면/)).not.toBeInTheDocument();
+  expect(screen.queryByRole('link', { name: '장소 정하기' })).not.toBeInTheDocument();
+  expect(requested).not.toHaveBeenCalled();
+});
+
+it('동네 찾기에서 고른 출퇴근 장소까지 매물마다 통근 시간을 보여 준다', async () => {
+  const user = userEvent.setup();
+  const requests: URL[] = [];
+  const track = ({ request }: { request: Request }) => {
+    const url = new URL(request.url);
+    if (url.pathname === '/api/properties/commute-times') requests.push(url);
+  };
+  server.events.on('request:start', track);
+  localStorage.setItem(
+    'jachwi-sunbae:commute-destination',
+    JSON.stringify({ latitude: 37.4842, longitude: 126.9297, name: '신림역' }),
+  );
+  try {
+    renderRecords();
+    await screen.findByText('신림역 원룸');
+    await user.click(screen.getByRole('button', { name: /리스트/ }));
+    expect(screen.queryByRole('link', { name: '바꾸기' })).not.toBeInTheDocument();
+    // 들어오자마자 계산하지 않고 `통근 시간` 버튼을 눌러야 부른다.
+    expect(requests).toHaveLength(0);
+    await user.click(screen.getByRole('button', { name: '통근 시간' }));
+    const near = within(screen.getByRole('link', { name: /신림역 원룸/ }));
+    expect(await near.findByText(/^신림역까지 대중교통 \d+분$/)).toBeInTheDocument();
+    expect(
+      within(screen.getByRole('link', { name: /망원동 투룸/ })).getByText(/^신림역까지 대중교통 \d+분$/),
+    ).toBeInTheDocument();
+    // 보기를 바꾸며 화면이 다시 붙으면 한 번 더 부를 수 있어, 보낸 요청이 모두 고른 장소 좌표인지만 본다.
+    expect(requests.length).toBeGreaterThan(0);
+    for (const url of requests) {
+      expect(url.searchParams.get('latitude')).toBe('37.4842');
+      expect(url.searchParams.get('longitude')).toBe('126.9297');
+    }
+  } finally {
+    server.events.removeListener('request:start', track);
+    localStorage.removeItem('jachwi-sunbae:commute-destination');
+  }
+});
+
 const useDesktopViewport = () =>
   vi.spyOn(window, 'matchMedia').mockImplementation(
     (query) =>
@@ -155,7 +209,7 @@ it('데스크탑에서는 보기 전환 없이 지도와 리스트를 함께 보
   matchMedia.mockRestore();
 });
 
-it('데스크탑은 기록하기 버튼 없이 지도를 찍어 리스트 자리에 매물 등록을 열고 닫는다', async () => {
+it('데스크탑은 기록하기 버튼 없이 지도를 찍어 리스트 옆 칸에 매물 등록을 열고 닫는다', async () => {
   const matchMedia = useDesktopViewport();
   const user = userEvent.setup();
   renderRecords();
@@ -165,14 +219,16 @@ it('데스크탑은 기록하기 버튼 없이 지도를 찍어 리스트 자리
   await user.click(screen.getByRole('button', { name: '말풍선 🏠 여기에 매물 등록' }));
   const panel = within(await screen.findByRole('complementary', { name: '새 매물 등록 패널' }));
   expect(panel.getByRole('heading', { name: '새 매물 등록' })).toBeInTheDocument();
-  expect(screen.queryByRole('heading', { name: '모든 기록' })).not.toBeInTheDocument();
+  // 등록 칸은 리스트를 덮지 않고 옆에 연다.
+  expect(screen.getByRole('heading', { name: '모든 기록' })).toBeInTheDocument();
   expect(screen.queryByRole('heading', { name: '매물 등록 화면' })).not.toBeInTheDocument();
   await user.click(panel.getByRole('button', { name: '매물 등록 닫기' }));
+  expect(screen.queryByRole('complementary', { name: '새 매물 등록 패널' })).not.toBeInTheDocument();
   expect(screen.getByRole('heading', { name: '모든 기록' })).toBeInTheDocument();
   matchMedia.mockRestore();
 });
 
-it('데스크탑에서 지도나 리스트의 방을 누르면 리스트 자리에 매물 상세를 보여주고 목록으로 돌아간다', async () => {
+it('데스크탑에서 지도나 리스트의 방을 누르면 리스트 옆 칸에 매물 상세를 열고, 지도 위 버튼으로 접는다', async () => {
   const matchMedia = useDesktopViewport();
   const user = userEvent.setup();
   renderRecords();
@@ -182,10 +238,19 @@ it('데스크탑에서 지도나 리스트의 방을 누르면 리스트 자리�
   const detail = within(screen.getByRole('complementary', { name: '선택한 매물 상세' }));
   expect(await detail.findByRole('heading', { level: 1, name: '신림역 원룸' })).toBeInTheDocument();
   expect(detail.getByRole('tablist', { name: '매물 상세 메뉴' })).toBeInTheDocument();
-  expect(screen.queryByRole('heading', { name: '모든 기록' })).not.toBeInTheDocument();
+  // 상세는 리스트를 덮지 않으므로 리스트도 함께 보인다.
+  expect(screen.getByRole('heading', { name: '모든 기록' })).toBeInTheDocument();
   expect(screen.queryByRole('button', { name: '매물 카드 닫기' })).not.toBeInTheDocument();
 
-  await user.click(detail.getByRole('button', { name: '목록으로 돌아가기' }));
+  await user.click(screen.getByRole('button', { name: '매물 상세 칸 닫기' }));
+  expect(screen.queryByRole('complementary', { name: '선택한 매물 상세' })).not.toBeInTheDocument();
+
+  // 상세를 연 채로 리스트에서 다른 방을 고르면 옆 칸이 그 방으로 바뀐다.
+  await user.click(within(screen.getByLabelText('예시 지도')).getByRole('button', { name: '신림역 원룸' }));
+  await within(screen.getByRole('complementary', { name: '선택한 매물 상세' })).findByRole('heading', {
+    level: 1,
+    name: '신림역 원룸',
+  });
   await user.click(screen.getByRole('link', { name: /망원동 투룸/ }));
   expect(
     await within(screen.getByRole('complementary', { name: '선택한 매물 상세' })).findByRole('heading', {
@@ -223,6 +288,8 @@ it('휴대폰은 메모 탭을 켠 채로 열어 화면 안 거리 메모를 지
   const rail = within(screen.getByRole('complementary', { name: '지도 시설 카테고리' }));
   expect(rail.getAllByRole('button')[0]).toHaveAccessibleName(/^거리 메모 숨기기/);
   expect(rail.getAllByRole('button')[0]).toHaveAttribute('aria-pressed', 'true');
+  // 전체 보기처럼 멀리 축소하면 메모를 숨기므로, 동네를 골라 확대한 뒤 화면 범위를 알린다.
+  await user.click(screen.getByRole('button', { name: '마포구' }));
   await user.click(screen.getByRole('button', { name: '화면 범위 알림' }));
   await user.click(await screen.findByRole('button', { name: '늦게까지 여는 세탁소가 있어요.' }));
   const memo = within(await screen.findByRole('region', { name: '거리 메모' }));
@@ -290,6 +357,7 @@ it('휴대폰 추가 버튼에서 메모를 고르면 찍은 위치에 메모를
   const user = userEvent.setup();
   renderRecords();
   await screen.findByText('신림역 원룸');
+  await user.click(screen.getByRole('button', { name: '마포구' }));
   await user.click(screen.getByRole('button', { name: '화면 범위 알림' }));
   await user.click(screen.getByRole('button', { name: '추가하기' }));
   await user.click(screen.getByRole('button', { name: '📝 메모' }));
@@ -302,14 +370,15 @@ it('휴대폰 추가 버튼에서 메모를 고르면 찍은 위치에 메모를
   await user.click(form.getByRole('button', { name: '👍 좋아요' }));
   await user.type(form.getByRole('textbox', { name: '메모' }), '밤에도 밝아요');
   await user.click(form.getByRole('button', { name: '메모 남기기' }));
-  // 남긴 뒤에는 상세를 열지 않고, 그 자리에 쓴 글을 잠깐 띄우고 메모 탭을 켜 마커로 남긴다.
+  // 남긴 뒤에는 상세를 열지 않고, 메모 탭을 켜 그 자리에 메모 말풍선으로 남긴다.
   await waitFor(() => expect(screen.queryByRole('region', { name: '메모 남기기' })).not.toBeInTheDocument());
   expect(screen.queryByRole('region', { name: '거리 메모' })).not.toBeInTheDocument();
   expect(screen.getByRole('button', { name: /^거리 메모 숨기기/ })).toHaveAttribute('aria-pressed', 'true');
-  expect(await screen.findAllByRole('button', { name: '밤에도 밝아요' })).toHaveLength(2);
+  // 따로 떠오르는 말풍선 없이, 남은 메모 말풍선 하나가 그 자리에서 떠오른다.
+  expect(await screen.findAllByRole('button', { name: '밤에도 밝아요' })).toHaveLength(1);
 });
 
-it('데스크탑은 찍은 자리 말풍선에서 매물 등록을 고르면 찍은 위치의 주소를 찾아 리스트 자리에 등록을 연다', async () => {
+it('데스크탑은 찍은 자리 말풍선에서 매물 등록을 고르면 찍은 위치의 주소를 찾아 리스트 옆 칸에 등록을 연다', async () => {
   const matchMedia = useDesktopViewport();
   const geocoded: string[] = [];
   const track = ({ request }: { request: Request }) => {

@@ -14,10 +14,9 @@ export type MapTapAction = {
 export type MapCoordinateMenu = {
   latitude: number;
   longitude: number;
-  /** 말풍선 위에 붙는 짧은 안내. */
+  /** 화면 낭독기가 읽는 말풍선 이름. 화면에는 쓰지 않는다. */
   title?: string;
   actions: MapTapAction[];
-  onClose: () => void;
 };
 
 export type MapCanvasProps = {

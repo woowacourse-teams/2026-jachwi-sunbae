@@ -1,8 +1,11 @@
+import { isRentLimit } from './criteriaLabels';
+
 type Point = { latitude: number; longitude: number; name: string; address: string };
 export type NeighborhoodSearchSession = {
   destination: Point;
   maxMinutes: number;
   maxTransfers: number;
+  /** 월세 상한(만원, 0은 전체). 월세 필터가 없던 때 저장한 검색은 전체 가격으로 읽는다. */
   maxRent: number;
   selectedId: string | null;
   selectedStopId: string | null;
@@ -35,11 +38,6 @@ export const readNeighborhoodSearch = (key: string): NeighborhoodSearchSession |
       value.maxMinutes % 10 !== 0 ||
       typeof value.maxTransfers !== 'number' ||
       ![0, 1, 2].includes(value.maxTransfers) ||
-      typeof value.maxRent !== 'number' ||
-      !Number.isInteger(value.maxRent) ||
-      value.maxRent < 0 ||
-      value.maxRent > 200 ||
-      value.maxRent % 10 !== 0 ||
       !isNullableString(value.selectedId) ||
       !isNullableString(value.selectedStopId)
     )
@@ -48,7 +46,7 @@ export const readNeighborhoodSearch = (key: string): NeighborhoodSearchSession |
       destination: value.destination,
       maxMinutes: value.maxMinutes,
       maxTransfers: value.maxTransfers,
-      maxRent: value.maxRent,
+      maxRent: isRentLimit(value.maxRent) ? value.maxRent : 0,
       selectedId: value.selectedId,
       selectedStopId: value.selectedStopId,
     };

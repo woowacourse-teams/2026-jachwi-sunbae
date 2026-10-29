@@ -140,7 +140,6 @@ export const WithCoordinateMenu: Story = {
         { id: 'memo', label: '거리 메모 남기기', onSelect: fn() },
         { id: 'nearby', label: '주변 시설 보기', onSelect: fn() },
       ],
-      onClose: fn(),
     },
   },
 };

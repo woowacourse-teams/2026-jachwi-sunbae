@@ -105,17 +105,13 @@ const styles = {
   iconWrap: css`
     label: MapPlaceDetailCard-iconWrap;
     display: grid;
-    width: 2.15rem;
-    height: 2.15rem;
-    border-radius: 0.72rem;
-    background: var(--place-color);
-    color: white;
     place-items: center;
   `,
 
+  /* 아이콘이 둥근 사각 바탕을 갖고 있어 감싸는 칸에는 색을 따로 칠하지 않는다. */
   icon: css`
     label: MapPlaceDetailCard-icon;
-    font-size: 1.15rem;
+    font-size: 2.4rem;
   `,
 
   content: css`

@@ -41,7 +41,7 @@
 | `neighborhood_nearby_link_clicked`   | (수집 중단) 동네 상세의 정류장·공인중개사 보기 카드 클릭. 결과 지도를 확대하면 정류장·부동산을 바로 보여 주어 카드를 없앴다 | `search_id`(있는 경우)                                        |
 | `neighborhood_listing_link_clicked`  | 동네 상세의 현재 매물 확인하기 카드 클릭                                                                                    | `provider=dabang`, `search_id`(있는 경우)                     |
 
-검색에는 `max_minutes`, `max_transfers`, `max_rent_manwon`(0은 전체 가격)을 함께 수집한다. `rent_area_count`는 결과 중 월세 시세가 있는 동네 수다. 주소·목적지 이름·좌표·검색어·정류장 ID·거래 금액 원문을 새 로그에 보내지 않는다. 상세 중복 방지에 사용한 지역/정류장 키는 로컬 비교용이며 전송하지 않는다.
+검색에는 `max_minutes`, `max_transfers`, `max_rent_manwon`(0은 전체 가격, 클라이언트에서 거는 필터)을 함께 수집한다. `rent_area_count`는 결과 중 월세 시세가 있는 동네 수다. 시세가 없는 동네는 화면에 그리지 않으므로 지금은 `result_count`와 같다. 주소·목적지 이름·좌표·검색어·정류장 ID·거래 금액 원문을 새 로그에 보내지 않는다. 상세 중복 방지에 사용한 지역/정류장 키는 로컬 비교용이며 전송하지 않는다.
 
 검색 요청은 재시도마다 별도 ID를 만들고 결과는 시도당 한 번만 기록한다. 취소·자동 refetch·StrictMode로 결과 건수를 늘리지 않는다. 검색 복원으로 목록을 다시 연 것은 상세 확인으로 기록할 수 있지만 새 검색으로 꾸미지 않는다. 공개 탐색의 기존 `exploration_completed`는 지도 검색 결과 표시이며 월세·통근 서비스 사용 완료가 아니다.
 

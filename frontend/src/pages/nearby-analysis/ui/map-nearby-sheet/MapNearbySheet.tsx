@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 
 import { ALL_MAP_CATEGORIES, getMapCategoryLabel } from '@/features/map/lib/mapPresentation';
 import type { MapCategory, NearbyPlace } from '@/features/map/model/Map';
+import MapCategoryIcon from '@/features/map/ui/map-category-icon/MapCategoryIcon';
 import Icon from '@/shared/ui/icon/Icon';
 
 type MapNearbySheetProps = {
@@ -51,7 +52,7 @@ const MapNearbySheet = ({
               aria-label={`${label} ${counts[category]}개 ${selected ? '숨기기' : '표시하기'}`}
               onClick={() => onToggleCategory(category)}
             >
-              <span aria-hidden="true" />
+              <MapCategoryIcon category={category} />
               {label} {counts[category]}개
             </button>
           </li>
@@ -75,7 +76,10 @@ const MapNearbySheet = ({
           <ul aria-label="주변 시설 목록">
             {places.map((place) => (
               <li key={place.providerPlaceId}>
-                <span data-category={place.category}>{getMapCategoryLabel(place.category)}</span>
+                <span data-category={place.category}>
+                  <MapCategoryIcon category={place.category} />
+                  <span className="sr-only">{getMapCategoryLabel(place.category)}</span>
+                </span>
                 <strong>{place.name}</strong>
                 <small>
                   {place.distanceMeters}m · {place.address}
@@ -214,31 +218,8 @@ const styles = {
       color: #2878ef;
     }
 
-    & button > span {
-      width: 0.48rem;
-      height: 0.48rem;
-      border-radius: 50%;
-      background: #64748b;
-    }
-
-    & li[data-category='HOSPITAL'] button > span {
-      background: #f06b57;
-    }
-
-    & li[data-category='TRANSPORT'] button > span {
-      background: #7963e8;
-    }
-
-    & li[data-category='SCHOOL'] button > span {
-      background: #f59e0b;
-    }
-
-    & li[data-category='CONVENIENCE'] button > span {
-      background: #08a982;
-    }
-
-    & li[data-category='AGENCY'] button > span {
-      background: #64748b;
+    & button > img {
+      font-size: 1.1rem;
     }
   `,
 
@@ -284,12 +265,7 @@ const styles = {
     & li > span {
       grid-row: 1 / span 2;
       align-self: center;
-      padding: 0.25rem 0.4rem;
-      border-radius: 999px;
-      background: var(--color-primary-soft);
-      color: var(--color-primary-dark);
-      font-size: 0.52rem;
-      font-weight: 850;
+      font-size: 1.9rem;
     }
 
     & strong,

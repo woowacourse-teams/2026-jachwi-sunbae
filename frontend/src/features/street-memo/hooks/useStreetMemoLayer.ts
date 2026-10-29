@@ -1,16 +1,16 @@
 import { useEffect, useMemo, useState } from 'react';
 
 import type { MapBounds, MapMarker } from '@/features/map/model/Map';
+import { useLogger } from '@/shared/lib/analytics/logging';
 
 import { useStreetMemoMutations, useStreetMemos } from '../api/useStreetMemos';
 import type { StreetMemo, StreetMemoPreference } from '../model/StreetMemo';
 
 export const STREET_MEMO_MARKER_PREFIX = 'street-memo:';
 const DRAFT_MARKER_ID = 'street-memo-draft';
-const FLASH_MARKER_ID = 'street-memo-flash';
-/** 방금 남긴 메모 글을 지도에 띄워 두는 시간. 말풍선 애니메이션(2.4초)과 맞춘다. */
+/** 방금 남긴 메모를 떠오르는 말풍선으로 표시해 두는 시간. 목록을 다시 받아 오기 전에도 그 자리에 보이게 한다. */
 const FLASH_DURATION_MS = 2400;
-const LABEL_MAX_LENGTH = 20;
+const LABEL_MAX_LENGTH = 80;
 
 type Point = { latitude: number; longitude: number };
 
@@ -19,13 +19,14 @@ const markerLabel = (memo: StreetMemo) =>
 
 /**
  * 지도 위 거리 메모 한 겹. 인프라 지도와 동네 찾기 지도가 함께 쓴다.
- * 켜져 있으면 화면 안 메모를 마커로 올리고, 메모 하나를 보거나(view) 찍은 위치에 새로 쓰는(compose) 상태를 가진다.
- * 메모를 남기면 상세를 열지 않고 그 자리에 쓴 글을 잠깐 띄운다(flash).
+ * 켜져 있으면 화면 안 메모를 글이 든 말풍선으로 올리고, 메모 하나를 보거나(view) 찍은 위치에 새로 쓰는(compose) 상태를 가진다.
+ * 메모를 남기면 상세를 열지 않고, 남긴 메모 말풍선이 그 자리에서 아래에서 떠오르며 나타난다(flash).
  * 화면 모양(데스크탑 칸·휴대폰 시트)은 지도 화면이 고르고, 이 Hook은 무엇을 보여줄지만 정한다.
  */
 const useStreetMemoLayer = (enabled: boolean, bounds: MapBounds | null) => {
   const { memos, isFailed } = useStreetMemos(enabled ? bounds : null);
   const { create, remove } = useStreetMemoMutations();
+  const { log } = useLogger();
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [draftPoint, setDraftPoint] = useState<Point | null>(null);
   // 방금 남긴 메모는 상세를 열지 않고, 그 자리에 글을 잠깐 띄웠다가 지운다.
@@ -36,39 +37,29 @@ const useStreetMemoLayer = (enabled: boolean, bounds: MapBounds | null) => {
     return () => window.clearTimeout(timer);
   }, [flash]);
 
-  const memoMarkers = useMemo<MapMarker[]>(
-    () =>
-      enabled
-        ? memos.map((memo) => ({
-            id: `${STREET_MEMO_MARKER_PREFIX}${memo.id}`,
-            latitude: memo.latitude,
-            longitude: memo.longitude,
-            label: markerLabel(memo),
-            tone: 'place' as const,
-            category: 'MEMO' as const,
-            variant: memo.preference === 'LIKE' ? ('positive' as const) : ('negative' as const),
-            actionable: true,
-          }))
-        : [],
-    [enabled, memos],
-  );
+  const memoMarkers = useMemo<MapMarker[]>(() => {
+    const shown = enabled ? memos : [];
+    // 방금 남긴 메모는 목록을 다시 받아 오기 전이나 메모를 숨긴 배율에서도 떠오르는 동안 그 자리에 둔다.
+    const withFlash = flash && !shown.some((memo) => memo.id === flash.id) ? [...shown, flash] : shown;
+    return withFlash.map((memo) => ({
+      id: `${STREET_MEMO_MARKER_PREFIX}${memo.id}`,
+      latitude: memo.latitude,
+      longitude: memo.longitude,
+      label: markerLabel(memo),
+      // 메모는 아이콘 대신 글이 든 말풍선으로 띄운다. 좋아요는 파랑, 싫어요는 빨강 말풍선이다.
+      tone: 'destination' as const,
+      category: 'MEMO' as const,
+      variant: memo.preference === 'LIKE' ? ('positive' as const) : ('negative' as const),
+      appear: memo.id === flash?.id,
+      actionable: true,
+    }));
+  }, [enabled, memos, flash]);
   const markers = useMemo<MapMarker[]>(
     () => [
       ...memoMarkers,
       ...(draftPoint ? [{ ...draftPoint, id: DRAFT_MARKER_ID, label: '메모 위치', tone: 'destination' as const }] : []),
-      ...(flash
-        ? [
-            {
-              id: `${FLASH_MARKER_ID}-${flash.id}`,
-              latitude: flash.latitude,
-              longitude: flash.longitude,
-              label: flash.memo,
-              tone: 'flash' as const,
-            },
-          ]
-        : []),
     ],
-    [memoMarkers, draftPoint, flash],
+    [memoMarkers, draftPoint],
   );
   const selectedMemo = selectedId === null ? null : (memos.find((memo) => memo.id === selectedId) ?? null);
 
@@ -96,7 +87,9 @@ const useStreetMemoLayer = (enabled: boolean, bounds: MapBounds | null) => {
       create.reset();
       remove.reset();
       setDraftPoint(null);
-      setSelectedId(Number(marker.id.slice(STREET_MEMO_MARKER_PREFIX.length)));
+      const id = Number(marker.id.slice(STREET_MEMO_MARKER_PREFIX.length));
+      log('street_memo_viewed', { preference: memos.find((memo) => memo.id === id)?.preference ?? null });
+      setSelectedId(id);
       return true;
     },
     startDraft: (point: Point) => {
@@ -110,6 +103,7 @@ const useStreetMemoLayer = (enabled: boolean, bounds: MapBounds | null) => {
         { ...draftPoint, memo, preference },
         {
           onSuccess: (saved) => {
+            log('street_memo_created', { preference: saved.preference, memo_length: saved.memo.length });
             setDraftPoint(null);
             setFlash(saved);
             onCreated?.(saved);
@@ -119,7 +113,13 @@ const useStreetMemoLayer = (enabled: boolean, bounds: MapBounds | null) => {
     },
     remove: () => {
       if (selectedMemo === null) return;
-      remove.mutate(selectedMemo.id, { onSuccess: close });
+      const { preference } = selectedMemo;
+      remove.mutate(selectedMemo.id, {
+        onSuccess: () => {
+          log('street_memo_deleted', { preference });
+          close();
+        },
+      });
     },
     close,
   };

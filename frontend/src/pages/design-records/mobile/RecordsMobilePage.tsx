@@ -103,6 +103,7 @@ const RecordsMobilePage = () => {
               className={styles.list}
               records={records.records}
               district={records.district}
+              commute={records.commute}
               onNotice={setNotice}
             />
           )}

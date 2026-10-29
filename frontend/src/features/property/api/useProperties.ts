@@ -8,6 +8,7 @@ import {
   fetchProperties,
   fetchPropertyChecklistDetail,
   fetchPropertyChecklistOverview,
+  fetchPropertyCommuteTimes,
   fetchPropertyDetail,
   fetchPropertyMemo,
 } from './propertyApi';
@@ -20,6 +21,17 @@ export const usePropertyList = () => {
     initialPageParam: 0,
     queryFn: ({ pageParam, signal }) => fetchProperties(config, { query: '', page: pageParam, size: 20 }, signal),
     getNextPageParam: (lastPage) => (lastPage.hasNext ? lastPage.page + 1 : undefined),
+  });
+};
+
+/** 목적지가 없으면 부르지 않는다. 매물 목록이 바뀌면(추가·수정·삭제) 목록과 함께 다시 받는다. */
+export const usePropertyCommuteTimes = (destination: { latitude: number; longitude: number } | null) => {
+  const config = usePublicConfig();
+  return useQuery({
+    queryKey: propertyQueryKeys.commuteTimes(destination?.latitude ?? 0, destination?.longitude ?? 0),
+    queryFn: ({ signal }) => fetchPropertyCommuteTimes(config, destination!, signal),
+    enabled: destination !== null,
+    staleTime: 5 * 60 * 1000,
   });
 };
 

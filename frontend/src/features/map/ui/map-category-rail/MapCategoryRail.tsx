@@ -2,6 +2,7 @@ import { css } from '@emotion/css';
 
 import { MAP_CATEGORY_OPTIONS } from '../../lib/mapPresentation';
 import type { MapCategory } from '../../model/Map';
+import MapCategoryIcon from '../map-category-icon/MapCategoryIcon';
 
 type MapCategoryRailProps = {
   selectedCategories: MapCategory[];
@@ -9,18 +10,25 @@ type MapCategoryRailProps = {
   onToggle: (category: MapCategory) => void;
   /** 거리 메모 탭을 함께 보여준다. 매물 주변 분석처럼 시설만 다루는 화면은 끈다. */
   showMemo?: boolean;
+  /** 끄면 아이콘 없이 짧은 글자만 둔다. 본 방 기록 지도는 기록 마커와 헷갈리지 않게 끈다. */
+  showIcons?: boolean;
   className?: string;
 };
 
-/** 지도 오른쪽에 세로로 쌓는 카테고리 버튼. 아이콘 없이 짧은 글자만 작게 둔다. */
+/** 지도 오른쪽에 세로로 쌓는 카테고리 버튼. 마커와 같은 아이콘 아래에 짧은 글자를 작게 둔다. */
 const MapCategoryRail = ({
   selectedCategories,
   counts,
   onToggle,
   showMemo = false,
+  showIcons = true,
   className,
 }: MapCategoryRailProps) => (
-  <aside className={`${styles.rail} ${className ?? ''}`} aria-label="지도 시설 카테고리">
+  <aside
+    className={`${styles.rail} ${className ?? ''}`}
+    aria-label="지도 시설 카테고리"
+    data-icons={showIcons || undefined}
+  >
     {MAP_CATEGORY_OPTIONS.filter((option) => showMemo || option.value !== 'MEMO').map((option) => {
       const selected = selectedCategories.includes(option.value);
       const count = counts?.[option.value];
@@ -34,6 +42,7 @@ const MapCategoryRail = ({
           aria-label={`${option.label} ${selected ? '숨기기' : '표시하기'}${count === undefined ? '' : `, ${count}개`}`}
           onClick={() => onToggle(option.value)}
         >
+          {showIcons && <MapCategoryIcon category={option.value} className={styles.icon} />}
           {option.shortLabel}
         </button>
       );
@@ -67,7 +76,15 @@ const styles = {
     font-size: 0.8rem;
     font-weight: 600;
     cursor: pointer;
-    place-items: center;
+    align-content: center;
+    justify-items: center;
+    gap: 0.12rem;
+
+    /* 아이콘이 없으면 기록 지도의 현재 위치 버튼이 레일 바로 아래(20.1rem)에 오도록 원래 높이 2.5rem을 지킨다. */
+    [data-icons] > & {
+      height: 3.1rem;
+      font-size: 0.62rem;
+    }
 
     & + & {
       border-top: 1px solid #ececec;
@@ -83,6 +100,11 @@ const styles = {
       outline: 2px solid #25282d;
       outline-offset: -2px;
     }
+  `,
+
+  icon: css`
+    label: MapCategoryRail-icon;
+    font-size: 1.45rem;
   `,
 };
 

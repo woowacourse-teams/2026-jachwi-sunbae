@@ -12,9 +12,24 @@ export const markerSignature = (marker: MapMarker, selectedMarkerId: string | nu
     marker.label,
     marker.caption ?? '',
     marker.summary?.amount ?? '',
+    marker.image?.src ?? '',
     marker.actionable === true ? '1' : '0',
     selectedMarkerId === marker.id ? '1' : '0',
   ].join('|');
+
+/** 매물과 시설 마커는 아래 꼭짓점이 좌표를 가리키는 핀 이미지로 그린다. */
+export const isPinMarker = (marker: MapMarker): boolean =>
+  marker.image !== undefined ||
+  marker.tone === 'property' ||
+  marker.tone === 'selected' ||
+  marker.tone === 'propertyCluster' ||
+  ((marker.tone === 'place' || marker.tone === 'cluster') && marker.category !== undefined);
+
+/** 핀과 말풍선은 아래 가운데가, 나머지 점 마커는 가운데가 좌표에 오게 옮긴다. */
+export const markerAnchorTransform = (marker: MapMarker): string =>
+  isPinMarker(marker) || marker.tone === 'destination' || marker.tone === 'flash'
+    ? 'translate(-50%, -100%)'
+    : 'translate(-50%, -50%)';
 
 export const markerZIndex = (marker: MapMarker, selectedMarkerId: string | null): number => {
   if (marker.tone === 'flash') return 11;

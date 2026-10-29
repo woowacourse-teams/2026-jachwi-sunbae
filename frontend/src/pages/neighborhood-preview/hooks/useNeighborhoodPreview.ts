@@ -7,17 +7,18 @@ import { commuteAreaToRegion } from '@/features/map/api/commuteApi';
 import { fetchCommuteRoute } from '@/features/map/api/commuteRouteApi';
 import { reverseGeocode, searchAddress } from '@/features/map/api/mapApi';
 import { useCommuteAreas } from '@/features/map/api/useCommuteAreas';
+import { writeCommuteDestination } from '@/features/map/lib/commuteDestinationStore';
 import { readGeolocationPermission, requestCurrentMapLocation } from '@/features/map/lib/mapLocation';
-import { type MapCoordinate, MapLocationError } from '@/features/map/lib/mapLocation';
+import { MapLocationError } from '@/features/map/lib/mapLocation';
 import type { MapAddress } from '@/features/map/model/Map';
 import { completeExploration, startExploration } from '@/features/onboarding/lib/explorationJourney';
 import { usePublicConfig } from '@/shared/config/PublicConfigContext';
 import useReturnNavigation from '@/shared/lib/navigation/useReturnNavigation';
 
-import { commuteBand, commuteColor } from '../model/commuteColors';
+import { commuteBand, commuteColor, OUT_OF_RENT_COLOR, OUT_OF_RENT_DRAW_STAGE } from '../model/commuteColors';
 import { readNeighborhoodSearch, writeNeighborhoodSearch } from '../model/neighborhoodSearchSession';
 import { PREVIEW_DESTINATION } from '../model/preview';
-import { resultMapCenter } from '../model/resultMapView';
+import { AREA_FOCUS_LEVEL, RESULT_OVERVIEW_LEVEL, resultMapCenter } from '../model/resultMapView';
 import useNeighborhoodAnalytics from './useNeighborhoodAnalytics';
 
 const describeError = (error: unknown) => {
@@ -64,15 +65,16 @@ const useNeighborhoodPreview = () => {
   const [selectionCenter, setSelectionCenter] = useState(restoredSearch?.destination ?? PREVIEW_DESTINATION);
   const [selectionLevel, setSelectionLevel] = useState(6);
   const resultView = useRef<{ latitude: number; longitude: number; level: number } | null>(null);
+  // 결과 지도 시점은 ref에 두므로, 목록에서 정류장을 고를 때처럼 시점만 바꾸면 다시 그리도록 이 값을 올린다.
+  const [, setResultViewVersion] = useState(0);
   const [hasChosenMapPoint, setHasChosenMapPoint] = useState(false);
   const [shouldFocusMapSearch, setShouldFocusMapSearch] = useState(false);
   const locationIntent = useRef(0);
-  const [currentPosition, setCurrentPosition] = useState<MapCoordinate | null>(null);
   const [isLocating, setIsLocating] = useState(false);
   const [locationError, setLocationError] = useState<string | null>(null);
   const [maxMinutes, setMaxMinutes] = useState(restoredSearch?.maxMinutes ?? 40);
-  const [maxTransfers, setMaxTransfers] = useState(restoredSearch?.maxTransfers ?? 1);
   const [maxRent, setMaxRent] = useState(restoredSearch?.maxRent ?? 0);
+  const [maxTransfers, setMaxTransfers] = useState(restoredSearch?.maxTransfers ?? 1);
   const isValidCommuteTime =
     Number.isInteger(maxMinutes) && maxMinutes >= 10 && maxMinutes <= 60 && maxMinutes % 10 === 0;
   const [selectedId, setSelectedId] = useState<string | null>(routeAreaId ?? restoredSearch?.selectedId ?? null);
@@ -97,7 +99,6 @@ const useNeighborhoodPreview = () => {
         const coordinate = await requestCurrentMapLocation();
         if (cancelled || intent !== locationIntent.current) return;
         const current = { ...coordinate, name: '현재 위치', address: '현재 위치 기준' };
-        setCurrentPosition(coordinate);
         setMapCandidate(current);
         setSelectionCenter(current);
       } catch {
@@ -114,8 +115,9 @@ const useNeighborhoodPreview = () => {
     maxTransfers,
     enabled: phase === 'analyzing',
   });
+  // 서버가 통근 시간·환승 조건으로 고른 동네 가운데 월세 시세가 있는 동네만 온다(`useCommuteAreas`가 거른다).
+  // 서버는 월세로 거르지 않으므로 월세 조건은 받은 시세(월세 중앙값)의 상한으로 화면에서 거른다. 바꿔도 다시 조회하지 않는다.
   const allAreas = commute.data?.areas;
-  // 월세 조건은 받은 동네 시세의 상한이다. 시세가 없는 동네는 전체 가격일 때만 보여준다.
   const areas = useMemo(
     () =>
       allAreas?.filter((area) => maxRent === 0 || (area.rent !== null && area.rent.monthlyRentKrw <= maxRent * 10000)),
@@ -157,23 +159,29 @@ const useNeighborhoodPreview = () => {
     enabled: !!selectedStation && phase === 'analyzing',
     retry: false,
   });
-  const regions = useMemo(
-    () =>
-      (areas ?? []).map((area) => ({
-        ...commuteAreaToRegion(area),
-        summary: undefined,
-        appearance: commuteColor(area.commuteMinutes),
-        drawStage: commuteBand(area.commuteMinutes),
-      })),
-    [areas],
-  );
+  // 월세 조건 밖 동네도 지도에서 빼지 않고 회색으로 깔아, 가깝지만 비싸서 빠진 동네가 어디인지 보이게 한다. 랭킹에는 넣지 않는다.
+  const regions = useMemo(() => {
+    const inRent = new Set(areas?.map((area) => area.adminDongCode));
+    return (allAreas ?? []).map((area) =>
+      inRent.has(area.adminDongCode)
+        ? {
+            ...commuteAreaToRegion(area),
+            summary: undefined,
+            appearance: commuteColor(area.commuteMinutes),
+            drawStage: commuteBand(area.commuteMinutes),
+          }
+        : {
+            ...commuteAreaToRegion(area),
+            summary: undefined,
+            appearance: OUT_OF_RENT_COLOR,
+            drawStage: OUT_OF_RENT_DRAW_STAGE,
+          },
+    );
+  }, [allAreas, areas]);
   return {
     isPublicExplore,
     mapPath,
-    maxRent,
-    changeMaxRent: setMaxRent,
     rentPeriod: commute.data?.rentPeriod ?? null,
-    currentPosition,
     isLocating,
     locationError,
     moveToCurrentLocation: async () => {
@@ -185,7 +193,6 @@ const useNeighborhoodPreview = () => {
       try {
         const coordinate = await request;
         if (intent !== locationIntent.current) return;
-        setCurrentPosition(coordinate);
         if (phase === 'analyzing') {
           resultView.current = { ...coordinate, level: 6 };
         } else {
@@ -213,6 +220,8 @@ const useNeighborhoodPreview = () => {
     },
     missingBoundaryCount: areas?.filter((area) => area.polygons.length === 0).length ?? 0,
     topAreas: areas?.slice(0, 5) ?? [],
+    /** 월세 조건까지 맞는 동네 수. 지도의 회색(월세 조건 밖) 동네는 세지 않는다. */
+    matchedAreaCount: areas?.length ?? 0,
     selectedStation,
     route: selectedStation ? route.data : undefined,
     isRouteLoading: !!selectedStation && (route.isPending || route.isFetching),
@@ -233,6 +242,8 @@ const useNeighborhoodPreview = () => {
     startAnalysis: () => {
       if (phase !== 'conditions' || !isValidCommuteTime) return;
       analytics.startSearch({ maxMinutes, maxTransfers, maxRent });
+      // 본 방 기록에서 매물마다 이 장소까지 통근 시간을 보여 주려고 기억한다.
+      writeCommuteDestination(destination);
       resultView.current = null;
       setSelectedId(null);
       setSelectedStopId(null);
@@ -242,7 +253,7 @@ const useNeighborhoodPreview = () => {
     selectionCenter,
     selectionLevel,
     rememberResultCenter: (latitude: number, longitude: number) => {
-      resultView.current = { latitude, longitude, level: resultView.current?.level ?? 10 };
+      resultView.current = { latitude, longitude, level: resultView.current?.level ?? RESULT_OVERVIEW_LEVEL };
     },
     rememberResultLevel: (level: number) => {
       if (resultView.current) resultView.current.level = level;
@@ -253,7 +264,6 @@ const useNeighborhoodPreview = () => {
     searchError,
     selectAddress: (address: MapAddress) => {
       locationIntent.current += 1;
-      setCurrentPosition(null);
       const point = {
         ...address,
         name: address.roadAddress ?? address.jibunAddress ?? address.address ?? '선택한 위치',
@@ -316,7 +326,6 @@ const useNeighborhoodPreview = () => {
     chooseMapPoint: (latitude: number, longitude: number) => {
       if (phase === 'analyzing') return;
       locationIntent.current += 1;
-      setCurrentPosition(null);
       void client.cancelQueries({ queryKey: ['commute-areas'] });
       setSelectedId(null);
       setSelectedStopId(null);
@@ -361,15 +370,17 @@ const useNeighborhoodPreview = () => {
       return commute.refetch();
     },
     maxMinutes,
+    maxRent,
+    changeMaxRent: setMaxRent,
     isValidCommuteTime,
     changeMaxMinutes: setMaxMinutes,
     maxTransfers,
     changeMaxTransfers: setMaxTransfers,
     // 새로고침·뒤로가기로 고른 동네가 복원되면 전체 보기 대신 그 동네로 연다. 고른 동네 화면의 정류장·부동산을 바로 보여주기 위해서다.
-    resultLevel: resultView.current?.level ?? (selected ? 7 : 10),
+    resultLevel: resultView.current?.level ?? (selected ? AREA_FOCUS_LEVEL : RESULT_OVERVIEW_LEVEL),
     center:
       resultView.current ??
-      (selected ? resultMapCenter(selected.center, 7) : undefined) ??
+      (selected ? resultMapCenter(selected.center, AREA_FOCUS_LEVEL) : undefined) ??
       resultMapCenter(
         areas?.length
           ? {
@@ -404,14 +415,22 @@ const useNeighborhoodPreview = () => {
     regions,
     selected,
     selectRegion: (id: string | null, options?: { openDetails?: boolean }) => {
-      const area = areas?.find((area) => area.adminDongCode === id);
+      // 회색(월세 조건 밖) 동네도 지도에서 고를 수 있어 받은 동네 전체에서 찾는다.
+      const area = allAreas?.find((area) => area.adminDongCode === id);
       if (area) analytics.selectArea();
-      if (area) resultView.current = { ...resultMapCenter(area.center, 7), level: 7 };
+      if (area) resultView.current = { ...resultMapCenter(area.center, AREA_FOCUS_LEVEL), level: AREA_FOCUS_LEVEL };
       setSelectedId(id);
       setSelectedStopId(area?.stations[0]?.stopId ?? null);
       // 데스크탑은 상세를 목록 옆에 붙여 지도를 가리지 않으므로, 동네를 고르면 바로 상세를 연다.
       const openDetails = options?.openDetails ?? location.pathname.endsWith('/details');
       if (id) navigate(`${mapPath}/areas/${id}${openDetails ? '/details' : ''}`);
+      // 선택을 풀면 동네 주소에서 지도 주소로 돌아가야 주소의 동네가 다시 골라지지 않는다.
+      else if (routeAreaId) navigate(mapPath, { replace: true });
+    },
+    /** 결과 지도를 한 지점으로 옮겨 확대한다. 데스크탑에서 출발 정류장을 고르거나 넘길 때 쓴다. */
+    focusResultPoint: (point: { latitude: number; longitude: number }, level: number) => {
+      resultView.current = { ...resultMapCenter(point, level), level };
+      setResultViewVersion((version) => version + 1);
     },
     selectStation: (id: string) => {
       if (!selected?.stations.some((station) => station.stopId === id) || id === selectedStopId) return;

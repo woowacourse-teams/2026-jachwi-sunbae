@@ -8,6 +8,7 @@ type LocationControlsProps = {
   preview: Pick<NeighborhoodPreviewContext, 'isLocating' | 'locationError' | 'moveToCurrentLocation'>;
   /** 결과 화면이면 아래 카드 레일을 피해 더 위에 둔다. */
   isResult: boolean;
+  /** 조건 칸 아래 피커가 펼쳐져 카드가 높아지면 그만큼 올린다. */
   isFilterOpen?: boolean;
 };
 

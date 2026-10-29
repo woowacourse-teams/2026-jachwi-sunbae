@@ -1,18 +1,20 @@
 import { useMemo, useState } from 'react';
 
 import { useViewportPlaces } from '@/features/map/api/useViewportPlaces';
+import { stationVariant } from '@/features/map/lib/mapIconAssets';
 import { viewportQuery } from '@/features/map/lib/mapViewportQuery';
 import type { MapBounds, MapMarker, NearbyAgency } from '@/features/map/model/Map';
 
 /**
- * 이 확대 단계(작을수록 가까움, 소수로도 온다)부터 화면 안의 정류장·부동산을 올린다. 축척 200m 화면 정도다.
- * 서버 반경은 최대 2km라 넓은 데스크탑 화면에서는 가운데 2km 안만 채워진다.
+ * 이 확대 단계(작을수록 가까움) 이하부터 화면 안의 정류장·부동산·메모를 올린다. 축척 100~150m 화면 정도다.
+ * 동네를 고르면 `AREA_FOCUS_LEVEL`(5)로 다가가므로 고르자마자 마커가 보인다.
+ * 데스크탑 휠은 확대를 부드럽게 해 5.3처럼 소수 단계로 멈추므로, 정수 5보다 반 단계 넉넉하게 둔다.
  */
-export const PLACES_MAX_LEVEL = 6;
+export const PLACES_MAX_LEVEL = 5.5;
 
 type BusStop = ReturnType<typeof useViewportPlaces>['busStops'][number];
-/** 동네의 출발 정류장. 경로망 정류장 ID를 그대로 가진다. */
-export type AreaStation = { stopId: string; name: string };
+/** 동네의 출발 정류장. 경로망 정류장 ID를 그대로 가지고, 고르면 지도를 그 자리로 옮긴다. */
+export type AreaStation = { stopId: string; name: string; latitude: number; longitude: number };
 export type NeighborhoodPlace =
   | { kind: 'agency'; agency: NearbyAgency }
   | { kind: 'busStop'; busStop: BusStop }
@@ -21,21 +23,22 @@ export type NeighborhoodPlace =
 export const placeTitle = (place: NeighborhoodPlace) =>
   place.kind === 'agency' ? place.agency.name : place.kind === 'busStop' ? place.busStop.name : place.station.name;
 
+const NO_AGENCIES: NearbyAgency[] = [];
 const AGENCY_PREFIX = 'agency:';
 const BUS_STOP_PREFIX = 'bus-stop:';
 const STATION_PREFIX = 'station:';
 
 /**
- * 결과 지도에서 동네를 고르거나 가까이 확대하면 지금 화면 안의 버스정류장과 공인중개사를 지도에 올린다.
- * 동네를 고르면 지도가 그 동네로 옮겨 가므로, 그 화면 기준으로 바로 보여준다.
- * 둘 다 아니면 동네 경계만 남기고, 지도 이동이 끝날 때마다(idle) 화면 범위로 다시 조회한다. 같은 화면은 캐시를 쓴다.
+ * 결과 지도를 가까이 확대하면 지금 화면 안의 버스정류장과 공인중개사를 지도에 올린다.
+ * 동네를 고르면 그 동네로 다가가므로 바로 보이고, 전체 결과를 볼 때처럼 멀면 동네 경계와 색만 남긴다.
+ * 지도 이동이 끝날 때마다(idle) 화면 범위로 다시 조회하고, 같은 화면은 캐시를 쓴다.
  */
-const useNeighborhoodPlaces = (enabled: boolean, hasSelectedArea: boolean) => {
+const useNeighborhoodPlaces = (enabled: boolean) => {
   const [bounds, setBounds] = useState<MapBounds | null>(null);
   const [level, setLevel] = useState<number | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [station, setStation] = useState<AreaStation | null>(null);
-  const isClose = enabled && (hasSelectedArea || (level !== null && level <= PLACES_MAX_LEVEL));
+  const isClose = enabled && level !== null && level <= PLACES_MAX_LEVEL;
   const query = useMemo(() => (isClose && bounds ? viewportQuery(bounds) : null), [isClose, bounds]);
   const places = useViewportPlaces(query);
   const markers = useMemo<MapMarker[]>(
@@ -64,6 +67,24 @@ const useNeighborhoodPlaces = (enabled: boolean, hasSelectedArea: boolean) => {
         : [],
     [isClose, places.busStops, places.agencies],
   );
+  // 목록에서 고른 출발 정류장은 확대 단계와 상관없이 지도에 따로 찍어 어디인지 보여 준다.
+  const stationMarker = useMemo<MapMarker[]>(
+    () =>
+      enabled && station && selectedId === `${STATION_PREFIX}${station.stopId}`
+        ? [
+            {
+              id: selectedId,
+              latitude: station.latitude,
+              longitude: station.longitude,
+              label: station.name,
+              tone: 'place' as const,
+              category: 'TRANSPORT' as const,
+              variant: stationVariant(station.stopId),
+            },
+          ]
+        : [],
+    [enabled, station, selectedId],
+  );
   const selectedPlace = useMemo<NeighborhoodPlace | null>(() => {
     if (!enabled || selectedId === null) return null;
     // 동네의 출발 정류장은 지도 화면과 상관없이 목록에서 고르므로 확대 여부와 무관하게 유지한다.
@@ -78,10 +99,14 @@ const useNeighborhoodPlaces = (enabled: boolean, hasSelectedArea: boolean) => {
   }, [enabled, isClose, selectedId, station, places.agencies, places.busStops]);
   return {
     isClose,
-    markers,
+    markers: stationMarker.length ? [...markers, ...stationMarker] : markers,
     selectedMarkerId: selectedPlace ? selectedId : null,
     selectedPlace,
     failed: places.agenciesFailed || places.busStopsFailed,
+    /** 지금 화면 범위의 공인중개사. 공인중개사는 동네 단위로 받을 수 없어 화면 기준 목록으로 쓴다. 멀리 보면 비운다. */
+    agencies: isClose ? places.agencies : NO_AGENCIES,
+    /** 목록에서 공인중개사를 고른다. */
+    selectAgency: (agency: NearbyAgency) => setSelectedId(`${AGENCY_PREFIX}${agency.providerPlaceId}`),
     /** 정류장·부동산 마커만 고른다. 다른 마커(목적지 등)는 무시한다. */
     selectMarker: (marker: MapMarker) => {
       if (marker.id.startsWith(AGENCY_PREFIX) || marker.id.startsWith(BUS_STOP_PREFIX)) setSelectedId(marker.id);

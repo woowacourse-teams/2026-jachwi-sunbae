@@ -28,6 +28,7 @@ const RecordsDesktopMap = ({ records, layers, districts, className }: Props) => 
     <div className={styles.districts}>{districts}</div>
     <MapCategoryRail
       showMemo
+      showIcons={false}
       className={styles.rail}
       selectedCategories={layers.category === null ? [] : [layers.category]}
       counts={layers.counts}
