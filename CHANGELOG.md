@@ -6,6 +6,36 @@
 
 아직 릴리스하지 않은 변경을 기록한다.
 
+## [3.0.0] - 2026-10-29
+
+### Breaking Changes
+
+- 닉네임 로그인 `POST /api/auth/nickname`을 제거하고 익명 로그인 `POST /api/auth/login`과 Refresh 쿠키 기반 `POST /api/auth/refresh`로 전환한다.
+- 인증 응답의 회원 정보에서 `name`과 `passwordProtected`를 제거한다. 기존 클라이언트는 새 인증 경로와 쿠키 전송·토큰 갱신 흐름을 사용해야 한다.
+- 게스트 체험 API `GET /api/guest/properties`와 `GET /api/guest/checklists`를 제거한다.
+- Flyway `V3`에서 회원의 닉네임·비밀번호 관련 컬럼을 제거하고 Refresh Token 저장소를 추가한다. 이전 버전으로 되돌릴 때는 DB 스키마 복구도 함께 고려해야 한다.
+
+### Added
+
+- 날씨 예보 수집·조회, 사용자 위치와 알림 설정 API 및 홈 날씨 위젯을 추가한다.
+- 거리 메모 등록·조회·삭제를 동네 찾기와 본 방 기록 지도에 연결한다.
+- 편의점 행사상품·배달 할인정보 수집·조회와 착한가격업소를 모아 보는 저렴한 한 끼 화면을 추가한다.
+- 매물별 통근 시간과 동네별 월세 정보를 조회하는 기능을 추가한다.
+
+### Changed
+
+- 매물은 위치만 골라 바로 만들고 상세에서 항목별로 정보를 수정하도록 등록·편집 흐름을 바꾼다.
+- 동네 검색 조건·체크리스트·매물 기록 화면을 개편하고 인프라 지도를 동네 찾기·본 방 기록 지도로 통합한다.
+- 프론트엔드 스타일을 Emotion으로 전환하고 공용 상태 화면·일러스트·로깅을 정리한다.
+- 통근 노선망 탐색 코드를 역할별로 분리하고 정류장 방향 응답은 `null`로 제공한다.
+- 백엔드·프론트엔드 제품 버전을 `3.0.0`으로 맞춘다.
+
+### Fixed
+
+- 통근 결과의 같은 역·정류장 중복 표시를 개선한다.
+- 모바일 확대·축소와 뒤로 가기 동작, CORS 자격증명 전송을 수정한다.
+- 외부 매물 링크를 다방의 매물 목록으로 연결한다.
+
 ## [2.1.0] - 2026-10-22
 
 ### Added
@@ -150,7 +180,8 @@
 - WebView 지도 마커 위치 갱신을 `transform` 기반으로 최적화한다.
 - 매물 사진 Object URL을 재사용해 지도 확대·이동 중 불필요한 재생성을 줄인다.
 
-[Unreleased]: https://github.com/woowacourse-teams/2026-jachwi-sunbae/compare/v2.1.0...HEAD
+[Unreleased]: https://github.com/woowacourse-teams/2026-jachwi-sunbae/compare/v3.0.0...HEAD
+[3.0.0]: https://github.com/woowacourse-teams/2026-jachwi-sunbae/releases/tag/v3.0.0
 [2.1.0]: https://github.com/woowacourse-teams/2026-jachwi-sunbae/releases/tag/v2.1.0
 [2.0.1]: https://github.com/woowacourse-teams/2026-jachwi-sunbae/releases/tag/v2.0.1
 [2.0.0]: https://github.com/woowacourse-teams/2026-jachwi-sunbae/releases/tag/v2.0.0
