@@ -26,11 +26,15 @@ export const useNearbyFacilities = (
     queryKey: ['nearby-facilities', config.apiBaseUrl, center.latitude, center.longitude, radius],
     queryFn: ({ signal }) => fetchNearby(config, center.latitude, center.longitude, radius, CATEGORIES, signal),
     enabled: enabled && needsNearby,
+    // 지도를 옮기면 가운데 좌표가 바뀌어 새로 조회한다. 그동안 이전 결과를 비우면 마커가 사라졌다 나타나고,
+    // 지도를 조금씩 계속 옮기면 한동안 아무 마커도 안 보인다. 새 결과가 올 때까지 이전 결과를 그대로 둔다.
+    placeholderData: (previous) => previous,
   });
   const transport = useQuery({
     queryKey: ['bus-stops', config.apiBaseUrl, center.latitude, center.longitude, radius],
     queryFn: ({ signal }) => fetchBusStops(config, center.latitude, center.longitude, radius, signal),
     enabled: enabled && needsTransport,
+    placeholderData: (previous) => previous,
   });
   const data = useMemo(() => {
     const stops: NearbyPlace[] = (transport.data?.busStops ?? []).map((stop) => ({

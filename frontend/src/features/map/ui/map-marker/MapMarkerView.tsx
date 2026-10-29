@@ -73,8 +73,8 @@ const MapMarkerView = ({ marker, selectedMarkerId = null, onSelectMarker }: MapM
           <span className={styles.destinationLabel}>
             {marker.tally ? (
               <>
-                {marker.tally.positive > 0 && <span data-variant="positive">{marker.tally.positive}</span>}
-                {marker.tally.negative > 0 && <span data-variant="negative">{marker.tally.negative}</span>}
+                {marker.tally.positive > 0 && <span data-variant="positive">👍 {marker.tally.positive}</span>}
+                {marker.tally.negative > 0 && <span data-variant="negative">👎 {marker.tally.negative}</span>}
               </>
             ) : (
               marker.label
@@ -583,7 +583,13 @@ const styles = {
       border-top-color: var(--color-memo-dislike, #f7cfcf);
     }
 
-    /* 겹친 메모 묶음은 글 대신 좋아요·싫어요 칸을 반반 나란히 두고 개수를 적는다. 바탕은 칸이 칠한다. */
+    /* 거리 메모는 멀리 축소할수록 작게 그려, 넓은 화면에 큰 말풍선이 빽빽하게 덮지 않게 한다. 꼬리 끝(아래 가운데)을 기준으로 줄인다. */
+    &[data-category='MEMO'] {
+      scale: var(--map-marker-scale, 1);
+      transform-origin: 50% 100%;
+    }
+
+    /* 겹친 메모 묶음은 글 대신 좋아요·싫어요 칸을 반반 나란히 두고 👍·👎와 개수를 적는다. 바탕은 칸이 칠한다. */
     &[data-tally] .MapMarkerView-destinationLabel {
       display: flex;
       padding: 0;

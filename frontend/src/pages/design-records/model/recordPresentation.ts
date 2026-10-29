@@ -34,15 +34,21 @@ type RecordPoint = { latitude: number | null; longitude: number | null };
 export const recordsMapHint = (
   records: RecordPoint[],
   { facilitiesFailed, memo }: { facilitiesFailed: boolean; memo: { isFailed: boolean } },
-  /** 지도를 찍어 메모·매물을 남기는지(데스크탑). 휴대폰은 아래쪽 추가 버튼으로 남긴다. */
-  registersOnTap = true,
 ) => {
   if (facilitiesFailed || memo.isFailed) return '지도 정보를 일부 불러오지 못했어요';
-  const action = registersOnTap ? '빈 곳을 눌러 메모를 남기거나 매물을 기록해요' : '+ 버튼으로 메모·매물을 추가해요';
+  const action = '빈 곳을 눌러 메모를 남기거나 매물을 기록해요';
   const base = records.length ? action : `아직 기록한 방이 없어요 · ${action}`;
   return records.some((record) => record.latitude === null || record.longitude === null)
     ? `${base} · 위치 없는 기록은 리스트에서 확인해요`
     : base;
+};
+
+/** 카드 맨 위에 붙이는 목적지까지 직선거리 한 줄. 1km 아래는 10m 단위, 그 위는 소수 한 자리 km로 적는다. */
+export const destinationDistanceLabel = (destinationName: string, meters: number) => {
+  const rounded = Math.round(meters / 10) * 10;
+  return rounded < 1000
+    ? `${destinationName}까지 ${rounded}m`
+    : `${destinationName}까지 ${(meters / 1000).toFixed(1)}km`;
 };
 
 /** 카드에 붙이는 출퇴근 장소까지 통근 시간 한 줄. 서버는 60분·환승 2회 안에서만 시간을 구한다. */

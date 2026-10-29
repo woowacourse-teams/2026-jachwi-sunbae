@@ -112,15 +112,15 @@ describe('지도 군집 반경', () => {
 
   it.each([
     [4, 80, 2],
-    [5, 80, 1],
-    [5, 150, 2],
-    [6, 150, 1],
-    [6, 300, 2],
-    [7, 300, 1],
-    [7, 600, 2],
-    [8, 600, 1],
-    [8, 1_200, 2],
-    [9, 1_200, 1],
+    [5, 150, 1],
+    [5, 300, 2],
+    [6, 300, 1],
+    [6, 600, 2],
+    [7, 600, 1],
+    [7, 1_200, 2],
+    [8, 1_200, 1],
+    [8, 2_400, 2],
+    [9, 2_400, 1],
   ])('레벨 %i에서 %im 떨어진 두 장소는 마커 %i개가 된다', (level, meters, expected) => {
     expect(clusterNearbyPlaces(pairAt(meters), level)).toHaveLength(expected);
   });
@@ -159,9 +159,9 @@ describe('지도 군집 마커 식별자와 중심', () => {
   it('장소는 가까운 순서로 군집의 씨앗이 되고, 거리가 같으면 provider id 순서를 따른다', () => {
     const origin = 37.5665;
     const places = [
-      place('far-30', origin + metersToLatitude(160), 126.978),
+      place('far-30', origin + metersToLatitude(320), 126.978),
       place('near-10', origin, 126.978),
-      place('mid-20', origin + metersToLatitude(80), 126.978),
+      place('mid-20', origin + metersToLatitude(160), 126.978),
     ];
 
     const markers = clusterNearbyPlaces(places, 5);
@@ -169,8 +169,8 @@ describe('지도 군집 마커 식별자와 중심', () => {
     expect(markers.map((marker) => marker.id).sort()).toEqual(['cluster-mid-20-near-10', 'place-far-30']);
 
     const tie = [
-      place('b-5', origin + metersToLatitude(160), 126.978),
-      place('c-5', origin + metersToLatitude(80), 126.978),
+      place('b-5', origin + metersToLatitude(320), 126.978),
+      place('c-5', origin + metersToLatitude(150), 126.978),
       place('a-5', origin, 126.978),
     ];
     expect(

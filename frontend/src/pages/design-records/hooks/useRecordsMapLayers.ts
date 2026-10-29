@@ -2,12 +2,14 @@ import { useMemo, useState } from 'react';
 
 import { reverseGeocode } from '@/features/map/api/mapApi';
 import { useNearbyFacilities } from '@/features/map/api/useNearbyFacilities';
+import { useViewportBusStops } from '@/features/map/api/useViewportBusStops';
 import { clusterNearbyPlaces } from '@/features/map/lib/mapClustering';
 import { SERVICE_MAP_STYLE_ID } from '@/features/map/lib/mapStyle';
-import { isInBounds, viewportQuery } from '@/features/map/lib/mapViewportQuery';
-import type { MapAddress, MapBounds, MapCategory, MapMarker } from '@/features/map/model/Map';
+import { isInBounds, viewportQuery, viewportTiles } from '@/features/map/lib/mapViewportQuery';
+import type { MapAddress, MapBounds, MapCategory, MapMarker, NearbyPlace } from '@/features/map/model/Map';
 import type { MapCanvasProps, MapCoordinateMenu, MapTapAction } from '@/features/map/model/MapCanvas';
 import useStreetMemoLayer from '@/features/street-memo/hooks/useStreetMemoLayer';
+import { focusOnMemos, OVERLAP_HEIGHT_RATIO, OVERLAP_WIDTH_RATIO } from '@/features/street-memo/lib/streetMemoFocus';
 import addProperty from '@/shared/assets/illustrations/add-property.webp';
 import addProperty2x from '@/shared/assets/illustrations/add-property@2x.webp';
 import { usePublicConfig } from '@/shared/config/PublicConfigContext';
@@ -16,6 +18,8 @@ import { useLogger } from '@/shared/lib/analytics/logging';
 import type { RecordsState } from './useRecords';
 
 const REGISTER_MARKER_ID = 'register-point';
+/** 겹쳐 묶인 매물 마커 id의 머리. 뒤에 묶인 매물 id를 쉼표로 잇는다. */
+const RECORD_GROUP_PREFIX = 'record-group:';
 const NO_CATEGORIES: MapCategory[] = [];
 /** 이 단계보다 멀리 축소하면 거리 메모를 숨긴다. 도시 전체를 볼 때는 골목 메모가 쓸모없다. */
 const MEMO_MAX_LEVEL = 10;
@@ -25,7 +29,7 @@ type MapPoint = { latitude: number; longitude: number };
 type Options = {
   /**
    * 찍은 위치에서 매물 등록을 고르면 주소를 찾아 넘긴다. 주소를 못 찾으면 좌표만 넘긴다. 등록 화면을 여는 방식은 화면이 정한다.
-   * 넘기지 않으면 찍은 위치에서는 메모만 남긴다. 휴대폰은 찍은 위치 동작을 쓰지 않고 추가 버튼으로 따로 남긴다.
+   * 넘기지 않으면 찍은 위치에서는 메모만 남긴다.
    */
   onRegister?: (location: MapAddress) => void;
   /** 처음 켜 둘 카테고리. 휴대폰은 거리 메모를 켠 채로 연다. */
@@ -36,6 +40,39 @@ type Options = {
 
 const sameBounds = (a: MapBounds | null, b: MapBounds) =>
   a !== null && a.south === b.south && a.north === b.north && a.west === b.west && a.east === b.east;
+
+/**
+ * 화면에서 집 핀이 포개질 만큼 가까운 매물 마커를 한 무리로 묶는다. 거리 메모 말풍선과 같은 겹침 간격을 쓴다.
+ * 화면 범위를 모르면 좌표가 똑같은(같은 건물의) 매물만 묶는다.
+ */
+const groupOverlappingRecords = (markers: MapMarker[], bounds: MapBounds | null): MapMarker[][] => {
+  const latitudeGap = bounds ? (bounds.north - bounds.south) * OVERLAP_HEIGHT_RATIO : 0;
+  const longitudeGap = bounds ? (bounds.east - bounds.west) * OVERLAP_WIDTH_RATIO : 0;
+  const groups: MapMarker[][] = [];
+  for (const marker of markers) {
+    const group = groups.find(
+      ([head]) =>
+        Math.abs(head.latitude - marker.latitude) <= latitudeGap &&
+        Math.abs(head.longitude - marker.longitude) <= longitudeGap,
+    );
+    if (group) group.push(marker);
+    else groups.push([marker]);
+  }
+  return groups;
+};
+
+const recordGroupMarker = (group: MapMarker[]): MapMarker =>
+  group.length === 1
+    ? group[0]
+    : {
+        id: `${RECORD_GROUP_PREFIX}${group.map((marker) => marker.id).join(',')}`,
+        latitude: group.reduce((sum, marker) => sum + marker.latitude, 0) / group.length,
+        longitude: group.reduce((sum, marker) => sum + marker.longitude, 0) / group.length,
+        label: `매물 ${group.length}개`,
+        tone: 'propertyCluster',
+        count: group.length,
+        actionable: true,
+      };
 
 /**
  * 본 방 기록 지도 위에 얹는 인프라 겹. 예전 인프라 지도의 시설 카테고리·거리 메모와 찍은 위치의 동작을 맡는다.
@@ -49,8 +86,13 @@ const useRecordsMapLayers = (
   const config = usePublicConfig();
   const { log } = useLogger();
   const { level } = records;
-  const hasSelection = records.selected !== undefined;
-  const closeSelection = () => records.setSelectedId(null);
+  // 겹쳐 묶인 매물 마커를 눌러 함께 보는 매물들의 id. 하나만 고른 매물은 records.selected로 따로 둔다.
+  const [groupIds, setGroupIds] = useState<string[]>([]);
+  const hasSelection = records.selected !== undefined || groupIds.length > 0;
+  const closeSelection = () => {
+    records.setSelectedId(null);
+    setGroupIds([]);
+  };
   const [bounds, setBounds] = useState<MapBounds | null>(null);
   const [category, setCategory] = useState<MapCategory | null>(initialCategory);
   const [tapPoint, setTapPoint] = useState<MapPoint | null>(null);
@@ -60,16 +102,33 @@ const useRecordsMapLayers = (
 
   const facilityCategory = category !== null && category !== 'MEMO' ? category : null;
   const query = useMemo(() => (bounds ? viewportQuery(bounds) : null), [bounds]);
-  const selectedCategories = facilityCategory === null ? NO_CATEGORIES : [facilityCategory];
+  // 정류장은 화면 가장자리까지 빠짐없이 보이게 화면을 칸으로 나눠 조회하고, 다른 시설은 화면 가운데 반경으로 조회한다.
+  const showsTransport = facilityCategory === 'TRANSPORT';
+  const selectedCategories = facilityCategory === null || showsTransport ? NO_CATEGORIES : [facilityCategory];
   const nearby = useNearbyFacilities(
     query?.center ?? { latitude: 0, longitude: 0 },
     query?.radius ?? 500,
     selectedCategories,
-    query !== null && facilityCategory !== null,
+    query !== null && facilityCategory !== null && !showsTransport,
   );
-  const visiblePlaces = useMemo(
-    () => (bounds ? nearby.data.places.filter((place) => isInBounds(place, bounds)) : []),
-    [nearby.data.places, bounds],
+  const tiles = useMemo(() => (bounds ? viewportTiles(bounds) : []), [bounds]);
+  const busStops = useViewportBusStops(tiles, bounds, showsTransport);
+  const visiblePlaces = useMemo<NearbyPlace[]>(
+    () =>
+      showsTransport
+        ? busStops.busStops.map((stop) => ({
+            providerPlaceId: stop.nodeId,
+            name: stop.name,
+            latitude: stop.latitude,
+            longitude: stop.longitude,
+            distanceMeters: stop.distanceMeters,
+            category: 'TRANSPORT',
+            address: '',
+          }))
+        : bounds
+          ? nearby.data.places.filter((place) => isInBounds(place, bounds))
+          : [],
+    [showsTransport, busStops.busStops, nearby.data.places, bounds],
   );
   const counts = useMemo(() => {
     const result: Partial<Record<MapCategory, number>> = {};
@@ -144,10 +203,34 @@ const useRecordsMapLayers = (
             : []),
         ];
 
+  const recordGroups = useMemo(() => groupOverlappingRecords(records.markers, bounds), [records.markers, bounds]);
+  const recordMarkers = useMemo(() => recordGroups.map(recordGroupMarker), [recordGroups]);
+  // 함께 보는 매물(겹친 무리)이나 하나만 고른 매물이 든 마커를 고른 것으로 표시한다. 배율을 바꿔 무리가 달라져도 따라간다.
+  const shownIds = groupIds.length > 0 ? groupIds : records.selected ? [records.selected.id] : [];
+  const selectedRecordMarkerId =
+    shownIds.length === 0
+      ? null
+      : (recordMarkers[recordGroups.findIndex((group) => group.some((marker) => marker.id === shownIds[0]))]?.id ??
+        null);
+
   const selectMarker = (marker: MapMarker): boolean => {
+    const memos = memo.memosOf(marker);
+    if (marker.id.startsWith(RECORD_GROUP_PREFIX)) {
+      memo.close();
+      setTapPoint(null);
+      records.setSelectedId(null);
+      setGroupIds(marker.id.slice(RECORD_GROUP_PREFIX.length).split(','));
+      return true;
+    }
     if (!memo.selectMarker(marker)) return false;
     setTapPoint(null);
     closeSelection();
+    // 누른 메모가 화면을 채우도록 다가간다. 겹쳐 묶인 메모는 말풍선이 서로 갈라질 만큼 확대한다.
+    if (memos.length > 0) {
+      const focus = focusOnMemos(memos, bounds, level);
+      records.setCenter(focus.center);
+      records.setLevel(focus.level);
+    }
     return true;
   };
   /**
@@ -169,19 +252,20 @@ const useRecordsMapLayers = (
     setBounds(next);
     setTapPoint(null);
   };
-  const allMarkers = useMemo(() => [...records.markers, ...markers], [records.markers, markers]);
+  const allMarkers = useMemo(() => [...recordMarkers, ...markers], [recordMarkers, markers]);
   /** 두 화면의 지도가 그대로 넘기는 MapCanvas 설정. 찍은 자리 말풍선(coordinateMenu)은 데스크탑만 더한다. */
   const canvasProps = {
     customStyleId: SERVICE_MAP_STYLE_ID,
     center: records.center,
     level: records.level,
     markers: allMarkers,
-    selectedMarkerId: records.selected?.id ?? memo.selectedMarkerId,
-    // 메모 마커가 아니면 기록한 방 마커다. 시설 마커는 누를 수 없다.
+    selectedMarkerId: selectedRecordMarkerId ?? memo.selectedMarkerId,
+    // 메모 마커와 겹친 매물 묶음이 아니면 기록한 방 하나의 마커다. 시설 마커는 누를 수 없다.
     onSelectMarker: (marker: MapMarker) => {
       if (selectMarker(marker)) return;
       memo.close();
       setTapPoint(null);
+      setGroupIds([]);
       records.setSelectedId(marker.id);
     },
     onSelectLocation: tapLocation,
@@ -195,10 +279,13 @@ const useRecordsMapLayers = (
     category,
     counts,
     memo,
+    /** 겹친 매물 묶음을 눌러 함께 보는 매물. 묶음을 고르지 않았으면 빈 목록이다. */
+    groupRecords: records.records.filter((record) => groupIds.includes(record.id)),
+    closeGroup: () => setGroupIds([]),
     tapPoint,
     tapActions,
     isResolvingAddress,
-    facilitiesFailed: facilityCategory !== null && nearby.isError,
+    facilitiesFailed: showsTransport ? busStops.isError : facilityCategory !== null && nearby.isError,
     coordinateMenu: (tapPoint === null ? undefined : { ...tapPoint, actions: tapActions }) satisfies
       MapCoordinateMenu | undefined,
     /** 같은 카테고리를 다시 누르면 끈다. */
@@ -206,7 +293,7 @@ const useRecordsMapLayers = (
     /** 메모를 남기면 메모가 보이도록 메모 카테고리를 켠다. */
     showMemos: () => setCategory('MEMO'),
     closeTap: () => setTapPoint(null),
-    /** 열어 둔 매물·메모·찍은 위치를 모두 닫는다. 휴대폰 추가 모드에 들어갈 때 쓴다. */
+    /** 열어 둔 매물·메모·찍은 위치를 모두 닫는다. */
     closeAll: () => {
       closeSelection();
       memo.close();

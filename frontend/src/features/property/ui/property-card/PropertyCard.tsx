@@ -58,6 +58,8 @@ type PropertyCardProps = {
   actions?: ReactNode;
   /** 가격 아래 덧붙이는 한 줄. 본 방 기록은 출퇴근 장소까지 통근 시간을 둔다. */
   meta?: ReactNode;
+  /** 이름 위에 붙이는 작은 한 줄. 본 방 기록은 목적지까지 거리를 둔다. */
+  eyebrow?: ReactNode;
 };
 
 const PropertyCard = ({
@@ -70,6 +72,7 @@ const PropertyCard = ({
   onOpen,
   actions,
   meta,
+  eyebrow,
 }: PropertyCardProps) => {
   const navigate = useNavigate();
   const detailPath = to ?? `/properties/${property.propertyId}`;
@@ -100,6 +103,7 @@ const PropertyCard = ({
         }}
       >
         <div className={styles.details}>
+          {eyebrow !== undefined && <span className={styles.eyebrow}>{eyebrow}</span>}
           <strong className={styles.title}>{property.name}</strong>
           <span className={styles.price}>
             보증금 {formatManwon(property.depositAmount)} / 월세 {formatManwon(property.monthlyRentAmount)}
@@ -203,6 +207,19 @@ const styles = {
     gap: 0.35rem;
     color: inherit;
     text-decoration: none;
+  `,
+
+  eyebrow: css`
+    label: PropertyCard-eyebrow;
+    display: inline-flex;
+    align-self: flex-start;
+    width: fit-content;
+    padding: 0.15rem 0.45rem;
+    border-radius: 0.35rem;
+    background: color-mix(in srgb, var(--color-brand-blue-ink, #3f6fc4) 12%, transparent);
+    color: var(--color-brand-blue-ink, #3f6fc4);
+    font-size: 0.72rem;
+    font-weight: 700;
   `,
 
   details: css`

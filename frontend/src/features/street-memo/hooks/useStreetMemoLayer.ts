@@ -4,6 +4,7 @@ import type { MapBounds, MapMarker } from '@/features/map/model/Map';
 import { useLogger } from '@/shared/lib/analytics/logging';
 
 import { useStreetMemoMutations, useStreetMemos } from '../api/useStreetMemos';
+import { OVERLAP_HEIGHT_RATIO, OVERLAP_WIDTH_RATIO } from '../lib/streetMemoFocus';
 import type { StreetMemo, StreetMemoPreference } from '../model/StreetMemo';
 
 export const STREET_MEMO_MARKER_PREFIX = 'street-memo:';
@@ -14,12 +15,6 @@ const LABEL_MAX_LENGTH = 80;
 
 type Point = { latitude: number; longitude: number };
 
-/**
- * 말풍선이 거의 같은 자리에 겹친다고 볼 거리. 지도 화면 폭과 높이에 대한 비율이라 확대 배율이 바뀌어도 화면에서 같은 간격이 된다.
- * 조금 겹치는 정도는 그대로 두고, 아래 말풍선을 누를 수 없을 만큼 포개질 때만 묶는다.
- */
-const OVERLAP_WIDTH_RATIO = 0.06;
-const OVERLAP_HEIGHT_RATIO = 0.03;
 /** 여러 메모가 한꺼번에 나타날 때 튀어나오는 시점을 엇갈리게 하는 간격과 단계 수. */
 const POP_STAGGER_MS = 60;
 const POP_STAGGER_STEPS = 6;
@@ -135,6 +130,10 @@ const useStreetMemoLayer = (enabled: boolean, bounds: MapBounds | null) => {
     /** 지우는 중이거나 지우지 못한 메모의 id. 여러 메모를 함께 볼 때 어느 메모의 상태인지 가린다. */
     removingId: remove.isPending ? (remove.variables ?? null) : null,
     removeFailedId: remove.isError ? (remove.variables ?? null) : null,
+    /** 메모 마커에 묶인 메모. 지도를 그 메모들로 옮길 때 쓴다. 메모 마커가 아니면 빈 목록이다. */
+    memosOf: (marker: MapMarker): StreetMemo[] =>
+      memoGroups.find((group) => markerId(group) === marker.id) ??
+      (flash && marker.id === markerId([flash]) ? [flash] : []),
     /** 메모 마커면 열고 true를 돌려준다. 다른 마커는 지도 화면이 처리하게 false를 돌려준다. */
     selectMarker: (marker: MapMarker): boolean => {
       if (!marker.id.startsWith(STREET_MEMO_MARKER_PREFIX)) return false;
