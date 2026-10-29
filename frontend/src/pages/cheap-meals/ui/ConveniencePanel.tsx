@@ -1,13 +1,18 @@
-import { css } from '@emotion/css';
+import { css, cx } from '@emotion/css';
 import { useState } from 'react';
 
 import { describeMealError, usePromotions } from '@/features/meal-deals/api/mealDealsApi';
 import { formatKst, httpsUrl, won } from '@/features/meal-deals/lib/presentation';
 import { type Brand, BRANDS, type Promotion, PROMOTIONS } from '@/features/meal-deals/model/MealDeal';
+import { LogClick } from '@/shared/lib/analytics/logging';
 import { Button } from '@/shared/ui/button/Button';
+import EmptyState from '@/shared/ui/empty-state/EmptyState';
+import InlineNotice from '@/shared/ui/inline-notice/InlineNotice';
 import QueryState from '@/shared/ui/query-state/QueryState';
 import { SegmentedControl, SegmentedControlItem } from '@/shared/ui/segmented-control/SegmentedControl';
 
+import type { MealLayout } from '../hooks/useMealTabs';
+import { CHEAP_MEAL_EVENTS, outboundClickedParams } from '../lib/cheapMealAnalytics';
 import type { MealDetail } from '../model/MealNavigation';
 import ProductImage from './ProductImage';
 
@@ -21,15 +26,15 @@ const filters: { value: Filter; label: string }[] = [
   { value: 'SALE', label: '할인' },
   { value: 'OTHER', label: '기타 행사' },
 ];
-type ConveniencePanelProps = { isActive: boolean; onDetail: (detail: MealDetail) => void };
+type ConveniencePanelProps = { isActive: boolean; layout: MealLayout; onDetail: (detail: MealDetail) => void };
 
-const ConveniencePanel = ({ isActive, onDetail }: ConveniencePanelProps) => {
+const ConveniencePanel = ({ isActive, layout, onDetail }: ConveniencePanelProps) => {
   const [brand, setBrand] = useState<Brand>('EMART24');
   const [filter, setFilter] = useState<Filter>('ALL');
   const [limit, setLimit] = useState(24);
   const query = usePromotions(brand, isActive);
   return (
-    <section className={shared.section} aria-label="편의점 행사상품">
+    <section className={cx(shared.section, layout === 'desktop' && shared.sectionDesktop)} aria-label="편의점 행사상품">
       <h2>편의점 행사상품</h2>
       <p className={shared.description}>지금 진행 중인 브랜드 행사 살펴보기</p>
       <SegmentedControl
@@ -46,21 +51,21 @@ const ConveniencePanel = ({ isActive, onDetail }: ConveniencePanelProps) => {
           </SegmentedControlItem>
         ))}
       </SegmentedControl>
-      <div className={shared.filters} role="group" aria-label="행사 유형">
+      <SegmentedControl
+        className={styles.filters}
+        value={filter}
+        onValueChange={(value) => {
+          setFilter(value as Filter);
+          setLimit(24);
+        }}
+        aria-label="행사 유형"
+      >
         {filters.map(({ value, label }) => (
-          <button
-            key={value}
-            type="button"
-            aria-pressed={filter === value}
-            onClick={() => {
-              setFilter(value);
-              setLimit(24);
-            }}
-          >
+          <SegmentedControlItem key={value} value={value}>
             {label}
-          </button>
+          </SegmentedControlItem>
         ))}
-      </div>
+      </SegmentedControl>
       <QueryState query={query} loadingTitle="행사상품을 불러오고 있어요" describeError={describeMealError}>
         {(result) => {
           const products = result.products.filter(
@@ -77,22 +82,23 @@ const ConveniencePanel = ({ isActive, onDetail }: ConveniencePanelProps) => {
                 {BRANDS[brand]} · {products.length.toLocaleString('ko-KR')}개 상품
               </p>
               {products.length === 0 ? (
-                <div className={shared.empty}>
-                  <strong>
-                    {result.collectedAt === null && result.count === 0
+                <EmptyState
+                  variant="plain"
+                  title={
+                    result.collectedAt === null && result.count === 0
                       ? '아직 행사정보를 수집하지 않았어요'
                       : result.count === 0
                         ? '현재 등록된 행사상품이 없어요'
-                        : '이 행사 유형의 상품이 없어요'}
-                  </strong>
-                  <p>
-                    {result.collectedAt === null
+                        : '이 행사 유형의 상품이 없어요'
+                  }
+                  description={
+                    result.collectedAt === null
                       ? '공식 행사 페이지에서 최신 정보를 확인해 주세요.'
-                      : '다른 행사 유형이나 브랜드를 살펴보세요.'}
-                  </p>
-                </div>
+                      : '다른 행사 유형이나 브랜드를 살펴보세요.'
+                  }
+                />
               ) : (
-                <ul className={styles.grid} aria-label="행사상품 목록">
+                <ul className={cx(styles.grid, layout === 'desktop' && styles.gridDesktop)} aria-label="행사상품 목록">
                   {products.slice(0, limit).map((product, index) => (
                     <li key={`${index}-${product.name}-${product.promotionType}`}>
                       <button
@@ -116,20 +122,24 @@ const ConveniencePanel = ({ isActive, onDetail }: ConveniencePanelProps) => {
                   상품 더 보기 ({Math.min(limit, products.length)}/{products.length})
                 </Button>
               )}
-              <footer className={shared.note}>
-                <p>
+              <footer className={styles.footer}>
+                <InlineNotice>
                   마지막 수집:{' '}
                   {result.collectedAt === null ? '아직 수집되지 않음' : `${formatKst(result.collectedAt)} (한국 시간)`}
-                </p>
-                {source && (
-                  <a href={source} target="_blank" rel="noreferrer">
-                    {BRANDS[brand]} 공식 행사정보 ↗
-                  </a>
-                )}
-                <p>
+                  <br />
                   개별 매장에 따라 행사 적용과 재고가 다를 수 있어요. 표시한 금액은 상품 판매가격이며, 행사 조건은 공식
                   안내를 확인해 주세요.
-                </p>
+                </InlineNotice>
+                {source && (
+                  <LogClick
+                    event={CHEAP_MEAL_EVENTS.outboundClicked}
+                    params={outboundClickedParams('convenience', 'official_source', brand)}
+                  >
+                    <a className={shared.sourceLink} href={source} target="_blank" rel="noreferrer">
+                      {BRANDS[brand]} 공식 행사정보 ↗
+                    </a>
+                  </LogClick>
+                )}
               </footer>
             </>
           );
@@ -139,6 +149,16 @@ const ConveniencePanel = ({ isActive, onDetail }: ConveniencePanelProps) => {
   );
 };
 const styles = {
+  filters: css`
+    label: ConveniencePanel-filters;
+    margin: 0.75rem 0 0.25rem;
+  `,
+  footer: css`
+    label: ConveniencePanel-footer;
+    display: grid;
+    gap: 0.5rem;
+    margin-top: 1.25rem;
+  `,
   grid: css`
     label: ConveniencePanel-grid;
     list-style: none;
@@ -147,6 +167,11 @@ const styles = {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 1.4rem 0.8rem;
+  `,
+  gridDesktop: css`
+    label: ConveniencePanel-gridDesktop;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 2rem 1.25rem;
   `,
   card: css`
     label: ConveniencePanel-card;

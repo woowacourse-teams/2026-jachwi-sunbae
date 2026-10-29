@@ -1,25 +1,28 @@
-import { css } from '@emotion/css';
+import { css, cx } from '@emotion/css';
 import { useState } from 'react';
 
 import { describeMealError, useDeliveryOffers } from '@/features/meal-deals/api/mealDealsApi';
 import { won } from '@/features/meal-deals/lib/presentation';
 import { type Platform, PLATFORMS } from '@/features/meal-deals/model/MealDeal';
 import { Button } from '@/shared/ui/button/Button';
+import EmptyState from '@/shared/ui/empty-state/EmptyState';
+import InlineNotice from '@/shared/ui/inline-notice/InlineNotice';
 import QueryState from '@/shared/ui/query-state/QueryState';
 import { SegmentedControl, SegmentedControlItem } from '@/shared/ui/segmented-control/SegmentedControl';
 
+import type { MealLayout } from '../hooks/useMealTabs';
 import type { MealDetail } from '../model/MealNavigation';
 
 import * as shared from './MealContent.styles';
 
-type DeliveryPanelProps = { isActive: boolean; onDetail: (detail: MealDetail) => void };
+type DeliveryPanelProps = { isActive: boolean; layout: MealLayout; onDetail: (detail: MealDetail) => void };
 
-const DeliveryPanel = ({ isActive, onDetail }: DeliveryPanelProps) => {
+const DeliveryPanel = ({ isActive, layout, onDetail }: DeliveryPanelProps) => {
   const [platform, setPlatform] = useState<Platform | 'ALL'>('ALL');
   const [limit, setLimit] = useState(24);
   const query = useDeliveryOffers(isActive);
   return (
-    <section className={shared.section} aria-label="배달 할인정보">
+    <section className={cx(shared.section, layout === 'desktop' && shared.sectionDesktop)} aria-label="배달 할인정보">
       <h2>배달 할인 모아보기</h2>
       <p className={shared.description}>할인금액뿐 아니라 적용 조건도 확인해 보세요.</p>
       <SegmentedControl
@@ -46,9 +49,13 @@ const DeliveryPanel = ({ isActive, onDetail }: DeliveryPanelProps) => {
                 {offers.length}개 혜택
               </p>
               {offers.length === 0 ? (
-                <p className={shared.empty}>현재 유효한 할인정보가 없어요.</p>
+                <EmptyState
+                  variant="plain"
+                  title="현재 유효한 할인정보가 없어요"
+                  description="다른 플랫폼을 고르거나 나중에 다시 확인해 주세요."
+                />
               ) : (
-                <ul className={styles.list} aria-label="배달 혜택 목록">
+                <ul className={cx(styles.list, layout === 'desktop' && styles.listDesktop)} aria-label="배달 혜택 목록">
                   {offers.slice(0, limit).map((offer) => (
                     <li key={offer.id}>
                       <button
@@ -79,9 +86,11 @@ const DeliveryPanel = ({ isActive, onDetail }: DeliveryPanelProps) => {
                   혜택 더 보기 ({limit}/{offers.length})
                 </Button>
               )}
-              <p className={shared.note}>
-                배달비·중복 할인·매장별 조건은 별도예요. 주문 앱에서 실제 적용 여부와 최종 결제금액을 확인해 주세요.
-              </p>
+              <div className={styles.notice}>
+                <InlineNotice>
+                  배달비·중복 할인·매장별 조건은 별도예요. 주문 앱에서 실제 적용 여부와 최종 결제금액을 확인해 주세요.
+                </InlineNotice>
+              </div>
             </>
           );
         }}
@@ -104,9 +113,15 @@ const styles = {
     padding: 0;
     margin: 0 0 1.5rem;
   `,
+  listDesktop: css`
+    label: DeliveryPanel-listDesktop;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1.25rem;
+  `,
   card: css`
     label: DeliveryPanel-card;
     display: flex;
+    height: 100%;
     flex-direction: column;
     gap: 0.6rem;
     width: 100%;
@@ -143,6 +158,10 @@ const styles = {
     & > :first-child {
       color: var(--color-ink-soft);
     }
+  `,
+  notice: css`
+    label: DeliveryPanel-notice;
+    margin-top: 1.25rem;
   `,
   more: css`
     label: DeliveryPanel-more;

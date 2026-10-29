@@ -13,6 +13,9 @@ import { PublicConfigProvider } from '@/shared/config/PublicConfigContext';
 
 import { server } from '../../server';
 
+const trackEvent = vi.hoisted(() => vi.fn());
+vi.mock('@/shared/lib/analytics/posthog', () => ({ trackPostHogEvent: trackEvent }));
+
 vi.mock('@/features/map/ui/map-canvas/MapCanvas', () => ({
   default: ({
     onCenterChange,
@@ -57,6 +60,7 @@ const success = (data: unknown) => HttpResponse.json({ code: 'SUCCESS', message:
 
 beforeEach(() => {
   Object.values(calls).forEach((call) => call.mockClear());
+  trackEvent.mockClear();
   setAuthentication({ accessToken: 'test-token', tokenType: 'Bearer', expiresIn: 60, memberId: 1 });
   server.use(
     http.get('http://localhost:8080/api/promotions', ({ request }) => {
@@ -147,7 +151,7 @@ it('상품은 24개씩 표시하고 추가 행사 유형과 UNKNOWN 상품도 �
   expect(within(list).getAllByRole('listitem')).toHaveLength(24);
   await user.click(screen.getByRole('button', { name: /상품 더 보기/ }));
   expect(within(list).getAllByRole('listitem')).toHaveLength(48);
-  await user.click(screen.getByRole('button', { name: '기타 행사' }));
+  await user.click(screen.getByRole('radio', { name: '기타 행사' }));
   expect(within(list).getAllByRole('listitem')).toHaveLength(24);
   expect(within(list).getAllByText('3+1')).toHaveLength(12);
   expect(within(list).getAllByText('골라담기')).toHaveLength(12);
@@ -159,14 +163,14 @@ it('브랜드·1+1 필터·배달 플랫폼이 탭을 오가도 유지된다', a
   await user.click(screen.getByRole('radio', { name: '세븐일레븐' }));
   await waitFor(() => expect(calls.promotions).toHaveBeenCalledWith('SEVEN_ELEVEN'));
   await screen.findByRole('list', { name: '행사상품 목록' });
-  await user.click(screen.getByRole('button', { name: '1+1' }));
+  await user.click(screen.getByRole('radio', { name: '1+1' }));
   await user.click(tab('배달'));
   await screen.findByRole('list', { name: '배달 혜택 목록' });
   await user.click(screen.getByRole('radio', { name: '배민' }));
   expect(screen.queryByRole('button', { name: /테스트치킨 할인 상세/ })).not.toBeInTheDocument();
   await user.click(tab('편의점'));
   expect(screen.getByRole('radio', { name: '세븐일레븐' })).toHaveAttribute('aria-checked', 'true');
-  expect(screen.getByRole('button', { name: '1+1' })).toHaveAttribute('aria-pressed', 'true');
+  expect(screen.getByRole('radio', { name: '1+1' })).toHaveAttribute('aria-checked', 'true');
   await user.click(tab('배달'));
   expect(screen.getByRole('radio', { name: '배민' })).toHaveAttribute('aria-checked', 'true');
 });
@@ -207,7 +211,7 @@ it('미수집 0건을 서버 오류와 구분한다', async () => {
 it('현재 유효한 배달 혜택 0건을 그대로 표시한다', async () => {
   server.use(http.get('http://localhost:8080/api/delivery-discount-offers', () => success([])));
   setup('/cheap-meals?tab=delivery');
-  expect(await screen.findByText('현재 유효한 할인정보가 없어요.')).toBeInTheDocument();
+  expect(await screen.findByText('현재 유효한 할인정보가 없어요')).toBeInTheDocument();
 });
 it('서버 실패 후 다시 시도하면 실제 응답 목록으로 복구한다', async () => {
   let failed = true;
@@ -266,7 +270,7 @@ it('응답을 기다리는 동안 로딩을 보여주고 빈 필터 결과를 �
   expect(await screen.findByText('행사상품을 불러오고 있어요')).toBeInTheDocument();
   complete();
   await screen.findByRole('list', { name: '행사상품 목록' });
-  await user.click(screen.getByRole('button', { name: '할인' }));
+  await user.click(screen.getByRole('radio', { name: '할인' }));
   expect(screen.getByText('이 행사 유형의 상품이 없어요')).toBeInTheDocument();
   expect(screen.queryByText('아직 행사정보를 수집하지 않았어요')).not.toBeInTheDocument();
 });
@@ -360,7 +364,7 @@ it('업소 조회 오류에서 재시도한 빈 결과를 오류나 샘플 업�
   expect(await screen.findByRole('alert')).toHaveTextContent('가게 정보를 불러오지 못했어요');
   failed = false;
   await user.click(screen.getByRole('button', { name: '다시 시도' }));
-  expect(await screen.findByText('이 반경 안에 등록된 가게가 없어요.')).toBeInTheDocument();
+  expect(await screen.findByText('이 반경 안에 등록된 가게가 없어요')).toBeInTheDocument();
   expect(screen.queryByRole('list', { name: '가게 목록' })).not.toBeInTheDocument();
 });
 
@@ -476,4 +480,84 @@ it.each(['store=10', 'search=1'])('상세 URL %s로 직접 진입해도 닫으�
   }
   expect(tab('식당')).toHaveAttribute('aria-selected', 'true');
   expect(await screen.findByRole('list', { name: '가게 목록' })).toBeInTheDocument();
+});
+
+it('UT 퍼널 이벤트 네 개를 정해진 시점에 정해진 속성으로만 기록한다', async () => {
+  const user = setup('/');
+  await user.click(screen.getByRole('link', { name: /오늘 한 끼/ }));
+  expect(trackEvent).toHaveBeenCalledTimes(1);
+  expect(trackEvent).toHaveBeenCalledWith('cheap_meal_viewed', {});
+
+  await user.click(screen.getByRole('button', { name: /편의점 행사상품/ }));
+  expect(trackEvent).toHaveBeenLastCalledWith('cheap_meal_category_selected', {
+    category: 'convenience',
+    source: 'overview_card',
+  });
+
+  // 목록 응답과 필터 변경만으로는 상세 확인을 기록하지 않는다.
+  await screen.findByRole('list', { name: '행사상품 목록' });
+  await user.click(screen.getByRole('radio', { name: '1+1' }));
+  expect(trackEvent).toHaveBeenCalledTimes(2);
+
+  await user.click(screen.getByRole('button', { name: '행사상품 0 상세 보기' }));
+  expect(trackEvent).toHaveBeenLastCalledWith('cheap_meal_detail_viewed', {
+    category: 'convenience',
+    provider: 'EMART24',
+  });
+
+  await user.click(within(screen.getByRole('dialog', { name: '상품 상세' })).getByRole('link', { name: /공식 행사/ }));
+  expect(trackEvent).toHaveBeenLastCalledWith('cheap_meal_outbound_clicked', {
+    category: 'convenience',
+    destination: 'official_source',
+    provider: 'EMART24',
+  });
+  expect(trackEvent).toHaveBeenCalledTimes(4);
+});
+
+it('주소로 복원한 탭은 카테고리 선택으로 세지 않고, 상단 탭과 가게 상세는 각각 기록한다', async () => {
+  const user = setup('/cheap-meals?tab=restaurant');
+  await screen.findByRole('list', { name: '가게 목록' });
+  expect(trackEvent).not.toHaveBeenCalledWith('cheap_meal_category_selected', expect.anything());
+
+  await user.click(screen.getByRole('button', { name: '업소 마커 테스트' }));
+  expect(trackEvent).toHaveBeenLastCalledWith('cheap_meal_detail_viewed', { category: 'restaurant' });
+  await user.click(screen.getByRole('link', { name: /길찾기/ }));
+  expect(trackEvent).toHaveBeenLastCalledWith('cheap_meal_outbound_clicked', {
+    category: 'restaurant',
+    destination: 'directions',
+  });
+
+  await user.click(tab('배달'));
+  expect(trackEvent).toHaveBeenLastCalledWith('cheap_meal_category_selected', {
+    category: 'delivery',
+    source: 'top_tab',
+  });
+  await user.click(await screen.findByRole('button', { name: /배민 테스트피자 할인 상세/ }));
+  expect(trackEvent).toHaveBeenLastCalledWith('cheap_meal_detail_viewed', { category: 'delivery', provider: 'BAEMIN' });
+});
+
+it('데스크탑은 공용 헤더 아래에서 가게 목록과 상세를 지도 옆에 함께 펼치고 상품 상세를 가운데 창으로 연다', async () => {
+  const matchMedia = window.matchMedia;
+  const setMatchMedia = (value: typeof window.matchMedia) =>
+    Object.defineProperty(window, 'matchMedia', { configurable: true, value });
+  setMatchMedia((query: string) => ({ ...matchMedia(query), matches: true }));
+  try {
+    const user = setup('/cheap-meals?tab=restaurant');
+    expect(screen.getByRole('link', { name: '본 방 기록' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: '저렴한 한 끼 찾기', level: 1 })).toBeInTheDocument();
+    await screen.findByRole('list', { name: '가게 목록' });
+
+    await user.click(screen.getByRole('button', { name: '업소 마커 테스트' }));
+    // 상세를 열어도 목록이 그대로 남는다.
+    expect(screen.getByRole('list', { name: '가게 목록' })).toBeInTheDocument();
+    expect(screen.getByRole('region', { name: '착한 세탁소 상세' })).toBeInTheDocument();
+
+    await user.click(tab('편의점'));
+    await user.click(await screen.findByRole('button', { name: '행사상품 0 상세 보기' }));
+    const dialog = screen.getByRole('dialog', { name: '상품 상세' });
+    await user.click(within(dialog).getByRole('button', { name: '상세 닫기' }));
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  } finally {
+    setMatchMedia(matchMedia);
+  }
 });

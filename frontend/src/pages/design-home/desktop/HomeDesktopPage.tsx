@@ -30,22 +30,43 @@ const HomeDesktopPage = () => (
 );
 
 const styles = {
+  /* 저렴한 한 끼 카드는 사용방법 카드와 같은 줄의 오른쪽 열에 둔다. */
   meals: css`
     label: HomeDesktopPage-meals;
     grid-area: meals;
-    width: min(100%, 40rem);
-    justify-self: center;
+    margin-top: 1.2rem;
+    /* 옆 사용방법 카드의 파란 그라데이션과 짝을 이루게, 옅은 노랑 바탕 오른쪽에 진한 노란빛을 깐다. */
+    --action-card-surface: color-mix(in srgb, var(--color-brand-yellow) 16%, #fff);
+    --action-card-ink: var(--color-ink);
+    background:
+      radial-gradient(
+        circle 8rem at right 2rem top 70%,
+        color-mix(in srgb, var(--color-brand-yellow) 70%, transparent),
+        color-mix(in srgb, var(--color-brand-yellow) 25%, transparent) 55%,
+        transparent 100%
+      ),
+      var(--action-card-surface);
+
+    & .ActionCard-description {
+      color: var(--color-muted);
+      opacity: 1;
+    }
+
+    /* 옆 사용방법 카드처럼 글자를 세로 가운데에 둔다. 좁은 열이라 가로는 왼쪽에 붙인다. */
+    & .ActionCard-text {
+      top: 50%;
+      transform: translateY(-50%);
+    }
   `,
   /*
-   * 데스크탑 홈: 공용 헤더 아래 본문을 64rem 안에 두고, 사용방법 카드는 두 열에 걸쳐 본문 가운데에,
-   * 그 아래 왼쪽에 기능 카드, 오른쪽 19rem 열에 빠른 메뉴와 최근 기록을 둔다.
+   * 데스크탑 홈: 공용 헤더 아래 본문을 64rem 안에 두고, 첫 줄 왼쪽에 사용방법 카드, 오른쪽 19rem 열에 저렴한 한 끼 카드를,
+   * 그 아래 왼쪽에 기능 카드, 오른쪽 열에 빠른 메뉴와 최근 기록을 둔다.
    */
   layout: css`
     label: HomeDesktopPage-layout;
     display: grid;
     grid-template-areas:
-      'guide guide'
-      'meals meals'
+      'guide meals'
       'features side';
     grid-template-columns: minmax(0, 1fr) 19rem;
     align-items: start;
@@ -59,8 +80,6 @@ const styles = {
   guide: css`
     label: HomeDesktopPage-guide;
     grid-area: guide;
-    justify-self: center;
-    width: min(100%, 40rem);
     margin-top: 1.2rem;
   `,
 
