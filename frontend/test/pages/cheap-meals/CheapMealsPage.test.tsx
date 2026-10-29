@@ -133,17 +133,20 @@ const setup = (entry = '/cheap-meals') => {
 };
 const tab = (name: string) => screen.getByRole('tab', { name });
 
-it('홈 카드에서 전체로 진입하고 세 선택 카드만 보여주며 카테고리 API를 미리 호출하지 않는다', async () => {
+it('홈 카드에서 들어오면 고를 카드만 늘어놓던 전체 탭 없이 식당 탭을 바로 열고, 다른 카테고리 API는 미리 부르지 않는다', async () => {
   const user = setup('/');
   await user.click(screen.getByRole('link', { name: /오늘 한 끼/ }));
-  expect(tab('전체')).toHaveAttribute('aria-selected', 'true');
-  expect(screen.getByRole('heading', { name: '오늘은 어떻게 아껴볼까요?' })).toBeInTheDocument();
-  expect(screen.getByRole('button', { name: /주변 착한가격업소/ })).toBeInTheDocument();
-  expect(screen.getByRole('button', { name: /편의점 행사상품/ })).toBeInTheDocument();
-  expect(screen.getByRole('button', { name: /배달 할인/ })).toBeInTheDocument();
+  expect(screen.queryByRole('tab', { name: '전체' })).not.toBeInTheDocument();
+  expect(screen.getAllByRole('tab').map((item) => item.textContent)).toEqual(['식당', '편의점', '배달']);
+  expect(tab('식당')).toHaveAttribute('aria-selected', 'true');
+  expect(await screen.findByRole('list', { name: '가게 목록' })).toBeInTheDocument();
   expect(calls.promotions).not.toHaveBeenCalled();
   expect(calls.delivery).not.toHaveBeenCalled();
-  expect(calls.stores).not.toHaveBeenCalled();
+});
+
+it('예전 주소의 전체 탭(?tab=all)으로 들어와도 식당 탭으로 연다', () => {
+  setup('/cheap-meals?tab=all');
+  expect(tab('식당')).toHaveAttribute('aria-selected', 'true');
 });
 it('상품은 24개씩 표시하고 추가 행사 유형과 UNKNOWN 상품도 전체 목록에 남는다', async () => {
   const user = setup('/cheap-meals?tab=convenience');
@@ -232,7 +235,7 @@ it('식당의 원본 업종을 표시하고 탭 복귀와 지도 재검색에도
   expect(calls.stores).toHaveBeenCalledWith('2000', expect.any(String), expect.any(String));
   expect(screen.queryByRole('group', { name: '탐색 반경' })).not.toBeInTheDocument();
   expect(screen.queryByRole('button', { name: /^(500m|1km|2km)$/ })).not.toBeInTheDocument();
-  await user.click(tab('전체'));
+  await user.click(tab('편의점'));
   await user.click(tab('식당'));
   expect(calls.stores).toHaveBeenLastCalledWith('2000', expect.any(String), expect.any(String));
   await user.click(screen.getByRole('button', { name: '지도 이동 테스트' }));
@@ -249,7 +252,7 @@ it('식당의 원본 업종을 표시하고 탭 복귀와 지도 재검색에도
 });
 it('카테고리 탭을 키보드로 전환할 수 있다', async () => {
   const user = setup();
-  tab('전체').focus();
+  tab('식당').focus();
   await user.keyboard('{End}');
   expect(tab('배달')).toHaveAttribute('aria-selected', 'true');
   expect(tab('배달')).toHaveFocus();
@@ -294,7 +297,7 @@ it('위치 확인 중 다른 탭으로 떠났다가 돌아와도 위치 버튼�
     expect(locate).not.toHaveBeenCalled();
     await user.click(screen.getByRole('button', { name: '현재 위치로 찾기' }));
     expect(screen.getByRole('button', { name: '현재 위치로 찾기' })).toBeDisabled();
-    await user.click(tab('전체'));
+    await user.click(tab('편의점'));
     await user.click(tab('식당'));
     expect(screen.getByRole('button', { name: '현재 위치로 찾기' })).toBeEnabled();
     await user.click(screen.getByRole('button', { name: '현재 위치로 찾기' }));
@@ -432,7 +435,7 @@ it('업소 상세에서 검색한 새 동네를 선택한 뒤 뒤로가면 이�
       ]),
     ),
   );
-  const user = setup();
+  const user = setup('/cheap-meals?tab=delivery');
   await user.click(tab('식당'));
   await screen.findByRole('list', { name: '가게 목록' });
   await user.click(screen.getByRole('button', { name: '업소 마커 테스트' }));
@@ -443,7 +446,7 @@ it('업소 상세에서 검색한 새 동네를 선택한 뒤 뒤로가면 이�
   expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   expect(screen.getByText('서울특별시 중구 세종대로 110')).toBeInTheDocument();
   await user.click(screen.getByRole('button', { name: '브라우저 뒤로' }));
-  expect(tab('전체')).toHaveAttribute('aria-selected', 'true');
+  expect(tab('배달')).toHaveAttribute('aria-selected', 'true');
 });
 
 it.each(['닫기', '뒤로가기'])('주소 검색에서 %s하면 진행 중이던 위치 요청의 늦은 응답을 무시한다', async (action) => {
@@ -488,10 +491,10 @@ it('UT 퍼널 이벤트 네 개를 정해진 시점에 정해진 속성으로만
   expect(trackEvent).toHaveBeenCalledTimes(1);
   expect(trackEvent).toHaveBeenCalledWith('cheap_meal_viewed', {});
 
-  await user.click(screen.getByRole('button', { name: /편의점 행사상품/ }));
+  await user.click(tab('편의점'));
   expect(trackEvent).toHaveBeenLastCalledWith('cheap_meal_category_selected', {
     category: 'convenience',
-    source: 'overview_card',
+    source: 'top_tab',
   });
 
   // 목록 응답과 필터 변경만으로는 상세 확인을 기록하지 않는다.
@@ -544,7 +547,9 @@ it('데스크탑은 공용 헤더 아래에서 가게 목록과 상세를 지도
   try {
     const user = setup('/cheap-meals?tab=restaurant');
     expect(screen.getByRole('link', { name: '본 방 기록' })).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: '저렴한 한 끼 찾기', level: 1 })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: '저렴한 한 끼', level: 1 })).toBeInTheDocument();
+    // 카테고리는 위쪽 가로 탭 대신 왼쪽 칸에 세로로 둔다.
+    expect(screen.getByRole('tablist', { name: '한 끼 카테고리' })).toHaveAttribute('aria-orientation', 'vertical');
     await screen.findByRole('list', { name: '가게 목록' });
 
     await user.click(screen.getByRole('button', { name: '업소 마커 테스트' }));

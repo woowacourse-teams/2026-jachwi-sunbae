@@ -21,10 +21,10 @@ const useMealTabs = (layout: MealLayout) => {
     ...navigation,
     layout,
     isRendered: (value: MealTab) => visited.includes(value) || tab === value,
-    // 사용자가 직접 고른 카테고리만 기록한다. 같은 탭을 다시 누르거나 전체 탭으로 돌아가는 것은 기록하지 않는다.
+    // 사용자가 직접 고른 카테고리만 기록한다. 같은 탭을 다시 누르는 것은 기록하지 않는다.
     selectTab: (next: MealTab, source: CheapMealCategorySource) => {
       if (next === tab) return;
-      if (next !== 'all') log(CHEAP_MEAL_EVENTS.categorySelected, categorySelectedParams(next, source));
+      log(CHEAP_MEAL_EVENTS.categorySelected, categorySelectedParams(next, source));
       navigation.selectTab(next);
     },
   };
