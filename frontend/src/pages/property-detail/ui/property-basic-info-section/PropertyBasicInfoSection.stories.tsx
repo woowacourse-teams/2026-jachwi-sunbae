@@ -31,6 +31,10 @@ const meta = {
   args: {
     property,
     onEdit: fn(),
+    onSaved: fn(),
+    onCancel: fn(),
+    editingField: null,
+    savedField: null,
   },
   parameters: {
     layout: 'fullscreen',

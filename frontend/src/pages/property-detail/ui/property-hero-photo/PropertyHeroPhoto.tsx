@@ -1,6 +1,7 @@
 import { css } from '@emotion/css';
 import { Link } from 'react-router-dom';
 
+import { FROM_PROPERTY_DETAIL_STATE } from '@/features/property/lib/propertyNavigation';
 import type { PropertyPhotoPreview } from '@/features/property/model/Property';
 import AuthenticatedPhoto from '@/features/property/ui/authenticated-photo/AuthenticatedPhoto';
 import Icon from '@/shared/ui/icon/Icon';
@@ -13,6 +14,8 @@ type PropertyHeroPhotoProps = {
   backState?: unknown;
   showBackButton?: boolean;
   onOpen: () => void;
+  /** 주면 사진 추가를 눌러도 사진 화면으로 넘어가지 않고 이 함수를 부른다(데스크탑 옆 칸은 그 칸 안에서 사진을 관리한다). */
+  onManagePhotos?: () => void;
 };
 
 const PropertyHeroPhoto = ({
@@ -23,6 +26,7 @@ const PropertyHeroPhoto = ({
   backState,
   showBackButton = true,
   onOpen,
+  onManagePhotos,
 }: PropertyHeroPhotoProps) => (
   <section className={styles.section} aria-label="대표 사진">
     {photos.length > 0 ? (
@@ -41,7 +45,16 @@ const PropertyHeroPhoto = ({
         />
       </button>
     ) : (
-      <Link className={`${styles.button} ${styles.emptyButton}`} to={`/properties/${propertyId}/photos`}>
+      <Link
+        className={`${styles.button} ${styles.emptyButton}`}
+        to={`/properties/${propertyId}/photos`}
+        state={FROM_PROPERTY_DETAIL_STATE}
+        onClick={(event) => {
+          if (onManagePhotos === undefined) return;
+          event.preventDefault();
+          onManagePhotos();
+        }}
+      >
         <span className={styles.addLabel}>
           <Icon name="plus" size={16} />
           사진 추가
@@ -90,6 +103,8 @@ const styles = {
     label: PropertyHeroPhoto-emptyButton;
     display: grid;
     place-items: center;
+    /* 아래 정보 칸이 사진 칸을 2rem 덮으므로 그만큼 위로 올려 보이는 칸 가운데에 둔다. */
+    padding-bottom: 2rem;
   `,
 
   addLabel: css`
