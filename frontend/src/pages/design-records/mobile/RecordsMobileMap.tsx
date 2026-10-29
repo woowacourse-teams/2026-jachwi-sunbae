@@ -61,6 +61,7 @@ const RecordsMobileMap = ({ records, layers, addMode, onAddProperty }: Props) =>
       {!isAddMode && (
         <MapCategoryRail
           showMemo
+          showIcons={false}
           className={styles.rail}
           selectedCategories={layers.category === null ? [] : [layers.category]}
           counts={layers.counts}

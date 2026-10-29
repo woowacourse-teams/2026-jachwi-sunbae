@@ -8,20 +8,19 @@ type Props = {
 
 const DEFAULT_TITLE = '이 위치에서';
 
-/** 데모 지도에서 쓰는 말풍선. 실제 지도는 같은 모양을 createMapCoordinateMenuElement로 만들어 지도 좌표에 붙인다. */
+/**
+ * 데모 지도에서 쓰는 말풍선. 실제 지도는 같은 모양을 createMapCoordinateMenuElement로 만들어 지도 좌표에 붙인다.
+ * 제목과 닫기 버튼은 두지 않는다. 지도 빈 곳을 다시 찍으면 닫힌다.
+ */
 const MapCoordinateMenu = ({ menu }: Props) => (
-  <div className={styles.menu} role="menu" aria-label={menu.title ?? DEFAULT_TITLE}>
-    <div className={styles.header}>
-      <span>{menu.title ?? DEFAULT_TITLE}</span>
-      <button type="button" className={styles.close} aria-label="닫기" onClick={menu.onClose}>
-        ×
-      </button>
+  <div className={styles.anchor}>
+    <div className={styles.menu} role="menu" aria-label={menu.title ?? DEFAULT_TITLE}>
+      {menu.actions.map((action) => (
+        <button key={action.id} type="button" role="menuitem" className={styles.action} onClick={action.onSelect}>
+          {action.label}
+        </button>
+      ))}
     </div>
-    {menu.actions.map((action) => (
-      <button key={action.id} type="button" role="menuitem" className={styles.action} onClick={action.onSelect}>
-        {action.label}
-      </button>
-    ))}
   </div>
 );
 
@@ -30,26 +29,13 @@ const MapCoordinateMenu = ({ menu }: Props) => (
  * React 트리 밖에서 그리므로 MapCoordinateMenu와 같은 클래스·구조를 DOM으로 직접 만든다.
  */
 export const createMapCoordinateMenuElement = (menu: MapCoordinateMenuModel): HTMLElement => {
-  const title = menu.title ?? DEFAULT_TITLE;
+  const anchor = document.createElement('div');
+  anchor.className = styles.anchor;
   const root = document.createElement('div');
   root.className = styles.menu;
   root.setAttribute('role', 'menu');
-  root.setAttribute('aria-label', title);
-  const header = document.createElement('div');
-  header.className = styles.header;
-  const label = document.createElement('span');
-  label.textContent = title;
-  const close = document.createElement('button');
-  close.type = 'button';
-  close.className = styles.close;
-  close.setAttribute('aria-label', '닫기');
-  close.textContent = '×';
-  close.addEventListener('click', (event) => {
-    event.stopPropagation();
-    menu.onClose();
-  });
-  header.append(label, close);
-  root.append(header);
+  root.setAttribute('aria-label', menu.title ?? DEFAULT_TITLE);
+  anchor.append(root);
   menu.actions.forEach((action) => {
     const button = document.createElement('button');
     button.type = 'button';
@@ -66,19 +52,26 @@ export const createMapCoordinateMenuElement = (menu: MapCoordinateMenuModel): HT
   ['click', 'pointerdown', 'mousedown', 'touchstart', 'dblclick'].forEach((type) =>
     root.addEventListener(type, (event) => event.stopPropagation()),
   );
-  return root;
+  return anchor;
 };
 
 const styles = {
-  /* 찍은 좌표를 꼬리 끝으로 가리키는 동작 말풍선. 좌표 기준 가운데 위에 놓인다. */
+  /* 찍은 자리에 따로 핀을 두지 않고, 말풍선 꼬리 끝(아래로 0.45rem)이 찍은 좌표를 바로 가리키게 그만큼 아래를 비운다. */
+  anchor: css`
+    label: MapCoordinateMenu-anchor;
+    padding-bottom: 0.45rem;
+    pointer-events: none;
+  `,
+
+  /* 찍은 좌표를 꼬리 끝으로 가리키는 동작 말풍선. */
   menu: css`
     label: MapCoordinateMenu-menu;
     position: relative;
     display: grid;
     gap: 0.25rem;
     min-width: 11rem;
-    margin-bottom: 0.7rem;
     padding: 0.5rem;
+    pointer-events: auto;
     border: 1px solid var(--color-border);
     border-radius: 0.75rem;
     background: var(--color-surface);
@@ -97,36 +90,6 @@ const styles = {
       background: var(--color-surface);
       content: '';
       transform: translateX(-50%) rotate(45deg);
-    }
-  `,
-
-  header: css`
-    label: MapCoordinateMenu-header;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 0.5rem;
-    padding: 0.15rem 0.25rem 0.25rem 0.5rem;
-    color: var(--color-muted);
-    font-size: 0.75rem;
-  `,
-
-  close: css`
-    label: MapCoordinateMenu-close;
-    display: grid;
-    width: 1.5rem;
-    height: 1.5rem;
-    place-items: center;
-    border: 0;
-    border-radius: 999px;
-    background: transparent;
-    color: var(--color-ink-soft);
-    font-size: 1rem;
-    line-height: 1;
-    cursor: pointer;
-
-    &:hover {
-      background: var(--color-surface-muted);
     }
   `,
 

@@ -8,6 +8,7 @@ import type {
   PropertyChecklistDetail,
   PropertyChecklistItemStatus,
   PropertyChecklistOverview,
+  PropertyCommuteTimes,
   PropertyDetail,
   PropertyMemoDocument,
   PropertyPage,
@@ -23,6 +24,7 @@ import {
   parsePropertyBasicInfo,
   parsePropertyChecklistDetail,
   parsePropertyChecklistOverview,
+  parsePropertyCommuteTimes,
   parsePropertyDetail,
   parsePropertyMemoDocument,
   parsePropertyPage,
@@ -52,6 +54,22 @@ export const fetchProperties = (
     };
   });
 };
+
+/** 내 매물마다 목적지까지 대중교통 통근 시간. 서버가 최대 60분·환승 2회로 고정해 계산한다. */
+export const fetchPropertyCommuteTimes = (
+  config: PublicConfig,
+  destination: { latitude: number; longitude: number },
+  signal?: AbortSignal,
+): Promise<PropertyCommuteTimes> =>
+  apiRequest({
+    config,
+    path: `/api/properties/commute-times?${new URLSearchParams({
+      latitude: String(destination.latitude),
+      longitude: String(destination.longitude),
+    })}`,
+    signal,
+    parseData: parsePropertyCommuteTimes,
+  });
 
 export const fetchPropertyCsv = (config: PublicConfig, signal?: AbortSignal): Promise<Blob> =>
   apiBlobRequest({ config, path: '/api/properties/export.csv', acceptedContentTypes: ['text/csv'], signal });
