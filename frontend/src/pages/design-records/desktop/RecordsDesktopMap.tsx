@@ -3,6 +3,7 @@ import type { ReactNode } from 'react';
 
 import MapCanvas from '@/features/map/ui/map-canvas/MapCanvas';
 import MapCategoryRail from '@/features/map/ui/map-category-rail/MapCategoryRail';
+import MapZoomControl from '@/features/map/ui/map-zoom-control/MapZoomControl';
 import StreetMemoPanel from '@/features/street-memo/ui/street-memo-panel/StreetMemoPanel';
 import Icon from '@/shared/ui/icon/Icon';
 
@@ -34,9 +35,15 @@ const RecordsDesktopMap = ({ records, layers, districts, className }: Props) => 
       counts={layers.counts}
       onToggle={layers.toggleCategory}
     />
-    <button className={styles.recenter} type="button" aria-label="선택한 동네로 지도 이동" onClick={records.recenter}>
+    <button
+      className={styles.recenter}
+      type="button"
+      aria-label="현재 위치로 이동"
+      onClick={() => records.moveToCurrentLocation()}
+    >
       <Icon name="target" size={22} />
     </button>
+    <MapZoomControl className={styles.zoom} level={records.level} onChange={records.setLevel} />
     {!records.selected && layers.memo.mode === null && (
       <span className={styles.hint}>{recordsMapHint(records.records, layers)}</span>
     )}
@@ -61,6 +68,8 @@ const styles = {
     right: 0;
     left: 0;
     padding-top: 0.75rem;
+    /* 오른쪽 위 확대·축소 버튼 자리를 비워 둔다. */
+    padding-right: 6.5rem;
   `,
 
   /* 동네 뱃지 줄 아래 오른쪽에 둔다. */
@@ -93,6 +102,13 @@ const styles = {
       outline: 2px solid #25282d;
       outline-offset: 3px;
     }
+  `,
+
+  /* 지도 오른쪽 위, 동네 뱃지 줄과 같은 높이에 둔다. */
+  zoom: css`
+    label: RecordsDesktopMap-zoom;
+    top: 1.35rem;
+    right: 1rem;
   `,
 
   hint: css`

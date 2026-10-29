@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 
 import { searchAddress } from '@/features/map/api/mapApi';
 import type { MapAddress } from '@/features/map/model/Map';
@@ -14,8 +14,11 @@ const useAddressSearch = () => {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<MapAddress[]>([]);
   const [status, setStatus] = useState<AddressSearchStatus>('idle');
+  // 입력할 때마다 검색하면 앞선 요청이 늦게 올 수 있다. 마지막 요청의 응답만 쓴다.
+  const sequenceRef = useRef(0);
 
   const changeQuery = (value: string) => {
+    ++sequenceRef.current;
     setQuery(value);
     setResults([]);
     setStatus('idle');
@@ -30,12 +33,16 @@ const useAddressSearch = () => {
 
   const submit = async () => {
     if (query.trim() === '') return;
+    const sequence = ++sequenceRef.current;
     trackPostHogEvent('address_search_started');
     setStatus('loading');
     try {
-      setResults(await searchAddress(config, query.trim()));
+      const found = await searchAddress(config, query.trim());
+      if (sequenceRef.current !== sequence) return;
+      setResults(found);
       setStatus('idle');
     } catch {
+      if (sequenceRef.current !== sequence) return;
       trackPostHogEvent('address_search_failed', { error_kind: 'server' });
       setResults([]);
       setStatus('error');
@@ -44,6 +51,7 @@ const useAddressSearch = () => {
 
   /** 고른 결과를 검색어로 남기고 목록을 닫는다. */
   const pick = (result: MapAddress) => {
+    ++sequenceRef.current;
     setResults([]);
     setQuery(formatAddress(result));
   };

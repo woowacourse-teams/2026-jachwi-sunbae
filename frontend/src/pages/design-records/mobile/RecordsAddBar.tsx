@@ -12,6 +12,8 @@ type Props = {
   coordinate: MapCoordinate | null;
   address: MapAddress | null;
   status: 'idle' | 'loading' | 'error';
+  /** 확인을 눌러 추가하는 중이면 버튼을 로딩으로 둔다. */
+  isConfirming?: boolean;
   onCancel: () => void;
   onConfirm: () => void;
 };
@@ -33,7 +35,7 @@ const COPY: Record<RecordsAddKind, { title: string; guide: string; region: strin
 
 const description = (
   kind: RecordsAddKind,
-  { coordinate, address, status }: Omit<Props, 'kind' | 'onCancel' | 'onConfirm'>,
+  { coordinate, address, status }: Omit<Props, 'kind' | 'isConfirming' | 'onCancel' | 'onConfirm'>,
 ) => {
   if (coordinate === null) return COPY[kind].guide;
   if (status === 'loading') return '주소를 확인하는 중이에요.';
@@ -46,7 +48,7 @@ const description = (
  * 휴대폰 추가 모드의 안내와 버튼. 위쪽 토스트로 무엇을 추가하는 중인지와 찍은 위치의 주소를 알리고, 아래쪽에는 버튼만 띄운다.
  * 메모는 좌표만 있으면 남길 수 있어 주소를 못 찾아도 넘기고, 매물은 주소를 찾아야 넘긴다.
  */
-const RecordsAddBar = ({ kind, coordinate, address, status, onCancel, onConfirm }: Props) => {
+const RecordsAddBar = ({ kind, coordinate, address, status, isConfirming = false, onCancel, onConfirm }: Props) => {
   const copy = COPY[kind];
   const canConfirm = coordinate !== null && status !== 'loading' && (kind === 'memo' || address !== null);
   return (
@@ -63,7 +65,7 @@ const RecordsAddBar = ({ kind, coordinate, address, status, onCancel, onConfirm 
         <Button type="button" variant="secondary" onClick={onCancel}>
           취소
         </Button>
-        <Button type="button" fullWidth disabled={!canConfirm} onClick={onConfirm}>
+        <Button type="button" fullWidth disabled={!canConfirm} isLoading={isConfirming} onClick={onConfirm}>
           {copy.confirm}
         </Button>
       </div>
