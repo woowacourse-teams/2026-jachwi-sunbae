@@ -15,6 +15,15 @@ export const getPropertyReturnPath = (
   return fallback;
 };
 
+/**
+ * 매물 상세에서 사진 관리로 넘어갈 때 넘기는 상태. 사진 화면의 뒤로가기는 이 상태가 있으면 새로 이동하지 않고 이전 기록(상세)으로 돌아간다.
+ * 그래야 상세가 들어온 곳(본 방 기록 등)을 기억한 채로 돌아오고, 휴대폰 뒤로가기도 사진 화면으로 되돌아가지 않는다.
+ */
+export const FROM_PROPERTY_DETAIL_STATE = { fromPropertyDetail: true } as const;
+
+export const cameFromPropertyDetail = (state: unknown): boolean =>
+  typeof state === 'object' && state !== null && 'fromPropertyDetail' in state && state.fromPropertyDetail === true;
+
 /** 들어온 화면이 상태로 넘어왔으면 바로 이전 기록이 그 화면이다. */
 export const hasPropertyReturnPath = (state: unknown): boolean =>
   typeof state === 'object' && state !== null && 'returnTo' in state;

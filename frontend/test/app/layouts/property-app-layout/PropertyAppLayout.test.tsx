@@ -40,6 +40,27 @@ describe('모바일 앱 셸', () => {
       expect(screen.queryByRole('link', { name: '홈으로 돌아가기' })).not.toBeInTheDocument();
     },
   );
+
+  it.each([
+    '/properties/10/photos',
+    '/properties/10/memo',
+    '/properties/10/edit',
+    '/properties/10/nearby',
+    '/neighborhoods/nearby',
+  ])('자체 뒤로 가기가 있는 화면(%s)에는 홈으로 가는 상단 바를 겹쳐 두지 않는다', (path) => {
+    render(
+      <MemoryRouter initialEntries={[path]}>
+        <Routes>
+          <Route element={<PropertyAppLayout />}>
+            <Route path="/properties/:propertyId/*" element={<h1>매물 하위 화면</h1>} />
+            <Route path="/neighborhoods/nearby" element={<h1>동네 주변 분석</h1>} />
+          </Route>
+        </Routes>
+      </MemoryRouter>,
+    );
+    expect(screen.getByRole('heading', { level: 1 })).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: '홈으로 돌아가기' })).not.toBeInTheDocument();
+  });
 });
 
 describe('데스크탑 앱 셸', () => {
