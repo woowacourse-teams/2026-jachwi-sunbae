@@ -1,6 +1,7 @@
 import { css, cx } from '@emotion/css';
 import { useEffect, useRef, useState } from 'react';
 
+import useDelayedLoading from '@/shared/lib/hooks/useDelayedLoading';
 import Icon from '@/shared/ui/icon/Icon';
 
 import { getPropertyErrorMessage } from '../../api/propertyErrorMessages';
@@ -16,6 +17,8 @@ type PropertyPhotoViewerProps = {
 
 const PropertyPhotoViewer = ({ propertyId, propertyName, initialIndex, onClose }: PropertyPhotoViewerProps) => {
   const photos = usePropertyPhotos(propertyId);
+  // 빠른 응답에는 로딩 문구 없이 바로 사진을 보여 주고, 오래 걸릴 때만 알린다.
+  const isLoadingVisible = useDelayedLoading(photos.isPending);
   const [currentIndex, setCurrentIndex] = useState(initialIndex);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
 
@@ -63,10 +66,12 @@ const PropertyPhotoViewer = ({ propertyId, propertyName, initialIndex, onClose }
         </header>
 
         <div className={styles.photoArea}>
-          {photos.isPending ? (
-            <div className={styles.state} role="status">
-              사진을 불러오는 중이에요.
-            </div>
+          {photos.isPending || isLoadingVisible ? (
+            isLoadingVisible && (
+              <div className={styles.state} role="status">
+                사진을 불러오는 중이에요.
+              </div>
+            )
           ) : photos.isError ? (
             <div className={styles.state} role="alert">
               <span>{getPropertyErrorMessage(photos.error)}</span>

@@ -22,44 +22,45 @@ const CompareMobilePage = () => {
   return (
     <main className={shared.page}>
       <TopNavigation title="비교할 매물 선택" backTo="/" />
-      <CompareLoadState properties={properties} />
-      {properties.isSuccess && (
-        <div className={shared.content}>
-          <div className={shared.selectionHeader} aria-live="polite">
-            <strong>{selectedIds.length}개 선택</strong>
-            <span>최대 {MAX_SELECTION}개</span>
+      <CompareLoadState properties={properties}>
+        {() => (
+          <div className={shared.content}>
+            <div className={shared.selectionHeader} aria-live="polite">
+              <strong>{selectedIds.length}개 선택</strong>
+              <span>최대 {MAX_SELECTION}개</span>
+            </div>
+            {hasEnoughProperties ? (
+              <ul className={styles.propertyList} aria-label="비교할 매물 목록">
+                {items.map((property) => {
+                  const isSelected = selectedIds.includes(property.propertyId);
+                  return (
+                    <li key={property.propertyId}>
+                      <ComparePropertyOption
+                        property={property}
+                        isSelected={isSelected}
+                        isDisabled={!isSelected && selectedIds.length >= MAX_SELECTION}
+                        onToggle={() => toggle(property.propertyId)}
+                      />
+                    </li>
+                  );
+                })}
+              </ul>
+            ) : (
+              <CompareEmpty />
+            )}
+            {hasExportError && (
+              <InlineNotice tone="error">PDF를 만들지 못했어요. 잠시 후 다시 시도해 주세요.</InlineNotice>
+            )}
+            {hasEnoughProperties && (
+              <CompareActionBar
+                selectedCount={selectedIds.length}
+                isExporting={isExporting}
+                onDownload={() => void downloadPdf()}
+              />
+            )}
           </div>
-          {hasEnoughProperties ? (
-            <ul className={styles.propertyList} aria-label="비교할 매물 목록">
-              {items.map((property) => {
-                const isSelected = selectedIds.includes(property.propertyId);
-                return (
-                  <li key={property.propertyId}>
-                    <ComparePropertyOption
-                      property={property}
-                      isSelected={isSelected}
-                      isDisabled={!isSelected && selectedIds.length >= MAX_SELECTION}
-                      onToggle={() => toggle(property.propertyId)}
-                    />
-                  </li>
-                );
-              })}
-            </ul>
-          ) : (
-            <CompareEmpty />
-          )}
-          {hasExportError && (
-            <InlineNotice tone="error">PDF를 만들지 못했어요. 잠시 후 다시 시도해 주세요.</InlineNotice>
-          )}
-          {hasEnoughProperties && (
-            <CompareActionBar
-              selectedCount={selectedIds.length}
-              isExporting={isExporting}
-              onDownload={() => void downloadPdf()}
-            />
-          )}
-        </div>
-      )}
+        )}
+      </CompareLoadState>
     </main>
   );
 };
