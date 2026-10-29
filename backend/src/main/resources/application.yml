@@ -55,6 +55,9 @@ map:
 promotion:
   collection:
     enabled: false
+    seven-eleven:
+      # 하루 1회 연동 조건이 있어 운영 주체를 정한 환경에서만 켠다.
+      enabled: false
 
 weather:
   kma:

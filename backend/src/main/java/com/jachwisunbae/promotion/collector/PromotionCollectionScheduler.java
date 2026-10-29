@@ -1,5 +1,6 @@
 package com.jachwisunbae.promotion.collector;
 
+import com.jachwisunbae.promotion.domain.ConvenienceBrand;
 import com.jachwisunbae.promotion.service.PromotionCollectionService;
 import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
@@ -27,10 +28,11 @@ public class PromotionCollectionScheduler {
         run(service::collect);
     }
 
-    // 기동 5분 뒤 한 번만 실행해, 저장된 목록이 없으면 다음 04:00을 기다리지 않고 적재한다.
+    // 기동 5분 뒤 한 번만 실행해, 이마트24 목록이 없으면 다음 04:00을 기다리지 않고 적재한다.
+    // 세븐일레븐은 재시작으로 하루 1회를 넘기지 않도록 04:00 정기 수집에서만 수집한다.
     @Scheduled(initialDelay = 5, timeUnit = TimeUnit.MINUTES)
     public void collectInitially() {
-        run(service::collectIfEmpty);
+        run(() -> service.collectIfEmpty(ConvenienceBrand.EMART24));
     }
 
     private void run(final Runnable collection) {

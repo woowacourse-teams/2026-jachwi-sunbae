@@ -6,6 +6,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
+import com.jachwisunbae.promotion.domain.ConvenienceBrand;
 import com.jachwisunbae.promotion.service.PromotionCollectionService;
 import com.jachwisunbae.weather.config.WeatherSchedulingConfig;
 import java.util.concurrent.TimeUnit;
@@ -51,11 +52,14 @@ class PromotionCollectionSchedulerTest {
             assertThat(context.getEnvironment().getProperty("promotion.collection.enabled", Boolean.class))
                     .isEqualTo(enabled);
             assertThat(context.getBeansOfType(PromotionCollectionScheduler.class)).hasSize(enabled ? 1 : 0);
+            // 세븐일레븐 자동 수집은 모든 프로필에서 기본으로 꺼져 있다.
+            assertThat(context.getEnvironment().getProperty("promotion.collection.seven-eleven.enabled", Boolean.class))
+                    .isFalse();
         });
     }
 
     @Test
-    @DisplayName("활성화하면 정기 수집과 최초 수집 작업을 등록하고 실행 시 Service를 호출한다")
+    @DisplayName("활성화하면 정기 수집과 이마트24 최초 수집 작업을 등록하고 실행 시 Service를 호출한다")
     void enabledTasksCallService() {
         runner.withPropertyValues("promotion.collection.enabled=true").run(context -> {
             var tasks = context.getBean(ScheduledAnnotationBeanPostProcessor.class).getScheduledTasks();
@@ -64,7 +68,7 @@ class PromotionCollectionSchedulerTest {
             tasks.forEach(task -> task.getTask().getRunnable().run());
 
             verify(service).collect();
-            verify(service).collectIfEmpty();
+            verify(service).collectIfEmpty(ConvenienceBrand.EMART24);
         });
     }
 

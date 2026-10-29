@@ -85,6 +85,7 @@ class PromotionApiIntegrationTest {
                 .andExpect(jsonPath("$.data.brand").value("EMART24"))
                 .andExpect(jsonPath("$.data.count").value(2))
                 .andExpect(jsonPath("$.data.collectedAt").value("2026-10-27T04:02:13.123456+09:00"))
+                .andExpect(jsonPath("$.data.sourceUrl").value("https://emart24.co.kr/goods/event"))
                 .andExpect(jsonPath("$.data.products[0].name").value("먼저 저장한 상품"))
                 .andExpect(jsonPath("$.data.products[0].price").value(3000))
                 .andExpect(jsonPath("$.data.products[0].imageUrl").value("https://example.com/product.jpg"))
@@ -101,7 +102,8 @@ class PromotionApiIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.count").value(0))
                 .andExpect(jsonPath("$.data.products").isEmpty())
-                .andExpect(jsonPath("$.data.collectedAt").value(nullValue()));
+                .andExpect(jsonPath("$.data.collectedAt").value(nullValue()))
+                .andExpect(jsonPath("$.data.sourceUrl").value("https://emart24.co.kr/goods/event"));
     }
 
     @ParameterizedTest

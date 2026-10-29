@@ -13,6 +13,8 @@ public record PromotionProductsResponse(
         @Schema(description = "마지막 정상 수집 시각(KST, +09:00), 미수집 시 null", nullable = true,
                 example = "2026-10-27T04:02:13+09:00")
         OffsetDateTime collectedAt,
+        @Schema(description = "행사상품 정보를 가져온 브랜드 공식 페이지", example = "https://emart24.co.kr/goods/event")
+        String sourceUrl,
         @Schema(description = "저장 순서의 전체 행사상품 목록")
         List<PromotionProductResponse> products
 ) {
@@ -22,6 +24,7 @@ public record PromotionProductsResponse(
         // DB의 수집 시각은 이미 KST이므로 시간을 옮기지 않고 오프셋만 붙인다.
         OffsetDateTime collectedAt = result.collectedAt() == null ? null
                 : result.collectedAt().atOffset(ZoneOffset.ofHours(9));
-        return new PromotionProductsResponse(result.brand(), products.size(), collectedAt, products);
+        return new PromotionProductsResponse(result.brand(), products.size(), collectedAt,
+                result.brand().sourceUrl(), products);
     }
 }

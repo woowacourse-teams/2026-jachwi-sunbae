@@ -13,7 +13,6 @@ import java.util.EnumMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Consumer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -40,9 +39,22 @@ public class PromotionCollectionService {
         this.clock = clock;
     }
 
-    // 등록된 모든 브랜드를 차례로 수집한다. 한 브랜드가 실패해도 다음 브랜드를 수집한다.
+    // 등록된 모든 브랜드를 차례로 수집한다. 한 브랜드가 실패해도 다음 브랜드를 수집하고,
+    // 모두 시도한 뒤 첫 실패를 호출자에게 전파한다.
     public void collect() {
-        collectEach(this::collect);
+        RuntimeException failure = null;
+        for (ConvenienceBrand brand : fetchers.keySet()) {
+            try {
+                collect(brand);
+            } catch (RuntimeException exception) {
+                if (failure == null) {
+                    failure = exception;
+                }
+            }
+        }
+        if (failure != null) {
+            throw failure;
+        }
     }
 
     // HTTP 수집은 트랜잭션 밖에서 하고, 저장만 Repository의 트랜잭션으로 교체한다.
@@ -79,32 +91,13 @@ public class PromotionCollectionService {
         }
     }
 
-    // 최초 배포처럼 저장된 목록이 없는 브랜드만 수집해, 재배포마다 전체 수집하지 않는다.
-    public void collectIfEmpty() {
-        collectEach(brand -> {
-            if (repository.findLastCollectedAt(brand).isPresent()) {
-                LOG.info("promotion-initial-collection-skipped brand={} reason=already-collected", brand);
-                return;
-            }
-            collect(brand);
-        });
-    }
-
-    // 브랜드마다 독립적으로 실행하고, 모두 시도한 뒤 첫 실패를 호출자에게 전파한다.
-    private void collectEach(final Consumer<ConvenienceBrand> collection) {
-        RuntimeException failure = null;
-        for (ConvenienceBrand brand : fetchers.keySet()) {
-            try {
-                collection.accept(brand);
-            } catch (RuntimeException exception) {
-                if (failure == null) {
-                    failure = exception;
-                }
-            }
+    // 최초 배포처럼 저장된 목록이 없을 때만 수집해, 재배포마다 전체 수집하지 않는다.
+    public void collectIfEmpty(final ConvenienceBrand brand) {
+        if (repository.findLastCollectedAt(brand).isPresent()) {
+            LOG.info("promotion-initial-collection-skipped brand={} reason=already-collected", brand);
+            return;
         }
-        if (failure != null) {
-            throw failure;
-        }
+        collect(brand);
     }
 
     private long elapsedMillis(final long startedAt) {

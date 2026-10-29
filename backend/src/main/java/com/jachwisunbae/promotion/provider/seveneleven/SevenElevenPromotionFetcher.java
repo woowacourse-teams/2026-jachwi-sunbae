@@ -9,9 +9,15 @@ import java.util.ArrayList;
 import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.stereotype.Component;
 
 // 세븐일레븐의 모든 행사 탭을 첫 화면부터 더보기 끝까지 수집한다.
 // 더보기가 전체 수보다 일찍 짧게 끝나면, 탭마다 98% 이상 확보한 경우에만 부분 수집으로 인정한다.
+// 하루 1회 연동 조건 때문에 명시적으로 활성화한 환경에서만 수집 대상으로 등록한다.
+@Component
+@ConditionalOnProperty(name = "promotion.collection.seven-eleven.enabled", havingValue = "true")
 public class SevenElevenPromotionFetcher implements PromotionFetcher {
 
     private static final Logger LOG = LoggerFactory.getLogger(SevenElevenPromotionFetcher.class);
@@ -22,6 +28,7 @@ public class SevenElevenPromotionFetcher implements PromotionFetcher {
     private final SevenElevenPromotionParser parser = new SevenElevenPromotionParser();
     private final int maxPageCount;
 
+    @Autowired
     public SevenElevenPromotionFetcher(final SevenElevenPromotionClient client) {
         this(client, MAX_PAGE_COUNT);
     }
