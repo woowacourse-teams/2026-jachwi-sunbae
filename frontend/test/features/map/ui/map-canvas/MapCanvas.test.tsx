@@ -2,6 +2,7 @@ import { act, render, waitFor } from '@testing-library/react';
 import type { ReactElement } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { NAVER_AUTH_FAILURE_EVENT } from '@/features/map/lib/naverMapEngine';
 import type { MapRegion } from '@/features/map/model/MapCanvas';
 import MapCanvas from '@/features/map/ui/map-canvas/MapCanvas';
 import { PublicConfigProvider } from '@/shared/config/PublicConfigContext';
@@ -555,5 +556,48 @@ describe('Naver 지도 상태 동기화', () => {
     expect(latest).toHaveBeenCalledWith(37.5, 127);
     expect(first).not.toHaveBeenCalled();
     expect(maps).toHaveLength(1);
+  });
+
+  it('SDK가 인증 실패 후 객체를 폐기해도 지도 오류만 표시하고 좌표 갱신과 화면 이탈은 안전하다', async () => {
+    const onRetry = vi.fn();
+    const { rerender, unmount, getByText, queryByText } = renderWithConfig(
+      <MapCanvas center={{ latitude: 37.5, longitude: 127 }} level={5} onRetry={onRetry} />,
+    );
+    await waitFor(() => expect(maps.length).toBeGreaterThan(0));
+    act(() => {
+      Object.defineProperty(window, 'naver', { configurable: true, value: { maps: null } });
+      window.dispatchEvent(new Event(NAVER_AUTH_FAILURE_EVENT));
+    });
+    expect(getByText('지도를 연결할 수 없어요.')).toBeInTheDocument();
+    expect(queryByText('DEMO MAP')).not.toBeInTheDocument();
+    act(() => getByText('지도 다시 시도').click());
+    expect(onRetry).toHaveBeenCalledOnce();
+    expect(() => rerender(<MapCanvas center={{ latitude: 37.6, longitude: 127.1 }} level={7} />)).not.toThrow();
+    expect(() => unmount()).not.toThrow();
+  });
+
+  it('좌표 메뉴가 열린 상태에서 SDK 인증이 실패해도 폐기된 오버레이를 호출하지 않는다', async () => {
+    const center = { latitude: 37.5, longitude: 127 };
+    const { getByRole, unmount } = renderWithConfig(
+      <MapCanvas
+        center={center}
+        coordinateMenu={{ ...center, actions: [{ id: 'save', label: '기록', onSelect: vi.fn() }] }}
+      />,
+    );
+    await waitFor(() => expect(overlayInstances).toHaveLength(1));
+    const overlay = overlayInstances[0];
+    overlay.setMap.mockClear();
+    overlay.setMap.mockImplementation(() => {
+      throw new Error('SDK가 폐기한 오버레이');
+    });
+    expect(() =>
+      act(() => {
+        Object.defineProperty(window, 'naver', { configurable: true, value: { maps: null } });
+        window.dispatchEvent(new Event(NAVER_AUTH_FAILURE_EVENT));
+      }),
+    ).not.toThrow();
+    expect(getByRole('alert')).toHaveTextContent('지도를 연결할 수 없어요.');
+    expect(() => unmount()).not.toThrow();
+    expect(overlay.setMap).not.toHaveBeenCalled();
   });
 });

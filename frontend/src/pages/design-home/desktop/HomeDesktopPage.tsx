@@ -2,6 +2,7 @@ import { css } from '@emotion/css';
 
 import DesktopHeader from '@/shared/ui/desktop-header/DesktopHeader';
 
+import CheapMealCard from '../ui/CheapMealCard';
 import GuideCard from '../ui/GuideCard';
 import HomeFeatures from '../ui/HomeFeatures';
 import HomeFooter from '../ui/HomeFooter';
@@ -16,6 +17,7 @@ const HomeDesktopPage = () => (
     <DesktopHeader />
     <div className={styles.layout}>
       <GuideCard className={styles.guide} />
+      <CheapMealCard className={styles.meals} />
       <HomeFeatures className={styles.features} />
       <div className={styles.side}>
         <QuickMenu />
@@ -28,15 +30,27 @@ const HomeDesktopPage = () => (
 );
 
 const styles = {
+  /* 저렴한 한 끼 카드는 사용방법 카드와 같은 줄의 오른쪽 열에 둔다. */
+  meals: css`
+    label: HomeDesktopPage-meals;
+    grid-area: meals;
+    margin-top: 1.2rem;
+
+    /* 옆 사용방법 카드처럼 글자를 세로 가운데에 둔다. 좁은 열이라 가로는 왼쪽에 붙인다. */
+    & .ActionCard-text {
+      top: 50%;
+      transform: translateY(-50%);
+    }
+  `,
   /*
-   * 데스크탑 홈: 공용 헤더 아래 본문을 64rem 안에 두고, 사용방법 카드는 두 열에 걸쳐 본문 가운데에,
-   * 그 아래 왼쪽에 기능 카드, 오른쪽 19rem 열에 빠른 메뉴와 최근 기록을 둔다.
+   * 데스크탑 홈: 공용 헤더 아래 본문을 64rem 안에 두고, 첫 줄 왼쪽에 사용방법 카드, 오른쪽 19rem 열에 저렴한 한 끼 카드를,
+   * 그 아래 왼쪽에 기능 카드, 오른쪽 열에 빠른 메뉴와 최근 기록을 둔다.
    */
   layout: css`
     label: HomeDesktopPage-layout;
     display: grid;
     grid-template-areas:
-      'guide guide'
+      'guide meals'
       'features side';
     grid-template-columns: minmax(0, 1fr) 19rem;
     align-items: start;
@@ -50,8 +64,6 @@ const styles = {
   guide: css`
     label: HomeDesktopPage-guide;
     grid-area: guide;
-    justify-self: center;
-    width: min(100%, 40rem);
     margin-top: 1.2rem;
   `,
 

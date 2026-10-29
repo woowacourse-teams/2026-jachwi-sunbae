@@ -21,6 +21,7 @@ export type MapCoordinateMenu = {
 
 export type MapCanvasProps = {
   animateView?: boolean;
+  onRetry?: () => void;
   coordinateAction?: {
     latitude: number;
     longitude: number;

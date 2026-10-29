@@ -227,9 +227,9 @@ export const createMapRegionLayer = (
       latest = { regions, selectedId };
       apply();
     },
-    dispose: () => {
+    dispose: (sdkUnavailable = false) => {
       cancelPending();
-      entries.forEach(remove);
+      if (!sdkUnavailable) entries.forEach(remove);
       entries.clear();
     },
   };

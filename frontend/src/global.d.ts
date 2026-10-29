@@ -11,6 +11,7 @@ declare const __ADMIN_BOUNDARY_BASE_URL__: string;
 
 interface Window {
   jachwiNaverSdkReady?: () => void;
+  navermap_authFailure?: () => void;
   naver?: { maps: NaverMapsNamespace };
 }
 
