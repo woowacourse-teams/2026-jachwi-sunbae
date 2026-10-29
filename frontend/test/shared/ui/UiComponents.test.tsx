@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { createRef, useState } from 'react';
 import { MemoryRouter } from 'react-router-dom';
@@ -12,16 +12,48 @@ import TextField from '@/shared/ui/text-field/TextField';
 import TopNavigation from '@/shared/ui/top-navigation/TopNavigation';
 
 describe('공용 UI 컴포넌트', () => {
-  it('Button은 처리 중일 때 중복 동작을 막고 진행 상태를 표시한다', () => {
-    render(
-      <Button isLoading loadingLabel="저장 중…">
-        저장
-      </Button>,
-    );
+  it('Button은 처리 중이면 두 번째 누름을 바로 막고 aria-busy로 알리지만, 스피너는 500ms가 지나야 보인다', () => {
+    vi.useFakeTimers();
+    try {
+      const onClick = vi.fn();
+      render(
+        <Button isLoading loadingLabel="저장 중…" onClick={onClick}>
+          저장
+        </Button>,
+      );
+      const button = screen.getByRole('button', { name: '저장' });
+      // 빠른 응답에서 버튼이 깜빡이지 않게 모양은 그대로 두되, 요청은 다시 보내지 않는다.
+      expect(button).toHaveAttribute('aria-busy', 'true');
+      expect(button).toBeEnabled();
+      fireEvent.click(button);
+      expect(onClick).not.toHaveBeenCalled();
 
-    const button = screen.getByRole('button', { name: '저장 중…' });
-    expect(button).toBeDisabled();
-    expect(button).toHaveAttribute('aria-busy', 'true');
+      act(() => vi.advanceTimersByTime(499));
+      expect(screen.getByRole('button', { name: '저장' })).toBeEnabled();
+      act(() => vi.advanceTimersByTime(1));
+      expect(screen.getByRole('button', { name: '저장 중…' })).toBeDisabled();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('Button은 500ms 안에 끝난 요청에는 스피너를 보여 주지 않는다', () => {
+    vi.useFakeTimers();
+    try {
+      const { rerender } = render(
+        <Button isLoading loadingLabel="저장 중…">
+          저장
+        </Button>,
+      );
+      act(() => vi.advanceTimersByTime(300));
+      rerender(<Button loadingLabel="저장 중…">저장</Button>);
+      act(() => vi.runOnlyPendingTimers());
+      const button = screen.getByRole('button', { name: '저장' });
+      expect(button).toBeEnabled();
+      expect(button).not.toHaveAttribute('aria-busy');
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('React 19의 ref prop으로 공용 입력 컴포넌트의 DOM에 접근한다', () => {

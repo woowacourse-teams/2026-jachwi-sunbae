@@ -7,6 +7,7 @@ import ChecklistProgressRing from '@/features/checklist/ui/checklist-progress-ri
 import { usePropertyChecklistDetail, usePropertyChecklistOverview } from '@/features/property/api/useProperties';
 import type { PropertyChecklistItem } from '@/features/property/model/Property';
 import { Button } from '@/shared/ui/button/Button';
+import DelayedFallback from '@/shared/ui/delayed-fallback/DelayedFallback';
 import DetailSection from '@/shared/ui/detail-section/DetailSection';
 import Icon from '@/shared/ui/icon/Icon';
 
@@ -101,44 +102,48 @@ const AppliedChecklistItems = ({
 }) => {
   const checklist = usePropertyChecklistDetail(propertyId, propertyChecklistId);
 
-  if (checklist.isPending) {
-    return <p className={styles.loading}>체크리스트를 불러오는 중이에요.</p>;
-  }
-
-  if (checklist.isError) {
-    return (
-      <button className={styles.retry} type="button" onClick={() => void checklist.refetch()}>
-        체크리스트를 불러오지 못했어요. 다시 시도
-      </button>
-    );
-  }
-
-  const detail = checklist.data;
-  const completedCount = detail.items.filter((item) => item.status !== 'UNCONFIRMED').length;
-
+  // 빠른 응답에는 로딩 문구 없이 바로 항목을 보여 주고, 오래 걸릴 때만 알린다.
   return (
-    <div className={styles.expandedChecklist}>
-      <header className={styles.expandedHeader}>
-        <h3>{detail.checklistName}</h3>
-        <span>
-          {completedCount} / {detail.items.length} 평가
-        </span>
-      </header>
-      <ol className={styles.items}>
-        {detail.items.map((item: PropertyChecklistItem) => (
-          <PropertyChecklistItemControl
-            key={item.itemId}
-            propertyId={propertyId}
-            propertyChecklistId={propertyChecklistId}
-            item={item}
-            isMemoEditing={editingMemoItemId === item.itemId}
-            isMemoEditDisabled={editingMemoItemId !== null && editingMemoItemId !== item.itemId}
-            onStartMemoEdit={() => onStartMemoEdit(item.itemId)}
-            onFinishMemoEdit={onFinishMemoEdit}
-          />
-        ))}
-      </ol>
-    </div>
+    <DelayedFallback
+      isPending={checklist.isPending}
+      fallback={<p className={styles.loading}>체크리스트를 불러오는 중이에요.</p>}
+    >
+      {() => {
+        if (checklist.isError || checklist.data === undefined)
+          return (
+            <button className={styles.retry} type="button" onClick={() => void checklist.refetch()}>
+              체크리스트를 불러오지 못했어요. 다시 시도
+            </button>
+          );
+        const detail = checklist.data;
+        const completedCount = detail.items.filter((item) => item.status !== 'UNCONFIRMED').length;
+
+        return (
+          <div className={styles.expandedChecklist}>
+            <header className={styles.expandedHeader}>
+              <h3>{detail.checklistName}</h3>
+              <span>
+                {completedCount} / {detail.items.length} 평가
+              </span>
+            </header>
+            <ol className={styles.items}>
+              {detail.items.map((item: PropertyChecklistItem) => (
+                <PropertyChecklistItemControl
+                  key={item.itemId}
+                  propertyId={propertyId}
+                  propertyChecklistId={propertyChecklistId}
+                  item={item}
+                  isMemoEditing={editingMemoItemId === item.itemId}
+                  isMemoEditDisabled={editingMemoItemId !== null && editingMemoItemId !== item.itemId}
+                  onStartMemoEdit={() => onStartMemoEdit(item.itemId)}
+                  onFinishMemoEdit={onFinishMemoEdit}
+                />
+              ))}
+            </ol>
+          </div>
+        );
+      }}
+    </DelayedFallback>
   );
 };
 
