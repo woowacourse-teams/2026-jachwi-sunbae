@@ -1,7 +1,7 @@
 // @vitest-environment node
 import { expect, it } from 'vitest';
 
-import { distanceMeters, isInBounds, viewportQuery } from '@/features/map/lib/mapViewportQuery';
+import { distanceMeters, isInBounds, viewportQuery, viewportTiles } from '@/features/map/lib/mapViewportQuery';
 
 const around = (halfLatitude: number, halfLongitude: number) => ({
   south: 37.5 - halfLatitude,
@@ -30,4 +30,18 @@ it('거리와 화면 포함 여부를 계산한다', () => {
   const bounds = around(0.004, 0.005);
   expect(isInBounds({ latitude: 37.5, longitude: 127.005 }, bounds)).toBe(true);
   expect(isInBounds({ latitude: 37.5, longitude: 127.0051 }, bounds)).toBe(false);
+});
+
+it('정류장 조회는 화면이 2km 안이면 한 번, 넘으면 네 칸으로 나눠 가장자리까지 조회한다', () => {
+  expect(viewportTiles(around(0.008, 0.01))).toEqual([viewportQuery(around(0.008, 0.01))]);
+  // 모서리까지 약 3km인 화면: 칸마다 모서리까지 1.5km라 네 칸이 화면을 다 덮는다.
+  const tiles = viewportTiles(around(0.018, 0.022));
+  expect(tiles).toHaveLength(4);
+  expect(tiles.map((tile) => tile.radius)).toEqual([2000, 2000, 2000, 2000]);
+  expect(tiles.map((tile) => [tile.center.latitude > 37.5, tile.center.longitude > 127])).toEqual([
+    [true, false],
+    [true, true],
+    [false, false],
+    [false, true],
+  ]);
 });
