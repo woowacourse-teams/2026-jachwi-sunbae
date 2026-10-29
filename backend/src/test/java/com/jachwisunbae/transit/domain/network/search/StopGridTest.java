@@ -12,7 +12,7 @@ import org.junit.jupiter.api.Test;
 class StopGridTest {
 
     @Test
-    @DisplayName("격자 칸 경계 너머라도 720m 안의 정류장은 모두 후보로 돌려준다")
+    @DisplayName("[POL-COMMUTE-013] 격자 칸 경계 너머라도 720m 안의 정류장은 모두 후보로 돌려준다")
     void findsStopsAcrossCellBoundary() {
         Coordinate destination = new Coordinate(37.50001, 127.00001);
         List<GtfsStop> stops = List.of(

@@ -29,7 +29,7 @@ class TransitImportCommandTest {
     }
 
     @Test
-    @DisplayName("행정동 경계를 적재한 뒤 GTFS 노선망을, 연계표 파일이 있으면 마지막에 관할 법정동 연결을 적재한다")
+    @DisplayName("[POL-COMMUTE-011·031] 행정동 경계를 적재한 뒤 GTFS 노선망을, 연계표 파일이 있으면 마지막에 관할 법정동 연결을 적재한다")
     void importsAdminDongsBeforeGtfsNetwork() {
         when(adminLegalDongImportService.hasFile()).thenReturn(true);
 
@@ -42,7 +42,7 @@ class TransitImportCommandTest {
     }
 
     @Test
-    @DisplayName("연계표 파일을 넘기지 않으면 관할 법정동 연결은 적재하지 않는다")
+    @DisplayName("[POL-COMMUTE-031] 연계표 파일을 넘기지 않으면 관할 법정동 연결은 적재하지 않는다")
     void skipsAdminLegalDongsWithoutFile() {
         TransitImportCommand.importTransitData(adminDongImportService, gtfsImportService, adminLegalDongImportService);
 

@@ -25,7 +25,7 @@ class AdminDongGeoJsonReaderTest {
     private final AdminDongGeoJsonReader reader = new AdminDongGeoJsonReader(new ObjectMapper());
 
     @Test
-    @DisplayName("Polygon과 MultiPolygon 행정동을 속성과 함께 읽는다")
+    @DisplayName("[POL-COMMUTE-009] Polygon과 MultiPolygon 행정동을 속성과 함께 읽는다")
     void readsPolygonAndMultiPolygon() throws IOException {
         Path file = write("""
                 {"type":"FeatureCollection","name":"admin","features":[

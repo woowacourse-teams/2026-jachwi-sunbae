@@ -25,7 +25,7 @@ class CommuteRentAreaSearchResponseTest {
             .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
 
     @Test
-    @DisplayName("동네 시세를 동네 항목에 바로 펼치고 시세 기간을 함께 내보낸다")
+    @DisplayName("[POL-COMMUTE-034] 동네 시세를 동네 항목에 바로 펼치고 시세 기간을 함께 내보낸다")
     void serializesRent() throws Exception {
         GtfsStop station = new GtfsStop("S1", "신림역", new Coordinate(37.48, 126.93), "11210630");
         AdminDongRents rents = new AdminDongRents(LocalDate.of(2026, 3, 30), LocalDate.of(2026, 9, 30),
@@ -45,7 +45,7 @@ class CommuteRentAreaSearchResponseTest {
     }
 
     @Test
-    @DisplayName("시세가 없는 동네는 금액과 거래 수를 null로, 시세가 하나도 없으면 기간을 null로 내보낸다")
+    @DisplayName("[POL-COMMUTE-034] 시세가 없는 동네는 금액과 거래 수를 null로, 시세가 하나도 없으면 기간을 null로 내보낸다")
     void serializesMissingRent() throws Exception {
         GtfsStop station = new GtfsStop("S1", "역삼역", new Coordinate(37.55, 127.05), "11230640");
         CommuteAreaSearchResult result = new CommuteAreaSearchResult(40, List.of(new CommuteArea("11230640",

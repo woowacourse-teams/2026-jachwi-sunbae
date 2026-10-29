@@ -42,7 +42,7 @@ class JdbcAdminDongRepositoryTest {
     }
 
     @Test
-    @DisplayName("기존 행정동을 지우고 새 행정동으로 교체하며, 경계와 중심을 그대로 다시 읽는다")
+    @DisplayName("[POL-COMMUTE-011] 기존 행정동을 지우고 새 행정동으로 교체하며, 경계와 중심을 그대로 다시 읽는다")
     void replacesAndReadsBack() throws Exception {
         repository.replace(List.of(adminDong("99999999", "옛동", "{\"type\":\"Polygon\",\"coordinates\":"
                 + "[[[0,0],[1,0],[1,1],[0,1],[0,0]]]}")));

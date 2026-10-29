@@ -68,7 +68,7 @@ class GtfsImportServiceTransactionTest {
     }
 
     @Test
-    @DisplayName("기존 노선망을 지운 뒤 저장이 실패하면 롤백되어 이전 노선망이 그대로 남는다")
+    @DisplayName("[POL-COMMUTE-006] 기존 노선망을 지운 뒤 저장이 실패하면 롤백되어 이전 노선망이 그대로 남는다")
     void keepsExistingNetworkWhenReplacementFails() {
         transactionalService(EXISTING_FEED).importFeed();
 

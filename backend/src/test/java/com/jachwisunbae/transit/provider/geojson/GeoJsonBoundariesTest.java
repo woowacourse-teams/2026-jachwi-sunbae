@@ -13,7 +13,7 @@ class GeoJsonBoundariesTest {
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     @Test
-    @DisplayName("경계 좌표를 소수점 5자리로 반올림해 GeoJSON을 다시 만든다")
+    @DisplayName("[POL-COMMUTE-009] 경계 좌표를 소수점 5자리로 반올림해 GeoJSON을 다시 만든다")
     void roundsCoordinates() throws Exception {
         AdminDongBoundary boundary = GeoJsonBoundaries.toBoundary(objectMapper.readTree("""
                 {"type":"Polygon","coordinates":[[[126.97389564130287,37.579318446045434],

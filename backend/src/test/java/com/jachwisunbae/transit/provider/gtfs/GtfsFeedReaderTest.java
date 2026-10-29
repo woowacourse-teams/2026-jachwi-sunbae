@@ -27,7 +27,7 @@ class GtfsFeedReaderTest {
     private final GtfsFeedReader reader = new GtfsFeedReader();
 
     @Test
-    @DisplayName("버스·지하철 노선의 구간 이동 시간 중앙값과 운행 간격 기반 대기 시간을 만든다")
+    @DisplayName("[POL-COMMUTE-001·002·003] 버스·지하철 노선의 구간 이동 시간 중앙값과 운행 간격 기반 대기 시간을 만든다")
     void readsMedianEdgesAndHeadwayWaits() throws IOException {
         write("routes.txt", """
                 route_id,agency_id,route_short_name,route_long_name,route_type
@@ -104,7 +104,7 @@ class GtfsFeedReaderTest {
     }
 
     @Test
-    @DisplayName("환승 불가 유형과 최소 환승 시간이 없는 환승은 적재하지 않는다")
+    @DisplayName("[POL-COMMUTE-004] 환승 불가 유형과 최소 환승 시간이 없는 환승은 적재하지 않는다")
     void skipsTransfersWithoutUsableTime() throws IOException {
         writeSingleTripFeed("""
                 trip_id,arrival_time,departure_time,stop_id,stop_sequence
@@ -124,7 +124,7 @@ class GtfsFeedReaderTest {
     }
 
     @Test
-    @DisplayName("같은 정류장 쌍의 환승이 여러 번 나오면 가장 짧은 환승 시간만 남긴다")
+    @DisplayName("[POL-COMMUTE-004] 같은 정류장 쌍의 환승이 여러 번 나오면 가장 짧은 환승 시간만 남긴다")
     void keepsShortestDuplicateTransfer() throws IOException {
         writeSingleTripFeed("""
                 trip_id,arrival_time,departure_time,stop_id,stop_sequence
@@ -147,7 +147,7 @@ class GtfsFeedReaderTest {
     }
 
     @Test
-    @DisplayName("한 운행편의 정차 기록이 흩어져 있으면 틀린 구간을 만들지 않고 적재를 멈춘다")
+    @DisplayName("[POL-COMMUTE-008] 한 운행편의 정차 기록이 흩어져 있으면 틀린 구간을 만들지 않고 적재를 멈춘다")
     void failsWhenTripRowsAreNotContiguous() throws IOException {
         writeSingleTripFeed("""
                 trip_id,arrival_time,departure_time,stop_id,stop_sequence
@@ -163,7 +163,7 @@ class GtfsFeedReaderTest {
     }
 
     @Test
-    @DisplayName("정차 순서가 증가하지 않으면 적재를 멈춘다")
+    @DisplayName("[POL-COMMUTE-008] 정차 순서가 증가하지 않으면 적재를 멈춘다")
     void failsWhenStopSequenceDoesNotIncrease() throws IOException {
         writeSingleTripFeed("""
                 trip_id,arrival_time,departure_time,stop_id,stop_sequence

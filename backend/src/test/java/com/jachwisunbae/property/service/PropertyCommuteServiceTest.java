@@ -48,7 +48,7 @@ class PropertyCommuteServiceTest {
     }
 
     @Test
-    @DisplayName("매물마다 통근 시간을 분으로 올림해 돌려주고, 위치가 없거나 60분을 넘는 매물은 상태로 알린다")
+    @DisplayName("[POL-COMMUTE-025·027] 매물마다 통근 시간을 분으로 올림해 돌려주고, 위치가 없거나 60분을 넘는 매물은 상태로 알린다")
     void findsCommuteTimes() {
         given(propertyRepository.findLocationsByMemberId(MEMBER_ID)).willReturn(List.of(
                 property(3L, "B 옆 집", 37.5500, 127.0012),
@@ -71,7 +71,7 @@ class PropertyCommuteServiceTest {
     }
 
     @Test
-    @DisplayName("목적지에서 걸어서 10분 안에 정류장이 없으면 생활권 탐색과 같은 오류를 낸다")
+    @DisplayName("[POL-COMMUTE-013·025] 목적지에서 걸어서 10분 안에 정류장이 없으면 생활권 탐색과 같은 오류를 낸다")
     void rejectsDestinationWithoutArrivalStop() {
         assertThatThrownBy(() -> service.findCommuteTimes(MEMBER_ID, new Coordinate(35.0000, 129.0000)))
                 .isInstanceOfSatisfying(BusinessRuleViolationException.class, exception ->

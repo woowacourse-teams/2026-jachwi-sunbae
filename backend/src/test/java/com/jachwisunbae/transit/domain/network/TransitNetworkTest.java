@@ -42,7 +42,7 @@ class TransitNetworkTest {
             List.of(new GtfsTransfer("G", "C", new Seconds(90))));
 
     @Test
-    @DisplayName("도착 정류장까지 걷는 시간과 노선마다 한 번의 대기 시간을 더해 통근 시간을 구한다")
+    @DisplayName("[POL-COMMUTE-013·014] 도착 정류장까지 걷는 시간과 노선마다 한 번의 대기 시간을 더해 통근 시간을 구한다")
     void addsWalkAndWaitTime() {
         Map<String, Integer> seconds = travelSeconds(network.reachableStops(DESTINATION, new Seconds(3600), 2));
 
@@ -56,7 +56,7 @@ class TransitNetworkTest {
     }
 
     @Test
-    @DisplayName("통근 시간이 짧은 순서로 정류장을 돌려준다")
+    @DisplayName("[POL-COMMUTE-015] 통근 시간이 짧은 순서로 정류장을 돌려준다")
     void sortsByTravelTime() {
         List<ReachableStop> stops = network.reachableStops(DESTINATION, new Seconds(3600), 2);
 
@@ -66,7 +66,7 @@ class TransitNetworkTest {
     }
 
     @Test
-    @DisplayName("제한 시간을 넘는 정류장은 뺀다")
+    @DisplayName("[POL-COMMUTE-014] 제한 시간을 넘는 정류장은 뺀다")
     void excludesStopsOverLimit() {
         Map<String, Integer> seconds = travelSeconds(network.reachableStops(DESTINATION, new Seconds(641), 2));
 
@@ -74,7 +74,7 @@ class TransitNetworkTest {
     }
 
     @Test
-    @DisplayName("환승 횟수가 최대 환승 횟수를 넘는 경로는 버린다")
+    @DisplayName("[POL-COMMUTE-014] 환승 횟수가 최대 환승 횟수를 넘는 경로는 버린다")
     void limitsTransfers() {
         Map<String, Integer> seconds = travelSeconds(network.reachableStops(DESTINATION, new Seconds(3600), 0));
 
@@ -82,14 +82,14 @@ class TransitNetworkTest {
     }
 
     @Test
-    @DisplayName("목적지에서 걸어서 10분 안에 정류장이 있는지 알려준다")
+    @DisplayName("[POL-COMMUTE-013] 목적지에서 걸어서 10분 안에 정류장이 있는지 알려준다")
     void findsArrivalStop() {
         assertThat(network.hasArrivalStop(DESTINATION)).isTrue();
         assertThat(network.hasArrivalStop(new Coordinate(35.0, 129.0))).isFalse();
     }
 
     @Test
-    @DisplayName("노선망에 없는 정류장을 잇는 구간이 있으면 만들지 않는다")
+    @DisplayName("[POL-COMMUTE-007] 노선망에 없는 정류장을 잇는 구간이 있으면 만들지 않는다")
     void rejectsUnknownStop() {
         assertThatThrownBy(() -> new TransitNetwork(List.of(A), List.of(route("R1", 3, 300)),
                 List.of(edge("R1", "NONE", "A", 60)), List.of()))
@@ -98,7 +98,7 @@ class TransitNetworkTest {
     }
 
     @Test
-    @DisplayName("출발 정류장에서 목적지까지 노선마다 구간을 묶고 마지막에 걷는 구간을 붙인다")
+    @DisplayName("[POL-COMMUTE-021] 출발 정류장에서 목적지까지 노선마다 구간을 묶고 마지막에 걷는 구간을 붙인다")
     void findsRouteWithTransfer() {
         CommuteRoute route = network.route("E", DESTINATION, new Seconds(3600), 2).orElseThrow();
 
@@ -120,7 +120,7 @@ class TransitNetworkTest {
     }
 
     @Test
-    @DisplayName("경로의 통근 시간은 생활권 탐색에서 구한 정류장 통근 시간과 같다")
+    @DisplayName("[POL-COMMUTE-020] 경로의 통근 시간은 생활권 탐색에서 구한 정류장 통근 시간과 같다")
     void matchesReachableStops() {
         Map<String, Integer> seconds = travelSeconds(network.reachableStops(DESTINATION, new Seconds(3600), 2));
 
@@ -132,7 +132,7 @@ class TransitNetworkTest {
     }
 
     @Test
-    @DisplayName("걸어서 환승하는 구간은 도보 구간이 된다")
+    @DisplayName("[POL-COMMUTE-021·028] 걸어서 환승하는 구간은 도보 구간이 된다")
     void findsWalkTransfer() {
         CommuteRoute route = network.route("G", DESTINATION, new Seconds(3600), 2).orElseThrow();
 
@@ -143,7 +143,7 @@ class TransitNetworkTest {
     }
 
     @Test
-    @DisplayName("지하철 구간은 SUBWAY로 나타낸다")
+    @DisplayName("[POL-COMMUTE-021] 지하철 구간은 SUBWAY로 나타낸다")
     void marksSubway() {
         CommuteRoute route = network.route("S", DESTINATION, new Seconds(3600), 2).orElseThrow();
 
@@ -152,7 +152,7 @@ class TransitNetworkTest {
     }
 
     @Test
-    @DisplayName("최대 통근 시간이나 최대 환승 횟수 안에 경로가 없으면 비어 있다")
+    @DisplayName("[POL-COMMUTE-020] 최대 통근 시간이나 최대 환승 횟수 안에 경로가 없으면 비어 있다")
     void returnsEmptyWhenNoRoute() {
         assertThat(network.route("E", DESTINATION, new Seconds(600), 2)).isEmpty();
         assertThat(network.route("E", DESTINATION, new Seconds(3600), 0)).isEmpty();
@@ -160,7 +160,7 @@ class TransitNetworkTest {
     }
 
     @Test
-    @DisplayName("도착 정류장에서 출발하면 걷는 구간만 있다")
+    @DisplayName("[POL-COMMUTE-021] 도착 정류장에서 출발하면 걷는 구간만 있다")
     void walksFromArrivalStop() {
         CommuteRoute route = network.route("A", DESTINATION, new Seconds(3600), 2).orElseThrow();
 
@@ -169,7 +169,7 @@ class TransitNetworkTest {
     }
 
     @Test
-    @DisplayName("출발지에서 걸어서 10분 안의 정류장까지 걷는 시간을 정류장의 통근 시간에 더한다")
+    @DisplayName("[POL-COMMUTE-026] 출발지에서 걸어서 10분 안의 정류장까지 걷는 시간을 정류장의 통근 시간에 더한다")
     void addsWalkFromOrigin() {
         Coordinate nearB = new Coordinate(37.5100, 127.0040);
 
@@ -179,7 +179,7 @@ class TransitNetworkTest {
     }
 
     @Test
-    @DisplayName("목적지까지 걸어서 10분 안이면 정류장을 거치는 것보다 빠를 때 걷는 시간을 쓴다")
+    @DisplayName("[POL-COMMUTE-026] 목적지까지 걸어서 10분 안이면 정류장을 거치는 것보다 빠를 때 걷는 시간을 쓴다")
     void walksDirectlyToDestination() {
         Coordinate nearDestination = new Coordinate(37.5000, 127.0010);
 
@@ -191,7 +191,7 @@ class TransitNetworkTest {
     }
 
     @Test
-    @DisplayName("제한 시간 안에 닿지 못하는 출발지는 비워 두고 출발지 순서를 지킨다")
+    @DisplayName("[POL-COMMUTE-026·027] 제한 시간 안에 닿지 못하는 출발지는 비워 두고 출발지 순서를 지킨다")
     void leavesUnreachableOriginsEmpty() {
         Coordinate nearB = new Coordinate(37.5100, 127.0040);
         Coordinate nearFar = new Coordinate(37.6000, 127.0010);
@@ -204,7 +204,7 @@ class TransitNetworkTest {
     }
 
     @Test
-    @DisplayName("100m 안의 버스 정류장과 역은 GTFS 환승이 없어도 걸어서 갈아탄다")
+    @DisplayName("[POL-COMMUTE-028] 100m 안의 버스 정류장과 역은 GTFS 환승이 없어도 걸어서 갈아탄다")
     void walksBetweenNearbyBusStopAndStation() {
         GtfsStop busStop = stop("P", 37.5100, 127.0300);
         GtfsStop station = stop("R", 37.5108, 127.0300);
@@ -223,7 +223,7 @@ class TransitNetworkTest {
     }
 
     @Test
-    @DisplayName("100m보다 멀리 떨어진 정류장끼리는 걸어서 갈아타지 않는다")
+    @DisplayName("[POL-COMMUTE-028] 100m보다 멀리 떨어진 정류장끼리는 걸어서 갈아타지 않는다")
     void doesNotWalkToFarStop() {
         TransitNetwork mixed = busAndSubway(stop("P", 37.5100, 127.0300), stop("R", 37.5112, 127.0300));
 
@@ -232,7 +232,7 @@ class TransitNetworkTest {
     }
 
     @Test
-    @DisplayName("걸어서 갈아탄 뒤에 다시 걸어서 갈아타지 않는다")
+    @DisplayName("[POL-COMMUTE-028] 걸어서 갈아탄 뒤에 다시 걸어서 갈아타지 않는다")
     void doesNotChainWalkTransfers() {
         // P-Q, Q-R은 100m 안이지만 P-R은 100m보다 멀다.
         TransitNetwork chained = new TransitNetwork(
@@ -247,7 +247,7 @@ class TransitNetworkTest {
     }
 
     @Test
-    @DisplayName("걸어서 갈아탄 뒤에 목적지까지 이어서 걷지 않는다")
+    @DisplayName("[POL-COMMUTE-028] 걸어서 갈아탄 뒤에 목적지까지 이어서 걷지 않는다")
     void doesNotWalkToDestinationAfterWalkTransfer() {
         // Q는 목적지에서 걸어서 10분 안이고 P는 아니다. P와 Q는 100m 안이다.
         TransitNetwork walking = new TransitNetwork(

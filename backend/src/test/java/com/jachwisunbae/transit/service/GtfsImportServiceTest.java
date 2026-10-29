@@ -53,7 +53,7 @@ class GtfsImportServiceTest {
     };
 
     @Test
-    @DisplayName("수도권 정류장과 이어진 행정동 없는 정류장, 그 사이 구간·환승·노선만 저장하고 적재 건수를 돌려준다")
+    @DisplayName("[POL-COMMUTE-007·024] 수도권 정류장과 이어진 행정동 없는 정류장, 그 사이 구간·환승·노선만 저장하고 적재 건수를 돌려준다")
     void keepsOnlyCapitalRegion() {
         GtfsImportService service = new GtfsImportService(directory.toString(), reader, networkRepository,
                 new InMemoryAdminDongRepository(ADMIN_DONGS));
@@ -70,7 +70,7 @@ class GtfsImportServiceTest {
     }
 
     @Test
-    @DisplayName("행정동 경계가 적재되지 않았으면 정류장의 지역을 알 수 없어 적재하지 않는다")
+    @DisplayName("[POL-COMMUTE-011] 행정동 경계가 적재되지 않았으면 정류장의 지역을 알 수 없어 적재하지 않는다")
     void rejectsWithoutAdminDongs() {
         GtfsImportService service = new GtfsImportService(directory.toString(), reader, networkRepository,
                 new InMemoryAdminDongRepository(List.of()));

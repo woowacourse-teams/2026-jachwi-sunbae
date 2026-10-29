@@ -15,7 +15,7 @@ class MedianTest {
     }
 
     @Test
-    @DisplayName("짝수 개면 가운데 두 값의 평균을 반올림한다")
+    @DisplayName("[POL-COMMUTE-002] 짝수 개면 가운데 두 값의 평균을 반올림한다")
     void roundsAverageOfMiddleValuesForEvenCount() {
         assertThat(Median.of(new int[]{10, 30, 61, 70, 90, 200})).isEqualTo(66);
     }

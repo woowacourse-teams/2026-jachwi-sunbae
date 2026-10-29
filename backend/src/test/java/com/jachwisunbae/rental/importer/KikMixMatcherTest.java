@@ -27,7 +27,7 @@ class KikMixMatcherTest {
     private Path work;
 
     @Test
-    @DisplayName("MS949 고정 폭 연계표 파일을 읽어 이름으로 행정동에 관할 법정동을 잇고, 가운뎃점과 '제1동' 표기 차이는 무시한다")
+    @DisplayName("[POL-COMMUTE-030] MS949 고정 폭 연계표 파일을 읽어 이름으로 행정동에 관할 법정동을 잇고, 가운뎃점과 '제1동' 표기 차이는 무시한다")
     void matchesByName() throws Exception {
         Path file = work.resolve("KIKmix.20260701");
         Files.write(file, lines(row("서울특별시", "종로구", "", "1111000000", "종로구", ""),
@@ -44,7 +44,7 @@ class KikMixMatcherTest {
     }
 
     @Test
-    @DisplayName("행정동 이름에서 번호를 뺀 이름과 같은 관할 법정동이 있으면 그 법정동만 잇고, 없거나 읍·면이면 모두 잇는다")
+    @DisplayName("[POL-COMMUTE-030] 행정동 이름에서 번호를 뺀 이름과 같은 관할 법정동이 있으면 그 법정동만 잇고, 없거나 읍·면이면 모두 잇는다")
     void prefersSameNamedLegalDong() {
         List<AdminDong> adminDongs = List.of(adminDong("31023610", "성남시분당구", "이매1동"),
             adminDong("11230511", "강남구", "일원본동"), adminDong("31240310", "화성시", "봉담읍"));
@@ -62,7 +62,7 @@ class KikMixMatcherTest {
     }
 
     @Test
-    @DisplayName("행정동 경계 기준일에 유효했던 연계표 행만 쓴다")
+    @DisplayName("[POL-COMMUTE-030] 행정동 경계 기준일에 유효했던 연계표 행만 쓴다")
     void usesRowsValidOnBaseDate() {
         List<AdminDong> adminDongs = List.of(adminDong("31240310", "화성시", "봉담읍"));
         List<String> lines = lines(row("경기도", "화성시", "봉담읍", "4159025321", "와우리", "20260201"),

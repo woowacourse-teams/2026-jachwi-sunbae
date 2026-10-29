@@ -25,7 +25,7 @@ class AdminDongRentServiceTest {
     private final AdminDongRentService service = new AdminDongRentService(rentRepository);
 
     @Test
-    @DisplayName("서버가 뜰 때 저장된 시세를 읽어 둔다")
+    @DisplayName("[POL-COMMUTE-033] 서버가 뜰 때 저장된 시세를 읽어 둔다")
     void loadsStoredRents() {
         AdminDongRents rents = new AdminDongRents(LocalDate.of(2026, 3, 30), LocalDate.of(2026, 9, 30),
             Map.of("11230640", new AdminDongRent("11230640", List.of("역삼동"), 780_000, 10_000_000, 5)));
@@ -36,7 +36,7 @@ class AdminDongRentServiceTest {
     }
 
     @Test
-    @DisplayName("수집본의 마지막 계약일부터 6개월 동안의 거래로 시세를 다시 계산해 저장한다")
+    @DisplayName("[POL-COMMUTE-032·033] 수집본의 마지막 계약일부터 6개월 동안의 거래로 시세를 다시 계산해 저장한다")
     void refreshesWithDatasetPeriod() {
         LocalDate endDate = LocalDate.of(2026, 9, 30);
         LocalDate startDate = LocalDate.of(2026, 3, 30);
@@ -52,7 +52,7 @@ class AdminDongRentServiceTest {
     }
 
     @Test
-    @DisplayName("적재된 월세 수집본이 없으면 시세를 비운다")
+    @DisplayName("[POL-COMMUTE-033] 적재된 월세 수집본이 없으면 시세를 비운다")
     void clearsWithoutDataset() {
         given(rentRepository.findRentEndDate()).willReturn(Optional.empty());
 

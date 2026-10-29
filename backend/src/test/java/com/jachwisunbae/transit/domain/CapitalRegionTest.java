@@ -9,7 +9,7 @@ import org.junit.jupiter.params.provider.CsvSource;
 class CapitalRegionTest {
 
     @ParameterizedTest(name = "{0}: 노선망 {1}, 결과 {2}")
-    @DisplayName("통계청 행정동 코드의 시도로 노선망과 결과에 들어가는지 정한다")
+    @DisplayName("[POL-COMMUTE-024] 통계청 행정동 코드의 시도로 노선망과 결과에 들어가는지 정한다")
     @CsvSource(nullValues = "NULL", value = {
             "11010530, true, true",
             "31011510, true, true",

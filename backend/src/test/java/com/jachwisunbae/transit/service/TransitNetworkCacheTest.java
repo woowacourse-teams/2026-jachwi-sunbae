@@ -26,7 +26,7 @@ class TransitNetworkCacheTest {
     private final TransitNetworkCache cache = new TransitNetworkCache(new TransitNetworkLoader(repository), clock);
 
     @Test
-    @DisplayName("노선망은 처음 한 번만 DB에서 읽고 이후에는 메모리의 노선망을 쓴다")
+    @DisplayName("[POL-COMMUTE-017] 노선망은 처음 한 번만 DB에서 읽고 이후에는 메모리의 노선망을 쓴다")
     void loadsOnce() {
         repository.replace(feed());
 
@@ -38,7 +38,7 @@ class TransitNetworkCacheTest {
     }
 
     @Test
-    @DisplayName("노선망을 읽지 못하면 다시 읽을 시간이 될 때까지 DB를 읽지 않고 바로 실패한다")
+    @DisplayName("[POL-COMMUTE-017] 노선망을 읽지 못하면 다시 읽을 시간이 될 때까지 DB를 읽지 않고 바로 실패한다")
     void rejectsWithoutLoadingBeforeRetry() {
         assertThatThrownBy(cache::get).isInstanceOf(ServiceUnavailableException.class);
         repository.replace(feed());
@@ -50,7 +50,7 @@ class TransitNetworkCacheTest {
     }
 
     @Test
-    @DisplayName("노선망을 읽지 못해도 담아 두지 않고, 다시 읽을 시간이 지나면 적재된 노선망을 읽는다")
+    @DisplayName("[POL-COMMUTE-017] 노선망을 읽지 못해도 담아 두지 않고, 다시 읽을 시간이 지나면 적재된 노선망을 읽는다")
     void loadsAfterRetryDelay() {
         assertThatThrownBy(cache::get).isInstanceOf(ServiceUnavailableException.class);
         repository.replace(feed());

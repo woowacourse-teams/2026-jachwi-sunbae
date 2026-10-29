@@ -39,7 +39,7 @@ class CommuteRouteServiceTest {
     }
 
     @Test
-    @DisplayName("정류장에서 목적지까지 타고 갈 노선과 걷는 구간을 찾는다")
+    @DisplayName("[POL-COMMUTE-020·021] 정류장에서 목적지까지 타고 갈 노선과 걷는 구간을 찾는다")
     void findsRoute() {
         CommuteRoute route = service.findRoute("C", DESTINATION, 60, 2);
 
@@ -57,7 +57,7 @@ class CommuteRouteServiceTest {
     }
 
     @Test
-    @DisplayName("목적지에서 걸어서 10분 안에 정류장이 없으면 경로를 찾지 않는다")
+    @DisplayName("[POL-COMMUTE-013] 목적지에서 걸어서 10분 안에 정류장이 없으면 경로를 찾지 않는다")
     void failsWhenNoArrivalStop() {
         assertThatThrownBy(() -> service.findRoute("C", new Coordinate(35.1, 129.0), 60, 2))
                 .isInstanceOf(BusinessRuleViolationException.class)
@@ -66,7 +66,7 @@ class CommuteRouteServiceTest {
     }
 
     @Test
-    @DisplayName("최대 통근 시간 안에 경로가 없으면 찾을 수 없다고 알린다")
+    @DisplayName("[POL-COMMUTE-020] 최대 통근 시간 안에 경로가 없으면 찾을 수 없다고 알린다")
     void failsWhenRouteIsOverLimit() {
         assertThatThrownBy(() -> service.findRoute("C", DESTINATION, 5, 2))
                 .isInstanceOf(ResourceNotFoundException.class)

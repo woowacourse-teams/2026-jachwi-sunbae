@@ -13,21 +13,18 @@ import com.jachwisunbae.rental.service.AdminDongRentService;
 import com.jachwisunbae.rental.service.AdminLegalDongImportService;
 import com.jachwisunbae.transit.service.AdminDongImportService;
 import com.jachwisunbae.transit.service.GtfsImportService;
+import com.jachwisunbae.transit.support.MutableClock;
+import com.jachwisunbae.transit.support.MutableClockConfig;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.time.Clock;
 import java.time.Duration;
-import java.time.Instant;
-import java.time.ZoneId;
-import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
@@ -37,9 +34,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.MockMvcPrint;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.context.TestConfiguration;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Primary;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpHeaders;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
@@ -59,11 +54,11 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 @ActiveProfiles("test")
 @Tag("acceptance")
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+@Import(MutableClockConfig.class)
 class CommuteAreaAcceptanceTest {
 
     @Container
     private static final MySQLContainer<?> MYSQL = new MySQLContainer<>("mysql:8.4.10");
-    private static final MutableClock CLOCK = new MutableClock();
     private static final Path FIXTURE = createFixture();
 
     private static final String GA_DONG = "11010510";
@@ -72,6 +67,8 @@ class CommuteAreaAcceptanceTest {
     private static final double DESTINATION_LATITUDE = 37.5000;
     private static final double DESTINATION_LONGITUDE = 127.0000;
 
+    @Autowired
+    private MutableClock clock;
     @Autowired
     private MockMvc mvc;
     @Autowired
@@ -114,7 +111,7 @@ class CommuteAreaAcceptanceTest {
         adminDongRentService.load();
 
         // 서버가 뜰 때 비어 있던 노선망을 다시 읽을 수 있는 시각으로 옮긴다.
-        CLOCK.advance(Duration.ofSeconds(31));
+        clock.advance(Duration.ofSeconds(31));
         accessToken = login();
     }
 
@@ -406,37 +403,5 @@ class CommuteAreaAcceptanceTest {
             line.append(values[index]).append(" ".repeat(widths[index] - values[index].getBytes(ms949).length + 1));
         }
         return line.toString();
-    }
-
-    @TestConfiguration
-    static class ClockConfig {
-        @Bean
-        @Primary
-        Clock commuteAreaAcceptanceClock() {
-            return CLOCK;
-        }
-    }
-
-    private static class MutableClock extends Clock {
-        private final AtomicReference<Instant> now = new AtomicReference<>(Instant.now());
-
-        void advance(final Duration duration) {
-            now.updateAndGet(instant -> instant.plus(duration));
-        }
-
-        @Override
-        public ZoneId getZone() {
-            return ZoneOffset.UTC;
-        }
-
-        @Override
-        public Clock withZone(final ZoneId zone) {
-            return Clock.fixed(instant(), zone);
-        }
-
-        @Override
-        public Instant instant() {
-            return now.get();
-        }
     }
 }

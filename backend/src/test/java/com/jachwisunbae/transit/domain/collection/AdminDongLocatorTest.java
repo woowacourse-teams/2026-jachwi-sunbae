@@ -18,21 +18,21 @@ class AdminDongLocatorTest {
     private final AdminDongLocator locator = new AdminDongLocator(List.of(WEST, EAST));
 
     @Test
-    @DisplayName("좌표가 들어 있는 행정동을 찾는다")
+    @DisplayName("[POL-COMMUTE-010] 좌표가 들어 있는 행정동을 찾는다")
     void locatesContainingAdminDong() {
         assertThat(locator.locate(new Coordinate(37.55, 127.05))).contains(WEST);
         assertThat(locator.locate(new Coordinate(37.55, 127.25))).contains(EAST);
     }
 
     @Test
-    @DisplayName("어느 행정동에도 들지 않으면 찾지 못한다")
+    @DisplayName("[POL-COMMUTE-010] 어느 행정동에도 들지 않으면 찾지 못한다")
     void returnsEmptyOutsideAllAdminDongs() {
         assertThat(locator.locate(new Coordinate(37.70, 127.05))).isEmpty();
         assertThat(locator.locate(new Coordinate(33.50, 126.50))).isEmpty();
     }
 
     @Test
-    @DisplayName("두 행정동에 걸친 좌표는 받은 순서와 상관없이 코드가 작은 행정동으로 정한다")
+    @DisplayName("[POL-COMMUTE-010] 두 행정동에 걸친 좌표는 받은 순서와 상관없이 코드가 작은 행정동으로 정한다")
     void choosesSmallerCodeWhenBoundariesOverlap() {
         AdminDong overlapping = adminDong("11010520", 127.08, 127.20);
         Coordinate border = new Coordinate(37.55, 127.09);

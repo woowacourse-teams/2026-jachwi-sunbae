@@ -19,7 +19,7 @@ class CommuteRouteResponseTest {
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     @Test
-    @DisplayName("구간마다 종류, 노선 이름, 분 단위 시간과 지나는 지점을 내보내고 목적지는 정류장 ID가 없다")
+    @DisplayName("[POL-COMMUTE-021] 구간마다 종류, 노선 이름, 분 단위 시간과 지나는 지점을 내보내고 목적지는 정류장 ID가 없다")
     void serializes() throws Exception {
         RoutePoint gangnam = RoutePoint.of(new GtfsStop("S1", "강남역", new Coordinate(37.4979, 127.0276)));
         RoutePoint yeoksam = RoutePoint.of(new GtfsStop("S2", "역삼역", new Coordinate(37.5006, 127.0364)));

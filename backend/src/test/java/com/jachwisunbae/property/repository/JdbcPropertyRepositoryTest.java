@@ -114,7 +114,7 @@ class JdbcPropertyRepositoryTest {
     }
 
     @Test
-    @DisplayName("통근 시간용 매물 위치는 회원의 삭제하지 않은 매물만 ID 내림차순으로 위치 없이도 돌려준다")
+    @DisplayName("[POL-COMMUTE-025] 통근 시간용 매물 위치는 회원의 삭제하지 않은 매물만 ID 내림차순으로 위치 없이도 돌려준다")
     void findsLocationsOfOwnProperties() {
         long member = insertMember();
         long other = insertMember();

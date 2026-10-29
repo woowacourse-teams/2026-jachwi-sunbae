@@ -29,7 +29,7 @@ class AdminDongImportServiceTest {
                     new GtfsStop("S2", "부산역", new Coordinate(35.11, 129.04))));
 
     @Test
-    @DisplayName("행정동 경계를 교체한다.")
+    @DisplayName("[POL-COMMUTE-011] 행정동 경계를 교체한다.")
     void replacesBoundaries() throws IOException {
         AdminDongImportService service = new AdminDongImportService(directory.resolve("admin.geojson").toString(),
                 readerReturning(List.of(AdminDongFixture.SEOUL_STATION_DONG)), adminDongRepository);

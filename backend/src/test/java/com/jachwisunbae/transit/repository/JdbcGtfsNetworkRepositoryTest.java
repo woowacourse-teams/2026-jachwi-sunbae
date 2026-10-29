@@ -43,7 +43,7 @@ class JdbcGtfsNetworkRepositoryTest {
     }
 
     @Test
-    @DisplayName("기존 노선망을 지우고 새 GTFS 노선망으로 교체한다")
+    @DisplayName("[POL-COMMUTE-006] 기존 노선망을 지우고 새 GTFS 노선망으로 교체한다")
     void replacesExistingNetwork() {
         repository.replace(new GtfsFeed(
                 List.of(new GtfsRoute("OLD", "구노선", "구노선", 3, new Seconds(300))),
@@ -70,7 +70,7 @@ class JdbcGtfsNetworkRepositoryTest {
     }
 
     @Test
-    @DisplayName("정류장을 행정동 코드와 함께 저장하고, 행정동 코드만 다시 붙일 수 있다")
+    @DisplayName("[POL-COMMUTE-010] 정류장을 행정동 코드와 함께 저장하고, 행정동 코드만 다시 붙일 수 있다")
     void savesAndUpdatesAdminDongCodes() {
         repository.replace(new GtfsFeed(
                 List.of(new GtfsRoute("R1", "1호선", "서울 1호선", 1, new Seconds(240))),

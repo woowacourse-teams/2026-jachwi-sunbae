@@ -18,7 +18,7 @@ class AdminDongBoundaryTest {
     private static final double[] ISLAND = {127.20, 37.50, 127.24, 37.50, 127.24, 37.54, 127.20, 37.54, 127.20, 37.50};
 
     @Test
-    @DisplayName("바깥 고리 안의 점은 포함하고 밖의 점은 포함하지 않는다")
+    @DisplayName("[POL-COMMUTE-010] 바깥 고리 안의 점은 포함하고 밖의 점은 포함하지 않는다")
     void containsPointInsideOuterRing() {
         AdminDongBoundary boundary = boundary(List.of(List.of(SQUARE)));
 
@@ -28,7 +28,7 @@ class AdminDongBoundaryTest {
     }
 
     @Test
-    @DisplayName("구멍 안의 점은 포함하지 않는다")
+    @DisplayName("[POL-COMMUTE-010] 구멍 안의 점은 포함하지 않는다")
     void excludesPointInsideHole() {
         AdminDongBoundary boundary = boundary(List.of(List.of(SQUARE, HOLE)));
 
@@ -37,7 +37,7 @@ class AdminDongBoundaryTest {
     }
 
     @Test
-    @DisplayName("여러 폴리곤 중 하나에라도 들어 있으면 포함한다")
+    @DisplayName("[POL-COMMUTE-010] 여러 폴리곤 중 하나에라도 들어 있으면 포함한다")
     void containsPointInAnyPolygon() {
         AdminDongBoundary boundary = boundary(List.of(List.of(SQUARE), List.of(ISLAND)));
 
@@ -46,7 +46,7 @@ class AdminDongBoundaryTest {
     }
 
     @Test
-    @DisplayName("중심은 가장 넓은 폴리곤 바깥 고리의 무게중심이다")
+    @DisplayName("[POL-COMMUTE-012] 중심은 가장 넓은 폴리곤 바깥 고리의 무게중심이다")
     void centerIsCentroidOfLargestPolygon() {
         Coordinate center = boundary(List.of(List.of(ISLAND), List.of(SQUARE))).center();
 

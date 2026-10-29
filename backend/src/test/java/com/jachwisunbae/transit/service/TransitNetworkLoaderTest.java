@@ -11,7 +11,7 @@ import org.springframework.transaction.annotation.Transactional;
 class TransitNetworkLoaderTest {
 
     @Test
-    @DisplayName("노선망을 DB에서 읽을 때만 읽기 트랜잭션을 열고, 탐색과 경로 계산은 트랜잭션 없이 한다")
+    @DisplayName("[POL-COMMUTE-017] 노선망을 DB에서 읽을 때만 읽기 트랜잭션을 열고, 탐색과 경로 계산은 트랜잭션 없이 한다")
     void opensTransactionOnlyWhenLoading() throws Exception {
         Transactional loading = TransitNetworkLoader.class.getMethod("load").getAnnotation(Transactional.class);
 

@@ -49,7 +49,7 @@ class CommuteAreaServiceTest {
     }
 
     @Test
-    @DisplayName("갈 수 있는 정류장을 행정동으로 묶고 통근 시간이 짧은 동네부터 돌려준다")
+    @DisplayName("[POL-COMMUTE-015] 갈 수 있는 정류장을 행정동으로 묶고 통근 시간이 짧은 동네부터 돌려준다")
     void groupsStopsByAdminDong() {
         networkRepository.replace(feed());
 
@@ -63,7 +63,7 @@ class CommuteAreaServiceTest {
     }
 
     @Test
-    @DisplayName("시세를 포함한 탐색만 행정동별 월세 시세를 담고, 기존 탐색은 시세를 담지 않는다")
+    @DisplayName("[POL-COMMUTE-034] 시세를 포함한 탐색만 행정동별 월세 시세를 담고, 기존 탐색은 시세를 담지 않는다")
     void includesRents() {
         networkRepository.replace(feed());
         AdminDongRents rents = new AdminDongRents(LocalDate.of(2026, 3, 30), LocalDate.of(2026, 9, 30),
@@ -75,7 +75,7 @@ class CommuteAreaServiceTest {
     }
 
     @Test
-    @DisplayName("행정동을 찾지 못한 정류장은 결과에서 뺀다")
+    @DisplayName("[POL-COMMUTE-010] 행정동을 찾지 못한 정류장은 결과에서 뺀다")
     void excludesStopsWithoutAdminDong() {
         networkRepository.replace(feed());
 
@@ -87,7 +87,7 @@ class CommuteAreaServiceTest {
     }
 
     @Test
-    @DisplayName("인천 정류장은 노선망에서 지나갈 수 있지만 결과 동네에서는 뺀다")
+    @DisplayName("[POL-COMMUTE-024] 인천 정류장은 노선망에서 지나갈 수 있지만 결과 동네에서는 뺀다")
     void excludesIncheonAreas() {
         networkRepository.replace(new GtfsFeed(
                 List.of(new GtfsRoute("R1", "1", "1번", 3, new Seconds(120))),
@@ -102,7 +102,7 @@ class CommuteAreaServiceTest {
     }
 
     @Test
-    @DisplayName("최대 통근 시간을 늘리면 이전 결과의 동네를 모두 포함한다")
+    @DisplayName("[POL-COMMUTE-014] 최대 통근 시간을 늘리면 이전 결과의 동네를 모두 포함한다")
     void widensWithMaxMinutes() {
         networkRepository.replace(feed());
 
@@ -114,7 +114,7 @@ class CommuteAreaServiceTest {
     }
 
     @Test
-    @DisplayName("목적지에서 걸어서 10분 안에 정류장이 없으면 탐색하지 않는다")
+    @DisplayName("[POL-COMMUTE-013] 목적지에서 걸어서 10분 안에 정류장이 없으면 탐색하지 않는다")
     void failsWhenNoArrivalStop() {
         networkRepository.replace(feed());
 
@@ -125,7 +125,7 @@ class CommuteAreaServiceTest {
     }
 
     @Test
-    @DisplayName("노선망이 적재되지 않았으면 잠시 후 다시 시도하도록 알린다")
+    @DisplayName("[POL-COMMUTE-017] 노선망이 적재되지 않았으면 잠시 후 다시 시도하도록 알린다")
     void failsWhenNetworkIsEmpty() {
         assertThatThrownBy(() -> service.search(DESTINATION, 60, 2))
                 .isInstanceOf(ServiceUnavailableException.class)
