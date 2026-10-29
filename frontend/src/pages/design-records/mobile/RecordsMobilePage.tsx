@@ -1,13 +1,14 @@
 import { css } from '@emotion/css';
 import { useState } from 'react';
-import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 
+import type { MapAddress } from '@/features/map/model/Map';
+import useDelayedLoading from '@/shared/lib/hooks/useDelayedLoading';
 import { HOME_PATH } from '@/shared/lib/navigation/appPaths';
 import Icon from '@/shared/ui/icon/Icon';
 
 import useQuickCreateProperty from '../hooks/useQuickCreateProperty';
 import useRecords from '../hooks/useRecords';
-import useRecordsAddMode from '../hooks/useRecordsAddMode';
 import useRecordsMapLayers from '../hooks/useRecordsMapLayers';
 import {
   parseRecordsView,
@@ -26,23 +27,35 @@ import RecordsMobileMap from './RecordsMobileMap';
 
 /**
  * 휴대폰·태블릿 본 방 기록. 위에서 지도·리스트를 바꿔 보고, 지도 보기에서는 헤더와 동네 뱃지를 지도 위에 띄운다.
- * 지도에서 고른 방은 지도 아래 요약 카드로, 리스트에서 고른 방은 상세 화면으로 연다.
+ * 지도에서 고른 방은 지도 아래 바텀시트로, 리스트에서 고른 방은 상세 화면으로 연다.
  * 지도는 예전 인프라 지도의 시설·거리 메모 카테고리와 찍은 위치의 메모·매물 등록을 함께 맡는다.
  */
 const RecordsMobilePage = () => {
-  const navigate = useNavigate();
   const records = useRecords();
   const { setNotice } = records;
-  // 휴대폰은 지도를 찍어 추가하지 않고, 메모·매물 모두 아래쪽 추가 버튼의 추가 모드에서 위치를 고른다.
-  const layers = useRecordsMapLayers(records, { initialCategory: 'MEMO' });
-  const addMode = useRecordsAddMode();
-  // 추가 모드에서 고른 위치로 등록 화면 없이 바로 매물을 만들고 그 상세로 간다.
+  // 지도에서 찍어 매물을 만드는 중인 위치. 만드는 동안 그 자리에 등록 핀을 둔다.
+  const [creatingAt, setCreatingAt] = useState<MapAddress | null>(null);
+  // 데스크탑처럼 찍은 위치로 등록 화면 없이 바로 매물을 만든다. 상세로 넘어가지 않고 그 자리로 다가가
+  // 새 핀을 띄우고 아래 시트에 열어, 어디에 생겼는지 보여 준다. 정보는 시트의 카드를 눌러 채운다.
   const quickCreate = useQuickCreateProperty({
-    onCreated: (propertyId) => {
-      addMode.cancel();
-      navigate(`/properties/${propertyId}`);
+    onCreated: (propertyId, location) => {
+      setCreatingAt(null);
+      records.revealCreated(String(propertyId), location);
+      setNotice('매물을 기록했어요. 아래 카드를 눌러 정보를 채워 주세요.');
     },
-    onError: () => setNotice('매물을 만들지 못했어요. 다시 시도해 주세요.'),
+    onError: () => {
+      setCreatingAt(null);
+      setNotice('매물을 만들지 못했어요. 다시 시도해 주세요.');
+    },
+  });
+  const layers = useRecordsMapLayers(records, {
+    initialCategory: 'MEMO',
+    registeringAt: creatingAt,
+    onRegister: (location) => {
+      if (quickCreate.isCreating) return;
+      setCreatingAt(location);
+      quickCreate.create(location);
+    },
   });
   const [searchParams, setSearchParams] = useSearchParams();
   const view = parseRecordsView(searchParams.get(RECORDS_VIEW_PARAM)) ?? readLastRecordsView();
@@ -62,6 +75,8 @@ const RecordsMobilePage = () => {
   const [isSearching, setIsSearching] = useState(false);
   // 헤더·동네 뱃지는 지도가 실제로 보일 때만 지도 위에 띄운다. 불러오는 중·실패 안내를 가리지 않게 한다.
   const overMap = showsMap && records.properties.isSuccess;
+  // 빠른 응답에는 뼈대 없이 빈 칸을 두었다가 바로 목록을 보여 주고, 오래 걸릴 때만 뼈대를 보여 준다.
+  const isSkeletonVisible = useDelayedLoading(records.properties.isPending);
 
   return (
     <main className={styles.page}>
@@ -70,57 +85,56 @@ const RecordsMobilePage = () => {
           <h1 ref={records.headingRef} className="sr-only" tabIndex={-1}>
             본 방 기록
           </h1>
-          {/* 추가 모드에서는 위쪽 탭을 모두 거두고, 그 자리에 지도가 추가 모드 안내 토스트를 띄운다. */}
-          {!addMode.isAddMode && (
-            <>
-              {isSearching ? (
-                <div className={styles.searchHeader}>
-                  {/* 주소를 고르면 지도 보기로 바꿔 그 자리로 옮긴다. */}
-                  <RecordAddressSearch
-                    autoFocus
-                    onBack={() => setIsSearching(false)}
-                    onSelect={(address) => {
-                      records.moveTo(address);
-                      setView('map');
-                      setIsSearching(false);
-                    }}
-                  />
-                </div>
-              ) : (
-                <header className={styles.header}>
-                  <Link className={styles.back} to={HOME_PATH} aria-label="홈으로 돌아가기">
-                    <Icon name="chevron-left" size={24} />
-                  </Link>
-                  <nav className={styles.viewSwitch} aria-label="기록 보기 방식">
-                    <button type="button" aria-pressed={view === 'map'} onClick={() => setView('map')}>
-                      <Icon name="map" size={17} /> 지도
-                    </button>
-                    <button type="button" aria-pressed={view === 'list'} onClick={() => setView('list')}>
-                      <Icon name="checklist" size={17} /> 리스트
-                    </button>
-                  </nav>
-                  <button
-                    className={styles.back}
-                    type="button"
-                    aria-label="주소 검색 열기"
-                    onClick={() => setIsSearching(true)}
-                  >
-                    <Icon name="search" size={20} />
-                  </button>
-                </header>
-              )}
-              <RecordDistricts
-                districts={records.districts}
-                district={records.district}
-                onSelect={records.selectDistrict}
-                overMap={overMap}
+          {isSearching ? (
+            <div className={styles.searchHeader}>
+              {/* 주소를 고르면 지도 보기로 바꿔 그 자리로 옮긴다. */}
+              <RecordAddressSearch
+                autoFocus
+                onBack={() => setIsSearching(false)}
+                onSelect={(address) => {
+                  records.moveTo(address);
+                  setView('map');
+                  setIsSearching(false);
+                }}
               />
-            </>
+            </div>
+          ) : (
+            <header className={styles.header}>
+              <Link className={styles.back} to={HOME_PATH} aria-label="홈으로 돌아가기">
+                <Icon name="chevron-left" size={24} />
+              </Link>
+              <nav className={styles.viewSwitch} aria-label="기록 보기 방식">
+                <button type="button" aria-pressed={view === 'map'} onClick={() => setView('map')}>
+                  <Icon name="map" size={17} /> 지도
+                </button>
+                <button type="button" aria-pressed={view === 'list'} onClick={() => setView('list')}>
+                  <Icon name="checklist" size={17} /> 리스트
+                </button>
+              </nav>
+              <button
+                className={styles.back}
+                type="button"
+                aria-label="주소 검색 열기"
+                onClick={() => setIsSearching(true)}
+              >
+                <Icon name="search" size={20} />
+              </button>
+            </header>
           )}
+          <RecordDistricts
+            districts={records.districts}
+            district={records.district}
+            onSelect={records.selectDistrict}
+            overMap={overMap}
+          />
         </div>
         <div className={styles.body}>
-          {records.properties.isPending ? (
-            <RecordListSkeleton className={styles.list} />
+          {records.properties.isPending || isSkeletonVisible ? (
+            isSkeletonVisible ? (
+              <RecordListSkeleton className={styles.list} />
+            ) : (
+              <div className={styles.list} />
+            )
           ) : records.properties.isError ? (
             <RecordLoadError
               className={styles.list}
@@ -128,29 +142,18 @@ const RecordsMobilePage = () => {
               onRetry={() => void records.properties.refetch()}
             />
           ) : showsMap ? (
-            <RecordsMobileMap
-              records={records}
-              layers={layers}
-              addMode={addMode}
-              isAddingProperty={quickCreate.isCreating}
-              onAddProperty={quickCreate.create}
-            />
+            <RecordsMobileMap records={records} layers={layers} />
           ) : (
             <RecordList
               className={styles.list}
               records={records.records}
               district={records.district}
               commute={records.commute}
+              distance={records.distance}
               onNotice={setNotice}
             />
           )}
         </div>
-        {/* 지도 보기는 지도 안의 매물 추가 버튼을 쓰므로, 리스트 보기에만 기록하기 버튼을 둔다. */}
-        {!showsMap && (
-          <button type="button" className={styles.add} onClick={() => navigate('/properties/new')}>
-            <Icon name="plus" size={20} /> 기록하기
-          </button>
-        )}
         <RecordNotice message={records.notice} onClose={() => setNotice('')} />
       </div>
     </main>
@@ -158,7 +161,7 @@ const RecordsMobilePage = () => {
 };
 
 const styles = {
-  /* 휴대폰·태블릿 본 방 기록: 화면 틀, 리스트 칸, 기록하기 버튼, 헤더(뒤로가기·지도/리스트 전환), 지도 위에 뜬 헤더. */
+  /* 휴대폰·태블릿 본 방 기록: 화면 틀, 리스트 칸, 헤더(뒤로가기·지도/리스트 전환), 지도 위에 뜬 헤더. 매물은 지도를 눌러 기록한다. */
   page: css`
     label: RecordsMobilePage-page;
     height: 100dvh;
@@ -196,37 +199,12 @@ const styles = {
     flex: 1;
     min-height: 0;
     overflow-y: auto;
-    padding: 0.75rem 1rem 6rem;
+    padding: 0.75rem 1rem 1.5rem;
     background: white;
 
     /* 태블릿 너비부터는 배치는 그대로 두고 글자와 여백만 키운다. */
     @media (min-width: 768px) {
-      padding: 1rem 1.5rem 7rem;
-    }
-  `,
-
-  add: css`
-    label: RecordsMobilePage-add;
-    position: absolute;
-    right: 1rem;
-    bottom: max(1.5rem, env(safe-area-inset-bottom));
-    display: flex;
-    align-items: center;
-    gap: 0.45rem;
-    padding: 1rem 1.2rem;
-    border: 0;
-    border-radius: 2rem;
-    background: #648fff;
-    color: white;
-    box-shadow: 0 4px 16px #396ae837;
-    font: inherit;
-    font-size: 0.85rem;
-    font-weight: 650;
-    cursor: pointer;
-
-    @media (min-width: 768px) {
-      right: 1.5rem;
-      font-size: 0.95rem;
+      padding: 1rem 1.5rem 2rem;
     }
   `,
 
