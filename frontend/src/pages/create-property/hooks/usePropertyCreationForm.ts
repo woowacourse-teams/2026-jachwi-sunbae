@@ -1,4 +1,4 @@
-import type { ChangeEvent, FormEvent } from 'react';
+import type { FormEvent } from 'react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
@@ -8,8 +8,7 @@ import { trackExplorationSaved } from '@/features/onboarding/lib/explorationJour
 import type { PropertyInputDto } from '@/features/property/api/dtos/PropertyDto';
 import { useCreateProperty } from '@/features/property/api/usePropertyMutations';
 import { trackPropertyEvent } from '@/features/property/lib/propertyAnalytics';
-import type { PropertyFormErrors, PropertyFormValues } from '@/features/property/lib/propertyForm';
-import { formatAmountForInput, toPropertyInputDto, validatePropertyForm } from '@/features/property/lib/propertyForm';
+import { addressOf, toQuickPropertyInput } from '@/features/property/lib/propertyForm';
 import { trackPostHogEvent } from '@/shared/lib/analytics/posthog';
 
 import useAddressSearch from './useAddressSearch';
@@ -20,34 +19,9 @@ export type PropertyCreationRouteState = {
   selectedLocation?: MapAddress;
   fromExploration?: boolean;
 };
-export const DEFAULT_PROPERTY_NAME = '새 매물';
-const stepEvents = {
-  deposit: 'property_creation_deposit_completed',
-  monthly_rent: 'property_creation_monthly_rent_completed',
-  address: 'property_creation_address_completed',
-  name: 'property_creation_name_completed',
-} as const;
-const emptyValues: PropertyFormValues = {
-  name: DEFAULT_PROPERTY_NAME,
-  depositAmount: '',
-  monthlyRentAmount: '',
-  discoverySource: '',
-};
-const draftToValues = (draft: PropertyInputDto | undefined): PropertyFormValues =>
-  draft === undefined
-    ? emptyValues
-    : {
-        name: draft.name,
-        depositAmount: formatAmountForInput(draft.depositAmount),
-        monthlyRentAmount: formatAmountForInput(draft.monthlyRentAmount),
-        discoverySource: draft.discoverySource ?? '',
-        address: draft.address ?? '',
-        latitude: draft.latitude,
-        longitude: draft.longitude,
-      };
 /**
- * 보증금 → 월세 → (위치) → 이름 순서로 한 칸씩 열어 가며 매물을 등록한다.
- * 지도에서 위치를 골라 들어왔다면 위치 단계는 건너뛴다.
+ * 위치만 골라 매물을 바로 만든다. 이름은 고른 주소로 채운다.
+ * 지도에서 위치를 골라 들어왔다면 그 위치로 지도를 연다.
  */
 export const usePropertyCreationForm = (
   routeState: PropertyCreationRouteState,
@@ -57,21 +31,6 @@ export const usePropertyCreationForm = (
   const hasPresetLocation = routeState.selectedLocation !== undefined && !routeState.fromExploration;
   const entrypoint = hasPresetLocation ? 'map' : 'form';
   const hasTrackedStart = useRef(false);
-  const nameStep = hasPresetLocation ? 2 : 3;
-  const [values, setValues] = useState<PropertyFormValues>(() => {
-    const draft = draftToValues(routeState.registrationDraft);
-    const selected = routeState.selectedLocation;
-    return selected === undefined
-      ? draft
-      : {
-          ...draft,
-          address: selected.roadAddress ?? selected.jibunAddress ?? selected.address ?? '',
-          latitude: selected.latitude,
-          longitude: selected.longitude,
-        };
-  });
-  const [errors, setErrors] = useState<PropertyFormErrors>({});
-  const [revealedStep, setRevealedStep] = useState(0);
   const [createError, setCreateError] = useState<string | null>(null);
   const createProperty = useCreateProperty(entrypoint);
   const clearCreateError = useCallback(() => setCreateError(null), []);
@@ -86,43 +45,12 @@ export const usePropertyCreationForm = (
 
   useEffect(() => {
     if (location.locationStatus !== 'ready') return;
-    const address =
-      location.selectedLocation.roadAddress ??
-      location.selectedLocation.jibunAddress ??
-      location.selectedLocation.address;
+    const address = addressOf(location.selectedLocation);
     if (address !== null && address !== undefined && address !== '') search.setInitialQuery(address);
-  }, [
-    location.locationStatus,
-    location.selectedLocation.address,
-    location.selectedLocation.jibunAddress,
-    location.selectedLocation.roadAddress,
-    search.setInitialQuery,
-  ]);
+  }, [location.locationStatus, location.selectedLocation, search.setInitialQuery]);
 
-  const changeMoney = (field: 'depositAmount' | 'monthlyRentAmount', formatted: string) => {
-    setValues((current) => ({ ...current, [field]: formatted }));
-    setErrors((current) => ({ ...current, [field]: undefined }));
-  };
-
-  /** 기본 이름은 입력을 시작할 때 비워 준다. */
-  const focusName = () => {
-    if (values.name === DEFAULT_PROPERTY_NAME) setValues((current) => ({ ...current, name: '' }));
-  };
-
-  const changeName = (event: ChangeEvent<HTMLInputElement>) => {
-    const name = event.target.value;
-    setValues((current) => ({ ...current, name }));
-    setErrors((current) => ({ ...current, name: undefined }));
-  };
-
-  const submitProperty = async () => {
-    const validationErrors = validatePropertyForm(values);
-    setErrors(validationErrors);
-    if (validationErrors.address !== undefined) {
-      setCreateError(validationErrors.address);
-      return;
-    }
-    if (Object.keys(validationErrors).length > 0) return;
+  const submit = async (event: FormEvent) => {
+    event.preventDefault();
     if (location.locationStatus !== 'ready') {
       setCreateError(
         location.locationStatus === 'loading'
@@ -131,60 +59,27 @@ export const usePropertyCreationForm = (
       );
       return;
     }
-    const input = toPropertyInputDto(values);
-    if (input === null) return;
     setCreateError(null);
-    trackPostHogEvent(stepEvents.name);
+    trackPostHogEvent('property_creation_address_completed');
     const { selectedLocation } = location;
+    const quick = toQuickPropertyInput(selectedLocation);
     try {
-      const created = await createProperty.mutateAsync({
-        ...input,
-        address: selectedLocation.roadAddress ?? selectedLocation.jibunAddress ?? selectedLocation.address,
-        latitude: selectedLocation.latitude,
-        longitude: selectedLocation.longitude,
-      });
+      const created = await createProperty.mutateAsync(
+        routeState.registrationDraft === undefined
+          ? quick
+          : {
+              ...routeState.registrationDraft,
+              address: quick.address,
+              latitude: quick.latitude,
+              longitude: quick.longitude,
+            },
+      );
       if (routeState.fromExploration) trackExplorationSaved();
       if (onCreated) onCreated(created.propertyId);
       else navigate(`/properties/${created.propertyId}`, { replace: true });
     } catch {
-      setCreateError('매물을 등록하지 못했어요. 입력한 정보는 유지되니 다시 시도해 주세요.');
+      setCreateError('매물을 등록하지 못했어요. 다시 시도해 주세요.');
     }
-  };
-
-  const submitStep = (event: FormEvent) => {
-    event.preventDefault();
-    const next: PropertyFormErrors = {};
-    const validationErrors = validatePropertyForm(values);
-    if (values.depositAmount.length === 0 || validationErrors.depositAmount !== undefined) {
-      next.depositAmount = validationErrors.depositAmount ?? '보증금을 입력해 주세요.';
-    }
-    if (
-      revealedStep >= 1 &&
-      (values.monthlyRentAmount.length === 0 || validationErrors.monthlyRentAmount !== undefined)
-    ) {
-      next.monthlyRentAmount = validationErrors.monthlyRentAmount ?? '월세를 입력해 주세요.';
-    }
-    if (revealedStep >= nameStep && (values.name.trim().length === 0 || validationErrors.name !== undefined)) {
-      next.name = validationErrors.name ?? '매물 이름을 입력해 주세요.';
-    }
-    setErrors(next);
-    if (Object.keys(next).length > 0) return;
-    if (revealedStep === 0) {
-      trackPostHogEvent(stepEvents.deposit);
-      setRevealedStep(1);
-      return;
-    }
-    if (revealedStep === 1) {
-      trackPostHogEvent(stepEvents.monthly_rent);
-      setRevealedStep(2);
-      return;
-    }
-    if (!hasPresetLocation && revealedStep === 2) {
-      trackPostHogEvent(stepEvents.address);
-      setRevealedStep(3);
-      return;
-    }
-    void submitProperty();
   };
 
   /** 현재 위치 확인도 주소 검색 영역에 진행 상태를 보여 준다. */
@@ -206,17 +101,10 @@ export const usePropertyCreationForm = (
   };
 
   return {
-    values,
-    errors,
-    revealedStep,
-    nameStep,
     hasPresetLocation,
     createError,
     isCreating: createProperty.isPending,
-    changeMoney,
-    focusName,
-    changeName,
-    submitStep,
+    submit: (event: FormEvent) => void submit(event),
     location: {
       selected: location.selectedLocation,
       status: location.locationStatus,
