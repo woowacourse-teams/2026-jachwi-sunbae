@@ -130,12 +130,17 @@ describe('익명 자동 인증 흐름', () => {
     expect(getAccessToken()).toBe('first-visit-token');
     expect(loginCalls).toBe(1);
   });
-  it('예전 랜딩 주소로 들어오면 쿼리를 유지한 채 홈으로 가서 자동 로그인한다', async () => {
+  it('랜딩은 로그인 없이 보고, 쿼리를 유지한 채 홈으로 잇는다', async () => {
     renderRoutes('/landing?utm_source=instagram');
-    expect(await screen.findByRole('region', { name: '자취선배 주요 기능' })).toBeInTheDocument();
-    expect(screen.getByTestId('route-path')).toHaveTextContent(/^\/$/);
-    expect(screen.getByTestId('route-search')).toHaveTextContent('?utm_source=instagram');
-    expect(getAccessToken()).toBe('test-auto-login-token');
+    expect(await screen.findByRole('heading', { level: 1, name: /자취할 동네를 찾고/ })).toBeInTheDocument();
+    expect(getAccessToken()).toBeNull();
+    // 첫 화면과 마지막 화면에 같은 바로가기를 둔다.
+    const [webStart] = screen.getAllByRole('link', { name: '웹에서 바로 시작하기' });
+    expect(webStart).toHaveAttribute('href', '/?utm_source=instagram');
+    const [appStore] = screen.getAllByRole('link', { name: /App Store/ });
+    expect(appStore).toHaveAttribute('href', expect.stringContaining('apps.apple.com'));
+    const [googlePlay] = screen.getAllByRole('link', { name: /Google Play/ });
+    expect(googlePlay).toHaveAttribute('href', 'https://play.google.com/store/apps/details?id=com.jachwisunbae');
   });
   it('사용 방법은 로그인 없이 보고 단계마다 실제 기능으로 이어진다', async () => {
     let loginCalls = 0;
