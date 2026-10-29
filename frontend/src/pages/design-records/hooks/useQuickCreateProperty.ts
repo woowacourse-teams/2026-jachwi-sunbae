@@ -3,7 +3,8 @@ import { useCreateProperty } from '@/features/property/api/usePropertyMutations'
 import { toQuickPropertyInput } from '@/features/property/lib/propertyForm';
 
 type Options = {
-  onCreated: (propertyId: number) => void;
+  /** 만든 매물 번호와 만든 위치를 넘긴다. 지도는 그 자리로 다가가 새 매물을 알린다. */
+  onCreated: (propertyId: number, location: MapAddress) => void;
   onError: () => void;
 };
 
@@ -18,7 +19,7 @@ const useQuickCreateProperty = ({ onCreated, onError }: Options) => {
     if (createProperty.isPending) return;
     createProperty
       .mutateAsync(toQuickPropertyInput(location))
-      .then((created) => onCreated(created.propertyId))
+      .then((created) => onCreated(created.propertyId, location))
       .catch(onError);
   };
 
