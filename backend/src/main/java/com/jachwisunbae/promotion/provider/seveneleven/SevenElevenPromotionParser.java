@@ -51,6 +51,7 @@ class SevenElevenPromotionParser {
     }
 
     // 더보기 응답은 상품 카드 li 조각이며, 다음 요청할 페이지 번호를 listPage로 제공한다.
+    // 기대보다 적은 응답은 부분 수집 여부를 Fetcher가 판단하도록 반환하고, 빈 응답과 초과 응답만 거부한다.
     List<PromotionProduct> parseMore(final String html, final SevenElevenPromotionTab tab, final int requestedPage,
                                      final int expectedCount) {
         Document document = document(html);
@@ -61,7 +62,7 @@ class SevenElevenPromotionParser {
         // 실제 listCnt는 일부 페이지에서 누적 카드 수와 달라 형식만 확인하고 건수 판단에 쓰지 않는다.
         number(requireElement(document, "input#listCnt").val());
         List<PromotionProduct> products = products(document.body(), tab);
-        if (products.size() != expectedCount) {
+        if (products.isEmpty() || products.size() > expectedCount) {
             throw invalidResponse("더보기 상품 수가 남은 전체 수·페이지 크기와 다릅니다. tab=" + tab
                     + ", page=" + requestedPage + ", expectedCount=" + expectedCount
                     + ", actualCount=" + products.size());

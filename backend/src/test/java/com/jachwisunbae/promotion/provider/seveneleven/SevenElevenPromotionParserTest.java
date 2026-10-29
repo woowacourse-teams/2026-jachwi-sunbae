@@ -129,17 +129,20 @@ class SevenElevenPromotionParserTest {
     }
 
     @Test
-    @DisplayName("실제 할인행사 48페이지처럼 전체 수에 못 미치는 짧은 응답은 거부한다")
-    void rejectsShortSaleResponse() {
+    @DisplayName("실제 할인행사 48페이지처럼 기대보다 짧은 응답은 부분 수집 판단을 위해 그대로 반환한다")
+    void returnsShortSaleResponse() {
         // 2026-10-29: 전체 484건 중 47페이지까지 473건. 48페이지는 기대한 10건 대신 7건을 반환했다.
         String html = SevenElevenPromotionFixtures.html("sale-short-before-total");
 
-        assertThatThrownBy(() -> parser.parseMore(html, SevenElevenPromotionTab.SALE, 48, 10))
-                .isInstanceOfSatisfying(UpstreamServiceException.class, exception -> {
-                    assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.PROMOTION_RESPONSE_INVALID);
-                    assertThat(exception).hasMessageContaining("tab=SALE", "page=48", "expectedCount=10",
-                            "actualCount=7");
-                });
+        assertThat(parser.parseMore(html, SevenElevenPromotionTab.SALE, 48, 10)).hasSize(7)
+                .allSatisfy(product -> assertThat(product.promotionType()).isEqualTo(PromotionType.SALE));
+    }
+
+    @Test
+    @DisplayName("상품이 없는 더보기 응답은 거부한다")
+    void rejectsEmptyMoreFragment() {
+        assertInvalid(() -> parser.parseMore(SevenElevenPromotionFixtures.more(SevenElevenPromotionTab.ONE_PLUS_ONE,
+                2, 0), SevenElevenPromotionTab.ONE_PLUS_ONE, 2, 10));
     }
 
     private void assertInvalid(final Runnable parsing) {
