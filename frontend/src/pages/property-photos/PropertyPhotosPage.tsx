@@ -1,10 +1,12 @@
 import { css } from '@emotion/css';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useLocation, useParams } from 'react-router-dom';
 
 import { describePropertyLoadError } from '@/features/property/api/propertyErrorMessages';
 import { usePropertyDetail } from '@/features/property/api/useProperties';
 import { parsePositiveId } from '@/features/property/lib/propertyFormat';
+import { cameFromPropertyDetail } from '@/features/property/lib/propertyNavigation';
 import PropertyPhotoManager from '@/features/property/ui/property-photo-manager/PropertyPhotoManager';
+import useReturnNavigation from '@/shared/lib/navigation/useReturnNavigation';
 import ContentState from '@/shared/ui/content-state/ContentState';
 import QueryState from '@/shared/ui/query-state/QueryState';
 import TopNavigation from '@/shared/ui/top-navigation/TopNavigation';
@@ -20,6 +22,11 @@ const PropertyPhotosPage = () => {
 
 const ResolvedPropertyPhotosPage = ({ propertyId }: { propertyId: number }) => {
   const property = usePropertyDetail(propertyId);
+  // 상세에서 들어왔으면 이전 기록(상세)으로 돌아가 상세가 들어온 곳을 잃지 않는다. 주소로 바로 열었으면 상세로 바꿔 이동한다.
+  const goBack = useReturnNavigation({
+    cameFromTarget: cameFromPropertyDetail(useLocation().state),
+    fallback: `/properties/${propertyId}`,
+  });
 
   return (
     <QueryState
@@ -30,11 +37,7 @@ const ResolvedPropertyPhotosPage = ({ propertyId }: { propertyId: number }) => {
     >
       {(detail) => (
         <main className={styles.page}>
-          <TopNavigation
-            title={`${detail.name} · 사진`}
-            backTo={`/properties/${propertyId}`}
-            backLabel="매물 상세로 돌아가기"
-          />
+          <TopNavigation title={`${detail.name} · 사진`} onBack={goBack} backLabel="매물 상세로 돌아가기" />
           <div className={styles.container}>
             <h1 className="sr-only">{detail.name} 사진 관리</h1>
             <PropertyPhotoManager propertyId={propertyId} />

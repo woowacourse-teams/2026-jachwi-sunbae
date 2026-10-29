@@ -15,6 +15,11 @@ const PropertyAppLayout = () => {
   const isDesktop = useIsDesktop();
   const isPropertyDetailPath = /^\/properties\/\d+$/.test(location.pathname);
   const isMapPage = location.pathname === '/neighborhoods' || location.pathname.startsWith('/neighborhoods/areas/');
+  // 매물 사진·메모·수정·주변 분석과 동네 주변 분석은 상세로 돌아가는 자체 "<"를 쓴다.
+  // 홈으로 가는 상단 바를 위에 겹치면 그 "<"를 눌러 홈으로 빠져나가 버린다.
+  const hasOwnBackNavigation =
+    /^\/properties\/\d+\/(photos|memo|edit|nearby)$/.test(location.pathname) ||
+    location.pathname === '/neighborhoods/nearby';
   const shell: AppShellState = {
     fullScreen:
       location.pathname === '/map/select-location' ||
@@ -40,7 +45,7 @@ const PropertyAppLayout = () => {
         <PropertyAppMobileLayout
           member={member}
           shell={shell}
-          hidesAppBar={location.pathname === '/compare' || isMapPage}
+          hidesAppBar={location.pathname === '/compare' || isMapPage || hasOwnBackNavigation}
           appBarTitle={location.pathname === '/me' ? '마이' : undefined}
         />
       )}

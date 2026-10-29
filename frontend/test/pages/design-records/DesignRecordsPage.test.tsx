@@ -540,3 +540,23 @@ it('휴대폰 매물 추가 모드는 현재 위치에서 추가 버튼으로 �
     Object.defineProperty(navigator, 'geolocation', { configurable: true, value: originalGeolocation });
   }
 });
+
+it('데스크탑 옆 칸 상세에서 사진 관리를 누르면 화면을 옮기지 않고 그 칸 안에서 사진을 관리한다', async () => {
+  const matchMedia = useDesktopViewport();
+  const user = userEvent.setup();
+  try {
+    renderRecords();
+    await screen.findByRole('heading', { name: '모든 기록' });
+    await user.click(within(screen.getByLabelText('예시 지도')).getByRole('button', { name: '신림역 원룸' }));
+    const detail = within(screen.getByRole('complementary', { name: '선택한 매물 상세' }));
+    await user.click(await detail.findByRole('link', { name: /사진 관리/ }));
+    // 지도와 리스트는 그대로 두고, 옆 칸만 사진 관리로 바뀐다.
+    expect(detail.getByRole('heading', { name: '신림역 원룸 · 사진' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: '모든 기록' })).toBeInTheDocument();
+    expect(screen.getByRole('region', { name: '본 방 기록 지도' })).toBeInTheDocument();
+    await user.click(detail.getByRole('button', { name: '매물 상세로 돌아가기' }));
+    expect(detail.getByRole('tablist', { name: '매물 상세 메뉴' })).toBeInTheDocument();
+  } finally {
+    matchMedia.mockRestore();
+  }
+});
