@@ -10,14 +10,14 @@ import RecentRooms from '../ui/RecentRooms';
 
 import * as shared from '../HomePage.styles';
 
-/** 휴대폰·태블릿 홈. 홈 전용 헤더 아래에 사용방법 카드·기능 카드·빠른 메뉴·최근 기록을 한 열로 쌓는다. */
+/** 휴대폰·태블릿 홈. 홈 전용 헤더 아래에 사용방법 카드·기능 카드·저렴한 한 끼 카드·빠른 메뉴·최근 기록을 한 열로 쌓는다. */
 const HomeMobilePage = () => (
   <main className={shared.page}>
     <HomeHeader className={styles.topBar} />
     <div className={styles.container}>
       <GuideCard className={styles.guide} />
-      <CheapMealCard />
       <HomeFeatures />
+      <CheapMealCard />
     </div>
     <div className={styles.side}>
       <QuickMenu />

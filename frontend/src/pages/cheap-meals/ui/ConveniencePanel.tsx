@@ -37,35 +37,38 @@ const ConveniencePanel = ({ isActive, layout, onDetail }: ConveniencePanelProps)
     <section className={cx(shared.section, layout === 'desktop' && shared.sectionDesktop)} aria-label="편의점 행사상품">
       <h2>편의점 행사상품</h2>
       <p className={shared.description}>지금 진행 중인 브랜드 행사 살펴보기</p>
-      <SegmentedControl
-        value={brand}
-        onValueChange={(value) => {
-          setBrand(value as Brand);
-          setLimit(24);
-        }}
-        aria-label="편의점 브랜드"
-      >
-        {Object.entries(BRANDS).map(([value, label]) => (
-          <SegmentedControlItem key={value} value={value}>
-            {label}
-          </SegmentedControlItem>
-        ))}
-      </SegmentedControl>
-      <SegmentedControl
-        className={styles.filters}
-        value={filter}
-        onValueChange={(value) => {
-          setFilter(value as Filter);
-          setLimit(24);
-        }}
-        aria-label="행사 유형"
-      >
-        {filters.map(({ value, label }) => (
-          <SegmentedControlItem key={value} value={value}>
-            {label}
-          </SegmentedControlItem>
-        ))}
-      </SegmentedControl>
+      {/* 데스크탑은 브랜드와 행사 유형을 한 줄 도구 막대에 나란히 둬, 선택 줄이 겹겹이 쌓이지 않게 한다. */}
+      <div className={layout === 'desktop' ? styles.toolbarDesktop : undefined}>
+        <SegmentedControl
+          value={brand}
+          onValueChange={(value) => {
+            setBrand(value as Brand);
+            setLimit(24);
+          }}
+          aria-label="편의점 브랜드"
+        >
+          {Object.entries(BRANDS).map(([value, label]) => (
+            <SegmentedControlItem key={value} value={value}>
+              {label}
+            </SegmentedControlItem>
+          ))}
+        </SegmentedControl>
+        <SegmentedControl
+          className={styles.filters}
+          value={filter}
+          onValueChange={(value) => {
+            setFilter(value as Filter);
+            setLimit(24);
+          }}
+          aria-label="행사 유형"
+        >
+          {filters.map(({ value, label }) => (
+            <SegmentedControlItem key={value} value={value}>
+              {label}
+            </SegmentedControlItem>
+          ))}
+        </SegmentedControl>
+      </div>
       <QueryState query={query} loadingTitle="행사상품을 불러오고 있어요" describeError={describeMealError}>
         {(result) => {
           const products = result.products.filter(
@@ -152,6 +155,26 @@ const styles = {
   filters: css`
     label: ConveniencePanel-filters;
     margin: 0.75rem 0 0.25rem;
+  `,
+  /* 브랜드는 두 칸만큼만, 행사 유형은 남은 폭에서 최대 34rem까지 쓴다. */
+  toolbarDesktop: css`
+    label: ConveniencePanel-toolbarDesktop;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 0.5rem;
+
+    & > [role='radiogroup'] {
+      flex: none;
+      width: 16rem;
+      margin: 0;
+    }
+
+    & > [role='radiogroup'] + [role='radiogroup'] {
+      flex: 1;
+      width: auto;
+      max-width: 34rem;
+    }
   `,
   footer: css`
     label: ConveniencePanel-footer;
