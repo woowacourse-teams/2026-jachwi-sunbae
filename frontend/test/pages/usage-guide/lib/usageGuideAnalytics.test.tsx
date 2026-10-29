@@ -1,19 +1,20 @@
-import { renderHook } from '@testing-library/react';
-import type { ReactNode } from 'react';
+import { render } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { expect, it, vi } from 'vitest';
 
 const { trackEvent } = vi.hoisted(() => ({ trackEvent: vi.fn() }));
 vi.mock('@/shared/lib/analytics/posthog', () => ({ trackPostHogEvent: trackEvent }));
 
-import { useUsageGuideViewTracking } from '@/pages/usage-guide/lib/usageGuideAnalytics';
+import UsageGuidePage from '@/pages/usage-guide/UsageGuidePage';
 
 it('사용 방법 진입을 다시 그려져도 한 번만 기록한다', () => {
-  const wrapper = ({ children }: { children: ReactNode }) => (
-    <MemoryRouter initialEntries={['/guide']}>{children}</MemoryRouter>
+  const page = (
+    <MemoryRouter initialEntries={['/guide']}>
+      <UsageGuidePage />
+    </MemoryRouter>
   );
-  const { rerender } = renderHook(() => useUsageGuideViewTracking(), { wrapper });
-  rerender();
+  const { rerender } = render(page);
+  rerender(page);
 
-  expect(trackEvent).toHaveBeenCalledExactlyOnceWith('usage_guide_viewed');
+  expect(trackEvent).toHaveBeenCalledExactlyOnceWith('usage_guide_viewed', {});
 });

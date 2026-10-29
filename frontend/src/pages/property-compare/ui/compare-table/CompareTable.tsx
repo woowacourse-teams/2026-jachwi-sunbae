@@ -4,6 +4,7 @@ import { formatManwon } from '@/features/property/lib/propertyFormat';
 import type { PropertySummary } from '@/features/property/model/Property';
 import AuthenticatedPhoto from '@/features/property/ui/authenticated-photo/AuthenticatedPhoto';
 import mascotImage from '@/shared/assets/jachwi-sunbae-goose.webp';
+import mascotImage2x from '@/shared/assets/jachwi-sunbae-goose@2x.webp';
 import SelectionControl from '@/shared/ui/selection-control/SelectionControl';
 
 import { StageOverview } from '../compare-property-option/ComparePropertyOption';
@@ -45,7 +46,7 @@ const CompareTable = ({ properties, selectedIds, maxSelection, onToggle }: Compa
             >
               <span className={styles.thumbnail}>
                 {property.representativePhoto === null ? (
-                  <img src={mascotImage} alt="" />
+                  <img src={mascotImage} srcSet={`${mascotImage} 1x, ${mascotImage2x} 2x`} alt="" />
                 ) : (
                   <AuthenticatedPhoto
                     propertyId={property.propertyId}

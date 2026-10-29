@@ -1,5 +1,5 @@
 import { css } from '@emotion/css';
-import { useEffect, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import { Link, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 
 import PropertyAdditionalInfoForm from '@/pages/property-memo/ui/property-additional-info-form/PropertyAdditionalInfoForm';
@@ -15,7 +15,7 @@ import {
 } from '@/features/property/lib/propertyNavigation';
 import type { PropertyDetail } from '@/features/property/model/Property';
 import PropertyPhotoViewer from '@/features/property/ui/property-photo-viewer/PropertyPhotoViewer';
-import { trackPostHogEvent } from '@/shared/lib/analytics/posthog';
+import { LogScreen } from '@/shared/lib/analytics/logging';
 import useReturnNavigation from '@/shared/lib/navigation/useReturnNavigation';
 import ConfirmDialog from '@/shared/ui/confirm-dialog/ConfirmDialog';
 import ContentState from '@/shared/ui/content-state/ContentState';
@@ -89,7 +89,12 @@ const ResolvedPropertyDetailPage = ({
       describeError={describeError}
       errorAction={<Link to={backTo}>{backTo === '/properties' ? '기록 화면으로 돌아가기' : '홈으로 돌아가기'}</Link>}
     >
-      {(detail) => <PropertyDetailView propertyId={propertyId} detail={detail} backTo={backTo} panel={panel} />}
+      {/* 상세를 불러온 뒤 매물마다 한 번 진입 로그를 남긴다. 다른 매물로 바뀌면 key가 바뀌어 다시 남긴다. */}
+      {(detail) => (
+        <LogScreen key={propertyId} event="property_detail_viewed" params={{ property_id: propertyId }}>
+          <PropertyDetailView propertyId={propertyId} detail={detail} backTo={backTo} panel={panel} />
+        </LogScreen>
+      )}
     </QueryState>
   );
 };
@@ -123,10 +128,6 @@ const PropertyDetailView = ({ propertyId, detail, backTo, panel }: PropertyDetai
   const [editingSection, setEditingSection] = useState<'basic' | 'additional' | null>(null);
   const deleteButtonRef = useRef<HTMLButtonElement>(null);
   const photoTriggerRef = useRef<HTMLButtonElement | null>(null);
-
-  useEffect(() => {
-    trackPostHogEvent('property_detail_viewed', { property_id: propertyId });
-  }, [propertyId]);
 
   const Root = panel ? 'div' : 'main';
 

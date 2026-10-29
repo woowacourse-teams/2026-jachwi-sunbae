@@ -4,6 +4,7 @@ import { fn } from 'storybook/test';
 import iconHome from '@/shared/assets/illustrations/icon-home.webp';
 import iconMap from '@/shared/assets/illustrations/icon-map.webp';
 import goose from '@/shared/assets/jachwi-sunbae-goose.webp';
+import goose2x from '@/shared/assets/jachwi-sunbae-goose@2x.webp';
 
 import ActionCard, { ActionCardIllustration } from './ActionCard';
 
@@ -11,7 +12,7 @@ import ActionCard, { ActionCardIllustration } from './ActionCard';
 const illustrations = {
   '지도 (모서리)': <ActionCardIllustration src={iconMap} width={192} height={192} />,
   '집 (모서리)': <ActionCardIllustration src={iconHome} width={192} height={192} />,
-  '거위 (고개 내밀기)': <ActionCardIllustration src={goose} width={160} height={160} placement="peek" />,
+  '거위 (고개 내밀기)': <ActionCardIllustration src={goose} src2x={goose2x} width={64} height={64} placement="peek" />,
   없음: undefined,
 };
 

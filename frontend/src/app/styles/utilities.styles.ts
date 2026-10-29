@@ -74,22 +74,6 @@ injectGlobal`
   text-align: center;
 }
 
-.content-state__mascot {
-  display: block;
-  width: 5.5rem;
-  height: 4.25rem;
-  overflow: hidden;
-  border-radius: 1rem;
-  background: var(--color-surface-muted);
-}
-
-.content-state__mascot img {
-  display: block;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
 .content-state__skeleton {
   display: grid;
   width: min(100%, 18rem);

@@ -3,23 +3,37 @@ import type { ReactNode } from 'react';
 
 import type { IconName } from '../icon/Icon';
 import Icon from '../icon/Icon';
+import StateIllustration, { type StateIllustrationName } from '../state-illustration/StateIllustration';
 
 type EmptyStateProps = {
   title: string;
   description: string;
   action?: ReactNode;
   icon?: IconName;
+  /** 주면 아이콘 대신 오리 그림을 둔다. */
+  illustration?: StateIllustrationName;
   variant?: 'card' | 'plain';
 };
 
-const EmptyState = ({ title, description, action, icon = 'inbox', variant = 'card' }: EmptyStateProps) => (
+const EmptyState = ({
+  title,
+  description,
+  action,
+  icon = 'inbox',
+  illustration,
+  variant = 'card',
+}: EmptyStateProps) => (
   <section
     className={variant === 'plain' ? `${styles.emptyState} ${styles.plain}` : styles.emptyState}
     data-variant={variant}
   >
-    <span className={styles.icon} aria-hidden="true">
-      <Icon name={icon} size={26} />
-    </span>
+    {illustration ? (
+      <StateIllustration name={illustration} size={6.5} />
+    ) : (
+      <span className={styles.icon} aria-hidden="true">
+        <Icon name={icon} size={26} />
+      </span>
+    )}
     <strong>{title}</strong>
     <p>{description}</p>
     {action !== undefined && <div className={styles.action}>{action}</div>}

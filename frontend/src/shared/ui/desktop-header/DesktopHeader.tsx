@@ -3,6 +3,7 @@ import { Link, NavLink } from 'react-router-dom';
 
 import iconProfile from '@/shared/assets/icon-profile.webp';
 import logo from '@/shared/assets/jachwi-sunbae-goose.webp';
+import logo2x from '@/shared/assets/jachwi-sunbae-goose@2x.webp';
 import { HOME_PATH, RECORDS_PATH } from '@/shared/lib/navigation/appPaths';
 
 import { useRegisterDesktopHeaderSlot } from './DesktopHeaderSlot';
@@ -30,7 +31,7 @@ const DesktopHeader = ({ className }: DesktopHeaderProps) => {
   return (
     <header className={`${styles.header} ${className ?? ''}`.trim()}>
       <Link className={styles.homeLogo} to={HOME_PATH} aria-label="홈으로 돌아가기">
-        <img src={logo} width={160} height={160} alt="" />
+        <img src={logo} srcSet={`${logo} 1x, ${logo2x} 2x`} width={64} height={64} alt="" />
       </Link>
       {/* 지도 화면의 검색창처럼 화면마다 헤더 가운데에 두는 요소가 들어오는 자리. */}
       <div ref={registerSlot} className={styles.slot} />

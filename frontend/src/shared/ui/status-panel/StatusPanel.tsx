@@ -1,7 +1,7 @@
 import { css, cx, keyframes } from '@emotion/css';
 import type { ReactNode } from 'react';
 
-import errorIllustration from '@/shared/assets/empty-property.jpg';
+import StateIllustration, { type StateIllustrationName } from '@/shared/ui/state-illustration/StateIllustration';
 
 const spinKeyframes = keyframes`
   to {
@@ -67,25 +67,9 @@ const styles = {
     }
   `,
 
-  errorIllustrationViewport: css`
-    label: StatusPanel-errorIllustrationViewport;
-    position: relative;
-    width: 8.5rem;
-    aspect-ratio: 1.1;
-    margin: 0 auto 1rem;
-    overflow: hidden;
-  `,
-
-  errorIllustration: css`
-    label: StatusPanel-errorIllustration;
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    display: block;
-    width: 220%;
-    max-width: none;
-    height: auto;
-    transform: translate(-50%, -50%);
+  illustration: css`
+    label: StatusPanel-illustration;
+    margin-bottom: 1rem;
   `,
 
   action: css`
@@ -114,6 +98,8 @@ type StatusPanelProps = {
   tone?: 'neutral' | 'error' | 'success';
   isBusy?: boolean;
   action?: ReactNode;
+  /** 오류일 때 위에 두는 오리 그림. 없는 페이지처럼 상황에 맞는 그림이 있으면 바꾼다. */
+  illustration?: StateIllustrationName;
 };
 
 const toneClassNames: Record<NonNullable<StatusPanelProps['tone']>, string> = {
@@ -122,7 +108,14 @@ const toneClassNames: Record<NonNullable<StatusPanelProps['tone']>, string> = {
   success: styles.success,
 };
 
-const StatusPanel = ({ title, description, tone = 'neutral', isBusy = false, action }: StatusPanelProps) => (
+const StatusPanel = ({
+  title,
+  description,
+  tone = 'neutral',
+  isBusy = false,
+  action,
+  illustration = 'error',
+}: StatusPanelProps) => (
   <main className={styles.page}>
     <section
       className={`${styles.panel} ${toneClassNames[tone]}`}
@@ -130,9 +123,7 @@ const StatusPanel = ({ title, description, tone = 'neutral', isBusy = false, act
       aria-busy={isBusy || undefined}
     >
       {tone === 'error' && !isBusy ? (
-        <div className={styles.errorIllustrationViewport} aria-hidden="true">
-          <img className={styles.errorIllustration} src={errorIllustration} alt="" />
-        </div>
+        <StateIllustration name={illustration} size={8.5} className={styles.illustration} />
       ) : (
         <div className={styles.mark} aria-hidden="true">
           {isBusy ? <span className={styles.spinner} /> : tone === 'success' ? '✓' : '·'}

@@ -4,6 +4,7 @@ import { formatManwon } from '@/features/property/lib/propertyFormat';
 import type { PropertySummary } from '@/features/property/model/Property';
 import AuthenticatedPhoto from '@/features/property/ui/authenticated-photo/AuthenticatedPhoto';
 import mascotImage from '@/shared/assets/jachwi-sunbae-goose.webp';
+import mascotImage2x from '@/shared/assets/jachwi-sunbae-goose@2x.webp';
 import SelectionControl from '@/shared/ui/selection-control/SelectionControl';
 
 type ComparePropertyOptionProps = {
@@ -34,7 +35,12 @@ const ComparePropertyOption = ({ property, isSelected, isDisabled, onToggle }: C
   >
     <span className={styles.thumbnail}>
       {property.representativePhoto === null ? (
-        <img src={mascotImage} alt="" className={styles.emptyThumbnailMascot} />
+        <img
+          src={mascotImage}
+          srcSet={`${mascotImage} 1x, ${mascotImage2x} 2x`}
+          alt=""
+          className={styles.emptyThumbnailMascot}
+        />
       ) : (
         <AuthenticatedPhoto
           propertyId={property.propertyId}

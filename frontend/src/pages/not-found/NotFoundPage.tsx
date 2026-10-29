@@ -7,6 +7,7 @@ const NotFoundPage = () => {
       title="페이지를 찾을 수 없어요"
       description="주소를 다시 확인하거나 시작 화면으로 돌아가 주세요."
       tone="error"
+      illustration="not-found"
       action={<ButtonLink to="/">시작 화면으로</ButtonLink>}
     />
   );

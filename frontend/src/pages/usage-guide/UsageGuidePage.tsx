@@ -1,9 +1,10 @@
 import { css } from '@emotion/css';
+import { useLocation } from 'react-router-dom';
 
+import { LogScreen } from '@/shared/lib/analytics/logging';
 import { ButtonLink } from '@/shared/ui/button/Button';
 import PageHeading from '@/shared/ui/page-heading/PageHeading';
 
-import { useUsageGuideViewTracking } from './lib/usageGuideAnalytics';
 import UsageDemo from './ui/usage-demo/UsageDemo';
 
 const RECORD_NOTES = [
@@ -14,31 +15,34 @@ const RECORD_NOTES = [
 
 /** 예전 랜딩을 대신하는 사용 방법. 회원 여부와 상관없이 볼 수 있고, 단계마다 실제 기능으로 이어 준다. */
 const UsageGuidePage = () => {
-  useUsageGuideViewTracking();
+  // 같은 화면에 다시 들어올 때마다(주소 이동마다) 한 번 진입 로그를 남긴다.
+  const { key } = useLocation();
 
   return (
-    <main className={styles.page}>
-      <div className={styles.container}>
-        <header className={styles.introduction}>
-          <PageHeading title="사용 방법" />
-          <p>자취할 동네를 찾고, 직접 본 방을 기록해요.</p>
-        </header>
-        <section className={styles.recordNotice} aria-labelledby="record-notice-heading">
-          <h2 id="record-notice-heading">로그인 없이 바로 시작해요</h2>
-          <ul>
-            {RECORD_NOTES.map((note) => (
-              <li key={note}>{note}</li>
-            ))}
-          </ul>
-        </section>
-        <UsageDemo />
-        <div className={styles.actions}>
-          <ButtonLink to="/" fullWidth>
-            홈에서 시작하기
-          </ButtonLink>
+    <LogScreen key={key} event="usage_guide_viewed">
+      <main className={styles.page}>
+        <div className={styles.container}>
+          <header className={styles.introduction}>
+            <PageHeading title="사용 방법" />
+            <p>자취할 동네를 찾고, 직접 본 방을 기록해요.</p>
+          </header>
+          <section className={styles.recordNotice} aria-labelledby="record-notice-heading">
+            <h2 id="record-notice-heading">로그인 없이 바로 시작해요</h2>
+            <ul>
+              {RECORD_NOTES.map((note) => (
+                <li key={note}>{note}</li>
+              ))}
+            </ul>
+          </section>
+          <UsageDemo />
+          <div className={styles.actions}>
+            <ButtonLink to="/" fullWidth>
+              홈에서 시작하기
+            </ButtonLink>
+          </div>
         </div>
-      </div>
-    </main>
+      </main>
+    </LogScreen>
   );
 };
 
