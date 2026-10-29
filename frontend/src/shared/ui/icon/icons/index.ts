@@ -15,6 +15,7 @@ export { default as InfoIcon } from './InfoIcon';
 export { default as LinkIcon } from './LinkIcon';
 export { default as LocateIcon } from './LocateIcon';
 export { default as MapIcon } from './MapIcon';
+export { default as MinusIcon } from './MinusIcon';
 export { default as MoreVerticalIcon } from './MoreVerticalIcon';
 export { default as PlusIcon } from './PlusIcon';
 export { default as RefreshIcon } from './RefreshIcon';
