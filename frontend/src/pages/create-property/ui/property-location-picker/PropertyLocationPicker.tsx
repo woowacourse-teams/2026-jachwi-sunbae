@@ -193,7 +193,8 @@ const styles = {
     label: PropertyLocationPicker-mapPreview;
     position: relative;
     width: calc(100% + 2.5rem);
-    height: 12rem;
+    /* 높이를 고정하면 큰 화면에서 지도 아래 등록 버튼까지 빈칸이 남는다. 남는 화면 높이만큼 지도를 키운다. */
+    height: clamp(14rem, calc(100svh - 24rem), 32rem);
     margin-left: -1.25rem;
     overflow: hidden;
     border-radius: 0;
