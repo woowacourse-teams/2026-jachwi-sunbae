@@ -36,14 +36,16 @@ const meta = {
   component: CompareLoadState,
   args: {
     properties: stateArg('loading'),
+    children: () => <p>비교할 매물 목록</p>,
   },
   argTypes: {
     properties: {
       control: 'select',
       options: Object.keys(states),
       mapping: states,
-      description: '매물 목록 조회 상태. 불러오는 중·실패가 아니면(done) 아무것도 그리지 않는다.',
+      description: '매물 목록 조회 상태. 불러오는 중은 500ms 뒤에 안내가 뜨고, 받으면(done) 내용을 그린다.',
     },
+    children: { control: false, description: '매물을 받은 뒤에만 그리는 내용' },
   },
   decorators: [
     (Story) => (
