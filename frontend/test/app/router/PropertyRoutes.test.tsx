@@ -322,7 +322,7 @@ describe('FE-2 등록·수정·메모', () => {
     expect(section.getByRole('button', { name: '방 옵션 수정' })).toBeInTheDocument();
   });
 
-  it('상세에서 보증금 / 월세 줄을 누르면 그 항목만 시트에서 고치고 위치는 그대로 보낸다', async () => {
+  it('상세에서 보증금 / 월세 줄을 누르면 모달 없이 그 줄에서 고치고, 칸을 떠나면 저장해 저장했다고 알린다', async () => {
     let requestBody: unknown;
     server.use(
       http.get(`${config.apiBaseUrl}/api/properties/10`, () => HttpResponse.json(successEnvelope(detailWithoutPhotos))),
@@ -338,17 +338,22 @@ describe('FE-2 등록·수정·메모', () => {
     renderAuthenticated('/properties/10');
 
     await user.click(await screen.findByRole('button', { name: '보증금 / 월세 수정' }));
-    const sheet = within(screen.getByRole('region', { name: '보증금 / 월세 수정' }));
-    expect(sheet.queryByRole('button', { name: '상세 패널 높이 조절' })).not.toBeInTheDocument();
-    expect(sheet.queryByLabelText('매물 이름')).not.toBeInTheDocument();
-    expect(sheet.queryByRole('region', { name: '매물 위치 선택' })).not.toBeInTheDocument();
-    const rent = sheet.getByLabelText('월세 (만원)');
+    // 시트나 모달을 띄우지 않고 그 줄 안에 금액 두 칸을 펼친다.
+    expect(screen.queryByRole('region', { name: '보증금 / 월세 수정' })).not.toBeInTheDocument();
+    const editor = within(screen.getByRole('form', { name: '보증금 / 월세 입력' }));
+    expect(editor.queryByRole('button', { name: '저장' })).not.toBeInTheDocument();
+    expect(editor.queryByRole('region', { name: '매물 위치 선택' })).not.toBeInTheDocument();
+    // 보증금에서 월세로 옮길 때는 저장하지 않는다.
+    await user.click(editor.getByLabelText('보증금 (만원)'));
+    const rent = editor.getByLabelText('월세 (만원)');
     await user.clear(rent);
     await user.type(rent, '60');
-    await user.click(sheet.getByRole('button', { name: '저장' }));
+    expect(requestBody).toBeUndefined();
+    // 금액 칸 밖을 누르면 저장한다.
+    await user.click(screen.getByRole('heading', { name: '신림역 원룸', level: 1 }));
 
-    await waitFor(() => expect(screen.queryByRole('region', { name: '보증금 / 월세 수정' })).not.toBeInTheDocument());
-    expect(screen.getByRole('heading', { name: '신림역 원룸', level: 1 })).toBeInTheDocument();
+    await waitFor(() => expect(screen.queryByRole('form', { name: '보증금 / 월세 입력' })).not.toBeInTheDocument());
+    expect(await screen.findByRole('status', { name: '' })).toHaveTextContent('✓ 저장했어요');
     expect(requestBody).toMatchObject({
       name: propertyDetailFixture.name,
       depositAmount: propertyDetailFixture.depositAmount,
@@ -395,7 +400,7 @@ describe('FE-2 등록·수정·메모', () => {
     expect(requestBody).toMatchObject({ name: '햇살 원룸', depositAmount: 0, monthlyRentAmount: 0 });
   });
 
-  it('상세의 방 옵션 줄을 누르면 시트에서 저장하고 닫기로 저장 없이 닫는다', async () => {
+  it('상세의 방 옵션 줄을 누르면 그 줄에서 고치고, Esc나 바꾸지 않고 떠나면 저장하지 않는다', async () => {
     let updateCalls = 0;
     let requestBody: unknown;
     server.use(
@@ -412,18 +417,23 @@ describe('FE-2 등록·수정·메모', () => {
     const user = userEvent.setup();
     renderAuthenticated('/properties/10');
 
-    await user.click(await screen.findByRole('button', { name: '방 옵션 수정' }));
-    await user.click(screen.getByRole('button', { name: '방 옵션 수정 닫기' }));
-    expect(screen.queryByRole('region', { name: '방 옵션 수정' })).not.toBeInTheDocument();
+    const section = within(await screen.findByRole('region', { name: '매물 부가 정보' }));
+    await user.click(section.getByRole('button', { name: '방 옵션 수정' }));
+    await user.keyboard('{Escape}');
+    expect(section.queryByRole('region', { name: '부가 정보 입력' })).not.toBeInTheDocument();
+    // 바꾸지 않고 다른 곳을 눌러 떠나도 저장하지 않는다.
+    await user.click(section.getByRole('button', { name: '방 옵션 수정' }));
+    await user.click(screen.getByRole('heading', { name: '신림역 원룸', level: 1 }));
+    await waitFor(() => expect(section.queryByRole('region', { name: '부가 정보 입력' })).not.toBeInTheDocument());
     expect(updateCalls).toBe(0);
 
-    await user.click(screen.getByRole('button', { name: '방 옵션 수정' }));
-    const sheet = within(screen.getByRole('region', { name: '방 옵션 수정' }));
-    expect(sheet.queryByLabelText('입주 가능일')).not.toBeInTheDocument();
-    await user.click(sheet.getByRole('checkbox', { name: '책상' }));
-    await user.click(sheet.getByRole('button', { name: '저장' }));
+    await user.click(section.getByRole('button', { name: '방 옵션 수정' }));
+    const editor = within(section.getByRole('region', { name: '부가 정보 입력' }));
+    expect(editor.queryByLabelText('입주 가능일')).not.toBeInTheDocument();
+    await user.click(editor.getByRole('checkbox', { name: '책상' }));
+    await user.click(screen.getByRole('heading', { name: '신림역 원룸', level: 1 }));
 
-    await waitFor(() => expect(screen.queryByRole('region', { name: '방 옵션 수정' })).not.toBeInTheDocument());
+    await waitFor(() => expect(section.queryByRole('region', { name: '부가 정보 입력' })).not.toBeInTheDocument());
     expect(updateCalls).toBe(1);
     expect(requestBody).toMatchObject({ roomOptions: ['AIR_CONDITIONER', 'REFRIGERATOR', 'DESK'] });
     expect(screen.getByText('에어컨, 냉장고, 책상')).toBeInTheDocument();
