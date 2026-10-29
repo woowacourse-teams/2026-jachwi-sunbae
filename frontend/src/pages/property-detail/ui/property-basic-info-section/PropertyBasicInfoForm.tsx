@@ -17,16 +17,19 @@ import type { PropertyDetail } from '@/features/property/model/Property';
 import MoneyField from '@/features/property/ui/money-field/MoneyField';
 import { trackPostHogEvent } from '@/shared/lib/analytics/posthog';
 import { Button } from '@/shared/ui/button/Button';
-import TextField from '@/shared/ui/text-field/TextField';
+
+import type { BasicEditField } from '../../model/editField';
 
 import * as styles from '../property-edit-sheet/PropertyEditSheet.styles';
 
 type PropertyBasicInfoFormProps = {
   property: PropertyDetail;
+  /** 상세에서 누른 항목만 보여 주고 그 값만 바꿔 저장한다. */
+  field: BasicEditField;
   onSaved: () => void;
 };
 
-type BasicInfoValues = { name: string; depositAmount: string; monthlyRentAmount: string };
+type BasicInfoValues = { depositAmount: string; monthlyRentAmount: string };
 
 /** 지도 idle 때 같은 좌표가 다시 들어와도 위치를 바꾼 것으로 보지 않는다. */
 const COORDINATE_EPSILON = 1e-6;
@@ -42,17 +45,22 @@ const toPresetLocation = ({ location }: PropertyDetail): MapAddress | undefined 
         longitude: location.longitude,
       };
 
+/** 새 매물은 금액을 0으로 만든다. 둘 다 0이면 빈칸으로 열어 바로 입력하게 한다. */
+const toPriceInputs = ({ depositAmount, monthlyRentAmount }: PropertyDetail) =>
+  depositAmount === 0 && monthlyRentAmount === 0
+    ? { depositAmount: '', monthlyRentAmount: '' }
+    : {
+        depositAmount: formatAmountForInput(depositAmount),
+        monthlyRentAmount: formatAmountForInput(monthlyRentAmount),
+      };
+
 /**
- * 상세 시트에서 새 매물 등록과 같은 기본 정보(이름·보증금·월세·위치)를 고친다.
+ * 상세 시트에서 기본 정보(보증금과 월세, 위치) 중 누른 항목 하나를 고친다. 이름은 상세 줄에서 바로 고친다.
  * 위치는 지도를 옮기거나 주소를 고른 경우에만 보낸다.
  */
-const PropertyBasicInfoForm = ({ property, onSaved }: PropertyBasicInfoFormProps) => {
+const PropertyBasicInfoForm = ({ property, field, onSaved }: PropertyBasicInfoFormProps) => {
   const updateProperty = useUpdateProperty(property.propertyId);
-  const [values, setValues] = useState<BasicInfoValues>({
-    name: property.name,
-    depositAmount: formatAmountForInput(property.depositAmount),
-    monthlyRentAmount: formatAmountForInput(property.monthlyRentAmount),
-  });
+  const [values, setValues] = useState<BasicInfoValues>(() => toPriceInputs(property));
   const [errors, setErrors] = useState<PropertyFormErrors>({});
   const [notice, setNotice] = useState<string | null>(null);
   const [presetLocation] = useState(() => toPresetLocation(property));
@@ -88,7 +96,19 @@ const PropertyBasicInfoForm = ({ property, onSaved }: PropertyBasicInfoFormProps
 
   const submit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    const nextErrors = validatePropertyForm({ ...values, discoverySource: property.discoverySource.value });
+    // 화면에 보이는 항목의 오류만 본다. 아직 비어 있는 다른 항목이 저장을 막지 않게 한다.
+    const allErrors = validatePropertyForm({
+      ...values,
+      name: property.name,
+      discoverySource: property.discoverySource.value,
+    });
+    const nextErrors: PropertyFormErrors =
+      field === 'price'
+        ? {
+            ...(allErrors.depositAmount && { depositAmount: allErrors.depositAmount }),
+            ...(allErrors.monthlyRentAmount && { monthlyRentAmount: allErrors.monthlyRentAmount }),
+          }
+        : {};
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length > 0) return;
 
@@ -105,67 +125,69 @@ const PropertyBasicInfoForm = ({ property, onSaved }: PropertyBasicInfoFormProps
       return;
     }
 
+    if (field === 'location' && !moved) {
+      onSaved();
+      return;
+    }
+
+    const changes =
+      field === 'price'
+        ? {
+            depositAmount: (parseMoneyInput(values.depositAmount) ?? 0) * WON_PER_MANWON,
+            monthlyRentAmount: (parseMoneyInput(values.monthlyRentAmount) ?? 0) * WON_PER_MANWON,
+          }
+        : {
+            address: selectedLocation.roadAddress ?? selectedLocation.jibunAddress ?? selectedLocation.address,
+            latitude: selectedLocation.latitude,
+            longitude: selectedLocation.longitude,
+          };
     void updateProperty
-      .mutateAsync({
-        current: property,
-        changes: {
-          name: values.name.trim(),
-          depositAmount: (parseMoneyInput(values.depositAmount) ?? 0) * WON_PER_MANWON,
-          monthlyRentAmount: (parseMoneyInput(values.monthlyRentAmount) ?? 0) * WON_PER_MANWON,
-          ...(moved
-            ? {
-                address: selectedLocation.roadAddress ?? selectedLocation.jibunAddress ?? selectedLocation.address,
-                latitude: selectedLocation.latitude,
-                longitude: selectedLocation.longitude,
-              }
-            : {}),
-        },
-      })
+      .mutateAsync({ current: property, changes })
       .then(onSaved)
       .catch(() => undefined);
   };
 
   return (
     <form className={styles.editor} noValidate onSubmit={submit}>
-      <TextField
-        label="매물 이름"
-        maxLength={30}
-        value={values.name}
-        error={errors.name}
-        onChange={(event) => setValue('name', event.target.value)}
-      />
-      <MoneyField
-        label="보증금"
-        value={values.depositAmount}
-        error={errors.depositAmount}
-        onValueChange={(value) => setValue('depositAmount', value)}
-      />
-      <MoneyField
-        label="월세"
-        value={values.monthlyRentAmount}
-        error={errors.monthlyRentAmount}
-        onValueChange={(value) => setValue('monthlyRentAmount', value)}
-      />
-      <PropertyLocationPicker
-        location={{
-          selected: location.selectedLocation,
-          status: location.locationStatus,
-          onCenterChange: location.handleCenterChange,
-          onMoveToCurrentLocation: () => void moveToCurrentLocation(),
-        }}
-        search={{
-          query: search.query,
-          results: search.results,
-          status: search.status,
-          onQueryChange: search.changeQuery,
-          onSubmit: () => void search.submit(),
-          onClear: search.clear,
-          onSelect: (result) => {
-            location.selectAddress(result);
-            search.pick(result);
-          },
-        }}
-      />
+      {field === 'price' && (
+        <>
+          <MoneyField
+            label="보증금"
+            value={values.depositAmount}
+            error={errors.depositAmount}
+            autoFocus
+            onValueChange={(value) => setValue('depositAmount', value)}
+          />
+          <MoneyField
+            label="월세"
+            value={values.monthlyRentAmount}
+            error={errors.monthlyRentAmount}
+            onValueChange={(value) => setValue('monthlyRentAmount', value)}
+          />
+        </>
+      )}
+      {field === 'location' && (
+        <PropertyLocationPicker
+          location={{
+            selected: location.selectedLocation,
+            status: location.locationStatus,
+            onCenterChange: location.handleCenterChange,
+            onMoveToCurrentLocation: () => void moveToCurrentLocation(),
+          }}
+          search={{
+            query: search.query,
+            results: search.results,
+            status: search.status,
+            onQueryChange: search.changeQuery,
+            onSubmit: () => void search.submit(),
+            onClear: search.clear,
+            onSelect: (result) => {
+              location.selectAddress(result);
+              search.pick(result);
+            },
+          }}
+        />
+      )}
       {notice !== null && (
         <p className={styles.errorNotice} role="alert">
           {notice}
@@ -173,11 +195,11 @@ const PropertyBasicInfoForm = ({ property, onSaved }: PropertyBasicInfoFormProps
       )}
       {updateProperty.isError && (
         <p className={styles.errorNotice} role="alert">
-          기본 정보를 저장하지 못했어요. 다시 시도해 주세요.
+          저장하지 못했어요. 다시 시도해 주세요.
         </p>
       )}
       <Button type="submit" variant="soft" fullWidth isLoading={updateProperty.isPending} loadingLabel="저장 중…">
-        기본 정보 저장
+        저장
       </Button>
     </form>
   );
