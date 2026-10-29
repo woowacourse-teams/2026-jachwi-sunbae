@@ -29,40 +29,41 @@ const CompareDesktopPage = () => {
   return (
     <main className={shared.page}>
       <h1 className="sr-only">비교할 매물 선택</h1>
-      <CompareLoadState properties={properties} />
-      {properties.isSuccess && (
-        <div className={shared.content}>
-          <div className={styles.listHeader}>
-            <div className={shared.selectionHeader} aria-live="polite">
-              <strong>{selectedIds.length}개 선택</strong>
-              <span>최대 {MAX_SELECTION}개</span>
+      <CompareLoadState properties={properties}>
+        {() => (
+          <div className={shared.content}>
+            <div className={styles.listHeader}>
+              <div className={shared.selectionHeader} aria-live="polite">
+                <strong>{selectedIds.length}개 선택</strong>
+                <span>최대 {MAX_SELECTION}개</span>
+              </div>
+              {hasEnoughProperties && (
+                <CompareFilters filters={filters} resultCount={visibleItems.length} onChange={setFilters} />
+              )}
             </div>
+            {hasEnoughProperties ? (
+              <CompareTable
+                properties={visibleItems}
+                selectedIds={selectedIds}
+                maxSelection={MAX_SELECTION}
+                onToggle={toggle}
+              />
+            ) : (
+              <CompareEmpty />
+            )}
+            {hasExportError && (
+              <InlineNotice tone="error">PDF를 만들지 못했어요. 잠시 후 다시 시도해 주세요.</InlineNotice>
+            )}
             {hasEnoughProperties && (
-              <CompareFilters filters={filters} resultCount={visibleItems.length} onChange={setFilters} />
+              <CompareActionBar
+                selectedCount={selectedIds.length}
+                isExporting={isExporting}
+                onDownload={() => void downloadPdf()}
+              />
             )}
           </div>
-          {hasEnoughProperties ? (
-            <CompareTable
-              properties={visibleItems}
-              selectedIds={selectedIds}
-              maxSelection={MAX_SELECTION}
-              onToggle={toggle}
-            />
-          ) : (
-            <CompareEmpty />
-          )}
-          {hasExportError && (
-            <InlineNotice tone="error">PDF를 만들지 못했어요. 잠시 후 다시 시도해 주세요.</InlineNotice>
-          )}
-          {hasEnoughProperties && (
-            <CompareActionBar
-              selectedCount={selectedIds.length}
-              isExporting={isExporting}
-              onDownload={() => void downloadPdf()}
-            />
-          )}
-        </div>
-      )}
+        )}
+      </CompareLoadState>
     </main>
   );
 };

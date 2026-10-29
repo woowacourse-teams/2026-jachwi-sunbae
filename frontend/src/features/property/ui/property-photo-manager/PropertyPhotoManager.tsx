@@ -1,6 +1,8 @@
 import { css } from '@emotion/css';
 import { useState } from 'react';
 
+import useDelayedLoading from '@/shared/lib/hooks/useDelayedLoading';
+
 import { getPropertyErrorMessage } from '../../api/propertyErrorMessages';
 import { usePropertyPhotos } from '../../api/useProperties';
 import PhotoUploadPanel from './PhotoUploadPanel';
@@ -14,13 +16,15 @@ type PropertyPhotoManagerProps = {
 const PropertyPhotoManager = ({ propertyId, showHeading = false }: PropertyPhotoManagerProps) => {
   const [visibleCount, setVisibleCount] = useState(6);
   const photos = usePropertyPhotos(propertyId);
+  // 빠른 응답에는 로딩 문구 없이 바로 사진을 보여 주고, 오래 걸릴 때만 알린다.
+  const isLoadingVisible = useDelayedLoading(photos.isPending);
 
-  if (photos.isPending) {
-    return (
+  if (photos.isPending || isLoadingVisible) {
+    return isLoadingVisible ? (
       <div className={styles.state} role="status">
         사진 정보를 불러오는 중이에요.
       </div>
-    );
+    ) : null;
   }
 
   if (photos.isError) {

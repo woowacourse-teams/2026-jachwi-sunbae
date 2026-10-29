@@ -1,5 +1,7 @@
 import { injectGlobal } from '@emotion/css';
 
+import useDelayedLoading from '@/shared/lib/hooks/useDelayedLoading';
+
 import { getPropertyErrorMessage } from '../../api/propertyErrorMessages';
 import { useAuthenticatedPhoto } from '../../api/useAuthenticatedPhoto';
 
@@ -21,6 +23,9 @@ const AuthenticatedPhoto = ({
   errorMode = 'message',
 }: AuthenticatedPhotoProps) => {
   const photo = useAuthenticatedPhoto(propertyId, photoId, contentUrl);
+  const isWaiting = photo.isPending || photo.objectUrl === null;
+  // 금방 받은 사진은 로딩 문구 없이 같은 크기의 빈 칸에서 바로 바뀌고, 오래 걸릴 때만 스피너와 문구를 보여 준다.
+  const isLoadingVisible = useDelayedLoading(isWaiting);
 
   if (photo.isError) {
     return (
@@ -43,12 +48,15 @@ const AuthenticatedPhoto = ({
     );
   }
 
-  if (photo.isPending || photo.objectUrl === null) {
-    return (
+  // objectUrl 비교는 isWaiting에 이미 들어 있지만, 아래에서 주소가 있다고 좁히려고 함께 적는다.
+  if (isWaiting || isLoadingVisible || photo.objectUrl === null) {
+    return isLoadingVisible ? (
       <div className={`authenticated-photo authenticated-photo--loading ${className}`} role="status">
         <span className="spinner" aria-hidden="true" />
         <span>사진을 불러오는 중</span>
       </div>
+    ) : (
+      <div className={`authenticated-photo ${className}`} aria-hidden="true" />
     );
   }
 
