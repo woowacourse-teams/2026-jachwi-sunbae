@@ -108,7 +108,7 @@
 
 ### 익명 테스트 트래픽
 
-테스트 기기에서 `?analytics_test=1` 링크를 한 번 열면 같은 저장소의 다음 방문도 `traffic_type=test`로 수집한다. `?analytics_test=0`으로 해제한다. 개발 환경은 `development`, 그 외는 `external`이다. 저장소가 차단되면 현재 URL의 표시만 사용할 수 있으며 다른 기기·WebView 저장소로 전달되지 않는다.
+테스트 기기에서 `?analytics_test=1` 링크를 한 번 열면 같은 저장소의 다음 방문도 `traffic_type=test`로 수집한다. `?analytics_test=0`으로 해제한다. 개발 환경은 `development`, 그 외는 `external`이다. 저장소가 차단되면 현재 URL의 표시만 사용할 수 있으며 다른 기기·WebView 저장소로 전달되지 않는다. UT 참가자 구분은 같은 방식으로 `?ut_session_id=UT01-P01`을 열어 `ut_session_id`를 싣고 `?ut_session_id=0`으로 지운다. 기준은 [저렴한 한 끼 찾기](cheap-meals.md#posthog-이벤트)를 따른다.
 
 이 표시는 권한·회원 여부와 무관한 이벤트 속성이다. 기존 내부 사용자 코호트에 자동으로 가입시키지 않으며 과거 테스트 이벤트도 자동 분류하지 않는다. 2026-10-15에 대시보드의 기존 운영 환경·코호트 제외를 유지하고 `coalesce(properties.traffic_type, 'external') NOT IN ('test', 'development')` 필터를 추가했다. 속성 없는 과거 이벤트를 유지하되 과거 테스트 트래픽이었다고 소급 확정하지 않는다. 14개 카드의 재계산이 오류 없이 실행됨을 확인했다.
 

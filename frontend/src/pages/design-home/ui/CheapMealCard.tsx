@@ -1,67 +1,51 @@
 import { css } from '@emotion/css';
-import { Link } from 'react-router-dom';
 
-import Icon from '@/shared/ui/icon/Icon';
+import ActionCard from '@/shared/ui/action-card/ActionCard';
 
-type CheapMealCardProps = { className?: string };
-
-const CheapMealCard = ({ className = '' }: CheapMealCardProps) => (
-  <Link
+/** 홈에서 저렴한 한 끼 찾기로 들어가는 카드. 사용방법 카드와 기능 카드 묶음 사이에 한 줄로 둔다. */
+const CheapMealCard = ({ className }: { className?: string }) => (
+  // 기능 진입은 저렴한 한 끼 화면의 cheap_meal_viewed로 센다.
+  <ActionCard
+    tone="brand"
+    title="오늘 한 끼, 저렴하게"
+    description="식당부터 편의점, 배달 할인까지"
+    aria-label="오늘 한 끼, 저렴하게"
     to="/cheap-meals"
-    className={`${styles.card} ${className}`}
-    aria-label="오늘 한 끼, 저렴하게 — 저렴한 한 끼 찾기"
-  >
-    <span className={styles.eyebrow}>자취 중이라면?</span>
-    <strong>오늘 한 끼, 저렴하게</strong>
-    <span className={styles.description}>식당부터 편의점·배달 할인까지</span>
-    <span className={styles.action}>
-      저렴한 한 끼 찾기 <Icon name="arrow-right" size={18} />
-    </span>
-  </Link>
+    className={`${styles.card} ${className ?? ''}`.trim()}
+  />
 );
+
 const styles = {
+  /* 기능 카드 묶음 밖에 있으므로 카드 글자 크기와 여백을 묶음과 같게 직접 정한다. */
   card: css`
     label: CheapMealCard-card;
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0.45rem;
-    margin-top: 1.2rem;
-    padding: 1.35rem;
-    border-radius: var(--radius-card);
-    color: var(--color-ink);
-    text-decoration: none;
-    background: color-mix(in srgb, var(--color-brand-yellow) 22%, white);
-    border: 1px solid color-mix(in srgb, var(--color-brand-yellow) 35%, white);
-    & strong {
-      font-size: 1.45rem;
-      letter-spacing: -0.045em;
-      line-height: 1.35;
+    --action-card-title-size: 1.2rem;
+    --action-card-description-size: 0.78rem;
+    --action-card-text-inset: 1.25rem;
+    /* 그림이 없는 ActionCard는 글자가 절대 위치라 높이를 직접 준다. 사용방법 카드와 같은 높이다. */
+    height: 5.2rem;
+    margin-top: 0.65rem;
+    /* 사용방법 카드의 파란 그라데이션과 짝을 이루게, 글자 쪽 진한 노랑에서 오른쪽으로 갈수록 밝은 노랑으로 번지게 한다. */
+    background:
+      radial-gradient(
+        circle 7rem at right 2rem top 65%,
+        color-mix(in srgb, #fff 55%, transparent),
+        color-mix(in srgb, #fff 15%, transparent) 60%,
+        transparent 100%
+      ),
+      linear-gradient(
+        110deg,
+        var(--color-brand-yellow) 35%,
+        color-mix(in srgb, var(--color-brand-yellow) 55%, #fff) 100%
+      );
+
+    @media (min-width: 768px) {
+      --action-card-title-size: 1.5rem;
+      --action-card-description-size: 0.9rem;
+      --action-card-text-inset: 1.4rem;
+      height: 6.2rem;
     }
-    &:hover {
-      background: color-mix(in srgb, var(--color-brand-yellow) 30%, white);
-    }
-  `,
-  eyebrow: css`
-    label: CheapMealCard-eyebrow;
-    font-size: 0.75rem;
-    color: var(--color-ink-soft);
-    font-weight: 600;
-  `,
-  description: css`
-    label: CheapMealCard-description;
-    font-size: 0.82rem;
-    color: var(--color-ink-soft);
-  `,
-  action: css`
-    label: CheapMealCard-action;
-    display: inline-flex;
-    align-items: center;
-    gap: 0.6rem;
-    font-size: 0.85rem;
-    font-weight: 750;
-    margin-top: 0.6rem;
-    min-height: 30px;
   `,
 };
+
 export default CheapMealCard;

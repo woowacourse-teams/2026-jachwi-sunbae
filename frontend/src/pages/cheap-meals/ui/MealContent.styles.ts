@@ -14,84 +14,26 @@ export const section = css`
     line-height: 1.6;
   }
 `;
+/* 데스크탑은 본문 칸을 넓게 쓰고, 좌우 여백은 화면 쪽에서 준다. */
+export const sectionDesktop = css`
+  label: MealContent-sectionDesktop;
+  max-width: none;
+  padding: 2rem 0 3rem;
+`;
 export const description = css`
   label: MealContent-description;
   color: var(--color-ink-soft);
   font-size: 0.85rem;
   margin: 0 0 1.25rem;
 `;
-export const filters = css`
-  label: MealContent-filters;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.4rem;
-  margin: 1rem 0;
-  & button {
-    min-height: 44px;
-    padding: 0.5rem 0.85rem;
-    border: 1px solid var(--color-border);
-    border-radius: 99px;
-    background: var(--color-surface);
-    color: var(--color-ink-soft);
-    font: inherit;
-    font-size: 0.8rem;
-    cursor: pointer;
-  }
-  & button[aria-pressed='true'] {
-    border-color: var(--color-action);
-    background: var(--color-action);
-    color: var(--color-on-action);
-    font-weight: 700;
-  }
-`;
-export const note = css`
-  label: MealContent-note;
-  color: var(--color-ink-soft);
-  font-size: 0.78rem;
-  line-height: 1.7;
-  margin-top: 1.25rem;
-  padding: 1rem;
-  border-radius: var(--radius-md);
-  background: var(--color-surface-muted);
-  overflow-wrap: anywhere;
-  & p {
-    margin: 0.4rem 0;
-  }
-  & a {
-    color: var(--color-primary);
-    text-underline-offset: 0.2em;
-    display: inline-flex;
-    align-items: center;
-    min-height: 44px;
-  }
-`;
-export const facts = css`
-  label: MealContent-facts;
-  display: grid;
-  gap: 1rem;
-  margin: 1.3rem 0;
-  & div {
-    display: grid;
-    grid-template-columns: 6.5rem minmax(0, 1fr);
-    gap: 0.6rem;
-    font-size: 0.86rem;
-    line-height: 1.6;
-  }
-  & dt {
-    color: var(--color-ink-soft);
-  }
-  & dd {
-    margin: 0;
-    white-space: pre-wrap;
-    overflow-wrap: anywhere;
-  }
-`;
-export const empty = css`
-  label: MealContent-empty;
-  padding: 2rem 1rem;
-  text-align: center;
-  color: var(--color-ink-soft);
-  line-height: 1.7;
+export const sourceLink = css`
+  label: MealContent-sourceLink;
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  color: var(--color-primary);
+  font-size: 0.8rem;
+  text-underline-offset: 0.2em;
 `;
 export const badge = css`
   label: MealContent-badge;
