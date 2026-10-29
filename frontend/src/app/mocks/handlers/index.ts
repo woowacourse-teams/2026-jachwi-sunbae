@@ -4,7 +4,8 @@ import { commuteAreaHandlers } from './commuteAreaHandlers';
 import { mapHandlers } from './mapHandlers';
 import { propertyChecklistHandlers } from './propertyChecklistHandlers';
 import { propertyHandlers } from './propertyHandlers';
-import { rentalHandlers } from './rentalHandlers';
+import { streetMemoHandlers } from './streetMemoHandlers';
+import { weatherHandlers } from './weatherHandlers';
 
 export const handlers = [
   ...authHandlers,
@@ -13,5 +14,6 @@ export const handlers = [
   ...propertyChecklistHandlers,
   ...mapHandlers,
   ...commuteAreaHandlers,
-  ...rentalHandlers,
+  ...streetMemoHandlers,
+  ...weatherHandlers,
 ];

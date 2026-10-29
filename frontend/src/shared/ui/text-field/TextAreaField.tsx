@@ -1,7 +1,7 @@
 import type { Ref, TextareaHTMLAttributes } from 'react';
 import { useId } from 'react';
 
-import styles from './TextField.module.css';
+import * as styles from './TextField.styles';
 
 type TextAreaFieldProps = Omit<TextareaHTMLAttributes<HTMLTextAreaElement>, 'children'> & {
   ref?: Ref<HTMLTextAreaElement>;

@@ -1,3 +1,4 @@
+import { css } from '@emotion/css';
 import { useState } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 
@@ -12,8 +13,6 @@ import PropertyForm from '@/features/property/ui/property-form/PropertyForm';
 import ContentState from '@/shared/ui/content-state/ContentState';
 import QueryState from '@/shared/ui/query-state/QueryState';
 import TopNavigation from '@/shared/ui/top-navigation/TopNavigation';
-
-import styles from './EditPropertyPage.module.css';
 
 const backToList = <Link to="/">홈으로 돌아가기</Link>;
 const describeError = describePropertyLoadError('매물 정보를 불러오지 못했어요.');
@@ -111,6 +110,26 @@ const EditPropertyView = ({ propertyId, initial }: EditPropertyViewProps) => {
       </div>
     </main>
   );
+};
+
+const styles = {
+  page: css`
+    label: EditPropertyPage-page;
+    min-height: 100%;
+    background: var(--color-canvas);
+  `,
+
+  container: css`
+    label: EditPropertyPage-container;
+    padding: 0 1rem 2rem;
+  `,
+
+  heading: css`
+    label: EditPropertyPage-heading;
+    margin: 0.9rem 0 0.85rem;
+    font-size: 1rem;
+    letter-spacing: -0.035em;
+  `,
 };
 
 export default EditPropertyPage;

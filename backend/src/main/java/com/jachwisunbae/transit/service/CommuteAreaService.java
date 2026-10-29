@@ -2,10 +2,12 @@ package com.jachwisunbae.transit.service;
 
 import com.jachwisunbae.common.exception.client.BusinessRuleViolationException;
 import com.jachwisunbae.common.exception.errorcode.ErrorCode;
+import com.jachwisunbae.rental.domain.AdminDongRents;
+import com.jachwisunbae.rental.service.AdminDongRentService;
 import com.jachwisunbae.transit.domain.CapitalRegion;
 import com.jachwisunbae.transit.domain.CommuteArea;
 import com.jachwisunbae.transit.domain.ReachableStop;
-import com.jachwisunbae.transit.domain.collection.TransitNetwork;
+import com.jachwisunbae.transit.domain.network.TransitNetwork;
 import com.jachwisunbae.transit.domain.vo.Coordinate;
 import com.jachwisunbae.transit.domain.vo.Seconds;
 import com.jachwisunbae.transit.service.dto.result.CommuteAreaSearchResult;
@@ -20,13 +22,28 @@ import org.springframework.stereotype.Service;
 public class CommuteAreaService {
 
     private final TransitNetworkCache transitNetworkCache;
+    private final AdminDongRentService adminDongRentService;
 
-    public CommuteAreaService(final TransitNetworkCache transitNetworkCache) {
+    public CommuteAreaService(final TransitNetworkCache transitNetworkCache,
+                              final AdminDongRentService adminDongRentService) {
         this.transitNetworkCache = transitNetworkCache;
+        this.adminDongRentService = adminDongRentService;
     }
 
     public CommuteAreaSearchResult search(final Coordinate destination, final int maxMinutes,
                                           final int maxTransfers) {
+        return new CommuteAreaSearchResult(maxMinutes, findAreas(destination, maxMinutes, maxTransfers),
+                AdminDongRents.empty());
+    }
+
+    // 동네마다 관할 법정동 거래로 낸 월세 시세를 함께 담는다.
+    public CommuteAreaSearchResult searchWithRents(final Coordinate destination, final int maxMinutes,
+                                                   final int maxTransfers) {
+        return new CommuteAreaSearchResult(maxMinutes, findAreas(destination, maxMinutes, maxTransfers),
+                adminDongRentService.findRents());
+    }
+
+    private List<CommuteArea> findAreas(final Coordinate destination, final int maxMinutes, final int maxTransfers) {
         TransitNetwork network = transitNetworkCache.get();
         if (!network.hasArrivalStop(destination)) {
             throw new BusinessRuleViolationException(ErrorCode.COMMUTE_DESTINATION_UNREACHABLE,
@@ -34,7 +51,7 @@ public class CommuteAreaService {
         }
         List<ReachableStop> reachableStops = network.reachableStops(destination, new Seconds(maxMinutes * 60),
                 maxTransfers);
-        return new CommuteAreaSearchResult(maxMinutes, toCommuteAreas(reachableStops));
+        return toCommuteAreas(reachableStops);
     }
 
     private List<CommuteArea> toCommuteAreas(final List<ReachableStop> reachableStops) {

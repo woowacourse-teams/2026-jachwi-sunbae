@@ -65,3 +65,15 @@ it('SDK 로딩 주소에는 GL 서브모듈이 포함된다', async () => {
   window.jachwiNaverSdkReady?.();
   await loading;
 });
+
+it('ready 이후 인증 실패가 도착하면 다음 지도 로드를 거절한다', async () => {
+  vi.resetModules();
+  const { naverEngine: isolatedEngine } = await import('@/features/map/lib/naverMapEngine');
+  delete window.naver;
+  const loading = isolatedEngine('test').load();
+  mockSdk();
+  window.jachwiNaverSdkReady?.();
+  await loading;
+  window.navermap_authFailure?.();
+  await expect(isolatedEngine('test').load()).rejects.toThrow('인증에 실패');
+});

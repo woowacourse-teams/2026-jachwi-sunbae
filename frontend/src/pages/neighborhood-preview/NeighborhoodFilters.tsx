@@ -1,25 +1,66 @@
+import { css } from '@emotion/css';
 import { useState } from 'react';
 
 import { Button } from '@/shared/ui/button/Button';
 import WheelPicker from '@/shared/ui/wheel-picker/WheelPicker';
 
 import type { NeighborhoodPreviewContext } from './hooks/useNeighborhoodPreview';
-
-import styles from './NeighborhoodFilters.module.css';
+import { RENT_LIMITS } from './model/criteriaLabels';
 
 type FilterValues = Pick<
   NeighborhoodPreviewContext,
   'maxMinutes' | 'changeMaxMinutes' | 'maxTransfers' | 'changeMaxTransfers' | 'maxRent' | 'changeMaxRent'
 >;
 export type NeighborhoodFilterField = 'minutes' | 'transfers' | 'rent';
-const RENT_OPTIONS = [
-  { value: 0, label: '전체 가격' },
-  ...Array.from({ length: 20 }, (_, index) => ({ value: (index + 1) * 10, label: `${(index + 1) * 10}만원 이하` })),
-];
-const MINUTE_OPTIONS = Array.from({ length: 6 }, (_, index) => ({
+/** 월세 상한 선택지. 0은 전체 가격이다. 서버는 월세로 거르지 않아, 받은 동네 시세(월세 중앙값)를 화면에서 거른다. */
+export const RENT_OPTIONS = RENT_LIMITS.map((value) => ({
+  value,
+  label: value === 0 ? '전체 가격' : `${value}만원 이하`,
+}));
+export const MINUTE_OPTIONS = Array.from({ length: 6 }, (_, index) => ({
   value: (index + 1) * 10,
   label: `${(index + 1) * 10}분 이내`,
 }));
+const TRANSFER_OPTIONS = [
+  { value: 0, label: '환승 없음' },
+  { value: 1, label: '1회 이하' },
+  { value: 2, label: '2회 이하' },
+];
+
+/** 조건 칸 아래에 바로 펼치는 피커. 굴리면 바로 반영하므로 적용 버튼이 없다. */
+export const NeighborhoodFilterPicker = ({
+  preview,
+  field,
+}: {
+  preview: FilterValues;
+  field: NeighborhoodFilterField;
+}) =>
+  field === 'minutes' ? (
+    <WheelPicker
+      size="small"
+      aria-label="최대 통근 시간"
+      options={MINUTE_OPTIONS}
+      value={preview.maxMinutes}
+      onValueChange={preview.changeMaxMinutes}
+    />
+  ) : field === 'transfers' ? (
+    <WheelPicker
+      size="small"
+      aria-label="최대 환승 횟수"
+      options={TRANSFER_OPTIONS}
+      value={preview.maxTransfers}
+      onValueChange={preview.changeMaxTransfers}
+    />
+  ) : (
+    <WheelPicker
+      size="small"
+      aria-label="최대 월세 시세"
+      options={RENT_OPTIONS}
+      value={preview.maxRent}
+      onValueChange={preview.changeMaxRent}
+    />
+  );
+
 const NeighborhoodFilters = ({
   preview,
   field,
@@ -38,7 +79,7 @@ const NeighborhoodFilters = ({
     <div className={styles.editor}>
       {field !== 'transfers' ? (
         <WheelPicker
-          label={field === 'rent' ? '최대 월세 평균가' : '최대 통근 시간'}
+          aria-label={field === 'rent' ? '최대 월세 시세' : '최대 통근 시간'}
           options={field === 'rent' ? RENT_OPTIONS : MINUTE_OPTIONS}
           value={draft}
           onValueChange={setDraft}
@@ -74,4 +115,36 @@ const NeighborhoodFilters = ({
     </div>
   );
 };
+
+const styles = {
+  editor: css`
+    label: NeighborhoodFilters-editor;
+    display: flex;
+    flex-direction: column;
+    min-height: 100%;
+    gap: 1rem;
+
+    & > * {
+      flex-shrink: 0;
+    }
+
+    & > button:last-child {
+      margin-top: auto;
+    }
+  `,
+
+  choices: css`
+    label: NeighborhoodFilters-choices;
+    display: flex;
+    gap: 0.6rem;
+    margin: 0.5rem 0 1rem;
+
+    & button {
+      display: flex;
+      flex: 1;
+      font-size: 0.8rem;
+    }
+  `,
+};
+
 export default NeighborhoodFilters;

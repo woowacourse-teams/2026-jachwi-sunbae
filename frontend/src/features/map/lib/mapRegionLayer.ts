@@ -7,7 +7,7 @@ type Engine = Pick<ReturnType<typeof naverEngine>, 'latLng' | 'createOverlay' | 
 /** 한 번에 등록하는 새 동 수. GL 지도는 도형마다 레이어를 검증·직렬화해 많이 넣으면 한 프레임이 길어진다. */
 const STAGE_CHUNK = 40;
 /** GL 준비 신호를 못 받아도 이 시간이 지나면 그린다. */
-const READY_TIMEOUT_MS = 3000;
+export const READY_TIMEOUT_MS = 3000;
 type Polygon = InstanceType<NaverMapsNamespace['Polygon']>;
 const anchorOf = (region: MapRegion) => region.center ?? region.polygons?.[0]?.[0]?.[0] ?? region.paths[0]?.[0];
 /** 화면 중심에서 가까운 순서를 정하는 용도라 위도에 따른 경도 축척만 맞춘 근사 거리다. */
@@ -44,12 +44,21 @@ type Entry = {
   hovered: boolean;
 };
 
+/** 도형 클릭 이벤트에서 찍은 좌표를 읽는다. SDK가 좌표를 주지 않으면 undefined다. */
+const clickedPoint = (event?: { coord?: { lat?: () => number; lng?: () => number } }) => {
+  const latitude = event?.coord?.lat?.();
+  const longitude = event?.coord?.lng?.();
+  return latitude !== undefined && longitude !== undefined && Number.isFinite(latitude) && Number.isFinite(longitude)
+    ? { latitude, longitude }
+    : undefined;
+};
+
 /** 지도 하나가 소유한다. 좌표가 같은 동은 유지하고 스타일·라벨 변경만 반영한다. */
 export const createMapRegionLayer = (
   map: LiveMap,
   sdk: NaverMapsNamespace,
   engine: Engine,
-  onSelect: (id: string) => void,
+  onSelect: (id: string, point?: { latitude: number; longitude: number }) => void,
   getLevel: () => number = () => 4,
 ) => {
   const entries = new Map<string, Entry>();
@@ -101,7 +110,9 @@ export const createMapRegionLayer = (
       hovered: false,
     };
     entry.listeners = polygons.flatMap((polygon) => [
-      sdk.Event.addListener(polygon, 'click', () => onSelect(region.id)),
+      sdk.Event.addListener(polygon, 'click', (event?: { coord?: { lat?: () => number; lng?: () => number } }) =>
+        onSelect(region.id, clickedPoint(event)),
+      ),
       sdk.Event.addListener(polygon, 'mouseover', () => hover(entry, true)),
       sdk.Event.addListener(polygon, 'mouseout', () => hover(entry, false)),
     ]);
@@ -216,9 +227,9 @@ export const createMapRegionLayer = (
       latest = { regions, selectedId };
       apply();
     },
-    dispose: () => {
+    dispose: (sdkUnavailable = false) => {
       cancelPending();
-      entries.forEach(remove);
+      if (!sdkUnavailable) entries.forEach(remove);
       entries.clear();
     },
   };

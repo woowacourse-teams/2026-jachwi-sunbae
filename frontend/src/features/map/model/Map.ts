@@ -1,5 +1,6 @@
-export type MapCategory = 'HOSPITAL' | 'TRANSPORT' | 'SCHOOL' | 'CONVENIENCE' | 'AGENCY';
-export type NearbyCategory = Exclude<MapCategory, 'TRANSPORT'>;
+/** MEMO는 시설이 아니라 회원들이 남긴 거리 메모다. 주변 시설 조회에는 쓰지 않고 지도 화면 범위로 따로 조회한다. */
+export type MapCategory = 'HOSPITAL' | 'TRANSPORT' | 'SCHOOL' | 'CONVENIENCE' | 'AGENCY' | 'MEMO';
+export type NearbyCategory = Exclude<MapCategory, 'TRANSPORT' | 'MEMO'>;
 
 export type MapBounds = { south: number; west: number; north: number; east: number };
 
@@ -12,9 +13,27 @@ export type MapMarker = {
   caption?: string;
   /** 매물 제목과 금액을 고정 카드로 표시할 때 사용한다. */
   summary?: { amount: string };
-  tone?: 'property' | 'current' | 'place' | 'selected' | 'cluster' | 'propertyCluster';
+  /** destination은 고른 장소를 이름이 든 말풍선 핀으로 그린다. 꼬리 끝이 좌표를 가리킨다. */
+  /** flash는 destination과 같은 말풍선을 잠깐 띄웠다가 위로 떠오르며 사라진다(방금 남긴 메모 등). */
+  tone?: 'property' | 'current' | 'place' | 'selected' | 'destination' | 'flash' | 'cluster' | 'propertyCluster';
   category?: MapCategory;
+  /** 주면 이 그림을 아래 가운데가 좌표를 가리키는 핀으로 그린다. 매물 등록, 메모를 남기려고 찍은 자리처럼 기호가 정해진 마커에 쓴다. */
+  image?: { src: string; src2x?: string };
+  /** 처음 그릴 때 아래에서 떠오르며 나타난다. 방금 남긴 메모처럼 새로 생긴 마커에 쓴다. */
+  appear?: boolean;
+  /**
+   * 처음 그릴 때 작게 시작해 튀어나오듯 커진다. 지도에 새로 들어온 메모 말풍선에 쓴다.
+   * delayMs만큼 늦게 시작해, 여러 마커가 한꺼번에 나타날 때 차례로 튀어나온다.
+   */
+  pop?: { delayMs: number };
+  /**
+   * 같은 카테고리 안에서 그림을 나눌 때 쓴다. 거리 메모의 좋아요(positive)·싫어요(negative),
+   * 교통의 지하철역(subway). 교통에 값이 없으면 버스 정류장으로 그린다.
+   */
+  variant?: 'positive' | 'negative' | 'subway';
   count?: number;
+  /** 겹친 거리 메모를 묶은 말풍선의 좋아요·싫어요 개수. 주면 글 대신 두 색으로 나눈 말풍선에 개수를 그린다. */
+  tally?: { positive: number; negative: number };
   placeId?: string;
   actionable?: boolean;
 };
@@ -42,4 +61,23 @@ export type NearbyResult = {
   radius: 500 | 1000 | 2000;
   counts: Record<NearbyCategory, number>;
   places: NearbyPlace[];
+};
+
+/** 공인중개사. 전화번호와 카카오맵 상세 페이지는 공급자에 정보가 없으면 null이다. */
+export type NearbyAgency = {
+  providerPlaceId: string;
+  name: string;
+  address: string;
+  latitude: number;
+  longitude: number;
+  distanceMeters: number;
+  phone: string | null;
+  placeUrl: string | null;
+};
+
+export type NearbyAgenciesResult = {
+  center: { latitude: number; longitude: number };
+  radius: 500 | 1000 | 2000;
+  count: number;
+  agencies: NearbyAgency[];
 };

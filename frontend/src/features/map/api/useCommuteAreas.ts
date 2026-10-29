@@ -16,7 +16,10 @@ type Options = {
   enabled: boolean;
 };
 
-/** 통근 결과와 manifest를 함께 받고, 결과 행정동이 속한 시도의 경계 파일만 받아 합친다. */
+/**
+ * 통근 결과와 manifest를 함께 받고, 결과 행정동이 속한 시도의 경계 파일만 받아 합친다.
+ * 거래가 5건보다 적어 서버가 월세 시세를 비워 보낸 동네는 그리지 않으므로, 경계를 받기 전에 뺀다.
+ */
 const loadResult = async (client: QueryClient, options: Options, signal: AbortSignal) => {
   const { config, destination, maxMinutes, maxTransfers } = options;
   const [result, manifest] = await Promise.all([
@@ -24,10 +27,11 @@ const loadResult = async (client: QueryClient, options: Options, signal: AbortSi
     fetchBoundaryManifest(config.boundaryBaseUrl, signal),
   ]);
   signal.throwIfAborted();
+  const rentAreas = result.areas.filter((area) => area.rent !== null);
   const chunks = await Promise.all(
     selectBoundaryFiles(
       manifest,
-      result.areas.map((area) => area.adminDongCode),
+      rentAreas.map((area) => area.adminDongCode),
     ).map((file) =>
       client.ensureQueryData({
         queryKey: ['admin-boundaries', file.file, config.boundaryBaseUrl],
@@ -42,7 +46,8 @@ const loadResult = async (client: QueryClient, options: Options, signal: AbortSi
   const boundaries = chunks.reduce<AdminBoundaries>((all, chunk) => Object.assign(all, chunk), {});
   return {
     ...result,
-    areas: result.areas.map((area) => ({
+    areaCount: rentAreas.length,
+    areas: rentAreas.map((area) => ({
       ...area,
       name: boundaries[area.adminDongCode]?.name ?? area.adminDongCode,
       fullName: boundaries[area.adminDongCode]?.fullName ?? '경계 정보가 없는 동네',

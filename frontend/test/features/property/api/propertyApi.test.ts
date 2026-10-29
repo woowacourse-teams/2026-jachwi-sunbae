@@ -15,6 +15,7 @@ import {
 import {
   createProperty,
   fetchProperties,
+  fetchPropertyCommuteTimes,
   fetchPropertyDetail,
   fetchPropertyMemo,
   removeProperty,
@@ -109,6 +110,56 @@ describe('FE-2 API 경계', () => {
 
     const result = await fetchProperties(config, { query: '  신림  ', page: 2 });
     expect(result.content[0]?.name).toBe('신림역 원룸');
+  });
+
+  it('매물별 통근 시간은 목적지 좌표로 부르고 상태별 시간을 읽는다', async () => {
+    authenticate();
+    let requested: URL | null = null;
+    server.use(
+      http.get(`${config.apiBaseUrl}/api/properties/commute-times`, ({ request }) => {
+        requested = new URL(request.url);
+        return HttpResponse.json(
+          successEnvelope({
+            maxMinutes: 60,
+            maxTransfers: 2,
+            properties: [
+              { propertyId: 10, propertyName: '신림역 원룸', status: 'REACHABLE', commuteMinutes: 27 },
+              { propertyId: 11, propertyName: '망원동 투룸', status: 'UNREACHABLE', commuteMinutes: null },
+              { propertyId: 12, propertyName: '주소 없는 방', status: 'NO_LOCATION', commuteMinutes: null },
+            ],
+          }),
+        );
+      }),
+    );
+
+    const result = await fetchPropertyCommuteTimes(config, { latitude: 37.3947, longitude: 127.1112 });
+    expect(requested!.searchParams.get('latitude')).toBe('37.3947');
+    expect(requested!.searchParams.get('longitude')).toBe('127.1112');
+    expect(result).toEqual({
+      maxMinutes: 60,
+      maxTransfers: 2,
+      properties: [
+        { propertyId: 10, status: 'REACHABLE', commuteMinutes: 27 },
+        { propertyId: 11, status: 'UNREACHABLE', commuteMinutes: null },
+        { propertyId: 12, status: 'NO_LOCATION', commuteMinutes: null },
+      ],
+    });
+  });
+
+  it('매물 통근 시간이 상태와 맞지 않으면 응답을 거부한다', async () => {
+    authenticate();
+    server.use(
+      http.get(`${config.apiBaseUrl}/api/properties/commute-times`, () =>
+        HttpResponse.json(
+          successEnvelope({
+            maxMinutes: 60,
+            maxTransfers: 2,
+            properties: [{ propertyId: 10, propertyName: '신림역 원룸', status: 'REACHABLE', commuteMinutes: null }],
+          }),
+        ),
+      ),
+    );
+    await expect(fetchPropertyCommuteTimes(config, { latitude: 37.39, longitude: 127.11 })).rejects.toThrow();
   });
 
   it('매물 생성은 Swagger에 정의된 필드만 보내고 서버의 URL 분류를 사용한다', async () => {

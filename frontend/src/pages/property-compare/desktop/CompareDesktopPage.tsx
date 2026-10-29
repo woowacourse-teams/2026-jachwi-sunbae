@@ -1,3 +1,4 @@
+import { css } from '@emotion/css';
 import { useState } from 'react';
 
 import { usePropertyList } from '@/features/property/api/useProperties';
@@ -11,8 +12,7 @@ import CompareFilters from '../ui/compare-filters/CompareFilters';
 import CompareLoadState from '../ui/compare-load-state/CompareLoadState';
 import CompareTable from '../ui/compare-table/CompareTable';
 
-import shared from '../ComparePage.module.css';
-import styles from './CompareDesktopPage.module.css';
+import * as shared from '../ComparePage.styles';
 
 /**
  * 데스크탑 비교할 매물 선택. 화면 위 헤더는 공용 데스크탑 헤더가 대신하고,
@@ -65,6 +65,19 @@ const CompareDesktopPage = () => {
       )}
     </main>
   );
+};
+
+const styles = {
+  /* 리스트 바로 위 줄: 왼쪽에 선택 개수, 오른쪽에 필터. */
+  listHeader: css`
+    label: CompareDesktopPage-listHeader;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding-top: 1rem;
+  `,
 };
 
 export default CompareDesktopPage;

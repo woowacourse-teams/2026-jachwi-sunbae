@@ -1,9 +1,8 @@
+import { css, cx } from '@emotion/css';
 import type { ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 
 import Icon from '../icon/Icon';
-
-import styles from './TopNavigation.module.css';
 
 type TopNavigationProps = {
   title: string;
@@ -54,6 +53,92 @@ const TopNavigation = ({
       )}
     </header>
   );
+};
+
+const styles = {
+  // 다른 요소의 선택자에서 `.TopNavigation-root`로 가리킨다.
+  root: cx(
+    css`
+      label: TopNavigation-root;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      min-height: var(--app-bar-height);
+      align-items: center;
+      gap: 0.75rem;
+      margin-bottom: 0.55rem;
+
+      &[data-has-back='true'] {
+        position: relative;
+      }
+    `,
+    'TopNavigation-root',
+  ),
+
+  title: css`
+    label: TopNavigation-title;
+
+    .TopNavigation-root[data-has-back='true'] & {
+      position: absolute;
+      left: 50%;
+      width: min(60%, 14rem);
+      transform: translateX(-50%);
+      font-size: 0.98rem;
+      text-align: center;
+      pointer-events: none;
+    }
+
+    & {
+      min-width: 0;
+      margin: 0;
+      overflow: hidden;
+      font-size: 1rem;
+      font-weight: 800;
+      letter-spacing: -0.035em;
+      line-height: 1.3;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+  `,
+
+  leading: css`
+    label: TopNavigation-leading;
+    display: flex;
+    min-width: 0;
+    align-items: center;
+    gap: 0.45rem;
+  `,
+
+  backLink: css`
+    label: TopNavigation-backLink;
+    display: inline-grid;
+    width: 2rem;
+    height: 2rem;
+    flex: 0 0 auto;
+    margin-left: -0.55rem;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: var(--color-ink);
+    cursor: pointer;
+    place-items: center;
+    text-decoration: none;
+  `,
+
+  meta: css`
+    label: TopNavigation-meta;
+    flex: 0 0 auto;
+    color: var(--color-muted);
+    font-size: 0.74rem;
+    font-weight: 700;
+  `,
+
+  endSlot: css`
+    label: TopNavigation-endSlot;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 0.45rem;
+  `,
 };
 
 export default TopNavigation;

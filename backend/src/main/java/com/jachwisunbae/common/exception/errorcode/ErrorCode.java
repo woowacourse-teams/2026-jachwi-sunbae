@@ -12,10 +12,8 @@ public enum ErrorCode {
     INTERNAL_SERVER_ERROR("서버 내부 오류가 발생했습니다."),
 
     // 회원 및 인증
-    NICKNAME_INVALID("닉네임을 확인해 주세요."),
-    NICKNAME_PASSWORD_INVALID("비밀번호를 확인해 주세요."),
-    NICKNAME_AUTHENTICATION_FAILED("닉네임 또는 비밀번호를 확인해 주세요."),
-    ACCESS_TOKEN_INVALID("인증 정보를 확인할 수 없습니다."),
+    ACCESS_TOKEN_INVALID("ACCESS 인증 정보를 확인할 수 없습니다."),
+    REFRESH_TOKEN_INVALID("REFRESH 인증 정보를 확인할 수 없습니다."),
     MEMBER_NOT_FOUND("회원을 찾을 수 없습니다."),
 
     // 체크리스트
@@ -39,6 +37,13 @@ public enum ErrorCode {
     PROPERTY_CHECK_RESULT_INVALID("체크 결과를 확인해 주세요."),
     PROPERTY_COMPARISON_EXPORT_FAILED("매물 비교 자료를 만들지 못했습니다."),
 
+    // 거리 메모
+    STREET_MEMO_CONTENT_INVALID("거리 메모 내용을 확인해 주세요."),
+    STREET_MEMO_LOCATION_INVALID("거리 메모 위치를 확인해 주세요."),
+    STREET_MEMO_QUERY_INVALID("거리 메모 조회 영역을 확인해 주세요."),
+    STREET_MEMO_PREFERENCE_INVALID("거리 메모의 좋아요·싫어요를 선택해 주세요."),
+    STREET_MEMO_NOT_FOUND("거리 메모를 찾을 수 없습니다."),
+
     // 사진
     PHOTO_NOT_FOUND("사진을 찾을 수 없습니다."),
     PHOTO_LIMIT_EXCEEDED("등록할 수 있는 사진 개수를 초과했습니다."),
@@ -53,6 +58,19 @@ public enum ErrorCode {
     MAP_ADDRESS_NOT_FOUND("해당 위치의 주소를 찾을 수 없습니다."),
     MAP_PROVIDER_UNAVAILABLE("지도 정보를 불러오지 못했습니다."),
 
+    // 편의점 행사상품
+    PROMOTION_PROVIDER_UNAVAILABLE("행사상품 정보를 불러오지 못했습니다."),
+    PROMOTION_RESPONSE_INVALID("행사상품 정보를 불러오지 못했습니다."),
+
+    // 날씨
+    WEATHER_PROVIDER_UNAVAILABLE("날씨 정보를 불러오지 못했습니다."),
+    WEATHER_RESPONSE_INVALID("날씨 정보를 불러오지 못했습니다."),
+    WEATHER_COORDINATE_INVALID("위도와 경도를 확인해 주세요."),
+    WEATHER_LOCATION_UNSUPPORTED("날씨를 제공하지 않는 위치입니다."),
+
+    WEATHER_DEVICE_CONFLICT("기기 등록 상태를 확인하고 다시 시도해 주세요."),
+    WEATHER_NOTIFICATION_NOT_FOUND("알림을 찾을 수 없습니다."),
+
     // 대중교통
     TRANSIT_FEED_READ_FAILURE("대중교통 데이터를 불러오지 못했습니다."),
     ADMIN_DONG_READ_FAILURE("행정동 경계 데이터를 불러오지 못했습니다."),
@@ -61,7 +79,6 @@ public enum ErrorCode {
     TRANSIT_STOP_NOT_FOUND("정류장을 찾을 수 없습니다."),
     COMMUTE_ROUTE_NOT_FOUND("최대 통근 시간 안에 목적지까지 가는 경로가 없습니다."),
     RENTAL_QUERY_INVALID("지역 코드와 페이지 정보를 확인해 주세요.");
-
 
     private final String publicMessage;
 

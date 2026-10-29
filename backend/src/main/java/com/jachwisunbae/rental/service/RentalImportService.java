@@ -8,15 +8,18 @@ import java.util.Objects;
 import java.util.Optional;
 import org.springframework.transaction.support.TransactionTemplate;
 
-// 수집본 검증과 전체 교체를 하나의 트랜잭션으로 실행한다.
+// 수집본 검증과 전체 교체, 행정동 월세 시세 재계산을 하나의 트랜잭션으로 실행한다.
 public class RentalImportService {
     private final JdbcRentalTransactionRepository repository;
+    private final AdminDongRentService adminDongRentService;
     private final TransactionTemplate transactionTemplate;
 
     public RentalImportService(
-        final JdbcRentalTransactionRepository repository, final TransactionTemplate transactionTemplate
+        final JdbcRentalTransactionRepository repository, final AdminDongRentService adminDongRentService,
+        final TransactionTemplate transactionTemplate
     ) {
         this.repository = repository;
+        this.adminDongRentService = adminDongRentService;
         this.transactionTemplate = transactionTemplate;
     }
 
@@ -39,6 +42,7 @@ public class RentalImportService {
         repository.deleteByDatasetKey(snapshot.datasetKey());
         repository.saveAll(snapshot.datasetKey(), transactions);
         repository.updateSnapshot(snapshot, transactions.size());
+        adminDongRentService.refresh();
         return true;
     }
 

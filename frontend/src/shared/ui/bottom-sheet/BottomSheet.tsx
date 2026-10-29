@@ -1,9 +1,8 @@
+import { css, cx } from '@emotion/css';
 import type { CSSProperties, PointerEvent, ReactNode } from 'react';
 import { useEffect, useRef, useState } from 'react';
 
 import Icon from '../icon/Icon';
-
-import styles from './BottomSheet.module.css';
 
 type BottomSheetProps = {
   title: string;
@@ -13,7 +12,20 @@ type BottomSheetProps = {
   showCloseButton?: boolean;
   initialHeightPercent?: number;
   resizable?: boolean;
+  /** 끝까지 끌어 올리면 모서리와 위 여백 없이 화면 전체를 덮는 페이지로 연다. */
+  fullPage?: boolean;
+  /** 값이 바뀔 때마다 제목만 보이는 높이로 내린다. 지도 빈 곳을 찍으면 시트를 비키게 할 때 쓴다. */
+  peekSignal?: number;
+  /** 있으면 제목 왼쪽에 뒤로가기를 둔다. 시트 안에서 목록→정보로 넘어갔을 때 목록으로 돌아가게 한다. */
+  onBack?: () => void;
+  /** 제목 오른쪽 끝에 둘 동작(외부 링크 아이콘 등). 페이지로 열려 닫기가 생기면 그 왼쪽에 둔다. */
+  headerEnd?: ReactNode;
+  /** 제목 아래 작은 한 줄(주소 등). */
+  subtitle?: string;
 };
+
+/** 시트 높이 단계. 낮은 것부터 제목만(peek), 처음 높이(default), 크게(expanded), 화면 전체(full). */
+type SheetMode = 'peek' | 'default' | 'expanded' | 'full';
 
 const BottomSheet = ({
   title,
@@ -23,19 +35,34 @@ const BottomSheet = ({
   showCloseButton = true,
   initialHeightPercent = 58,
   resizable = true,
+  fullPage = false,
+  peekSignal,
+  onBack,
+  headerEnd,
+  subtitle,
 }: BottomSheetProps) => {
   const [height, setHeight] = useState<number | null>(null);
-  const [expanded, setExpanded] = useState(false);
+  const [mode, setMode] = useState<SheetMode>('default');
+  const modes: SheetMode[] = fullPage ? ['peek', 'default', 'expanded', 'full'] : ['peek', 'default', 'expanded'];
+  const lastPeekSignal = useRef(peekSignal);
+  useEffect(() => {
+    if (peekSignal === lastPeekSignal.current) return;
+    lastPeekSignal.current = peekSignal;
+    setMode('peek');
+  }, [peekSignal]);
   const gesture = useRef<{ startY: number; height: number; limit: number } | null>(null);
   const dragged = useRef(false);
   const sheetRef = useRef<HTMLElement>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
   const handleRef = useRef<HTMLButtonElement>(null);
+  const isFullPage = mode === 'full';
   useEffect(() => {
     (showCloseButton ? closeButtonRef.current : resizable ? handleRef.current : sheetRef.current)?.focus({
       preventScroll: true,
     });
   }, [showCloseButton, resizable]);
+  // 페이지로 열리면 끌개가 사라지므로 헤더의 뒤로가기·닫기로 다룬다.
+  const back = onBack ?? (isFullPage ? () => setMode('default') : undefined);
   const finish = (event: PointerEvent<HTMLButtonElement>) => {
     const start = gesture.current;
     gesture.current = null;
@@ -43,7 +70,8 @@ const BottomSheet = ({
     if (!start || !dragged.current) return;
     const released = start.height + start.startY - event.clientY;
     if (released < start.limit * 0.25) onClose();
-    else setExpanded(released > start.limit * 0.7);
+    else if (fullPage && released > start.limit * 0.85) setMode('full');
+    else setMode(released > start.limit * 0.6 ? 'expanded' : 'default');
     setHeight(null);
   };
   return (
@@ -53,7 +81,8 @@ const BottomSheet = ({
       aria-label={title}
       tabIndex={-1}
       data-resizable={resizable}
-      data-expanded={expanded || undefined}
+      data-expanded={mode === 'expanded' || mode === 'full' || undefined}
+      data-mode={mode}
       style={
         {
           '--sheet-default-height': `${Math.max(25, Math.min(88, initialHeightPercent))}%`,
@@ -67,13 +96,13 @@ const BottomSheet = ({
         }
       }}
     >
-      {resizable && (
+      {resizable && !isFullPage && (
         <button
           ref={handleRef}
           className={styles.grabber}
           type="button"
           aria-label="상세 패널 높이 조절"
-          aria-expanded={expanded}
+          aria-expanded={mode === 'expanded'}
           onPointerDown={(event) => {
             if (event.button !== 0) return;
             dragged.current = false;
@@ -90,7 +119,9 @@ const BottomSheet = ({
             const start = gesture.current;
             if (!start || Math.abs(event.clientY - start.startY) < 6) return;
             dragged.current = true;
-            setHeight(Math.max(80, Math.min(start.limit * 0.9, start.height + start.startY - event.clientY)));
+            setHeight(
+              Math.max(80, Math.min(start.limit * (fullPage ? 1 : 0.9), start.height + start.startY - event.clientY)),
+            );
           }}
           onPointerUp={finish}
           onPointerCancel={(event) => {
@@ -98,20 +129,32 @@ const BottomSheet = ({
             setHeight(null);
             event.currentTarget.releasePointerCapture?.(event.pointerId);
           }}
+          // 누르기만 해서는 높이를 바꾸지 않는다. 끌어서 바꾸고, 키보드는 위·아래 화살표로 한 단계씩 바꾼다.
           onClick={() => {
-            if (dragged.current) {
-              dragged.current = false;
-              return;
-            }
-            setExpanded((value) => !value);
+            dragged.current = false;
+          }}
+          onKeyDown={(event) => {
+            if (event.key !== 'ArrowUp' && event.key !== 'ArrowDown') return;
+            event.preventDefault();
+            const index = modes.indexOf(mode);
+            setMode(modes[Math.max(0, Math.min(modes.length - 1, index + (event.key === 'ArrowUp' ? 1 : -1)))]);
           }}
         >
           <span />
         </button>
       )}
       <header className={styles.header}>
-        <h2>{title}</h2>
-        {showCloseButton && (
+        {back && (
+          <button type="button" className={styles.back} aria-label="뒤로 가기" onClick={back}>
+            <Icon name="chevron-left" size={22} />
+          </button>
+        )}
+        <div className={styles.titles}>
+          <h2>{title}</h2>
+          {subtitle && <p>{subtitle}</p>}
+        </div>
+        {headerEnd}
+        {(showCloseButton || isFullPage) && (
           <button ref={closeButtonRef} type="button" onClick={onClose} aria-label={closeLabel}>
             <Icon name="close" size={20} />
           </button>
@@ -120,6 +163,149 @@ const BottomSheet = ({
       <div className={styles.content}>{children}</div>
     </section>
   );
+};
+
+const styles = {
+  // 다른 요소의 선택자에서 `.BottomSheet-sheet`로 가리킨다.
+  sheet: cx(
+    css`
+      label: BottomSheet-sheet;
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: var(--map-sheet-bottom, 0px);
+      height: var(--sheet-height, var(--sheet-default-height, 58%));
+      max-height: calc(100% - var(--map-sheet-bottom, 0px) - 1rem);
+      display: flex;
+      flex-direction: column;
+      z-index: 35;
+      border-radius: 1.25rem 1.25rem 0 0;
+      background: var(--color-surface);
+      color: var(--color-ink);
+      box-shadow: 0 -0.35rem 1.4rem rgb(0 0 0 / 12%);
+      overflow: hidden;
+
+      &[data-mode='expanded'] {
+        height: var(--sheet-height, 88%);
+      }
+
+      /* 제목만 남기고 내린다. */
+      &[data-mode='peek'] {
+        height: var(--sheet-height, 5.5rem);
+      }
+
+      /* 끝까지 올리면 지도를 덮는 페이지가 된다. */
+      &[data-mode='full'] {
+        bottom: 0;
+        z-index: 50;
+        height: var(--sheet-height, 100%);
+        max-height: 100%;
+        border-radius: 0;
+        box-shadow: none;
+      }
+
+      /* 태블릿부터는 넓은 화면을 가로지르지 않게 30rem 폭으로 가운데에 띄운다. */
+      @media (min-width: 768px) {
+        max-width: 30rem;
+        margin-right: auto;
+        margin-left: auto;
+      }
+    `,
+    'BottomSheet-sheet',
+  ),
+
+  grabber: css`
+    label: BottomSheet-grabber;
+    flex: none;
+    display: grid;
+    place-items: center;
+    width: 100%;
+    height: 1.75rem;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    cursor: ns-resize;
+    touch-action: none;
+
+    & span {
+      width: 2.5rem;
+      height: 0.25rem;
+      border-radius: 999px;
+      background: var(--color-border-strong);
+    }
+  `,
+
+  header: css`
+    label: BottomSheet-header;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.25rem;
+    padding: 0.35rem 1.25rem 0.7rem;
+    flex: none;
+
+    & h2 {
+      overflow: hidden;
+      font-size: 1.05rem;
+      margin: 0;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .BottomSheet-sheet[data-resizable='false'] & {
+      padding-top: 1.25rem;
+    }
+
+    .BottomSheet-sheet[data-mode='full'] & {
+      padding-top: calc(env(safe-area-inset-top) + 0.5rem);
+    }
+
+    & button {
+      display: grid;
+      place-items: center;
+      width: 2rem;
+      height: 2rem;
+      padding: 0;
+      background: none;
+      color: inherit;
+      border: 0;
+      cursor: pointer;
+    }
+  `,
+
+  titles: css`
+    label: BottomSheet-titles;
+    display: grid;
+    flex: 1;
+    gap: 0.15rem;
+    min-width: 0;
+
+    & p {
+      margin: 0;
+      overflow: hidden;
+      color: var(--color-muted);
+      font-size: 0.78rem;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+  `,
+
+  back: css`
+    label: BottomSheet-back;
+
+    .BottomSheet-sheet & {
+      margin-left: -0.5rem;
+    }
+  `,
+
+  content: css`
+    label: BottomSheet-content;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    min-height: 0;
+    flex: 1;
+    padding: 0 1.25rem 1.5rem;
+  `,
 };
 
 export default BottomSheet;

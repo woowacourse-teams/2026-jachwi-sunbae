@@ -1,24 +1,21 @@
 import type { ReactNode } from 'react';
 import { lazy } from 'react';
-import { Navigate, Route, Routes, useParams } from 'react-router-dom';
+import { Navigate, Route, Routes, useLocation, useParams } from 'react-router-dom';
 
 import PropertyAppLayout from '@/app/layouts/property-app-layout/PropertyAppLayout';
 import PublicExploreLayout from '@/app/layouts/public-explore-layout/PublicExploreLayout';
-import LoginPage from '@/pages/login/LoginPage';
-import { useAuthentication } from '@/features/auth/model/useAuthentication';
-import { isChecklistStage } from '@/features/checklist/model/checklist';
 import useIsDesktop from '@/shared/lib/hooks/useIsDesktop';
+import { RECORDS_PATH } from '@/shared/lib/navigation/appPaths';
 
 import LazyRouteBoundary from './LazyRouteBoundary';
 import ProtectedRoute from './ProtectedRoute';
 
-const ServiceIntroductionPage = lazy(() => import('@/pages/landing/LandingPage'));
+const CheapMealsPage = lazy(() => import('@/pages/cheap-meals/CheapMealsPage'));
 const DesignHomePage = lazy(() => import('@/pages/design-home/DesignHomePage'));
 const DesignRecordsPage = lazy(() => import('@/pages/design-records/DesignRecordsPage'));
 const NeighborhoodPreviewPage = lazy(() => import('@/pages/neighborhood-preview/NeighborhoodPreviewPage'));
-const NeighborhoodEntryPage = lazy(() => import('@/pages/neighborhood-entry/NeighborhoodEntryPage'));
 const NeighborhoodRoutePage = lazy(() => import('@/pages/neighborhood-preview/NeighborhoodRoutePage'));
-const NeighborhoodPricePage = lazy(() => import('@/pages/neighborhood-preview/NeighborhoodPricePage'));
+const UsageGuidePage = lazy(() => import('@/pages/usage-guide/UsageGuidePage'));
 const PrivacyPage = lazy(() => import('@/pages/privacy/PrivacyPage'));
 const NotFoundPage = lazy(() => import('@/pages/not-found/NotFoundPage'));
 const CreatePropertyPage = lazy(() => import('@/pages/create-property/CreatePropertyPage'));
@@ -27,27 +24,15 @@ const EditPropertyPage = lazy(() => import('@/pages/edit-property/EditPropertyPa
 const PropertyPhotosPage = lazy(() => import('@/pages/property-photos/PropertyPhotosPage'));
 const PropertyMemoPage = lazy(() => import('@/pages/property-memo/PropertyMemoPage'));
 const ChecklistListPage = lazy(() => import('@/pages/checklist-list/ChecklistListPage'));
-const CreateChecklistPage = lazy(() => import('@/pages/create-checklist/CreateChecklistPage'));
-const ChecklistDetailPage = lazy(() => import('@/pages/checklist-detail/ChecklistDetailPage'));
 const PropertyActiveChecklistPage = lazy(() => import('@/pages/property-active-checklist/PropertyActiveChecklistPage'));
 const PropertyChecklistPage = lazy(() => import('@/pages/property-checklist/PropertyChecklistPage'));
 const MyPage = lazy(() => import('@/pages/my/MyPage'));
-const MapPage = lazy(() => import('@/pages/map/MapPage'));
 const MapLocationSelectPage = lazy(() => import('@/pages/map-location-select/MapLocationSelectPage'));
 const NearbyAnalysisPage = lazy(() => import('@/pages/nearby-analysis/NearbyAnalysisPage'));
 const PropertyComparePage = lazy(() => import('@/pages/property-compare/PropertyComparePage'));
 const UpcomingFeaturePage = lazy(() => import('@/pages/upcoming-feature/UpcomingFeaturePage'));
 
 const lazyPage = (page: ReactNode) => <LazyRouteBoundary>{page}</LazyRouteBoundary>;
-
-/** 예전 단계별 목록 주소(/checklists/ON_SITE 등)로 들어와도 단일 목록으로 보낸다. */
-const ChecklistResourceRoute = () => {
-  const resource = useParams().resource;
-  if (isChecklistStage(resource)) {
-    return <Navigate to="/checklists" replace />;
-  }
-  return <ChecklistDetailPage />;
-};
 
 /**
  * 본 방 기록(`/properties`)과 매물 상세(`/properties/:propertyId`).
@@ -60,53 +45,64 @@ const RecordsRoute = () => {
   return <PropertyAppLayout />;
 };
 
-const LoginRoute = () => {
-  const { session } = useAuthentication();
-
-  return session !== null ? <Navigate to="/" replace /> : <LoginPage />;
+/** 인프라 지도는 본 방 기록 지도로 합쳤다. 예전 주소(`/map`, `/map/:propertyId`)로 들어오면 기록 화면으로 보낸다. */
+const LegacyMapRoute = () => {
+  const propertyId = useParams().propertyId;
+  return <Navigate to={propertyId === undefined ? RECORDS_PATH : `${RECORDS_PATH}/${propertyId}`} replace />;
 };
 
-const LandingRoute = () => {
-  const { session } = useAuthentication();
-  return session ? <Navigate to="/" replace /> : lazyPage(<ServiceIntroductionPage />);
+/** 광고에 쓰던 랜딩 주소는 홈으로 바로 보낸다. 유입 측정을 위해 쿼리(utm 등)는 그대로 넘긴다. */
+const LegacyLandingRoute = () => {
+  const { search } = useLocation();
+  return <Navigate to={{ pathname: '/', search }} replace />;
 };
 /**
- * 첫 주소(`/`)는 로그인했으면 홈을, 아니면 랜딩을 보여준다. 로그인은 `/login`에서 따로 한다.
- * 토큰 만료 등으로 방금 로그아웃됐다면 까닭을 안내하는 로그인 화면으로 보낸다.
+ * 동네 찾기는 통근과 월세를 한 지도에서 함께 본다. 기준을 고르던 예전 주소(`/explore/commute`, `/explore/price`,
+ * `/neighborhoods/map?mode=`)로 들어오면 새 주소로 보낸다. 통근 동네 상세는 그대로 잇고, 법정동 월세 상세는 지도로 보낸다.
  */
-const HomeRoute = () => {
-  const { session, terminationReason } = useAuthentication();
-  if (session) return <ProtectedRoute />;
-  return <Navigate to={terminationReason ? '/login' : '/landing'} replace />;
+const LegacyNeighborhoodRoute = ({ base }: { base: '/explore' | '/neighborhoods' }) => {
+  const rest = useParams()['*'] ?? '';
+  const { search } = useLocation();
+  const params = new URLSearchParams(search);
+  params.delete('mode');
+  const query = params.toString();
+  return (
+    <Navigate
+      to={{ pathname: rest.startsWith('areas/') ? `${base}/${rest}` : base, search: query ? `?${query}` : '' }}
+      replace
+    />
+  );
 };
 const AppRoutes = () => (
   <Routes>
-    <Route element={<HomeRoute />}>
-      <Route path="/" element={lazyPage(<DesignHomePage />)} />
-    </Route>
     <Route element={<PublicExploreLayout />}>
-      <Route path="/explore" element={lazyPage(<NeighborhoodEntryPage />)} />
-      <Route path="/explore/commute" element={lazyPage(<NeighborhoodPreviewPage />)}>
+      <Route path="/explore" element={lazyPage(<NeighborhoodPreviewPage />)}>
         <Route path="areas/:adminDongCode" element={lazyPage(<NeighborhoodRoutePage />)} />
         <Route path="areas/:adminDongCode/details" element={lazyPage(<NeighborhoodRoutePage />)} />
       </Route>
-      <Route path="/explore/price" element={lazyPage(<NeighborhoodPreviewPage />)}>
-        <Route path="prices/:legalDongCode" element={lazyPage(<NeighborhoodPricePage />)} />
-      </Route>
+      <Route path="/explore/commute/*" element={<LegacyNeighborhoodRoute base="/explore" />} />
+      <Route path="/explore/price/*" element={<LegacyNeighborhoodRoute base="/explore" />} />
+      <Route path="/explore/nearby" element={lazyPage(<NearbyAnalysisPage />)} />
     </Route>
     <Route element={<PropertyAppLayout />}>
-      <Route path="/neighborhoods" element={lazyPage(<NeighborhoodEntryPage />)} />
-      <Route path="/neighborhoods/map" element={lazyPage(<NeighborhoodPreviewPage />)}>
+      <Route path="/guide" element={lazyPage(<UsageGuidePage />)} />
+      <Route path="/neighborhoods" element={lazyPage(<NeighborhoodPreviewPage />)}>
         <Route path="areas/:adminDongCode" element={lazyPage(<NeighborhoodRoutePage />)} />
         <Route path="areas/:adminDongCode/details" element={lazyPage(<NeighborhoodRoutePage />)} />
-        <Route path="prices/:legalDongCode" element={lazyPage(<NeighborhoodPricePage />)} />
       </Route>
+      <Route path="/neighborhoods/map/*" element={<LegacyNeighborhoodRoute base="/neighborhoods" />} />
+      <Route path="/neighborhoods/nearby" element={lazyPage(<NearbyAnalysisPage />)} />
     </Route>
-    <Route path="/landing" element={<LandingRoute />} />
-    <Route path="/about" element={lazyPage(<ServiceIntroductionPage />)} />
+    {/* 랜딩은 없다. 첫 진입은 홈에서 자동 로그인하고, 서비스 소개는 사용 방법(`/guide`)이 맡는다. */}
+    <Route path="/landing" element={<LegacyLandingRoute />} />
+    <Route path="/about" element={<Navigate to="/guide" replace />} />
     <Route path="/privacy" element={lazyPage(<PrivacyPage />)} />
-    <Route path="/login" element={<LoginRoute />} />
+    {/* 로그인 화면은 없다. 예전 주소로 들어오면 홈에서 자동 로그인한다. */}
+    <Route path="/login" element={<Navigate to="/" replace />} />
+    {/* 첫 주소(`/`)를 포함한 회원 화면은 자동 로그인(복원 또는 익명 회원 생성)을 마친 뒤 그린다. */}
     <Route element={<ProtectedRoute />}>
+      <Route path="/cheap-meals" element={lazyPage(<CheapMealsPage />)} />
+      <Route path="/" element={lazyPage(<DesignHomePage />)} />
       <Route path="/properties/:propertyId?" element={<RecordsRoute />}>
         <Route index element={lazyPage(<PropertyDetailPage />)} />
       </Route>
@@ -125,10 +121,10 @@ const AppRoutes = () => (
           element={lazyPage(<PropertyChecklistPage />)}
         />
         <Route path="/checklists" element={lazyPage(<ChecklistListPage />)} />
-        <Route path="/checklists/new" element={lazyPage(<CreateChecklistPage />)} />
-        <Route path="/checklists/:resource" element={lazyPage(<ChecklistResourceRoute />)} />
+        {/* 사용자마다 체크리스트를 하나만 쓰므로 예전 만들기·개별 편집·단계별 주소는 모두 내 체크리스트 편집으로 보낸다. */}
+        <Route path="/checklists/*" element={<Navigate to="/checklists" replace />} />
         <Route path="/me" element={lazyPage(<MyPage />)} />
-        <Route path="/map/:propertyId?" element={lazyPage(<MapPage />)} />
+        <Route path="/map/:propertyId?" element={<LegacyMapRoute />} />
         <Route path="/map/select-location" element={lazyPage(<MapLocationSelectPage />)} />
         <Route path="/compare" element={lazyPage(<PropertyComparePage />)} />
         <Route path="/export" element={lazyPage(<UpcomingFeaturePage feature="export" />)} />

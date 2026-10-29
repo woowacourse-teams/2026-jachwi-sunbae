@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { useId } from 'react';
 
-import styles from './DetailSection.module.css';
+import * as styles from './DetailSection.styles';
 
 export type DetailSectionProps = {
   title: string;

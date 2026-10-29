@@ -3,7 +3,7 @@ import { type CSSProperties, type ReactNode } from 'react';
 import { useKeyboardInset } from '@/shared/lib/hooks/useKeyboardInset';
 import BottomSheet from '@/shared/ui/bottom-sheet/BottomSheet';
 
-import styles from './PropertyEditSheet.module.css';
+import * as styles from './PropertyEditSheet.styles';
 
 type PropertyEditSheetProps = {
   title: string;

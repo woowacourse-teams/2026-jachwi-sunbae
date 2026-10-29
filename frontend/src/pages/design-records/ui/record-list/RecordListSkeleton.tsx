@@ -1,4 +1,4 @@
-import styles from './RecordList.module.css';
+import * as styles from './RecordList.styles';
 
 /** 기록을 불러오는 동안 공용 매물 카드와 같은 모양의 스켈레톤을 보여 준다. */
 const RecordListSkeleton = ({ className }: { className?: string }) => (

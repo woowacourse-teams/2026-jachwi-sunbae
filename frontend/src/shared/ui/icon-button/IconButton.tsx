@@ -1,7 +1,6 @@
+import { css } from '@emotion/css';
 import type { ReactNode } from 'react';
 import { Link } from 'react-router-dom';
-
-import styles from './IconButton.module.css';
 
 type IconButtonBaseProps = {
   label: string;
@@ -28,6 +27,34 @@ const IconButton = ({ label, children, className, to, onClick }: IconButtonProps
       {children}
     </button>
   );
+};
+
+const styles = {
+  iconButton: css`
+    label: IconButton-iconButton;
+    display: inline-flex;
+    width: 2rem;
+    height: 2rem;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    border: 1px solid var(--color-border-strong, #d7c69e);
+    border-radius: 50%;
+    background: var(--color-surface, #fffdf8);
+    color: var(--color-primary-dark, #455a27);
+    cursor: pointer;
+    text-decoration: none;
+    transition:
+      background 0.15s ease,
+      border-color 0.15s ease;
+
+    &:hover,
+    &:focus-visible {
+      border-color: var(--color-primary, #6c873b);
+      background: var(--color-surface-muted, #f2f3eb);
+      outline: none;
+    }
+  `,
 };
 
 export default IconButton;

@@ -33,6 +33,7 @@ const area = (adminDongCode: string): CommuteArea => ({
   stations: [],
   center: { latitude: 0, longitude: 0 },
   polygons: [],
+  rent: { monthlyRentKrw: 500_000, depositKrw: 10_000_000, transactionCount: 12, legalDongNames: ['역삼동'] },
 });
 const boundary = (name: string) => ({
   name,
@@ -46,6 +47,7 @@ it('결과 행정동의 시도 경계 파일만 받아 이름·중심·경계를
   vi.mocked(fetchCommuteAreas).mockResolvedValue({
     maxMinutes: 60,
     areaCount: 2,
+    rentPeriod: null,
     areas: [area('11230640'), area('23010510')],
   });
   vi.mocked(fetchAdminBoundaries).mockImplementation(async ({ file }): Promise<AdminBoundaries> =>
@@ -87,6 +89,7 @@ it('경계 파일에 없는 동은 코드 이름과 안내 문구, 원래 중심
   vi.mocked(fetchCommuteAreas).mockResolvedValue({
     maxMinutes: 60,
     areaCount: 1,
+    rentPeriod: null,
     areas: [{ ...area('11999999'), center: { latitude: 37.1, longitude: 127.1 } }],
   });
   vi.mocked(fetchAdminBoundaries).mockResolvedValue({});
@@ -116,6 +119,41 @@ it('경계 파일에 없는 동은 코드 이름과 안내 문구, 원래 중심
     polygons: [],
     simplifiedPolygons: undefined,
   });
+  unmount();
+  client.clear();
+});
+
+it('거래가 적어 월세 시세가 없는 동네는 빼고, 그 동네만 있는 시도의 경계 파일은 받지 않는다', async () => {
+  vi.mocked(fetchAdminBoundaries).mockClear();
+  vi.mocked(fetchCommuteAreas).mockResolvedValue({
+    maxMinutes: 60,
+    areaCount: 2,
+    rentPeriod: null,
+    areas: [area('11230640'), { ...area('23010510'), rent: null }],
+  });
+  vi.mocked(fetchAdminBoundaries).mockResolvedValue({ '11230640': boundary('역삼1동') });
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } });
+  const wrapper = ({ children }: { children: ReactNode }) => (
+    <QueryClientProvider client={client}>
+      <PublicConfigProvider config={{ apiBaseUrl: 'http://localhost', commuteDataSource: 'mock' }}>
+        {children}
+      </PublicConfigProvider>
+    </QueryClientProvider>
+  );
+  const { result, unmount } = renderHook(
+    () =>
+      useCommuteAreas({
+        destination: { latitude: 37, longitude: 127 },
+        maxMinutes: 60,
+        maxTransfers: 2,
+        enabled: true,
+      }),
+    { wrapper },
+  );
+  await waitFor(() => expect(result.current.isSuccess).toBe(true));
+  expect(vi.mocked(fetchAdminBoundaries).mock.calls.map(([file]) => file.file)).toEqual(['seoul.geojson']);
+  expect(result.current.data?.areas.map((item) => item.adminDongCode)).toEqual(['11230640']);
+  expect(result.current.data?.areaCount).toBe(1);
   unmount();
   client.clear();
 });

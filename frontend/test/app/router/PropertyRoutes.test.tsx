@@ -55,7 +55,8 @@ const renderAuthenticated = (path: string, state?: unknown) => {
 };
 
 it.each([
-  [{ returnTo: '/map' }, '매물 지도로 돌아가기', '/map'],
+  // 인프라 지도는 기록 화면으로 합쳐서 예전 상태로 열린 상세는 기록 화면으로 돌아간다.
+  [{ returnTo: '/map' }, '기록 화면으로 돌아가기', '/properties'],
   [{ returnTo: '/' }, '홈으로 돌아가기', '/'],
   [undefined, '기록 화면으로 돌아가기', '/properties'],
   [{ returnTo: 'https://other.example' }, '기록 화면으로 돌아가기', '/properties'],
@@ -118,7 +119,7 @@ describe('FE-2 매물 비교 PDF', () => {
 });
 
 describe('FE-2 등록·수정·메모', () => {
-  it('등록 필수값을 검증하고 성공 후 생성된 상세로 이동한다', async () => {
+  it('위치만 고르면 새 매물로 만들고 생성된 상세로 이동한다', async () => {
     let requestBody: unknown;
     server.use(
       http.post(`${config.apiBaseUrl}/api/properties`, async ({ request }) => {
@@ -211,33 +212,22 @@ describe('FE-2 등록·수정·메모', () => {
       const user = userEvent.setup();
       renderAuthenticated('/properties/new');
 
-      // 1. 보증금 → 월세 → 지도 → 매물 이름 순으로, 다음을 눌렀을 때만 한 단계씩 열린다.
-      expect(await screen.findByRole('button', { name: '다음' })).toBeEnabled();
-      expect(navigator.geolocation.getCurrentPosition).not.toHaveBeenCalled();
-      await user.type(screen.getByLabelText('보증금 입력 (만원)'), '1000');
-      expect(screen.queryByLabelText('월세 입력 (만원)')).not.toBeInTheDocument();
-      await user.click(screen.getByRole('button', { name: '다음' }));
-      expect(screen.getByLabelText('월세 입력 (만원)')).toBeInTheDocument();
-      await user.click(screen.getByRole('button', { name: '다음' }));
-      expect(screen.getByLabelText('월세 입력 (만원)')).toHaveAttribute('aria-invalid', 'true');
-      expect(screen.getByText('월세를 입력해 주세요.')).toBeInTheDocument();
-      await user.type(screen.getByLabelText('월세 입력 (만원)'), '55');
-      await user.click(screen.getByRole('button', { name: '다음' }));
+      // 위치만 고르면 바로 등록한다. 금액과 이름을 묻는 단계는 없다.
       expect(await screen.findByRole('region', { name: '매물 위치 선택' })).toBeInTheDocument();
+      expect(navigator.geolocation.getCurrentPosition).not.toHaveBeenCalled();
+      expect(screen.queryByLabelText(/보증금 입력/)).not.toBeInTheDocument();
       expect(screen.queryByLabelText('매물 이름 입력')).not.toBeInTheDocument();
-      await user.click(screen.getByRole('button', { name: '다음' }));
-      expect(screen.getByLabelText('매물 이름 입력')).toBeInTheDocument();
-      await user.type(screen.getByLabelText('매물 이름 입력'), '신림역 원룸');
-      const createButton = await screen.findByRole('button', { name: '매물 등록' });
+      const createButton = screen.getByRole('button', { name: '매물 등록' });
       await waitFor(() => expect(createButton).toBeEnabled());
       await user.click(createButton);
 
       expect(await screen.findAllByRole('heading', { name: '신림역 원룸', level: 1 })).toHaveLength(1);
       await waitFor(() => expect(requestBody).toBeDefined());
+      // 이름은 새 매물로 두고, 금액은 상세에서 채우도록 0으로 보낸다.
       expect(requestBody).toMatchObject({
-        name: '신림역 원룸',
-        depositAmount: 10_000_000,
-        monthlyRentAmount: 550_000,
+        name: '새 매물',
+        depositAmount: 0,
+        monthlyRentAmount: 0,
         address: '서울 관악구 신림로 12길 3',
       });
     } finally {
@@ -269,40 +259,15 @@ describe('FE-2 등록·수정·메모', () => {
       const user = userEvent.setup();
       renderAuthenticated('/properties/new');
 
-      await user.type(await screen.findByLabelText('보증금 입력 (만원)'), '1000');
-      expect(navigator.geolocation.getCurrentPosition).not.toHaveBeenCalled();
-      await user.click(screen.getByRole('button', { name: '다음' }));
-      await user.type(screen.getByLabelText('월세 입력 (만원)'), '55');
-      await user.click(screen.getByRole('button', { name: '다음' }));
       expect(await screen.findByRole('region', { name: '매물 위치 선택' })).toBeInTheDocument();
-      await user.click(screen.getByRole('button', { name: '다음' }));
-      await user.type(screen.getByLabelText('매물 이름 입력'), '신림역 원룸');
-
-      await user.click(await screen.findByRole('button', { name: '매물 등록' }));
+      expect(navigator.geolocation.getCurrentPosition).not.toHaveBeenCalled();
+      await user.click(screen.getByRole('button', { name: '매물 등록' }));
 
       expect(await screen.findByRole('alert')).toHaveTextContent('주소를 확인하지 못했어요.');
       expect(createCalls).toBe(0);
     } finally {
       Object.defineProperty(navigator, 'geolocation', { configurable: true, value: originalGeolocation });
     }
-  });
-
-  it('키패드가 열려 있어도 다음 버튼을 보여주고 키패드 확인으로도 다음 단계로 이동한다', async () => {
-    const user = userEvent.setup();
-    renderAuthenticated('/properties/new');
-
-    const depositField = await screen.findByLabelText('보증금 입력 (만원)');
-    expect(depositField).not.toHaveFocus();
-    expect(screen.getByRole('button', { name: '다음' })).toBeInTheDocument();
-
-    await user.type(depositField, '1000');
-    await user.keyboard('{Enter}');
-
-    const rentField = await screen.findByLabelText('월세 입력 (만원)');
-    await user.type(rentField, '55');
-    await user.click(screen.getByRole('button', { name: '다음' }));
-
-    expect(await screen.findByRole('region', { name: '매물 위치 선택' })).toBeInTheDocument();
   });
 
   it('수정은 변경이 없어도 전체 필드를 보내고 상세 화면으로 돌아간다', async () => {
@@ -353,10 +318,11 @@ describe('FE-2 등록·수정·메모', () => {
     expect(section.getByText('수도세, 인터넷')).toBeInTheDocument();
     expect(section.getByText('에어컨, 냉장고')).toBeInTheDocument();
     expect(section.getByText('2026-08-20 14:00')).toBeInTheDocument();
-    expect(section.getByRole('button', { name: '부가 정보 편집' })).toBeInTheDocument();
+    expect(section.queryByRole('button', { name: '부가 정보 편집' })).not.toBeInTheDocument();
+    expect(section.getByRole('button', { name: '방 옵션 수정' })).toBeInTheDocument();
   });
 
-  it('상세의 기본 정보 편집은 움직이지 않는 시트에서 고치고 위치는 그대로 보낸다', async () => {
+  it('상세에서 보증금 / 월세 줄을 누르면 그 항목만 시트에서 고치고 위치는 그대로 보낸다', async () => {
     let requestBody: unknown;
     server.use(
       http.get(`${config.apiBaseUrl}/api/properties/10`, () => HttpResponse.json(successEnvelope(detailWithoutPhotos))),
@@ -371,15 +337,17 @@ describe('FE-2 등록·수정·메모', () => {
     const user = userEvent.setup();
     renderAuthenticated('/properties/10');
 
-    await user.click(await screen.findByRole('button', { name: '기본 정보 편집' }));
-    const sheet = within(screen.getByRole('region', { name: '기본 정보 수정' }));
+    await user.click(await screen.findByRole('button', { name: '보증금 / 월세 수정' }));
+    const sheet = within(screen.getByRole('region', { name: '보증금 / 월세 수정' }));
     expect(sheet.queryByRole('button', { name: '상세 패널 높이 조절' })).not.toBeInTheDocument();
+    expect(sheet.queryByLabelText('매물 이름')).not.toBeInTheDocument();
+    expect(sheet.queryByRole('region', { name: '매물 위치 선택' })).not.toBeInTheDocument();
     const rent = sheet.getByLabelText('월세 (만원)');
     await user.clear(rent);
     await user.type(rent, '60');
-    await user.click(sheet.getByRole('button', { name: '기본 정보 저장' }));
+    await user.click(sheet.getByRole('button', { name: '저장' }));
 
-    await waitFor(() => expect(screen.queryByRole('region', { name: '기본 정보 수정' })).not.toBeInTheDocument());
+    await waitFor(() => expect(screen.queryByRole('region', { name: '보증금 / 월세 수정' })).not.toBeInTheDocument());
     expect(screen.getByRole('heading', { name: '신림역 원룸', level: 1 })).toBeInTheDocument();
     expect(requestBody).toMatchObject({
       name: propertyDetailFixture.name,
@@ -391,7 +359,43 @@ describe('FE-2 등록·수정·메모', () => {
     });
   });
 
-  it('상세의 부가 정보 편집은 시트에서 저장하고 닫기로 저장 없이 닫는다', async () => {
+  it('매물 이름은 상세 줄에서 바로 고치고, 금액이 비어 있어도 저장된다', async () => {
+    let requestBody: unknown;
+    server.use(
+      http.get(`${config.apiBaseUrl}/api/properties/10`, () =>
+        HttpResponse.json(successEnvelope({ ...detailWithoutPhotos, depositAmount: 0, monthlyRentAmount: 0 })),
+      ),
+      http.get(`${config.apiBaseUrl}/api/properties/10/memo`, () =>
+        HttpResponse.json(successEnvelope({ propertyId: 10, freeMemo: '' })),
+      ),
+      http.put(`${config.apiBaseUrl}/api/properties/10`, async ({ request }) => {
+        requestBody = await request.json();
+        return HttpResponse.json(successEnvelope({ id: 10, ...(requestBody as object) }));
+      }),
+    );
+    const user = userEvent.setup();
+    renderAuthenticated('/properties/10');
+
+    const section = within(await screen.findByRole('region', { name: '매물 기본 정보' }));
+    expect(section.getByText('보증금과 월세를 입력해 주세요')).toBeInTheDocument();
+    // 이름은 시트 없이 그 줄에서 바로 고친다. Esc는 저장하지 않고 닫는다.
+    await user.click(section.getByRole('button', { name: '매물 이름 수정' }));
+    expect(screen.queryByRole('region', { name: '매물 이름 수정' })).not.toBeInTheDocument();
+    await user.type(section.getByLabelText('매물 이름'), ' 바뀜');
+    await user.keyboard('{Escape}');
+    expect(section.queryByLabelText('매물 이름')).not.toBeInTheDocument();
+    expect(requestBody).toBeUndefined();
+
+    await user.click(section.getByRole('button', { name: '매물 이름 수정' }));
+    const name = section.getByLabelText('매물 이름');
+    await user.clear(name);
+    await user.type(name, '햇살 원룸{Enter}');
+
+    await waitFor(() => expect(section.queryByLabelText('매물 이름')).not.toBeInTheDocument());
+    expect(requestBody).toMatchObject({ name: '햇살 원룸', depositAmount: 0, monthlyRentAmount: 0 });
+  });
+
+  it('상세의 방 옵션 줄을 누르면 시트에서 저장하고 닫기로 저장 없이 닫는다', async () => {
     let updateCalls = 0;
     let requestBody: unknown;
     server.use(
@@ -408,18 +412,18 @@ describe('FE-2 등록·수정·메모', () => {
     const user = userEvent.setup();
     renderAuthenticated('/properties/10');
 
-    await user.click(await screen.findByRole('button', { name: '부가 정보 편집' }));
-    await user.click(screen.getByRole('button', { name: '부가 정보 수정 닫기' }));
-    expect(screen.queryByRole('region', { name: '부가 정보 수정' })).not.toBeInTheDocument();
+    await user.click(await screen.findByRole('button', { name: '방 옵션 수정' }));
+    await user.click(screen.getByRole('button', { name: '방 옵션 수정 닫기' }));
+    expect(screen.queryByRole('region', { name: '방 옵션 수정' })).not.toBeInTheDocument();
     expect(updateCalls).toBe(0);
 
-    await user.click(screen.getByRole('button', { name: '부가 정보 편집' }));
-    const sheet = within(screen.getByRole('region', { name: '부가 정보 수정' }));
-    expect(sheet.getByLabelText('입주 가능일')).toHaveValue('2026-09-01');
+    await user.click(screen.getByRole('button', { name: '방 옵션 수정' }));
+    const sheet = within(screen.getByRole('region', { name: '방 옵션 수정' }));
+    expect(sheet.queryByLabelText('입주 가능일')).not.toBeInTheDocument();
     await user.click(sheet.getByRole('checkbox', { name: '책상' }));
-    await user.click(sheet.getByRole('button', { name: '부가 정보 저장' }));
+    await user.click(sheet.getByRole('button', { name: '저장' }));
 
-    await waitFor(() => expect(screen.queryByRole('region', { name: '부가 정보 수정' })).not.toBeInTheDocument());
+    await waitFor(() => expect(screen.queryByRole('region', { name: '방 옵션 수정' })).not.toBeInTheDocument());
     expect(updateCalls).toBe(1);
     expect(requestBody).toMatchObject({ roomOptions: ['AIR_CONDITIONER', 'REFRIGERATOR', 'DESK'] });
     expect(screen.getByText('에어컨, 냉장고, 책상')).toBeInTheDocument();

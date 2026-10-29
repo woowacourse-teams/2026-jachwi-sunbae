@@ -11,6 +11,7 @@ declare const __ADMIN_BOUNDARY_BASE_URL__: string;
 
 interface Window {
   jachwiNaverSdkReady?: () => void;
+  navermap_authFailure?: () => void;
   naver?: { maps: NaverMapsNamespace };
 }
 
@@ -113,10 +114,3 @@ declare module '*.mp4' {
   const source: string;
   export default source;
 }
-
-declare module '*.module.css' {
-  const classes: Readonly<Record<string, string>>;
-  export default classes;
-}
-
-declare module '*.css';

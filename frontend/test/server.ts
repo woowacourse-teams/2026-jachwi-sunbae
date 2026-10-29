@@ -3,8 +3,21 @@ import { setupServer } from 'msw/node';
 
 const success = (data: unknown) => HttpResponse.json({ code: 'SUCCESS', message: '요청에 성공했습니다.', data });
 
+const tokenResponse = () =>
+  success({
+    accessToken: 'test-auto-login-token',
+    tokenType: 'Bearer',
+    expiresIn: 900,
+    newMember: false,
+    member: { memberId: 1 },
+  });
+
 export const server = setupServer(
-  http.get('*/api/members/me', () => success({ id: 1, name: '이자취', passwordProtected: false })),
+  http.post('*/api/auth/login', tokenResponse),
+  http.post('*/api/auth/refresh', tokenResponse),
+  http.get('*/api/members/me', () => success({ id: 1 })),
+  // 마이의 생활 날씨 카드는 열 때 수신 동의를 조회한다. 기본은 꺼짐이다.
+  http.get('*/api/members/me/weather-notification-settings', () => success({ enabled: false })),
   http.get('*/api/checklists', () => success({ totalCount: 0, items: [] })),
   http.get('*/api/properties/:propertyId/memo', ({ params }) =>
     success({

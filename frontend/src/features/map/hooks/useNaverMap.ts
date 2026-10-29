@@ -4,12 +4,19 @@ import { usePublicConfig } from '@/shared/config/PublicConfigContext';
 
 import { clampToSouthKorea } from '../lib/mapLocation';
 import { markerScale, markerSignature, markerZIndex } from '../lib/mapMarkerPresentation';
-import { createMapRegionLayer } from '../lib/mapRegionLayer';
-import { type LiveMap, type LiveOverlay, naverEngine } from '../lib/naverMapEngine';
+import { createMapRegionLayer, READY_TIMEOUT_MS } from '../lib/mapRegionLayer';
+import {
+  isNaverSdkAvailable,
+  type LiveMap,
+  type LiveOverlay,
+  NAVER_AUTH_FAILURE_EVENT,
+  naverEngine,
+} from '../lib/naverMapEngine';
 import type { MapCanvasProps } from '../model/MapCanvas';
+import { createMapCoordinateMenuElement } from '../ui/map-coordinate-menu/MapCoordinateMenu';
 import { createMapMarkerElement } from '../ui/map-marker/MapMarkerView';
 
-import actionStyles from '../ui/map-canvas/MapCanvas.module.css';
+import * as actionStyles from '../ui/map-canvas/MapCanvas.styles';
 const EMPTY_MARKERS: NonNullable<MapCanvasProps['markers']> = [];
 const EMPTY_CIRCLES: NonNullable<MapCanvasProps['circles']> = [];
 const EMPTY_REGIONS: NonNullable<MapCanvasProps['regions']> = [];
@@ -19,6 +26,7 @@ type LiveMapProps = Pick<
   | 'center'
   | 'animateView'
   | 'coordinateAction'
+  | 'coordinateMenu'
   | 'level'
   | 'customStyleId'
   | 'markers'
@@ -40,6 +48,7 @@ const useNaverMap = ({
   center,
   animateView = false,
   coordinateAction,
+  coordinateMenu,
   level = 5,
   customStyleId,
   markers = EMPTY_MARKERS,
@@ -64,6 +73,8 @@ const useNaverMap = ({
   const circleSignatureRef = useRef('');
   const callbackRef = useRef({ onSelectLocation, onCenterChange, onLevelChange, onSelectMarker, onBoundsChange });
   const [mapReady, setMapReady] = useState(false);
+  // SDK 로드와 GL 준비 사이에는 지도를 눌러도 반응이 없으므로 화면에 준비 중임을 알린다.
+  const [renderReady, setRenderReady] = useState(false);
   const canvasRef = useRef<HTMLDivElement>(null);
   const gestureActiveRef = useRef(false);
   const [settledVersion, setSettledVersion] = useState(0);
@@ -95,9 +106,27 @@ const useNaverMap = ({
     let disposed = false;
     let map: LiveMap | null = null;
     let listeners: unknown[] = [];
+    let readyFrame: number | null = null;
 
+    const handleAuthFailure = () => {
+      // 폐기된 SDK를 호출하지 않고 지도만 중단하여 실제 API 목록·상세를 계속 사용할 수 있게 한다.
+      if (readyFrame !== null) window.cancelAnimationFrame(readyFrame);
+      readyFrame = null;
+      mapRef.current = null;
+      map = null;
+      regionLayerRef.current?.dispose(true);
+      regionLayerRef.current = null;
+      overlaysRef.current.clear();
+      circlesRef.current = [];
+      containerRef.current?.replaceChildren();
+      setMapReady(false);
+      setRenderReady(false);
+      setSdkError(true);
+    };
+    window.addEventListener(NAVER_AUTH_FAILURE_EVENT, handleAuthFailure);
     setSdkError(false);
     setMapReady(false);
+    setRenderReady(false);
     void engine
       .load()
       .then(() => {
@@ -116,7 +145,7 @@ const useNaverMap = ({
           }),
           engine.addListener(map, 'idle', () => {
             setGestureActive(false);
-            if (map === null) return;
+            if (map === null || !isNaverSdkAvailable()) return;
             setSettledVersion((current) => current + 1);
             const nextCenter = engine.getCenter(map);
             callbackRef.current.onCenterChange?.(nextCenter.latitude, nextCenter.longitude);
@@ -126,6 +155,17 @@ const useNaverMap = ({
         );
         setMapReady(true);
         callbackRef.current.onBoundsChange?.(engine.getBounds(map));
+        const createdAt = performance.now();
+        const waitForRender = () => {
+          readyFrame = null;
+          if (disposed || map === null) return;
+          if (engine.isRenderReady(map) || performance.now() - createdAt >= READY_TIMEOUT_MS) {
+            setRenderReady(true);
+            return;
+          }
+          readyFrame = window.requestAnimationFrame(waitForRender);
+        };
+        waitForRender();
       })
       .catch(() => {
         if (!disposed) setSdkError(true);
@@ -133,21 +173,23 @@ const useNaverMap = ({
 
     return () => {
       disposed = true;
+      window.removeEventListener(NAVER_AUTH_FAILURE_EVENT, handleAuthFailure);
+      if (readyFrame !== null) window.cancelAnimationFrame(readyFrame);
       listeners.forEach((listener) => engine.removeListener(listener));
       listeners = [];
       setGestureActive(false);
-      overlaysRef.current.forEach(({ overlay }) => overlay.setMap(null));
+      if (isNaverSdkAvailable()) overlaysRef.current.forEach(({ overlay }) => overlay.setMap(null));
       overlaysRef.current.clear();
-      circlesRef.current.forEach((circle) => circle.setMap(null));
+      if (isNaverSdkAvailable()) circlesRef.current.forEach((circle) => circle.setMap(null));
       circlesRef.current = [];
       circleSignatureRef.current = '';
-      if (map !== null) engine.destroy(map);
+      if (map !== null && isNaverSdkAvailable()) engine.destroy(map);
       mapRef.current = null;
     };
   }, [engine, liveMode]);
 
   useEffect(() => {
-    if (animateView || !liveMode || !mapReady || mapRef.current === null) return;
+    if (animateView || !liveMode || !mapReady || mapRef.current === null || !isNaverSdkAvailable()) return;
     const current = engine.getCenter(mapRef.current);
     if (
       Math.abs(current.latitude - boundedCenter.latitude) < 0.0000001 &&
@@ -159,7 +201,7 @@ const useNaverMap = ({
 
   useEffect(() => {
     const map = mapRef.current;
-    if (!animateView || !liveMode || !mapReady || map === null) return;
+    if (!animateView || !liveMode || !mapReady || map === null || !isNaverSdkAvailable()) return;
     const current = engine.getCenter(map);
     if (
       Math.abs(current.latitude - boundedCenter.latitude) < 0.0000001 &&
@@ -187,7 +229,14 @@ const useNaverMap = ({
       relayoutFrame = window.requestAnimationFrame(() => {
         relayoutFrame = null;
         const container = containerRef.current;
-        if (container === null || container.clientWidth === 0 || container.clientHeight === 0) return;
+        if (
+          container === null ||
+          container.clientWidth === 0 ||
+          container.clientHeight === 0 ||
+          mapRef.current !== map ||
+          !isNaverSdkAvailable()
+        )
+          return;
         const size = `${container.clientWidth}x${container.clientHeight}`;
         if (size === previousSize) return;
         previousSize = size;
@@ -204,13 +253,21 @@ const useNaverMap = ({
 
   useEffect(() => {
     const map = mapRef.current;
-    if (animateView || !liveMode || !mapReady || map === null || engine.getZoom(map) === level) return;
+    if (
+      animateView ||
+      !liveMode ||
+      !mapReady ||
+      map === null ||
+      !isNaverSdkAvailable() ||
+      engine.getZoom(map) === level
+    )
+      return;
     engine.setZoom(map, level);
   }, [engine, level, liveMode, mapReady, animateView]);
 
   useEffect(() => {
     const map = mapRef.current;
-    if (!liveMode || !mapReady || map === null || gestureActiveRef.current) return;
+    if (!liveMode || !mapReady || map === null || gestureActiveRef.current || !isNaverSdkAvailable()) return;
     // 달라진 마커만 다시 그린다. 전부 지웠다 만들면 지도를 옮길 때마다 깜빡인다.
     const previous = overlaysRef.current;
     const next = new Map<string, { signature: string; overlay: LiveOverlay; content: HTMLElement }>();
@@ -245,11 +302,11 @@ const useNaverMap = ({
 
   useEffect(() => {
     const map = mapRef.current;
-    if (!liveMode || !mapReady || map === null || gestureActiveRef.current) return;
+    if (!liveMode || !mapReady || map === null || gestureActiveRef.current || !isNaverSdkAvailable()) return;
     const signature = `${circleRadii}:${radiusCenter.latitude}:${radiusCenter.longitude}`;
     if (signature === circleSignatureRef.current) return;
     circleSignatureRef.current = signature;
-    circlesRef.current.forEach((circle) => circle.setMap(null));
+    if (isNaverSdkAvailable()) circlesRef.current.forEach((circle) => circle.setMap(null));
     circlesRef.current = (circleRadii === '' ? [] : circleRadii.split(',').map(Number)).map((radius) =>
       engine.createCircle(map, engine.latLng(radiusCenter.latitude, radiusCenter.longitude), radius),
     );
@@ -257,7 +314,7 @@ const useNaverMap = ({
 
   useEffect(() => {
     const map = mapRef.current;
-    if (!liveMode || !mapReady || map === null || !coordinateAction) return;
+    if (!liveMode || !mapReady || map === null || !coordinateAction || !isNaverSdkAvailable()) return;
     const content = document.createElement('div');
     const button = document.createElement('button');
     button.type = 'button';
@@ -281,23 +338,46 @@ const useNaverMap = ({
       content,
       30,
     );
-    return () => overlay.setMap(null);
+    return () => {
+      if (isNaverSdkAvailable()) overlay.setMap(null);
+    };
   }, [coordinateAction, engine, liveMode, mapReady]);
 
   useEffect(() => {
     const map = mapRef.current;
+    if (!liveMode || !mapReady || map === null || !coordinateMenu || !isNaverSdkAvailable()) return;
+    const overlay = engine.createOverlay(
+      map,
+      {
+        id: 'coordinate-menu',
+        label: coordinateMenu.title ?? '',
+        latitude: coordinateMenu.latitude,
+        longitude: coordinateMenu.longitude,
+        // 말풍선 꼬리 끝(요소 아래 가운데)이 좌표에 오게 말풍선 핀과 같은 기준으로 놓는다.
+        tone: 'destination',
+      },
+      createMapCoordinateMenuElement(coordinateMenu),
+      40,
+    );
+    return () => {
+      if (isNaverSdkAvailable()) overlay.setMap(null);
+    };
+  }, [coordinateMenu, engine, liveMode, mapReady]);
+
+  useEffect(() => {
+    const map = mapRef.current;
     const sdk = window.naver?.maps;
-    if (!liveMode || !mapReady || map === null || sdk === undefined) return;
+    if (!liveMode || !mapReady || map === null || sdk == null || !isNaverSdkAvailable()) return;
     const layer = createMapRegionLayer(
       map,
       sdk,
       engine,
-      (id) => regionCallbackRef.current?.(id),
+      (id, point) => regionCallbackRef.current?.(id, point),
       () => engine.getZoom(map),
     );
     regionLayerRef.current = layer;
     return () => {
-      layer.dispose();
+      layer.dispose(!isNaverSdkAvailable());
       if (regionLayerRef.current === layer) regionLayerRef.current = null;
     };
   }, [engine, liveMode, mapReady]);
@@ -306,6 +386,6 @@ const useNaverMap = ({
     regionLayerRef.current?.sync(regions, selectedRegionId);
   }, [engine, liveMode, mapReady, regions, selectedRegionId, settledVersion]);
 
-  return { containerRef, canvasRef, liveMode, sdkError };
+  return { containerRef, canvasRef, liveMode, sdkError, isLoading: liveMode && !renderReady && !sdkError };
 };
 export default useNaverMap;

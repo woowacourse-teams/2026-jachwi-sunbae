@@ -6,6 +6,8 @@ React 19·TypeScript 6·Webpack 5 기반 모바일 우선 SPA입니다.
 
 ## 관련 문서
 
+홈 진입 카드와 전체·식당·편의점·배달 화면은 [저렴한 한 끼 찾기](docs/cheap-meals.md)를 참고하세요. `/cheap-meals`에서 기존 인증·공통 API 클라이언트와 실제 백엔드 API를 사용합니다.
+
 체크리스트 집계 막대와 범례는 괜찮음=초록, 주의=빨강, 미확인=회색을 사용합니다. 동네 찾기 통근 범례도 홈 집계처럼 짧은 세로 색상 막대와 텍스트로 표시하며, 통근 구간의 파랑·초록·빨강 의미는 유지합니다.
 
 페이지 전환의 화면 파일 로딩은 공용 `ProgressCircle`(40px)로 표시합니다. 홈(`/properties`)은 사진·텍스트 형태의 매물 스켈레톤을 사용하며 목록 데이터 로딩에도 같은 스켈레톤을 재사용합니다. 실제 진행률을 알 수 없어 원형 로딩은 불확정 회전으로 표시합니다. `LazyRouteBoundary`의 fallback만 변경하면 기존 안내 UI로 되돌릴 수 있으며 오류·재시도 화면은 유지합니다.
@@ -15,6 +17,7 @@ React 19·TypeScript 6·Webpack 5 기반 모바일 우선 SPA입니다.
 - [프론트엔드 배포](docs/deployment.md)
 - [프론트엔드 테스트 전략](docs/testing-strategy.md)
 - [뮤테이션 테스트](docs/mutation-testing.md)
+- [생활 날씨 카드](docs/weather-ui-prototype.md)
 
 ## 설치와 실행
 
@@ -30,7 +33,7 @@ set +a
 npm run dev
 ```
 
-기본 `.env.example`은 외부 키가 필요 없는 닉네임 인증·데모 지도 모드입니다. `.env.example`을 `.env.local`로 복사하면 Webpack이 빌드 시작에 그 값을 읽습니다(`.env.local`은 저장소에 올라가지 않으며, 이미 설정된 셸 환경변수를 덮어쓰지 않습니다). `http://localhost:3000`에서 닉네임과 선택 비밀번호로 바로 시작합니다.
+기본 `.env.example`은 외부 키가 필요 없는 익명 자동 로그인·데모 지도 모드입니다. `.env.example`을 `.env.local`로 복사하면 Webpack이 빌드 시작에 그 값을 읽습니다(`.env.local`은 저장소에 올라가지 않으며, 이미 설정된 셸 환경변수를 덮어쓰지 않습니다). `http://localhost:3000`에 들어가면 로그인 입력 없이 자동으로 익명 회원으로 시작합니다.
 
 `npm run dev`는 실제 백엔드 API에 연결합니다. 백엔드 없이 UI fixture만 확인할 때에만 `npm run dev:mock`을 사용합니다. dev 배포에서 fixture가 꼭 필요한 경우에는 CodePipeline 빌드 환경변수에 `ENABLE_MSW=true`를 지정할 수 있으며, 운영에서는 이 값을 사용하지 않습니다.
 
@@ -86,34 +89,32 @@ JWT secret, 지도 Client Secret, S3 자격증명은 프론트에 넣지 않습�
 
 통근 지도는 경계와 하단 카드로 동네를 선택하고 선택한 동네만 작은 정보 버튼을 표시합니다. 대중교통 정보 보기에서 별도 상세 페이지로 이동하며 왼쪽 위 X로 지도에 돌아옵니다. 월세 지도는 각 동네의 평균가를 표시하고 선택하면 별도 거래 상세 페이지로 이동합니다. 정류장은 작은 배지로 고릅니다. 가장 빠른 정류장의 `GET /api/commute-areas/route`를 조회하며, 다른 정류장을 고르면 해당 정보로 전환합니다. 버스·지하철·도보 구간, 환승 횟수와 경유 정류장을 안내하며 실시간 도착 정보나 안내 시작 기능은 제공하지 않습니다. 상세에서 돌아오면 지도 결과와 시점을 유지합니다. 새로고침·URL 직접 진입 시 검색 상태 복원은 지원하지 않습니다. GeoJSON Polygon·MultiPolygon의 분리된 면·내부 링을 보존하며 [경도, 위도]를 지도 좌표로 변환합니다.
 
-위치 권한이 이미 허용되어 있으면 첫 지도에 현재 위치 마커를 표시합니다. 현재 위치 아이콘을 누르면 현재 위치를 선택하고 확대합니다. 동네 찾기·월세 조회에서 다른 위치를 직접 찍거나 주소로 선택하면 파란 현재 위치 점을 지우고 선택한 위치 마커만 남깁니다. 현재 위치를 다시 누르면 파란 점도 다시 표시합니다. 첫 안내는 아래에서 올라오는 토스트로 표시합니다. 지도에서 위치를 고르면 해당 위치로 확대하며 마커 옆의 선택한 조건으로 찾기로 조회합니다. 통근·환승·월세 평균가 조건은 검색창 아래 뱃지로 공용 고정 높이 시트를 열어 설정합니다. 통근은 10~~60분의 10분 단위, 환승은 0~~2회로 고르며 적용할 때만 반영합니다. 시트를 닫아도 선택 위치는 유지합니다.
+위치 권한이 이미 허용되어 있으면 첫 지도를 현재 위치로 옮깁니다. 동네 찾기 지도는 현재 위치를 마커로 그리지 않습니다. 현재 위치 아이콘을 누르면 현재 위치를 선택하고 확대합니다. 첫 안내는 아래에서 올라오는 토스트로 표시합니다. 지도에서 위치를 고르면 아래 시트의 `{장소}에서 찾기`로 조회합니다. 통근, 환승, 월세 조건은 같은 시트의 조건 칸으로 공용 고정 높이 시트를 열어 설정합니다. 통근은 10~~60분의 10분 단위, 환승은 0~~2회로 고르며 적용할 때만 반영합니다. 시트를 닫아도 선택 위치는 유지합니다.
 
 `USE_REAL_COMMUTE_API=true npm run dev:mock`으로 통근·경로·월세 API를 실제 서버로 전환합니다. 통근은 로그인 없이 조회하며 행정동은 SGIS 8자리 코드를 사용합니다. 월세 API는 인증과 10자리 법정동 코드가 필요합니다. 실제 월세 조회는 `npm run dev`에서 정상 로그인 후 확인합니다. MSW 시간·정류장·상세 경로·월세 금액은 가상 데이터이고, 경계와 동 이름은 제공받은 원본을 사용합니다. 실제 서버 모드에서 실패하면 샘플로 대체하지 않습니다.
 
 동네 찾기의 위치 선택·결과 지도에는 발행된 네이버 사용자 스타일 `631c1c09-380e-427f-b7d8-e600956dac10`을 적용합니다. 기존 지도 탭은 기본 스타일을 유지하며, 추천 경계 강조는 배경 지도 스타일과 별도로 표시합니다.
 
-인스타그램 광고용 공개 페이지는 `/landing`입니다. 오리 로고, 네 장의 순환 슬라이드, App Store·웹 시작 버튼을 제공합니다. 로고는 iPhone·iPad에서는 App Store로, 그 외 환경에서는 운영 웹 로그인으로 연결됩니다. 로컬 확인 주소는 `http://localhost:3000/landing`이며, 연결 주소와 이미지는 `src/pages/landing/LandingPage.tsx`에서 관리합니다.
+랜딩(`/landing`)은 없앴습니다. 첫 진입은 바로 홈(`/`)이며 자동 로그인합니다. 서비스 소개는 사용 방법(`/guide`, `src/pages/usage-guide`)이 맡고, 예전 `/landing`은 쿼리를 유지한 채 `/`로, `/about`은 `/guide`로 이동합니다.
 
-| 화면                 | 경로                                                      | 기능                                           |
-| -------------------- | --------------------------------------------------------- | ---------------------------------------------- |
-| 닉네임으로 시작      | `/login`                                                  | 닉네임과 선택 비밀번호로 시작                  |
-| 공개 안내            | `/privacy`                                                | 광고 측정 동의·철회                            |
-| 매물 목록            | `/properties`                                             | 매물 목록, 단계별 진행 현황, PDF 비교 진입     |
-| 매물 비교            | `/compare`                                                | 2~5개 매물 선택과 전체 기록 PDF 다운로드       |
-| 매물 등록            | `/properties/new`                                         | 이름·보증금·월세 입력 후 지도에서 주소 확정    |
-| 매물 상세            | `/properties/:propertyId`                                 | 기본·부가 정보 즉시 수정, 사진·메모·체크 요약  |
-| 매물 사진            | `/properties/:propertyId/photos`                          | 업로드·대표 지정·삭제                          |
-| 매물 메모            | `/properties/:propertyId/memo`                            | 자유 메모 저장                                 |
-| 매물 정보 수정       | `/properties/:propertyId/edit`                            | 위치가 없는 매물의 주소·좌표 보정              |
-| 적용 체크리스트 선택 | `/properties/:propertyId/active-checklists/:stage`        | 기본 또는 내 체크리스트 적용·교체              |
-| 매물 체크 진행       | `/properties/:propertyId/checklists/:propertyChecklistId` | 상태 즉시 저장·항목 메모 저장·진행 집계        |
-| 내 체크리스트 목록   | `/checklists`                                             | 단계별 내 체크리스트 목록                      |
-| 체크리스트 상세·수정 | `/checklists/:checklistId`                                | 체크리스트 상세·수정                           |
-| 체크리스트 생성      | `/checklists/new`                                         | 기본·선택 항목 조합 생성                       |
-| 마이페이지           | `/me`                                                     | 계정·모드·주요 기능 이동·로그아웃              |
-| 지도                 | `/map`                                                    | 현재 위치·주소 검색·매물 핀 표시               |
-| 지도에서 위치 선택   | `/map/select-location`                                    | 현재 위치·접힌 주소 검색·역지오코딩            |
-| 매물 주변 분석       | `/properties/:propertyId/nearby`                          | 반경별 시설 개수·선택 시설 핀 상세·스크롤 목록 |
+| 화면                 | 경로                                                      | 기능                                            |
+| -------------------- | --------------------------------------------------------- | ----------------------------------------------- |
+| 공개 안내            | `/privacy`                                                | 광고 측정 동의·철회                             |
+| 매물 목록            | `/properties`                                             | 매물 목록, 단계별 진행 현황, PDF 비교 진입      |
+| 매물 비교            | `/compare`                                                | 2~5개 매물 선택과 전체 기록 PDF 다운로드        |
+| 매물 등록            | `/properties/new`                                         | 위치만 골라 `새 매물`로 바로 등록               |
+| 매물 상세            | `/properties/:propertyId`                                 | 항목 줄을 눌러 하나씩 수정, 사진·메모·체크 요약 |
+| 매물 사진            | `/properties/:propertyId/photos`                          | 업로드·대표 지정·삭제                           |
+| 매물 메모            | `/properties/:propertyId/memo`                            | 자유 메모 저장                                  |
+| 매물 정보 수정       | `/properties/:propertyId/edit`                            | 위치가 없는 매물의 주소·좌표 보정               |
+| 적용 체크리스트 선택 | `/properties/:propertyId/active-checklists/:stage`        | 기본 또는 내 체크리스트 적용·교체               |
+| 매물 체크 진행       | `/properties/:propertyId/checklists/:propertyChecklistId` | 상태 즉시 저장·항목 메모 저장·진행 집계         |
+| 내 체크리스트 목록   | `/checklists`                                             | 단계별 내 체크리스트 목록                       |
+| 체크리스트 상세·수정 | `/checklists/:checklistId`                                | 체크리스트 상세·수정                            |
+| 체크리스트 생성      | `/checklists/new`                                         | 기본·선택 항목 조합 생성                        |
+| 마이페이지           | `/me`                                                     | 계정·모드·주요 기능 이동·로그아웃               |
+| 지도에서 위치 선택   | `/map/select-location`                                    | 현재 위치·접힌 주소 검색·역지오코딩             |
+| 매물 주변 분석       | `/properties/:propertyId/nearby`                          | 반경별 시설 개수·선택 시설 핀 상세·스크롤 목록  |
 
 하단 메뉴는 홈·체크리스트·지도·마이를 제공합니다. 모든 보호 화면은 조회 중·저장 중·빈 결과·오류·재시도 상태를 제공하고 키보드 포커스와 명시적 label을 유지합니다.
 
@@ -123,10 +124,8 @@ JWT secret, 지도 Client Secret, S3 자격증명은 프론트에 넣지 않습�
 로그인 화면의 쿼리와 마이페이지의 해시도 유지합니다. 직접 접속해 앱 내 이전 이력이 없으면 `/`로 교체하여
 로그인 상태에 따른 기본 진입 화면으로 이동합니다.
 
-운영 사이트의 Maze 사용성 테스트 설치와 배포 후 검증은 [Maze 테스트 안내](docs/maze-testing.md)를 참고합니다.
-
-- Access Token은 탭 단위 `sessionStorage`에 `expiresAt`과 함께 저장해 새로고침만 복구합니다. `localStorage`에는 쓰지 않습니다.
-- 401·만료·로그아웃은 인증 Query Cache와 토큰을 함께 지웁니다.
+- Access Token은 메모리에만 둡니다. 앱을 열면 `POST /api/auth/login`이 HttpOnly Refresh 쿠키로 같은 익명 회원을 복원하거나 새 익명 회원을 만듭니다.
+- Access Token이 만료되거나 업무 API가 401을 주면 `POST /api/auth/refresh`로 갱신해 원래 요청을 한 번 다시 보냅니다. 갱신이 `401 REFRESH_TOKEN_INVALID`로 거절되면 새 회원을 만들지 않고 인증 Query Cache와 토큰을 지운 뒤 안내합니다.
 - 사진 콘텐츠는 URL을 `<img>`에 직접 주지 않고 Bearer 인증 Blob으로 조회해 Object URL을 만든 뒤 해제합니다.
 - 사진은 JPEG·PNG·WebP, 파일당 5MiB, 매물당 30장으로 선택 단계부터 검증합니다.
 - 서버 상태는 TanStack Query가 관리하고, 체크 항목 상태와 메모 저장 채널은 서로 독립적입니다.
@@ -141,7 +140,7 @@ npm test
 npm run build
 ```
 
-공통 컴포넌트의 상태와 반응형 스타일은 Storybook에서 격리해 확인합니다.
+컴포넌트의 상태와 반응형 스타일은 Storybook에서 격리해 확인합니다. Storybook 트리는 폴더 구조와 같게 `페이지/<페이지명>`(페이지 전용 UI), `기능/<기능명>`(여러 페이지가 쓰는 도메인 UI), `공용`(도메인과 무관한 UI)으로 나눕니다.
 
 ```bash
 npm run storybook
@@ -154,6 +153,16 @@ npm run storybook:build
 - `.github/workflows/storybook-pages.yml`이 `develop` push마다 정적 Storybook을 빌드하고 배포합니다.
 
 Storybook에서는 구현 내부가 아니라 기본·로딩·에러·빈 상태처럼 사용자가 보는 상태를 확인합니다. 지도 SDK처럼 외부 환경에 의존하는 화면은 Storybook 대상에서 제외하고 별도 통합·E2E 테스트로 다룹니다.
+
+스토리는 컴포넌트와 같은 폴더의 `<Component>.stories.tsx`에 둡니다.
+
+- 제목은 `src/pages/<page>` → `페이지/<페이지명>/<Component>`, `src/features/<feature>` → `기능/<기능명>/<Component>`, `src/shared/ui` → `공용/<Component>`로 짓습니다. 페이지·기능 이름과 트리 순서는 `.storybook/preview.tsx`의 `storySort`에 둡니다.
+- `.storybook/preview.tsx`가 모든 스토리를 앱과 같은 Provider(공개 설정·React Query·라우터)로 감쌉니다. 스토리에서 라우터나 QueryClient를 다시 감싸지 않고 `parameters`로 필요한 상태를 줍니다.
+  - `route`: 처음 열 주소
+  - `routePath`: `useParams`가 필요할 때의 경로 패턴(예: `/properties/:propertyId`)
+  - `queryData`: `[queryKey, data]` 목록. 서버 요청 없이 Query Hook이 읽을 데이터를 캐시에 미리 넣습니다.
+- 데스크탑·휴대폰 화면을 나눈 페이지(홈·본 방 기록·동네 찾기·방 비교·마이)는 그 아래를 `데스크탑`·`휴대폰`·`공통`으로 나눕니다. `desktop/`·`mobile/` 폴더의 화면과 조각은 meta에 `globals: { viewport: { value: 'desktop' | 'mobile' } }`을 두어 그 화면 폭으로 엽니다. 툴바의 화면 폭은 휴대폰(390)·태블릿(820)·데스크탑(1440)입니다.
+- 값은 `args`로 넘겨 Controls 패널에서 바꿔 볼 수 있게 합니다. 콜백은 `fn()`(`storybook/test`)으로 두어 Actions 패널에 호출이 찍히게 하고, 컨트롤로 바꿀 수 없는 ReactNode·함수 props는 `argTypes`에서 `control: false`로 숨깁니다. `className`·`ref`는 전역에서 숨깁니다.
 
 `npm run build`는 번들 생성 전에 `npm run typecheck`를 실행합니다. 개발 중 타입 오류만 빠르게 확인하려면 `npm run typecheck`를 직접 실행합니다.
 

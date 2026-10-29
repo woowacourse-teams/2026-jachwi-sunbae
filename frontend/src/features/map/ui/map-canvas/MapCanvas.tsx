@@ -1,42 +1,44 @@
 import type { CSSProperties } from 'react';
 import { useMemo } from 'react';
 
-import StatusPanel from '@/shared/ui/status-panel/StatusPanel';
+import { Button } from '@/shared/ui/button/Button';
+import ProgressCircle from '@/shared/ui/progress-circle/ProgressCircle';
 
 import useNaverMap from '../../hooks/useNaverMap';
 import { clampToSouthKorea } from '../../lib/mapLocation';
-import { markerScale } from '../../lib/mapMarkerPresentation';
+import { markerAnchorTransform, markerScale } from '../../lib/mapMarkerPresentation';
 import { regionLabelPosition, regionSummaryRows } from '../../lib/mapRegionSummary';
 import type { MapMarker } from '../../model/Map';
 import type { MapCanvasProps } from '../../model/MapCanvas';
+import MapCoordinateMenu from '../map-coordinate-menu/MapCoordinateMenu';
 import MapMarkerView from '../map-marker/MapMarkerView';
 
-import styles from './MapCanvas.module.css';
-import summaryStyles from './MapRegionSummary.module.css';
+import * as styles from './MapCanvas.styles';
+import * as summaryStyles from './MapRegionSummary.styles';
 
 const EMPTY_MARKERS: MapMarker[] = [];
 const EMPTY_CIRCLES: NonNullable<MapCanvasProps['circles']> = [];
 const clamp = (value: number, min: number, max: number): number => Math.min(Math.max(value, min), max);
 
 const demoMarkerStyle = (marker: MapMarker, center: { latitude: number; longitude: number }): CSSProperties => ({
-  transform:
-    marker.tone === 'property' || marker.tone === 'selected'
-      ? 'translate(-50%, -120.710678%)'
-      : 'translate(-50%, -50%)',
+  transform: markerAnchorTransform(marker),
   left: `${clamp(50 + (marker.longitude - center.longitude) * 3_100, 9, 91)}%`,
   top: `${clamp(50 - (marker.latitude - center.latitude) * 4_200, 10, 88)}%`,
 });
 
 const MapCanvas = ({
   center,
+  onRetry,
   animateView = false,
   coordinateAction,
+  coordinateMenu,
   markers = EMPTY_MARKERS,
   circles = EMPTY_CIRCLES,
   level = 5,
   customStyleId,
   interactive = false,
   showCenterPin = false,
+  hideLoading = false,
   showRadiusLabels = false,
   selectedMarkerId = null,
   onSelectMarker,
@@ -50,10 +52,11 @@ const MapCanvas = ({
   onSelectRegion,
 }: MapCanvasProps) => {
   const boundedCenter = useMemo(() => clampToSouthKorea(center), [center.latitude, center.longitude]);
-  const { containerRef, canvasRef, liveMode, sdkError } = useNaverMap({
+  const { containerRef, canvasRef, liveMode, sdkError, isLoading } = useNaverMap({
     center,
     animateView,
     coordinateAction,
+    coordinateMenu,
     markers,
     circles,
     radiusCenter,
@@ -72,8 +75,9 @@ const MapCanvas = ({
 
   return (
     <div
-      className={`${styles.canvas} ${liveMode ? styles.live : styles.demo}`}
+      className={liveMode ? styles.canvas : `${styles.canvas} ${styles.demo}`}
       ref={canvasRef}
+      data-map-zoom-area=""
       aria-label={liveMode ? 'Naver 지도' : '데모 지도'}
       onClick={(event) => {
         if (liveMode || !interactive || onSelectLocation === undefined) return;
@@ -113,6 +117,18 @@ const MapCanvas = ({
             >
               {coordinateAction.label}
             </button>
+          )}
+          {coordinateMenu && (
+            <div
+              className={styles.coordinateMenu}
+              style={demoMarkerStyle(
+                { ...coordinateMenu, id: 'coordinate-menu', label: '', tone: 'destination' },
+                boundedCenter,
+              )}
+              onClick={(event) => event.stopPropagation()}
+            >
+              <MapCoordinateMenu menu={coordinateMenu} />
+            </div>
           )}
           {regions !== undefined && (
             <svg
@@ -253,9 +269,21 @@ const MapCanvas = ({
             ))}
         </div>
       )}
+      {isLoading && !hideLoading && (
+        <div className={styles.mapLoading} role="status">
+          <ProgressCircle size={24} label="지도를 불러오는 중이에요." />
+          지도를 불러오고 있어요
+        </div>
+      )}
       {sdkError && (
-        <div className={styles.mapError}>
-          <StatusPanel title="지도를 연결할 수 없어요." description="잠시 후 다시 시도해 주세요." tone="error" />
+        <div className={styles.mapError} role="alert">
+          <strong>지도를 연결할 수 없어요.</strong>
+          <p>잠시 후 다시 시도해 주세요.</p>
+          {onRetry && (
+            <Button variant="secondary" onClick={onRetry}>
+              지도 다시 시도
+            </Button>
+          )}
         </div>
       )}
     </div>

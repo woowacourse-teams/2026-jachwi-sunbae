@@ -1,40 +1,77 @@
 import { render, screen } from '@testing-library/react';
 import { MemoryRouter, Outlet, Route, Routes } from 'react-router-dom';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import PropertyAppLayout from '@/app/layouts/property-app-layout/PropertyAppLayout';
 
 describe('모바일 앱 셸', () => {
   it('로그인 뒤 화면은 바텀탭 없이 홈으로 돌아가는 상단 바를 둔다', () => {
     render(
-      <MemoryRouter initialEntries={['/checklists']}>
+      <MemoryRouter initialEntries={['/compare/history']}>
         <Routes>
           <Route element={<Outlet context={{ memberId: 1, displayName: '이자취', passwordProtected: false }} />}>
             <Route element={<PropertyAppLayout />}>
-              <Route path="/checklists" element={<h1>체크리스트</h1>} />
+              <Route path="/compare/history" element={<h1>앱 화면</h1>} />
             </Route>
           </Route>
         </Routes>
       </MemoryRouter>,
     );
 
-    expect(screen.getByRole('heading', { name: '체크리스트' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: '앱 화면' })).toBeInTheDocument();
     expect(screen.queryByRole('navigation', { name: '주요 메뉴' })).not.toBeInTheDocument();
     expect(screen.getByRole('link', { name: '홈으로 돌아가기' })).toHaveAttribute('href', '/');
   });
 
-  it('동네 찾기 지도는 상단 바 없이 지도 하단 여백 정책을 사용한다', () => {
-    const { container } = render(
-      <MemoryRouter initialEntries={['/neighborhoods/map']}>
-        <Routes>
-          <Route element={<PropertyAppLayout />}>
-            <Route path="/neighborhoods/map" element={<h1>동네 찾기</h1>} />
-          </Route>
-        </Routes>
-      </MemoryRouter>,
+  it.each(['/neighborhoods', '/neighborhoods/areas/11230640'])(
+    '동네 찾기 지도(%s)는 상단 바 없이 지도 하단 여백 정책을 사용한다',
+    (path) => {
+      const { container } = render(
+        <MemoryRouter initialEntries={[path]}>
+          <Routes>
+            <Route element={<PropertyAppLayout />}>
+              <Route path="/neighborhoods/*" element={<h1>동네 찾기</h1>} />
+            </Route>
+          </Routes>
+        </MemoryRouter>,
+      );
+      expect(container.querySelector('[data-map-page="true"]')).not.toBeNull();
+      expect(screen.queryByRole('navigation', { name: '주요 메뉴' })).not.toBeInTheDocument();
+      expect(screen.queryByRole('link', { name: '홈으로 돌아가기' })).not.toBeInTheDocument();
+    },
+  );
+});
+
+describe('데스크탑 앱 셸', () => {
+  it('상단 바 대신 홈 로고·주요 화면 메뉴가 있는 공용 헤더를 둔다', () => {
+    const matchMedia = vi.spyOn(window, 'matchMedia').mockImplementation(
+      (query) =>
+        ({
+          matches: query === '(min-width: 1024px)',
+          media: query,
+          addEventListener: () => undefined,
+          removeEventListener: () => undefined,
+        }) as unknown as MediaQueryList,
     );
-    expect(container.querySelector('[data-map-page="true"]')).not.toBeNull();
-    expect(screen.queryByRole('navigation', { name: '주요 메뉴' })).not.toBeInTheDocument();
-    expect(screen.queryByRole('link', { name: '홈으로 돌아가기' })).not.toBeInTheDocument();
+    try {
+      render(
+        <MemoryRouter initialEntries={['/checklists']}>
+          <Routes>
+            <Route element={<Outlet context={{ memberId: 1, displayName: '이자취', passwordProtected: false }} />}>
+              <Route element={<PropertyAppLayout />}>
+                <Route path="/checklists" element={<h1>체크리스트</h1>} />
+              </Route>
+            </Route>
+          </Routes>
+        </MemoryRouter>,
+      );
+      expect(screen.getByRole('navigation', { name: '주요 화면' })).toBeInTheDocument();
+      expect(screen.getByRole('link', { name: '마이페이지' })).toHaveAttribute('href', '/me');
+      // 홈으로 돌아가는 길은 헤더 로고 하나뿐이고, 휴대폰의 "<" 상단 바는 두지 않는다.
+      expect(screen.getAllByRole('link', { name: '홈으로 돌아가기' })).toHaveLength(1);
+      expect(screen.getByRole('heading', { name: '체크리스트' })).toBeInTheDocument();
+    } finally {
+      matchMedia.mockRestore();
+    }
   });
 });

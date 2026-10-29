@@ -1,5 +1,9 @@
 package com.jachwisunbae.rental.domain;
 
+import com.jachwisunbae.rental.domain.vo.LegalDong;
+import com.jachwisunbae.rental.domain.vo.RentalArea;
+import com.jachwisunbae.rental.domain.vo.RentalPrice;
+import com.jachwisunbae.rental.domain.vo.RentalSource;
 import java.time.LocalDate;
 import java.util.Objects;
 

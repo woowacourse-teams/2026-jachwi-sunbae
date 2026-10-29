@@ -1,28 +1,21 @@
-import { type CSSProperties, type KeyboardEvent, useEffect } from 'react';
+import { css, cx } from '@emotion/css';
+import { type CSSProperties, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 
+import type { MapAddress } from '@/features/map/model/Map';
 import { trackExplorationRecordView } from '@/features/onboarding/lib/explorationJourney';
-import MoneyField from '@/features/property/ui/money-field/MoneyField';
 import { useKeyboardInset } from '@/shared/lib/hooks/useKeyboardInset';
 import BottomActionArea from '@/shared/ui/bottom-action-area/BottomActionArea';
 import { Button } from '@/shared/ui/button/Button';
-import TextField from '@/shared/ui/text-field/TextField';
 import TopNavigation from '@/shared/ui/top-navigation/TopNavigation';
 
 import { type PropertyCreationRouteState, usePropertyCreationForm } from './hooks/usePropertyCreationForm';
 import PropertyLocationPicker from './ui/property-location-picker/PropertyLocationPicker';
 
-import styles from './CreatePropertyPage.module.css';
-
-const stepNotice = (revealedStep: number, isReadyToSubmit: boolean) => {
-  if (isReadyToSubmit) return '필수 정보를 모두 입력했다면 매물을 등록해 주세요.';
-  if (revealedStep === 0) return '보증금을 입력한 뒤 다음을 눌러 주세요.';
-  if (revealedStep === 1) return '월세를 입력한 뒤 다음을 눌러 주세요.';
-  return '위치를 선택한 뒤 다음을 눌러 주세요.';
-};
-
 /** 다른 화면 옆 패널로 열 때 쓴다. 닫기와 등록 뒤 이동을 패널을 연 화면이 정한다. */
 export type PropertyCreationPanel = {
+  /** 지도에서 찍은 위치로 열면 그 주소·좌표를 미리 채운다. */
+  initialLocation?: MapAddress;
   onClose: () => void;
   onCreated: (propertyId: number) => void;
 };
@@ -30,18 +23,13 @@ export type PropertyCreationPanel = {
 const CreatePropertyPage = ({ panel }: { panel?: PropertyCreationPanel }) => {
   const routeState = (useLocation().state as PropertyCreationRouteState | null) ?? {};
   const keyboardInset = useKeyboardInset();
-  const form = usePropertyCreationForm(panel ? {} : routeState, { onCreated: panel?.onCreated });
-  const { values, errors, revealedStep, nameStep } = form;
+  const form = usePropertyCreationForm(panel ? { selectedLocation: panel.initialLocation } : routeState, {
+    onCreated: panel?.onCreated,
+  });
   useEffect(() => {
     if (routeState.fromExploration) trackExplorationRecordView();
   }, [routeState.fromExploration]);
-  const isNameStep = revealedStep >= nameStep;
   const Root = panel ? 'div' : 'main';
-  const submitOnKeyboardEnter = (event: KeyboardEvent<HTMLInputElement>) => {
-    if (event.key !== 'Enter') return;
-    event.preventDefault();
-    event.currentTarget.form?.requestSubmit();
-  };
 
   return (
     // 패널로 열면 패널을 연 화면의 main 안에 들어가므로 main을 겹치지 않는다.
@@ -56,86 +44,106 @@ const CreatePropertyPage = ({ panel }: { panel?: PropertyCreationPanel }) => {
           navigationIcon="close"
         />
         {routeState.fromExploration && (
-          <p className={styles.stepNotice}>
-            찾아본 동네에서 기록을 시작해요. 실제 방문한 방의 위치는 주소 단계에서 확인해주세요.
-          </p>
+          <p className={styles.stepNotice}>찾아본 동네에서 기록을 시작해요. 실제 방문한 방의 위치를 골라 주세요.</p>
         )}
         <form
           className={styles.formContainer}
           style={{ '--keyboard-inset': `${keyboardInset}px` } as CSSProperties}
-          onSubmit={form.submitStep}
+          onSubmit={form.submit}
         >
-          <MoneyField
-            label="보증금 입력"
-            fieldClassName={styles.depositField}
-            fieldSize="large"
-            floatingLabel
-            placeholder="보증금 입력"
-            value={values.depositAmount}
-            onValueChange={(value) => form.changeMoney('depositAmount', value)}
-            error={errors.depositAmount}
-            enterKeyHint="next"
-            onKeyDown={submitOnKeyboardEnter}
-          />
-          {revealedStep >= 1 && (
-            <MoneyField
-              label="월세 입력"
-              fieldClassName={styles.rentField}
-              fieldSize="large"
-              floatingLabel
-              placeholder="월세 입력"
-              value={values.monthlyRentAmount}
-              onValueChange={(value) => form.changeMoney('monthlyRentAmount', value)}
-              error={errors.monthlyRentAmount}
-              enterKeyHint="next"
-              onKeyDown={submitOnKeyboardEnter}
-              autoFocus={revealedStep === 1}
-            />
-          )}
-          {!form.hasPresetLocation && revealedStep >= 2 && (
-            <PropertyLocationPicker location={form.location} search={form.search} />
-          )}
-          {isNameStep && (
-            <TextField
-              label="매물 이름 입력"
-              fieldClassName={styles.nameField}
-              fieldSize="large"
-              floatingLabel
-              placeholder="매물 이름 입력"
-              maxLength={30}
-              value={values.name}
-              onFocus={form.focusName}
-              onChange={form.changeName}
-              error={errors.name}
-              enterKeyHint="done"
-              onKeyDown={submitOnKeyboardEnter}
-            />
-          )}
+          <PropertyLocationPicker location={form.location} search={form.search} />
           {form.createError !== null && (
             <p className={styles.errorNotice} role="alert">
               {form.createError}
             </p>
           )}
           <p className={styles.stepNotice}>
-            {stepNotice(revealedStep, isNameStep && form.location.status === 'ready')}
+            고른 위치로 새 매물을 만들어요. 보증금, 월세 같은 정보는 매물 상세에서 항목을 눌러 채워 주세요.
           </p>
-          {/* iOS 숫자 키패드에는 확인 키가 없어서, 키패드가 열려 있어도 버튼을 키패드 바로 위에 띄운다. */}
           <BottomActionArea>
-            <Button
-              variant="primary"
-              type="submit"
-              fullWidth
-              isLoading={form.isCreating}
-              // 누를 때 입력칸 포커스를 뺏지 않아 키패드가 닫혔다 열리며 버튼이 튀지 않는다.
-              onMouseDown={(event) => event.preventDefault()}
-            >
-              {isNameStep ? '매물 등록' : '다음'}
+            <Button variant="primary" type="submit" fullWidth isLoading={form.isCreating}>
+              매물 등록
             </Button>
           </BottomActionArea>
         </form>
       </div>
     </Root>
   );
+};
+
+const styles = {
+  // 다른 요소의 선택자에서 `.CreatePropertyPage-page`로 가리킨다.
+  page: cx(
+    css`
+      label: CreatePropertyPage-page;
+      min-height: 100%;
+      background: var(--color-canvas, #fff);
+    `,
+    'CreatePropertyPage-page',
+  ),
+
+  content: css`
+    label: CreatePropertyPage-content;
+    padding: 0 1.25rem calc(6rem + env(safe-area-inset-bottom));
+
+    /* 패널로 열면 화면 맨 아래가 아닌 패널 스크롤 영역 아래에 버튼을 붙인다. */
+    .CreatePropertyPage-page[data-panel='true'] & {
+      padding-bottom: 1rem;
+    }
+  `,
+
+  createNavigation: css`
+    label: CreatePropertyPage-createNavigation;
+
+    &[data-has-back='true'] h1 {
+      font-size: 1.08rem;
+    }
+  `,
+
+  formContainer: css`
+    label: CreatePropertyPage-formContainer;
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+    margin-top: 0.6rem;
+
+    & > [data-divider] {
+      position: fixed;
+      right: 0;
+      bottom: var(--keyboard-inset, 0px);
+      left: 0;
+      z-index: 20;
+      box-sizing: border-box;
+      width: 100%;
+      max-width: var(--app-max-width);
+      margin: 0 auto;
+      padding: 0.75rem 1.25rem calc(0.75rem + env(safe-area-inset-bottom));
+      transition: bottom 0.18s ease-out;
+    }
+
+    .CreatePropertyPage-page[data-panel='true'] & > [data-divider] {
+      position: sticky;
+      bottom: 0;
+      max-width: none;
+      margin: 0 -1.25rem;
+    }
+  `,
+
+  errorNotice: css`
+    label: CreatePropertyPage-errorNotice;
+    margin: 0;
+    color: var(--color-error, #e53e3e);
+    font-size: 0.8rem;
+    font-weight: 600;
+  `,
+
+  stepNotice: css`
+    label: CreatePropertyPage-stepNotice;
+    margin: 0;
+    color: var(--color-muted, #868b94);
+    font-size: 0.78rem;
+    line-height: 1.55;
+  `,
 };
 
 export default CreatePropertyPage;

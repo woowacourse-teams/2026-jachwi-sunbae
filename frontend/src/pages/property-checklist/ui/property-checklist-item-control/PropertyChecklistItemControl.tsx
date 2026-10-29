@@ -6,14 +6,13 @@ import {
 } from '@/features/property/api/usePropertyChecklistItemMutations';
 import type { PropertyChecklistItem, PropertyChecklistItemStatus } from '@/features/property/model/Property';
 import Icon from '@/shared/ui/icon/Icon';
-import SelectionControl from '@/shared/ui/selection-control/SelectionControl';
 
-import styles from './PropertyChecklistItemControl.module.css';
+import * as styles from './PropertyChecklistItemControl.styles';
 
-const STATUS_OPTIONS: Array<{ value: PropertyChecklistItemStatus; label: string }> = [
+/** 미확인은 아무것도 고르지 않은 상태라 버튼으로 두지 않는다. 고른 상태를 다시 누르면 미확인으로 돌아간다. */
+const STATUS_OPTIONS: Array<{ value: Exclude<PropertyChecklistItemStatus, 'UNCONFIRMED'>; label: string }> = [
   { value: 'GOOD', label: '괜찮음' },
   { value: 'CAUTION', label: '주의' },
-  { value: 'UNCONFIRMED', label: '미확인' },
 ];
 
 const PropertyChecklistItemControl = ({
@@ -36,10 +35,21 @@ const PropertyChecklistItemControl = ({
   const [memo, setMemo] = useState(item.memo);
   const statusMutation = usePropertyChecklistItemStatusMutation(propertyId, propertyChecklistId);
   const memoMutation = usePropertyChecklistItemMemoMutation(propertyId, propertyChecklistId);
+  const hasMemo = item.memo.trim() !== '';
 
   useEffect(() => {
     if (!isMemoEditing) setMemo(item.memo);
   }, [isMemoEditing, item.memo]);
+
+  const selectStatus = (status: PropertyChecklistItemStatus) => {
+    const nextStatus = item.status === status ? 'UNCONFIRMED' : status;
+    statusMutation.mutate({ itemId: item.itemId, status: nextStatus });
+  };
+
+  const cancelMemo = () => {
+    setMemo(item.memo);
+    onFinishMemoEdit();
+  };
 
   const saveMemo = async () => {
     const nextMemo = memo.trim();
@@ -57,31 +67,37 @@ const PropertyChecklistItemControl = ({
   };
 
   return (
-    <li className={styles.item}>
-      <fieldset>
-        <legend className="sr-only">{item.question}</legend>
-        <div className={styles.content}>
-          <strong aria-hidden="true">{item.question}</strong>
-          <div className={styles.statuses}>
-            {STATUS_OPTIONS.map((option) => (
-              <SelectionControl
-                key={option.value}
-                type="radio"
-                dataAttributes={{ 'data-status': option.value }}
-                name={`property-checklist-item-${item.itemId}`}
-                value={option.value}
-                checked={item.status === option.value}
-                disabled={statusMutation.isPending}
-                onSelect={() => statusMutation.mutate({ itemId: item.itemId, status: option.value })}
-              >
-                <span aria-hidden="true" />
-                <small>{option.label}</small>
-              </SelectionControl>
-            ))}
-          </div>
+    <li className={styles.item} data-status={item.status}>
+      <div className={styles.row}>
+        <div className={styles.question}>
+          <strong id={`property-checklist-question-${item.itemId}`}>{item.question}</strong>
+          {hasMemo && !isMemoEditing && <p className={styles.memoText}>{item.memo}</p>}
         </div>
-      </fieldset>
-      {isMemoEditing ? (
+        <div className={styles.statuses} role="group" aria-labelledby={`property-checklist-question-${item.itemId}`}>
+          {STATUS_OPTIONS.map((option) => (
+            <button
+              key={option.value}
+              type="button"
+              data-status={option.value}
+              aria-pressed={item.status === option.value}
+              disabled={statusMutation.isPending}
+              onClick={() => selectStatus(option.value)}
+            >
+              {option.label}
+            </button>
+          ))}
+          <button
+            type="button"
+            className={styles.memoButton}
+            aria-label={`${item.question} ${hasMemo ? '메모 편집' : '메모 추가'}`}
+            disabled={isMemoEditDisabled || isMemoEditing}
+            onClick={onStartMemoEdit}
+          >
+            <Icon name={hasMemo ? 'edit' : 'plus'} size={16} />
+          </button>
+        </div>
+      </div>
+      {isMemoEditing && (
         <div className={styles.memoPanel} id={`property-checklist-memo-${item.itemId}`}>
           <label className="sr-only" htmlFor={`property-checklist-memo-input-${item.itemId}`}>
             {item.question} 메모
@@ -91,18 +107,21 @@ const PropertyChecklistItemControl = ({
             value={memo}
             maxLength={500}
             rows={2}
+            // 메모 버튼을 눌러 열었으니 바로 적을 수 있게 포커스를 옮긴다.
+            autoFocus
             placeholder="확인한 내용을 메모해 주세요."
             onChange={(event) => setMemo(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === 'Escape') cancelMemo();
+              if (event.key === 'Enter' && (event.metaKey || event.ctrlKey)) void saveMemo();
+            }}
           />
           <div className={styles.memoActions}>
             <button
               type="button"
               className={styles.memoCancelButton}
               disabled={memoMutation.isPending}
-              onClick={() => {
-                setMemo(item.memo);
-                onFinishMemoEdit();
-              }}
+              onClick={cancelMemo}
             >
               취소
             </button>
@@ -115,18 +134,6 @@ const PropertyChecklistItemControl = ({
               {memoMutation.isPending ? '저장 중…' : '저장'}
             </button>
           </div>
-        </div>
-      ) : (
-        <div className={styles.memoSummary}>
-          <p>{item.memo.trim() === '' ? '메모 없음' : item.memo}</p>
-          <button
-            type="button"
-            aria-label={`${item.question} 메모 편집`}
-            disabled={isMemoEditDisabled}
-            onClick={onStartMemoEdit}
-          >
-            <Icon name="edit" size={15} />
-          </button>
         </div>
       )}
       {(statusMutation.isError || memoMutation.isError) && (

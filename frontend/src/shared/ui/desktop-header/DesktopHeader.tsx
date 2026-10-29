@@ -1,17 +1,16 @@
+import { css } from '@emotion/css';
 import { Link, NavLink } from 'react-router-dom';
 
 import iconProfile from '@/shared/assets/icon-profile.webp';
 import logo from '@/shared/assets/jachwi-sunbae-goose.webp';
+import logo2x from '@/shared/assets/jachwi-sunbae-goose@2x.webp';
 import { HOME_PATH, RECORDS_PATH } from '@/shared/lib/navigation/appPaths';
 
 import { useRegisterDesktopHeaderSlot } from './DesktopHeaderSlot';
 
-import styles from './DesktopHeader.module.css';
-
 /** 데스크탑 헤더에서 바로 옮겨 갈 수 있는 주요 화면. */
 const DESKTOP_NAV_ITEMS = [
   { label: '본 방 기록', to: RECORDS_PATH },
-  { label: '인프라 지도', to: '/map' },
   { label: '동네 찾기', to: '/neighborhoods' },
   { label: '체크리스트', to: '/checklists' },
   { label: '방 비교', to: '/compare' },
@@ -32,7 +31,7 @@ const DesktopHeader = ({ className }: DesktopHeaderProps) => {
   return (
     <header className={`${styles.header} ${className ?? ''}`.trim()}>
       <Link className={styles.homeLogo} to={HOME_PATH} aria-label="홈으로 돌아가기">
-        <img src={logo} width={160} height={160} alt="" />
+        <img src={logo} srcSet={`${logo} 1x, ${logo2x} 2x`} width={64} height={64} alt="" />
       </Link>
       {/* 지도 화면의 검색창처럼 화면마다 헤더 가운데에 두는 요소가 들어오는 자리. */}
       <div ref={registerSlot} className={styles.slot} />
@@ -48,6 +47,118 @@ const DesktopHeader = ({ className }: DesktopHeaderProps) => {
       </Link>
     </header>
   );
+};
+
+const styles = {
+  header: css`
+    label: DesktopHeader-header;
+    /*
+     * 화면마다 기준 글자 크기(rem)를 키우는 경우가 있어도 헤더는 어디서나 같은 크기로 보이게
+     * 글자 크기를 16px로 고정하고 안쪽 크기는 em으로 잡는다.
+     */
+    font-size: 16px;
+    /* 가운데 자리가 비어도 메뉴·마이페이지 위치가 바뀌지 않게 격자 대신 가로 줄로 둔다. */
+    display: flex;
+    align-items: center;
+    gap: 1em;
+    box-sizing: border-box;
+    width: 100%;
+    padding: max(1.1em, env(safe-area-inset-top)) 1.5em 0.8em;
+    /* 화면마다 표면색 변수가 달라도 헤더는 흰색으로 통일한다. */
+    background: #fff;
+    border-bottom: 1px solid #eceef1;
+  `,
+
+  homeLogo: css`
+    label: DesktopHeader-homeLogo;
+    display: block;
+    border-radius: 0.75em;
+
+    &:focus-visible {
+      outline: 2px solid var(--color-focus);
+      outline-offset: 3px;
+    }
+
+    & img {
+      display: block;
+      width: 2.5em;
+      height: 2.5em;
+      border-radius: 0.75em;
+    }
+  `,
+
+  slot: css`
+    label: DesktopHeader-slot;
+    display: flex;
+    min-width: 0;
+    flex: 0 1 28em;
+    align-items: center;
+    gap: 0.5em;
+
+    &:empty {
+      display: none;
+    }
+  `,
+
+  nav: css`
+    label: DesktopHeader-nav;
+    display: flex;
+    gap: 0;
+    margin-left: auto;
+
+    /* 메뉴는 마우스를 올리면 살짝 둥근 네모로 옅게만 표시하고, 지금 화면은 파란 글자로 둔다. */
+    & a {
+      padding: 0.5em 0.6em;
+      border-radius: 0.5em;
+      color: #6b7079;
+      font-size: 0.95em;
+      font-weight: 600;
+      text-decoration: none;
+      transition:
+        background-color 0.18s ease,
+        color 0.18s ease;
+    }
+
+    & a:hover {
+      background: #f6f7f9;
+      color: #25282d;
+    }
+
+    & a[aria-current='page'] {
+      color: var(--color-brand-blue);
+      font-weight: 700;
+    }
+
+    & a[aria-current='page']:hover {
+      color: var(--color-brand-blue);
+    }
+  `,
+
+  /* 메뉴와 구분되도록 마이페이지는 메뉴에서 조금 떨어뜨린다. */
+  profile: css`
+    label: DesktopHeader-profile;
+    display: grid;
+    margin-left: 1em;
+    width: 2.4em;
+    height: 2.4em;
+    border-radius: 0.5em;
+    place-items: center;
+    transition: background-color 0.18s ease;
+
+    & img {
+      width: 2.1em;
+      height: 2.1em;
+    }
+
+    &:hover {
+      background: #f6f7f9;
+    }
+
+    &:focus-visible {
+      outline: 2px solid var(--color-focus);
+      outline-offset: 3px;
+    }
+  `,
 };
 
 export default DesktopHeader;

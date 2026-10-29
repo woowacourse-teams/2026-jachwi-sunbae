@@ -19,6 +19,8 @@ import type {
   PropertyChecklistOverview,
   PropertyChecklistProgress,
   PropertyChecklistStageSummary,
+  PropertyCommuteStatus,
+  PropertyCommuteTimes,
   PropertyDetail,
   PropertyLocation,
   PropertyMemoDocument,
@@ -377,4 +379,28 @@ export const parseNoContent = (value: unknown): undefined => {
   }
 
   return undefined;
+};
+
+const COMMUTE_STATUSES = ['REACHABLE', 'UNREACHABLE', 'NO_LOCATION'] as const;
+
+export const parsePropertyCommuteTimes = (value: unknown): PropertyCommuteTimes => {
+  const record = readRecord(value);
+  return {
+    maxMinutes: readInteger(record, 'maxMinutes', 1),
+    maxTransfers: readInteger(record, 'maxTransfers'),
+    properties: readArray(record, 'properties').map((item) => {
+      const property = readRecord(item);
+      const status = property.status;
+      if (!COMMUTE_STATUSES.some((candidate) => candidate === status))
+        throw new Error('매물 통근 상태가 올바르지 않습니다.');
+      const commuteMinutes = readNullableInteger(property, 'commuteMinutes');
+      if ((status === 'REACHABLE') !== (commuteMinutes !== null))
+        throw new Error('매물 통근 시간이 상태와 맞지 않습니다.');
+      return {
+        propertyId: readInteger(property, 'propertyId', 1),
+        status: status as PropertyCommuteStatus,
+        commuteMinutes,
+      };
+    }),
+  };
 };

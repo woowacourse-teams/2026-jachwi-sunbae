@@ -27,7 +27,7 @@ export default defineConfig(
       'simple-import-sort': simpleImportSort,
     },
     rules: {
-      // 외부 패키지 → 레이어 별칭(@/) → 같은 slice의 상대 경로 → 스타일 순서로 묶는다.
+      // 외부 패키지 → 레이어 별칭(@/) → 같은 slice의 상대 경로 → 스타일(*.styles) 순서로 묶는다.
       'simple-import-sort/imports': [
         'error',
         {
@@ -36,11 +36,13 @@ export default defineConfig(
             ['^(?!@/)@?\\w'],
             ['^@/app/', '^@/pages/', '^@/features/', '^@/shared/'],
             ['^\\.'],
-            ['^.+\\.css$'],
+            ['^.+\\.styles$'],
           ],
         },
       ],
       'no-undef': 'off',
+      // 전역 스타일은 Emotion의 injectGlobal 태그 템플릿으로 넣는다.
+      '@typescript-eslint/no-unused-expressions': ['error', { allowTaggedTemplates: true }],
       '@typescript-eslint/no-unused-vars': [
         'warn',
         {

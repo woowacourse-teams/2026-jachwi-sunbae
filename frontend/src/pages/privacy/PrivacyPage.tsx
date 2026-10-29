@@ -1,8 +1,9 @@
+import { css, cx } from '@emotion/css';
 import { useNavigate, useNavigationType } from 'react-router-dom';
 
-import TopNavigation from '@/shared/ui/top-navigation/TopNavigation';
-
-import styles from './PrivacyPage.module.css';
+import { createAccountDeletionMailto } from '@/shared/config/accountDeletion';
+import AppBar from '@/shared/ui/app-bar/AppBar';
+import { ButtonLink } from '@/shared/ui/button/Button';
 
 const PrivacyPage = () => {
   const navigate = useNavigate();
@@ -17,8 +18,8 @@ const PrivacyPage = () => {
 
   return (
     <main className={styles.page}>
+      <AppBar title="개인정보 처리방침" onBack={goBack} backLabel="이전 화면으로 돌아가기" />
       <div className={styles.content}>
-        <TopNavigation title="개인정보 처리방침" onBack={goBack} backLabel="이전 화면으로 돌아가기" />
         <section className={styles.section} aria-labelledby="privacy-overview-heading">
           <p className={styles.eyebrow}>개인정보 처리방침</p>
           <h1 id="privacy-overview-heading">자취선배는 필요한 정보만 처리합니다.</h1>
@@ -70,16 +71,25 @@ const PrivacyPage = () => {
           </p>
           <ol>
             <li>이메일 제목에 “자취선배 계정 및 데이터 삭제 요청”이라고 적어 주세요.</li>
-            <li>계정을 확인할 수 있도록 사용한 닉네임을 적어 주세요. 비밀번호는 이메일에 적지 마세요.</li>
+            <li>
+              계정을 확인할 수 있도록 회원 번호를 적어 주세요. 마이 화면의 계정 삭제 요청을 이용하면 자동으로 적혀요.
+            </li>
             <li>계정 전체 또는 삭제를 원하는 데이터 범위를 적어 보내 주세요.</li>
           </ol>
           <p>
             요청이 확인되면 해당 계정과 연결된 회원·매물·체크리스트·사진 데이터를 삭제합니다. 법령상 보관이 필요한
             정보가 있는 경우에는 해당 정보와 보관 사유 및 기간을 안내하고, 필요한 범위에서 분리 보관합니다.
           </p>
-          <a href="mailto:conditionaltype@gmail.com?subject=%EC%9E%90%EC%B7%A8%EC%84%A0%EB%B0%B0%20%EA%B3%84%EC%A0%95%20%EB%B0%8F%20%EB%8D%B0%EC%9D%B4%ED%84%B0%20%EC%82%AD%EC%A0%9C%20%EC%9A%94%EC%B2%AD">
+          {/* 메일 앱을 여는 외부 주소라 라우터 이동 대신 문서 이동으로 연다. */}
+          <ButtonLink
+            className={styles.mailButton}
+            to={createAccountDeletionMailto()}
+            reloadDocument
+            variant="primary"
+            fullWidth
+          >
             계정 및 데이터 삭제 이메일 보내기
-          </a>
+          </ButtonLink>
         </section>
 
         <section className={styles.card} aria-labelledby="sharing-heading">
@@ -126,6 +136,139 @@ const PrivacyPage = () => {
       </div>
     </main>
   );
+};
+
+const styles = {
+  /* 마이와 같은 흰 바탕·회색 카드. 읽기 화면이라 넓은 화면에서도 본문은 40rem까지만 넓힌다. */
+  page: css`
+    label: PrivacyPage-page;
+    height: 100%;
+    overflow-y: auto;
+    background: var(--color-canvas);
+  `,
+
+  content: css`
+    label: PrivacyPage-content;
+    width: min(100%, 40rem);
+    margin: 0 auto;
+    padding: 0 1rem calc(2rem + env(safe-area-inset-bottom));
+  `,
+
+  section: css`
+    label: PrivacyPage-section;
+    padding: 1.4rem 0 1rem;
+
+    & h1 {
+      margin: 0;
+      font-size: 1.35rem;
+      line-height: 1.35;
+      letter-spacing: -0.04em;
+      word-break: keep-all;
+    }
+
+    & > p:last-child {
+      margin-top: 1rem;
+    }
+  `,
+
+  eyebrow: css`
+    label: PrivacyPage-eyebrow;
+    margin: 0 0 0.35rem;
+    color: var(--color-primary);
+    font-size: 0.68rem;
+    font-weight: 800;
+  `,
+
+  // 다른 요소의 선택자에서 `.PrivacyPage-card`로 가리킨다.
+  card: cx(
+    css`
+      label: PrivacyPage-card;
+
+      & p,
+      & li {
+        margin-top: 1rem;
+      }
+
+      & {
+        margin-top: 0.8rem;
+        padding: 1.15rem;
+        border-radius: var(--radius-card);
+        background: var(--color-card-surface);
+      }
+
+      & h2 {
+        margin: 0;
+        font-size: 0.9rem;
+      }
+
+      & ul {
+        display: grid;
+        gap: 0.35rem;
+        margin: 0.7rem 0;
+        padding-left: 1.2rem;
+      }
+
+      & p {
+        margin: 0.65rem 0 0;
+      }
+    `,
+    'PrivacyPage-card',
+  ),
+
+  mailButton: css`
+    label: PrivacyPage-mailButton;
+    margin-top: 1rem;
+  `,
+
+  externalNotice: css`
+    label: PrivacyPage-externalNotice;
+    color: var(--color-muted);
+    font-size: 0.72rem;
+    line-height: 1.65;
+    margin: 1rem 0 0;
+
+    & a {
+      color: var(--color-primary-dark);
+      font-weight: 750;
+    }
+  `,
+
+  strongNotice: css`
+    label: PrivacyPage-strongNotice;
+
+    .PrivacyPage-card & {
+      color: var(--color-primary-dark);
+      font-weight: 750;
+    }
+  `,
+
+  status: css`
+    label: PrivacyPage-status;
+
+    .PrivacyPage-card & {
+      padding: 0.65rem 0.75rem;
+      border-radius: var(--radius-sm);
+      background: var(--color-surface-brand);
+      color: var(--color-primary-dark);
+      font-weight: 750;
+    }
+  `,
+
+  actions: css`
+    label: PrivacyPage-actions;
+    display: grid;
+    grid-template-columns: 1fr 1.4fr;
+    gap: 0.55rem;
+    margin-top: 0.8rem;
+
+    & button {
+      min-height: 2.7rem;
+      border-radius: 999px;
+      font-size: 0.72rem;
+      font-weight: 750;
+      cursor: pointer;
+    }
+  `,
 };
 
 export default PrivacyPage;

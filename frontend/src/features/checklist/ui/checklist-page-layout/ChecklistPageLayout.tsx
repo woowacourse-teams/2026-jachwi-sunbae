@@ -1,8 +1,7 @@
+import { css } from '@emotion/css';
 import type { ReactNode } from 'react';
 
 import TopNavigation from '@/shared/ui/top-navigation/TopNavigation';
-
-import styles from './ChecklistPageLayout.module.css';
 
 type ChecklistPageLayoutProps = {
   title: string;
@@ -41,5 +40,27 @@ const ChecklistPageLayout = ({
     </div>
   </main>
 );
+
+const styles = {
+  page: css`
+    label: ChecklistPageLayout-page;
+    min-height: 100%;
+    background: var(--color-canvas);
+  `,
+
+  container: css`
+    label: ChecklistPageLayout-container;
+    width: 100%;
+    max-width: 39rem;
+    min-height: 100%;
+    margin: 0 auto;
+    padding: 0 1rem 6rem;
+  `,
+
+  stageTabs: css`
+    label: ChecklistPageLayout-stageTabs;
+    margin: 0.25rem 0 0.65rem;
+  `,
+};
 
 export default ChecklistPageLayout;

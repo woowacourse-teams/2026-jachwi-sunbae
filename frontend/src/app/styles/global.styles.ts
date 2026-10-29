@@ -1,0 +1,84 @@
+import { injectGlobal } from '@emotion/css';
+
+injectGlobal`
+:root {
+  color: var(--color-ink);
+  font-family:
+    Pretendard,
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
+    sans-serif;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+/*
+ * 모바일에서 화면 전체가 핀치·더블탭으로 확대되지 않게 한다. 스크롤은 그대로 둔다.
+ * 지도 확대·축소는 지도 SDK가 터치 이벤트로 직접 처리하므로 영향이 없다.
+ */
+html {
+  height: 100%;
+  background: #fff;
+  touch-action: pan-x pan-y;
+}
+
+/*
+ * body에 overflow: hidden을 두면 iOS 사파리·안드로이드 크롬의 기본 당김 새로고침이 발동하지 않는다.
+ * 실제 스크롤은 앱 셸(.root, 100dvh + overflow: hidden)이 가두므로 문서가 넘칠 일은 없다.
+ */
+body {
+  height: 100%;
+  margin: 0;
+  background: #fff;
+}
+
+#root {
+  height: 100%;
+}
+
+button,
+a {
+  -webkit-tap-highlight-color: transparent;
+}
+
+button {
+  font: inherit;
+}
+
+/* 입력 중 깜빡이는 커서는 브랜드색을 쓴다. */
+input,
+textarea {
+  caret-color: var(--color-brand-yellow);
+}
+
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--color-focus) 70%, transparent);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 1ms !important;
+  }
+}
+
+@media (max-width: 430px) {
+  html,
+  body {
+    background: var(--color-surface);
+  }
+}
+`;

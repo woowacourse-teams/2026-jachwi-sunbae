@@ -6,6 +6,10 @@ export const COMMUTE_COLORS = {
 };
 
 export type CommuteColorGroup = keyof typeof COMMUTE_COLORS;
+/** 통근으로는 갈 수 있지만 월세 조건보다 비싼 동네. 통근 색보다 눈에 덜 띄게 옅은 회색으로 깐다. */
+export const OUT_OF_RENT_COLOR = { fillColor: '#A9AEB6', strokeColor: '#C4C8CE' };
+/** 월세 조건 밖 동네는 통근 색 동네 뒤에 그린다. */
+export const OUT_OF_RENT_DRAW_STAGE = 3;
 /** 최대 통근 시간과 상관없는 고정 구간이다. 최대 시간이 짧으면 한두 색만 나온다. */
 export const COMMUTE_BAND_LIMITS = { fast: 15, medium: 30 } as const;
 const GROUPS: CommuteColorGroup[] = ['fast', 'medium', 'slow'];

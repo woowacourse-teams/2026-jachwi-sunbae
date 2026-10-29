@@ -1,10 +1,10 @@
+import { css } from '@emotion/css';
 import type { Meta, StoryObj } from '@storybook/react-webpack5';
 import type { CSSProperties } from 'react';
+import { fn } from 'storybook/test';
 
 import type { MapMarker } from '../../model/Map';
 import MapMarkerView from './MapMarkerView';
-
-import styles from './MapMarkerView.stories.module.css';
 
 const sampleMarkers: Array<{ name: string; marker: MapMarker }> = [
   {
@@ -63,11 +63,18 @@ const sampleMarkers: Array<{ name: string; marker: MapMarker }> = [
 ];
 
 const meta = {
-  title: '지도/MapMarkerView',
+  title: '기능/지도/MapMarkerView',
   component: MapMarkerView,
+  args: {
+    onSelectMarker: fn(),
+  },
   argTypes: {
-    marker: { control: false },
-    onSelectMarker: { action: 'select marker' },
+    marker: {
+      control: 'object',
+      description: '그릴 마커. tone으로 매물·현재 위치·시설·군집 모양이 갈리고, actionable이면 누를 수 있다.',
+    },
+    selectedMarkerId: { control: 'text', description: '이 ID와 같은 마커를 선택된 모양으로 그린다.' },
+    onSelectMarker: { description: '마커를 눌렀을 때. 누른 마커를 넘긴다.' },
   },
   parameters: {
     layout: 'fullscreen',
@@ -78,7 +85,9 @@ export default meta;
 
 type Story = StoryObj<typeof meta>;
 
+/** 모든 모양을 한눈에 비교하는 모음이라 컨트롤을 따르지 않는다. 하나씩 바꿔 보려면 Actionable·Active 스토리를 쓴다. */
 export const Variants: Story = {
+  parameters: { controls: { disable: true } },
   args: {
     marker: sampleMarkers[0].marker,
   },
@@ -131,4 +140,37 @@ export const ZoomSizes: Story = {
       </div>
     </div>
   ),
+};
+
+const styles = {
+  stage: css`
+    label: MapMarkerView.stories-stage;
+    display: grid;
+    gap: 1rem;
+    padding: 1.5rem;
+    background:
+      linear-gradient(28deg, transparent 45%, rgb(255 255 255 / 82%) 46% 51%, transparent 52%),
+      repeating-linear-gradient(0deg, transparent 0 52px, rgb(160 151 128 / 20%) 53px 54px), #ece8dc;
+  `,
+
+  grid: css`
+    label: MapMarkerView.stories-grid;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+    gap: 2.6rem 1.5rem;
+    align-items: center;
+    justify-items: center;
+    min-height: 12rem;
+  `,
+
+  item: css`
+    label: MapMarkerView.stories-item;
+    display: grid;
+    min-width: 7rem;
+    justify-items: center;
+    gap: 0.75rem;
+    color: var(--color-muted);
+    font-size: 0.72rem;
+    font-weight: 700;
+  `,
 };

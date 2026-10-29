@@ -1,19 +1,30 @@
 import type { MapBounds, MapMarker } from '../model/Map';
 import { clampToSouthKorea, SOUTH_KOREA_BOUNDS } from './mapLocation';
+import { markerAnchorTransform } from './mapMarkerPresentation';
 const clamp = (value: number, min: number, max: number): number => Math.min(Math.max(value, min), max);
 const NAVER_ZOOM_BASE = 20;
 const MIN_NAVER_ZOOM = 6;
 const toNaverZoom = (level: number): number => clamp(NAVER_ZOOM_BASE - level, MIN_NAVER_ZOOM, 21);
 const toMapLevel = (zoom: number): number => clamp(NAVER_ZOOM_BASE - zoom, 1, 14);
 let naverSdkPromise: Promise<void> | null = null;
+let hasAuthFailed = false;
+export const NAVER_AUTH_FAILURE_EVENT = 'jachwi:naver-auth-failure';
+export const isNaverSdkAvailable = () => !hasAuthFailed && window.naver?.maps != null;
 
 const loadNaverSdk = (clientId: string): Promise<void> => {
+  if (hasAuthFailed) return Promise.reject(new Error('Naver Maps 인증에 실패했습니다.'));
   if (naverSdkPromise !== null) return naverSdkPromise;
-  if (window.naver?.maps !== undefined) return Promise.resolve();
+  if (isNaverSdkAvailable()) return Promise.resolve();
   naverSdkPromise = new Promise((resolve, reject) => {
+    // 인증 응답은 SDK ready 이후에도 도착하며, 실패하면 SDK가 내부 객체를 폐기한다.
+    window.navermap_authFailure = () => {
+      hasAuthFailed = true;
+      reject(new Error('Naver Maps 인증에 실패했습니다.'));
+      window.dispatchEvent(new Event(NAVER_AUTH_FAILURE_EVENT));
+    };
     const existing = document.querySelector<HTMLScriptElement>('script[data-jachwi-naver-map]');
     const ready = () => {
-      if (window.naver?.maps === undefined) {
+      if (!isNaverSdkAvailable()) {
         naverSdkPromise = null;
         document.querySelector('script[data-jachwi-naver-map]')?.remove();
         reject(new Error('Naver Maps SDK를 불러오지 못했습니다.'));
@@ -126,7 +137,7 @@ export const naverEngine = (clientId: string, customStyleId?: string): LiveEngin
   addListener: (map, event, callback) =>
     window.naver!.maps.Event.addListener(map, event, (value) => callback(value?.coord?.lat(), value?.coord?.lng())),
   removeListener: (listener) => {
-    if (listener !== undefined && window.naver?.maps !== undefined) window.naver.maps.Event.removeListener(listener);
+    if (listener !== undefined && isNaverSdkAvailable()) window.naver!.maps.Event.removeListener(listener);
   },
   createOverlay: (map, marker, content, zIndex) => {
     const overlay = new window.naver!.maps.OverlayView();
@@ -137,9 +148,7 @@ export const naverEngine = (clientId: string, customStyleId?: string): LiveEngin
     content.style.position = 'absolute';
     content.style.left = '0';
     content.style.top = '0';
-    // 회전된 물방울의 끝은 원형 이미지 중심에서 높이의 sqrt(2)/2만큼 아래에 있다.
-    const isPin = marker.tone === 'property' || marker.tone === 'selected';
-    content.style.transform = isPin ? 'translate(-50%, -120.710678%)' : 'translate(-50%, -50%)';
+    content.style.transform = markerAnchorTransform(marker);
     element.style.position = 'absolute';
     element.style.top = '0';
     element.style.left = '0';

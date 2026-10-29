@@ -1,5 +1,5 @@
 import { formatRentSummary } from '@/features/property/lib/propertyFormat';
-import type { PropertySummary } from '@/features/property/model/Property';
+import type { PropertyCommuteTime, PropertySummary } from '@/features/property/model/Property';
 
 export const propertyArea = (address: string | null) => {
   const parts = address?.split(/\s+/) ?? [];
@@ -27,3 +27,27 @@ export const recordPresentation = (property: PropertySummary) => ({
   checklist: property.stages.find((stage) => stage.stage === 'ON_SITE') ?? null,
   representativePhoto: property.representativePhoto,
 });
+
+type RecordPoint = { latitude: number | null; longitude: number | null };
+
+/** 본 방 기록 지도 아래쪽 안내. 메모·매물을 남기는 방법과 위치 없는 기록·조회 실패를 알린다. */
+export const recordsMapHint = (
+  records: RecordPoint[],
+  { facilitiesFailed, memo }: { facilitiesFailed: boolean; memo: { isFailed: boolean } },
+  /** 지도를 찍어 메모·매물을 남기는지(데스크탑). 휴대폰은 아래쪽 추가 버튼으로 남긴다. */
+  registersOnTap = true,
+) => {
+  if (facilitiesFailed || memo.isFailed) return '지도 정보를 일부 불러오지 못했어요';
+  const action = registersOnTap ? '빈 곳을 눌러 메모를 남기거나 매물을 기록해요' : '+ 버튼으로 메모·매물을 추가해요';
+  const base = records.length ? action : `아직 기록한 방이 없어요 · ${action}`;
+  return records.some((record) => record.latitude === null || record.longitude === null)
+    ? `${base} · 위치 없는 기록은 리스트에서 확인해요`
+    : base;
+};
+
+/** 카드에 붙이는 출퇴근 장소까지 통근 시간 한 줄. 서버는 60분·환승 2회 안에서만 시간을 구한다. */
+export const commuteLabel = (commute: PropertyCommuteTime, destinationName: string, maxMinutes: number) => {
+  if (commute.status === 'NO_LOCATION') return '위치가 없어 통근 시간을 몰라요';
+  if (commute.status === 'UNREACHABLE') return `${destinationName}까지 ${maxMinutes}분 넘게 걸려요`;
+  return `${destinationName}까지 대중교통 ${commute.commuteMinutes}분`;
+};

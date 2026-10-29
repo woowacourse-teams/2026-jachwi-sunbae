@@ -1,5 +1,6 @@
-import { useEffect, useRef, useState } from 'react';
-import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
+import { css } from '@emotion/css';
+import { useRef, useState } from 'react';
+import { Link, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 
 import PropertyAdditionalInfoForm from '@/pages/property-memo/ui/property-additional-info-form/PropertyAdditionalInfoForm';
 import { describePropertyLoadError } from '@/features/property/api/propertyErrorMessages';
@@ -9,17 +10,27 @@ import { parsePositiveId } from '@/features/property/lib/propertyFormat';
 import {
   getPropertyReturnPath,
   getPropertyReturnState,
+  hasPropertyReturnPath,
   type PropertyReturnPath,
 } from '@/features/property/lib/propertyNavigation';
 import type { PropertyDetail } from '@/features/property/model/Property';
 import PropertyPhotoViewer from '@/features/property/ui/property-photo-viewer/PropertyPhotoViewer';
-import { trackPostHogEvent } from '@/shared/lib/analytics/posthog';
+import { LogScreen } from '@/shared/lib/analytics/logging';
+import useReturnNavigation from '@/shared/lib/navigation/useReturnNavigation';
 import ConfirmDialog from '@/shared/ui/confirm-dialog/ConfirmDialog';
 import ContentState from '@/shared/ui/content-state/ContentState';
 import Icon from '@/shared/ui/icon/Icon';
 import QueryState from '@/shared/ui/query-state/QueryState';
 import TopNavigationMenu from '@/shared/ui/top-navigation-menu/TopNavigationMenu';
 
+import {
+  DETAIL_TAB_PARAM,
+  type DetailTab,
+  parseDetailTab,
+  readLastDetailTab,
+  writeLastDetailTab,
+} from './model/detailTab';
+import { editFieldSheetHeight, editFieldTitles, isBasicEditField, type PropertyEditField } from './model/editField';
 import PropertyAdditionalInfoSection from './ui/property-additional-info-section/PropertyAdditionalInfoSection';
 import PropertyBasicInfoForm from './ui/property-basic-info-section/PropertyBasicInfoForm';
 import PropertyBasicInfoSection from './ui/property-basic-info-section/PropertyBasicInfoSection';
@@ -28,8 +39,6 @@ import PropertyEditSheet from './ui/property-edit-sheet/PropertyEditSheet';
 import PropertyHeroPhoto from './ui/property-hero-photo/PropertyHeroPhoto';
 import PropertyMemoSection from './ui/property-memo-section/PropertyMemoSection';
 import PropertyPhotoSection from './ui/property-photo-section/PropertyPhotoSection';
-
-import styles from './PropertyDetailPage.module.css';
 
 const describeError = describePropertyLoadError('매물 상세를 불러오지 못했어요.');
 
@@ -56,13 +65,7 @@ const PropertyDetailPage = ({ panel, returnTo }: PropertyDetailPageProps) => {
   if (propertyId === null) {
     return (
       <ContentState title="올바른 매물 주소가 아니에요.">
-        <Link to={backTo}>
-          {backTo === '/map'
-            ? '매물 지도로 돌아가기'
-            : backTo === '/properties'
-              ? '기록 화면으로 돌아가기'
-              : '홈으로 돌아가기'}
-        </Link>
+        <Link to={backTo}>{backTo === '/properties' ? '기록 화면으로 돌아가기' : '홈으로 돌아가기'}</Link>
       </ContentState>
     );
   }
@@ -85,35 +88,47 @@ const ResolvedPropertyDetailPage = ({
       query={property}
       loadingTitle="매물 상세를 불러오는 중이에요."
       describeError={describeError}
-      errorAction={
-        <Link to={backTo}>
-          {backTo === '/map'
-            ? '매물 지도로 돌아가기'
-            : backTo === '/properties'
-              ? '기록 화면으로 돌아가기'
-              : '홈으로 돌아가기'}
-        </Link>
-      }
+      errorAction={<Link to={backTo}>{backTo === '/properties' ? '기록 화면으로 돌아가기' : '홈으로 돌아가기'}</Link>}
     >
-      {(detail) => <PropertyDetailView propertyId={propertyId} detail={detail} backTo={backTo} panel={panel} />}
+      {/* 상세를 불러온 뒤 매물마다 한 번 진입 로그를 남긴다. 다른 매물로 바뀌면 key가 바뀌어 다시 남긴다. */}
+      {(detail) => (
+        <LogScreen key={propertyId} event="property_detail_viewed" params={{ property_id: propertyId }}>
+          <PropertyDetailView propertyId={propertyId} detail={detail} backTo={backTo} panel={panel} />
+        </LogScreen>
+      )}
     </QueryState>
   );
 };
 
 const PropertyDetailView = ({ propertyId, detail, backTo, panel }: PropertyDetailViewProps) => {
   const navigate = useNavigate();
-  const returnState = getPropertyReturnState(useLocation().state);
+  const locationState = useLocation().state;
+  const returnState = getPropertyReturnState(locationState);
+  const goBack = useReturnNavigation({
+    cameFromTarget: hasPropertyReturnPath(locationState),
+    fallback: backTo,
+    fallbackState: returnState,
+  });
   const removeMutation = useRemoveProperty(propertyId);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [selectedPhotoIndex, setSelectedPhotoIndex] = useState<number | null>(null);
-  const [activeTab, setActiveTab] = useState<'details' | 'checklist'>('details');
-  const [editingSection, setEditingSection] = useState<'basic' | 'additional' | null>(null);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const activeTab = parseDetailTab(searchParams.get(DETAIL_TAB_PARAM)) ?? readLastDetailTab();
+  // 고른 탭을 주소에 남겨 체크리스트에서 돌아와도 그 탭으로 열고, 마지막 탭으로 기억해 다른 매물도 그 탭으로 연다.
+  // 들어온 화면(state)은 그대로 둔다.
+  const setActiveTab = (next: DetailTab) => {
+    writeLastDetailTab(next);
+    setSearchParams(
+      (current) => {
+        current.set(DETAIL_TAB_PARAM, next);
+        return current;
+      },
+      { replace: true, state: locationState },
+    );
+  };
+  const [editingField, setEditingField] = useState<PropertyEditField | null>(null);
   const deleteButtonRef = useRef<HTMLButtonElement>(null);
   const photoTriggerRef = useRef<HTMLButtonElement | null>(null);
-
-  useEffect(() => {
-    trackPostHogEvent('property_detail_viewed', { property_id: propertyId });
-  }, [propertyId]);
 
   const Root = panel ? 'div' : 'main';
 
@@ -142,13 +157,11 @@ const PropertyDetailView = ({ propertyId, detail, backTo, panel }: PropertyDetai
               className={styles.backButton}
               to={backTo}
               state={returnState}
-              aria-label={
-                backTo === '/map'
-                  ? '매물 지도로 돌아가기'
-                  : backTo === '/properties'
-                    ? '기록 화면으로 돌아가기'
-                    : '홈으로 돌아가기'
-              }
+              onClick={(event) => {
+                event.preventDefault();
+                goBack();
+              }}
+              aria-label={backTo === '/properties' ? '기록 화면으로 돌아가기' : '홈으로 돌아가기'}
             >
               <Icon name="chevron-left" size={24} />
             </Link>
@@ -211,9 +224,9 @@ const PropertyDetailView = ({ propertyId, detail, backTo, panel }: PropertyDetai
                   </button>
                 </TopNavigationMenu>
               </div>
-              <PropertyBasicInfoSection property={detail} onEdit={() => setEditingSection('basic')} />
+              <PropertyBasicInfoSection property={detail} onEdit={setEditingField} />
 
-              <PropertyAdditionalInfoSection property={detail} onEdit={() => setEditingSection('additional')} />
+              <PropertyAdditionalInfoSection property={detail} onEdit={setEditingField} />
 
               <PropertyMemoSection propertyId={propertyId} />
 
@@ -246,16 +259,21 @@ const PropertyDetailView = ({ propertyId, detail, backTo, panel }: PropertyDetai
           />
         )}
 
-        {editingSection !== null && (
+        {editingField !== null && (
           <PropertyEditSheet
-            title={editingSection === 'basic' ? '기본 정보 수정' : '부가 정보 수정'}
-            initialHeightPercent={88}
-            onClose={() => setEditingSection(null)}
+            title={editFieldTitles[editingField]}
+            initialHeightPercent={editFieldSheetHeight(editingField)}
+            onClose={() => setEditingField(null)}
           >
-            {editingSection === 'basic' ? (
-              <PropertyBasicInfoForm property={detail} onSaved={() => setEditingSection(null)} />
+            {isBasicEditField(editingField) ? (
+              <PropertyBasicInfoForm property={detail} field={editingField} onSaved={() => setEditingField(null)} />
             ) : (
-              <PropertyAdditionalInfoForm property={detail} layout="sheet" onSaved={() => setEditingSection(null)} />
+              <PropertyAdditionalInfoForm
+                property={detail}
+                layout="sheet"
+                field={editingField}
+                onSaved={() => setEditingField(null)}
+              />
             )}
           </PropertyEditSheet>
         )}
@@ -279,6 +297,143 @@ const PropertyDetailView = ({ propertyId, detail, backTo, panel }: PropertyDetai
       </div>
     </Root>
   );
+};
+
+const styles = {
+  page: css`
+    label: PropertyDetailPage-page;
+    min-height: 100dvh;
+    background: var(--color-canvas);
+
+    /* 패널로 열면 패널 높이 안에서 스크롤하므로 화면 높이를 채우지 않는다. */
+    &[data-panel='true'] {
+      min-height: 0;
+    }
+  `,
+
+  container: css`
+    label: PropertyDetailPage-container;
+    --page-inline-padding: 1rem;
+    padding: 0 var(--page-inline-padding) 1.5rem;
+  `,
+
+  header: css`
+    label: PropertyDetailPage-header;
+    position: relative;
+    display: flex;
+    min-height: 3.5rem;
+    align-items: center;
+    gap: 0.5rem;
+
+    & > details > summary {
+      width: 2.5rem;
+      height: 2.5rem;
+    }
+  `,
+
+  backButton: css`
+    label: PropertyDetailPage-backButton;
+    display: grid;
+    width: 2.5rem;
+    height: 2.5rem;
+    flex: 0 0 auto;
+    place-items: center;
+    border: 0;
+    border-radius: 50%;
+    padding: 0;
+    background: transparent;
+    color: var(--color-ink);
+    text-decoration: none;
+    cursor: pointer;
+  `,
+
+  /* 헤더 제목은 뒤로가기 화살표 바로 오른쪽에 왼쪽 정렬로 둔다. */
+  headerTitle: css`
+    label: PropertyDetailPage-headerTitle;
+    min-width: 0;
+    flex: 1;
+    margin: 0;
+    overflow: hidden;
+    color: var(--color-ink);
+    font-size: 1.1rem;
+    font-weight: 800;
+    letter-spacing: -0.035em;
+    line-height: 1.3;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  `,
+
+  tabs: css`
+    label: PropertyDetailPage-tabs;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    margin: 0 -1rem;
+    padding: 0 1rem;
+    background: var(--color-surface);
+
+    & button {
+      min-height: 3rem;
+      border: 0;
+      background: transparent;
+      color: #a2a4a9;
+      font: inherit;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    & button[aria-selected='true'] {
+      color: var(--color-ink);
+    }
+  `,
+
+  infoPanel: css`
+    label: PropertyDetailPage-infoPanel;
+    position: relative;
+    z-index: 1;
+    margin: -2rem -1rem 0;
+    padding: 0 1rem 1.5rem;
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    background: var(--color-surface);
+
+    & > section[aria-label='매물 기본 정보'],
+    & > section[aria-label='매물 부가 정보'] {
+      margin-bottom: 0.5rem;
+    }
+  `,
+
+  titleRow: css`
+    label: PropertyDetailPage-titleRow;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    margin: 0;
+    padding: 1.25rem 0 0.8rem;
+
+    & > details > summary {
+      width: 2rem;
+      height: 2rem;
+    }
+  `,
+
+  infoTitle: css`
+    label: PropertyDetailPage-infoTitle;
+    min-width: 0;
+    flex: 1;
+    margin: 0;
+    color: var(--color-ink);
+    font-size: 1.35rem;
+    font-weight: 800;
+    letter-spacing: -0.04em;
+    line-height: 1.3;
+  `,
+
+  deleteError: css`
+    label: PropertyDetailPage-deleteError;
+    margin: 0.75rem 0 0;
+    color: var(--color-error);
+    font-size: 0.78rem;
+    line-height: 1.5;
+  `,
 };
 
 export default PropertyDetailPage;
