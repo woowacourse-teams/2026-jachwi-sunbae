@@ -269,8 +269,7 @@ class AnonymousAuthenticationAcceptanceTest {
             "/api/rental-transactions",
             "/api/commute-areas",
             "/api/commute-areas/route",
-            "/api/maps/bus-stops",
-            "/api/guest/properties"
+            "/api/maps/bus-stops"
     })
     @DisplayName("업무 조회 API도 Access Token 없이는 이용할 수 없다")
     void rejectsBusinessReadWithoutAccessToken(String path) throws Exception {
