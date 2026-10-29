@@ -40,7 +40,13 @@ export const markerZIndex = (marker: MapMarker, selectedMarkerId: string | null)
   return 5;
 };
 
-export const markerScale = (marker: MapMarker, level: number): number =>
-  marker.tone === 'property' || marker.tone === 'selected' || marker.tone === 'propertyCluster'
-    ? Number(clamp(1 + (4 - level) * 0.12, 0.7, 1.36).toFixed(2))
-    : 1;
+/**
+ * 배율에 따라 마커를 키우거나 줄이는 비율. 매물 핀은 가까울수록 키우고 멀수록 줄인다.
+ * 거리 메모 말풍선은 골목이 보이는 배율(4)까지 그대로 두고, 그보다 멀리 축소할수록 줄여 넓은 화면을 덮지 않게 한다.
+ */
+export const markerScale = (marker: MapMarker, level: number): number => {
+  if (marker.tone === 'property' || marker.tone === 'selected' || marker.tone === 'propertyCluster')
+    return Number(clamp(1 + (4 - level) * 0.12, 0.7, 1.36).toFixed(2));
+  if (marker.category === 'MEMO') return Number(clamp(1 - (level - 4) * 0.1, 0.6, 1).toFixed(2));
+  return 1;
+};

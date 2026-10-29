@@ -39,6 +39,23 @@ export const viewportQuery = (bounds: MapBounds): ViewportQuery => {
   return { center, radius: RADII.find((radius) => radius >= corner) ?? 2000, bounds };
 };
 
+/**
+ * 정류장처럼 화면 가장자리까지 빠짐없이 보여야 하는 조회를 위한 범위 나누기.
+ * 화면이 서버 최대 반경(2km)보다 넓으면 화면을 네 칸으로 나눠 칸마다 반경을 고른다. 가운데 2km만 조회하면 가장자리가 빈다.
+ * 네 칸으로도 다 덮지 못할 만큼 넓으면 칸마다 가운데 2km씩만 덮는다.
+ */
+export const viewportTiles = (bounds: MapBounds): ViewportQuery[] => {
+  const whole = viewportQuery(bounds);
+  if (distanceMeters(whole.center, { latitude: bounds.north, longitude: bounds.east }) <= 2000) return [whole];
+  const middle = { latitude: (bounds.south + bounds.north) / 2, longitude: (bounds.west + bounds.east) / 2 };
+  return [
+    { south: middle.latitude, north: bounds.north, west: bounds.west, east: middle.longitude },
+    { south: middle.latitude, north: bounds.north, west: middle.longitude, east: bounds.east },
+    { south: bounds.south, north: middle.latitude, west: bounds.west, east: middle.longitude },
+    { south: bounds.south, north: middle.latitude, west: middle.longitude, east: bounds.east },
+  ].map(viewportQuery);
+};
+
 export const isInBounds = (point: { latitude: number; longitude: number }, bounds: MapBounds) =>
   point.latitude >= bounds.south &&
   point.latitude <= bounds.north &&

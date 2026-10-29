@@ -96,3 +96,22 @@ describe('고른 장소 말풍선 핀', () => {
     expect(element.children).toHaveLength(2);
   });
 });
+
+describe('겹친 거리 메모 묶음 마커', () => {
+  it('좋아요와 싫어요 칸에 따봉과 개수를 함께 적고, 없는 쪽 칸은 그리지 않는다', () => {
+    const marker = (positive: number, negative: number): MapMarker => ({
+      id: 'street-memo:1,2,3',
+      latitude: 37.48,
+      longitude: 126.93,
+      label: `거리 메모 ${positive + negative}개`,
+      tone: 'destination',
+      category: 'MEMO',
+      tally: { positive, negative },
+      actionable: true,
+    });
+    const both = createMapMarkerElement(marker(2, 1), null, vi.fn());
+    expect([...both.querySelectorAll('[data-variant]')].map((cell) => cell.textContent)).toEqual(['👍 2', '👎 1']);
+    const likesOnly = createMapMarkerElement(marker(3, 0), null, vi.fn());
+    expect([...likesOnly.querySelectorAll('[data-variant]')].map((cell) => cell.textContent)).toEqual(['👍 3']);
+  });
+});

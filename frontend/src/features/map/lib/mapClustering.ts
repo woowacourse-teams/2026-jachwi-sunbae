@@ -10,12 +10,16 @@ type PlaceCluster = {
 
 const EARTH_METERS_PER_DEGREE = 111_320;
 
+/**
+ * 레벨마다 화면에서 같은 간격이 되도록 거리를 두 배씩 늘린다.
+ * 축소한 지도(레벨 5 이상)는 화면에서 약 55px 안에 겹친 마커를 묶는다. 마커 지름(약 32px)만큼만 묶으면 묶음끼리 다시 포개진다.
+ */
 const clusterDistanceForLevel = (level: number): number => {
   if (level <= 3) return 0;
   if (level === 4) return 55;
-  if (level === 5) return 110;
-  if (level === 6) return 220;
-  return 400 * 2 ** Math.max(0, level - 7);
+  if (level === 5) return 220;
+  if (level === 6) return 440;
+  return 800 * 2 ** Math.max(0, level - 7);
 };
 
 const distanceMeters = (
