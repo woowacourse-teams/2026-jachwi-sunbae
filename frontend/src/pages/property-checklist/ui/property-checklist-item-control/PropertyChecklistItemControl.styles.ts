@@ -84,7 +84,7 @@ export const statuses = css`
     outline-offset: 2px;
   }
 
-  & > button:disabled {
+  & > button[aria-disabled='true'] {
     cursor: wait;
   }
 `;

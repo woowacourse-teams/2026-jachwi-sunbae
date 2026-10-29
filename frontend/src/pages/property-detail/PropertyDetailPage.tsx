@@ -16,6 +16,7 @@ import type { PropertyDetail } from '@/features/property/model/Property';
 import PropertyPhotoManager from '@/features/property/ui/property-photo-manager/PropertyPhotoManager';
 import PropertyPhotoViewer from '@/features/property/ui/property-photo-viewer/PropertyPhotoViewer';
 import { LogScreen } from '@/shared/lib/analytics/logging';
+import useDocumentTitle from '@/shared/lib/hooks/useDocumentTitle';
 import useReturnNavigation from '@/shared/lib/navigation/useReturnNavigation';
 import ConfirmDialog from '@/shared/ui/confirm-dialog/ConfirmDialog';
 import ContentState from '@/shared/ui/content-state/ContentState';
@@ -127,6 +128,8 @@ const PropertyDetailView = ({ propertyId, detail, backTo, panel }: PropertyDetai
       { replace: true, state: locationState },
     );
   };
+  // 탭 제목으로 어느 매물의 어느 탭인지 먼저 알린다. 패널로 열면 패널을 연 기록 화면이 탭 제목을 가진다.
+  useDocumentTitle(panel ? undefined : `${detail.name} ${activeTab === 'checklist' ? '체크리스트' : '정보'}`);
   // 그 줄 안에서 고치고 있는 항목. 모달 없이 상세 화면에서 바로 고치고, 한 번에 한 줄만 연다.
   const [editingField, setEditingField] = useState<PropertyEditField | null>(null);
   // 방금 저장한 항목. 그 줄 값 아래에 잠깐 `저장했어요`를 보여 응답한다.

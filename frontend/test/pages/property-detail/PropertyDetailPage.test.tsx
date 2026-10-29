@@ -1,5 +1,5 @@
 import { QueryClientProvider } from '@tanstack/react-query';
-import { cleanup, render, screen } from '@testing-library/react';
+import { cleanup, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { createMemoryRouter, RouterProvider } from 'react-router-dom';
 import { afterEach, beforeEach, expect, it } from 'vitest';
@@ -63,4 +63,38 @@ it('주소에 탭이 없으면 마지막으로 본 탭으로 연다', async () =
 
   renderDetail();
   expect(await screen.findByRole('tab', { name: '체크리스트' })).toHaveAttribute('aria-selected', 'true');
+});
+
+it('탭 제목에 매물 이름과 지금 탭을 담는다', async () => {
+  renderDetail('?tab=checklist');
+  await screen.findByRole('tab', { name: '체크리스트' });
+  await waitFor(() => expect(document.title).toBe('신림역 원룸 체크리스트 | 자취선배'));
+});
+
+it('항목을 평가해도 포커스가 누른 버튼에 남고, 바뀐 평가 개수를 알린다', async () => {
+  const user = userEvent.setup();
+  renderDetail('?tab=checklist');
+  const group = await screen.findByRole('group', { name: '주차가 가능한가요?' });
+  const good = within(group).getByRole('button', { name: '괜찮음' });
+
+  await user.click(good);
+
+  await waitFor(() => expect(good).toHaveAttribute('aria-pressed', 'true'));
+  expect(good).toHaveFocus();
+  expect(screen.getByRole('status')).toHaveTextContent('3개 중 3개 평가');
+});
+
+it('메모를 저장하면 포커스를 그 항목의 메모 버튼으로 돌린다', async () => {
+  const user = userEvent.setup();
+  renderDetail('?tab=checklist');
+  await user.click(await screen.findByRole('button', { name: '주차가 가능한가요? 메모 추가' }));
+  await user.type(screen.getByRole('textbox', { name: '주차가 가능한가요? 메모' }), '기계식 주차 1대');
+  await user.click(screen.getByRole('button', { name: '저장' }));
+
+  expect(await screen.findByRole('button', { name: '주차가 가능한가요? 메모 편집' })).toHaveFocus();
+});
+
+it('정보 탭의 값 버튼은 라벨과 화면에 보이는 값을 함께 읽는다', async () => {
+  renderDetail('?tab=info');
+  expect(await screen.findByRole('button', { name: '매물 이름 신림역 원룸, 수정' })).toBeInTheDocument();
 });
