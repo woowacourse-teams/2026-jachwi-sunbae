@@ -222,16 +222,18 @@ it('서버 실패 후 다시 시도하면 실제 응답 목록으로 복구한�
   await user.click(retry);
   expect(await screen.findByRole('list', { name: '행사상품 목록' })).toBeInTheDocument();
 });
-it('식당의 원본 업종과 반경을 유지하고 지도 이동 후 재검색한다', async () => {
+it('식당의 원본 업종을 표시하고 탭 복귀와 지도 재검색에도 2km 반경을 유지한다', async () => {
   const user = setup('/cheap-meals?tab=restaurant');
   expect(await screen.findByText('기타비요식업')).toBeInTheDocument();
-  await user.click(screen.getByRole('button', { name: '500m' }));
-  await waitFor(() => expect(calls.stores).toHaveBeenCalledWith('500', expect.any(String), expect.any(String)));
+  expect(calls.stores).toHaveBeenCalledWith('2000', expect.any(String), expect.any(String));
+  expect(screen.queryByRole('group', { name: '탐색 반경' })).not.toBeInTheDocument();
+  expect(screen.queryByRole('button', { name: /^(500m|1km|2km)$/ })).not.toBeInTheDocument();
   await user.click(tab('전체'));
   await user.click(tab('식당'));
-  expect(screen.getByRole('button', { name: '500m' })).toHaveAttribute('aria-pressed', 'true');
+  expect(calls.stores).toHaveBeenLastCalledWith('2000', expect.any(String), expect.any(String));
   await user.click(screen.getByRole('button', { name: '지도 이동 테스트' }));
   await user.click(screen.getByRole('button', { name: '이 위치에서 찾기' }));
+  await waitFor(() => expect(calls.stores).toHaveBeenLastCalledWith('2000', '37.5665', '126.978'));
   expect(screen.getByText('지도에서 선택한 위치')).toBeInTheDocument();
   await user.click(await screen.findByRole('button', { name: '착한 세탁소 상세 보기' }));
   expect(screen.getByRole('link', { name: /길찾기/ })).toHaveAttribute(
@@ -298,7 +300,7 @@ it('위치 확인 중 다른 탭으로 떠났다가 돌아와도 위치 버튼�
   }
 });
 
-it('주소 검색 결과를 선택하면 선택한 좌표로 조회하고 2km 반경도 적용한다', async () => {
+it('주소 검색 결과를 선택하면 선택한 좌표의 2km 반경을 조회한다', async () => {
   server.use(
     http.get('http://localhost:8080/api/maps/geocode', () =>
       success([
@@ -312,8 +314,6 @@ it('주소 검색 결과를 선택하면 선택한 좌표로 조회하고 2km �
   await user.click(screen.getByRole('button', { name: '검색' }));
   await user.click(await screen.findByRole('button', { name: /서울특별시 중구 세종대로 110/ }));
   expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
-  await waitFor(() => expect(calls.stores).toHaveBeenCalledWith('1000', '37.5665', '126.978'));
-  await user.click(screen.getByRole('button', { name: '2km' }));
   await waitFor(() => expect(calls.stores).toHaveBeenCalledWith('2000', '37.5665', '126.978'));
 });
 
@@ -329,7 +329,7 @@ it('명시적으로 요청한 현재 위치가 거부되면 안내하고 재요�
     await user.click(screen.getByRole('button', { name: '현재 위치로 찾기' }));
     expect(await screen.findByRole('alert')).toHaveTextContent('권한을 확인하거나 주소를 검색');
     await user.click(screen.getByRole('button', { name: '현재 위치로 찾기' }));
-    await waitFor(() => expect(calls.stores).toHaveBeenCalledWith('1000', '37.5665', '126.978'));
+    await waitFor(() => expect(calls.stores).toHaveBeenCalledWith('2000', '37.5665', '126.978'));
     expect(screen.getByText('현재 위치 주변')).toBeInTheDocument();
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
   } finally {
@@ -353,7 +353,7 @@ it('업소 조회 오류에서 재시도한 빈 결과를 오류나 샘플 업�
     http.get('http://localhost:8080/api/maps/good-price-stores', () =>
       failed
         ? new HttpResponse(null, { status: 500 })
-        : success({ center: { latitude: 37.5, longitude: 127 }, radius: 1000, count: 0, stores: [], dataAsOf: null }),
+        : success({ center: { latitude: 37.5, longitude: 127 }, radius: 2000, count: 0, stores: [], dataAsOf: null }),
     ),
   );
   const user = setup('/cheap-meals?tab=restaurant');

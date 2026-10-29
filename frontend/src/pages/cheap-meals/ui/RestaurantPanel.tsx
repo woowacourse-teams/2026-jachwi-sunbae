@@ -1,6 +1,5 @@
 import { css } from '@emotion/css';
 
-import type { GoodPriceResult } from '@/features/good-price/model/GoodPriceStore';
 import useAddressSearch from '@/features/map/api/useAddressSearch';
 import AddressSearchResults from '@/features/map/ui/address-search-results/AddressSearchResults';
 import MapCanvas from '@/features/map/ui/map-canvas/MapCanvas';
@@ -31,18 +30,6 @@ const RestaurantPanel = ({ isActive }: RestaurantPanelProps) => {
           <small>주소 검색</small>
         </button>
         <div className={styles.row}>
-          <div className={styles.radii} role="group" aria-label="탐색 반경">
-            {([500, 1000, 2000] as GoodPriceResult['radius'][]).map((radius) => (
-              <button
-                key={radius}
-                type="button"
-                aria-pressed={map.radius === radius}
-                onClick={() => map.selectRadius(radius)}
-              >
-                {radius === 500 ? '500m' : `${radius / 1000}km`}
-              </button>
-            ))}
-          </div>
           <button
             type="button"
             className={styles.locate}
@@ -212,28 +199,9 @@ const styles = {
     label: RestaurantPanel-row;
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    justify-content: flex-end;
     gap: 0.5rem;
     margin-top: 0.5rem;
-  `,
-  radii: css`
-    label: RestaurantPanel-radii;
-    display: flex;
-    gap: 0.3rem;
-    & button {
-      min-height: 44px;
-      padding: 0.4rem 0.7rem;
-      border: 1px solid var(--color-border);
-      border-radius: 99px;
-      background: var(--color-surface);
-      color: var(--color-ink);
-      font-size: 0.78rem;
-      cursor: pointer;
-    }
-    & button[aria-pressed='true'] {
-      background: var(--color-action);
-      color: var(--color-on-action);
-    }
   `,
   locate: css`
     label: RestaurantPanel-locate;

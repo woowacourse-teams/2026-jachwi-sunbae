@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { useGoodPriceStores } from '@/features/good-price/api/goodPriceApi';
-import type { GoodPriceResult } from '@/features/good-price/model/GoodPriceStore';
 import {
   coordinatesAreClose,
   DEFAULT_MAP_CENTER,
@@ -11,7 +10,7 @@ import {
 } from '@/features/map/lib/mapLocation';
 import type { MapMarker } from '@/features/map/model/Map';
 
-import type { RestaurantArea } from '../model/RestaurantMap';
+import { RESTAURANT_SEARCH_RADIUS, type RestaurantArea } from '../model/RestaurantMap';
 import storePin from '../ui/store-pin.svg';
 import useRestaurantOverlay from './useRestaurantOverlay';
 
@@ -19,8 +18,7 @@ const useRestaurantMap = (isActive: boolean) => {
   const overlay = useRestaurantOverlay();
   const [area, setArea] = useState<RestaurantArea>({ ...DEFAULT_MAP_CENTER, label: '판교 주변' });
   const [viewport, setViewport] = useState<MapCoordinate>(area);
-  const [radius, setRadius] = useState<GoodPriceResult['radius']>(1000);
-  const [level, setLevel] = useState(6);
+  const [level, setLevel] = useState(7);
   const [isListOpen, setIsListOpen] = useState(true);
   const [isLocating, setIsLocating] = useState(false);
   const [locationError, setLocationError] = useState<string | null>(null);
@@ -31,7 +29,7 @@ const useRestaurantMap = (isActive: boolean) => {
       requestId.current += 1;
     };
   }, [isActive, overlay.isSearchOpen]);
-  const query = useGoodPriceStores(area, radius, isActive);
+  const query = useGoodPriceStores(area, RESTAURANT_SEARCH_RADIUS, isActive);
   const selectedStore = query.data?.stores.find((store) => String(store.id) === overlay.selectedStoreId) ?? null;
   const markers = useMemo<MapMarker[]>(
     () =>
@@ -73,7 +71,7 @@ const useRestaurantMap = (isActive: boolean) => {
   return {
     area,
     viewport,
-    radius,
+    radius: RESTAURANT_SEARCH_RADIUS,
     level,
     query,
     markers,
@@ -91,13 +89,6 @@ const useRestaurantMap = (isActive: boolean) => {
     moveMap: (latitude: number, longitude: number) =>
       setViewport((old) => (coordinatesAreClose(old, { latitude, longitude }) ? old : { latitude, longitude })),
     searchMap: () => chooseArea({ ...viewport, label: '지도에서 선택한 위치' }),
-    selectRadius: (value: GoodPriceResult['radius']) => {
-      setRadius(value);
-      setLevel(value === 500 ? 5 : value === 1000 ? 6 : 7);
-      setViewport(area);
-      setIsListOpen(true);
-      overlay.closeOverlay();
-    },
     openSearch: overlay.openSearch,
     openStore: (id: number) => {
       const store = query.data?.stores.find((store) => store.id === id);
