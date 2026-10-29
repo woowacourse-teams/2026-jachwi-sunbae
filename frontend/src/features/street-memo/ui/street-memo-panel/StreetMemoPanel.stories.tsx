@@ -28,12 +28,12 @@ const makeLayer = (overrides: Partial<StreetMemoLayer>): StreetMemoLayer => ({
   markers: [],
   isFailed: false,
   mode: null,
-  selectedMemo: null,
+  selectedMemos: [],
   selectedMarkerId: null,
   isSubmitting: false,
   submitFailed: false,
-  isRemoving: false,
-  removeFailed: false,
+  removingId: null,
+  removeFailedId: null,
   selectMarker: fn(() => false),
   startDraft: fn(),
   submit: fn(),
@@ -46,7 +46,7 @@ const meta = {
   title: '기능/거리 메모/StreetMemoPanel',
   component: StreetMemoPanel,
   args: {
-    layer: makeLayer({ mode: 'view', selectedMemo: likeMemo }),
+    layer: makeLayer({ mode: 'view', selectedMemos: [likeMemo] }),
     onCreated: fn(),
     showCloseButton: true,
   },
@@ -81,13 +81,20 @@ export const Compose: Story = {
 
 export const RemoveFailed: Story = {
   args: {
-    layer: makeLayer({ mode: 'view', selectedMemo: likeMemo, removeFailed: true }),
+    layer: makeLayer({ mode: 'view', selectedMemos: [likeMemo], removeFailedId: likeMemo.id }),
     showCloseButton: false,
   },
 };
 
 export const OthersMemo: Story = {
   args: {
-    layer: makeLayer({ mode: 'view', selectedMemo: dislikeMemo }),
+    layer: makeLayer({ mode: 'view', selectedMemos: [dislikeMemo] }),
+  },
+};
+
+/** 겹친 말풍선을 누르면 그 자리 메모를 최신순으로 모두 보여 준다. */
+export const Grouped: Story = {
+  args: {
+    layer: makeLayer({ mode: 'view', selectedMemos: [dislikeMemo, likeMemo] }),
   },
 };

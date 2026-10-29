@@ -35,6 +35,7 @@ const markerClassName = (marker: MapMarker, selectedMarkerId: string | null | un
     isPinMarker(marker) ? styles.pinMarker : '',
     marker.image ? styles.imageMarker : '',
     marker.appear ? styles.appearMarker : '',
+    marker.pop ? styles.popMarker : '',
     marker.tone === 'property' || marker.tone === 'propertyCluster' ? styles.propertyMarker : '',
     marker.tone === 'current' ? styles.currentMarker : '',
     marker.tone === 'selected' ? styles.selectedMarker : '',
@@ -69,7 +70,16 @@ const MapMarkerView = ({ marker, selectedMarkerId = null, onSelectMarker }: MapM
         />
       ) : marker.tone === 'destination' || marker.tone === 'flash' ? (
         <>
-          <span className={styles.destinationLabel}>{marker.label}</span>
+          <span className={styles.destinationLabel}>
+            {marker.tally ? (
+              <>
+                {marker.tally.positive > 0 && <span data-variant="positive">{marker.tally.positive}</span>}
+                {marker.tally.negative > 0 && <span data-variant="negative">{marker.tally.negative}</span>}
+              </>
+            ) : (
+              marker.label
+            )}
+          </span>
           <span className={styles.destinationTail} aria-hidden="true" />
         </>
       ) : isCurrentLocationDot(marker) ? null : isPinMarker(marker) ? (
@@ -87,7 +97,9 @@ const MapMarkerView = ({ marker, selectedMarkerId = null, onSelectMarker }: MapM
     'data-tone': marker.tone ?? 'property',
     'data-category': marker.category,
     'data-variant': marker.variant,
+    'data-tally': marker.tally ? '' : undefined,
     'aria-label': marker.label,
+    style: marker.pop ? { animationDelay: `${marker.pop.delayMs}ms` } : undefined,
   };
 
   if (!canSelect)
@@ -171,6 +183,24 @@ const markerAppearKeyframes = keyframes`
   }
 `;
 
+const markerPopKeyframes = keyframes`
+  0% {
+    opacity: 0;
+    scale: 0.3;
+  }
+  55% {
+    opacity: 1;
+    scale: 1.12;
+  }
+  78% {
+    scale: 0.96;
+  }
+  100% {
+    opacity: 1;
+    scale: 1;
+  }
+`;
+
 const markerFlashFadeKeyframes = keyframes`
   0%,
   80% {
@@ -235,6 +265,17 @@ const styles = {
     label: MapMarkerView-appearMarker;
     transform-origin: 50% 100%;
     animation: ${markerAppearKeyframes} 560ms cubic-bezier(0.22, 1, 0.36, 1) both;
+
+    @media (prefers-reduced-motion: reduce) {
+      animation: none;
+    }
+  `,
+
+  /* 메모 말풍선은 꼬리 끝을 축으로 작게 시작해 통통 튀어나온다. 나타난 뒤에는 움직이지 않아 누르기 쉽다. */
+  popMarker: css`
+    label: MapMarkerView-popMarker;
+    transform-origin: 50% 100%;
+    animation: ${markerPopKeyframes} 420ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
 
     @media (prefers-reduced-motion: reduce) {
       animation: none;
@@ -335,7 +376,11 @@ const styles = {
     color: #25282d;
     text-align: center;
     transform: translateX(-50%);
-    pointer-events: none;
+
+    /* 카드는 마커 버튼 안에 있으므로, 카드를 눌러도 그 매물을 고른다. */
+    button & {
+      cursor: pointer;
+    }
 
     &::after {
       position: absolute;
@@ -496,13 +541,15 @@ const styles = {
     }
 
     /*
-     * 거리 메모 말풍선은 글이 잘리지 않게 넓게 두고 네 줄까지 보여 준다. 넘치면 넷째 줄 끝을 줄인다.
+     * 거리 메모 말풍선은 가로로 길게 두고 두 줄까지 보여 준다. 넘치면 둘째 줄 끝을 줄인다.
      * 색 바탕 위 흰 글자가 뭉개지지 않게 굵기를 한 단계 낮추고 줄 간격과 안쪽 여백을 넉넉히 둔다.
      */
     &[data-category='MEMO'] .MapMarkerView-destinationLabel {
       display: -webkit-box;
-      max-width: 16rem;
-      padding: 0.5rem 0.8rem;
+      /* 지도 겹 안의 마커는 폭이 좁게 잡혀 짧은 글도 접히므로, 글 길이만큼 펴고 최대 폭에서만 줄을 바꾼다. */
+      width: max-content;
+      max-width: min(22rem, 75vw);
+      padding: 0.45rem 0.9rem;
       border-radius: 0.8rem;
       font-size: 0.82rem;
       font-weight: 600;
@@ -512,24 +559,44 @@ const styles = {
       white-space: normal;
       word-break: keep-all;
       -webkit-box-orient: vertical;
-      -webkit-line-clamp: 4;
+      -webkit-line-clamp: 2;
     }
 
-    /* 거리 메모 말풍선은 좋아요(positive)를 파랑, 싫어요(negative)를 빨강으로 칠한다. */
-    &[data-variant='positive'] .MapMarkerView-destinationLabel {
-      background: var(--color-brand-blue-ink, #3f6fc4);
+    /* 거리 메모 말풍선은 좋아요(positive)를 옅은 파랑, 싫어요(negative)를 옅은 빨강으로 칠하고 진한 같은 계열 글자를 올린다. */
+    &[data-variant='positive'] .MapMarkerView-destinationLabel,
+    &[data-tally] .MapMarkerView-destinationLabel [data-variant='positive'] {
+      background: var(--color-memo-like, #cfe2fa);
+      color: var(--color-memo-like-ink, #24497f);
     }
 
     &[data-variant='positive'] .MapMarkerView-destinationTail {
-      border-top-color: var(--color-brand-blue-ink, #3f6fc4);
+      border-top-color: var(--color-memo-like, #cfe2fa);
     }
 
-    &[data-variant='negative'] .MapMarkerView-destinationLabel {
-      background: var(--color-check-caution-ink, #d14d4d);
+    &[data-variant='negative'] .MapMarkerView-destinationLabel,
+    &[data-tally] .MapMarkerView-destinationLabel [data-variant='negative'] {
+      background: var(--color-memo-dislike, #f7cfcf);
+      color: var(--color-memo-dislike-ink, #8a2c2c);
     }
 
     &[data-variant='negative'] .MapMarkerView-destinationTail {
-      border-top-color: var(--color-check-caution-ink, #d14d4d);
+      border-top-color: var(--color-memo-dislike, #f7cfcf);
+    }
+
+    /* 겹친 메모 묶음은 글 대신 좋아요·싫어요 칸을 반반 나란히 두고 개수를 적는다. 바탕은 칸이 칠한다. */
+    &[data-tally] .MapMarkerView-destinationLabel {
+      display: flex;
+      padding: 0;
+      background: transparent;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    &[data-tally] .MapMarkerView-destinationLabel > span {
+      flex: 1;
+      min-width: 2.2rem;
+      padding: 0.4rem 0.7rem;
+      text-align: center;
     }
   `,
 
