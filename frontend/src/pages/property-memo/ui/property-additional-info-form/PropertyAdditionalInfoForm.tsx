@@ -1,6 +1,7 @@
 import { css } from '@emotion/css';
 import { useState } from 'react';
 
+import type { AdditionalEditField } from '@/pages/property-detail/model/editField';
 import { useUpdateProperty } from '@/features/property/api/usePropertyMutations';
 import { formatAmountForInput, parseMoneyInput, WON_PER_MANWON } from '@/features/property/lib/propertyForm';
 import type { PropertyDetail, RoomOption, UtilityOption } from '@/features/property/model/Property';
@@ -27,6 +28,8 @@ type PropertyAdditionalInfoFormProps = {
   onSaved: () => void;
   /** `page`는 제목과 화면 아래 고정 버튼을, `sheet`는 시트 제목을 쓰고 버튼을 시트 맨 아래에 둔다. */
   layout?: 'page' | 'sheet';
+  /** 넘기면 상세에서 누른 항목만 보여 준다. 저장은 늘 부가 정보 전체로 한다. */
+  field?: AdditionalEditField;
 };
 
 const toValues = (property: PropertyDetail): AdditionalInfoValues => ({
@@ -40,16 +43,17 @@ const toValues = (property: PropertyDetail): AdditionalInfoValues => ({
 });
 
 /** 매물 상세 값으로 부가 정보를 채워 두고, 바뀐 값을 얹어 전체 수정으로 저장한다. */
-const PropertyAdditionalInfoForm = ({ property, onSaved, layout = 'page' }: PropertyAdditionalInfoFormProps) => {
+const PropertyAdditionalInfoForm = ({ property, onSaved, layout = 'page', field }: PropertyAdditionalInfoFormProps) => {
   const updateProperty = useUpdateProperty(property.propertyId);
   const [values, setValues] = useState(() => toValues(property));
+  const shows = (target: AdditionalEditField) => field === undefined || field === target;
 
   const setValue = <K extends keyof AdditionalInfoValues>(key: K, value: AdditionalInfoValues[K]) =>
     setValues((current) => ({ ...current, [key]: value }));
 
   const submitButton = (
     <Button type="submit" variant="soft" fullWidth isLoading={updateProperty.isPending} loadingLabel="저장 중…">
-      부가 정보 저장
+      {field === undefined ? '부가 정보 저장' : '저장'}
     </Button>
   );
 
@@ -85,45 +89,56 @@ const PropertyAdditionalInfoForm = ({ property, onSaved, layout = 'page' }: Prop
         aria-label={layout === 'sheet' ? '부가 정보 입력' : undefined}
       >
         {layout === 'page' && <h1 id="additional-info-heading">부가 정보</h1>}
-        <TextField
-          label="입주 가능일"
-          type="date"
-          value={values.availableMoveInDate}
-          onChange={(event) => setValue('availableMoveInDate', event.target.value)}
-        />
-        <PropertyOptionPicker
-          label="관리비 포함 공과금"
-          options={MAINTENANCE_OPTIONS}
-          variant="badge"
-          selected={values.utilityOptions}
-          onChange={(next) => setValue('utilityOptions', next as UtilityOption[])}
-        >
-          <MoneyField
-            label="총 관리비"
-            value={values.maintenanceFeeAmount}
-            placeholder="예: 10"
-            onValueChange={(value) => setValue('maintenanceFeeAmount', value)}
+        {shows('availableMoveInDate') && (
+          <TextField
+            label="입주 가능일"
+            type="date"
+            value={values.availableMoveInDate}
+            onChange={(event) => setValue('availableMoveInDate', event.target.value)}
           />
-        </PropertyOptionPicker>
-        <PropertyOptionPicker
-          label="방 옵션"
-          options={PROPERTY_OPTIONS}
-          selected={values.roomOptions}
-          onChange={(next) => setValue('roomOptions', next as RoomOption[])}
-        />
-        <TextField
-          label="방문 일정"
-          type="datetime-local"
-          value={values.visitScheduledAt}
-          onChange={(event) => setValue('visitScheduledAt', event.target.value)}
-        />
-        <TextField
-          label="확인한 곳"
-          value={values.discoverySource}
-          maxLength={500}
-          placeholder="URL, 앱 이름 또는 중개사 정보"
-          onChange={(event) => setValue('discoverySource', event.target.value)}
-        />
+        )}
+        {shows('maintenance') && (
+          <PropertyOptionPicker
+            label="관리비 포함 공과금"
+            options={MAINTENANCE_OPTIONS}
+            variant="badge"
+            selected={values.utilityOptions}
+            onChange={(next) => setValue('utilityOptions', next as UtilityOption[])}
+          >
+            <MoneyField
+              label="총 관리비"
+              value={values.maintenanceFeeAmount}
+              placeholder="예: 10"
+              onValueChange={(value) => setValue('maintenanceFeeAmount', value)}
+            />
+          </PropertyOptionPicker>
+        )}
+        {shows('roomOptions') && (
+          <PropertyOptionPicker
+            label="방 옵션"
+            options={PROPERTY_OPTIONS}
+            selected={values.roomOptions}
+            onChange={(next) => setValue('roomOptions', next as RoomOption[])}
+          />
+        )}
+        {shows('visitScheduledAt') && (
+          <TextField
+            label="방문 일정"
+            type="datetime-local"
+            value={values.visitScheduledAt}
+            onChange={(event) => setValue('visitScheduledAt', event.target.value)}
+          />
+        )}
+        {shows('discoverySource') && (
+          <TextField
+            label="확인한 곳"
+            value={values.discoverySource}
+            maxLength={500}
+            placeholder="URL, 앱 이름 또는 중개사 정보"
+            autoFocus={field === 'discoverySource'}
+            onChange={(event) => setValue('discoverySource', event.target.value)}
+          />
+        )}
       </section>
       {updateProperty.isError && (
         <InlineNotice tone="error">부가 정보를 저장하지 못했어요. 다시 시도해 주세요.</InlineNotice>

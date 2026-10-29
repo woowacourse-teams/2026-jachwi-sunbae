@@ -2,7 +2,12 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 
 import { readCommuteDestination } from '@/features/map/lib/commuteDestinationStore';
-import { DEFAULT_MAP_CENTER } from '@/features/map/lib/mapLocation';
+import {
+  DEFAULT_MAP_CENTER,
+  type MapCoordinate,
+  MapLocationError,
+  requestCurrentMapLocation,
+} from '@/features/map/lib/mapLocation';
 import type { MapMarker } from '@/features/map/model/Map';
 import { usePropertyCommuteTimes, usePropertyList } from '@/features/property/api/useProperties';
 
@@ -104,11 +109,29 @@ const useRecords = (selection?: RecordsSelection) => {
     setLevel(next === '전체' ? 8 : 5);
   };
 
-  /** 지금 동네의 첫 기록 위치로 지도를 옮긴다. */
-  const recenter = () => {
-    const first = records.find((record) => record.latitude !== null && record.longitude !== null);
-    if (first && first.latitude !== null && first.longitude !== null)
-      setCenter({ latitude: first.latitude, longitude: first.longitude });
+  /** 주소 검색 결과처럼 고른 자리로 지도를 옮기고 동네 수준으로 확대한다. */
+  const moveTo = (coordinate: MapCoordinate) => {
+    setCenter({ latitude: coordinate.latitude, longitude: coordinate.longitude });
+    setLevel(4);
+  };
+
+  /**
+   * 현재 위치로 지도를 옮긴다. 사파리는 누른 그 순간에만 권한 창을 띄우므로 클릭 처리기에서 바로 부른다.
+   * 위치를 못 받으면 까닭을 알림으로 보여 준다. 받은 위치를 더 쓰려면 `onLocated`를 넘긴다.
+   */
+  const moveToCurrentLocation = (onLocated?: (coordinate: MapCoordinate) => void) => {
+    requestCurrentMapLocation().then(
+      (coordinate) => {
+        moveTo(coordinate);
+        onLocated?.(coordinate);
+      },
+      (error: unknown) =>
+        setNotice(
+          error instanceof MapLocationError && error.reason === 'denied'
+            ? '위치 권한이 꺼져 있어요. 브라우저 설정에서 위치 권한을 켜 주세요.'
+            : '현재 위치를 확인하지 못했어요.',
+        ),
+    );
   };
 
   return {
@@ -127,7 +150,8 @@ const useRecords = (selection?: RecordsSelection) => {
     level,
     setLevel,
     markers,
-    recenter,
+    moveTo,
+    moveToCurrentLocation,
     notice,
     setNotice,
     commute,

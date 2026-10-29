@@ -70,15 +70,17 @@ const styles = {
     label: StreetMemoDetails-preference;
     padding: 0.2rem 0.55rem;
     border-radius: 999px;
-    color: #fff;
     font-weight: 700;
 
+    /* 지도 말풍선과 같은 옅은 바탕·진한 글자 색을 쓴다. */
     &[data-preference='LIKE'] {
-      background: var(--color-brand-blue);
+      background: var(--color-memo-like);
+      color: var(--color-memo-like-ink);
     }
 
     &[data-preference='DISLIKE'] {
-      background: var(--color-danger);
+      background: var(--color-memo-dislike);
+      color: var(--color-memo-dislike-ink);
     }
   `,
 

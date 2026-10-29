@@ -72,6 +72,11 @@ injectGlobal`
   --color-check-caution-ink: #d14d4d;
   --color-check-unconfirmed: #c6c6c6;
   --color-check-unconfirmed-ink: #666;
+  /* 거리 메모: 좋아요는 옅은 파랑, 싫어요는 옅은 빨강 바탕에 같은 계열의 진한 글자를 올린다. 지도 위에서 튀지 않게 채도를 낮췄다. */
+  --color-memo-like: #cfe2fa;
+  --color-memo-like-ink: #24497f;
+  --color-memo-dislike: #f7cfcf;
+  --color-memo-dislike-ink: #8a2c2c;
 
   /* Card-style home: 기능 카드·바로가기 타일·레일 카드가 함께 쓰는 표면과 강조색. */
   --color-card-surface: #f1f2f4;

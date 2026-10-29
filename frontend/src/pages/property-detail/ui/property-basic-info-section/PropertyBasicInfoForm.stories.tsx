@@ -27,10 +27,16 @@ const meta = {
   component: PropertyBasicInfoForm,
   argTypes: {
     property: { control: 'object', description: '폼 초기값으로 쓰는 매물 상세 데이터. JSON으로 값을 바꿔 볼 수 있다.' },
+    field: {
+      control: 'inline-radio',
+      options: ['price', 'location'],
+      description: '상세에서 누른 항목. 이 항목만 보여 주고 저장한다.',
+    },
     onSaved: { description: '저장 요청이 성공하면 부른다.' },
   },
   args: {
     property,
+    field: 'price',
     onSaved: fn(),
   },
   decorators: [
@@ -50,6 +56,7 @@ export const Default: Story = {};
 
 export const WithoutLocation: Story = {
   args: {
+    field: 'location',
     property: { ...property, location: { address: null, latitude: null, longitude: null } },
   },
 };

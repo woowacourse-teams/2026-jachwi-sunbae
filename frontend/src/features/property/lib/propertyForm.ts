@@ -1,3 +1,5 @@
+import type { MapAddress } from '@/features/map/model/Map';
+
 import type { PropertyInputDto } from '../api/dtos/PropertyDto';
 
 export const WON_PER_MANWON = 10_000;
@@ -138,4 +140,31 @@ export const propertyFieldErrorMessage = (field: PropertyFormField): string => {
   };
 
   return messages[field];
+};
+
+/** 위치만으로 바로 만든 매물의 이름. 사용자가 상세에서 바로 고친다. */
+export const DEFAULT_PROPERTY_NAME = '새 매물';
+
+export const addressOf = (location: MapAddress): string | null =>
+  location.roadAddress ?? location.jibunAddress ?? location.address;
+
+/**
+ * 위치만으로 바로 만드는 매물 요청. 이름은 `새 매물`로 두고, 서버가 미확정 금액으로 받는 0을 보증금과 월세에 넣는다.
+ * 나머지는 상세 화면에서 항목마다 채운다.
+ */
+export const toQuickPropertyInput = (location: MapAddress): PropertyInputDto => {
+  return {
+    name: DEFAULT_PROPERTY_NAME,
+    depositAmount: 0,
+    monthlyRentAmount: 0,
+    discoverySource: null,
+    address: addressOf(location),
+    latitude: location.latitude,
+    longitude: location.longitude,
+    availableMoveInDate: null,
+    maintenanceFeeAmount: null,
+    visitScheduledAt: null,
+    roomOptions: [],
+    utilityOptions: [],
+  };
 };

@@ -17,8 +17,8 @@ import type { RecordsState } from './useRecords';
 
 const REGISTER_MARKER_ID = 'register-point';
 const NO_CATEGORIES: MapCategory[] = [];
-/** 거리 메모는 이 단계까지 확대했을 때만 띄운다. 멀리 축소하면 말풍선이 지도를 덮어서 숨긴다. */
-const MEMO_VISIBLE_LEVEL = 7;
+/** 이 단계보다 멀리 축소하면 거리 메모를 숨긴다. 도시 전체를 볼 때는 골목 메모가 쓸모없다. */
+const MEMO_MAX_LEVEL = 10;
 
 type MapPoint = { latitude: number; longitude: number };
 
@@ -55,7 +55,8 @@ const useRecordsMapLayers = (
   const [category, setCategory] = useState<MapCategory | null>(initialCategory);
   const [tapPoint, setTapPoint] = useState<MapPoint | null>(null);
   const [isResolvingAddress, setIsResolvingAddress] = useState(false);
-  const memo = useStreetMemoLayer(category === 'MEMO' && level <= MEMO_VISIBLE_LEVEL, bounds);
+  // 겹치는 메모는 개수 말풍선으로 묶이므로 웬만큼 축소해도 띄우고, 아주 멀리 축소했을 때만 숨긴다.
+  const memo = useStreetMemoLayer(category === 'MEMO' && level <= MEMO_MAX_LEVEL, bounds);
 
   const facilityCategory = category !== null && category !== 'MEMO' ? category : null;
   const query = useMemo(() => (bounds ? viewportQuery(bounds) : null), [bounds]);

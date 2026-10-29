@@ -28,12 +28,12 @@ const makeLayer = (overrides: Partial<StreetMemoLayer>): StreetMemoLayer => ({
   markers: [],
   isFailed: false,
   mode: null,
-  selectedMemo: null,
+  selectedMemos: [],
   selectedMarkerId: null,
   isSubmitting: false,
   submitFailed: false,
-  isRemoving: false,
-  removeFailed: false,
+  removingId: null,
+  removeFailedId: null,
   selectMarker: fn(() => false),
   startDraft: fn(),
   submit: fn(),
@@ -46,7 +46,7 @@ const meta = {
   title: '기능/거리 메모/StreetMemoSheet',
   component: StreetMemoSheet,
   args: {
-    layer: makeLayer({ mode: 'view', selectedMemo: likeMemo }),
+    layer: makeLayer({ mode: 'view', selectedMemos: [likeMemo] }),
     onCreated: fn(),
   },
   argTypes: {
@@ -76,6 +76,6 @@ export const Compose: Story = {
 
 export const OthersMemo: Story = {
   args: {
-    layer: makeLayer({ mode: 'view', selectedMemo: dislikeMemo }),
+    layer: makeLayer({ mode: 'view', selectedMemos: [dislikeMemo] }),
   },
 };

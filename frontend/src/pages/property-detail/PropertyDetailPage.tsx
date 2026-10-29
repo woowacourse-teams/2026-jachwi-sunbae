@@ -30,6 +30,7 @@ import {
   readLastDetailTab,
   writeLastDetailTab,
 } from './model/detailTab';
+import { editFieldSheetHeight, editFieldTitles, isBasicEditField, type PropertyEditField } from './model/editField';
 import PropertyAdditionalInfoSection from './ui/property-additional-info-section/PropertyAdditionalInfoSection';
 import PropertyBasicInfoForm from './ui/property-basic-info-section/PropertyBasicInfoForm';
 import PropertyBasicInfoSection from './ui/property-basic-info-section/PropertyBasicInfoSection';
@@ -125,7 +126,7 @@ const PropertyDetailView = ({ propertyId, detail, backTo, panel }: PropertyDetai
       { replace: true, state: locationState },
     );
   };
-  const [editingSection, setEditingSection] = useState<'basic' | 'additional' | null>(null);
+  const [editingField, setEditingField] = useState<PropertyEditField | null>(null);
   const deleteButtonRef = useRef<HTMLButtonElement>(null);
   const photoTriggerRef = useRef<HTMLButtonElement | null>(null);
 
@@ -223,9 +224,9 @@ const PropertyDetailView = ({ propertyId, detail, backTo, panel }: PropertyDetai
                   </button>
                 </TopNavigationMenu>
               </div>
-              <PropertyBasicInfoSection property={detail} onEdit={() => setEditingSection('basic')} />
+              <PropertyBasicInfoSection property={detail} onEdit={setEditingField} />
 
-              <PropertyAdditionalInfoSection property={detail} onEdit={() => setEditingSection('additional')} />
+              <PropertyAdditionalInfoSection property={detail} onEdit={setEditingField} />
 
               <PropertyMemoSection propertyId={propertyId} />
 
@@ -258,16 +259,21 @@ const PropertyDetailView = ({ propertyId, detail, backTo, panel }: PropertyDetai
           />
         )}
 
-        {editingSection !== null && (
+        {editingField !== null && (
           <PropertyEditSheet
-            title={editingSection === 'basic' ? '기본 정보 수정' : '부가 정보 수정'}
-            initialHeightPercent={88}
-            onClose={() => setEditingSection(null)}
+            title={editFieldTitles[editingField]}
+            initialHeightPercent={editFieldSheetHeight(editingField)}
+            onClose={() => setEditingField(null)}
           >
-            {editingSection === 'basic' ? (
-              <PropertyBasicInfoForm property={detail} onSaved={() => setEditingSection(null)} />
+            {isBasicEditField(editingField) ? (
+              <PropertyBasicInfoForm property={detail} field={editingField} onSaved={() => setEditingField(null)} />
             ) : (
-              <PropertyAdditionalInfoForm property={detail} layout="sheet" onSaved={() => setEditingSection(null)} />
+              <PropertyAdditionalInfoForm
+                property={detail}
+                layout="sheet"
+                field={editingField}
+                onSaved={() => setEditingField(null)}
+              />
             )}
           </PropertyEditSheet>
         )}

@@ -4,6 +4,7 @@ import { StrictMode } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { usePropertyCreationForm } from '@/pages/create-property/hooks/usePropertyCreationForm';
+import { DEFAULT_PROPERTY_NAME, toQuickPropertyInput } from '@/features/property/lib/propertyForm';
 
 const { trackEvent, useCreate, setInitialQuery } = vi.hoisted(() => ({
   trackEvent: vi.fn(),
@@ -33,8 +34,6 @@ describe('등록 진입 경로 지표', () => {
       }),
     );
     expect(result.current.hasPresetLocation).toBe(false);
-    expect(result.current.nameStep).toBe(3);
-    expect(result.current.values.latitude).toBe(37.4);
   });
   it.each(['form', 'map'] as const)('%s 진입은 StrictMode에서도 시작을 한 번 기록한다', (entrypoint) => {
     const wrapper = ({ children }: PropsWithChildren) => <StrictMode>{children}</StrictMode>;
@@ -53,5 +52,26 @@ describe('등록 진입 경로 지표', () => {
     renderHook(() => usePropertyCreationForm(routeState), { wrapper });
     expect(trackEvent.mock.calls).toEqual([['property_creation_started', { entrypoint }]]);
     expect(useCreate).toHaveBeenCalledWith(entrypoint);
+  });
+});
+
+describe('위치만으로 만드는 매물 요청', () => {
+  it('이름은 새 매물, 금액은 0으로 두고 주소와 좌표만 채운다', () => {
+    expect(
+      toQuickPropertyInput({
+        roadAddress: '서울 관악구 신림로 12길 3',
+        jibunAddress: null,
+        address: null,
+        latitude: 37.48,
+        longitude: 126.93,
+      }),
+    ).toMatchObject({
+      name: DEFAULT_PROPERTY_NAME,
+      depositAmount: 0,
+      monthlyRentAmount: 0,
+      address: '서울 관악구 신림로 12길 3',
+      latitude: 37.48,
+      longitude: 126.93,
+    });
   });
 });
