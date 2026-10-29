@@ -12,50 +12,8 @@ import {
 import { usePublicConfig } from '@/shared/config/PublicConfigContext';
 import type { PublicConfig } from '@/shared/config/publicConfigTypes';
 
-export const BRANDS = { EMART24: '이마트24', SEVEN_ELEVEN: '세븐일레븐' } as const;
-export const PLATFORMS = { BAEMIN: '배민', COUPANG_EATS: '쿠팡이츠' } as const;
-export const PROMOTIONS = {
-  ONE_PLUS_ONE: '1+1',
-  TWO_PLUS_ONE: '2+1',
-  THREE_PLUS_ONE: '3+1',
-  SALE: '할인',
-  PICK_AND_MIX: '골라담기',
-} as const;
-export const CATEGORIES = {
-  MEAL: '간편식',
-  SNACK: '과자',
-  BEVERAGE: '음료',
-  HOUSEHOLD_GOODS: '생활용품',
-  UNKNOWN: '카테고리 정보 없음',
-} as const;
-export type Brand = keyof typeof BRANDS;
-export type Platform = keyof typeof PLATFORMS;
-export type Promotion = keyof typeof PROMOTIONS;
-export type Product = {
-  name: string;
-  price: number;
-  imageUrl: string;
-  category: keyof typeof CATEGORIES;
-  promotionType: Promotion;
-};
-export type PromotionResult = {
-  brand: Brand;
-  count: number;
-  collectedAt: string | null;
-  sourceUrl: string;
-  products: Product[];
-};
-export type DeliveryOffer = {
-  id: number;
-  platform: Platform;
-  brandName: string;
-  discountAmount: number;
-  minOrderAmount: number | null;
-  startDate: string | null;
-  endDate: string | null;
-  conditions: string | null;
-  lastVerifiedAt: string;
-};
+import type { Brand, DeliveryOffer, PromotionResult } from '../model/MealDeal';
+import { BRANDS, CATEGORIES, PLATFORMS, PROMOTIONS } from '../model/MealDeal';
 
 const member = <T extends string>(value: string, values: Record<T, string>): T => {
   if (!Object.prototype.hasOwnProperty.call(values, value)) throw new Error('지원하지 않는 행사 응답입니다.');
@@ -117,20 +75,20 @@ export const fetchPromotions = (config: PublicConfig, brand: Brand, signal?: Abo
 export const fetchDeliveryOffers = (config: PublicConfig, signal?: AbortSignal) =>
   apiRequest({ config, path: '/api/delivery-discount-offers', signal, parseData: parseDeliveryOffers });
 
-export const usePromotions = (brand: Brand, enabled: boolean) => {
+export const usePromotions = (brand: Brand, isEnabled: boolean) => {
   const config = usePublicConfig();
   return useQuery({
     queryKey: ['promotions', config.apiBaseUrl, brand],
-    enabled,
+    enabled: isEnabled,
     queryFn: ({ signal }) => fetchPromotions(config, brand, signal),
     staleTime: 300_000,
   });
 };
-export const useDeliveryOffers = (enabled: boolean) => {
+export const useDeliveryOffers = (isEnabled: boolean) => {
   const config = usePublicConfig();
   return useQuery({
     queryKey: ['delivery-discount-offers', config.apiBaseUrl],
-    enabled,
+    enabled: isEnabled,
     queryFn: ({ signal }) => fetchDeliveryOffers(config, signal),
     staleTime: 300_000,
   });

@@ -1,20 +1,23 @@
 import { css } from '@emotion/css';
 import { useState } from 'react';
 
-import { describeMealError, type Platform, PLATFORMS, useDeliveryOffers } from '@/features/meal-deals/api/mealDealsApi';
+import { describeMealError, useDeliveryOffers } from '@/features/meal-deals/api/mealDealsApi';
 import { won } from '@/features/meal-deals/lib/presentation';
+import { type Platform, PLATFORMS } from '@/features/meal-deals/model/MealDeal';
 import { Button } from '@/shared/ui/button/Button';
 import QueryState from '@/shared/ui/query-state/QueryState';
 import { SegmentedControl, SegmentedControlItem } from '@/shared/ui/segmented-control/SegmentedControl';
 
-import type { MealDetail } from '../hooks/useMealNavigation';
+import type { MealDetail } from '../model/MealNavigation';
 
 import * as shared from './MealContent.styles';
 
-const DeliveryPanel = ({ active, onDetail }: { active: boolean; onDetail: (detail: MealDetail) => void }) => {
+type DeliveryPanelProps = { isActive: boolean; onDetail: (detail: MealDetail) => void };
+
+const DeliveryPanel = ({ isActive, onDetail }: DeliveryPanelProps) => {
   const [platform, setPlatform] = useState<Platform | 'ALL'>('ALL');
   const [limit, setLimit] = useState(24);
-  const query = useDeliveryOffers(active);
+  const query = useDeliveryOffers(isActive);
   return (
     <section className={shared.section} aria-label="배달 할인정보">
       <h2>배달 할인 모아보기</h2>

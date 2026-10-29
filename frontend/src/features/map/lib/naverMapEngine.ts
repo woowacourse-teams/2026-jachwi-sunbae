@@ -7,18 +7,18 @@ const MIN_NAVER_ZOOM = 6;
 const toNaverZoom = (level: number): number => clamp(NAVER_ZOOM_BASE - level, MIN_NAVER_ZOOM, 21);
 const toMapLevel = (zoom: number): number => clamp(NAVER_ZOOM_BASE - zoom, 1, 14);
 let naverSdkPromise: Promise<void> | null = null;
-let authFailed = false;
+let hasAuthFailed = false;
 export const NAVER_AUTH_FAILURE_EVENT = 'jachwi:naver-auth-failure';
-export const isNaverSdkAvailable = () => !authFailed && window.naver?.maps != null;
+export const isNaverSdkAvailable = () => !hasAuthFailed && window.naver?.maps != null;
 
 const loadNaverSdk = (clientId: string): Promise<void> => {
-  if (authFailed) return Promise.reject(new Error('Naver Maps 인증에 실패했습니다.'));
+  if (hasAuthFailed) return Promise.reject(new Error('Naver Maps 인증에 실패했습니다.'));
   if (naverSdkPromise !== null) return naverSdkPromise;
   if (isNaverSdkAvailable()) return Promise.resolve();
   naverSdkPromise = new Promise((resolve, reject) => {
     // 인증 응답은 SDK ready 이후에도 도착하며, 실패하면 SDK가 내부 객체를 폐기한다.
     window.navermap_authFailure = () => {
-      authFailed = true;
+      hasAuthFailed = true;
       reject(new Error('Naver Maps 인증에 실패했습니다.'));
       window.dispatchEvent(new Event(NAVER_AUTH_FAILURE_EVENT));
     };

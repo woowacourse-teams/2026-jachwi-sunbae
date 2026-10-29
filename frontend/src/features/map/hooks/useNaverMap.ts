@@ -314,7 +314,7 @@ const useNaverMap = ({
 
   useEffect(() => {
     const map = mapRef.current;
-    if (!liveMode || !mapReady || map === null || !coordinateAction) return;
+    if (!liveMode || !mapReady || map === null || !coordinateAction || !isNaverSdkAvailable()) return;
     const content = document.createElement('div');
     const button = document.createElement('button');
     button.type = 'button';
@@ -345,7 +345,7 @@ const useNaverMap = ({
 
   useEffect(() => {
     const map = mapRef.current;
-    if (!liveMode || !mapReady || map === null || !coordinateMenu) return;
+    if (!liveMode || !mapReady || map === null || !coordinateMenu || !isNaverSdkAvailable()) return;
     const overlay = engine.createOverlay(
       map,
       {
@@ -359,13 +359,15 @@ const useNaverMap = ({
       createMapCoordinateMenuElement(coordinateMenu),
       40,
     );
-    return () => overlay.setMap(null);
+    return () => {
+      if (isNaverSdkAvailable()) overlay.setMap(null);
+    };
   }, [coordinateMenu, engine, liveMode, mapReady]);
 
   useEffect(() => {
     const map = mapRef.current;
     const sdk = window.naver?.maps;
-    if (!liveMode || !mapReady || map === null || sdk === undefined) return;
+    if (!liveMode || !mapReady || map === null || sdk == null || !isNaverSdkAvailable()) return;
     const layer = createMapRegionLayer(
       map,
       sdk,

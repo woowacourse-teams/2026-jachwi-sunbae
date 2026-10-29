@@ -64,12 +64,12 @@ export const fetchGoodPriceStores = (
 export const useGoodPriceStores = (
   center: GoodPriceResult['center'] | null,
   radius: GoodPriceResult['radius'],
-  active = true,
+  isActive = true,
 ) => {
   const config = usePublicConfig();
   return useQuery({
     queryKey: ['good-price-stores', config.apiBaseUrl, center?.latitude, center?.longitude, radius],
-    enabled: active && center !== null,
+    enabled: isActive && center !== null,
     queryFn: ({ signal }) => {
       if (center === null) throw new Error('동네를 먼저 선택해 주세요.');
       return fetchGoodPriceStores(config, center, radius, signal);

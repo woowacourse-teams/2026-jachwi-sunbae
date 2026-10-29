@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 
 import { useGoodPriceStores } from '@/features/good-price/api/goodPriceApi';
 import type { GoodPriceResult } from '@/features/good-price/model/GoodPriceStore';
@@ -12,29 +11,28 @@ import {
 } from '@/features/map/lib/mapLocation';
 import type { MapMarker } from '@/features/map/model/Map';
 
+import type { RestaurantArea } from '../model/RestaurantMap';
 import storePin from '../ui/store-pin.svg';
+import useRestaurantOverlay from './useRestaurantOverlay';
 
-export type RestaurantArea = MapCoordinate & { label: string };
-const useRestaurantMap = (active: boolean) => {
-  const [params, setParams] = useSearchParams();
-  const location = useLocation();
-  const navigate = useNavigate();
+const useRestaurantMap = (isActive: boolean) => {
+  const overlay = useRestaurantOverlay();
   const [area, setArea] = useState<RestaurantArea>({ ...DEFAULT_MAP_CENTER, label: '판교 주변' });
   const [viewport, setViewport] = useState<MapCoordinate>(area);
   const [radius, setRadius] = useState<GoodPriceResult['radius']>(1000);
   const [level, setLevel] = useState(6);
-  const [listOpen, setListOpen] = useState(true);
-  const [isLocating, setLocating] = useState(false);
+  const [isListOpen, setIsListOpen] = useState(true);
+  const [isLocating, setIsLocating] = useState(false);
   const [locationError, setLocationError] = useState<string | null>(null);
   const requestId = useRef(0);
   useEffect(() => {
-    if (!active) setLocating(false);
+    setIsLocating(false);
     return () => {
       requestId.current += 1;
     };
-  }, [active]);
-  const query = useGoodPriceStores(area, radius, active);
-  const selectedStore = query.data?.stores.find((store) => String(store.id) === params.get('store')) ?? null;
+  }, [isActive, overlay.isSearchOpen]);
+  const query = useGoodPriceStores(area, radius, isActive);
+  const selectedStore = query.data?.stores.find((store) => String(store.id) === overlay.selectedStoreId) ?? null;
   const markers = useMemo<MapMarker[]>(
     () =>
       query.data?.stores.map((store) => ({
@@ -47,28 +45,18 @@ const useRestaurantMap = (active: boolean) => {
       })) ?? [],
     [query.data],
   );
-  const clearSelection = () =>
-    setParams(
-      (previous) => {
-        const next = new URLSearchParams(previous);
-        next.delete('store');
-        next.delete('search');
-        return next;
-      },
-      { replace: true, state: null },
-    );
   const chooseArea = (next: RestaurantArea) => {
     requestId.current += 1;
-    setLocating(false);
+    setIsLocating(false);
     setLocationError(null);
     setArea(next);
     setViewport(next);
-    setListOpen(true);
-    clearSelection();
+    setIsListOpen(true);
+    overlay.closeOverlay();
   };
   const locate = async () => {
     const id = ++requestId.current;
-    setLocating(true);
+    setIsLocating(true);
     setLocationError(null);
     try {
       const coordinate = await requestCurrentMapLocation();
@@ -77,7 +65,7 @@ const useRestaurantMap = (active: boolean) => {
       chooseArea({ ...coordinate, label: '현재 위치 주변' });
     } catch {
       if (id === requestId.current) {
-        setLocating(false);
+        setIsLocating(false);
         setLocationError('현재 위치를 확인하지 못했어요. 권한을 확인하거나 주소를 검색해 주세요.');
       }
     }
@@ -90,15 +78,16 @@ const useRestaurantMap = (active: boolean) => {
     query,
     markers,
     selectedStore,
-    listOpen,
+    isListOpen,
     isLocating,
     locationError,
     isMapMoved: !coordinatesAreClose(area, viewport),
-    isSearchOpen: params.get('search') === '1',
+    isSearchOpen: overlay.isSearchOpen,
     chooseArea,
     locate,
     changeLevel: setLevel,
-    setListOpen,
+    openList: () => setIsListOpen(true),
+    closeList: () => setIsListOpen(false),
     moveMap: (latitude: number, longitude: number) =>
       setViewport((old) => (coordinatesAreClose(old, { latitude, longitude }) ? old : { latitude, longitude })),
     searchMap: () => chooseArea({ ...viewport, label: '지도에서 선택한 위치' }),
@@ -106,35 +95,21 @@ const useRestaurantMap = (active: boolean) => {
       setRadius(value);
       setLevel(value === 500 ? 5 : value === 1000 ? 6 : 7);
       setViewport(area);
-      setListOpen(true);
-      clearSelection();
+      setIsListOpen(true);
+      overlay.closeOverlay();
     },
-    openSearch: () =>
-      setParams(
-        (previous) => {
-          const next = new URLSearchParams(previous);
-          next.set('search', '1');
-          return next;
-        },
-        { state: { restaurantOverlay: true } },
-      ),
+    openSearch: overlay.openSearch,
     openStore: (id: number) => {
       const store = query.data?.stores.find((store) => store.id === id);
       if (!store) return;
       setViewport(store);
-      setListOpen(true);
-      setParams(
-        (previous) => {
-          const next = new URLSearchParams(previous);
-          next.set('store', String(id));
-          return next;
-        },
-        { state: { restaurantOverlay: true } },
-      );
+      setIsListOpen(true);
+      overlay.openStore(id);
     },
     closeOverlay: () => {
-      if ((location.state as { restaurantOverlay?: boolean } | null)?.restaurantOverlay) navigate(-1);
-      else clearSelection();
+      requestId.current += 1;
+      setIsLocating(false);
+      overlay.closeOverlay();
     },
   };
 };

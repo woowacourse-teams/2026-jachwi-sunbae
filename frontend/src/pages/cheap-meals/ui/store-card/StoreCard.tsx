@@ -3,7 +3,9 @@ import { css } from '@emotion/css';
 import { formatStoreDistance, type GoodPriceStore } from '@/features/good-price/model/GoodPriceStore';
 import Icon from '@/shared/ui/icon/Icon';
 
-const StoreCard = ({ store, onSelect }: { store: GoodPriceStore; onSelect: (id: number) => void }) => (
+type StoreCardProps = { store: GoodPriceStore; onSelect: (id: number) => void };
+
+const StoreCard = ({ store, onSelect }: StoreCardProps) => (
   <button
     type="button"
     className={styles.card}

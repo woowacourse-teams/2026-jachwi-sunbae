@@ -4,7 +4,8 @@ import { Link } from 'react-router-dom';
 
 import Icon from '@/shared/ui/icon/Icon';
 
-import useMealNavigation, { MEAL_TABS, type MealTab } from './hooks/useMealNavigation';
+import useMealNavigation from './hooks/useMealNavigation';
+import { MEAL_TABS, type MealTab } from './model/MealNavigation';
 import ConveniencePanel from './ui/ConveniencePanel';
 import DeliveryPanel from './ui/DeliveryPanel';
 import MealDetails from './ui/MealDetails';
@@ -111,11 +112,11 @@ const CheapMealsPage = () => {
         >
           {(visited.includes(value) || tab === value) &&
             (value === 'restaurant' ? (
-              <RestaurantPanel active={tab === value} />
+              <RestaurantPanel isActive={tab === value} />
             ) : value === 'convenience' ? (
-              <ConveniencePanel active={tab === value} onDetail={navigation.openDetail} />
+              <ConveniencePanel isActive={tab === value} onDetail={navigation.openDetail} />
             ) : (
-              <DeliveryPanel active={tab === value} onDetail={navigation.openDetail} />
+              <DeliveryPanel isActive={tab === value} onDetail={navigation.openDetail} />
             ))}
         </div>
       ))}

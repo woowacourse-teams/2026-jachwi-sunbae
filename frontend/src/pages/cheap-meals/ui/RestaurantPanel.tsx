@@ -16,8 +16,10 @@ import StoreDetail from './store-detail/StoreDetail';
 
 import * as shared from './MealContent.styles';
 
-const RestaurantPanel = ({ active }: { active: boolean }) => {
-  const map = useRestaurantMap(active);
+type RestaurantPanelProps = { isActive: boolean };
+
+const RestaurantPanel = ({ isActive }: RestaurantPanelProps) => {
+  const map = useRestaurantMap(isActive);
   const search = useAddressSearch();
   const data = map.query.isError ? undefined : map.query.data;
   return (
@@ -60,7 +62,7 @@ const RestaurantPanel = ({ active }: { active: boolean }) => {
         )}
       </div>
       <div className={styles.map}>
-        {active && (
+        {isActive && (
           <MapCanvas
             onRetry={() => window.location.reload()}
             center={map.viewport}
@@ -80,8 +82,8 @@ const RestaurantPanel = ({ active }: { active: boolean }) => {
             이 위치에서 찾기
           </button>
         )}
-        {!map.listOpen ? (
-          <button type="button" className={styles.showList} onClick={() => map.setListOpen(true)}>
+        {!map.isListOpen ? (
+          <button type="button" className={styles.showList} onClick={map.openList}>
             가게 목록 보기 {data ? `· ${data.count}곳` : ''}
           </button>
         ) : (
@@ -90,7 +92,7 @@ const RestaurantPanel = ({ active }: { active: boolean }) => {
             initialHeightPercent={40}
             onClose={() => {
               if (map.selectedStore) map.closeOverlay();
-              else map.setListOpen(false);
+              else map.closeList();
             }}
             closeLabel={map.selectedStore ? '가게 상세 닫기' : '가게 목록 닫기'}
             onBack={map.selectedStore ? map.closeOverlay : undefined}
@@ -133,7 +135,7 @@ const RestaurantPanel = ({ active }: { active: boolean }) => {
           </BottomSheet>
         )}
       </div>
-      {map.isSearchOpen && active && (
+      {map.isSearchOpen && isActive && (
         <MealSheet title="어느 동네를 둘러볼까요?" onClose={map.closeOverlay}>
           <Button fullWidth variant="secondary" isLoading={map.isLocating} onClick={() => void map.locate()}>
             현재 위치로 찾기

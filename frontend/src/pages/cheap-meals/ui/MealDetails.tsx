@@ -1,15 +1,17 @@
 import { css } from '@emotion/css';
 
-import { BRANDS, CATEGORIES, PLATFORMS, PROMOTIONS } from '@/features/meal-deals/api/mealDealsApi';
 import { formatKst, httpsUrl, won } from '@/features/meal-deals/lib/presentation';
+import { BRANDS, CATEGORIES, PLATFORMS, PROMOTIONS } from '@/features/meal-deals/model/MealDeal';
 
-import type { MealDetail } from '../hooks/useMealNavigation';
+import type { MealDetail } from '../model/MealNavigation';
 import MealSheet from './MealSheet';
 import ProductImage from './ProductImage';
 
 import * as shared from './MealContent.styles';
 
-const MealDetails = ({ detail, onClose }: { detail: MealDetail; onClose: () => void }) => {
+type MealDetailsProps = { detail: MealDetail; onClose: () => void };
+
+const MealDetails = ({ detail, onClose }: MealDetailsProps) => {
   if (detail.kind === 'product') {
     const { product, brand, sourceUrl } = detail;
     const source = httpsUrl(sourceUrl);

@@ -4,7 +4,9 @@ import { useState } from 'react';
 import { httpsUrl } from '@/features/meal-deals/lib/presentation';
 import Icon from '@/shared/ui/icon/Icon';
 
-const ProductImage = ({ src, name }: { src: string; name: string }) => {
+type ProductImageProps = { src: string; name: string };
+
+const ProductImage = ({ src, name }: ProductImageProps) => {
   const [failedSource, setFailedSource] = useState<string | null>(null);
   const url = httpsUrl(src);
   return (

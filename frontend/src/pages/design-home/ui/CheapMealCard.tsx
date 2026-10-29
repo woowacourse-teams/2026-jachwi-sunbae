@@ -3,7 +3,9 @@ import { Link } from 'react-router-dom';
 
 import Icon from '@/shared/ui/icon/Icon';
 
-const CheapMealCard = ({ className = '' }: { className?: string }) => (
+type CheapMealCardProps = { className?: string };
+
+const CheapMealCard = ({ className = '' }: CheapMealCardProps) => (
   <Link
     to="/cheap-meals"
     className={`${styles.card} ${className}`}

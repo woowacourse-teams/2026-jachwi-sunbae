@@ -5,7 +5,9 @@ import { createPortal } from 'react-dom';
 
 import BottomSheet from '@/shared/ui/bottom-sheet/BottomSheet';
 
-const MealSheet = ({ title, children, onClose }: { title: string; children: ReactNode; onClose: () => void }) => {
+type MealSheetProps = { title: string; children: ReactNode; onClose: () => void };
+
+const MealSheet = ({ title, children, onClose }: MealSheetProps) => {
   const ref = useRef<HTMLDialogElement>(null);
   useLayoutEffect(() => {
     const dialog = ref.current;

@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import { MemoryRouter, Route, Routes, useNavigate } from 'react-router-dom';
@@ -409,4 +409,71 @@ it('만료된 401 응답은 기존 Refresh Token 클라이언트로 갱신하고
   setup('/cheap-meals?tab=convenience');
   expect(await screen.findByRole('list', { name: '행사상품 목록' })).toBeInTheDocument();
   expect(refresh).toHaveBeenCalledOnce();
+});
+
+it('같은 마커를 여러 번 선택해도 상세 닫기 한 번으로 목록으로 돌아간다', async () => {
+  const user = setup('/cheap-meals?tab=restaurant');
+  await screen.findByRole('list', { name: '가게 목록' });
+  await user.click(screen.getByRole('button', { name: '업소 마커 테스트' }));
+  await user.click(screen.getByRole('button', { name: '업소 마커 테스트' }));
+  await user.click(screen.getByRole('button', { name: '가게 상세 닫기' }));
+  expect(screen.getByRole('list', { name: '가게 목록' })).toBeInTheDocument();
+});
+
+it('업소 상세에서 검색한 새 동네를 선택한 뒤 뒤로가면 이전 탭으로 돌아간다', async () => {
+  server.use(
+    http.get('http://localhost:8080/api/maps/geocode', () =>
+      success([
+        { roadAddress: '서울특별시 중구 세종대로 110', jibunAddress: null, latitude: 37.5665, longitude: 126.978 },
+      ]),
+    ),
+  );
+  const user = setup();
+  await user.click(tab('식당'));
+  await screen.findByRole('list', { name: '가게 목록' });
+  await user.click(screen.getByRole('button', { name: '업소 마커 테스트' }));
+  await user.click(screen.getByRole('button', { name: /주소 검색/ }));
+  await user.type(screen.getByRole('textbox', { name: '동네 주소 검색' }), '서울시청');
+  await user.click(screen.getByRole('button', { name: '검색' }));
+  await user.click(await screen.findByRole('button', { name: /서울특별시 중구 세종대로 110/ }));
+  expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  expect(screen.getByText('서울특별시 중구 세종대로 110')).toBeInTheDocument();
+  await user.click(screen.getByRole('button', { name: '브라우저 뒤로' }));
+  expect(tab('전체')).toHaveAttribute('aria-selected', 'true');
+});
+
+it.each(['닫기', '뒤로가기'])('주소 검색에서 %s하면 진행 중이던 위치 요청의 늦은 응답을 무시한다', async (action) => {
+  let complete!: (coordinate: { latitude: number; longitude: number }) => void;
+  const locate = vi.spyOn(mapLocation, 'requestCurrentMapLocation').mockImplementation(
+    () =>
+      new Promise((resolve) => {
+        complete = resolve;
+      }),
+  );
+  try {
+    const user = setup('/cheap-meals?tab=restaurant');
+    await screen.findByRole('list', { name: '가게 목록' });
+    await user.click(screen.getByRole('button', { name: /주소 검색/ }));
+    await user.click(within(screen.getByRole('dialog')).getByRole('button', { name: '현재 위치로 찾기' }));
+    if (action === '닫기')
+      await user.click(within(screen.getByRole('dialog')).getByRole('button', { name: '상세 닫기' }));
+    else await user.click(screen.getByRole('button', { name: '브라우저 뒤로' }));
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    await act(async () => complete({ latitude: 37.5665, longitude: 126.978 }));
+    expect(screen.getByRole('button', { name: /판교 주변/ })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '현재 위치로 찾기' })).toBeEnabled();
+  } finally {
+    locate.mockRestore();
+  }
+});
+
+it.each(['store=10', 'search=1'])('상세 URL %s로 직접 진입해도 닫으면 식당 목록을 유지한다', async (query) => {
+  const user = setup(`/cheap-meals?tab=restaurant&${query}`);
+  if (query.startsWith('store')) {
+    await user.click(await screen.findByRole('button', { name: '가게 상세 닫기' }));
+  } else {
+    await user.click(within(screen.getByRole('dialog')).getByRole('button', { name: '상세 닫기' }));
+  }
+  expect(tab('식당')).toHaveAttribute('aria-selected', 'true');
+  expect(await screen.findByRole('list', { name: '가게 목록' })).toBeInTheDocument();
 });

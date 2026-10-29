@@ -3,7 +3,9 @@ import { css } from '@emotion/css';
 import { formatStoreDistance, type GoodPriceStore } from '@/features/good-price/model/GoodPriceStore';
 import Icon from '@/shared/ui/icon/Icon';
 
-const StoreDetail = ({ store, dataAsOf }: { store: GoodPriceStore; dataAsOf: string | null }) => (
+type StoreDetailProps = { store: GoodPriceStore; dataAsOf: string | null };
+
+const StoreDetail = ({ store, dataAsOf }: StoreDetailProps) => (
   <div className={styles.detail}>
     <p className={styles.meta}>
       {store.businessType} <span>·</span> 기준 위치에서 직선 {formatStoreDistance(store.distanceMeters)}

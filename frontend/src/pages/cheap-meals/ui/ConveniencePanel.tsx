@@ -1,20 +1,14 @@
 import { css } from '@emotion/css';
 import { useState } from 'react';
 
-import {
-  type Brand,
-  BRANDS,
-  describeMealError,
-  type Promotion,
-  PROMOTIONS,
-  usePromotions,
-} from '@/features/meal-deals/api/mealDealsApi';
+import { describeMealError, usePromotions } from '@/features/meal-deals/api/mealDealsApi';
 import { formatKst, httpsUrl, won } from '@/features/meal-deals/lib/presentation';
+import { type Brand, BRANDS, type Promotion, PROMOTIONS } from '@/features/meal-deals/model/MealDeal';
 import { Button } from '@/shared/ui/button/Button';
 import QueryState from '@/shared/ui/query-state/QueryState';
 import { SegmentedControl, SegmentedControlItem } from '@/shared/ui/segmented-control/SegmentedControl';
 
-import type { MealDetail } from '../hooks/useMealNavigation';
+import type { MealDetail } from '../model/MealNavigation';
 import ProductImage from './ProductImage';
 
 import * as shared from './MealContent.styles';
@@ -27,11 +21,13 @@ const filters: { value: Filter; label: string }[] = [
   { value: 'SALE', label: '할인' },
   { value: 'OTHER', label: '기타 행사' },
 ];
-const ConveniencePanel = ({ active, onDetail }: { active: boolean; onDetail: (detail: MealDetail) => void }) => {
+type ConveniencePanelProps = { isActive: boolean; onDetail: (detail: MealDetail) => void };
+
+const ConveniencePanel = ({ isActive, onDetail }: ConveniencePanelProps) => {
   const [brand, setBrand] = useState<Brand>('EMART24');
   const [filter, setFilter] = useState<Filter>('ALL');
   const [limit, setLimit] = useState(24);
-  const query = usePromotions(brand, active);
+  const query = usePromotions(brand, isActive);
   return (
     <section className={shared.section} aria-label="편의점 행사상품">
       <h2>편의점 행사상품</h2>
