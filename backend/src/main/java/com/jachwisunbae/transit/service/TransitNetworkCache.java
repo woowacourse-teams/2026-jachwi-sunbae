@@ -28,7 +28,6 @@ public class TransitNetworkCache {
         this.clock = clock;
     }
 
-    // 처음 요청이 동시에 몰려도 노선망은 한 번만 읽는다.
     public TransitNetwork get() {
         TransitNetwork loaded = network;
         if (loaded != null) {

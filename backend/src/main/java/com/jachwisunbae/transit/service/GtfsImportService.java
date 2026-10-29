@@ -83,7 +83,6 @@ public class GtfsImportService {
         return capitalStopIds;
     }
 
-    // 행정동 코드가 없는 정류장이 연속될 수 있어 더 이상 추가되지 않을 때까지 확인한다.
     private static void includeLinkedUnknownStops(final List<GtfsEdge> edges, final Set<String> capitalStopIds,
                                                   final Set<String> unknownStopIds) {
         boolean added;

@@ -2,8 +2,6 @@ package com.jachwisunbae.transit.domain.network.search;
 
 import java.util.Arrays;
 
-// 탐색 상태 번호를 시간이 짧은 순서로 꺼내는 이진 힙이다. 객체를 만들지 않도록 상태 번호와 시간을 원시 배열에 담는다.
-// 같은 상태가 더 짧은 시간으로 다시 들어오면 그대로 하나 더 넣고, 꺼낼 때 오래된 항목을 건너뛴다.
 public final class StateHeap {
 
     private int[] states = new int[1 << 12];

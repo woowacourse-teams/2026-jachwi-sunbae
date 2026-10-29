@@ -8,7 +8,6 @@ import com.jachwisunbae.transit.domain.vo.AdminDongBoundary;
 import java.util.ArrayList;
 import java.util.List;
 
-// GeoJSON Polygon·MultiPolygon geometry를 행정동 경계로 바꾼다. 파일에서 읽을 때와 DB에서 다시 읽을 때 함께 쓴다.
 // 경계는 이미 약 15m 오차로 단순화한 지도용 데이터라, 좌표를 소수점 5자리(약 1m)로 반올림해 저장·응답 크기를 줄인다.
 public final class GeoJsonBoundaries {
 
@@ -31,7 +30,6 @@ public final class GeoJsonBoundaries {
         return new AdminDongBoundary(toGeoJson(type, polygons), polygons);
     }
 
-    // 반올림한 좌표로 GeoJSON을 다시 만들어, 판정에 쓰는 좌표와 저장·응답하는 좌표가 같게 한다.
     private static String toGeoJson(final String type, final List<List<double[]>> polygons) {
         ObjectNode geometry = JsonNodeFactory.instance.objectNode().put("type", type);
         ArrayNode coordinates = geometry.putArray("coordinates");
@@ -53,7 +51,6 @@ public final class GeoJsonBoundaries {
         return rings;
     }
 
-    // [[경도, 위도], ...]를 [경도, 위도, 경도, 위도, ...]로 펼친다.
     private static double[] flatten(final JsonNode ring) {
         double[] values = new double[ring.size() * 2];
         for (int index = 0; index < ring.size(); index++) {

@@ -21,7 +21,6 @@ public record CommuteRouteResponse(int totalMinutes, int transferCount, List<Leg
         }
     }
 
-    // 목적지는 stopId가 null이다.
     public record Point(String stopId, String name, double latitude, double longitude) {
 
         static Point from(final RoutePoint point) {

@@ -18,9 +18,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-// 구간과 환승을 한 개씩 받아 노선망을 만든다. 117만 개 구간을 목록으로 모으지 않고 DB에서 읽는 대로 번호 배열에 담는다.
-// 정류장 번호는 stops 목록의 위치이고, 노선 번호는 routes 목록의 위치다.
-// 다 받은 뒤 build()에서 가까운 정류장 사이 도보 환승을 더한다.
 public final class TransitNetworkBuilder {
 
     // GTFS 환승은 지하철역끼리만 있어, 버스 정류장과 역, 길 건너편 정류장 사이 환승이 없다.
@@ -36,7 +33,6 @@ public final class TransitNetworkBuilder {
     private final Map<String, Integer> routeIndexes = new HashMap<>();
     private final Set<Long> transferPairs = new HashSet<>();
 
-    // 받은 순서대로 쌓은 연결이다. i번째 연결은 from[i]에서 to[i]로 route[i] 노선을 타고 seconds[i]초 걸린다.
     private int[] from = new int[INITIAL_CAPACITY];
     private int[] to = new int[INITIAL_CAPACITY];
     private int[] route = new int[INITIAL_CAPACITY];
@@ -72,7 +68,6 @@ public final class TransitNetworkBuilder {
         add(fromStop, toStop, TRANSFER, transfer.transferTime());
     }
 
-    // 도보 환승을 더한 뒤 받은 연결을 정류장별로 묶는다. 생활권 탐색은 들어오는 연결을, 경로 안내는 나가는 연결을 쓴다.
     public TransitNetwork build() {
         StopGrid stopGrid = new StopGrid(stops);
         addWalkTransfers(stopGrid);

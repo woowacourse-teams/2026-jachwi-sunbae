@@ -19,8 +19,6 @@ import java.util.List;
 import java.util.Set;
 import org.springframework.stereotype.Component;
 
-// 통계청 SGIS 행정동 경계를 변환한 GeoJSON(backend/scripts/admin-dongs)을 읽는다.
-// 전국 파일이 수십 MB라 features를 하나씩 읽어 바로 행정동으로 바꾼다.
 @Component
 public class AdminDongGeoJsonReader {
 
@@ -57,7 +55,6 @@ public class AdminDongGeoJsonReader {
         throw failure("features 배열이 없습니다. file=" + file, null);
     }
 
-    // 배열 끝까지 읽는다. 객체가 아닌 원소가 끼어 있으면 앞부분만으로 기존 행정동을 교체하지 않도록 적재를 멈춘다.
     private List<AdminDong> readFeatures(final JsonParser parser) throws IOException {
         List<AdminDong> adminDongs = new ArrayList<>();
         Set<String> codes = new HashSet<>();

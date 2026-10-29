@@ -42,7 +42,6 @@ public class GtfsFiles {
         return rows;
     }
 
-    // 람다 안에서 쓰도록 IOException을 UncheckedIOException으로 바꾼다. commons-csv도 행을 읽다 실패하면 같은 예외를 던진다.
     public void forEach(final String fileName, final Consumer<GtfsRecord> consumer) {
         try (CSVParser parser = open(directory.resolve(fileName))) {
             parser.forEach(row -> accept(fileName, row, consumer));
@@ -51,7 +50,6 @@ public class GtfsFiles {
         }
     }
 
-    // 컬럼이 없거나 숫자·좌표·시간 값이 잘못된 행은 파일 이름과 줄 번호를 남기고 적재를 멈춘다.
     private void accept(final String fileName, final CSVRecord row, final Consumer<GtfsRecord> consumer) {
         try {
             consumer.accept(new GtfsRecord(row));
@@ -62,7 +60,6 @@ public class GtfsFiles {
         }
     }
 
-    // UTF-8 BOM이 붙은 파일은 첫 헤더 이름에 BOM이 섞여 컬럼을 찾지 못하므로 건너뛴다.
     private CSVParser open(final Path path) throws IOException {
         PushbackReader reader = new PushbackReader(Files.newBufferedReader(path, StandardCharsets.UTF_8), 1);
         int firstCharacter = reader.read();

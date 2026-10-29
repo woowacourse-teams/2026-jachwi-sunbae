@@ -17,10 +17,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-// stop_times.txt를 한 번 읽으며 바로 앞 정차와 비교해 다음 세 가지를 모은다.
-// - 대상 노선이 정차한 정류장
-// - 구간(노선, 출발 정류장, 도착 정류장)별 이동 시간 표본
-// - 노선별 운행편 첫 정류장 출발 시각
 // GTFS 표준은 행 순서를 보장하지 않으므로, 운행편 행이 모여 있고 stop_sequence가 증가한다는 전제가 깨지면
 // 틀린 구간을 만드는 대신 적재를 멈춘다.
 public class StopTimeAccumulator {

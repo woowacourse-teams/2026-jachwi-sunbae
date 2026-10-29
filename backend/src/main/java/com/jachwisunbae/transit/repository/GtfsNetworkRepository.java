@@ -16,7 +16,6 @@ public interface GtfsNetworkRepository {
 
     List<GtfsRoute> findRoutes();
 
-    // 구간은 117만 개라 목록으로 모으지 않고 읽는 대로 하나씩 넘긴다.
     void forEachEdge(Consumer<GtfsEdge> consumer);
 
     List<GtfsTransfer> findTransfers();

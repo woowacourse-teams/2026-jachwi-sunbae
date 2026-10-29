@@ -27,11 +27,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-// 전국 노선망에서 목적지까지 제한 시간 안에 갈 수 있는 정류장과, 정류장 하나에서 목적지까지의 경로를 찾는다.
-// 생활권 탐색은 목적지에서 출발해 구간을 거꾸로 따라가며 정류장마다 가장 짧은 통근 시간을 구하고(다익스트라),
-// 경로 안내는 같은 규칙으로 출발 정류장에서 목적지 쪽으로 따라가며 지나온 구간을 기록한다.
-// 정류장 21만 개, 구간 117만 개를 다루므로 정류장과 노선을 번호로 바꾸고(TransitNetworkBuilder),
-// 연결은 정류장별로 묶은 StopLinks에, 탐색 상태는 객체 없이 SearchStates·StateHeap의 원시 배열에 담는다.
 public final class TransitNetwork {
 
     public static final double WALKING_METERS_PER_SECOND = 1.2;
@@ -46,8 +41,6 @@ public final class TransitNetwork {
     private final boolean[] railRoutes;
     private final StopGrid stopGrid;
 
-    // 생활권 탐색은 목적지에서 거꾸로 가므로 들어오는 연결을, 경로 안내는 나가는 연결을 쓴다.
-    // 두 목록의 연결 번호는 서로 다르므로 섞어 쓰지 않는다.
     private final StopLinks incoming;
     private final StopLinks outgoing;
 
@@ -177,9 +170,6 @@ public final class TransitNetwork {
                 Math.max(0, states.boardings(arrival.state()) - 1), legs));
     }
 
-    // 생활권 탐색과 경로 안내가 함께 쓰는 다익스트라다. 두 탐색은 쓰는 연결 목록(들어오는·나가는 연결)과
-    // 기록하는 값만 다르고 규칙은 같다. 생활권 탐색은 정류장별 최단 시간을 bestSeconds에,
-    // 경로 안내는 가장 빠른 도착을 arrival에 기록한다. 쓰지 않는 쪽은 null로 넘긴다.
     // 노선에 탈 때마다 그 노선의 대기 시간을 더하고, 환승 횟수(탑승 횟수 - 1)가 maxTransfers를 넘거나
     // 제한 시간을 넘는 경로는 버린다. 상태마다 직전 상태와 따라온 연결을 기록한다.
     private void search(final StopLinks links, final SearchStates states, final StateHeap heap, final Seconds limit,

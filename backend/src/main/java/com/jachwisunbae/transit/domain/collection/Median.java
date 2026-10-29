@@ -2,7 +2,6 @@ package com.jachwisunbae.transit.domain.collection;
 
 import java.util.Arrays;
 
-// 구간 이동 시간과 운행 간격이 같은 중앙값 정의를 쓰도록 한곳에서 계산한다.
 // 짝수 개면 가운데 두 값의 평균을 반올림한다.
 public final class Median {
 

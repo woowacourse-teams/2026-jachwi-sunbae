@@ -2,8 +2,6 @@ package com.jachwisunbae.transit.domain.network.search;
 
 import java.util.Arrays;
 
-// 노선망 탐색의 상태(정류장, 타고 가는 노선, 탑승 횟수)별 가장 짧은 시간과 직전 상태를 담는다.
-// 상태마다 객체를 만들지 않도록 상태를 long 키로 바꿔 열린 주소 해시 테이블과 원시 배열에 담는다.
 public final class SearchStates {
 
     public static final int NONE = -1;
@@ -63,7 +61,6 @@ public final class SearchStates {
         return NONE;
     }
 
-    // 상태가 없으면 새로 만든다. 직전 상태는 비워 둔다.
     public int findOrInsert(final long key) {
         int found = find(key);
         if (found != NONE) {

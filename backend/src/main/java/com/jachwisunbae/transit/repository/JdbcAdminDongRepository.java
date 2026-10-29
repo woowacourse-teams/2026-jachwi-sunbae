@@ -17,7 +17,6 @@ import org.springframework.stereotype.Repository;
 @Repository
 public class JdbcAdminDongRepository implements AdminDongRepository {
 
-    // 경계 GeoJSON이 행마다 수 KB~수백 KB라, 여러 행 INSERT 한 번이 max_allowed_packet을 넘지 않도록 작게 묶는다.
     private static final int BATCH_SIZE = 100;
 
     private final JdbcTemplate jdbcTemplate;

@@ -51,7 +51,6 @@ public class GtfsFeedReader {
         return TRANSIT_ROUTE_TYPES.contains(record.text("route_type"));
     }
 
-    // 대상 노선의 운행편만 trip_id → route_id로 기억한다.
     private Map<String, String> routeIdsByTrip(final GtfsFiles files, final List<GtfsRoute> routes) {
         Set<String> routeIds = routes.stream()
                 .map(GtfsRoute::routeId)

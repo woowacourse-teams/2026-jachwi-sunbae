@@ -26,7 +26,6 @@ public class JdbcGtfsNetworkRepository implements GtfsNetworkRepository {
         this.jdbcTemplate = jdbcTemplate;
     }
 
-    // MySQL의 TRUNCATE는 암묵적으로 커밋되고 외래 키가 걸린 테이블에 쓸 수 없어 참조하는 테이블부터 DELETE한다.
     @Override
     public void replace(final GtfsFeed feed) {
         jdbcTemplate.update("DELETE FROM gtfs_transfers");
@@ -60,8 +59,6 @@ public class JdbcGtfsNetworkRepository implements GtfsNetworkRepository {
                 resultSet.getInt("route_type"), new Seconds(resultSet.getInt("wait_seconds"))));
     }
 
-    // MySQL 드라이버는 기본으로 결과 전체를 메모리에 받아 두므로,
-    // fetch size를 Integer.MIN_VALUE로 줘 한 행씩 스트리밍한다.
     @Override
     public void forEachEdge(final Consumer<GtfsEdge> consumer) {
         String sql = "SELECT route_id, from_stop_id, to_stop_id, travel_seconds FROM gtfs_edges";

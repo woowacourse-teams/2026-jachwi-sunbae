@@ -2,8 +2,6 @@ package com.jachwisunbae.transit.domain.vo;
 
 import java.util.List;
 
-// 행정동 경계다. GeoJSON Polygon·MultiPolygon의 좌표를 판정용으로 들고, 저장·응답용 GeoJSON 원문도 함께 갖는다.
-// 폴리곤마다 첫 고리가 바깥 경계, 나머지 고리가 구멍이며, 고리는 [경도, 위도, 경도, 위도, ...]로 펼친 배열이다.
 public final class AdminDongBoundary {
 
     private final String geoJson;
@@ -49,7 +47,6 @@ public final class AdminDongBoundary {
         return maxLongitude;
     }
 
-    // 바깥 고리 안에 있고 어떤 구멍에도 속하지 않으면 경계 안이다.
     public boolean contains(final Coordinate coordinate) {
         double longitude = coordinate.longitude();
         double latitude = coordinate.latitude();
@@ -93,7 +90,6 @@ public final class AdminDongBoundary {
         return rings.stream().skip(1).noneMatch(hole -> ringContains(hole, longitude, latitude));
     }
 
-    // 점에서 오른쪽으로 그은 반직선이 고리의 변을 홀수 번 지나면 안쪽이다.
     private static boolean ringContains(final double[] ring, final double longitude, final double latitude) {
         boolean inside = false;
         int points = ring.length / 2;
@@ -111,7 +107,6 @@ public final class AdminDongBoundary {
         return inside;
     }
 
-    // 신발끈 공식으로 구한 넓이다. 고리가 닫혀 있지 않아도 마지막 점과 첫 점을 잇는다.
     private static double signedArea(final double[] ring) {
         double sum = 0;
         int points = ring.length / 2;
