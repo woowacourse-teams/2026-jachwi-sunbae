@@ -156,7 +156,7 @@ describe('익명 자동 인증 흐름', () => {
     expect(screen.getByRole('heading', { name: '이렇게 사용해요' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: '동네 찾아보기' })).toHaveAttribute('href', '/neighborhoods');
     expect(screen.getByRole('link', { name: '매물 등록하기' })).toHaveAttribute('href', '/properties/new');
-    expect(screen.getByRole('link', { name: '본 방 기록 보기' })).toHaveAttribute('href', '/properties');
+    expect(screen.getByRole('link', { name: '기록 지도 열기' })).toHaveAttribute('href', '/properties');
     expect(screen.getByRole('link', { name: '체크리스트 보기' })).toHaveAttribute('href', '/checklists');
     expect(screen.getByRole('link', { name: '홈에서 시작하기' })).toHaveAttribute('href', '/');
     expect(screen.queryByRole('link', { name: '앱으로 써보기' })).not.toBeInTheDocument();
