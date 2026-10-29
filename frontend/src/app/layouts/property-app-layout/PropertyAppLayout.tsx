@@ -20,12 +20,13 @@ const PropertyAppLayout = () => {
       location.pathname === '/map/select-location' ||
       location.pathname.startsWith('/properties/new') ||
       isPropertyDetailPath ||
-      location.pathname === '/checklists/new' ||
-      /^\/checklists\/\d+$/.test(location.pathname) ||
+      // 체크리스트 편집은 자체 상단 내비게이션을 쓴다.
+      location.pathname === '/checklists' ||
       /^\/properties\/\d+\/checklists\/\d+$/.test(location.pathname),
     isMapPage,
     isPropertyDetailPath,
     isHomeWidthPage: location.pathname === '/me',
+    isWidePage: location.pathname === '/checklists',
   };
 
   return (

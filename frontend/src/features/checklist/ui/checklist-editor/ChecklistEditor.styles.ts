@@ -110,19 +110,6 @@ export const itemPicker = cx(
   'ChecklistEditor-itemPicker',
 );
 
-export const nameField = css`
-  label: ChecklistEditor-nameField;
-
-  & > label {
-    margin: 0;
-    color: var(--color-ink);
-    font-size: 0.9rem;
-    font-weight: 800;
-    letter-spacing: -0.02em;
-    line-height: 1.4;
-  }
-`;
-
 export const checkItemSearch = css`
   label: ChecklistEditor-checkItemSearch;
 

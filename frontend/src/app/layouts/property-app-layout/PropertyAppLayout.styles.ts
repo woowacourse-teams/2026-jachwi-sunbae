@@ -26,6 +26,14 @@ export const root = cx(
       }
     }
 
+    /* 체크리스트 편집은 휴대폰 기준 폭(--app-max-width)보다 넓은 휴대폰에서도 양옆 빈칸 없이 채운다. 아래 고정 버튼도 같은 폭을 따른다. */
+    @media (max-width: 767px) {
+      &[data-wide-page='true'] {
+        --app-max-width: 100vw;
+        width: 100%;
+      }
+    }
+
     /* 카드형 홈 시안 셸: 바텀탭 대신 상단 홈 버튼으로 시안 홈에 돌아간다. */
     &[data-design-shell='true'] {
       display: flex;

@@ -4,7 +4,6 @@ import { Navigate, Route, Routes, useLocation, useParams } from 'react-router-do
 
 import PropertyAppLayout from '@/app/layouts/property-app-layout/PropertyAppLayout';
 import PublicExploreLayout from '@/app/layouts/public-explore-layout/PublicExploreLayout';
-import { isChecklistStage } from '@/features/checklist/model/checklist';
 import useIsDesktop from '@/shared/lib/hooks/useIsDesktop';
 import { RECORDS_PATH } from '@/shared/lib/navigation/appPaths';
 
@@ -24,8 +23,6 @@ const EditPropertyPage = lazy(() => import('@/pages/edit-property/EditPropertyPa
 const PropertyPhotosPage = lazy(() => import('@/pages/property-photos/PropertyPhotosPage'));
 const PropertyMemoPage = lazy(() => import('@/pages/property-memo/PropertyMemoPage'));
 const ChecklistListPage = lazy(() => import('@/pages/checklist-list/ChecklistListPage'));
-const CreateChecklistPage = lazy(() => import('@/pages/create-checklist/CreateChecklistPage'));
-const ChecklistDetailPage = lazy(() => import('@/pages/checklist-detail/ChecklistDetailPage'));
 const PropertyActiveChecklistPage = lazy(() => import('@/pages/property-active-checklist/PropertyActiveChecklistPage'));
 const PropertyChecklistPage = lazy(() => import('@/pages/property-checklist/PropertyChecklistPage'));
 const MyPage = lazy(() => import('@/pages/my/MyPage'));
@@ -35,15 +32,6 @@ const PropertyComparePage = lazy(() => import('@/pages/property-compare/Property
 const UpcomingFeaturePage = lazy(() => import('@/pages/upcoming-feature/UpcomingFeaturePage'));
 
 const lazyPage = (page: ReactNode) => <LazyRouteBoundary>{page}</LazyRouteBoundary>;
-
-/** 예전 단계별 목록 주소(/checklists/ON_SITE 등)로 들어와도 단일 목록으로 보낸다. */
-const ChecklistResourceRoute = () => {
-  const resource = useParams().resource;
-  if (isChecklistStage(resource)) {
-    return <Navigate to="/checklists" replace />;
-  }
-  return <ChecklistDetailPage />;
-};
 
 /**
  * 본 방 기록(`/properties`)과 매물 상세(`/properties/:propertyId`).
@@ -131,8 +119,8 @@ const AppRoutes = () => (
           element={lazyPage(<PropertyChecklistPage />)}
         />
         <Route path="/checklists" element={lazyPage(<ChecklistListPage />)} />
-        <Route path="/checklists/new" element={lazyPage(<CreateChecklistPage />)} />
-        <Route path="/checklists/:resource" element={lazyPage(<ChecklistResourceRoute />)} />
+        {/* 사용자마다 체크리스트를 하나만 쓰므로 예전 만들기·개별 편집·단계별 주소는 모두 내 체크리스트 편집으로 보낸다. */}
+        <Route path="/checklists/*" element={<Navigate to="/checklists" replace />} />
         <Route path="/me" element={lazyPage(<MyPage />)} />
         <Route path="/map/:propertyId?" element={<LegacyMapRoute />} />
         <Route path="/map/select-location" element={lazyPage(<MapLocationSelectPage />)} />

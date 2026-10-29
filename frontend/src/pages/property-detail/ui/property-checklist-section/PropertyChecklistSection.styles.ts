@@ -1,14 +1,5 @@
 import { css } from '@emotion/css';
 
-export const count = css`
-  label: PropertyChecklistSection-count;
-  color: var(--color-primary-dark);
-  font-size: 0.78rem;
-  font-weight: 800;
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
-`;
-
 export const retry = css`
   label: PropertyChecklistSection-retry;
   display: flex;
@@ -31,19 +22,6 @@ export const mainAction = css`
   margin-top: 0.9rem;
 `;
 
-export const contractSection = css`
-  label: PropertyChecklistSection-contractSection;
-  margin: 0 calc(-1 * var(--page-inline-padding));
-  padding: 0.8rem var(--page-inline-padding);
-  border-top: 0.5rem solid var(--color-canvas);
-  background: var(--color-surface);
-`;
-
-export const contractAction = css`
-  label: PropertyChecklistSection-contractAction;
-  gap: 0.4rem;
-`;
-
 export const loading = css`
   label: PropertyChecklistSection-loading;
   margin: 0.9rem 0 0;
@@ -53,31 +31,33 @@ export const loading = css`
 
 export const expandedChecklist = css`
   label: PropertyChecklistSection-expandedChecklist;
-  display: grid;
-  gap: 0.75rem;
+  /* 체크리스트 이름과 항목을 둥근 묶음 하나에 담는다. 항목은 카드로 띄우지 않고 줄로만 나눈다. */
   margin-top: 0.9rem;
+  padding: 0.95rem 1rem 0.2rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
 `;
 
 export const expandedHeader = css`
   label: PropertyChecklistSection-expandedHeader;
   display: flex;
-  align-items: end;
+  align-items: baseline;
   justify-content: space-between;
   gap: 0.75rem;
-
-  & span {
-    color: var(--color-muted);
-    font-size: 0.7rem;
-  }
+  padding-bottom: 0.2rem;
 
   & h3 {
-    margin: 0.2rem 0 0;
-    font-size: 1rem;
+    min-width: 0;
+    margin: 0;
+    font-size: 1.05rem;
+    font-weight: 800;
   }
 
-  & > strong {
-    color: var(--color-primary-dark);
-    font-size: 0.82rem;
+  & > span {
+    flex: 0 0 auto;
+    color: var(--color-muted);
+    font-size: 0.78rem;
     font-variant-numeric: tabular-nums;
     white-space: nowrap;
   }
@@ -86,7 +66,6 @@ export const expandedHeader = css`
 export const items = css`
   label: PropertyChecklistSection-items;
   display: grid;
-  gap: 0.55rem;
   margin: 0;
   padding: 0;
   list-style: none;

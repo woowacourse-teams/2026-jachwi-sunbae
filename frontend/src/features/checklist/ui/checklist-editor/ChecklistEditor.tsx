@@ -3,7 +3,6 @@ import { useMemo } from 'react';
 import AddItemAction from '@/shared/ui/add-item-action/AddItemAction';
 import BottomActionArea from '@/shared/ui/bottom-action-area/BottomActionArea';
 import { Button } from '@/shared/ui/button/Button';
-import TextField from '@/shared/ui/text-field/TextField';
 
 import { useActiveCheckItems } from '../../api/useChecklists';
 import type { ChecklistEditorItem } from '../../model/ChecklistEditor';
@@ -23,7 +22,7 @@ type ChecklistEditorProps = {
   onSubmit: (input: ChecklistDraftInput) => Promise<ChecklistDetail>;
 };
 
-/** 체크리스트 이름과 항목 순서를 고치는 폼. 항목 추가 화면은 `CheckItemPicker`가 맡는다. */
+/** 체크리스트 항목과 순서를 고치는 폼. 사용자마다 하나만 쓰므로 이름은 묻지 않는다. 항목 추가 화면은 `CheckItemPicker`가 맡는다. */
 const ChecklistEditor = ({
   stage,
   draft,
@@ -49,22 +48,6 @@ const ChecklistEditor = ({
         void draft.submit(onSubmit);
       }}
     >
-      <section className={styles.editorSection}>
-        <TextField
-          id="checklist-name"
-          fieldClassName={styles.nameField}
-          label="체크리스트 이름"
-          placeholder="체크리스트 이름"
-          floatingLabel
-          value={draft.name}
-          maxLength={30}
-          disabled={isSubmitting}
-          helpText={`같은 단계에서 같은 이름을 여러 번 사용할 수 있어요. ${draft.name.length}/30`}
-          error={draft.nameError ?? undefined}
-          onChange={(event) => draft.setName(event.target.value)}
-        />
-      </section>
-
       <AddItemAction disabled={isSubmitting} onClick={onOpenItemPicker}>
         체크 항목 추가
       </AddItemAction>
