@@ -86,7 +86,7 @@ class CommuteStationDedupeAcceptanceTest {
     }
 
     @Test
-    @DisplayName("[POL-COMMUTE-015] 이름이 같은 정류장이 한 동네에 여러 개면 통근 시간이 가장 빠른 하나만 나온다")
+    @DisplayName("이름이 같은 정류장이 한 동네에 여러 개면 통근 시간이 가장 빠른 하나만 나온다")
     void showsFastestStationPerName() throws Exception {
         JsonNode stations = data(mvc.perform(get("/api/commute-areas")
                         .header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken)
