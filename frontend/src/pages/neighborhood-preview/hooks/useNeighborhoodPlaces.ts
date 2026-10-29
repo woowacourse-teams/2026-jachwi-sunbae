@@ -6,11 +6,11 @@ import { viewportQuery } from '@/features/map/lib/mapViewportQuery';
 import type { MapBounds, MapMarker, NearbyAgency } from '@/features/map/model/Map';
 
 /**
- * 이 확대 단계(작을수록 가까움) 이하부터 화면 안의 정류장·부동산·메모를 올린다. 축척 100~150m 화면 정도다.
- * 동네를 고르면 `AREA_FOCUS_LEVEL`(5)로 다가가므로 고르자마자 마커가 보인다.
- * 데스크탑 휠은 확대를 부드럽게 해 5.3처럼 소수 단계로 멈추므로, 정수 5보다 반 단계 넉넉하게 둔다.
+ * 이 확대 단계(작을수록 가까움) 이하부터 화면 안의 정류장·부동산·메모를 올린다. 축척 200~300m 화면 정도다.
+ * 동네를 고르면 `AREA_FOCUS_LEVEL`(5)로 다가가므로 고르자마자 마커가 보이고, 거기서 한 단계 멀리 봐도 그대로 보인다.
+ * 데스크탑 휠은 확대를 부드럽게 해 6.3처럼 소수 단계로 멈추므로, 정수 6보다 반 단계 넉넉하게 둔다.
  */
-export const PLACES_MAX_LEVEL = 5.5;
+export const PLACES_MAX_LEVEL = 6.5;
 
 type BusStop = ReturnType<typeof useViewportPlaces>['busStops'][number];
 /** 동네의 출발 정류장. 경로망 정류장 ID를 그대로 가지고, 고르면 지도를 그 자리로 옮긴다. */

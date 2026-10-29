@@ -11,6 +11,8 @@ import type { NeighborhoodPreviewContext } from './useNeighborhoodPreview';
 const NO_REGIONS: MapRegion[] = [];
 /** 고른 출퇴근 장소 말풍선 핀의 글자. 장소 이름은 검색창·찾기 버튼에 있으니 핀은 고른 자리만 알린다. */
 const DESTINATION_LABEL = '선택한 지역';
+/** 상위 동네 순위 알약 마커 id의 머리. 뒤에 행정동 코드를 붙인다. */
+const RANK_MARKER_PREFIX = 'area-rank:';
 
 /**
  * 휴대폰·데스크탑 동네 찾기가 함께 쓰는 지도 설정. 위치 선택·분석·결과 내내 지도 하나를 유지하고 단계마다 넘기는 값만 바꾼다.
@@ -47,7 +49,26 @@ const useNeighborhoodMapView = (
     else if (onEmptyTap) onEmptyTap();
     else if (hasOpenLayer) closeLayers();
   };
+  /** 지도의 동네(구역이나 순위 알약)를 찍었을 때. 이미 고른 동네 안을 다시 찍으면 열어 둔 정보만 닫고, 다른 동네를 찍으면 동네를 바꾼다. */
+  const selectRegion = (id: string) => {
+    if (deselectOnRegionTap && preview.selected) {
+      closeLayers();
+      preview.selectRegion(null);
+      return;
+    }
+    if (id === preview.selected?.adminDongCode) {
+      tapEmpty();
+      return;
+    }
+    closeLayers();
+    // 데스크탑은 동네를 고를 때 대중교통 상세를 열지 않는다(왼쪽 목록에 요약을 펼친다).
+    preview.selectRegion(id, showAreaAction ? undefined : { openDetails: false });
+  };
   const selectMarker = (marker: MapMarker) => {
+    if (marker.id.startsWith(RANK_MARKER_PREFIX)) {
+      selectRegion(marker.id.slice(RANK_MARKER_PREFIX.length));
+      return;
+    }
     if (memo.selectMarker(marker)) {
       places.closePlace();
       return;
@@ -55,15 +76,33 @@ const useNeighborhoodMapView = (
     memo.close();
     places.selectMarker(marker);
   };
+  // 상위 1~5위 동네는 동네 가운데에 순위 알약을 띄운다.
+  // 가까이 확대했거나 휴대폰 동네 시트를 열어 정류장·공인중개사 마커를 올릴 때는 그 마커를 가리지 않게 거둔다.
+  const rankMarkers = useMemo<MapMarker[]>(
+    () =>
+      places.isClose || placeMarkers
+        ? []
+        : preview.topAreas.map((area, index) => ({
+            ...area.center,
+            id: `${RANK_MARKER_PREFIX}${area.adminDongCode}`,
+            label: `${area.name} ${index + 1}위`,
+            caption: area.name,
+            tone: 'rank' as const,
+            rank: index + 1,
+            actionable: true,
+          })),
+    [preview.topAreas, places.isClose, placeMarkers],
+  );
   const destinationMarkers = useMemo(
     () => [
+      ...rankMarkers,
       ...(placeMarkers
         ? places.markers.filter((marker) => marker.category === (placeMarkers === 'stations' ? 'TRANSPORT' : 'AGENCY'))
         : places.markers),
       ...(placeMarkers ? [] : memo.markers),
       { ...preview.destination, id: 'destination', label: DESTINATION_LABEL, tone: 'destination' as const },
     ],
-    [preview.destination, places.markers, memo.markers, placeMarkers],
+    [rankMarkers, preview.destination, places.markers, memo.markers, placeMarkers],
   );
   const candidateMarkers = useMemo(
     () => [
@@ -84,27 +123,16 @@ const useNeighborhoodMapView = (
           places.rememberLevel(level);
         },
         onBoundsChange: places.rememberBounds,
-        selectedMarkerId: places.selectedMarkerId ?? memo.selectedMarkerId,
+        selectedMarkerId:
+          places.selectedMarkerId ??
+          memo.selectedMarkerId ??
+          (preview.selected ? `${RANK_MARKER_PREFIX}${preview.selected.adminDongCode}` : null),
         onSelectMarker: selectMarker,
         // 빈 곳을 찍으면 열어 둔 정류장·부동산·메모 정보를 닫는다(휴대폰은 시트를 내린다).
         onSelectLocation: tapEmpty,
         regions: preview.regions,
         selectedRegionId: preview.selected?.adminDongCode,
-        // 이미 고른 동네 안을 다시 찍으면 열어 둔 정보만 닫고, 다른 동네를 찍으면 동네를 바꾼다.
-        onSelectRegion: (id: string) => {
-          if (deselectOnRegionTap && preview.selected) {
-            closeLayers();
-            preview.selectRegion(null);
-            return;
-          }
-          if (id === preview.selected?.adminDongCode) {
-            tapEmpty();
-            return;
-          }
-          closeLayers();
-          // 데스크탑은 동네를 고를 때 대중교통 상세를 열지 않는다(왼쪽 목록에 요약을 펼친다).
-          preview.selectRegion(id, showAreaAction ? undefined : { openDetails: false });
-        },
+        onSelectRegion: selectRegion,
         coordinateAction:
           // 정류장·부동산·메모 정보를 띄우는 동안은 동네 말풍선을 숨겨 마커와 시트를 가리지 않게 한다.
           showAreaAction && preview.selected && !hasOpenLayer
