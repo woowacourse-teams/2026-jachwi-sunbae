@@ -1,8 +1,8 @@
 import type { CSSProperties } from 'react';
 import { useMemo } from 'react';
 
+import { Button } from '@/shared/ui/button/Button';
 import ProgressCircle from '@/shared/ui/progress-circle/ProgressCircle';
-import StatusPanel from '@/shared/ui/status-panel/StatusPanel';
 
 import useNaverMap from '../../hooks/useNaverMap';
 import { clampToSouthKorea } from '../../lib/mapLocation';
@@ -28,6 +28,7 @@ const demoMarkerStyle = (marker: MapMarker, center: { latitude: number; longitud
 
 const MapCanvas = ({
   center,
+  onRetry,
   animateView = false,
   coordinateAction,
   coordinateMenu,
@@ -275,8 +276,14 @@ const MapCanvas = ({
         </div>
       )}
       {sdkError && (
-        <div className={styles.mapError}>
-          <StatusPanel title="지도를 연결할 수 없어요." description="잠시 후 다시 시도해 주세요." tone="error" />
+        <div className={styles.mapError} role="alert">
+          <strong>지도를 연결할 수 없어요.</strong>
+          <p>잠시 후 다시 시도해 주세요.</p>
+          {onRetry && (
+            <Button variant="secondary" onClick={onRetry}>
+              지도 다시 시도
+            </Button>
+          )}
         </div>
       )}
     </div>

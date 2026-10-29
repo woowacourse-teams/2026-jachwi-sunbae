@@ -201,9 +201,17 @@ export const mapError = css`
   inset: 0;
   background: var(--color-canvas);
 
-  & .page {
-    min-height: 100%;
-    padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 2rem 1rem;
+  gap: 0.6rem;
+  text-align: center;
+  & p {
+    margin: 0;
+    font-size: 0.8rem;
+    color: var(--color-ink-soft);
   }
 `;
 

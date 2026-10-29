@@ -36,6 +36,7 @@ const renderHome = () => {
             <Route path="/compare" element={target('방 비교 화면')} />
             <Route path="/neighborhoods" element={target('동네 찾기 화면')} />
             <Route path="/me" element={target('마이페이지 화면')} />
+            <Route path="/cheap-meals" element={target('저렴한 한 끼 화면')} />
           </Routes>
         </MemoryRouter>
       </PublicConfigProvider>
@@ -64,6 +65,7 @@ it.each([
   ['link', '방 비교', '방 비교 화면'],
   ['link', '동네를 알아보는 중이에요', '동네 찾기 화면'],
   ['link', '마이페이지', '마이페이지 화면'],
+  ['link', /오늘 한 끼, 저렴하게/, '저렴한 한 끼 화면'],
 ] as const)('%s %s는 기존 앱 화면(%s)으로 이동한다', async (role, name, heading) => {
   const user = userEvent.setup();
   renderHome();

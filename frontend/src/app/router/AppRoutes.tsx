@@ -10,6 +10,7 @@ import { RECORDS_PATH } from '@/shared/lib/navigation/appPaths';
 import LazyRouteBoundary from './LazyRouteBoundary';
 import ProtectedRoute from './ProtectedRoute';
 
+const CheapMealsPage = lazy(() => import('@/pages/cheap-meals/CheapMealsPage'));
 const DesignHomePage = lazy(() => import('@/pages/design-home/DesignHomePage'));
 const DesignRecordsPage = lazy(() => import('@/pages/design-records/DesignRecordsPage'));
 const NeighborhoodPreviewPage = lazy(() => import('@/pages/neighborhood-preview/NeighborhoodPreviewPage'));
@@ -100,6 +101,7 @@ const AppRoutes = () => (
     <Route path="/login" element={<Navigate to="/" replace />} />
     {/* 첫 주소(`/`)를 포함한 회원 화면은 자동 로그인(복원 또는 익명 회원 생성)을 마친 뒤 그린다. */}
     <Route element={<ProtectedRoute />}>
+      <Route path="/cheap-meals" element={lazyPage(<CheapMealsPage />)} />
       <Route path="/" element={lazyPage(<DesignHomePage />)} />
       <Route path="/properties/:propertyId?" element={<RecordsRoute />}>
         <Route index element={lazyPage(<PropertyDetailPage />)} />

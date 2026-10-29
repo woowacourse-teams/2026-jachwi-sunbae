@@ -1,5 +1,6 @@
 import { css } from '@emotion/css';
 
+import CheapMealCard from '../ui/CheapMealCard';
 import GuideCard from '../ui/GuideCard';
 import HomeFeatures from '../ui/HomeFeatures';
 import HomeFooter from '../ui/HomeFooter';
@@ -15,6 +16,7 @@ const HomeMobilePage = () => (
     <HomeHeader className={styles.topBar} />
     <div className={styles.container}>
       <GuideCard className={styles.guide} />
+      <CheapMealCard />
       <HomeFeatures />
     </div>
     <div className={styles.side}>

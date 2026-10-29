@@ -5,7 +5,13 @@ import { usePublicConfig } from '@/shared/config/PublicConfigContext';
 import { clampToSouthKorea } from '../lib/mapLocation';
 import { markerScale, markerSignature, markerZIndex } from '../lib/mapMarkerPresentation';
 import { createMapRegionLayer, READY_TIMEOUT_MS } from '../lib/mapRegionLayer';
-import { type LiveMap, type LiveOverlay, naverEngine } from '../lib/naverMapEngine';
+import {
+  isNaverSdkAvailable,
+  type LiveMap,
+  type LiveOverlay,
+  NAVER_AUTH_FAILURE_EVENT,
+  naverEngine,
+} from '../lib/naverMapEngine';
 import type { MapCanvasProps } from '../model/MapCanvas';
 import { createMapCoordinateMenuElement } from '../ui/map-coordinate-menu/MapCoordinateMenu';
 import { createMapMarkerElement } from '../ui/map-marker/MapMarkerView';
@@ -102,6 +108,22 @@ const useNaverMap = ({
     let listeners: unknown[] = [];
     let readyFrame: number | null = null;
 
+    const handleAuthFailure = () => {
+      // 폐기된 SDK를 호출하지 않고 지도만 중단하여 실제 API 목록·상세를 계속 사용할 수 있게 한다.
+      if (readyFrame !== null) window.cancelAnimationFrame(readyFrame);
+      readyFrame = null;
+      mapRef.current = null;
+      map = null;
+      regionLayerRef.current?.dispose(true);
+      regionLayerRef.current = null;
+      overlaysRef.current.clear();
+      circlesRef.current = [];
+      containerRef.current?.replaceChildren();
+      setMapReady(false);
+      setRenderReady(false);
+      setSdkError(true);
+    };
+    window.addEventListener(NAVER_AUTH_FAILURE_EVENT, handleAuthFailure);
     setSdkError(false);
     setMapReady(false);
     setRenderReady(false);
@@ -123,7 +145,7 @@ const useNaverMap = ({
           }),
           engine.addListener(map, 'idle', () => {
             setGestureActive(false);
-            if (map === null) return;
+            if (map === null || !isNaverSdkAvailable()) return;
             setSettledVersion((current) => current + 1);
             const nextCenter = engine.getCenter(map);
             callbackRef.current.onCenterChange?.(nextCenter.latitude, nextCenter.longitude);
@@ -151,22 +173,23 @@ const useNaverMap = ({
 
     return () => {
       disposed = true;
+      window.removeEventListener(NAVER_AUTH_FAILURE_EVENT, handleAuthFailure);
       if (readyFrame !== null) window.cancelAnimationFrame(readyFrame);
       listeners.forEach((listener) => engine.removeListener(listener));
       listeners = [];
       setGestureActive(false);
-      overlaysRef.current.forEach(({ overlay }) => overlay.setMap(null));
+      if (isNaverSdkAvailable()) overlaysRef.current.forEach(({ overlay }) => overlay.setMap(null));
       overlaysRef.current.clear();
-      circlesRef.current.forEach((circle) => circle.setMap(null));
+      if (isNaverSdkAvailable()) circlesRef.current.forEach((circle) => circle.setMap(null));
       circlesRef.current = [];
       circleSignatureRef.current = '';
-      if (map !== null) engine.destroy(map);
+      if (map !== null && isNaverSdkAvailable()) engine.destroy(map);
       mapRef.current = null;
     };
   }, [engine, liveMode]);
 
   useEffect(() => {
-    if (animateView || !liveMode || !mapReady || mapRef.current === null) return;
+    if (animateView || !liveMode || !mapReady || mapRef.current === null || !isNaverSdkAvailable()) return;
     const current = engine.getCenter(mapRef.current);
     if (
       Math.abs(current.latitude - boundedCenter.latitude) < 0.0000001 &&
@@ -178,7 +201,7 @@ const useNaverMap = ({
 
   useEffect(() => {
     const map = mapRef.current;
-    if (!animateView || !liveMode || !mapReady || map === null) return;
+    if (!animateView || !liveMode || !mapReady || map === null || !isNaverSdkAvailable()) return;
     const current = engine.getCenter(map);
     if (
       Math.abs(current.latitude - boundedCenter.latitude) < 0.0000001 &&
@@ -206,7 +229,14 @@ const useNaverMap = ({
       relayoutFrame = window.requestAnimationFrame(() => {
         relayoutFrame = null;
         const container = containerRef.current;
-        if (container === null || container.clientWidth === 0 || container.clientHeight === 0) return;
+        if (
+          container === null ||
+          container.clientWidth === 0 ||
+          container.clientHeight === 0 ||
+          mapRef.current !== map ||
+          !isNaverSdkAvailable()
+        )
+          return;
         const size = `${container.clientWidth}x${container.clientHeight}`;
         if (size === previousSize) return;
         previousSize = size;
@@ -223,13 +253,21 @@ const useNaverMap = ({
 
   useEffect(() => {
     const map = mapRef.current;
-    if (animateView || !liveMode || !mapReady || map === null || engine.getZoom(map) === level) return;
+    if (
+      animateView ||
+      !liveMode ||
+      !mapReady ||
+      map === null ||
+      !isNaverSdkAvailable() ||
+      engine.getZoom(map) === level
+    )
+      return;
     engine.setZoom(map, level);
   }, [engine, level, liveMode, mapReady, animateView]);
 
   useEffect(() => {
     const map = mapRef.current;
-    if (!liveMode || !mapReady || map === null || gestureActiveRef.current) return;
+    if (!liveMode || !mapReady || map === null || gestureActiveRef.current || !isNaverSdkAvailable()) return;
     // 달라진 마커만 다시 그린다. 전부 지웠다 만들면 지도를 옮길 때마다 깜빡인다.
     const previous = overlaysRef.current;
     const next = new Map<string, { signature: string; overlay: LiveOverlay; content: HTMLElement }>();
@@ -264,11 +302,11 @@ const useNaverMap = ({
 
   useEffect(() => {
     const map = mapRef.current;
-    if (!liveMode || !mapReady || map === null || gestureActiveRef.current) return;
+    if (!liveMode || !mapReady || map === null || gestureActiveRef.current || !isNaverSdkAvailable()) return;
     const signature = `${circleRadii}:${radiusCenter.latitude}:${radiusCenter.longitude}`;
     if (signature === circleSignatureRef.current) return;
     circleSignatureRef.current = signature;
-    circlesRef.current.forEach((circle) => circle.setMap(null));
+    if (isNaverSdkAvailable()) circlesRef.current.forEach((circle) => circle.setMap(null));
     circlesRef.current = (circleRadii === '' ? [] : circleRadii.split(',').map(Number)).map((radius) =>
       engine.createCircle(map, engine.latLng(radiusCenter.latitude, radiusCenter.longitude), radius),
     );
@@ -300,7 +338,9 @@ const useNaverMap = ({
       content,
       30,
     );
-    return () => overlay.setMap(null);
+    return () => {
+      if (isNaverSdkAvailable()) overlay.setMap(null);
+    };
   }, [coordinateAction, engine, liveMode, mapReady]);
 
   useEffect(() => {
@@ -335,7 +375,7 @@ const useNaverMap = ({
     );
     regionLayerRef.current = layer;
     return () => {
-      layer.dispose();
+      layer.dispose(!isNaverSdkAvailable());
       if (regionLayerRef.current === layer) regionLayerRef.current = null;
     };
   }, [engine, liveMode, mapReady]);

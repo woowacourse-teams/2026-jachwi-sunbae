@@ -2,6 +2,7 @@ import { css } from '@emotion/css';
 
 import DesktopHeader from '@/shared/ui/desktop-header/DesktopHeader';
 
+import CheapMealCard from '../ui/CheapMealCard';
 import GuideCard from '../ui/GuideCard';
 import HomeFeatures from '../ui/HomeFeatures';
 import HomeFooter from '../ui/HomeFooter';
@@ -16,6 +17,7 @@ const HomeDesktopPage = () => (
     <DesktopHeader />
     <div className={styles.layout}>
       <GuideCard className={styles.guide} />
+      <CheapMealCard className={styles.meals} />
       <HomeFeatures className={styles.features} />
       <div className={styles.side}>
         <QuickMenu />
@@ -28,6 +30,12 @@ const HomeDesktopPage = () => (
 );
 
 const styles = {
+  meals: css`
+    label: HomeDesktopPage-meals;
+    grid-area: meals;
+    width: min(100%, 40rem);
+    justify-self: center;
+  `,
   /*
    * 데스크탑 홈: 공용 헤더 아래 본문을 64rem 안에 두고, 사용방법 카드는 두 열에 걸쳐 본문 가운데에,
    * 그 아래 왼쪽에 기능 카드, 오른쪽 19rem 열에 빠른 메뉴와 최근 기록을 둔다.
@@ -37,6 +45,7 @@ const styles = {
     display: grid;
     grid-template-areas:
       'guide guide'
+      'meals meals'
       'features side';
     grid-template-columns: minmax(0, 1fr) 19rem;
     align-items: start;
