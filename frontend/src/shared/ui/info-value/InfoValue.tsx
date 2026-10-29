@@ -39,7 +39,13 @@ const InfoValue = ({
       <dd className={styles.value} data-empty={(isEmpty && !editor) || undefined}>
         {editor ??
           (onEdit ? (
-            <button className={styles.editButton} type="button" aria-label={`${label} 수정`} onClick={onEdit}>
+            // 이름을 "매물 이름 수정"으로만 두면 스크린 리더가 화면에 보이는 값을 읽지 않는다. 라벨과 값을 함께 담는다.
+            <button
+              className={styles.editButton}
+              type="button"
+              aria-label={`${label} ${isEmpty ? '비어 있음' : value}, 수정`}
+              onClick={onEdit}
+            >
               {content}
             </button>
           ) : (
