@@ -15,7 +15,9 @@ export type MapMarker = {
   summary?: { amount: string };
   /** destination은 고른 장소를 이름이 든 말풍선 핀으로 그린다. 꼬리 끝이 좌표를 가리킨다. */
   /** flash는 destination과 같은 말풍선을 잠깐 띄웠다가 위로 떠오르며 사라진다(방금 남긴 메모 등). */
-  tone?: 'property' | 'current' | 'place' | 'selected' | 'destination' | 'flash' | 'cluster' | 'propertyCluster';
+  /** rank는 순위 숫자와 이름을 붙인 알약으로 그린다(동네 찾기 상위 동네 등). 가운데가 좌표에 온다. */
+  tone?:
+    'property' | 'current' | 'place' | 'selected' | 'destination' | 'flash' | 'cluster' | 'propertyCluster' | 'rank';
   category?: MapCategory;
   /** 주면 이 그림을 아래 가운데가 좌표를 가리키는 핀으로 그린다. 매물 등록, 메모를 남기려고 찍은 자리처럼 기호가 정해진 마커에 쓴다. */
   image?: { src: string; src2x?: string };
@@ -32,6 +34,8 @@ export type MapMarker = {
    */
   variant?: 'positive' | 'negative' | 'subway';
   count?: number;
+  /** tone이 rank일 때 알약 앞 동그라미에 쓰는 순위. */
+  rank?: number;
   /** 겹친 거리 메모를 묶은 말풍선의 좋아요·싫어요 개수. 주면 글 대신 두 색으로 나눈 말풍선에 개수를 그린다. */
   tally?: { positive: number; negative: number };
   placeId?: string;

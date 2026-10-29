@@ -9,6 +9,7 @@ export const markerSignature = (marker: MapMarker, selectedMarkerId: string | nu
     marker.category ?? '',
     marker.variant ?? '',
     marker.count ?? '',
+    marker.rank ?? '',
     marker.label,
     marker.caption ?? '',
     marker.summary?.amount ?? '',
@@ -37,6 +38,7 @@ export const markerZIndex = (marker: MapMarker, selectedMarkerId: string | null)
   if (marker.tone === 'selected') return 9;
   if (marker.tone === 'property' || marker.tone === 'propertyCluster') return 8;
   if (marker.tone === 'current') return 7;
+  if (marker.tone === 'rank') return 6;
   return 5;
 };
 

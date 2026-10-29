@@ -40,6 +40,7 @@ const markerClassName = (marker: MapMarker, selectedMarkerId: string | null | un
     marker.tone === 'current' ? styles.currentMarker : '',
     marker.tone === 'selected' ? styles.selectedMarker : '',
     marker.tone === 'destination' || marker.tone === 'flash' ? styles.destinationMarker : '',
+    marker.tone === 'rank' ? styles.rankMarker : '',
     marker.tone === 'flash' ? styles.flashMarker : '',
     marker.tone === 'place' ? styles.placeMarker : '',
     marker.tone === 'cluster' ? styles.clusterMarker : '',
@@ -68,6 +69,11 @@ const MapMarkerView = ({ marker, selectedMarkerId = null, onSelectMarker }: MapM
           draggable={false}
           decoding="async"
         />
+      ) : marker.tone === 'rank' ? (
+        <span className={styles.rankLabel}>
+          <b>{marker.rank}</b>
+          {marker.caption ?? marker.label}
+        </span>
       ) : marker.tone === 'destination' || marker.tone === 'flash' ? (
         <>
           <span className={styles.destinationLabel}>
@@ -98,6 +104,7 @@ const MapMarkerView = ({ marker, selectedMarkerId = null, onSelectMarker }: MapM
     'data-category': marker.category,
     'data-variant': marker.variant,
     'data-tally': marker.tally ? '' : undefined,
+    'data-rank': marker.rank,
     'aria-label': marker.label,
     style: marker.pop ? { animationDelay: `${marker.pop.delayMs}ms` } : undefined,
   };
@@ -603,6 +610,55 @@ const styles = {
       min-width: 2.2rem;
       padding: 0.4rem 0.7rem;
       text-align: center;
+    }
+  `,
+
+  /* 순위 알약은 동네 가운데에 띄운다. 바탕 없는 틀만 두고 모양은 안쪽 알약이 맡는다. */
+  rankMarker: css`
+    label: MapMarkerView-rankMarker;
+    width: auto;
+    height: auto;
+    border: 0;
+    border-radius: 999px;
+    background: transparent;
+    box-shadow: none;
+    filter: drop-shadow(0 0.15rem 0.4rem rgb(25 30 40 / 25%));
+
+    &.MapMarkerView-activeMarker {
+      outline: 0;
+      scale: 1.08;
+    }
+  `,
+
+  /* 앞쪽 파란 동그라미에 순위를, 뒤에 동네 이름을 둔다. 1위는 강조색으로 채운다. */
+  rankLabel: css`
+    label: MapMarkerView-rankLabel;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.2rem 0.6rem 0.2rem 0.2rem;
+    border: 1px solid #dfe3ea;
+    border-radius: 999px;
+    background: white;
+    color: var(--color-ink, #25282d);
+    font-size: 0.75rem;
+    font-weight: 700;
+    line-height: 1.2;
+    white-space: nowrap;
+
+    & > b {
+      display: grid;
+      width: 1.3rem;
+      height: 1.3rem;
+      place-items: center;
+      border-radius: 50%;
+      background: #3d6fe8;
+      color: white;
+      font-size: 0.72rem;
+    }
+
+    [data-rank='1'] > & > b {
+      background: #f5b417;
     }
   `,
 
