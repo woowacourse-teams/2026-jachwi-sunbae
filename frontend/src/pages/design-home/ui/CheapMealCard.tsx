@@ -25,6 +25,19 @@ const styles = {
     /* 그림이 없는 ActionCard는 글자가 절대 위치라 높이를 직접 준다. 사용방법 카드와 같은 높이다. */
     height: 5.2rem;
     margin-top: 0.65rem;
+    /* 사용방법 카드의 파란 그라데이션과 짝을 이루게, 글자 쪽 진한 노랑에서 오른쪽으로 갈수록 밝은 노랑으로 번지게 한다. */
+    background:
+      radial-gradient(
+        circle 7rem at right 2rem top 65%,
+        color-mix(in srgb, #fff 55%, transparent),
+        color-mix(in srgb, #fff 15%, transparent) 60%,
+        transparent 100%
+      ),
+      linear-gradient(
+        110deg,
+        var(--color-brand-yellow) 35%,
+        color-mix(in srgb, var(--color-brand-yellow) 55%, #fff) 100%
+      );
 
     @media (min-width: 768px) {
       --action-card-title-size: 1.5rem;

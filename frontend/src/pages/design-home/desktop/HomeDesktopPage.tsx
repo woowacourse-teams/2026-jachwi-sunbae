@@ -35,22 +35,6 @@ const styles = {
     label: HomeDesktopPage-meals;
     grid-area: meals;
     margin-top: 1.2rem;
-    /* 옆 사용방법 카드의 파란 그라데이션과 짝을 이루게, 옅은 노랑 바탕 오른쪽에 진한 노란빛을 깐다. */
-    --action-card-surface: color-mix(in srgb, var(--color-brand-yellow) 16%, #fff);
-    --action-card-ink: var(--color-ink);
-    background:
-      radial-gradient(
-        circle 8rem at right 2rem top 70%,
-        color-mix(in srgb, var(--color-brand-yellow) 70%, transparent),
-        color-mix(in srgb, var(--color-brand-yellow) 25%, transparent) 55%,
-        transparent 100%
-      ),
-      var(--action-card-surface);
-
-    & .ActionCard-description {
-      color: var(--color-muted);
-      opacity: 1;
-    }
 
     /* 옆 사용방법 카드처럼 글자를 세로 가운데에 둔다. 좁은 열이라 가로는 왼쪽에 붙인다. */
     & .ActionCard-text {
