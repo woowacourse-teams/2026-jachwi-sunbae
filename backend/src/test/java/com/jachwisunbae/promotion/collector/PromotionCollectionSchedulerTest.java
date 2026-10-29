@@ -51,6 +51,9 @@ class PromotionCollectionSchedulerTest {
             assertThat(context.getEnvironment().getProperty("promotion.collection.enabled", Boolean.class))
                     .isEqualTo(enabled);
             assertThat(context.getBeansOfType(PromotionCollectionScheduler.class)).hasSize(enabled ? 1 : 0);
+            // 세븐일레븐 자동 수집은 모든 프로필에서 기본으로 꺼져 있다.
+            assertThat(context.getEnvironment().getProperty("promotion.collection.seven-eleven.enabled", Boolean.class))
+                    .isFalse();
         });
     }
 

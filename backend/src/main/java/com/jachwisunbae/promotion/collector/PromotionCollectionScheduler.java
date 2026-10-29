@@ -27,7 +27,8 @@ public class PromotionCollectionScheduler {
         run(service::collect);
     }
 
-    // 기동 5분 뒤 한 번만 실행해, 저장된 목록이 없으면 다음 04:00을 기다리지 않고 적재한다.
+    // 기동 5분 뒤 한 번만 실행해, 목록이 없는 브랜드는 다음 04:00을 기다리지 않고 적재한다.
+    // 목록이 있으면 수집하지 않으므로 재배포로 세븐일레븐 하루 1회 연동을 넘기지 않는다.
     @Scheduled(initialDelay = 5, timeUnit = TimeUnit.MINUTES)
     public void collectInitially() {
         run(service::collectIfEmpty);

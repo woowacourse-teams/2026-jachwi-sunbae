@@ -5,5 +5,7 @@ public enum ProductCategory {
     MEAL,
     SNACK,
     BEVERAGE,
-    HOUSEHOLD_GOODS
+    HOUSEHOLD_GOODS,
+    // 공식 홈페이지에서 상품 카테고리를 확인할 수 없는 브랜드에 사용한다.
+    UNKNOWN
 }
