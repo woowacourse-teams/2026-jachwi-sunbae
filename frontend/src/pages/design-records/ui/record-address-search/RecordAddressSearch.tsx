@@ -11,6 +11,9 @@ type Props = {
   autoFocus?: boolean;
   /** 넘기면 검색창 왼쪽에 뒤로가기를 두고 누르면 부른다. 휴대폰에서 검색을 접을 때 쓴다. */
   onBack?: () => void;
+  /** 검색창 이름과 안내 문구. 기본은 지도를 옮기는 주소 검색이다. */
+  label?: string;
+  placeholder?: string;
   className?: string;
 };
 
@@ -20,7 +23,14 @@ const SEARCH_DEBOUNCE_MS = 300;
 const formatAddress = (address: MapAddress) => address.roadAddress ?? address.jibunAddress ?? address.address ?? '';
 
 /** 본 방 기록 지도에서 주소를 찾아 그 자리로 지도를 옮기는 검색창. 결과는 검색창 바로 아래에 띄운다. */
-const RecordAddressSearch = ({ onSelect, autoFocus = false, onBack, className }: Props) => {
+const RecordAddressSearch = ({
+  onSelect,
+  autoFocus = false,
+  onBack,
+  label = '주소 검색',
+  placeholder = '주소로 지도 이동',
+  className,
+}: Props) => {
   const search = useAddressSearch();
   const { query } = search;
   // 결과를 고르면 검색어가 그 주소로 바뀐다. 이때는 다시 검색하지 않는다.
@@ -41,8 +51,8 @@ const RecordAddressSearch = ({ onSelect, autoFocus = false, onBack, className }:
       <SearchField
         className={styles.field}
         shape="pill"
-        label="주소 검색"
-        placeholder="주소로 지도 이동"
+        label={label}
+        placeholder={placeholder}
         value={search.query}
         showSubmitButton={false}
         autoFocus={autoFocus}

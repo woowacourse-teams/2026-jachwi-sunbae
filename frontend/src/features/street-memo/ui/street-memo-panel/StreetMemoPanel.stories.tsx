@@ -34,6 +34,7 @@ const makeLayer = (overrides: Partial<StreetMemoLayer>): StreetMemoLayer => ({
   submitFailed: false,
   removingId: null,
   removeFailedId: null,
+  memosOf: fn(() => []),
   selectMarker: fn(() => false),
   startDraft: fn(),
   submit: fn(),

@@ -1,13 +1,15 @@
 import { useMemo, useState } from 'react';
 
 import { reverseGeocode } from '@/features/map/api/mapApi';
-import { useNearbyFacilities } from '@/features/map/api/useNearbyFacilities';
+import { useViewportBusStops } from '@/features/map/api/useViewportBusStops';
+import { useViewportFacilities } from '@/features/map/api/useViewportFacilities';
 import { clusterNearbyPlaces } from '@/features/map/lib/mapClustering';
 import { SERVICE_MAP_STYLE_ID } from '@/features/map/lib/mapStyle';
-import { isInBounds, viewportQuery } from '@/features/map/lib/mapViewportQuery';
-import type { MapAddress, MapBounds, MapCategory, MapMarker } from '@/features/map/model/Map';
+import { facilityCells, viewportTiles } from '@/features/map/lib/mapViewportQuery';
+import type { MapAddress, MapBounds, MapCategory, MapMarker, NearbyPlace } from '@/features/map/model/Map';
 import type { MapCanvasProps, MapCoordinateMenu, MapTapAction } from '@/features/map/model/MapCanvas';
 import useStreetMemoLayer from '@/features/street-memo/hooks/useStreetMemoLayer';
+import { focusOnMemos, OVERLAP_HEIGHT_RATIO, OVERLAP_WIDTH_RATIO } from '@/features/street-memo/lib/streetMemoFocus';
 import addProperty from '@/shared/assets/illustrations/add-property.webp';
 import addProperty2x from '@/shared/assets/illustrations/add-property@2x.webp';
 import { usePublicConfig } from '@/shared/config/PublicConfigContext';
@@ -16,7 +18,12 @@ import { useLogger } from '@/shared/lib/analytics/logging';
 import type { RecordsState } from './useRecords';
 
 const REGISTER_MARKER_ID = 'register-point';
-const NO_CATEGORIES: MapCategory[] = [];
+const DESTINATION_MARKER_ID = 'commute-destination';
+const NO_MARKERS: MapMarker[] = [];
+/** 목적지와 매물을 함께 보이게 맞출 때 넘지 않는 배율. 너무 바짝 붙거나 도시 밖까지 멀어지지 않게 한다. */
+const DESTINATION_FIT_LEVELS = { closest: 3, farthest: 12 };
+/** 겹쳐 묶인 매물 마커 id의 머리. 뒤에 묶인 매물 id를 쉼표로 잇는다. */
+const RECORD_GROUP_PREFIX = 'record-group:';
 /** 이 단계보다 멀리 축소하면 거리 메모를 숨긴다. 도시 전체를 볼 때는 골목 메모가 쓸모없다. */
 const MEMO_MAX_LEVEL = 10;
 
@@ -25,17 +32,55 @@ type MapPoint = { latitude: number; longitude: number };
 type Options = {
   /**
    * 찍은 위치에서 매물 등록을 고르면 주소를 찾아 넘긴다. 주소를 못 찾으면 좌표만 넘긴다. 등록 화면을 여는 방식은 화면이 정한다.
-   * 넘기지 않으면 찍은 위치에서는 메모만 남긴다. 휴대폰은 찍은 위치 동작을 쓰지 않고 추가 버튼으로 따로 남긴다.
+   * 넘기지 않으면 찍은 위치에서는 메모만 남긴다.
    */
   onRegister?: (location: MapAddress) => void;
   /** 처음 켜 둘 카테고리. 휴대폰은 거리 메모를 켠 채로 연다. */
   initialCategory?: MapCategory | null;
   /** 매물 등록 칸을 연 위치. 등록하는 동안 그 자리에 집과 더하기 그림 핀을 둔다. */
   registeringAt?: MapPoint | null;
+  /**
+   * 겹친 매물 묶음을 눌렀을 때. `list`는 묶인 매물을 함께 늘어놓고(휴대폰 바텀시트), `zoom`은 핀이 갈라져 보일 때까지 다가간다.
+   * 데스크탑은 리스트에 이미 모든 매물이 보여, 묶음을 따로 늘어놓지 않고 다가가기만 한다.
+   */
+  groupAction?: 'list' | 'zoom';
 };
 
 const sameBounds = (a: MapBounds | null, b: MapBounds) =>
   a !== null && a.south === b.south && a.north === b.north && a.west === b.west && a.east === b.east;
+
+/**
+ * 화면에서 집 핀이 포개질 만큼 가까운 매물 마커를 한 무리로 묶는다. 거리 메모 말풍선과 같은 겹침 간격을 쓴다.
+ * 화면 범위를 모르면 좌표가 똑같은(같은 건물의) 매물만 묶는다.
+ */
+const groupOverlappingRecords = (markers: MapMarker[], bounds: MapBounds | null): MapMarker[][] => {
+  const latitudeGap = bounds ? (bounds.north - bounds.south) * OVERLAP_HEIGHT_RATIO : 0;
+  const longitudeGap = bounds ? (bounds.east - bounds.west) * OVERLAP_WIDTH_RATIO : 0;
+  const groups: MapMarker[][] = [];
+  for (const marker of markers) {
+    const group = groups.find(
+      ([head]) =>
+        Math.abs(head.latitude - marker.latitude) <= latitudeGap &&
+        Math.abs(head.longitude - marker.longitude) <= longitudeGap,
+    );
+    if (group) group.push(marker);
+    else groups.push([marker]);
+  }
+  return groups;
+};
+
+const recordGroupMarker = (group: MapMarker[]): MapMarker =>
+  group.length === 1
+    ? group[0]
+    : {
+        id: `${RECORD_GROUP_PREFIX}${group.map((marker) => marker.id).join(',')}`,
+        latitude: group.reduce((sum, marker) => sum + marker.latitude, 0) / group.length,
+        longitude: group.reduce((sum, marker) => sum + marker.longitude, 0) / group.length,
+        label: `매물 ${group.length}개`,
+        tone: 'propertyCluster',
+        count: group.length,
+        actionable: true,
+      };
 
 /**
  * 본 방 기록 지도 위에 얹는 인프라 겹. 예전 인프라 지도의 시설 카테고리·거리 메모와 찍은 위치의 동작을 맡는다.
@@ -44,13 +89,18 @@ const sameBounds = (a: MapBounds | null, b: MapBounds) =>
  */
 const useRecordsMapLayers = (
   records: RecordsState,
-  { onRegister, initialCategory = null, registeringAt = null }: Options,
+  { onRegister, initialCategory = null, registeringAt = null, groupAction = 'list' }: Options,
 ) => {
   const config = usePublicConfig();
   const { log } = useLogger();
   const { level } = records;
-  const hasSelection = records.selected !== undefined;
-  const closeSelection = () => records.setSelectedId(null);
+  // 겹쳐 묶인 매물 마커를 눌러 함께 보는 매물들의 id. 하나만 고른 매물은 records.selected로 따로 둔다.
+  const [groupIds, setGroupIds] = useState<string[]>([]);
+  const hasSelection = records.selected !== undefined || groupIds.length > 0;
+  const closeSelection = () => {
+    records.setSelectedId(null);
+    setGroupIds([]);
+  };
   const [bounds, setBounds] = useState<MapBounds | null>(null);
   const [category, setCategory] = useState<MapCategory | null>(initialCategory);
   const [tapPoint, setTapPoint] = useState<MapPoint | null>(null);
@@ -59,17 +109,33 @@ const useRecordsMapLayers = (
   const memo = useStreetMemoLayer(category === 'MEMO' && level <= MEMO_MAX_LEVEL, bounds);
 
   const facilityCategory = category !== null && category !== 'MEMO' ? category : null;
-  const query = useMemo(() => (bounds ? viewportQuery(bounds) : null), [bounds]);
-  const selectedCategories = facilityCategory === null ? NO_CATEGORIES : [facilityCategory];
-  const nearby = useNearbyFacilities(
-    query?.center ?? { latitude: 0, longitude: 0 },
-    query?.radius ?? 500,
-    selectedCategories,
-    query !== null && facilityCategory !== null,
+  // 시설은 화면 가장자리까지 빠짐없이 보이게 화면을 칸으로 나눠 조회한다. 정류장은 큰 칸 네 개로, 다른 시설은 촘촘해 작은 격자 칸으로 나눈다.
+  const showsTransport = facilityCategory === 'TRANSPORT';
+  const cells = useMemo(
+    () => (bounds && facilityCategory !== null && !showsTransport ? facilityCells(bounds) : []),
+    [bounds, facilityCategory, showsTransport],
   );
-  const visiblePlaces = useMemo(
-    () => (bounds ? nearby.data.places.filter((place) => isInBounds(place, bounds)) : []),
-    [nearby.data.places, bounds],
+  const facilities = useViewportFacilities(
+    cells,
+    bounds,
+    facilityCategory === null || facilityCategory === 'TRANSPORT' ? null : facilityCategory,
+  );
+  const tiles = useMemo(() => (bounds ? viewportTiles(bounds) : []), [bounds]);
+  const busStops = useViewportBusStops(tiles, bounds, showsTransport);
+  const visiblePlaces = useMemo<NearbyPlace[]>(
+    () =>
+      showsTransport
+        ? busStops.busStops.map((stop) => ({
+            providerPlaceId: stop.nodeId,
+            name: stop.name,
+            latitude: stop.latitude,
+            longitude: stop.longitude,
+            distanceMeters: stop.distanceMeters,
+            category: 'TRANSPORT',
+            address: '',
+          }))
+        : facilities.places,
+    [showsTransport, busStops.busStops, facilities.places],
   );
   const counts = useMemo(() => {
     const result: Partial<Record<MapCategory, number>> = {};
@@ -90,6 +156,17 @@ const useRecordsMapLayers = (
     () => [
       ...facilityMarkers,
       ...memo.markers,
+      ...(records.distance.isShown && records.distance.destination
+        ? [
+            {
+              id: DESTINATION_MARKER_ID,
+              latitude: records.distance.destination.latitude,
+              longitude: records.distance.destination.longitude,
+              label: records.distance.destination.name,
+              tone: 'destination' as const,
+            },
+          ]
+        : []),
       ...(registeringAt === null
         ? []
         : [
@@ -102,8 +179,84 @@ const useRecordsMapLayers = (
             },
           ]),
     ],
-    [facilityMarkers, memo.markers, registeringAt],
+    [facilityMarkers, memo.markers, registeringAt, records.distance.isShown, records.distance.destination],
   );
+
+  // 지도 레일의 `통근`(목적지). 목적지가 있으면 목적지 핀과 매물 핀의 거리를 켜고 끄고, 없으면 목적지 모드로 바꿔 지도를 누른 자리를 목적지로 정한다.
+  const [isPickingDestination, setIsPickingDestination] = useState(false);
+  /**
+   * 목적지 모드로 바꾼다. 지도를 누르면 매물 등록이나 메모가 아니라 목적지를 정한다는 것이 분명하도록,
+   * 열린 매물과 메모, 찍은 자리 말풍선을 닫고 카테고리를 끈다. 지도 위 마커와 다른 조작은 각 지도가 거둔다.
+   */
+  const startPickingDestination = () => {
+    records.setSelectedId(null);
+    setGroupIds([]);
+    memo.close();
+    setTapPoint(null);
+    setCategory(null);
+    setIsPickingDestination(true);
+  };
+  /** 목적지와 기록한 매물이 한 화면에 함께 들어오도록 지도를 옮기고 배율을 맞춘다. */
+  const fitDestination = (destination: MapPoint) => {
+    const points = [
+      destination,
+      ...records.markers.map((marker) => ({ latitude: marker.latitude, longitude: marker.longitude })),
+    ];
+    const latitudes = points.map((point) => point.latitude);
+    const longitudes = points.map((point) => point.longitude);
+    const box = {
+      south: Math.min(...latitudes),
+      north: Math.max(...latitudes),
+      west: Math.min(...longitudes),
+      east: Math.max(...longitudes),
+    };
+    records.setCenter({ latitude: (box.south + box.north) / 2, longitude: (box.west + box.east) / 2 });
+    if (!bounds) return;
+    // 한 단계 멀어질 때마다 화면 범위가 두 배가 된다. 위쪽 동네 뱃지와 오른쪽 레일에 가리지 않게 1.8배 넉넉히 담는다.
+    const ratio = Math.max(
+      ((box.north - box.south) * 1.8) / (bounds.north - bounds.south),
+      ((box.east - box.west) * 1.8) / (bounds.east - bounds.west),
+    );
+    const steps = ratio > 0 ? Math.ceil(Math.log2(ratio)) : -Infinity;
+    records.setLevel(
+      Math.min(DESTINATION_FIT_LEVELS.farthest, Math.max(DESTINATION_FIT_LEVELS.closest, level + steps)),
+    );
+  };
+  const destination = {
+    name: records.distance.destination?.name ?? null,
+    isShown: records.distance.isShown && records.distance.destination !== null,
+    isPicking: isPickingDestination,
+    toggle: () => {
+      const current = records.distance.destination;
+      if (current === null) {
+        if (isPickingDestination) setIsPickingDestination(false);
+        else startPickingDestination();
+        return;
+      }
+      if (records.distance.isShown) {
+        records.distance.hide();
+        return;
+      }
+      // 레일의 다른 칸처럼 한 번에 하나만 켠다. 목적지를 켜면 메모와 시설 카테고리는 끈다.
+      setCategory(null);
+      records.distance.toggle();
+      fitDestination(current);
+    },
+    change: () => startPickingDestination(),
+    cancel: () => setIsPickingDestination(false),
+    isResolving: isResolvingAddress && isPickingDestination,
+    choose: (address: MapAddress) => {
+      const next = {
+        latitude: address.latitude,
+        longitude: address.longitude,
+        name: address.roadAddress ?? address.jibunAddress ?? address.address ?? '통근 장소',
+      };
+      setCategory(null);
+      records.distance.setDestination(next);
+      setIsPickingDestination(false);
+      fitDestination(next);
+    },
+  };
 
   const registerAt = (point: MapPoint) => {
     setTapPoint(null);
@@ -144,10 +297,46 @@ const useRecordsMapLayers = (
             : []),
         ];
 
+  const recordGroups = useMemo(() => groupOverlappingRecords(records.markers, bounds), [records.markers, bounds]);
+  const recordMarkers = useMemo(() => recordGroups.map(recordGroupMarker), [recordGroups]);
+  // 함께 보는 매물(겹친 무리)이나 하나만 고른 매물이 든 마커를 고른 것으로 표시한다. 배율을 바꿔 무리가 달라져도 따라간다.
+  const shownIds = groupIds.length > 0 ? groupIds : records.selected ? [records.selected.id] : [];
+  const selectedRecordMarkerId =
+    shownIds.length === 0
+      ? null
+      : (recordMarkers[recordGroups.findIndex((group) => group.some((marker) => marker.id === shownIds[0]))]?.id ??
+        null);
+
   const selectMarker = (marker: MapMarker): boolean => {
+    const memos = memo.memosOf(marker);
+    if (marker.id.startsWith(RECORD_GROUP_PREFIX)) {
+      memo.close();
+      setTapPoint(null);
+      records.setSelectedId(null);
+      const ids = marker.id.slice(RECORD_GROUP_PREFIX.length).split(',');
+      if (groupAction === 'list') {
+        setGroupIds(ids);
+        return true;
+      }
+      // 겹친 메모처럼 묶인 핀이 갈라져 보일 만큼 다가간다.
+      const focus = focusOnMemos(
+        records.markers.filter((record) => ids.includes(record.id)),
+        bounds,
+        level,
+      );
+      records.setCenter(focus.center);
+      records.setLevel(focus.level);
+      return true;
+    }
     if (!memo.selectMarker(marker)) return false;
     setTapPoint(null);
     closeSelection();
+    // 누른 메모가 화면을 채우도록 다가간다. 겹쳐 묶인 메모는 말풍선이 서로 갈라질 만큼 확대한다.
+    if (memos.length > 0) {
+      const focus = focusOnMemos(memos, bounds, level);
+      records.setCenter(focus.center);
+      records.setLevel(focus.level);
+    }
     return true;
   };
   /**
@@ -155,6 +344,19 @@ const useRecordsMapLayers = (
    * 무언가를 닫으려고 찍었는데 바로 새 동작이 뜨면 다시 닫아야 해서 두 단계로 나눈다.
    */
   const tapLocation = (latitude: number, longitude: number) => {
+    // 목적지 모드에서는 누른 자리의 주소를 찾아 목적지로 정한다. 주소를 못 찾으면 `통근 장소`로 둔다.
+    if (isPickingDestination) {
+      if (isResolvingAddress) return;
+      const point = { latitude, longitude };
+      setIsResolvingAddress(true);
+      reverseGeocode(config, latitude, longitude)
+        .then(
+          (address) => destination.choose({ ...address, ...point }),
+          () => destination.choose({ address: null, roadAddress: null, jibunAddress: null, ...point }),
+        )
+        .finally(() => setIsResolvingAddress(false));
+      return;
+    }
     if (hasSelection || memo.mode !== null || tapPoint !== null) {
       closeSelection();
       memo.close();
@@ -169,19 +371,21 @@ const useRecordsMapLayers = (
     setBounds(next);
     setTapPoint(null);
   };
-  const allMarkers = useMemo(() => [...records.markers, ...markers], [records.markers, markers]);
+  const allMarkers = useMemo(() => [...recordMarkers, ...markers], [recordMarkers, markers]);
   /** 두 화면의 지도가 그대로 넘기는 MapCanvas 설정. 찍은 자리 말풍선(coordinateMenu)은 데스크탑만 더한다. */
   const canvasProps = {
     customStyleId: SERVICE_MAP_STYLE_ID,
     center: records.center,
     level: records.level,
-    markers: allMarkers,
-    selectedMarkerId: records.selected?.id ?? memo.selectedMarkerId,
-    // 메모 마커가 아니면 기록한 방 마커다. 시설 마커는 누를 수 없다.
+    // 목적지 모드에서는 지도 위 마커를 모두 거두고 빈 지도에서 목적지만 고르게 한다.
+    markers: isPickingDestination ? NO_MARKERS : allMarkers,
+    selectedMarkerId: isPickingDestination ? null : (selectedRecordMarkerId ?? memo.selectedMarkerId),
+    // 메모 마커와 겹친 매물 묶음이 아니면 기록한 방 하나의 마커다. 시설 마커는 누를 수 없다.
     onSelectMarker: (marker: MapMarker) => {
       if (selectMarker(marker)) return;
       memo.close();
       setTapPoint(null);
+      setGroupIds([]);
       records.setSelectedId(marker.id);
     },
     onSelectLocation: tapLocation,
@@ -195,18 +399,29 @@ const useRecordsMapLayers = (
     category,
     counts,
     memo,
+    /** 겹친 매물 묶음을 눌러 함께 보는 매물. 묶음을 고르지 않았으면 빈 목록이다. */
+    groupRecords: records.records.filter((record) => groupIds.includes(record.id)),
+    closeGroup: () => setGroupIds([]),
     tapPoint,
     tapActions,
     isResolvingAddress,
-    facilitiesFailed: facilityCategory !== null && nearby.isError,
+    facilitiesFailed: showsTransport ? busStops.isError : facilities.isError,
     coordinateMenu: (tapPoint === null ? undefined : { ...tapPoint, actions: tapActions }) satisfies
       MapCoordinateMenu | undefined,
     /** 같은 카테고리를 다시 누르면 끈다. */
-    toggleCategory: (next: MapCategory) => setCategory((current) => (current === next ? null : next)),
+    destination,
+    // 카테고리를 켜면 목적지 거리와 목적지 검색은 거둔다. 레일에서는 한 번에 하나만 켠다.
+    toggleCategory: (next: MapCategory) => {
+      if (category !== next) {
+        records.distance.hide();
+        setIsPickingDestination(false);
+      }
+      setCategory((current) => (current === next ? null : next));
+    },
     /** 메모를 남기면 메모가 보이도록 메모 카테고리를 켠다. */
     showMemos: () => setCategory('MEMO'),
     closeTap: () => setTapPoint(null),
-    /** 열어 둔 매물·메모·찍은 위치를 모두 닫는다. 휴대폰 추가 모드에 들어갈 때 쓴다. */
+    /** 열어 둔 매물·메모·찍은 위치를 모두 닫는다. */
     closeAll: () => {
       closeSelection();
       memo.close();

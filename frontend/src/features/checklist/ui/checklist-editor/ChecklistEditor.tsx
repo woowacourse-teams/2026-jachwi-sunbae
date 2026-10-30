@@ -20,6 +20,8 @@ type ChecklistEditorProps = {
   serverError?: string;
   onOpenItemPicker: () => void;
   onSubmit: (input: ChecklistDraftInput) => Promise<ChecklistDetail>;
+  /** 데스크탑은 저장 버튼을 다른 화면처럼 파란 기본 버튼으로 두고, 화면 폭이 아니라 본문 열 아래에 붙인다. */
+  isDesktop?: boolean;
 };
 
 /** 체크리스트 항목과 순서를 고치는 폼. 사용자마다 하나만 쓰므로 이름은 묻지 않는다. 항목 추가 화면은 `CheckItemPicker`가 맡는다. */
@@ -31,6 +33,7 @@ const ChecklistEditor = ({
   serverError,
   onOpenItemPicker,
   onSubmit,
+  isDesktop = false,
 }: ChecklistEditorProps) => {
   const activeCatalog = useActiveCheckItems(stage);
   const activeSourceIds = useMemo(
@@ -39,6 +42,21 @@ const ChecklistEditor = ({
   );
   const isInactive = (item: ChecklistEditorItem) =>
     item.origin === 'PROVIDED' && activeCatalog.isSuccess && !activeSourceIds.has(item.sourceCheckItemId);
+
+  // 휴대폰은 화면 맨 아래에 고정하고, 데스크탑은 목록 아래 본문 열에 붙인다.
+  const submitArea = (
+    <BottomActionArea placement={isDesktop ? 'sticky' : 'screen'} divider={false}>
+      <Button
+        type="submit"
+        variant={isDesktop ? 'primary' : 'soft'}
+        fullWidth
+        isLoading={isSubmitting}
+        loadingLabel="저장 중…"
+      >
+        {submitLabel}
+      </Button>
+    </BottomActionArea>
+  );
 
   return (
     <form
@@ -52,11 +70,7 @@ const ChecklistEditor = ({
         체크 항목 추가
       </AddItemAction>
 
-      <BottomActionArea placement="screen" divider={false}>
-        <Button type="submit" variant="soft" fullWidth isLoading={isSubmitting} loadingLabel="저장 중…">
-          {submitLabel}
-        </Button>
-      </BottomActionArea>
+      {!isDesktop && submitArea}
 
       <p className={styles.editorSaveStatus} role="status" aria-live="polite">
         {draft.announcement}
@@ -94,6 +108,7 @@ const ChecklistEditor = ({
           </p>
         )}
       </section>
+      {isDesktop && submitArea}
     </form>
   );
 };

@@ -16,7 +16,7 @@ export const CHEAP_MEAL_EVENTS = {
 } as const;
 
 export type CheapMealCategory = 'restaurant' | 'convenience' | 'delivery';
-export type CheapMealCategorySource = 'overview_card' | 'top_tab';
+export type CheapMealCategorySource = 'top_tab';
 export type CheapMealOutboundDestination = 'directions' | 'phone' | 'official_source';
 
 export const categorySelectedParams = (category: CheapMealCategory, source: CheapMealCategorySource): LogParams => ({

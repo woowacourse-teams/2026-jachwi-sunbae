@@ -8,9 +8,8 @@ import PageHeading from '@/shared/ui/page-heading/PageHeading';
 import UsageDemo from './ui/usage-demo/UsageDemo';
 
 const RECORD_NOTES = [
-  '처음 들어오면 가입이나 로그인 없이 기록 공간이 바로 만들어져요.',
-  '같은 브라우저나 앱으로 다시 오면 기록이 그대로 이어져요.',
-  '다른 브라우저·기기에서는 새 기록으로 시작하고, 사이트 데이터를 지우면 이전 기록을 불러올 수 없어요.',
+  '가입이나 로그인 없이 바로 기록할 수 있어요.',
+  '같은 브라우저나 앱으로 다시 오면 기록이 이어져요.',
 ];
 
 /** 예전 랜딩을 대신하는 사용 방법. 회원 여부와 상관없이 볼 수 있고, 단계마다 실제 기능으로 이어 준다. */

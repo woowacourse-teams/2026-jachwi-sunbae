@@ -1,5 +1,4 @@
 import { css } from '@emotion/css';
-import type { ReactNode } from 'react';
 
 import { describeChecklistLoadError, getChecklistErrorMessage } from '@/features/checklist/api/checklistErrorMessages';
 import { useUpdateChecklist } from '@/features/checklist/api/useChecklistMutations';
@@ -10,6 +9,10 @@ import useChecklistDraft, { type ChecklistDraftInput } from '@/features/checklis
 import useChecklistItemPickerRoute from '@/features/checklist/model/useChecklistItemPickerRoute';
 import CheckItemPicker from '@/features/checklist/ui/checklist-editor/CheckItemPicker';
 import ChecklistEditor from '@/features/checklist/ui/checklist-editor/ChecklistEditor';
+import ChecklistEditorFrame, {
+  ChecklistDesktopHeading,
+} from '@/features/checklist/ui/checklist-editor-frame/ChecklistEditorFrame';
+import useIsDesktop from '@/shared/lib/hooks/useIsDesktop';
 import useReturnNavigation from '@/shared/lib/navigation/useReturnNavigation';
 import QueryState from '@/shared/ui/query-state/QueryState';
 import TopNavigation from '@/shared/ui/top-navigation/TopNavigation';
@@ -31,6 +34,7 @@ const ChecklistDetailPage = ({ checklistId }: { checklistId: number }) => {
 
 const ChecklistDetailView = ({ checklist }: { checklist: ChecklistDetail }) => {
   const update = useUpdateChecklist(checklist.checklistId);
+  const isDesktop = useIsDesktop();
   const goBack = useReturnNavigation({ cameFromTarget: true, fallback: '/' });
   const { isPickerOpen, openPicker, closePicker } = useChecklistItemPickerRoute();
   const draft = useChecklistDraft({
@@ -49,7 +53,7 @@ const ChecklistDetailView = ({ checklist }: { checklist: ChecklistDetail }) => {
 
   if (isPickerOpen)
     return (
-      <ChecklistEditorFrame>
+      <ChecklistEditorFrame isDesktop={isDesktop} className={styles.page}>
         <TopNavigation
           className={styles.topNavigation}
           title="체크 항목 편집"
@@ -70,14 +74,18 @@ const ChecklistDetailView = ({ checklist }: { checklist: ChecklistDetail }) => {
     );
 
   return (
-    <ChecklistEditorFrame>
-      <TopNavigation
-        className={styles.topNavigation}
-        title="체크리스트 편집"
-        backLabel="이전 화면으로 돌아가기"
-        navigationIcon="arrow-left"
-        onBack={goBack}
-      />
+    <ChecklistEditorFrame isDesktop={isDesktop} className={styles.page}>
+      {isDesktop ? (
+        <ChecklistDesktopHeading />
+      ) : (
+        <TopNavigation
+          className={styles.topNavigation}
+          title="체크리스트 편집"
+          backLabel="이전 화면으로 돌아가기"
+          navigationIcon="arrow-left"
+          onBack={goBack}
+        />
+      )}
       <ChecklistEditor
         stage={checklist.stage}
         draft={draft}
@@ -86,35 +94,17 @@ const ChecklistDetailView = ({ checklist }: { checklist: ChecklistDetail }) => {
         serverError={update.isError ? getChecklistErrorMessage(update.error) : undefined}
         onOpenItemPicker={openPicker}
         onSubmit={save}
+        isDesktop={isDesktop}
       />
     </ChecklistEditorFrame>
   );
 };
-
-const ChecklistEditorFrame = ({ children }: { children: ReactNode }) => (
-  <main className={`property-page checklist-page checklist-editor-page ${styles.page}`}>
-    <div className={styles.container}>{children}</div>
-  </main>
-);
 
 const styles = {
   page: css`
     label: ChecklistDetailPage-page;
     padding-right: 1rem;
     padding-left: 1rem;
-    background: var(--color-canvas);
-  `,
-
-  /* 휴대폰은 앱 열의 가로 폭을 그대로 쓰고, 데스크탑은 항목 줄이 너무 길어지지 않게 가운데 좁은 열에 둔다. */
-  container: css`
-    label: ChecklistDetailPage-container;
-    width: 100%;
-
-    @media (min-width: 768px) {
-      max-width: 34rem;
-      margin-right: auto;
-      margin-left: auto;
-    }
   `,
 
   topNavigation: css`

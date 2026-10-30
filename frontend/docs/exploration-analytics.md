@@ -11,8 +11,9 @@
 - `useNeighborhoodPreview`: 검색 실행·재시도·동네 선택·정류장 변경을 수집한다. 검색 응답은 시도당 한 번만 기록한다.
 - 월세·경로 상세 페이지: 실제 정보 표시와 실패를 구분하고 기존 공개 라우팅을 유지한다.
 - `UsageGuidePage`: `useUsageGuideViewTracking`으로 방문 이벤트 중복을 막는다.
-- `UsageDemo`: 직접 누른 탐색 모드 버튼만 수집한다. 스크롤로 재생되는 시연을 실제 기능 사용으로 기록하지 않는다.
-- 랜딩을 없애면서 `landing_page_viewed`, `service_introduction_viewed`, `landing_cta_clicked`, `landing_demo_interacted`는 더 이상 보내지 않는다. 이전 기간 데이터를 볼 때만 쓴다.
+- `UsageDemo`: 이벤트를 보내지 않는다. 시나리오 영상 재생을 실제 기능 사용으로 기록하지 않는다. 예전 `usage_guide_demo_interacted`는 이전 기간 비교에만 쓴다.
+- 예전 랜딩의 `landing_page_viewed`, `service_introduction_viewed`, `landing_cta_clicked`, `landing_demo_interacted`는 더 이상 보내지 않는다. 이전 기간 데이터를 볼 때만 쓴다.
+- 새 랜딩(`/landing`)은 진입(`landing_viewed`)과 앱 스토어(`landing_app_store_clicked`), 웹 바로가기(`landing_web_start_clicked`) 클릭을 보낸다.
 
 선행 랜딩 변경이 병합되어 별도 적용 패치는 제거하고 실제 코드에 반영했다. 제거한 준비 패치는 Git 이력에서 복구할 수 있다.
 
@@ -29,7 +30,10 @@
 | 이벤트                               | 발생 시점                                                                                                                   | 주요 추가 속성                                                |
 | ------------------------------------ | --------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------- |
 | `usage_guide_viewed`                 | 사용 방법 진입, StrictMode 중복 제외                                                                                        | 없음                                                          |
-| `usage_guide_demo_interacted`        | 시연의 탐색 모드 버튼 직접 조작                                                                                             | `action`, 미리 정한 `value`                                   |
+| `usage_guide_demo_interacted`        | 더 이상 보내지 않음. 예전 시연의 탐색 모드 버튼 직접 조작                                                                   | `action`, 미리 정한 `value`                                   |
+| `landing_viewed`                     | 랜딩 진입                                                                                                                   | 없음                                                          |
+| `landing_app_store_clicked`          | 랜딩의 App Store, Google Play 배지 클릭                                                                                     | `store=app_store/google_play`, `position=top/bottom`          |
+| `landing_web_start_clicked`          | 랜딩의 웹에서 바로 시작하기 클릭                                                                                            | `position=top/bottom`                                         |
 | `neighborhood_feature_viewed`        | 동네 찾기 지도 진입                                                                                                         | 공통 기능 속성                                                |
 | `neighborhood_search_submitted`      | 유효한 목적지·조건으로 동네 조회 실행                                                                                       | `search_id`, `trigger=search/retry`, 통근 조건과 월세 필터    |
 | `neighborhood_search_results_viewed` | 조회가 끝나 결과/빈 결과를 표시                                                                                             | `search_id`, `result_count`, `has_results`, `rent_area_count` |

@@ -16,6 +16,7 @@ const DesignRecordsPage = lazy(() => import('@/pages/design-records/DesignRecord
 const NeighborhoodPreviewPage = lazy(() => import('@/pages/neighborhood-preview/NeighborhoodPreviewPage'));
 const NeighborhoodRoutePage = lazy(() => import('@/pages/neighborhood-preview/NeighborhoodRoutePage'));
 const UsageGuidePage = lazy(() => import('@/pages/usage-guide/UsageGuidePage'));
+const LandingPage = lazy(() => import('@/pages/landing/LandingPage'));
 const PrivacyPage = lazy(() => import('@/pages/privacy/PrivacyPage'));
 const NotFoundPage = lazy(() => import('@/pages/not-found/NotFoundPage'));
 const CreatePropertyPage = lazy(() => import('@/pages/create-property/CreatePropertyPage'));
@@ -51,11 +52,6 @@ const LegacyMapRoute = () => {
   return <Navigate to={propertyId === undefined ? RECORDS_PATH : `${RECORDS_PATH}/${propertyId}`} replace />;
 };
 
-/** 광고에 쓰던 랜딩 주소는 홈으로 바로 보낸다. 유입 측정을 위해 쿼리(utm 등)는 그대로 넘긴다. */
-const LegacyLandingRoute = () => {
-  const { search } = useLocation();
-  return <Navigate to={{ pathname: '/', search }} replace />;
-};
 /**
  * 동네 찾기는 통근과 월세를 한 지도에서 함께 본다. 기준을 고르던 예전 주소(`/explore/commute`, `/explore/price`,
  * `/neighborhoods/map?mode=`)로 들어오면 새 주소로 보낸다. 통근 동네 상세는 그대로 잇고, 법정동 월세 상세는 지도로 보낸다.
@@ -93,8 +89,8 @@ const AppRoutes = () => (
       <Route path="/neighborhoods/map/*" element={<LegacyNeighborhoodRoute base="/neighborhoods" />} />
       <Route path="/neighborhoods/nearby" element={lazyPage(<NearbyAnalysisPage />)} />
     </Route>
-    {/* 랜딩은 없다. 첫 진입은 홈에서 자동 로그인하고, 서비스 소개는 사용 방법(`/guide`)이 맡는다. */}
-    <Route path="/landing" element={<LegacyLandingRoute />} />
+    {/* 생활권 탐색 광고 랜딩. 회원이 아니어도 보고, 웹으로 시작하면 홈으로 잇는다. */}
+    <Route path="/landing" element={lazyPage(<LandingPage />)} />
     <Route path="/about" element={<Navigate to="/guide" replace />} />
     <Route path="/privacy" element={lazyPage(<PrivacyPage />)} />
     {/* 로그인 화면은 없다. 예전 주소로 들어오면 홈에서 자동 로그인한다. */}
