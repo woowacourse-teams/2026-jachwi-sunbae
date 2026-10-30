@@ -9,7 +9,8 @@ import Icon from '@/shared/ui/icon/Icon';
 
 import type { RecordsState } from '../hooks/useRecords';
 import type { RecordsMapLayers } from '../hooks/useRecordsMapLayers';
-import { recordsMapHint } from '../model/recordPresentation';
+import { destinationRailButton, recordsMapHint } from '../model/recordPresentation';
+import RecordDestinationControl from '../ui/record-destination/RecordDestinationControl';
 import RecordMapTapIntro from '../ui/record-map-tap-intro/RecordMapTapIntro';
 
 type Props = {
@@ -36,6 +37,7 @@ const RecordsDesktopMap = ({ records, layers, districts, className }: Props) => 
       selectedCategories={layers.category === null ? [] : [layers.category]}
       counts={layers.counts}
       onToggle={layers.toggleCategory}
+      extraButton={destinationRailButton(layers.destination)}
     />
     <button
       className={styles.recenter}
@@ -46,11 +48,12 @@ const RecordsDesktopMap = ({ records, layers, districts, className }: Props) => 
       <Icon name="target" size={22} />
     </button>
     <MapZoomControl className={styles.zoom} level={records.level} onChange={records.setLevel} />
+    <RecordDestinationControl destination={layers.destination} className={styles.destination} />
     {!records.selected && layers.memo.mode === null && (
       <span className={styles.hint}>{recordsMapHint(records.records, layers)}</span>
     )}
     <StreetMemoPanel layer={layers.memo} onCreated={layers.showMemos} className={styles.memoCard} />
-    <RecordMapTapIntro setLevel={records.setLevel} hasTapped={layers.tapPoint !== null} />
+    <RecordMapTapIntro setLevel={records.setLevel} hasTapped={layers.tapPoint !== null || layers.destination.isShown} />
   </section>
 );
 
@@ -83,11 +86,11 @@ const styles = {
     z-index: 12;
   `,
 
-  /* 메모 탭까지 여섯 칸인 레일 아래에 둔다. */
+  /* 메모부터 목적지까지 일곱 칸인 레일 아래에 둔다. */
   recenter: css`
     label: RecordsDesktopMap-recenter;
     position: absolute;
-    top: 20.1rem;
+    top: 22.6rem;
     right: 1.15rem;
     z-index: 12;
     display: grid;
@@ -105,6 +108,14 @@ const styles = {
       outline: 2px solid #25282d;
       outline-offset: 3px;
     }
+  `,
+
+  /* 목적지 검색창과 거리 안내는 지도 아래 왼쪽, 지도 안내 위에 둔다. 위쪽 메모 카드와 겹치지 않는다. */
+  destination: css`
+    label: RecordsDesktopMap-destination;
+    bottom: 5.5rem;
+    left: 1rem;
+    max-width: min(26rem, calc(100% - 6rem));
   `,
 
   /* 지도 오른쪽 위, 동네 뱃지 줄과 같은 높이에 둔다. */

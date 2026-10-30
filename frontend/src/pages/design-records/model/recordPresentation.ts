@@ -43,6 +43,26 @@ export const recordsMapHint = (
     : base;
 };
 
+/** 지도 레일 맨 아래 `목적지` 칸. 목적지가 없으면 정하라고, 있으면 거리를 켜고 끈다고 읽어 준다. */
+export const destinationRailButton = (destination: {
+  name: string | null;
+  isShown: boolean;
+  isPicking: boolean;
+  toggle: () => void;
+}) => ({
+  shortLabel: '목적지',
+  label:
+    destination.name === null
+      ? '목적지 정하기'
+      : `${destination.name}까지 거리 ${destination.isShown ? '숨기기' : '표시하기'}`,
+  pressed: destination.isShown || destination.isPicking,
+  onClick: destination.toggle,
+});
+
+/** 지도 핀의 가격 자리에 적는 짧은 직선거리. 1km 아래는 10m 단위, 그 위는 소수 한 자리 km로 적는다. */
+export const shortDistanceLabel = (meters: number) =>
+  meters < 1000 ? `${Math.round(meters / 10) * 10}m` : `${(meters / 1000).toFixed(1)}km`;
+
 /** 카드 맨 위에 붙이는 목적지까지 직선거리 한 줄. 1km 아래는 10m 단위, 그 위는 소수 한 자리 km로 적는다. */
 export const destinationDistanceLabel = (destinationName: string, meters: number) => {
   const rounded = Math.round(meters / 10) * 10;

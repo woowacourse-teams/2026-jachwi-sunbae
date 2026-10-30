@@ -18,6 +18,9 @@ import { useLogger } from '@/shared/lib/analytics/logging';
 import type { RecordsState } from './useRecords';
 
 const REGISTER_MARKER_ID = 'register-point';
+const DESTINATION_MARKER_ID = 'commute-destination';
+/** 목적지와 매물을 함께 보이게 맞출 때 넘지 않는 배율. 너무 바짝 붙거나 도시 밖까지 멀어지지 않게 한다. */
+const DESTINATION_FIT_LEVELS = { closest: 3, farthest: 12 };
 /** 겹쳐 묶인 매물 마커 id의 머리. 뒤에 묶인 매물 id를 쉼표로 잇는다. */
 const RECORD_GROUP_PREFIX = 'record-group:';
 /** 이 단계보다 멀리 축소하면 거리 메모를 숨긴다. 도시 전체를 볼 때는 골목 메모가 쓸모없다. */
@@ -152,6 +155,17 @@ const useRecordsMapLayers = (
     () => [
       ...facilityMarkers,
       ...memo.markers,
+      ...(records.distance.isShown && records.distance.destination
+        ? [
+            {
+              id: DESTINATION_MARKER_ID,
+              latitude: records.distance.destination.latitude,
+              longitude: records.distance.destination.longitude,
+              label: records.distance.destination.name,
+              tone: 'destination' as const,
+            },
+          ]
+        : []),
       ...(registeringAt === null
         ? []
         : [
@@ -164,8 +178,72 @@ const useRecordsMapLayers = (
             },
           ]),
     ],
-    [facilityMarkers, memo.markers, registeringAt],
+    [facilityMarkers, memo.markers, registeringAt, records.distance.isShown, records.distance.destination],
   );
+
+  // 지도 레일의 `목적지`. 목적지가 있으면 목적지 핀과 매물 핀의 거리를 켜고 끄고, 없으면 목적지 모드로 바꿔 지도를 누른 자리를 목적지로 정한다.
+  const [isPickingDestination, setIsPickingDestination] = useState(false);
+  /** 목적지와 기록한 매물이 한 화면에 함께 들어오도록 지도를 옮기고 배율을 맞춘다. */
+  const fitDestination = (destination: MapPoint) => {
+    const points = [
+      destination,
+      ...records.markers.map((marker) => ({ latitude: marker.latitude, longitude: marker.longitude })),
+    ];
+    const latitudes = points.map((point) => point.latitude);
+    const longitudes = points.map((point) => point.longitude);
+    const box = {
+      south: Math.min(...latitudes),
+      north: Math.max(...latitudes),
+      west: Math.min(...longitudes),
+      east: Math.max(...longitudes),
+    };
+    records.setCenter({ latitude: (box.south + box.north) / 2, longitude: (box.west + box.east) / 2 });
+    if (!bounds) return;
+    // 한 단계 멀어질 때마다 화면 범위가 두 배가 된다. 위쪽 동네 뱃지와 오른쪽 레일에 가리지 않게 1.8배 넉넉히 담는다.
+    const ratio = Math.max(
+      ((box.north - box.south) * 1.8) / (bounds.north - bounds.south),
+      ((box.east - box.west) * 1.8) / (bounds.east - bounds.west),
+    );
+    const steps = ratio > 0 ? Math.ceil(Math.log2(ratio)) : -Infinity;
+    records.setLevel(
+      Math.min(DESTINATION_FIT_LEVELS.farthest, Math.max(DESTINATION_FIT_LEVELS.closest, level + steps)),
+    );
+  };
+  const destination = {
+    name: records.distance.destination?.name ?? null,
+    isShown: records.distance.isShown && records.distance.destination !== null,
+    isPicking: isPickingDestination,
+    toggle: () => {
+      const current = records.distance.destination;
+      if (current === null) {
+        if (!isPickingDestination) setCategory(null);
+        setIsPickingDestination(!isPickingDestination);
+        return;
+      }
+      if (records.distance.isShown) {
+        records.distance.hide();
+        return;
+      }
+      // 레일의 다른 칸처럼 한 번에 하나만 켠다. 목적지를 켜면 메모와 시설 카테고리는 끈다.
+      setCategory(null);
+      records.distance.toggle();
+      fitDestination(current);
+    },
+    change: () => setIsPickingDestination(true),
+    cancel: () => setIsPickingDestination(false),
+    isResolving: isResolvingAddress && isPickingDestination,
+    choose: (address: MapAddress) => {
+      const next = {
+        latitude: address.latitude,
+        longitude: address.longitude,
+        name: address.roadAddress ?? address.jibunAddress ?? address.address ?? '목적지',
+      };
+      setCategory(null);
+      records.distance.setDestination(next);
+      setIsPickingDestination(false);
+      fitDestination(next);
+    },
+  };
 
   const registerAt = (point: MapPoint) => {
     setTapPoint(null);
@@ -253,6 +331,19 @@ const useRecordsMapLayers = (
    * 무언가를 닫으려고 찍었는데 바로 새 동작이 뜨면 다시 닫아야 해서 두 단계로 나눈다.
    */
   const tapLocation = (latitude: number, longitude: number) => {
+    // 목적지 모드에서는 누른 자리의 주소를 찾아 목적지로 정한다. 주소를 못 찾으면 `목적지`로 둔다.
+    if (isPickingDestination) {
+      if (isResolvingAddress) return;
+      const point = { latitude, longitude };
+      setIsResolvingAddress(true);
+      reverseGeocode(config, latitude, longitude)
+        .then(
+          (address) => destination.choose({ ...address, ...point }),
+          () => destination.choose({ address: null, roadAddress: null, jibunAddress: null, ...point }),
+        )
+        .finally(() => setIsResolvingAddress(false));
+      return;
+    }
     if (hasSelection || memo.mode !== null || tapPoint !== null) {
       closeSelection();
       memo.close();
@@ -304,7 +395,15 @@ const useRecordsMapLayers = (
     coordinateMenu: (tapPoint === null ? undefined : { ...tapPoint, actions: tapActions }) satisfies
       MapCoordinateMenu | undefined,
     /** 같은 카테고리를 다시 누르면 끈다. */
-    toggleCategory: (next: MapCategory) => setCategory((current) => (current === next ? null : next)),
+    destination,
+    // 카테고리를 켜면 목적지 거리와 목적지 검색은 거둔다. 레일에서는 한 번에 하나만 켠다.
+    toggleCategory: (next: MapCategory) => {
+      if (category !== next) {
+        records.distance.hide();
+        setIsPickingDestination(false);
+      }
+      setCategory((current) => (current === next ? null : next));
+    },
     /** 메모를 남기면 메모가 보이도록 메모 카테고리를 켠다. */
     showMemos: () => setCategory('MEMO'),
     closeTap: () => setTapPoint(null),
