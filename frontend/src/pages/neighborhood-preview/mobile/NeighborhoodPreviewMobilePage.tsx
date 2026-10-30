@@ -4,6 +4,7 @@ import { Outlet, useMatch } from 'react-router-dom';
 import { SERVICE_MAP_STYLE_ID } from '@/features/map/lib/mapStyle';
 import MapCanvas from '@/features/map/ui/map-canvas/MapCanvas';
 import ExplorationRecordAction from '@/features/onboarding/ui/exploration-record-action/ExplorationRecordAction';
+import StreetMemoImpressionLog from '@/features/street-memo/ui/street-memo-impression-log/StreetMemoImpressionLog';
 import StreetMemoSheet from '@/features/street-memo/ui/street-memo-sheet/StreetMemoSheet';
 import { LogClick } from '@/shared/lib/analytics/logging';
 import BottomSheet from '@/shared/ui/bottom-sheet/BottomSheet';
@@ -125,6 +126,7 @@ const NeighborhoodPreviewMobilePage = ({ preview }: Props) => {
           interactive
           {...mapProps}
         />
+        <StreetMemoImpressionLog memos={memo.visibleMemos} />
         <AnalysisOverlay preview={preview} />
         {preview.isSelectingOnMap && (
           <>

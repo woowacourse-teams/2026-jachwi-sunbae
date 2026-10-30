@@ -4,6 +4,7 @@ import type { ReactNode } from 'react';
 import MapCanvas from '@/features/map/ui/map-canvas/MapCanvas';
 import MapCategoryRail from '@/features/map/ui/map-category-rail/MapCategoryRail';
 import MapZoomControl from '@/features/map/ui/map-zoom-control/MapZoomControl';
+import StreetMemoImpressionLog from '@/features/street-memo/ui/street-memo-impression-log/StreetMemoImpressionLog';
 import StreetMemoPanel from '@/features/street-memo/ui/street-memo-panel/StreetMemoPanel';
 import Icon from '@/shared/ui/icon/Icon';
 
@@ -32,6 +33,7 @@ const RecordsDesktopMap = ({ records, layers, districts, className }: Props) => 
   return (
     <section className={`${styles.map} ${className ?? ''}`.trim()} aria-label="본 방 기록 지도">
       <MapCanvas {...layers.canvasProps} coordinateMenu={layers.coordinateMenu} />
+      <StreetMemoImpressionLog memos={layers.memo.visibleMemos} />
       {!isPickingDestination && (
         <>
           <div className={styles.districts}>{districts}</div>

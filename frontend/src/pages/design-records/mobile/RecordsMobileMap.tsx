@@ -3,6 +3,7 @@ import { css } from '@emotion/css';
 import MapCanvas from '@/features/map/ui/map-canvas/MapCanvas';
 import MapCategoryRail from '@/features/map/ui/map-category-rail/MapCategoryRail';
 import MapZoomControl from '@/features/map/ui/map-zoom-control/MapZoomControl';
+import StreetMemoImpressionLog from '@/features/street-memo/ui/street-memo-impression-log/StreetMemoImpressionLog';
 import StreetMemoSheet from '@/features/street-memo/ui/street-memo-sheet/StreetMemoSheet';
 import Icon from '@/shared/ui/icon/Icon';
 
@@ -33,6 +34,7 @@ const RecordsMobileMap = ({ records, layers }: Props) => {
   return (
     <section className={styles.map} aria-label="본 방 기록 지도">
       <MapCanvas {...layers.canvasProps} coordinateMenu={layers.coordinateMenu} />
+      <StreetMemoImpressionLog memos={layers.memo.visibleMemos} />
       {!isPickingDestination && (
         <MapCategoryRail
           showMemo
