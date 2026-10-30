@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { type ButtonHTMLAttributes, StrictMode } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { LogClick, LogParamsProvider, LogScreen, withLogClick } from '@/shared/lib/analytics/logging';
+import { LogClick, LogImpression, LogParamsProvider, LogScreen, withLogClick } from '@/shared/lib/analytics/logging';
 import { trackPostHogEvent } from '@/shared/lib/analytics/posthog';
 
 vi.mock('@/shared/lib/analytics/posthog', () => ({ trackPostHogEvent: vi.fn(() => true) }));
@@ -40,6 +40,34 @@ describe('선언적 로깅 컴포넌트', () => {
       </StrictMode>,
     );
     expect(trackPostHogEvent).toHaveBeenCalledTimes(1);
+  });
+
+  it('LogImpression은 보인 항목마다 한 번만 노출을 보내고, 새로 보인 항목만 더 보낸다', () => {
+    type Memo = { id: number; text: string };
+    const getKey = (memo: Memo) => memo.id;
+    const getParams = (memo: Memo) => ({ memo_id: memo.id, memo: memo.text });
+    const first = [
+      { id: 1, text: '골목이 밝아요' },
+      { id: 2, text: '밤에 시끄러워요' },
+    ];
+    const { rerender } = render(
+      <LogImpression event="memo_impressed_test" items={first} getKey={getKey} getParams={getParams} />,
+    );
+    expect(trackPostHogEvent).toHaveBeenCalledTimes(2);
+    // 지도를 옮겨 같은 메모와 새 메모가 함께 보이면 새 메모만 남긴다.
+    rerender(
+      <LogImpression
+        event="memo_impressed_test"
+        items={[...first, { id: 3, text: '편의점이 가까워요' }]}
+        getKey={getKey}
+        getParams={getParams}
+      />,
+    );
+    expect(trackPostHogEvent).toHaveBeenCalledTimes(3);
+    expect(trackPostHogEvent).toHaveBeenLastCalledWith('memo_impressed_test', {
+      memo_id: 3,
+      memo: '편의점이 가까워요',
+    });
   });
 
   it('LogClick은 상위 속성을 합쳐 로그를 보낸 뒤 원래 onClick을 실행한다', async () => {

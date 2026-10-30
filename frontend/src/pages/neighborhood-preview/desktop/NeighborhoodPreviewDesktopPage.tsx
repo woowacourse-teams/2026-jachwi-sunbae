@@ -5,6 +5,7 @@ import { Outlet, useMatch } from 'react-router-dom';
 import { SERVICE_MAP_STYLE_ID } from '@/features/map/lib/mapStyle';
 import MapCanvas from '@/features/map/ui/map-canvas/MapCanvas';
 import ExplorationRecordAction from '@/features/onboarding/ui/exploration-record-action/ExplorationRecordAction';
+import StreetMemoImpressionLog from '@/features/street-memo/ui/street-memo-impression-log/StreetMemoImpressionLog';
 import StreetMemoPanel from '@/features/street-memo/ui/street-memo-panel/StreetMemoPanel';
 import { Button } from '@/shared/ui/button/Button';
 import Icon from '@/shared/ui/icon/Icon';
@@ -200,6 +201,7 @@ const NeighborhoodPreviewDesktopPage = ({ preview }: Props) => {
             interactive
             {...mapProps}
           />
+          <StreetMemoImpressionLog memos={memo.visibleMemos} />
           <AnalysisOverlay preview={preview} />
           {preview.isSelectingOnMap && (
             <>

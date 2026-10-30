@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 
+import { isInBounds } from '@/features/map/lib/mapViewportQuery';
 import type { MapBounds, MapMarker } from '@/features/map/model/Map';
 import { useLogger } from '@/shared/lib/analytics/logging';
 
@@ -18,6 +19,13 @@ type Point = { latitude: number; longitude: number };
 /** 여러 메모가 한꺼번에 나타날 때 튀어나오는 시점을 엇갈리게 하는 간격과 단계 수. */
 const POP_STAGGER_MS = 60;
 const POP_STAGGER_STEPS = 6;
+
+/** 메모 순위를 볼 수 있게 노출과 열람 이벤트에 함께 싣는 메모 정보. 거리 메모는 지도에서 누구나 보는 공개 글이라 내용도 싣는다. */
+export const memoLogParams = (memo: StreetMemo) => ({
+  memo_id: memo.id,
+  preference: memo.preference,
+  memo: memo.memo,
+});
 
 const markerLabel = (memo: StreetMemo) =>
   memo.memo.length > LABEL_MAX_LENGTH ? `${memo.memo.slice(0, LABEL_MAX_LENGTH)}…` : memo.memo;
@@ -87,6 +95,12 @@ const useStreetMemoLayer = (enabled: boolean, bounds: MapBounds | null) => {
     return () => window.clearTimeout(timer);
   }, [flash]);
 
+  // 지금 화면 안에 보이는 메모. 지도를 옮기는 동안 남아 있는 이전 범위의 메모는 화면 밖이라 빼고, 노출 지표에 쓴다.
+  const visibleMemos = useMemo(
+    () => (enabled && bounds ? memos.filter((memo) => isInBounds(memo, bounds)) : []),
+    [enabled, bounds, memos],
+  );
+
   const memoGroups = useMemo(() => {
     const shown = enabled ? memos : [];
     // 방금 남긴 메모는 떠오르는 동안 다른 메모와 묶지 않고, 목록을 다시 받아 오기 전이나 메모를 숨긴 배율에서도 그 자리에 둔다.
@@ -119,6 +133,7 @@ const useStreetMemoLayer = (enabled: boolean, bounds: MapBounds | null) => {
 
   return {
     markers,
+    visibleMemos,
     isFailed: enabled && isFailed,
     /** compose: 찍은 위치에 새로 쓰는 중, view: 지도에서 고른 메모를 보는 중. */
     mode: draftPoint ? ('compose' as const) : selectedMemos.length > 0 ? ('view' as const) : null,
@@ -141,7 +156,9 @@ const useStreetMemoLayer = (enabled: boolean, bounds: MapBounds | null) => {
       remove.reset();
       setDraftPoint(null);
       const ids = marker.id.slice(STREET_MEMO_MARKER_PREFIX.length).split(',').map(Number);
-      log('street_memo_viewed', { preference: memos.find((memo) => memo.id === ids[0])?.preference ?? null });
+      // 겹친 메모 묶음을 열면 묶음 안의 메모를 하나씩 열람으로 남긴다.
+      for (const memo of memos.filter((item) => ids.includes(item.id)))
+        log('street_memo_viewed', { ...memoLogParams(memo), group_size: ids.length });
       setSelectedIds(ids);
       return true;
     },
