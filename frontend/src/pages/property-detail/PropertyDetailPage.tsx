@@ -1,8 +1,7 @@
 import { css } from '@emotion/css';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 
-import PropertyAdditionalInfoForm from '@/pages/property-memo/ui/property-additional-info-form/PropertyAdditionalInfoForm';
 import { describePropertyLoadError } from '@/features/property/api/propertyErrorMessages';
 import { usePropertyDetail } from '@/features/property/api/useProperties';
 import { useRemoveProperty } from '@/features/property/api/usePropertyMutations';
@@ -14,13 +13,16 @@ import {
   type PropertyReturnPath,
 } from '@/features/property/lib/propertyNavigation';
 import type { PropertyDetail } from '@/features/property/model/Property';
+import PropertyPhotoManager from '@/features/property/ui/property-photo-manager/PropertyPhotoManager';
 import PropertyPhotoViewer from '@/features/property/ui/property-photo-viewer/PropertyPhotoViewer';
 import { LogScreen } from '@/shared/lib/analytics/logging';
+import useDocumentTitle from '@/shared/lib/hooks/useDocumentTitle';
 import useReturnNavigation from '@/shared/lib/navigation/useReturnNavigation';
 import ConfirmDialog from '@/shared/ui/confirm-dialog/ConfirmDialog';
 import ContentState from '@/shared/ui/content-state/ContentState';
 import Icon from '@/shared/ui/icon/Icon';
 import QueryState from '@/shared/ui/query-state/QueryState';
+import TopNavigation from '@/shared/ui/top-navigation/TopNavigation';
 import TopNavigationMenu from '@/shared/ui/top-navigation-menu/TopNavigationMenu';
 
 import {
@@ -30,17 +32,17 @@ import {
   readLastDetailTab,
   writeLastDetailTab,
 } from './model/detailTab';
-import { editFieldSheetHeight, editFieldTitles, isBasicEditField, type PropertyEditField } from './model/editField';
+import type { PropertyEditField } from './model/editField';
 import PropertyAdditionalInfoSection from './ui/property-additional-info-section/PropertyAdditionalInfoSection';
-import PropertyBasicInfoForm from './ui/property-basic-info-section/PropertyBasicInfoForm';
 import PropertyBasicInfoSection from './ui/property-basic-info-section/PropertyBasicInfoSection';
 import PropertyChecklistSection from './ui/property-checklist-section/PropertyChecklistSection';
-import PropertyEditSheet from './ui/property-edit-sheet/PropertyEditSheet';
 import PropertyHeroPhoto from './ui/property-hero-photo/PropertyHeroPhoto';
 import PropertyMemoSection from './ui/property-memo-section/PropertyMemoSection';
 import PropertyPhotoSection from './ui/property-photo-section/PropertyPhotoSection';
 
 const describeError = describePropertyLoadError('매물 상세를 불러오지 못했어요.');
+/** 저장한 줄에 `저장했어요`를 보여 두는 시간. */
+const SAVED_FEEDBACK_MS = 2400;
 
 /** 다른 화면 옆 패널로 열 때 쓴다. 보여줄 매물과 닫기(뒤로가기·삭제 뒤)를 패널을 연 화면이 정한다. */
 export type PropertyDetailPanel = { propertyId: number; onClose: () => void };
@@ -126,9 +128,36 @@ const PropertyDetailView = ({ propertyId, detail, backTo, panel }: PropertyDetai
       { replace: true, state: locationState },
     );
   };
+  // 탭 제목으로 어느 매물의 어느 탭인지 먼저 알린다. 패널로 열면 패널을 연 기록 화면이 탭 제목을 가진다.
+  useDocumentTitle(panel ? undefined : `${detail.name} ${activeTab === 'checklist' ? '체크리스트' : '정보'}`);
+  // 그 줄 안에서 고치고 있는 항목. 모달 없이 상세 화면에서 바로 고치고, 한 번에 한 줄만 연다.
   const [editingField, setEditingField] = useState<PropertyEditField | null>(null);
+  // 방금 저장한 항목. 그 줄 값 아래에 잠깐 `저장했어요`를 보여 응답한다.
+  const [savedField, setSavedField] = useState<PropertyEditField | null>(null);
+  useEffect(() => {
+    if (savedField === null) return;
+    const timer = window.setTimeout(() => setSavedField(null), SAVED_FEEDBACK_MS);
+    return () => window.clearTimeout(timer);
+  }, [savedField]);
+  const inlineEdit = {
+    editingField,
+    savedField,
+    onEdit: (field: PropertyEditField) => {
+      setSavedField(null);
+      setEditingField(field);
+    },
+    // 고치던 줄을 떠나 다른 줄을 누르면, 앞 줄 저장이 끝나기 전에 새 줄이 열린다. 저장을 마친 줄만 닫는다.
+    onSaved: (field: PropertyEditField) => {
+      setEditingField((current) => (current === field ? null : current));
+      setSavedField(field);
+    },
+    onCancel: () => setEditingField(null),
+  };
   const deleteButtonRef = useRef<HTMLButtonElement>(null);
   const photoTriggerRef = useRef<HTMLButtonElement | null>(null);
+  // 옆 칸(데스크탑 본 방 기록)으로 열었으면 사진 관리도 화면을 옮기지 않고 이 칸 안에서 연다. 지도와 리스트가 그대로 남는다.
+  const [isManagingPhotos, setIsManagingPhotos] = useState(false);
+  const managePhotos = panel ? () => setIsManagingPhotos(true) : undefined;
 
   const Root = panel ? 'div' : 'main';
 
@@ -142,6 +171,20 @@ const PropertyDetailView = ({ propertyId, detail, backTo, panel }: PropertyDetai
       // 삭제 확인 창에서 재시도할 수 있도록 유지한다.
     }
   };
+
+  if (panel && isManagingPhotos)
+    return (
+      <div className={styles.page} data-panel="true">
+        <div className={styles.container}>
+          <TopNavigation
+            title={`${detail.name} · 사진`}
+            onBack={() => setIsManagingPhotos(false)}
+            backLabel="매물 상세로 돌아가기"
+          />
+          <PropertyPhotoManager propertyId={propertyId} />
+        </div>
+      </div>
+    );
 
   return (
     // 패널로 열면 패널을 연 화면의 main 안에 들어가므로 main을 겹치지 않는다.
@@ -201,6 +244,7 @@ const PropertyDetailView = ({ propertyId, detail, backTo, panel }: PropertyDetai
               backTo={backTo}
               backState={returnState}
               showBackButton={false}
+              onManagePhotos={managePhotos}
               onOpen={() => {
                 photoTriggerRef.current = null;
                 setSelectedPhotoIndex(0);
@@ -224,9 +268,9 @@ const PropertyDetailView = ({ propertyId, detail, backTo, panel }: PropertyDetai
                   </button>
                 </TopNavigationMenu>
               </div>
-              <PropertyBasicInfoSection property={detail} onEdit={setEditingField} />
+              <PropertyBasicInfoSection property={detail} {...inlineEdit} />
 
-              <PropertyAdditionalInfoSection property={detail} onEdit={setEditingField} />
+              <PropertyAdditionalInfoSection property={detail} {...inlineEdit} />
 
               <PropertyMemoSection propertyId={propertyId} />
 
@@ -234,6 +278,7 @@ const PropertyDetailView = ({ propertyId, detail, backTo, panel }: PropertyDetai
                 propertyId={propertyId}
                 propertyName={detail.name}
                 photoPreview={detail.photoPreview}
+                onManage={managePhotos}
                 onSelect={(index, trigger) => {
                   photoTriggerRef.current = trigger;
                   setSelectedPhotoIndex(index);
@@ -257,25 +302,6 @@ const PropertyDetailView = ({ propertyId, detail, backTo, panel }: PropertyDetai
               window.requestAnimationFrame(() => photoTriggerRef.current?.focus());
             }}
           />
-        )}
-
-        {editingField !== null && (
-          <PropertyEditSheet
-            title={editFieldTitles[editingField]}
-            initialHeightPercent={editFieldSheetHeight(editingField)}
-            onClose={() => setEditingField(null)}
-          >
-            {isBasicEditField(editingField) ? (
-              <PropertyBasicInfoForm property={detail} field={editingField} onSaved={() => setEditingField(null)} />
-            ) : (
-              <PropertyAdditionalInfoForm
-                property={detail}
-                layout="sheet"
-                field={editingField}
-                onSaved={() => setEditingField(null)}
-              />
-            )}
-          </PropertyEditSheet>
         )}
 
         <ConfirmDialog

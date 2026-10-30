@@ -19,7 +19,7 @@ describe('DesktopHeader', () => {
       within(nav)
         .getAllByRole('link')
         .map((link) => link.textContent),
-    ).toEqual(['본 방 기록', '동네 찾기', '체크리스트', '방 비교']);
+    ).toEqual(['본 방 기록', '동네 찾기', '체크리스트', '방 비교', '저렴한 한 끼']);
     expect(within(nav).getByRole('link', { name: '동네 찾기' })).toHaveAttribute('aria-current', 'page');
     expect(within(nav).getByRole('link', { name: '본 방 기록' })).not.toHaveAttribute('aria-current');
   });

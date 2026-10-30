@@ -14,6 +14,7 @@ const DESKTOP_NAV_ITEMS = [
   { label: '동네 찾기', to: '/neighborhoods' },
   { label: '체크리스트', to: '/checklists' },
   { label: '방 비교', to: '/compare' },
+  { label: '저렴한 한 끼', to: '/cheap-meals' },
 ] as const;
 
 type DesktopHeaderProps = {

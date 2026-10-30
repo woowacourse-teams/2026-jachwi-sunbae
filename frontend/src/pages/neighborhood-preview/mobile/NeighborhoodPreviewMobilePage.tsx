@@ -4,6 +4,7 @@ import { Outlet, useMatch } from 'react-router-dom';
 import { SERVICE_MAP_STYLE_ID } from '@/features/map/lib/mapStyle';
 import MapCanvas from '@/features/map/ui/map-canvas/MapCanvas';
 import ExplorationRecordAction from '@/features/onboarding/ui/exploration-record-action/ExplorationRecordAction';
+import StreetMemoImpressionLog from '@/features/street-memo/ui/street-memo-impression-log/StreetMemoImpressionLog';
 import StreetMemoSheet from '@/features/street-memo/ui/street-memo-sheet/StreetMemoSheet';
 import { LogClick } from '@/shared/lib/analytics/logging';
 import BottomSheet from '@/shared/ui/bottom-sheet/BottomSheet';
@@ -125,6 +126,7 @@ const NeighborhoodPreviewMobilePage = ({ preview }: Props) => {
           interactive
           {...mapProps}
         />
+        <StreetMemoImpressionLog memos={memo.visibleMemos} />
         <AnalysisOverlay preview={preview} />
         {preview.isSelectingOnMap && (
           <>
@@ -184,21 +186,15 @@ const NeighborhoodPreviewMobilePage = ({ preview }: Props) => {
         {isResultMap && (
           <>
             <header className={shared.resultHeader}>
-              <Button
-                variant="secondary"
-                className={shared.resultBack}
-                onClick={() => {
-                  closeLayers();
-                  preview.reset();
-                }}
-              >
-                <Icon name="refresh" size={26} />
-                다시 선택하기
-              </Button>
+              {/* 왼쪽은 들어온 곳(보통 홈)으로 한 번에 나가는 뒤로가기, 가운데는 조건과 색 기준, 오른쪽은 출퇴근 장소부터 다시 고르는 버튼이다. */}
+              <button type="button" className={shared.mapBack} aria-label="동네 찾기 나가기" onClick={preview.leave}>
+                <Icon name="chevron-left" size={24} />
+              </button>
               <div className={shared.resultCriteria}>
                 <div className={shared.criteriaBadges} aria-label="선택한 탐색 조건">
-                  <span>통근 {preview.maxMinutes}분 이내</span>
-                  <span>{transferLabel(preview.maxTransfers)}</span>
+                  {/* 통근과 환승은 찾은 결과를 정한 조건이라 결과에서는 바꿀 수 없다. 회색으로 두고, 바꾸려면 다시 선택한다. */}
+                  <span aria-disabled="true">통근 {preview.maxMinutes}분 이내</span>
+                  <span aria-disabled="true">{transferLabel(preview.maxTransfers)}</span>
                   {/* 월세는 받은 시세를 거르는 조건이라 결과에서도 다시 찾지 않고 바로 바꾼다. */}
                   <Button variant="secondary" className={shared.filterBadge} onClick={() => setFilterField('rent')}>
                     {rentLabel(preview.maxRent)} <Icon name="chevron-down" size={16} />
@@ -222,6 +218,17 @@ const NeighborhoodPreviewMobilePage = ({ preview }: Props) => {
                   </small>
                 </div>
               </div>
+              <Button
+                variant="secondary"
+                className={shared.resultReset}
+                onClick={() => {
+                  closeLayers();
+                  preview.reset();
+                }}
+              >
+                <Icon name="refresh" size={22} />
+                다시 선택하기
+              </Button>
             </header>
             <LocationControls preview={preview} isResult />
             {preview.isPublicExplore && recordArea && (

@@ -829,23 +829,7 @@ export const presets = css`
   }
 `;
 
-export const resultBack = css`
-  label: NeighborhoodPreviewPage-resultBack;
-  width: 4.5rem;
-  height: 4.5rem;
-  padding: 0.15rem;
-  font-size: 0.6rem;
-  white-space: nowrap;
-  flex: none;
-  border-radius: 0.65rem;
-  box-shadow: 0 2px 8px rgb(0 0 0 / 8%);
-
-  & > span {
-    flex-direction: column;
-    gap: 0.2rem;
-  }
-`;
-
+/* 휴대폰 결과 화면 위쪽 한 줄: 왼쪽 뒤로가기, 가운데 조건 배지와 색 기준, 오른쪽 다시 선택하기. */
 export const resultHeader = css`
   label: NeighborhoodPreviewPage-resultHeader;
   position: absolute;
@@ -853,13 +837,37 @@ export const resultHeader = css`
   left: 0.85rem;
   right: 0.85rem;
   display: flex;
-  gap: 0.6rem;
+  gap: 0.45rem;
   align-items: flex-start;
   z-index: 31;
+
+  @media (max-width: 370px) {
+    left: 0.6rem;
+    right: 0.6rem;
+    gap: 0.3rem;
+  }
+`;
+
+export const resultReset = css`
+  label: NeighborhoodPreviewPage-resultReset;
+  width: 3.5rem;
+  height: 3.5rem;
+  padding: 0.15rem;
+  font-size: 0.56rem;
+  white-space: nowrap;
+  flex: none;
+  border-radius: 0.65rem;
+  box-shadow: 0 2px 8px rgb(0 0 0 / 8%);
+
+  & > span {
+    flex-direction: column;
+    gap: 0.15rem;
+  }
 `;
 
 export const resultCriteria = css`
   label: NeighborhoodPreviewPage-resultCriteria;
+  flex: 1;
   min-width: 0;
   display: grid;
   gap: 0.4rem;
@@ -869,15 +877,34 @@ export const criteriaBadges = css`
   label: NeighborhoodPreviewPage-criteriaBadges;
   display: flex;
   gap: 0.3rem;
-  flex-wrap: wrap;
+  /* 좁은 화면에서도 월세 버튼이 아래 줄로 내려가지 않게 한 줄로 두고, 넘치면 옆으로 민다. */
+  overflow-x: auto;
+  scrollbar-width: none;
+
+  & > * {
+    flex: none;
+  }
 
   & > span {
-    padding: 0.45rem 0.6rem;
+    padding: 0.45rem 0.5rem;
+    white-space: nowrap;
     border: 1px solid var(--color-border);
     border-radius: 999px;
     background: white;
-    font-size: 0.75rem;
+    font-size: 0.72rem;
+
+    @media (max-width: 370px) {
+      padding: 0.45rem 0.4rem;
+      font-size: 0.66rem;
+    }
     box-shadow: 0 2px 8px rgb(0 0 0 / 6%);
+  }
+
+  /* 결과에서 바꿀 수 없는 조건은 회색으로 흐리게 둔다. */
+  & > span[aria-disabled='true'] {
+    border-color: #e6e8eb;
+    background: #f1f2f4;
+    color: #9a9ea6;
   }
 `;
 
@@ -983,9 +1010,8 @@ export const filterCellValue = css`
 
 export const filterBadge = css`
   label: NeighborhoodPreviewPage-filterBadge;
-  width: 9.25rem;
-  flex: 0 0 9.25rem;
-  padding: 0.5rem 0.75rem;
+  flex: none;
+  padding: 0.5rem 0.6rem;
   border-radius: 2rem;
   border-color: var(--color-border-strong);
   font-size: 0.75rem;
@@ -997,6 +1023,11 @@ export const filterBadge = css`
     width: 100%;
     justify-content: space-between;
     gap: 0.25rem;
+  }
+
+  @media (max-width: 370px) {
+    padding: 0.5rem 0.45rem;
+    font-size: 0.66rem;
   }
 `;
 

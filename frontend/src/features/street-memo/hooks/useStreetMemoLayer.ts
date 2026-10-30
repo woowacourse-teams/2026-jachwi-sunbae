@@ -1,9 +1,11 @@
 import { useEffect, useMemo, useState } from 'react';
 
+import { isInBounds } from '@/features/map/lib/mapViewportQuery';
 import type { MapBounds, MapMarker } from '@/features/map/model/Map';
 import { useLogger } from '@/shared/lib/analytics/logging';
 
 import { useStreetMemoMutations, useStreetMemos } from '../api/useStreetMemos';
+import { OVERLAP_HEIGHT_RATIO, OVERLAP_WIDTH_RATIO } from '../lib/streetMemoFocus';
 import type { StreetMemo, StreetMemoPreference } from '../model/StreetMemo';
 
 export const STREET_MEMO_MARKER_PREFIX = 'street-memo:';
@@ -14,15 +16,23 @@ const LABEL_MAX_LENGTH = 80;
 
 type Point = { latitude: number; longitude: number };
 
-/**
- * 말풍선이 거의 같은 자리에 겹친다고 볼 거리. 지도 화면 폭과 높이에 대한 비율이라 확대 배율이 바뀌어도 화면에서 같은 간격이 된다.
- * 조금 겹치는 정도는 그대로 두고, 아래 말풍선을 누를 수 없을 만큼 포개질 때만 묶는다.
- */
-const OVERLAP_WIDTH_RATIO = 0.06;
-const OVERLAP_HEIGHT_RATIO = 0.03;
 /** 여러 메모가 한꺼번에 나타날 때 튀어나오는 시점을 엇갈리게 하는 간격과 단계 수. */
 const POP_STAGGER_MS = 60;
 const POP_STAGGER_STEPS = 6;
+
+/** 메모 순위를 볼 수 있게 노출과 열람 이벤트에 함께 싣는 메모 정보. 거리 메모는 지도에서 누구나 보는 공개 글이라 내용도 싣는다. */
+export const memoLogParams = (memo: StreetMemo) => ({
+  memo_id: memo.id,
+  preference: memo.preference,
+  memo: memo.memo,
+});
+
+/**
+ * 노출을 세는 가장 넓은 화면(위도 폭, 약 3.3km). 그보다 멀리 축소하면 메모가 개수 말풍선으로 뭉쳐 내용이 보이지 않고,
+ * 도시 전체의 메모가 한꺼번에 들어와 노출 이벤트가 쏟아지므로 세지 않는다.
+ */
+const IMPRESSION_MAX_LATITUDE_SPAN = 0.03;
+const NO_MEMOS: StreetMemo[] = [];
 
 const markerLabel = (memo: StreetMemo) =>
   memo.memo.length > LABEL_MAX_LENGTH ? `${memo.memo.slice(0, LABEL_MAX_LENGTH)}…` : memo.memo;
@@ -92,6 +102,16 @@ const useStreetMemoLayer = (enabled: boolean, bounds: MapBounds | null) => {
     return () => window.clearTimeout(timer);
   }, [flash]);
 
+  // 노출 지표에 쓰는, 지금 화면 안에서 내용이 보이는 메모. 지도를 옮기는 동안 남아 있는 이전 범위의 메모는 화면 밖이라 빼고,
+  // 멀리 축소한 화면은 세지 않는다.
+  const visibleMemos = useMemo(
+    () =>
+      enabled && bounds && bounds.north - bounds.south <= IMPRESSION_MAX_LATITUDE_SPAN
+        ? memos.filter((memo) => isInBounds(memo, bounds))
+        : NO_MEMOS,
+    [enabled, bounds, memos],
+  );
+
   const memoGroups = useMemo(() => {
     const shown = enabled ? memos : [];
     // 방금 남긴 메모는 떠오르는 동안 다른 메모와 묶지 않고, 목록을 다시 받아 오기 전이나 메모를 숨긴 배율에서도 그 자리에 둔다.
@@ -124,6 +144,7 @@ const useStreetMemoLayer = (enabled: boolean, bounds: MapBounds | null) => {
 
   return {
     markers,
+    visibleMemos,
     isFailed: enabled && isFailed,
     /** compose: 찍은 위치에 새로 쓰는 중, view: 지도에서 고른 메모를 보는 중. */
     mode: draftPoint ? ('compose' as const) : selectedMemos.length > 0 ? ('view' as const) : null,
@@ -135,6 +156,10 @@ const useStreetMemoLayer = (enabled: boolean, bounds: MapBounds | null) => {
     /** 지우는 중이거나 지우지 못한 메모의 id. 여러 메모를 함께 볼 때 어느 메모의 상태인지 가린다. */
     removingId: remove.isPending ? (remove.variables ?? null) : null,
     removeFailedId: remove.isError ? (remove.variables ?? null) : null,
+    /** 메모 마커에 묶인 메모. 지도를 그 메모들로 옮길 때 쓴다. 메모 마커가 아니면 빈 목록이다. */
+    memosOf: (marker: MapMarker): StreetMemo[] =>
+      memoGroups.find((group) => markerId(group) === marker.id) ??
+      (flash && marker.id === markerId([flash]) ? [flash] : []),
     /** 메모 마커면 열고 true를 돌려준다. 다른 마커는 지도 화면이 처리하게 false를 돌려준다. */
     selectMarker: (marker: MapMarker): boolean => {
       if (!marker.id.startsWith(STREET_MEMO_MARKER_PREFIX)) return false;
@@ -142,7 +167,9 @@ const useStreetMemoLayer = (enabled: boolean, bounds: MapBounds | null) => {
       remove.reset();
       setDraftPoint(null);
       const ids = marker.id.slice(STREET_MEMO_MARKER_PREFIX.length).split(',').map(Number);
-      log('street_memo_viewed', { preference: memos.find((memo) => memo.id === ids[0])?.preference ?? null });
+      // 겹친 메모 묶음을 열면 묶음 안의 메모를 하나씩 열람으로 남긴다.
+      for (const memo of memos.filter((item) => ids.includes(item.id)))
+        log('street_memo_viewed', { ...memoLogParams(memo), group_size: ids.length });
       setSelectedIds(ids);
       return true;
     },

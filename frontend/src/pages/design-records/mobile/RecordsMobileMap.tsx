@@ -1,67 +1,41 @@
 import { css } from '@emotion/css';
 
-import type { MapAddress, MapMarker } from '@/features/map/model/Map';
 import MapCanvas from '@/features/map/ui/map-canvas/MapCanvas';
 import MapCategoryRail from '@/features/map/ui/map-category-rail/MapCategoryRail';
 import MapZoomControl from '@/features/map/ui/map-zoom-control/MapZoomControl';
+import StreetMemoImpressionLog from '@/features/street-memo/ui/street-memo-impression-log/StreetMemoImpressionLog';
 import StreetMemoSheet from '@/features/street-memo/ui/street-memo-sheet/StreetMemoSheet';
 import Icon from '@/shared/ui/icon/Icon';
 
 import type { RecordsState } from '../hooks/useRecords';
-import type useRecordsAddMode from '../hooks/useRecordsAddMode';
 import type { RecordsMapLayers } from '../hooks/useRecordsMapLayers';
 import { recordsMapHint } from '../model/recordPresentation';
-import RecordsAddBar from './RecordsAddBar';
-import RecordsAddButton from './RecordsAddButton';
-import RecordsSelectedCard from './RecordsSelectedCard';
-
-const ADD_POINT_MARKER_ID = 'add-point';
+import { destinationRailButton } from '../model/recordPresentation';
+import RecordDestinationControl from '../ui/record-destination/RecordDestinationControl';
+import RecordMapTapIntro from '../ui/record-map-tap-intro/RecordMapTapIntro';
+import RecordsSelectedSheet from './RecordsSelectedSheet';
 
 type Props = {
   records: RecordsState;
   layers: RecordsMapLayers;
-  addMode: ReturnType<typeof useRecordsAddMode>;
-  onAddProperty: (address: MapAddress) => void;
-  /** 고른 위치로 매물을 만드는 중이면 추가 버튼을 로딩으로 둔다. */
-  isAddingProperty?: boolean;
 };
 
 /**
  * 휴대폰·태블릿 본 방 기록 지도. 위에 뜬 헤더 아래로 시설·거리 메모 카테고리 레일을 둔다.
- * 마커를 누르려다 잘못 찍기 쉬워 평소에 빈 곳을 찍으면 열린 매물·메모를 닫기만 한다.
- * 메모·매물은 가운데 아래 추가 버튼에서 고르면 추가 모드에 들어가, 마커를 모두 거둔 지도에서 위치를 찍어 고른다.
+ * 데스크탑처럼 빈 곳을 찍으면 그 자리 말풍선에서 메모를 남기거나 매물을 등록한다. 열린 것이 있으면 먼저 닫기만 한다.
+ * 고른 매물은 아래 바텀시트에서 보고, 겹쳐 묶인 매물은 시트에 함께 늘어놓는다.
  */
-const RecordsMobileMap = ({ records, layers, addMode, onAddProperty, isAddingProperty = false }: Props) => {
+const RecordsMobileMap = ({ records, layers }: Props) => {
   const { selected } = records;
-  const { isAddMode } = addMode;
-  const addMarkers: MapMarker[] =
-    addMode.coordinate === null
-      ? []
-      : [{ ...addMode.coordinate, id: ADD_POINT_MARKER_ID, label: '선택한 위치', tone: 'destination' }];
-  const confirmAdd = () => {
-    if (addMode.kind === 'property') {
-      if (addMode.address !== null) onAddProperty(addMode.address);
-      return;
-    }
-    const point = addMode.coordinate;
-    addMode.cancel();
-    if (point !== null) layers.memo.startDraft(point);
-  };
-  const hasBottomLayer = selected !== undefined || layers.memo.mode !== null;
-  const { canvasProps } = layers;
+  const sheetRecords = layers.groupRecords.length > 0 ? layers.groupRecords : selected ? [selected] : [];
+  const hasBottomLayer = sheetRecords.length > 0 || layers.memo.mode !== null;
+  // 목적지 모드에서는 카테고리 레일, 안내, 매물 시트, 메모 시트를 거두고 목적지 고르기만 남긴다.
+  const isPickingDestination = layers.destination.isPicking;
   return (
     <section className={styles.map} aria-label="본 방 기록 지도">
-      <MapCanvas
-        {...canvasProps}
-        // 추가 모드에서는 매물·시설·메모 마커를 모두 거두고, 찍은 자리를 추가할 위치로 고른다.
-        markers={isAddMode ? addMarkers : canvasProps.markers}
-        selectedMarkerId={isAddMode ? null : canvasProps.selectedMarkerId}
-        onSelectMarker={isAddMode ? undefined : canvasProps.onSelectMarker}
-        onSelectLocation={
-          isAddMode ? (latitude, longitude) => addMode.select({ latitude, longitude }) : layers.closeAll
-        }
-      />
-      {!isAddMode && (
+      <MapCanvas {...layers.canvasProps} coordinateMenu={layers.coordinateMenu} />
+      <StreetMemoImpressionLog memos={layers.memo.visibleMemos} />
+      {!isPickingDestination && (
         <MapCategoryRail
           showMemo
           showIcons={false}
@@ -69,49 +43,28 @@ const RecordsMobileMap = ({ records, layers, addMode, onAddProperty, isAddingPro
           selectedCategories={layers.category === null ? [] : [layers.category]}
           counts={layers.counts}
           onToggle={layers.toggleCategory}
+          extraButton={destinationRailButton(layers.destination)}
         />
       )}
-      {/* 매물 추가 모드는 아래쪽 현재 위치에서 추가 버튼이 같은 일을 하므로 위쪽 버튼을 거둔다. */}
-      {addMode.kind !== 'property' && (
-        <button
-          className={styles.recenter}
-          type="button"
-          aria-label="현재 위치로 이동"
-          onClick={() => records.moveToCurrentLocation()}
-        >
-          <Icon name="target" size={22} />
-        </button>
-      )}
+      <button
+        className={styles.recenter}
+        type="button"
+        aria-label="현재 위치로 이동"
+        onClick={() => records.moveToCurrentLocation()}
+      >
+        <Icon name="target" size={22} />
+      </button>
       <MapZoomControl className={styles.zoom} level={records.level} onChange={records.setLevel} />
-      {addMode.kind === 'property' && (
-        // 지금 있는 방을 기록할 때는 지도를 찍지 않고 현재 위치를 바로 매물 위치로 고른다.
-        <button className={styles.addHere} type="button" onClick={() => records.moveToCurrentLocation(addMode.select)}>
-          <Icon name="target" size={18} /> 현재 위치에서 추가
-        </button>
-      )}
-      {addMode.kind !== null ? (
-        <RecordsAddBar
-          kind={addMode.kind}
-          coordinate={addMode.coordinate}
-          address={addMode.address}
-          status={addMode.addressStatus}
-          isConfirming={isAddingProperty}
-          onCancel={addMode.cancel}
-          onConfirm={confirmAdd}
-        />
-      ) : (
+      <RecordDestinationControl destination={layers.destination} className={styles.destination} />
+      {!isPickingDestination && (
         <>
-          {!hasBottomLayer && (
-            <RecordsAddButton
-              hint={recordsMapHint(records.records, layers, false)}
-              onChoose={(kind) => {
-                layers.closeAll();
-                addMode.enter(kind);
-              }}
-            />
-          )}
-          {selected && <RecordsSelectedCard record={selected} onClose={() => records.setSelectedId(null)} />}
+          {!hasBottomLayer && <span className={styles.hint}>{recordsMapHint(records.records, layers)}</span>}
+          <RecordsSelectedSheet records={sheetRecords} onClose={layers.closeAll} onNotice={records.setNotice} />
           <StreetMemoSheet layer={layers.memo} onCreated={layers.showMemos} />
+          <RecordMapTapIntro
+            setLevel={records.setLevel}
+            hasTapped={layers.tapPoint !== null || layers.destination.isShown}
+          />
         </>
       )}
     </section>
@@ -119,7 +72,7 @@ const RecordsMobileMap = ({ records, layers, addMode, onAddProperty, isAddingPro
 };
 
 const styles = {
-  /* 휴대폰·태블릿 본 방 기록 지도. 위에 뜬 헤더·동네 뱃지 아래로 카테고리 레일·현재 위치 버튼을 두고, 아래쪽에 선택 매물 카드·찍은 위치 버튼을 띄운다. */
+  /* 휴대폰·태블릿 본 방 기록 지도. 위에 뜬 헤더·동네 뱃지 아래로 카테고리 레일·현재 위치 버튼을 두고, 아래쪽에 지도 안내를 띄운다. */
   map: css`
     label: RecordsMobileMap-map;
     position: relative;
@@ -134,11 +87,11 @@ const styles = {
     z-index: 12;
   `,
 
-  /* 메모 탭까지 여섯 칸(한 칸 2.5rem)인 레일 아래에 둔다. */
+  /* 메모부터 목적지까지 일곱 칸(한 칸 2.5rem)인 레일 아래에 둔다. */
   recenter: css`
     label: RecordsMobileMap-recenter;
     position: absolute;
-    top: calc(max(0.85rem, env(safe-area-inset-top)) + 27rem);
+    top: calc(max(0.85rem, env(safe-area-inset-top)) + 29.5rem);
     right: 0.95rem;
     z-index: 12;
     display: grid;
@@ -158,6 +111,14 @@ const styles = {
     }
   `,
 
+  /* 통근 장소 고르기 안내와 통근거리 안내는 확대·축소 버튼 왼쪽, 같은 높이에 둔다. */
+  destination: css`
+    label: RecordsMobileMap-destination;
+    top: calc(max(0.85rem, env(safe-area-inset-top)) + 8.15rem);
+    left: 0.75rem;
+    max-width: calc(100% - 7.5rem);
+  `,
+
   /* 헤더·동네 뱃지 아래 오른쪽 위에 두고, 카테고리 레일은 그 아래로 내린다. */
   zoom: css`
     label: RecordsMobileMap-zoom;
@@ -165,31 +126,24 @@ const styles = {
     right: 0.75rem;
   `,
 
-  /* 추가 모드 아래쪽 취소와 추가 버튼 줄 바로 위 오른쪽에 둔다. */
-  addHere: css`
-    label: RecordsMobileMap-addHere;
+  /* 아무것도 열리지 않았을 때 가운데 아래에 띄우는 지도 안내. 지도 조작을 막지 않는다. */
+  hint: css`
+    label: RecordsMobileMap-hint;
     position: absolute;
-    right: 1rem;
-    bottom: calc(max(1.5rem, env(safe-area-inset-bottom)) + 3.75rem);
-    z-index: 30;
-    display: flex;
-    align-items: center;
-    gap: 0.35rem;
-    padding: 0.7rem 1rem;
-    border: 1px solid #e3e5e9;
+    bottom: max(1.5rem, env(safe-area-inset-bottom));
+    left: 50%;
+    z-index: 12;
+    width: max-content;
+    max-width: calc(100% - 2rem);
+    padding: 0.55rem 0.85rem;
     border-radius: 2rem;
-    background: white;
-    box-shadow: 0 4px 16px rgb(0 0 0 / 14%);
-    color: #383c43;
-    font: inherit;
-    font-size: 0.85rem;
-    font-weight: 650;
-    cursor: pointer;
-
-    &:focus-visible {
-      outline: 2px solid #25282d;
-      outline-offset: 3px;
-    }
+    background: #ffffffed;
+    box-shadow: 0 2px 10px #00000016;
+    color: #6b7079;
+    font-size: 0.8rem;
+    text-align: center;
+    transform: translateX(-50%);
+    pointer-events: none;
   `,
 };
 

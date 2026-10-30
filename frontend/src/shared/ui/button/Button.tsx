@@ -1,7 +1,9 @@
 import { css, cx, keyframes } from '@emotion/css';
-import type { ButtonHTMLAttributes, ReactNode, Ref } from 'react';
+import type { ButtonHTMLAttributes, MouseEvent, ReactNode, Ref } from 'react';
 import type { LinkProps } from 'react-router-dom';
 import { Link } from 'react-router-dom';
+
+import useDelayedLoading from '@/shared/lib/hooks/useDelayedLoading';
 
 export type ButtonVariant = 'primary' | 'soft' | 'secondary' | 'neutral' | 'danger' | 'text';
 
@@ -36,6 +38,11 @@ const buttonClassName = (variant: ButtonVariant, size: ButtonSize, fullWidth: bo
     .filter(Boolean)
     .join(' ');
 
+/**
+ * 공용 버튼. `isLoading`이면 반응은 바로, 로딩 UI만 늦게 보여 준다.
+ * 사용자가 눌러 시작한 요청이라 두 번째 누름은 바로 막고 화면 읽기 프로그램에도 `aria-busy`로 바로 알린다.
+ * 스피너와 흐린 비활성화 모양은 요청이 500ms를 넘길 때만 보여, 빠른 응답에서 버튼이 깜빡이지 않게 한다.
+ */
 export const Button = ({
   children,
   variant = 'primary',
@@ -47,20 +54,33 @@ export const Button = ({
   disabled,
   type = 'button',
   ref,
+  onClick,
   ...buttonProps
-}: ButtonProps) => (
-  <button
-    {...buttonProps}
-    ref={ref}
-    className={buttonClassName(variant, size, fullWidth, className)}
-    type={type}
-    disabled={disabled === true || isLoading}
-    aria-busy={isLoading || undefined}
-  >
-    {isLoading && <span className={styles.spinner} aria-hidden="true" />}
-    <span>{isLoading ? loadingLabel : children}</span>
-  </button>
-);
+}: ButtonProps) => {
+  const isSpinnerVisible = useDelayedLoading(isLoading);
+  // 모양은 그대로여도 요청 중에는 두 번째 요청을 보내지 않는다. 제출 버튼은 폼 제출까지 막는다.
+  const handleClick = (event: MouseEvent<HTMLButtonElement>) => {
+    if (isLoading) {
+      event.preventDefault();
+      return;
+    }
+    onClick?.(event);
+  };
+  return (
+    <button
+      {...buttonProps}
+      ref={ref}
+      className={buttonClassName(variant, size, fullWidth, className)}
+      type={type}
+      disabled={disabled === true || isSpinnerVisible}
+      aria-busy={isLoading || undefined}
+      onClick={handleClick}
+    >
+      {isSpinnerVisible && <span className={styles.spinner} aria-hidden="true" />}
+      <span>{isSpinnerVisible ? loadingLabel : children}</span>
+    </button>
+  );
+};
 
 export const ButtonLink = ({
   children,

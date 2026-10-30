@@ -1,6 +1,7 @@
 import type { CSSProperties } from 'react';
 import { useMemo } from 'react';
 
+import useDelayedLoading from '@/shared/lib/hooks/useDelayedLoading';
 import { Button } from '@/shared/ui/button/Button';
 import ProgressCircle from '@/shared/ui/progress-circle/ProgressCircle';
 
@@ -72,6 +73,8 @@ const MapCanvas = ({
     selectedRegionId,
     onSelectRegion,
   });
+  // 지도가 금방 준비되면 불러오는 중 안내 없이 바로 보여 주고, 오래 걸릴 때만 알린다.
+  const isMapLoadingVisible = useDelayedLoading(isLoading);
 
   return (
     <div
@@ -269,7 +272,7 @@ const MapCanvas = ({
             ))}
         </div>
       )}
-      {isLoading && !hideLoading && (
+      {isMapLoadingVisible && !hideLoading && (
         <div className={styles.mapLoading} role="status">
           <ProgressCircle size={24} label="지도를 불러오는 중이에요." />
           지도를 불러오고 있어요

@@ -28,7 +28,7 @@ const meta = {
   argTypes: {
     layout: {
       control: 'inline-radio',
-      options: ['page', 'sheet'],
+      options: ['page', 'inline'],
     },
     property: { control: 'object', description: '폼 초기값으로 쓰는 매물 상세 데이터. JSON으로 값을 바꿔 볼 수 있다.' },
     onSaved: { description: '저장 요청이 성공하면 부른다.' },
@@ -48,9 +48,11 @@ type Story = StoryObj<typeof meta>;
 
 export const Page: Story = {};
 
-export const Sheet: Story = {
+/** 매물 상세의 그 줄 안에서 한 항목만 고칠 때. 버튼 없이 칸을 떠나면 저장한다. */
+export const Inline: Story = {
   args: {
-    layout: 'sheet',
+    layout: 'inline',
+    field: 'roomOptions',
   },
 };
 

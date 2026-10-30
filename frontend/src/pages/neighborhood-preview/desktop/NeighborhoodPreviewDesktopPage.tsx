@@ -5,6 +5,7 @@ import { Outlet, useMatch } from 'react-router-dom';
 import { SERVICE_MAP_STYLE_ID } from '@/features/map/lib/mapStyle';
 import MapCanvas from '@/features/map/ui/map-canvas/MapCanvas';
 import ExplorationRecordAction from '@/features/onboarding/ui/exploration-record-action/ExplorationRecordAction';
+import StreetMemoImpressionLog from '@/features/street-memo/ui/street-memo-impression-log/StreetMemoImpressionLog';
 import StreetMemoPanel from '@/features/street-memo/ui/street-memo-panel/StreetMemoPanel';
 import { Button } from '@/shared/ui/button/Button';
 import Icon from '@/shared/ui/icon/Icon';
@@ -18,7 +19,6 @@ import type { NeighborhoodPreviewContext } from '../hooks/useNeighborhoodPreview
 import { COMMUTE_COLORS, commuteLegend, OUT_OF_RENT_COLOR } from '../model/commuteColors';
 import { areaCardDescription, emptyAreaMessage, placesHint, transferLabel } from '../model/criteriaLabels';
 import { STATION_FOCUS_LEVEL } from '../model/resultMapView';
-import { RENT_OPTIONS } from '../NeighborhoodFilters';
 import AnalysisOverlay from '../ui/analysis-overlay/AnalysisOverlay';
 import type { AreaPlacesTab } from '../ui/area-places-sheet/AreaPlacesSheet';
 import AreaSummary, { areaStation } from '../ui/area-summary/AreaSummary';
@@ -27,6 +27,7 @@ import LocationControls from '../ui/location-controls/LocationControls';
 import NeighborhoodMapSearch from '../ui/map-search/NeighborhoodMapSearch';
 import MapTapHint from '../ui/map-tap-hint/MapTapHint';
 import NeighborhoodPlacePanel from '../ui/place-panel/NeighborhoodPlacePanel';
+import RentSlider from '../ui/rent-slider/RentSlider';
 
 import * as shared from '../NeighborhoodPreviewPage.styles';
 import * as placeStyles from '../ui/place-panel/NeighborhoodPlacePanel.styles';
@@ -104,18 +105,6 @@ const NeighborhoodPreviewDesktopPage = ({ preview }: Props) => {
       <div className={styles.criteria} aria-label="선택한 탐색 조건">
         <span>통근 {preview.maxMinutes}분 이내</span>
         <span>{transferLabel(preview.maxTransfers)}</span>
-        {/* 월세는 받은 시세를 거르는 조건이라 결과에서도 다시 찾지 않고 바로 바꾼다. */}
-        <select
-          aria-label="최대 월세 시세"
-          value={preview.maxRent}
-          onChange={(event) => preview.changeMaxRent(Number(event.target.value))}
-        >
-          {RENT_OPTIONS.map((option) => (
-            <option key={option.value} value={option.value}>
-              {option.value === 0 ? '월세 전체' : `월세 ${option.label}`}
-            </option>
-          ))}
-        </select>
       </div>
       {preview.topAreas.length > 0 ? (
         <div className={styles.areaList}>
@@ -212,6 +201,7 @@ const NeighborhoodPreviewDesktopPage = ({ preview }: Props) => {
             interactive
             {...mapProps}
           />
+          <StreetMemoImpressionLog memos={memo.visibleMemos} />
           <AnalysisOverlay preview={preview} />
           {preview.isSelectingOnMap && (
             <>
@@ -244,6 +234,8 @@ const NeighborhoodPreviewDesktopPage = ({ preview }: Props) => {
                   {placesHint({ isClose: places.isClose, failed: places.failed || memo.isFailed })}
                 </small>
               </div>
+              {/* 월세 시세는 찾기 전이 아니라 결과 지도 위에서 고른다. 끄는 동안 지도 색과 왼쪽 순위가 바로 바뀐다. */}
+              <RentSlider preview={preview} className={styles.rentCard} />
               <LocationControls preview={preview} isResult />
               {preview.isPublicExplore && recordArea && (
                 <div className={`${shared.recordAction} ${styles.recordAction}`}>
@@ -324,18 +316,13 @@ const styles = {
     flex-wrap: wrap;
     gap: 0.35rem;
 
-    & > span,
-    & select {
+    & > span {
       padding: 0.4rem 0.65rem;
       border: 1px solid var(--color-border);
       border-radius: 999px;
       background: white;
       color: var(--color-ink);
       font-size: 0.75rem;
-    }
-
-    & select {
-      cursor: pointer;
     }
   `,
 
@@ -365,6 +352,21 @@ const styles = {
     top: 1rem;
     left: 1rem;
     z-index: 31;
+  `,
+
+  /* 지도 아래 왼쪽에 띄우는 월세 슬라이더 카드. 오른쪽 위치 버튼과 겹치지 않게 폭을 둔다. */
+  rentCard: css`
+    label: NeighborhoodPreviewDesktopPage-rentCard;
+    position: absolute;
+    bottom: 1.25rem;
+    left: 1rem;
+    z-index: 31;
+    width: min(22rem, calc(100% - 6rem));
+    padding: 0.9rem 1.1rem 0.6rem;
+    border: 1px solid var(--color-border);
+    border-radius: 1rem;
+    background: white;
+    box-shadow: 0 0.4rem 1.2rem rgb(0 0 0 / 12%);
   `,
 
   recordAction: css`

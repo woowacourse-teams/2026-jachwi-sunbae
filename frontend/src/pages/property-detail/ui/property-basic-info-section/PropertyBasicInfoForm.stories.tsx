@@ -33,11 +33,13 @@ const meta = {
       description: '상세에서 누른 항목. 이 항목만 보여 주고 저장한다.',
     },
     onSaved: { description: '저장 요청이 성공하면 부른다.' },
+    onCancel: { description: 'Esc를 누르거나 바뀐 값 없이 떠나면 부른다.' },
   },
   args: {
     property,
     field: 'price',
     onSaved: fn(),
+    onCancel: fn(),
   },
   decorators: [
     (Story) => (

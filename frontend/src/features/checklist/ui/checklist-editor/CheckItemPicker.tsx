@@ -1,5 +1,6 @@
 import { Fragment, useMemo, useState } from 'react';
 
+import useDelayedLoading from '@/shared/lib/hooks/useDelayedLoading';
 import BottomActionArea from '@/shared/ui/bottom-action-area/BottomActionArea';
 import { Button } from '@/shared/ui/button/Button';
 import SearchField from '@/shared/ui/search-field/SearchField';
@@ -23,6 +24,8 @@ const CheckItemPicker = ({ stage, existingSourceIds, disabled, onCancel, onAdd }
   const [query, setQuery] = useState('');
   const [selectedIds, setSelectedIds] = useState<Set<number>>(() => new Set());
   const result = useCheckItemSearch(stage, query);
+  // 빠른 응답에는 불러오는 중 문구 없이 바로 항목을 보여 주고, 오래 걸릴 때만 알린다.
+  const isLoadingVisible = useDelayedLoading(result.isPending);
   const items = useMemo(() => result.data?.pages.flatMap((page) => page.content) ?? [], [result.data]);
   const existingIds = useMemo(() => new Set(existingSourceIds), [existingSourceIds]);
   const orderedItems = useMemo(
@@ -83,10 +86,12 @@ const CheckItemPicker = ({ stage, existingSourceIds, disabled, onCancel, onAdd }
           </Button>
         </BottomActionArea>
 
-        {result.isPending ? (
-          <div className={styles.compactState} role="status">
-            <span className="spinner" /> 항목을 불러오는 중이에요.
-          </div>
+        {result.isPending || isLoadingVisible ? (
+          isLoadingVisible && (
+            <div className={styles.compactState} role="status">
+              <span className="spinner" /> 항목을 불러오는 중이에요.
+            </div>
+          )
         ) : result.isError ? (
           <div className={styles.pickerError} role="alert">
             <span>{getChecklistErrorMessage(result.error)}</span>

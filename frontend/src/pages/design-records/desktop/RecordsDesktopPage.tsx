@@ -4,6 +4,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 
 import PropertyDetailPage from '@/pages/property-detail/PropertyDetailPage';
 import type { MapAddress } from '@/features/map/model/Map';
+import useDelayedLoading from '@/shared/lib/hooks/useDelayedLoading';
 import { RECORDS_PATH } from '@/shared/lib/navigation/appPaths';
 import DesktopHeader from '@/shared/ui/desktop-header/DesktopHeader';
 import DesktopHeaderSlot, { DesktopHeaderSlotProvider } from '@/shared/ui/desktop-header/DesktopHeaderSlot';
@@ -37,10 +38,10 @@ const RecordsDesktopPage = () => {
   // 지도에서 찍어 매물을 만드는 중인 위치. 만드는 동안 그 자리에 등록 핀을 둔다.
   const [creatingAt, setCreatingAt] = useState<MapAddress | null>(null);
   const quickCreate = useQuickCreateProperty({
-    onCreated: (propertyId) => {
+    onCreated: (propertyId, location) => {
       setCreatingAt(null);
-      records.setDistrict('전체');
-      setSelectedId(String(propertyId));
+      // 지도도 새 매물 자리로 다가가 핀을 띄운다. 상세는 리스트 옆 칸에 연다.
+      records.revealCreated(String(propertyId), location);
       setNotice('매물을 기록했어요. 항목을 눌러 정보를 채워 주세요.');
     },
     onError: () => {
@@ -52,6 +53,7 @@ const RecordsDesktopPage = () => {
   const layers = useRecordsMapLayers(records, {
     initialCategory: 'MEMO',
     registeringAt: creatingAt,
+    groupAction: 'zoom',
     onRegister: (location) => {
       if (quickCreate.isCreating) return;
       setCreatingAt(location);
@@ -59,25 +61,31 @@ const RecordsDesktopPage = () => {
     },
   });
   const closeDetail = () => setSelectedId(null);
+  const isSkeletonVisible = useDelayedLoading(records.properties.isPending);
 
-  const list = records.properties.isPending ? (
-    <RecordListSkeleton className={styles.list} />
-  ) : records.properties.isError ? (
-    <RecordLoadError
-      className={styles.list}
-      error={records.properties.error}
-      onRetry={() => void records.properties.refetch()}
-    />
-  ) : (
-    <RecordList
-      className={styles.list}
-      records={records.records}
-      district={records.district}
-      commute={records.commute}
-      onOpen={setSelectedId}
-      onNotice={setNotice}
-    />
-  );
+  // 빠른 응답에는 뼈대 없이 빈 칸을 두었다가 바로 목록을 보여 주고, 오래 걸릴 때만 뼈대를 보여 준다.
+  const list =
+    records.properties.isPending || isSkeletonVisible ? (
+      isSkeletonVisible ? (
+        <RecordListSkeleton className={styles.list} />
+      ) : (
+        <div className={styles.list} />
+      )
+    ) : records.properties.isError ? (
+      <RecordLoadError
+        className={styles.list}
+        error={records.properties.error}
+        onRetry={() => void records.properties.refetch()}
+      />
+    ) : (
+      <RecordList
+        className={styles.list}
+        records={records.records}
+        district={records.district}
+        onOpen={setSelectedId}
+        onNotice={setNotice}
+      />
+    );
 
   const detail =
     selected !== undefined ? (

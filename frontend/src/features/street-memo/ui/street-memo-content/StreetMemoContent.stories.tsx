@@ -26,6 +26,7 @@ const dislikeMemo: StreetMemo = {
 /** 화면이 Hook으로 만드는 메모 겹 상태를 표본으로 만든다. */
 const makeLayer = (overrides: Partial<StreetMemoLayer>): StreetMemoLayer => ({
   markers: [],
+  visibleMemos: [],
   isFailed: false,
   mode: null,
   selectedMemos: [],
@@ -34,6 +35,7 @@ const makeLayer = (overrides: Partial<StreetMemoLayer>): StreetMemoLayer => ({
   submitFailed: false,
   removingId: null,
   removeFailedId: null,
+  memosOf: fn(() => []),
   selectMarker: fn(() => false),
   startDraft: fn(),
   submit: fn(),

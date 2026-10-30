@@ -2,10 +2,9 @@ import { css } from '@emotion/css';
 
 import { Button } from '@/shared/ui/button/Button';
 import { SegmentedControl, SegmentedControlItem } from '@/shared/ui/segmented-control/SegmentedControl';
-import Slider from '@/shared/ui/slider/Slider';
 
 import type { NeighborhoodPreviewContext } from '../../hooks/useNeighborhoodPreview';
-import { MINUTE_OPTIONS, RENT_OPTIONS } from '../../NeighborhoodFilters';
+import { MINUTE_OPTIONS } from '../../NeighborhoodFilters';
 
 type ConditionPanelProps = {
   preview: Pick<
@@ -20,8 +19,6 @@ type ConditionPanelProps = {
     | 'changeMaxMinutes'
     | 'maxTransfers'
     | 'changeMaxTransfers'
-    | 'maxRent'
-    | 'changeMaxRent'
     | 'isValidCommuteTime'
   >;
   disabled: boolean;
@@ -31,13 +28,9 @@ type ConditionPanelProps = {
 /**
  * 데스크탑 동네 찾기의 왼쪽 칸. 휴대폰은 지도 아래 카드의 조건 칸을 눌러 휠로 고르지만,
  * 데스크탑은 본 방 기록처럼 왼쪽 칸에 출퇴근 장소·조건·찾기 버튼을 펼쳐 두고 지도는 위치를 찍는 데만 쓴다.
+ * 월세 시세는 찾기 전에 고르지 않는다. 결과 지도 위 슬라이더에서 언제든 바꿔 가며 바로 본다.
  */
 const ConditionPanel = ({ preview, disabled, onSubmit }: ConditionPanelProps) => {
-  const rentIndex = Math.max(
-    0,
-    RENT_OPTIONS.findIndex((option) => option.value === preview.maxRent),
-  );
-  const rentOption = RENT_OPTIONS[rentIndex] ?? RENT_OPTIONS[0];
   return (
     <aside className={styles.panel} aria-label="탐색 조건">
       <h2>어디로 출퇴근·통학하세요?</h2>
@@ -95,19 +88,6 @@ const ConditionPanel = ({ preview, disabled, onSubmit }: ConditionPanelProps) =>
           ))}
         </SegmentedControl>
       </fieldset>
-      {/* 선택지가 여러 개라 버튼 대신 슬라이더로 고른다. 끌면서 바로 값을 보고 화살표 키로도 움직인다. */}
-      <Slider
-        label="월세 시세"
-        indicator={rentOption.label}
-        description="최근 6개월 실거래 월세 중앙값으로 걸러요."
-        min={0}
-        max={RENT_OPTIONS.length - 1}
-        values={[rentIndex]}
-        onValuesChange={([index]) => preview.changeMaxRent(RENT_OPTIONS[index ?? 0]?.value ?? 0)}
-        disabled={disabled}
-        getAriaLabel={() => '최대 월세 시세'}
-        getAriaValuetext={() => rentOption.label}
-      />
       <Button
         className={styles.submit}
         fullWidth

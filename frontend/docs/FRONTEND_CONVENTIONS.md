@@ -178,6 +178,8 @@ const DesignHomePage = () => (useIsDesktop() ? <HomeDesktopPage /> : <HomeMobile
 - 조회·변경 Query Hook도 같은 기능의 `api`에 둡니다.
 - 화면에는 최소한 loading, error, empty, success 상태를 고려합니다.
 - 페이지 전체를 조회 결과로 그릴 때는 `shared/ui/query-state/QueryState`로 로딩·오류 화면을 맡깁니다. 오류 안내는 `describePropertyLoadError`, `describeChecklistLoadError`처럼 소유 기능의 `api`에서 만듭니다.
+- 화면 일부만 불러올 때는 `shared/ui/delayed-fallback/DelayedFallback`으로 감쌉니다. 500ms 안에 끝나면 로딩 UI 없이 빈자리(`placeholder`)만 두었다가 바로 내용을 보여 주고, 그보다 길어지면 `fallback`을 띄워 최소 250ms는 남깁니다. 오류 처리는 맡지 않습니다. 감싸기 어려운 곳(스켈레톤, 지도 안내 등)은 같은 규칙의 `useDelayedLoading`을 씁니다.
+- 공용 `Button`의 `isLoading`은 켜지는 즉시 두 번째 클릭을 막고 `aria-busy`를 달지만, 스피너와 문구, 비활성 모양은 500ms가 지나야 보여 줍니다. 라우트 Suspense 대체 화면(`RouteLoading`)도 처음엔 투명하게 두고 500ms 뒤 CSS 애니메이션으로 나타냅니다.
 - 오류 코드는 `isApiErrorCode(error, 'CODE')`로 확인합니다.
 - 서버 상태와 UI 상태를 구분합니다. 서버에서 가져온 데이터를 불필요하게 여러 컴포넌트의 로컬 상태로 복사하지 않습니다.
 
@@ -187,6 +189,11 @@ const DesignHomePage = () => (useIsDesktop() ? <HomeDesktopPage /> : <HomeMobile
 - 클릭 동작에는 가능한 한 `div` 대신 `button`이나 `a`를 사용합니다.
 - 폼 입력에는 label을 제공합니다.
 - 키보드만으로도 주요 기능을 사용할 수 있어야 합니다.
+- 누른 버튼을 저장하는 동안 막을 때는 `disabled` 대신 `aria-disabled`를 걸고 핸들러에서 돌아갑니다. `disabled`가 되면 포커스가 `body`로 빠집니다.
+- 입력칸처럼 포커스가 있던 요소를 닫으면 그 요소를 연 버튼으로 포커스를 돌립니다.
+- 값이 바뀌어도 화면으로만 알 수 있는 숫자(평가 개수 등)는 `role="status"`로 알립니다. `2 / 3`처럼 기호로 읽히는 표기는 `sr-only` 문장("3개 중 2개 평가")을 따로 둡니다.
+- 버튼에 `aria-label`을 주면 버튼 안 글자는 읽히지 않습니다. 화면에 보이는 값은 이름에도 넣습니다(`InfoValue`: "매물 이름 신림역 원룸, 수정").
+- 화면마다 `shared/lib/hooks/useDocumentTitle`로 탭 제목을 "화면 | 자취선배"로 바꿉니다. 지금은 매물 상세에만 적용했습니다.
 - 색상만으로 상태를 전달하지 않습니다.
 
 ## 9. 검사 명령어

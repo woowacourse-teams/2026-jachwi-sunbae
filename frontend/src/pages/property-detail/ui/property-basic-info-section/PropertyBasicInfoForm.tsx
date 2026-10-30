@@ -1,4 +1,5 @@
-import { type FormEvent, useCallback, useEffect, useRef, useState } from 'react';
+import { css } from '@emotion/css';
+import { type FocusEvent, type FormEvent, type KeyboardEvent, useCallback, useEffect, useRef, useState } from 'react';
 
 import useAddressSearch from '@/pages/create-property/hooks/useAddressSearch';
 import usePropertyLocation from '@/pages/create-property/hooks/usePropertyLocation';
@@ -20,13 +21,14 @@ import { Button } from '@/shared/ui/button/Button';
 
 import type { BasicEditField } from '../../model/editField';
 
-import * as styles from '../property-edit-sheet/PropertyEditSheet.styles';
-
 type PropertyBasicInfoFormProps = {
   property: PropertyDetail;
   /** 상세에서 누른 항목만 보여 주고 그 값만 바꿔 저장한다. */
   field: BasicEditField;
+  /** 저장을 마쳤을 때. 바뀐 값이 없으면 저장하지 않고 onCancel을 부른다. */
   onSaved: () => void;
+  /** Esc를 누르거나 바뀐 값 없이 입력을 떠났을 때. */
+  onCancel: () => void;
 };
 
 type BasicInfoValues = { depositAmount: string; monthlyRentAmount: string };
@@ -55,12 +57,14 @@ const toPriceInputs = ({ depositAmount, monthlyRentAmount }: PropertyDetail) =>
       };
 
 /**
- * 상세 시트에서 기본 정보(보증금과 월세, 위치) 중 누른 항목 하나를 고친다. 이름은 상세 줄에서 바로 고친다.
- * 위치는 지도를 옮기거나 주소를 고른 경우에만 보낸다.
+ * 상세의 그 줄 안에서 기본 정보(보증금과 월세, 위치) 중 누른 항목 하나를 고친다. 이름은 `PropertyNameInput`이 맡는다.
+ * 보증금과 월세는 입력을 마치고 칸을 떠나거나 엔터를 누르면 바로 저장하고, Esc는 저장하지 않고 닫는다.
+ * 위치는 지도를 옮기는 동안 저장하면 안 되므로 `이 위치로 저장`을 눌러야 저장한다. 지도를 옮기거나 주소를 고른 경우에만 보낸다.
  */
-const PropertyBasicInfoForm = ({ property, field, onSaved }: PropertyBasicInfoFormProps) => {
+const PropertyBasicInfoForm = ({ property, field, onSaved, onCancel }: PropertyBasicInfoFormProps) => {
   const updateProperty = useUpdateProperty(property.propertyId);
-  const [values, setValues] = useState<BasicInfoValues>(() => toPriceInputs(property));
+  const [initialValues] = useState<BasicInfoValues>(() => toPriceInputs(property));
+  const [values, setValues] = useState<BasicInfoValues>(initialValues);
   const [errors, setErrors] = useState<PropertyFormErrors>({});
   const [notice, setNotice] = useState<string | null>(null);
   const [presetLocation] = useState(() => toPresetLocation(property));
@@ -126,7 +130,15 @@ const PropertyBasicInfoForm = ({ property, field, onSaved }: PropertyBasicInfoFo
     }
 
     if (field === 'location' && !moved) {
-      onSaved();
+      onCancel();
+      return;
+    }
+    if (
+      field === 'price' &&
+      values.depositAmount === initialValues.depositAmount &&
+      values.monthlyRentAmount === initialValues.monthlyRentAmount
+    ) {
+      onCancel();
       return;
     }
 
@@ -147,10 +159,29 @@ const PropertyBasicInfoForm = ({ property, field, onSaved }: PropertyBasicInfoFo
       .catch(() => undefined);
   };
 
+  // 금액은 입력 칸 둘 밖으로 떠나면 저장한다. 보증금에서 월세로 옮길 때는 저장하지 않는다.
+  const saveOnLeave = (event: FocusEvent<HTMLFormElement>) => {
+    if (field !== 'price' || updateProperty.isPending) return;
+    if (event.currentTarget.contains(event.relatedTarget as Node | null)) return;
+    event.currentTarget.requestSubmit();
+  };
+  const cancelOnEscape = (event: KeyboardEvent<HTMLFormElement>) => {
+    if (event.key !== 'Escape') return;
+    event.stopPropagation();
+    onCancel();
+  };
+
   return (
-    <form className={styles.editor} noValidate onSubmit={submit}>
+    <form
+      className={styles.editor}
+      aria-label={field === 'price' ? '보증금 / 월세 입력' : '주소 입력'}
+      noValidate
+      onSubmit={submit}
+      onBlur={saveOnLeave}
+      onKeyDown={cancelOnEscape}
+    >
       {field === 'price' && (
-        <>
+        <div className={styles.priceRow}>
           <MoneyField
             label="보증금"
             value={values.depositAmount}
@@ -164,7 +195,7 @@ const PropertyBasicInfoForm = ({ property, field, onSaved }: PropertyBasicInfoFo
             error={errors.monthlyRentAmount}
             onValueChange={(value) => setValue('monthlyRentAmount', value)}
           />
-        </>
+        </div>
       )}
       {field === 'location' && (
         <PropertyLocationPicker
@@ -198,11 +229,67 @@ const PropertyBasicInfoForm = ({ property, field, onSaved }: PropertyBasicInfoFo
           저장하지 못했어요. 다시 시도해 주세요.
         </p>
       )}
-      <Button type="submit" variant="soft" fullWidth isLoading={updateProperty.isPending} loadingLabel="저장 중…">
-        저장
-      </Button>
+      {field === 'price' ? (
+        // 금액은 떠나면 저장하므로 버튼 없이 저장 중임만 알린다. 엔터로 보내는 숨은 제출 버튼을 둔다.
+        <>
+          {updateProperty.isPending && (
+            <p className={styles.status} role="status">
+              저장 중…
+            </p>
+          )}
+          <button type="submit" hidden aria-hidden="true" tabIndex={-1} />
+        </>
+      ) : (
+        <div className={styles.actions}>
+          <Button type="button" variant="secondary" onClick={onCancel}>
+            취소
+          </Button>
+          <Button type="submit" variant="soft" isLoading={updateProperty.isPending} loadingLabel="저장 중…">
+            이 위치로 저장
+          </Button>
+        </div>
+      )}
     </form>
   );
+};
+
+const styles = {
+  editor: css`
+    label: PropertyBasicInfoForm-editor;
+    display: grid;
+    gap: 0.75rem;
+    padding: 0.25rem 0 0.5rem;
+  `,
+
+  /* 보증금과 월세는 한 줄에 나란히 둔다. */
+  priceRow: css`
+    label: PropertyBasicInfoForm-priceRow;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.6rem;
+  `,
+
+  actions: css`
+    label: PropertyBasicInfoForm-actions;
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.5rem;
+  `,
+
+  status: css`
+    label: PropertyBasicInfoForm-status;
+    margin: 0;
+    color: var(--color-ink-soft);
+    font-size: 0.78rem;
+  `,
+
+  errorNotice: css`
+    label: PropertyBasicInfoForm-errorNotice;
+    margin: 0;
+    color: var(--color-error);
+    font-size: 0.8rem;
+    font-weight: 600;
+  `,
 };
 
 export default PropertyBasicInfoForm;

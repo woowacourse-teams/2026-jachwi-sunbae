@@ -3,6 +3,7 @@ import { css, cx } from '@emotion/css';
 import useAddressSearch from '@/features/map/api/useAddressSearch';
 import AddressSearchResults from '@/features/map/ui/address-search-results/AddressSearchResults';
 import MapCanvas from '@/features/map/ui/map-canvas/MapCanvas';
+import useDelayedLoading from '@/shared/lib/hooks/useDelayedLoading';
 import BottomSheet from '@/shared/ui/bottom-sheet/BottomSheet';
 import { Button } from '@/shared/ui/button/Button';
 import EmptyState from '@/shared/ui/empty-state/EmptyState';
@@ -21,6 +22,8 @@ type RestaurantPanelProps = { isActive: boolean; layout: MealLayout };
 
 const RestaurantPanel = ({ isActive, layout }: RestaurantPanelProps) => {
   const map = useRestaurantMap(isActive);
+  // 빠른 응답에는 찾는 중 문구 없이 바로 가게를 보여 주고, 오래 걸릴 때만 알린다.
+  const isLoadingVisible = useDelayedLoading(map.query.isPending);
   const search = useAddressSearch();
   const data = map.query.isError ? undefined : map.query.data;
   const locate = () => void map.locate();
@@ -75,42 +78,43 @@ const RestaurantPanel = ({ isActive, layout }: RestaurantPanelProps) => {
       )}
     </>
   );
-  const storeList = map.query.isPending ? (
-    <p role="status">주변 가게를 찾고 있어요…</p>
-  ) : map.query.isError ? (
-    <div role="alert">
-      <p>가게 정보를 불러오지 못했어요.</p>
-      <Button onClick={() => void map.query.refetch()}>다시 시도</Button>
-    </div>
-  ) : data?.count === 0 ? (
-    <EmptyState
-      variant="plain"
-      icon="map"
-      title="이 반경 안에 등록된 가게가 없어요"
-      description="지도를 옮겨 다시 찾거나 다른 동네를 검색해 보세요."
-      action={
-        <Button variant="secondary" onClick={map.openSearch}>
-          다른 동네 찾기
-        </Button>
-      }
-    />
-  ) : (
-    <>
-      <p className={styles.notice}>가까운 순 · 기준 위치에서 직선거리 · 등록 가격</p>
-      <ul className={styles.list} aria-label="가게 목록">
-        {data?.stores.map((store) => (
-          <li key={store.id}>
-            <StoreCard store={store} onSelect={map.openStore} />
-          </li>
-        ))}
-      </ul>
-      <InlineNotice>
-        행정안전부 착한가격업소 현황 · {data?.dataAsOf ?? '기준일 정보 없음'}
-        <br />
-        방문 전 가격과 영업 여부를 확인해 주세요.
-      </InlineNotice>
-    </>
-  );
+  const storeList =
+    map.query.isPending || isLoadingVisible ? (
+      isLoadingVisible && <p role="status">주변 가게를 찾고 있어요…</p>
+    ) : map.query.isError ? (
+      <div role="alert">
+        <p>가게 정보를 불러오지 못했어요.</p>
+        <Button onClick={() => void map.query.refetch()}>다시 시도</Button>
+      </div>
+    ) : data?.count === 0 ? (
+      <EmptyState
+        variant="plain"
+        icon="map"
+        title="이 반경 안에 등록된 가게가 없어요"
+        description="지도를 옮겨 다시 찾거나 다른 동네를 검색해 보세요."
+        action={
+          <Button variant="secondary" onClick={map.openSearch}>
+            다른 동네 찾기
+          </Button>
+        }
+      />
+    ) : (
+      <>
+        <p className={styles.notice}>가까운 순 · 기준 위치에서 직선거리 · 등록 가격</p>
+        <ul className={styles.list} aria-label="가게 목록">
+          {data?.stores.map((store) => (
+            <li key={store.id}>
+              <StoreCard store={store} onSelect={map.openStore} />
+            </li>
+          ))}
+        </ul>
+        <InlineNotice>
+          행정안전부 착한가격업소 현황 · {data?.dataAsOf ?? '기준일 정보 없음'}
+          <br />
+          방문 전 가격과 영업 여부를 확인해 주세요.
+        </InlineNotice>
+      </>
+    );
   const searchSheet = map.isSearchOpen && isActive && (
     <MealSheet title="어느 동네를 둘러볼까요?" layout={layout} onClose={map.closeOverlay}>
       <Button fullWidth variant="secondary" isLoading={map.isLocating} onClick={locate}>
