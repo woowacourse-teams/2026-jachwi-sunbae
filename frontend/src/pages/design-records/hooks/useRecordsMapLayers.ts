@@ -1,11 +1,11 @@
 import { useMemo, useState } from 'react';
 
 import { reverseGeocode } from '@/features/map/api/mapApi';
-import { useNearbyFacilities } from '@/features/map/api/useNearbyFacilities';
 import { useViewportBusStops } from '@/features/map/api/useViewportBusStops';
+import { useViewportFacilities } from '@/features/map/api/useViewportFacilities';
 import { clusterNearbyPlaces } from '@/features/map/lib/mapClustering';
 import { SERVICE_MAP_STYLE_ID } from '@/features/map/lib/mapStyle';
-import { isInBounds, viewportQuery, viewportTiles } from '@/features/map/lib/mapViewportQuery';
+import { facilityCells, viewportTiles } from '@/features/map/lib/mapViewportQuery';
 import type { MapAddress, MapBounds, MapCategory, MapMarker, NearbyPlace } from '@/features/map/model/Map';
 import type { MapCanvasProps, MapCoordinateMenu, MapTapAction } from '@/features/map/model/MapCanvas';
 import useStreetMemoLayer from '@/features/street-memo/hooks/useStreetMemoLayer';
@@ -20,7 +20,6 @@ import type { RecordsState } from './useRecords';
 const REGISTER_MARKER_ID = 'register-point';
 /** 겹쳐 묶인 매물 마커 id의 머리. 뒤에 묶인 매물 id를 쉼표로 잇는다. */
 const RECORD_GROUP_PREFIX = 'record-group:';
-const NO_CATEGORIES: MapCategory[] = [];
 /** 이 단계보다 멀리 축소하면 거리 메모를 숨긴다. 도시 전체를 볼 때는 골목 메모가 쓸모없다. */
 const MEMO_MAX_LEVEL = 10;
 
@@ -106,15 +105,16 @@ const useRecordsMapLayers = (
   const memo = useStreetMemoLayer(category === 'MEMO' && level <= MEMO_MAX_LEVEL, bounds);
 
   const facilityCategory = category !== null && category !== 'MEMO' ? category : null;
-  const query = useMemo(() => (bounds ? viewportQuery(bounds) : null), [bounds]);
-  // 정류장은 화면 가장자리까지 빠짐없이 보이게 화면을 칸으로 나눠 조회하고, 다른 시설은 화면 가운데 반경으로 조회한다.
+  // 시설은 화면 가장자리까지 빠짐없이 보이게 화면을 칸으로 나눠 조회한다. 정류장은 큰 칸 네 개로, 다른 시설은 촘촘해 작은 격자 칸으로 나눈다.
   const showsTransport = facilityCategory === 'TRANSPORT';
-  const selectedCategories = facilityCategory === null || showsTransport ? NO_CATEGORIES : [facilityCategory];
-  const nearby = useNearbyFacilities(
-    query?.center ?? { latitude: 0, longitude: 0 },
-    query?.radius ?? 500,
-    selectedCategories,
-    query !== null && facilityCategory !== null && !showsTransport,
+  const cells = useMemo(
+    () => (bounds && facilityCategory !== null && !showsTransport ? facilityCells(bounds) : []),
+    [bounds, facilityCategory, showsTransport],
+  );
+  const facilities = useViewportFacilities(
+    cells,
+    bounds,
+    facilityCategory === null || facilityCategory === 'TRANSPORT' ? null : facilityCategory,
   );
   const tiles = useMemo(() => (bounds ? viewportTiles(bounds) : []), [bounds]);
   const busStops = useViewportBusStops(tiles, bounds, showsTransport);
@@ -130,10 +130,8 @@ const useRecordsMapLayers = (
             category: 'TRANSPORT',
             address: '',
           }))
-        : bounds
-          ? nearby.data.places.filter((place) => isInBounds(place, bounds))
-          : [],
-    [showsTransport, busStops.busStops, nearby.data.places, bounds],
+        : facilities.places,
+    [showsTransport, busStops.busStops, facilities.places],
   );
   const counts = useMemo(() => {
     const result: Partial<Record<MapCategory, number>> = {};
@@ -302,7 +300,7 @@ const useRecordsMapLayers = (
     tapPoint,
     tapActions,
     isResolvingAddress,
-    facilitiesFailed: showsTransport ? busStops.isError : facilityCategory !== null && nearby.isError,
+    facilitiesFailed: showsTransport ? busStops.isError : facilities.isError,
     coordinateMenu: (tapPoint === null ? undefined : { ...tapPoint, actions: tapActions }) satisfies
       MapCoordinateMenu | undefined,
     /** 같은 카테고리를 다시 누르면 끈다. */
