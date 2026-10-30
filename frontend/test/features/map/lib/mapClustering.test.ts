@@ -36,7 +36,7 @@ describe('지도 장소 군집', () => {
         place('bus-2', 37.56655, 126.978),
         place('hospital-3', 37.57, 126.982, 'HOSPITAL'),
       ],
-      5,
+      6,
     );
 
     expect(markers).toHaveLength(2);
@@ -111,9 +111,7 @@ describe('지도 군집 반경', () => {
   ];
 
   it.each([
-    [4, 80, 2],
-    [5, 150, 1],
-    [5, 300, 2],
+    [5, 10, 2],
     [6, 300, 1],
     [6, 600, 2],
     [7, 600, 1],
@@ -129,12 +127,12 @@ describe('지도 군집 반경', () => {
     // 경도 0.0011도는 적도에서 약 122m지만 위도 37.57도에서는 약 97m다.
     const pair = [place('a-1', base.latitude, base.longitude), place('a-2', base.latitude, base.longitude + 0.0011)];
 
-    expect(clusterNearbyPlaces(pair, 4)).toHaveLength(2);
-    expect(clusterNearbyPlaces(pair, 5)).toHaveLength(1);
+    expect(clusterNearbyPlaces(pair, 6)).toHaveLength(1);
+    expect(clusterNearbyPlaces([place('a-1', 0, 0), place('a-2', 0, 0.0045)], 6)).toHaveLength(2);
   });
 
-  it('레벨 3 이하에서는 좌표가 같아도 묶지 않는다', () => {
-    expect(clusterNearbyPlaces([place('a-1', 37.5665, 126.978), place('a-2', 37.5665, 126.978)], 3)).toHaveLength(2);
+  it('동네가 보이는 배율(5) 이하에서는 좌표가 같아도 시설을 묶지 않고, 매물은 3 이하에서 묶지 않는다', () => {
+    expect(clusterNearbyPlaces([place('a-1', 37.5665, 126.978), place('a-2', 37.5665, 126.978)], 5)).toHaveLength(2);
     expect(clusterProperties([pin(1, 37.5665, 126.978), pin(2, 37.5665, 126.978)], 3)).toHaveLength(2);
   });
 });
@@ -159,22 +157,22 @@ describe('지도 군집 마커 식별자와 중심', () => {
   it('장소는 가까운 순서로 군집의 씨앗이 되고, 거리가 같으면 provider id 순서를 따른다', () => {
     const origin = 37.5665;
     const places = [
-      place('far-30', origin + metersToLatitude(320), 126.978),
+      place('far-30', origin + metersToLatitude(640), 126.978),
       place('near-10', origin, 126.978),
-      place('mid-20', origin + metersToLatitude(160), 126.978),
+      place('mid-20', origin + metersToLatitude(320), 126.978),
     ];
 
-    const markers = clusterNearbyPlaces(places, 5);
+    const markers = clusterNearbyPlaces(places, 6);
 
     expect(markers.map((marker) => marker.id).sort()).toEqual(['cluster-mid-20-near-10', 'place-far-30']);
 
     const tie = [
-      place('b-5', origin + metersToLatitude(320), 126.978),
-      place('c-5', origin + metersToLatitude(150), 126.978),
+      place('b-5', origin + metersToLatitude(640), 126.978),
+      place('c-5', origin + metersToLatitude(300), 126.978),
       place('a-5', origin, 126.978),
     ];
     expect(
-      clusterNearbyPlaces(tie, 5)
+      clusterNearbyPlaces(tie, 6)
         .map((marker) => marker.id)
         .sort(),
     ).toEqual(['cluster-a-5-c-5', 'place-b-5']);

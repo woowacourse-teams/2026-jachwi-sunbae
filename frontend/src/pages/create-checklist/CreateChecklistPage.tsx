@@ -1,5 +1,5 @@
 import { css } from '@emotion/css';
-import { type ReactNode, useEffect } from 'react';
+import { useEffect } from 'react';
 
 import { getChecklistErrorMessage } from '@/features/checklist/api/checklistErrorMessages';
 import { useCreateChecklist } from '@/features/checklist/api/useChecklistMutations';
@@ -11,7 +11,11 @@ import useChecklistDraft, { type ChecklistDraftInput } from '@/features/checklis
 import useChecklistItemPickerRoute from '@/features/checklist/model/useChecklistItemPickerRoute';
 import CheckItemPicker from '@/features/checklist/ui/checklist-editor/CheckItemPicker';
 import ChecklistEditor from '@/features/checklist/ui/checklist-editor/ChecklistEditor';
+import ChecklistEditorFrame, {
+  ChecklistDesktopHeading,
+} from '@/features/checklist/ui/checklist-editor-frame/ChecklistEditorFrame';
 import { trackPostHogEvent } from '@/shared/lib/analytics/posthog';
+import useIsDesktop from '@/shared/lib/hooks/useIsDesktop';
 import useReturnNavigation from '@/shared/lib/navigation/useReturnNavigation';
 import TopNavigation from '@/shared/ui/top-navigation/TopNavigation';
 
@@ -26,6 +30,7 @@ const MY_CHECKLIST_NAME = '내 체크리스트';
 const CreateChecklistPage = () => {
   const goBack = useReturnNavigation({ cameFromTarget: true, fallback: '/' });
   const preset = useChecklistPreset(stage, 'ONE_ROOM', true);
+  const isDesktop = useIsDesktop();
 
   useEffect(() => {
     trackPostHogEvent('checklist_creation_started', { stage });
@@ -33,8 +38,8 @@ const CreateChecklistPage = () => {
 
   if (!preset.isSuccess)
     return (
-      <ChecklistEditorFrame>
-        <ChecklistEditNavigation onBack={goBack} />
+      <ChecklistEditorFrame isDesktop={isDesktop}>
+        <ChecklistEditNavigation isDesktop={isDesktop} onBack={goBack} />
         <ChecklistPresetStatus preset={preset} />
       </ChecklistEditorFrame>
     );
@@ -45,6 +50,7 @@ const CreateChecklistPage = () => {
 const CreateChecklistForm = ({ presetItems }: { presetItems: ChecklistPresetItem[] }) => {
   const goBack = useReturnNavigation({ cameFromTarget: true, fallback: '/' });
   const create = useCreateChecklist();
+  const isDesktop = useIsDesktop();
   const { isPickerOpen, openPicker, closePicker } = useChecklistItemPickerRoute();
   const draft = useChecklistDraft({
     initialName: MY_CHECKLIST_NAME,
@@ -72,7 +78,7 @@ const CreateChecklistForm = ({ presetItems }: { presetItems: ChecklistPresetItem
 
   if (isPickerOpen)
     return (
-      <ChecklistEditorFrame>
+      <ChecklistEditorFrame isDesktop={isDesktop}>
         <TopNavigation
           className={styles.topNavigation}
           title="체크 항목 편집"
@@ -93,8 +99,8 @@ const CreateChecklistForm = ({ presetItems }: { presetItems: ChecklistPresetItem
     );
 
   return (
-    <ChecklistEditorFrame>
-      <ChecklistEditNavigation onBack={goBack} />
+    <ChecklistEditorFrame isDesktop={isDesktop}>
+      <ChecklistEditNavigation isDesktop={isDesktop} onBack={goBack} />
       <ChecklistEditor
         stage={stage}
         draft={draft}
@@ -103,52 +109,30 @@ const CreateChecklistForm = ({ presetItems }: { presetItems: ChecklistPresetItem
         serverError={create.isError ? getChecklistErrorMessage(create.error) : undefined}
         onOpenItemPicker={openPicker}
         onSubmit={save}
+        isDesktop={isDesktop}
       />
     </ChecklistEditorFrame>
   );
 };
 
-const ChecklistEditorFrame = ({ children }: { children: ReactNode }) => (
-  <main className={`${styles.page} property-page checklist-page checklist-editor-page`}>
-    <div className={styles.container}>{children}</div>
-  </main>
-);
-
-const ChecklistEditNavigation = ({ onBack }: { onBack: () => void }) => (
-  <TopNavigation
-    className={styles.topNavigation}
-    title="체크리스트 편집"
-    backLabel="이전 화면으로 돌아가기"
-    navigationIcon="arrow-left"
-    onBack={onBack}
-  />
-);
+/** 휴대폰은 뒤로가기가 있는 제목 줄을, 데스크탑은 공용 헤더 아래 왼쪽 정렬 제목을 둔다. */
+const ChecklistEditNavigation = ({ isDesktop, onBack }: { isDesktop: boolean; onBack: () => void }) =>
+  isDesktop ? (
+    <ChecklistDesktopHeading />
+  ) : (
+    <TopNavigation
+      className={styles.topNavigation}
+      title="체크리스트 편집"
+      backLabel="이전 화면으로 돌아가기"
+      navigationIcon="arrow-left"
+      onBack={onBack}
+    />
+  );
 
 const styles = {
-  page: css`
-    label: CreateChecklistPage-page;
-    background: var(--color-canvas);
-  `,
-
   topNavigation: css`
     label: CreateChecklistPage-topNavigation;
     margin-bottom: 0;
-  `,
-
-  /* 휴대폰은 앱 열의 가로 폭을 그대로 쓰고, 데스크탑은 항목 줄이 너무 길어지지 않게 가운데 좁은 열에 둔다. */
-  container: css`
-    label: CreateChecklistPage-container;
-    width: 100%;
-
-    @media (min-width: 768px) {
-      max-width: 34rem;
-      margin-right: auto;
-      margin-left: auto;
-    }
-
-    & > [data-full-bleed='true'] {
-      margin-top: -0.15rem;
-    }
   `,
 };
 

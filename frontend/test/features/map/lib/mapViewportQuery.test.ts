@@ -1,7 +1,14 @@
 // @vitest-environment node
 import { expect, it } from 'vitest';
 
-import { distanceMeters, isInBounds, viewportQuery, viewportTiles } from '@/features/map/lib/mapViewportQuery';
+import {
+  distanceMeters,
+  facilityCells,
+  isInBounds,
+  MAX_FACILITY_CELLS,
+  viewportQuery,
+  viewportTiles,
+} from '@/features/map/lib/mapViewportQuery';
 
 const around = (halfLatitude: number, halfLongitude: number) => ({
   south: 37.5 - halfLatitude,
@@ -44,4 +51,42 @@ it('정류장 조회는 화면이 2km 안이면 한 번, 넘으면 네 칸으로
     [false, false],
     [false, true],
   ]);
+});
+
+it('시설은 화면을 고정 격자 칸으로 나눠, 칸 가운데에서 반경 500m로 칸 모서리까지 덮는다', () => {
+  // 약 670m x 440m 화면이라 400m 칸이 가로 2~3개, 세로 2~3개 걸친다.
+  const bounds = around(0.002, 0.0038);
+  const cells = facilityCells(bounds);
+  expect(cells.length).toBeGreaterThanOrEqual(4);
+  expect(cells.length).toBeLessThanOrEqual(MAX_FACILITY_CELLS);
+  for (const cell of cells) {
+    expect(cell.radius).toBe(500);
+    expect(distanceMeters(cell.center, { latitude: cell.bounds.north, longitude: cell.bounds.east })).toBeLessThan(500);
+  }
+  // 화면 네 모서리가 모두 어느 칸 안에 든다.
+  for (const corner of [
+    { latitude: bounds.south, longitude: bounds.west },
+    { latitude: bounds.north, longitude: bounds.east },
+    { latitude: bounds.south, longitude: bounds.east },
+    { latitude: bounds.north, longitude: bounds.west },
+  ])
+    expect(cells.some((cell) => isInBounds(corner, cell.bounds))).toBe(true);
+});
+
+it('지도를 조금 옮겨도 겹치는 칸은 같은 가운데로 조회해 캐시를 다시 쓴다', () => {
+  const before = facilityCells(around(0.002, 0.0038)).map((cell) => cell.center);
+  const moved = facilityCells({ south: 37.4981, north: 37.5021, west: 126.9963, east: 127.0039 }).map(
+    (cell) => cell.center,
+  );
+  expect(
+    moved.filter((center) =>
+      before.some((other) => other.latitude === center.latitude && other.longitude === center.longitude),
+    ).length,
+  ).toBeGreaterThan(0);
+});
+
+it('화면이 넓으면 가운데에 가까운 칸부터 상한만큼만 조회한다', () => {
+  const cells = facilityCells(around(0.02, 0.025));
+  expect(cells).toHaveLength(MAX_FACILITY_CELLS);
+  expect(cells.every((cell) => distanceMeters({ latitude: 37.5, longitude: 127 }, cell.center) < 800)).toBe(true);
 });

@@ -56,6 +56,44 @@ export const viewportTiles = (bounds: MapBounds): ViewportQuery[] => {
   ].map(viewportQuery);
 };
 
+/** 병원처럼 촘촘한 시설을 나눠 조회하는 칸 한 변. 카카오는 한 번에 거리순 45개까지만 주어, 반경 500m 조회도 도심에서는 200m 안팎만 채운다. */
+export const FACILITY_CELL_METERS = 400;
+/** 한 화면에서 조회하는 칸 수의 상한. 칸마다 카카오를 최대 세 번 부르므로, 넘으면 화면 가운데에 가까운 칸부터 이만큼만 조회한다. */
+export const MAX_FACILITY_CELLS = 9;
+const METERS_PER_LATITUDE = 111_320;
+
+/**
+ * 병원, 학교, 편의점, 중개사무소를 화면 가장자리까지 채우려고 화면을 고정된 격자 칸으로 나눈다.
+ * 칸을 화면이 아니라 지구 좌표 격자에 맞춰, 지도를 조금 옮겨도 겹치는 칸은 같은 요청이 되어 캐시를 다시 쓴다.
+ * 칸 가운데에서 반경 500m로 조회하면 칸 모서리(약 283m)까지 덮는다.
+ */
+export const facilityCells = (bounds: MapBounds): ViewportQuery[] => {
+  const latitudeStep = FACILITY_CELL_METERS / METERS_PER_LATITUDE;
+  const middle = { latitude: (bounds.south + bounds.north) / 2, longitude: (bounds.west + bounds.east) / 2 };
+  const cells: ViewportQuery[] = [];
+  for (let row = Math.floor(bounds.south / latitudeStep); row * latitudeStep < bounds.north; row++) {
+    // 경도 칸 폭은 화면이 아니라 그 줄의 위도로 정해, 지도를 옮겨도 같은 자리는 같은 칸이 된다.
+    const rowLatitude = (row + 0.5) * latitudeStep;
+    const longitudeStep = FACILITY_CELL_METERS / (METERS_PER_LATITUDE * Math.cos(toRadians(rowLatitude)));
+    for (let column = Math.floor(bounds.west / longitudeStep); column * longitudeStep < bounds.east; column++) {
+      const cell = {
+        south: row * latitudeStep,
+        north: (row + 1) * latitudeStep,
+        west: column * longitudeStep,
+        east: (column + 1) * longitudeStep,
+      };
+      cells.push({
+        center: { latitude: round((cell.south + cell.north) / 2), longitude: round((cell.west + cell.east) / 2) },
+        radius: 500,
+        bounds: cell,
+      });
+    }
+  }
+  return cells
+    .sort((a, b) => distanceMeters(middle, a.center) - distanceMeters(middle, b.center))
+    .slice(0, MAX_FACILITY_CELLS);
+};
+
 export const isInBounds = (point: { latitude: number; longitude: number }, bounds: MapBounds) =>
   point.latitude >= bounds.south &&
   point.latitude <= bounds.north &&

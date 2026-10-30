@@ -43,13 +43,30 @@ export const recordsMapHint = (
     : base;
 };
 
-/** 카드 맨 위에 붙이는 목적지까지 직선거리 한 줄. 1km 아래는 10m 단위, 그 위는 소수 한 자리 km로 적는다. */
-export const destinationDistanceLabel = (destinationName: string, meters: number) => {
+/** 지도 레일 맨 아래 `통근` 칸. 통근 장소가 없으면 정하라고, 있으면 통근거리를 켜고 끈다고 읽어 준다. */
+export const destinationRailButton = (destination: {
+  name: string | null;
+  isShown: boolean;
+  isPicking: boolean;
+  toggle: () => void;
+}) => ({
+  shortLabel: '통근',
+  label:
+    destination.name === null
+      ? '통근 장소 정하기'
+      : `${destination.name}까지 통근거리 ${destination.isShown ? '숨기기' : '표시하기'}`,
+  pressed: destination.isShown || destination.isPicking,
+  onClick: destination.toggle,
+});
+
+/** 통근 장소까지 직선거리를 짧게 적는다. 1km 아래는 10m 단위, 그 위는 소수 한 자리 km로 적는다. 지도 핀의 가격 자리에 쓴다. */
+export const shortDistanceLabel = (meters: number) => {
   const rounded = Math.round(meters / 10) * 10;
-  return rounded < 1000
-    ? `${destinationName}까지 ${rounded}m`
-    : `${destinationName}까지 ${(meters / 1000).toFixed(1)}km`;
+  return rounded < 1000 ? `${rounded}m` : `${(meters / 1000).toFixed(1)}km`;
 };
+
+/** 리스트 카드 맨 위에 붙이는 통근거리 한 줄. 통근 장소 이름은 리스트 위 줄에 한 번만 적는다. */
+export const commuteDistanceLabel = (meters: number) => `통근거리 ${shortDistanceLabel(meters)}`;
 
 /** 카드에 붙이는 출퇴근 장소까지 통근 시간 한 줄. 서버는 60분·환승 2회 안에서만 시간을 구한다. */
 export const commuteLabel = (commute: PropertyCommuteTime, destinationName: string, maxMinutes: number) => {
