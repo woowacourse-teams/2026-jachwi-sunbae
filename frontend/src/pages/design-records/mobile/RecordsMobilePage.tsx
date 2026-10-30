@@ -121,12 +121,15 @@ const RecordsMobilePage = () => {
               </button>
             </header>
           )}
-          <RecordDistricts
-            districts={records.districts}
-            district={records.district}
-            onSelect={records.selectDistrict}
-            overMap={overMap}
-          />
+          {/* 목적지 모드에서는 동네 뱃지도 거둬 목적지 고르기만 남긴다. */}
+          {!(showsMap && layers.destination.isPicking) && (
+            <RecordDistricts
+              districts={records.districts}
+              district={records.district}
+              onSelect={records.selectDistrict}
+              overMap={overMap}
+            />
+          )}
         </div>
         <div className={styles.body}>
           {records.properties.isPending || isSkeletonVisible ? (

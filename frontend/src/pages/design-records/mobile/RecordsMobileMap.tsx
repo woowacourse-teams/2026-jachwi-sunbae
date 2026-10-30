@@ -28,18 +28,22 @@ const RecordsMobileMap = ({ records, layers }: Props) => {
   const { selected } = records;
   const sheetRecords = layers.groupRecords.length > 0 ? layers.groupRecords : selected ? [selected] : [];
   const hasBottomLayer = sheetRecords.length > 0 || layers.memo.mode !== null;
+  // 목적지 모드에서는 카테고리 레일, 안내, 매물 시트, 메모 시트를 거두고 목적지 고르기만 남긴다.
+  const isPickingDestination = layers.destination.isPicking;
   return (
     <section className={styles.map} aria-label="본 방 기록 지도">
       <MapCanvas {...layers.canvasProps} coordinateMenu={layers.coordinateMenu} />
-      <MapCategoryRail
-        showMemo
-        showIcons={false}
-        className={styles.rail}
-        selectedCategories={layers.category === null ? [] : [layers.category]}
-        counts={layers.counts}
-        onToggle={layers.toggleCategory}
-        extraButton={destinationRailButton(layers.destination)}
-      />
+      {!isPickingDestination && (
+        <MapCategoryRail
+          showMemo
+          showIcons={false}
+          className={styles.rail}
+          selectedCategories={layers.category === null ? [] : [layers.category]}
+          counts={layers.counts}
+          onToggle={layers.toggleCategory}
+          extraButton={destinationRailButton(layers.destination)}
+        />
+      )}
       <button
         className={styles.recenter}
         type="button"
@@ -50,13 +54,17 @@ const RecordsMobileMap = ({ records, layers }: Props) => {
       </button>
       <MapZoomControl className={styles.zoom} level={records.level} onChange={records.setLevel} />
       <RecordDestinationControl destination={layers.destination} className={styles.destination} />
-      {!hasBottomLayer && <span className={styles.hint}>{recordsMapHint(records.records, layers)}</span>}
-      <RecordsSelectedSheet records={sheetRecords} onClose={layers.closeAll} onNotice={records.setNotice} />
-      <StreetMemoSheet layer={layers.memo} onCreated={layers.showMemos} />
-      <RecordMapTapIntro
-        setLevel={records.setLevel}
-        hasTapped={layers.tapPoint !== null || layers.destination.isShown}
-      />
+      {!isPickingDestination && (
+        <>
+          {!hasBottomLayer && <span className={styles.hint}>{recordsMapHint(records.records, layers)}</span>}
+          <RecordsSelectedSheet records={sheetRecords} onClose={layers.closeAll} onNotice={records.setNotice} />
+          <StreetMemoSheet layer={layers.memo} onCreated={layers.showMemos} />
+          <RecordMapTapIntro
+            setLevel={records.setLevel}
+            hasTapped={layers.tapPoint !== null || layers.destination.isShown}
+          />
+        </>
+      )}
     </section>
   );
 };

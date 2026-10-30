@@ -606,10 +606,13 @@ it('목적지가 없으면 지도 레일의 목적지로 목적지 모드에 들
     renderRecords();
     const rail = within(await screen.findByRole('complementary', { name: '지도 시설 카테고리' }));
     await user.click(rail.getByRole('button', { name: '목적지 정하기' }));
-    // 검색창 없이 지도를 눌러 정하라고 알리고, 레일에서는 목적지만 켜 둔다.
+    // 검색창 없이 지도를 눌러 정하라고 알리고, 목적지 고르기만 남도록 레일과 지도 위 마커를 거둔다.
     expect(screen.getByText('지도에서 목적지를 눌러 주세요')).toBeInTheDocument();
     expect(screen.queryByLabelText('목적지 검색')).not.toBeInTheDocument();
-    expect(rail.getAllByRole('button', { pressed: true })).toHaveLength(1);
+    expect(screen.queryByRole('complementary', { name: '지도 시설 카테고리' })).not.toBeInTheDocument();
+    expect(
+      within(screen.getByLabelText('예시 지도')).queryByRole('button', { name: '신림역 원룸' }),
+    ).not.toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: '빈 곳 찍기' }));
     // 찍은 자리에서 할 일을 고르는 말풍선 대신 바로 목적지로 정한다.
     expect(screen.queryByRole('button', { name: /메모 남기기/ })).not.toBeInTheDocument();
@@ -617,8 +620,11 @@ it('목적지가 없으면 지도 레일의 목적지로 목적지 모드에 들
     const name = chip.textContent?.replace(/까지 직선거리$/, '') ?? '';
     expect(within(screen.getByLabelText('예시 지도')).getByRole('button', { name })).toBeInTheDocument();
     expect(localStorage.getItem('jachwi-sunbae:commute-destination')).not.toBeNull();
-    // 다시 누르면 목적지 핀과 안내를 거둔다.
-    await user.click(rail.getByRole('button', { name: /까지 거리 숨기기$/ }));
+    // 목적지를 정하면 레일과 매물 핀이 돌아오고, 레일에서 목적지만 켜 둔다. 다시 누르면 목적지 핀과 안내를 거둔다.
+    const railAgain = within(screen.getByRole('complementary', { name: '지도 시설 카테고리' }));
+    expect(railAgain.getAllByRole('button', { pressed: true })).toHaveLength(1);
+    expect(within(screen.getByLabelText('예시 지도')).getByRole('button', { name: '신림역 원룸' })).toBeInTheDocument();
+    await user.click(railAgain.getByRole('button', { name: /까지 거리 숨기기$/ }));
     expect(screen.queryByText(/까지 직선거리$/)).not.toBeInTheDocument();
     expect(within(screen.getByLabelText('예시 지도')).queryByRole('button', { name })).not.toBeInTheDocument();
   } finally {

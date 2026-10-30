@@ -19,6 +19,7 @@ import type { RecordsState } from './useRecords';
 
 const REGISTER_MARKER_ID = 'register-point';
 const DESTINATION_MARKER_ID = 'commute-destination';
+const NO_MARKERS: MapMarker[] = [];
 /** 목적지와 매물을 함께 보이게 맞출 때 넘지 않는 배율. 너무 바짝 붙거나 도시 밖까지 멀어지지 않게 한다. */
 const DESTINATION_FIT_LEVELS = { closest: 3, farthest: 12 };
 /** 겹쳐 묶인 매물 마커 id의 머리. 뒤에 묶인 매물 id를 쉼표로 잇는다. */
@@ -183,6 +184,18 @@ const useRecordsMapLayers = (
 
   // 지도 레일의 `목적지`. 목적지가 있으면 목적지 핀과 매물 핀의 거리를 켜고 끄고, 없으면 목적지 모드로 바꿔 지도를 누른 자리를 목적지로 정한다.
   const [isPickingDestination, setIsPickingDestination] = useState(false);
+  /**
+   * 목적지 모드로 바꾼다. 지도를 누르면 매물 등록이나 메모가 아니라 목적지를 정한다는 것이 분명하도록,
+   * 열린 매물과 메모, 찍은 자리 말풍선을 닫고 카테고리를 끈다. 지도 위 마커와 다른 조작은 각 지도가 거둔다.
+   */
+  const startPickingDestination = () => {
+    records.setSelectedId(null);
+    setGroupIds([]);
+    memo.close();
+    setTapPoint(null);
+    setCategory(null);
+    setIsPickingDestination(true);
+  };
   /** 목적지와 기록한 매물이 한 화면에 함께 들어오도록 지도를 옮기고 배율을 맞춘다. */
   const fitDestination = (destination: MapPoint) => {
     const points = [
@@ -216,8 +229,8 @@ const useRecordsMapLayers = (
     toggle: () => {
       const current = records.distance.destination;
       if (current === null) {
-        if (!isPickingDestination) setCategory(null);
-        setIsPickingDestination(!isPickingDestination);
+        if (isPickingDestination) setIsPickingDestination(false);
+        else startPickingDestination();
         return;
       }
       if (records.distance.isShown) {
@@ -229,7 +242,7 @@ const useRecordsMapLayers = (
       records.distance.toggle();
       fitDestination(current);
     },
-    change: () => setIsPickingDestination(true),
+    change: () => startPickingDestination(),
     cancel: () => setIsPickingDestination(false),
     isResolving: isResolvingAddress && isPickingDestination,
     choose: (address: MapAddress) => {
@@ -364,8 +377,9 @@ const useRecordsMapLayers = (
     customStyleId: SERVICE_MAP_STYLE_ID,
     center: records.center,
     level: records.level,
-    markers: allMarkers,
-    selectedMarkerId: selectedRecordMarkerId ?? memo.selectedMarkerId,
+    // 목적지 모드에서는 지도 위 마커를 모두 거두고 빈 지도에서 목적지만 고르게 한다.
+    markers: isPickingDestination ? NO_MARKERS : allMarkers,
+    selectedMarkerId: isPickingDestination ? null : (selectedRecordMarkerId ?? memo.selectedMarkerId),
     // 메모 마커와 겹친 매물 묶음이 아니면 기록한 방 하나의 마커다. 시설 마커는 누를 수 없다.
     onSelectMarker: (marker: MapMarker) => {
       if (selectMarker(marker)) return;
