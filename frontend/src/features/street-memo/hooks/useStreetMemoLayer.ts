@@ -27,6 +27,13 @@ export const memoLogParams = (memo: StreetMemo) => ({
   memo: memo.memo,
 });
 
+/**
+ * 노출을 세는 가장 넓은 화면(위도 폭, 약 3.3km). 그보다 멀리 축소하면 메모가 개수 말풍선으로 뭉쳐 내용이 보이지 않고,
+ * 도시 전체의 메모가 한꺼번에 들어와 노출 이벤트가 쏟아지므로 세지 않는다.
+ */
+const IMPRESSION_MAX_LATITUDE_SPAN = 0.03;
+const NO_MEMOS: StreetMemo[] = [];
+
 const markerLabel = (memo: StreetMemo) =>
   memo.memo.length > LABEL_MAX_LENGTH ? `${memo.memo.slice(0, LABEL_MAX_LENGTH)}…` : memo.memo;
 
@@ -95,9 +102,13 @@ const useStreetMemoLayer = (enabled: boolean, bounds: MapBounds | null) => {
     return () => window.clearTimeout(timer);
   }, [flash]);
 
-  // 지금 화면 안에 보이는 메모. 지도를 옮기는 동안 남아 있는 이전 범위의 메모는 화면 밖이라 빼고, 노출 지표에 쓴다.
+  // 노출 지표에 쓰는, 지금 화면 안에서 내용이 보이는 메모. 지도를 옮기는 동안 남아 있는 이전 범위의 메모는 화면 밖이라 빼고,
+  // 멀리 축소한 화면은 세지 않는다.
   const visibleMemos = useMemo(
-    () => (enabled && bounds ? memos.filter((memo) => isInBounds(memo, bounds)) : []),
+    () =>
+      enabled && bounds && bounds.north - bounds.south <= IMPRESSION_MAX_LATITUDE_SPAN
+        ? memos.filter((memo) => isInBounds(memo, bounds))
+        : NO_MEMOS,
     [enabled, bounds, memos],
   );
 
