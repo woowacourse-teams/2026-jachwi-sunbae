@@ -568,7 +568,7 @@ it('첫 진입 안내는 건너뛸 수 있다', async () => {
   }
 });
 
-it('데스크탑은 겹친 매물 묶음을 누르면 지도 위 카드에 늘어놓고, 고른 매물은 카드를 연 채로 옆 칸에 상세를 연다', async () => {
+it('데스크탑은 리스트에 매물이 모두 보여, 겹친 매물 묶음을 누르면 카드 없이 갈라져 보일 때까지 다가간다', async () => {
   const matchMedia = useDesktopViewport();
   const [base] = getMockProperties();
   const items = [
@@ -584,13 +584,12 @@ it('데스크탑은 겹친 매물 묶음을 누르면 지도 위 카드에 늘�
   try {
     renderRecords();
     await screen.findByRole('heading', { name: '모든 기록' });
+    expect(screen.getByRole('link', { name: /같은 건물 3층/ })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /같은 건물 5층/ })).toBeInTheDocument();
     await user.click(within(screen.getByLabelText('예시 지도')).getByRole('button', { name: '매물 2개' }));
-    const group = within(screen.getByRole('region', { name: '이 자리 매물 2개' }));
-    await user.click(group.getByRole('link', { name: '같은 건물 3층' }));
-    expect(await screen.findByRole('complementary', { name: '선택한 매물 상세' })).toBeInTheDocument();
-    expect(screen.getByRole('region', { name: '이 자리 매물 2개' })).toBeInTheDocument();
-    await user.click(screen.getByRole('button', { name: '매물 묶음 닫기' }));
     expect(screen.queryByRole('region', { name: '이 자리 매물 2개' })).not.toBeInTheDocument();
+    // 같은 자리라 갈라지지 않으면 너무 바짝 붙지 않는 가장 가까운 배율에서 멈춘다.
+    expect(screen.getByRole('status', { name: '지도 배율' }).textContent).toBe('3');
   } finally {
     matchMedia.mockRestore();
   }

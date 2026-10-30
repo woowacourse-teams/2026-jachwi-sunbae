@@ -10,7 +10,6 @@ import Icon from '@/shared/ui/icon/Icon';
 import type { RecordsState } from '../hooks/useRecords';
 import type { RecordsMapLayers } from '../hooks/useRecordsMapLayers';
 import { recordsMapHint } from '../model/recordPresentation';
-import RecordGroupPanel from '../ui/record-group/RecordGroupPanel';
 import RecordMapTapIntro from '../ui/record-map-tap-intro/RecordMapTapIntro';
 
 type Props = {
@@ -23,7 +22,8 @@ type Props = {
 
 /**
  * 데스크탑 본 방 기록 지도. 기록한 방에 더해 시설·거리 메모 카테고리를 켜 볼 수 있고,
- * 빈 곳을 찍으면 그 자리 말풍선에서 메모를 남기거나 매물을 등록한다. 메모와 겹쳐 묶인 매물은 지도 위 카드에서 본다.
+ * 빈 곳을 찍으면 그 자리 말풍선에서 메모를 남기거나 매물을 등록한다. 메모는 지도 위 카드에서 보고,
+ * 겹쳐 묶인 매물은 리스트에 이미 모두 보여 따로 늘어놓지 않고 누르면 갈라져 보일 때까지 다가간다.
  */
 const RecordsDesktopMap = ({ records, layers, districts, className }: Props) => (
   <section className={`${styles.map} ${className ?? ''}`.trim()} aria-label="본 방 기록 지도">
@@ -46,18 +46,10 @@ const RecordsDesktopMap = ({ records, layers, districts, className }: Props) => 
       <Icon name="target" size={22} />
     </button>
     <MapZoomControl className={styles.zoom} level={records.level} onChange={records.setLevel} />
-    {!records.selected && layers.memo.mode === null && layers.groupRecords.length === 0 && (
+    {!records.selected && layers.memo.mode === null && (
       <span className={styles.hint}>{recordsMapHint(records.records, layers)}</span>
     )}
     <StreetMemoPanel layer={layers.memo} onCreated={layers.showMemos} className={styles.memoCard} />
-    {/* 겹친 매물 중 하나를 열어도 카드를 닫지 않아, 옆 칸 상세를 띄운 채 다른 매물로 바로 바꿔 볼 수 있다. */}
-    <RecordGroupPanel
-      records={layers.groupRecords}
-      onOpen={records.setSelectedId}
-      onClose={layers.closeGroup}
-      onNotice={records.setNotice}
-      className={styles.memoCard}
-    />
     <RecordMapTapIntro setLevel={records.setLevel} hasTapped={layers.tapPoint !== null} />
   </section>
 );

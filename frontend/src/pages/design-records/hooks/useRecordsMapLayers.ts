@@ -36,6 +36,11 @@ type Options = {
   initialCategory?: MapCategory | null;
   /** 매물 등록 칸을 연 위치. 등록하는 동안 그 자리에 집과 더하기 그림 핀을 둔다. */
   registeringAt?: MapPoint | null;
+  /**
+   * 겹친 매물 묶음을 눌렀을 때. `list`는 묶인 매물을 함께 늘어놓고(휴대폰 바텀시트), `zoom`은 핀이 갈라져 보일 때까지 다가간다.
+   * 데스크탑은 리스트에 이미 모든 매물이 보여, 묶음을 따로 늘어놓지 않고 다가가기만 한다.
+   */
+  groupAction?: 'list' | 'zoom';
 };
 
 const sameBounds = (a: MapBounds | null, b: MapBounds) =>
@@ -81,7 +86,7 @@ const recordGroupMarker = (group: MapMarker[]): MapMarker =>
  */
 const useRecordsMapLayers = (
   records: RecordsState,
-  { onRegister, initialCategory = null, registeringAt = null }: Options,
+  { onRegister, initialCategory = null, registeringAt = null, groupAction = 'list' }: Options,
 ) => {
   const config = usePublicConfig();
   const { log } = useLogger();
@@ -219,7 +224,19 @@ const useRecordsMapLayers = (
       memo.close();
       setTapPoint(null);
       records.setSelectedId(null);
-      setGroupIds(marker.id.slice(RECORD_GROUP_PREFIX.length).split(','));
+      const ids = marker.id.slice(RECORD_GROUP_PREFIX.length).split(',');
+      if (groupAction === 'list') {
+        setGroupIds(ids);
+        return true;
+      }
+      // 겹친 메모처럼 묶인 핀이 갈라져 보일 만큼 다가간다.
+      const focus = focusOnMemos(
+        records.markers.filter((record) => ids.includes(record.id)),
+        bounds,
+        level,
+      );
+      records.setCenter(focus.center);
+      records.setLevel(focus.level);
       return true;
     }
     if (!memo.selectMarker(marker)) return false;
