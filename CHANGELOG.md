@@ -6,6 +6,28 @@
 
 아직 릴리스하지 않은 변경을 기록한다.
 
+## [3.1.0] - 2026-10-30
+
+### Added
+
+- 랜딩 페이지와 영상 중심 사용 가이드를 새로 구성한다.
+- 거리 메모별 노출·열람 분석 이벤트와 공용 노출 로깅을 추가한다.
+- 매물 상세의 스크린 리더 안내, 평가 후 포커스 유지와 복원, 화면별 탭 제목을 개선한다.
+
+### Changed
+
+- 매물 상세 정보를 별도 수정 시트 대신 항목 줄 안에서 수정하고 저장·취소하도록 바꾼다.
+- 본 방 기록 지도와 매물 추가·선택 흐름, 동네 찾기 결과의 순위와 경로 안내를 개선한다.
+- 홈 카드와 저렴한 한 끼 메뉴를 정리하고 한 끼 화면은 식당 탭부터 보여 준다.
+- 백엔드·프론트엔드 제품 버전을 `3.1.0`으로 맞춘다.
+
+### Fixed
+
+- 짧은 요청에서 로딩 화면이 깜빡이는 현상을 줄인다.
+- 사진 화면의 뒤로 가기를 매물 상세로 복원하고 데스크탑 상세 패널 안에서 사진을 관리한다.
+- 지도 시설 조회와 마커·클러스터 표시, 기록 화면의 지도 동작을 수정한다.
+- 멀리 축소한 지도에서는 내용이 보이지 않는 거리 메모의 노출 이벤트를 집계하지 않는다.
+
 ## [3.0.0] - 2026-10-29
 
 ### Breaking Changes
@@ -180,7 +202,8 @@
 - WebView 지도 마커 위치 갱신을 `transform` 기반으로 최적화한다.
 - 매물 사진 Object URL을 재사용해 지도 확대·이동 중 불필요한 재생성을 줄인다.
 
-[Unreleased]: https://github.com/woowacourse-teams/2026-jachwi-sunbae/compare/v3.0.0...HEAD
+[Unreleased]: https://github.com/woowacourse-teams/2026-jachwi-sunbae/compare/v3.1.0...HEAD
+[3.1.0]: https://github.com/woowacourse-teams/2026-jachwi-sunbae/releases/tag/v3.1.0
 [3.0.0]: https://github.com/woowacourse-teams/2026-jachwi-sunbae/releases/tag/v3.0.0
 [2.1.0]: https://github.com/woowacourse-teams/2026-jachwi-sunbae/releases/tag/v2.1.0
 [2.0.1]: https://github.com/woowacourse-teams/2026-jachwi-sunbae/releases/tag/v2.0.1
