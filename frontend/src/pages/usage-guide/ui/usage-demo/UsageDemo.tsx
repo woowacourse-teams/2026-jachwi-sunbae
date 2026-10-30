@@ -134,6 +134,7 @@ const styles = {
     }
   `,
 
+  /* 데스크탑은 시나리오를 두 열로 놓아, 한 줄에 설명과 영상이 멀리 떨어지지 않게 한다. */
   scenarios: css`
     label: UsageDemo-scenarios;
     display: grid;
@@ -141,9 +142,14 @@ const styles = {
     margin: 0;
     padding: 0;
     list-style: none;
+
+    @media (min-width: 64rem) {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 1.25rem;
+    }
   `,
 
-  /* 휴대폰은 설명 아래에 영상을, 넓은 화면은 설명 오른쪽에 영상을 둔다. */
+  /* 휴대폰은 설명 아래에 영상을, 넓은 화면은 설명 오른쪽에 영상을 둔다. 데스크탑은 칸마다 카드로 묶는다. */
   scenario: css`
     label: UsageDemo-scenario;
     display: grid;
@@ -154,11 +160,34 @@ const styles = {
       align-items: center;
       gap: 2.5rem;
     }
+
+    @media (min-width: 64rem) {
+      grid-template-columns: minmax(0, 1fr) 8.5rem;
+      align-items: start;
+      gap: 1rem;
+      padding: 1.25rem;
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-md);
+      background: var(--color-surface);
+    }
   `,
 
+  /* 데스크탑 카드는 설명 칸이 좁아, 단계 들여쓰기를 없애고 낱말 중간에서 줄을 나누지 않는다. */
   copy: css`
     label: UsageDemo-copy;
     min-width: 0;
+    word-break: keep-all;
+
+    @media (min-width: 64rem) {
+      & > ol,
+      & > a {
+        margin-left: 0;
+      }
+
+      & > ol {
+        font-size: 0.82rem;
+      }
+    }
   `,
 
   title: css`
@@ -235,6 +264,12 @@ const styles = {
     overflow: hidden;
     border: 0.3rem solid var(--color-ink);
     border-radius: 1.5rem;
+
+    @media (min-width: 64rem) {
+      border-width: 0.25rem;
+      border-radius: 1.1rem;
+    }
+
     background: var(--color-canvas);
     box-shadow: 0 8px 24px #0000000c;
 
