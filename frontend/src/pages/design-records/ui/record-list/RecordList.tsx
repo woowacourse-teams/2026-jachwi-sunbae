@@ -17,7 +17,7 @@ type RecordListProps = {
   district: string;
   /** 동네 찾기에서 고른 출퇴근 장소까지 통근 시간. `통근 시간` 버튼을 켜면 카드마다 가격 아래에 붙인다. 리스트에서 장소를 정하거나 바꾸지는 않는다. */
   commute?: RecordsState['commute'];
-  /** 목적지까지 거리. 지도 레일의 `목적지`로 켜면 카드마다 이름 위에 붙이고, 리스트 위 줄의 `바꾸기`로 목적지를 바꾼다. */
+  /** 목적지까지 거리. 지도 레일의 `통근`으로 켜면 카드마다 이름 위에 붙이고, 리스트 위 줄의 `바꾸기`로 목적지를 바꾼다. */
   distance?: RecordsState['distance'];
   /** 주면 기록을 눌러도 상세로 넘어가지 않고 이 함수를 부른다(데스크탑은 리스트 자리에 상세를 연다). */
   onOpen?: (recordId: string) => void;
@@ -68,7 +68,7 @@ const RecordList = ({ records, district, commute, distance, onOpen, onNotice, cl
       </div>
       {distance !== undefined && distance.destination !== null && distance.isShown && !isPickingDestination && (
         <p className={styles.destinationRow}>
-          <span>{distance.destination.name} 기준 직선거리</span>
+          <span>{distance.destination.name} 기준 통근거리</span>
           <button type="button" onClick={() => setIsPickingDestination(true)}>
             바꾸기
           </button>
@@ -78,14 +78,14 @@ const RecordList = ({ records, district, commute, distance, onOpen, onNotice, cl
         <div className={styles.destinationSearch}>
           <RecordAddressSearch
             autoFocus
-            label="목적지 검색"
+            label="통근 장소 검색"
             placeholder="학교나 회사 주소를 찾아요"
             onBack={() => setIsPickingDestination(false)}
             onSelect={(address) => {
               distance.setDestination({
                 latitude: address.latitude,
                 longitude: address.longitude,
-                name: address.roadAddress ?? address.jibunAddress ?? address.address ?? '목적지',
+                name: address.roadAddress ?? address.jibunAddress ?? address.address ?? '통근 장소',
               });
               setIsPickingDestination(false);
             }}

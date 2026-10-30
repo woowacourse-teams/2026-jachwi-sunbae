@@ -182,7 +182,7 @@ const useRecordsMapLayers = (
     [facilityMarkers, memo.markers, registeringAt, records.distance.isShown, records.distance.destination],
   );
 
-  // 지도 레일의 `목적지`. 목적지가 있으면 목적지 핀과 매물 핀의 거리를 켜고 끄고, 없으면 목적지 모드로 바꿔 지도를 누른 자리를 목적지로 정한다.
+  // 지도 레일의 `통근`(목적지). 목적지가 있으면 목적지 핀과 매물 핀의 거리를 켜고 끄고, 없으면 목적지 모드로 바꿔 지도를 누른 자리를 목적지로 정한다.
   const [isPickingDestination, setIsPickingDestination] = useState(false);
   /**
    * 목적지 모드로 바꾼다. 지도를 누르면 매물 등록이나 메모가 아니라 목적지를 정한다는 것이 분명하도록,
@@ -249,7 +249,7 @@ const useRecordsMapLayers = (
       const next = {
         latitude: address.latitude,
         longitude: address.longitude,
-        name: address.roadAddress ?? address.jibunAddress ?? address.address ?? '목적지',
+        name: address.roadAddress ?? address.jibunAddress ?? address.address ?? '통근 장소',
       };
       setCategory(null);
       records.distance.setDestination(next);
@@ -344,7 +344,7 @@ const useRecordsMapLayers = (
    * 무언가를 닫으려고 찍었는데 바로 새 동작이 뜨면 다시 닫아야 해서 두 단계로 나눈다.
    */
   const tapLocation = (latitude: number, longitude: number) => {
-    // 목적지 모드에서는 누른 자리의 주소를 찾아 목적지로 정한다. 주소를 못 찾으면 `목적지`로 둔다.
+    // 목적지 모드에서는 누른 자리의 주소를 찾아 목적지로 정한다. 주소를 못 찾으면 `통근 장소`로 둔다.
     if (isPickingDestination) {
       if (isResolvingAddress) return;
       const point = { latitude, longitude };

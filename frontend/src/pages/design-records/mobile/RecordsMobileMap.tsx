@@ -109,7 +109,7 @@ const styles = {
     }
   `,
 
-  /* 목적지 검색창과 거리 안내는 확대·축소 버튼 왼쪽, 같은 높이에 둔다. */
+  /* 통근 장소 고르기 안내와 통근거리 안내는 확대·축소 버튼 왼쪽, 같은 높이에 둔다. */
   destination: css`
     label: RecordsMobileMap-destination;
     top: calc(max(0.85rem, env(safe-area-inset-top)) + 8.15rem);

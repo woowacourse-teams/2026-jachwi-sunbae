@@ -17,8 +17,8 @@ import type { MapMarker } from '@/features/map/model/Map';
 import { usePropertyCommuteTimes, usePropertyList } from '@/features/property/api/useProperties';
 
 import {
+  commuteDistanceLabel,
   commuteLabel,
-  destinationDistanceLabel,
   recordPresentation,
   shortDistanceLabel,
 } from '../model/recordPresentation';
@@ -49,7 +49,7 @@ const useRecords = (selection?: RecordsSelection) => {
   );
   // 동네 찾기에서 마지막으로 고른 출퇴근 장소까지 매물마다 통근 시간을 붙인다.
   // 들어오자마자 계산하지 않고, 리스트 위 `통근 시간` 버튼을 눌렀을 때만 부른다. 장소가 없으면 버튼도 없다.
-  // 지도 레일의 `목적지`에서 정하거나 바꿀 수 있고, 정하면 동네 찾기와 같은 자리에 기억한다.
+  // 지도 레일의 `통근`에서 정하거나 바꿀 수 있고, 정하면 동네 찾기와 같은 자리에 기억한다.
   const [destination, setDestinationState] = useState(readCommuteDestination);
   const [showsCommute, setShowsCommute] = useState(false);
   const commuteTimes = usePropertyCommuteTimes(showsCommute ? destination : null);
@@ -60,7 +60,7 @@ const useRecords = (selection?: RecordsSelection) => {
       labels.set(String(commute.propertyId), commuteLabel(commute, destination.name, commuteTimes.data.maxMinutes));
     return labels;
   }, [showsCommute, destination, commuteTimes.data]);
-  // 목적지까지 직선거리. 지도 레일의 `목적지`를 켜면 지도 핀의 가격 자리와 리스트 카드 맨 위에 붙인다.
+  // 통근 장소까지 직선거리(통근거리). 지도 레일의 `통근`을 켜면 지도 핀의 가격 자리와 리스트 카드 맨 위에 붙인다.
   const [showsDistance, setShowsDistance] = useState(false);
   const distanceLabels = useMemo(() => {
     const labels = new Map<string, string>();
@@ -70,9 +70,7 @@ const useRecords = (selection?: RecordsSelection) => {
         record.id,
         record.latitude === null || record.longitude === null
           ? '위치가 없어 거리를 몰라요'
-          : // 목적지 이름(주소)은 리스트 위 줄에 한 번만 적고, 카드에는 짧게 `목적지까지`로 붙인다.
-            destinationDistanceLabel(
-              '목적지',
+          : commuteDistanceLabel(
               distanceMeters(destination, { latitude: record.latitude, longitude: record.longitude }),
             ),
       );

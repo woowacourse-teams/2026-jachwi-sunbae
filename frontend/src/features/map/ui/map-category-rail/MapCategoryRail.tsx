@@ -12,7 +12,7 @@ type MapCategoryRailProps = {
   showMemo?: boolean;
   /** 끄면 아이콘 없이 짧은 글자만 둔다. 본 방 기록 지도는 기록 마커와 헷갈리지 않게 끈다. */
   showIcons?: boolean;
-  /** 카테고리 아래 맨 끝에 같은 모양으로 붙이는 칸. 본 방 기록 지도의 `목적지`처럼 카테고리가 아닌 켜고 끄는 표시에 쓴다. */
+  /** 카테고리 아래 맨 끝에 같은 모양으로 붙이는 칸. 본 방 기록 지도의 `통근`처럼 카테고리가 아닌 켜고 끄는 표시에 쓴다. */
   extraButton?: { shortLabel: string; label: string; pressed: boolean; onClick: () => void };
   className?: string;
 };
