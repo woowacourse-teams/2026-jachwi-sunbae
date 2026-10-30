@@ -84,7 +84,8 @@ export const statuses = css`
     outline-offset: 2px;
   }
 
-  & > button:disabled {
+  /* 괜찮음, 주의는 저장하는 동안만 비활성이라 기다리는 커서를 둔다. 메모 버튼은 메모를 쓰는 동안 비활성이라 걸지 않는다. */
+  & > button[data-status]:disabled {
     cursor: wait;
   }
 `;
