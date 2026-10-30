@@ -122,8 +122,14 @@ const AppliedChecklistItems = ({
           <div className={styles.expandedChecklist}>
             <header className={styles.expandedHeader}>
               <h3>{detail.checklistName}</h3>
-              <span>
-                {completedCount} / {detail.items.length} 평가
+              {/* 항목을 평가하면 바뀐 개수를 이어서 읽는다. 화면의 "2 / 3"은 "2 슬래시 3"으로 읽혀 문장으로 따로 둔다. */}
+              <span role="status">
+                <span aria-hidden="true">
+                  {completedCount} / {detail.items.length} 평가
+                </span>
+                <span className="sr-only">
+                  {detail.items.length}개 중 {completedCount}개 평가
+                </span>
               </span>
             </header>
             <ol className={styles.items}>

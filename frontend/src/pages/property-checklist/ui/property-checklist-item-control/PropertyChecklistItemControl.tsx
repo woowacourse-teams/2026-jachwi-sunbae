@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import {
   usePropertyChecklistItemMemoMutation,
@@ -36,12 +36,22 @@ const PropertyChecklistItemControl = ({
   const statusMutation = usePropertyChecklistItemStatusMutation(propertyId, propertyChecklistId);
   const memoMutation = usePropertyChecklistItemMemoMutation(propertyId, propertyChecklistId);
   const hasMemo = item.memo.trim() !== '';
+  const memoButtonRef = useRef<HTMLButtonElement>(null);
+  const wasMemoEditing = useRef(isMemoEditing);
 
   useEffect(() => {
     if (!isMemoEditing) setMemo(item.memo);
   }, [isMemoEditing, item.memo]);
 
+  // 메모를 저장하거나 취소하면 입력칸이 사라진다. 포커스를 메모 버튼으로 돌려 같은 항목에서 이어 가게 한다.
+  useEffect(() => {
+    if (wasMemoEditing.current && !isMemoEditing) memoButtonRef.current?.focus();
+    wasMemoEditing.current = isMemoEditing;
+  }, [isMemoEditing]);
+
   const selectStatus = (status: PropertyChecklistItemStatus) => {
+    // 저장 중에는 누르지 못하게 하되 disabled는 쓰지 않는다. disabled가 되면 포커스가 버튼에서 빠져 화면 처음으로 돌아간다.
+    if (statusMutation.isPending) return;
     const nextStatus = item.status === status ? 'UNCONFIRMED' : status;
     statusMutation.mutate({ itemId: item.itemId, status: nextStatus });
   };
@@ -71,7 +81,12 @@ const PropertyChecklistItemControl = ({
       <div className={styles.row}>
         <div className={styles.question}>
           <strong id={`property-checklist-question-${item.itemId}`}>{item.question}</strong>
-          {hasMemo && !isMemoEditing && <p className={styles.memoText}>{item.memo}</p>}
+          {hasMemo && !isMemoEditing && (
+            <p className={styles.memoText}>
+              <span className="sr-only">메모: </span>
+              {item.memo}
+            </p>
+          )}
         </div>
         <div className={styles.statuses} role="group" aria-labelledby={`property-checklist-question-${item.itemId}`}>
           {STATUS_OPTIONS.map((option) => (
@@ -80,13 +95,14 @@ const PropertyChecklistItemControl = ({
               type="button"
               data-status={option.value}
               aria-pressed={item.status === option.value}
-              disabled={statusMutation.isPending}
+              aria-disabled={statusMutation.isPending || undefined}
               onClick={() => selectStatus(option.value)}
             >
               {option.label}
             </button>
           ))}
           <button
+            ref={memoButtonRef}
             type="button"
             className={styles.memoButton}
             aria-label={`${item.question} ${hasMemo ? '메모 편집' : '메모 추가'}`}

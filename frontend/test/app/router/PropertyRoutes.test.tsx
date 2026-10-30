@@ -319,7 +319,7 @@ describe('FE-2 등록·수정·메모', () => {
     expect(section.getByText('에어컨, 냉장고')).toBeInTheDocument();
     expect(section.getByText('2026-08-20 14:00')).toBeInTheDocument();
     expect(section.queryByRole('button', { name: '부가 정보 편집' })).not.toBeInTheDocument();
-    expect(section.getByRole('button', { name: '방 옵션 수정' })).toBeInTheDocument();
+    expect(section.getByRole('button', { name: /^방 옵션 .+, 수정$/ })).toBeInTheDocument();
   });
 
   it('상세에서 보증금 / 월세 줄을 누르면 모달 없이 그 줄에서 고치고, 칸을 떠나면 저장해 저장했다고 알린다', async () => {
@@ -337,9 +337,9 @@ describe('FE-2 등록·수정·메모', () => {
     const user = userEvent.setup();
     renderAuthenticated('/properties/10');
 
-    await user.click(await screen.findByRole('button', { name: '보증금 / 월세 수정' }));
+    await user.click(await screen.findByRole('button', { name: /^보증금 \/ 월세 .+, 수정$/ }));
     // 시트나 모달을 띄우지 않고 그 줄 안에 금액 두 칸을 펼친다.
-    expect(screen.queryByRole('region', { name: '보증금 / 월세 수정' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('region', { name: /^보증금 \/ 월세 .+, 수정$/ })).not.toBeInTheDocument();
     const editor = within(screen.getByRole('form', { name: '보증금 / 월세 입력' }));
     expect(editor.queryByRole('button', { name: '저장' })).not.toBeInTheDocument();
     expect(editor.queryByRole('region', { name: '매물 위치 선택' })).not.toBeInTheDocument();
@@ -384,14 +384,14 @@ describe('FE-2 등록·수정·메모', () => {
     const section = within(await screen.findByRole('region', { name: '매물 기본 정보' }));
     expect(section.getByText('보증금과 월세를 입력해 주세요')).toBeInTheDocument();
     // 이름은 시트 없이 그 줄에서 바로 고친다. Esc는 저장하지 않고 닫는다.
-    await user.click(section.getByRole('button', { name: '매물 이름 수정' }));
+    await user.click(section.getByRole('button', { name: /^매물 이름 .+, 수정$/ }));
     expect(screen.queryByRole('region', { name: '매물 이름 수정' })).not.toBeInTheDocument();
     await user.type(section.getByLabelText('매물 이름'), ' 바뀜');
     await user.keyboard('{Escape}');
     expect(section.queryByLabelText('매물 이름')).not.toBeInTheDocument();
     expect(requestBody).toBeUndefined();
 
-    await user.click(section.getByRole('button', { name: '매물 이름 수정' }));
+    await user.click(section.getByRole('button', { name: /^매물 이름 .+, 수정$/ }));
     const name = section.getByLabelText('매물 이름');
     await user.clear(name);
     await user.type(name, '햇살 원룸{Enter}');
@@ -418,16 +418,16 @@ describe('FE-2 등록·수정·메모', () => {
     renderAuthenticated('/properties/10');
 
     const section = within(await screen.findByRole('region', { name: '매물 부가 정보' }));
-    await user.click(section.getByRole('button', { name: '방 옵션 수정' }));
+    await user.click(section.getByRole('button', { name: /^방 옵션 .+, 수정$/ }));
     await user.keyboard('{Escape}');
     expect(section.queryByRole('region', { name: '부가 정보 입력' })).not.toBeInTheDocument();
     // 바꾸지 않고 다른 곳을 눌러 떠나도 저장하지 않는다.
-    await user.click(section.getByRole('button', { name: '방 옵션 수정' }));
+    await user.click(section.getByRole('button', { name: /^방 옵션 .+, 수정$/ }));
     await user.click(screen.getByRole('heading', { name: '신림역 원룸', level: 1 }));
     await waitFor(() => expect(section.queryByRole('region', { name: '부가 정보 입력' })).not.toBeInTheDocument());
     expect(updateCalls).toBe(0);
 
-    await user.click(section.getByRole('button', { name: '방 옵션 수정' }));
+    await user.click(section.getByRole('button', { name: /^방 옵션 .+, 수정$/ }));
     const editor = within(section.getByRole('region', { name: '부가 정보 입력' }));
     expect(editor.queryByLabelText('입주 가능일')).not.toBeInTheDocument();
     await user.click(editor.getByRole('checkbox', { name: '책상' }));
