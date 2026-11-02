@@ -4,7 +4,6 @@ import type { ReactNode } from 'react';
 import { getPropertyErrorMessage } from '@/features/property/api/propertyErrorMessages';
 import type { usePropertyList } from '@/features/property/api/useProperties';
 import { Button } from '@/shared/ui/button/Button';
-import DelayedFallback from '@/shared/ui/delayed-fallback/DelayedFallback';
 import InlineNotice from '@/shared/ui/inline-notice/InlineNotice';
 
 type CompareLoadStateProps = {
@@ -15,32 +14,29 @@ type CompareLoadStateProps = {
 
 /**
  * 비교할 매물을 불러오는 동안과 불러오지 못했을 때의 안내를 맡고, 받은 뒤에만 내용을 그린다.
- * 빠른 응답에는 로딩 안내 없이 바로 내용을 보여 주고, 오래 걸릴 때만 알린다. 한 번 보인 안내는 잠깐 남겨 깜빡이지 않게 한다.
+ * 새로 연 비교 화면의 본문 전체라 남겨 둘 내용이 없으므로 로딩 안내를 늦추지 않고 바로 보여 준다.
  */
-const CompareLoadState = ({ properties, children }: CompareLoadStateProps) => (
-  <DelayedFallback
-    isPending={properties.isPending}
-    fallback={
+const CompareLoadState = ({ properties, children }: CompareLoadStateProps) => {
+  if (properties.isPending) {
+    return (
       <div className={styles.loading} role="status">
         <span className={styles.spinner} aria-hidden="true" />
         매물을 불러오는 중이에요.
       </div>
-    }
-  >
-    {() =>
-      properties.isError ? (
-        <div className={styles.errorState}>
-          <InlineNotice tone="error">{getPropertyErrorMessage(properties.error)}</InlineNotice>
-          <Button variant="secondary" fullWidth onClick={() => void properties.refetch()}>
-            다시 시도
-          </Button>
-        </div>
-      ) : (
-        children()
-      )
-    }
-  </DelayedFallback>
-);
+    );
+  }
+  if (properties.isError) {
+    return (
+      <div className={styles.errorState}>
+        <InlineNotice tone="error">{getPropertyErrorMessage(properties.error)}</InlineNotice>
+        <Button variant="secondary" fullWidth onClick={() => void properties.refetch()}>
+          다시 시도
+        </Button>
+      </div>
+    );
+  }
+  return <>{children()}</>;
+};
 
 const spinKeyframes = keyframes`
   to {

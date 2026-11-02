@@ -1,7 +1,5 @@
 import type { ReactNode } from 'react';
 
-import useDelayedLoading from '@/shared/lib/hooks/useDelayedLoading';
-
 import ContentState from '../content-state/ContentState';
 
 type QueryLike<TData> = {
@@ -22,10 +20,7 @@ export type QueryErrorView = {
 type QueryStateProps<TData> = {
   query: QueryLike<TData>;
   loadingTitle: string;
-  /**
-   * 처음 여는 화면의 뼈대. 남겨 둘 내용이 없는 화면이라 늦추지 않고 기다리는 동안 바로 보여 주고, 로딩 문구는 띄우지 않는다.
-   * 라우트 Suspense 대체 화면과 같은 뼈대를 넘기면 뼈대에서 내용으로 한 번만 바뀐다.
-   */
+  /** 화면 뼈대. 주면 기다리는 동안 로딩 문구 대신 뼈대를 그려, 뼈대에서 내용으로 한 번만 바뀐다. */
   skeleton?: ReactNode;
   describeError: (error: unknown) => QueryErrorView;
   /** 오류 화면에 함께 보여 줄 돌아가기 링크 같은 동작. */
@@ -34,8 +29,8 @@ type QueryStateProps<TData> = {
 };
 
 /**
- * 조회 결과를 기다리는 동안과 실패했을 때의 화면을 대신 그린다.
- * 짧은 요청에는 로딩을 생략하고, 한 번 보인 로딩은 잠깐 유지해 깜빡임을 줄인다. 뼈대(`skeleton`)를 주면 늦추지 않고 뼈대를 그린다.
+ * 페이지 전체를 조회 결과로 그릴 때, 기다리는 동안과 실패했을 때의 화면을 대신 그린다.
+ * 페이지를 바꾸는 중이라 남겨 둘 내용이 없으므로 로딩을 늦추지 않고 바로 보여 준다. 뼈대(`skeleton`)를 주면 뼈대를 그린다.
  */
 const QueryState = <TData,>({
   query,
@@ -45,20 +40,7 @@ const QueryState = <TData,>({
   errorAction,
   children,
 }: QueryStateProps<TData>) => {
-  const hasSkeleton = skeleton !== undefined;
-  const isLoadingVisible = useDelayedLoading(query.isPending && !hasSkeleton);
-
-  if (query.isPending && hasSkeleton) return <>{skeleton}</>;
-
-  if (query.isPending || isLoadingVisible) {
-    return isLoadingVisible ? (
-      <ContentState loading title={loadingTitle} />
-    ) : (
-      <main className="property-page">
-        <div className="page-container" />
-      </main>
-    );
-  }
+  if (query.isPending) return skeleton === undefined ? <ContentState loading title={loadingTitle} /> : <>{skeleton}</>;
 
   if (query.isError || query.data === undefined) {
     const { title, description, canRetry } = describeError(query.error);

@@ -25,20 +25,17 @@ describe('QueryState', () => {
     expect(screen.getByText('매물 상세')).toBeInTheDocument();
   });
 
-  it('짧은 요청에는 로딩을 숨기고, 길어지면 로딩 안내를 보여 준다', () => {
-    vi.useFakeTimers();
+  it('페이지 전체를 그리는 조회라 기다리는 동안 로딩 안내를 늦추지 않고 바로 보여 준다', () => {
     render(
       <QueryState query={{ ...baseQuery, isPending: true }} loadingTitle="불러오는 중" describeError={describeError}>
         {() => <p>본문</p>}
       </QueryState>,
     );
 
-    expect(screen.queryByRole('status')).not.toBeInTheDocument();
-    act(() => vi.advanceTimersByTime(300));
     expect(screen.getByRole('status')).toHaveTextContent('불러오는 중');
   });
 
-  it('뼈대를 주면 기다리지 않고 바로 뼈대를 보여 주고, 로딩 안내는 띄우지 않는다', () => {
+  it('뼈대를 주면 로딩 안내 대신 뼈대를 보여 주고, 받으면 내용으로 바로 바꾼다', () => {
     vi.useFakeTimers();
     const { rerender } = render(
       <QueryState

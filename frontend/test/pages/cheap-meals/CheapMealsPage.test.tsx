@@ -566,3 +566,9 @@ it('데스크탑은 공용 헤더 아래에서 가게 목록과 상세를 지도
     setMatchMedia(matchMedia);
   }
 });
+it('식당 탭을 처음 열어 보여 줄 목록이 없으면 찾는 중 문구를 늦추지 않고 바로 보여 준다', async () => {
+  server.use(http.get('http://localhost:8080/api/maps/good-price-stores', () => new Promise<never>(() => {})));
+  setup();
+  // 지연 로딩(300ms)이 걸려 있으면 이 시간 안에는 문구가 나오지 않는다.
+  expect(await screen.findByText('주변 가게를 찾고 있어요…', {}, { timeout: 200 })).toBeInTheDocument();
+});

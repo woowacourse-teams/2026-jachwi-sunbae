@@ -4,7 +4,6 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import { getPropertyErrorMessage } from '@/features/property/api/propertyErrorMessages';
 import { usePropertyDetail } from '@/features/property/api/useProperties';
 import { parsePositiveId } from '@/features/property/lib/propertyFormat';
-import useDelayedLoading from '@/shared/lib/hooks/useDelayedLoading';
 import { HOME_PATH, propertyDetailPath } from '@/shared/lib/navigation/appPaths';
 import ContentState from '@/shared/ui/content-state/ContentState';
 import TopNavigation from '@/shared/ui/top-navigation/TopNavigation';
@@ -26,8 +25,6 @@ const PropertyMemoPage = () => {
 const ResolvedPropertyMemoPage = ({ propertyId }: { propertyId: number }) => {
   const navigate = useNavigate();
   const property = usePropertyDetail(propertyId);
-  // 빠른 응답에는 로딩 화면 없이 바로 부가 정보를 보여 주고, 오래 걸릴 때만 알린다.
-  const isLoadingVisible = useDelayedLoading(property.isPending);
 
   if (property.isError) {
     return (
@@ -39,9 +36,8 @@ const ResolvedPropertyMemoPage = ({ propertyId }: { propertyId: number }) => {
       />
     );
   }
-  if (property.isPending || isLoadingVisible) {
-    return isLoadingVisible ? <ContentState loading title="부가 정보를 불러오는 중이에요." /> : null;
-  }
+  // 페이지 전체를 바꾸는 중이라 남겨 둘 내용이 없으므로 로딩을 늦추지 않고 바로 보여 준다.
+  if (property.isPending) return <ContentState loading title="부가 정보를 불러오는 중이에요." />;
 
   return (
     <main className={styles.page}>
