@@ -168,18 +168,17 @@ describe('익명 자동 인증 흐름', () => {
       return view;
     };
 
-    it('홈은 빈 화면이나 준비 문구 없이 바로 그리고, 최근 기록 자리에는 카드 뼈대를 둔다', async () => {
+    it('홈은 로그인을 기다리는 동안에도 빈 화면이나 준비 문구 없이 바로 그린다', async () => {
       const release = holdLogin();
       renderWithMockServer('/');
 
-      expect(screen.getByRole('region', { name: '자취선배 주요 기능' })).toBeInTheDocument();
-      expect(screen.getByRole('status')).toHaveTextContent('기록을 불러오는 중이에요.');
+      expect(await screen.findByRole('region', { name: '자취선배 주요 기능' })).toBeInTheDocument();
+      expect(screen.getByRole('heading', { name: '최근 기록한 방' })).toBeInTheDocument();
       expect(screen.queryByText('기록을 불러올 준비를 하고 있어요.')).not.toBeInTheDocument();
 
       release();
 
       expect(await screen.findByLabelText('최근 기록한 방 목록')).toBeInTheDocument();
-      expect(screen.queryByText('기록을 불러오는 중이에요.')).not.toBeInTheDocument();
     });
 
     it('체크리스트는 로그인과 체크리스트를 기다리는 동안 준비 문구 없이 편집 화면 뼈대를 보여 준다', async () => {

@@ -3,7 +3,7 @@ import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, expect, it } from 'vitest';
 
 import { propertyHandlers } from '@/app/mocks/handlers/propertyHandlers';
 import { getMockProperties, resetMockStore, setMockProperties } from '@/app/mocks/mockStore';
@@ -108,39 +108,14 @@ it('푸터에 사용 방법과 개인정보 안내 링크를 둔다', () => {
   expect(footer.getByText('© 2026 자취선배')).toBeInTheDocument();
 });
 
-describe('최근 기록 칸 높이', () => {
-  /** 칸 안에서 보이지 않는 높이 기준 카드. 뼈대, 빈 기록, 카드 상태가 모두 이 카드 한 줄 높이를 쓴다. */
-  const sizerOf = (section: HTMLElement) => section.querySelector('[class*="RecentRooms-sizer"]');
-  const recentSection = () => screen.getByRole('heading', { name: '최근 기록한 방' }).closest('section') as HTMLElement;
-
-  it.each([
-    ['매물이 없을 때', [] as ReturnType<typeof getMockProperties>, '아직 기록한 방이 없어요.'],
-    ['매물이 하나일 때', getMockProperties().slice(0, 1), '신림역 원룸'],
-    ['매물이 여럿일 때', getMockProperties(), '망원동 투룸'],
-  ])(
-    '%s도 뼈대와 같은 높이 기준 카드를 두어, 뼈대에서 내용으로 바뀌어도 칸 높이가 그대로다',
-    async (_, properties, text) => {
-      setMockProperties(properties);
-      renderHome();
-
-      const skeletonSizer = sizerOf(recentSection());
-      expect(within(recentSection()).getByRole('status')).toHaveTextContent('기록을 불러오는 중이에요.');
-      expect(skeletonSizer).not.toBeNull();
-
-      expect(await screen.findByText(text)).toBeInTheDocument();
-      expect(within(recentSection()).queryByRole('status')).not.toBeInTheDocument();
-      // 같은 기준 카드가 그대로 남아 있어야 상태가 바뀌어도 칸이 펼쳐지거나 줄지 않는다.
-      expect(sizerOf(recentSection())).toBe(skeletonSizer);
-      expect(skeletonSizer).toHaveAttribute('aria-hidden', 'true');
-    },
-  );
-
-  it('뼈대 카드는 실제 카드와 같은 카드, 사진, 정보 줄 구조를 쓴다', () => {
-    renderHome();
-    const skeletonCard = sizerOf(recentSection())?.firstElementChild as HTMLElement;
-    expect(skeletonCard.className).toMatch(/RecentRooms-roomCard/);
-    expect(skeletonCard.querySelector('[class*="RecentRooms-roomPicture"]')).not.toBeNull();
-    const info = skeletonCard.querySelector('[class*="RecentRooms-roomInfo"]') as HTMLElement;
-    expect([...info.children].map((child) => child.tagName)).toEqual(['STRONG', 'SPAN', 'P']);
-  });
+it('최근 기록은 제목을 처음부터 보이고, 빠른 응답에는 안내 문구나 카드 뼈대 없이 바로 목록을 보여 준다', async () => {
+  renderHome();
+  const section = screen.getByRole('heading', { name: '최근 기록한 방' }).closest('section') as HTMLElement;
+  // 몇 개가 올지 모르는 목록이라 카드 뼈대를 두지 않는다.
+  expect(within(section).queryByRole('status')).not.toBeInTheDocument();
+  expect(section.querySelector('[class*="skeleton"]')).toBeNull();
+  // 데이터 전에도 문구 한 줄 높이는 잡아 둔다.
+  expect(section.querySelector('[class*="RecentRooms-body"]')).not.toBeNull();
+  expect(await within(section).findByText('신림역 원룸')).toBeInTheDocument();
+  expect(within(section).queryByText('기록을 불러오는 중이에요.')).not.toBeInTheDocument();
 });
