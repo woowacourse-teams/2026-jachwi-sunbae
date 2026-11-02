@@ -14,6 +14,7 @@ import ChecklistEditor from '@/features/checklist/ui/checklist-editor/ChecklistE
 import ChecklistEditorFrame, {
   ChecklistDesktopHeading,
 } from '@/features/checklist/ui/checklist-editor-frame/ChecklistEditorFrame';
+import ChecklistEditorSkeleton from '@/features/checklist/ui/checklist-editor-frame/ChecklistEditorSkeleton';
 import { trackPostHogEvent } from '@/shared/lib/analytics/posthog';
 import useIsDesktop from '@/shared/lib/hooks/useIsDesktop';
 import useReturnNavigation from '@/shared/lib/navigation/useReturnNavigation';
@@ -35,6 +36,9 @@ const CreateChecklistPage = () => {
   useEffect(() => {
     trackPostHogEvent('checklist_creation_started', { stage });
   }, []);
+
+  // 기본 항목을 받는 동안은 체크리스트 화면과 같은 뼈대를 둬, 뼈대에서 편집 화면으로 한 번만 바뀌게 한다.
+  if (preset.isPending) return <ChecklistEditorSkeleton />;
 
   if (!preset.isSuccess)
     return (
