@@ -19,7 +19,7 @@ export const authHandlers = [
   http.post('*/api/auth/login', () => tokenResponse()),
   http.post('*/api/auth/refresh', () => tokenResponse()),
   // 지금 Refresh 쿠키를 폐기하고 새 익명 회원을 만든다. 응답은 로그인과 같은 LoginResponse다.
-  http.post('*/api/auth/reset', () => {
+  http.post('*/api/auth/delete', () => {
     currentMemberId += 1;
     return tokenResponse(true);
   }),

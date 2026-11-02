@@ -146,7 +146,7 @@ describe('마이 화면의 초기화', () => {
   const useResetServer = (result: 'success' | 'failure') => {
     const state = { resetCalls: 0 };
     server.use(
-      http.post('*/api/auth/reset', () => {
+      http.post('*/api/auth/delete', () => {
         state.resetCalls += 1;
         if (result === 'failure') {
           return HttpResponse.json({ code: 'INTERNAL_ERROR', message: '실패', errors: [] }, { status: 500 });

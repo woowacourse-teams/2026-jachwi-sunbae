@@ -188,7 +188,8 @@ const sendRequest = async (
 
 const LOGIN_PATH = '/api/auth/login';
 const REFRESH_PATH = '/api/auth/refresh';
-const RESET_PATH = '/api/auth/reset';
+// 경로 이름은 delete지만 계정을 지우지 않는다. 지금 Refresh 쿠키를 폐기하고 새 익명 회원으로 바꾸는 초기화다.
+const RESET_PATH = '/api/auth/delete';
 
 type AuthenticationPath = typeof LOGIN_PATH | typeof REFRESH_PATH | typeof RESET_PATH;
 

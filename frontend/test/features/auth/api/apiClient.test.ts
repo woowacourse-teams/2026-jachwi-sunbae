@@ -298,7 +298,7 @@ describe('초기화', () => {
     queryClient.setQueryData(propertyQueryKeys.detail(10), { name: '이전 회원 매물' });
     let resetCredentials: RequestCredentials | undefined;
     server.use(
-      http.post(`${config.apiBaseUrl}/api/auth/reset`, ({ request }) => {
+      http.post(`${config.apiBaseUrl}/api/auth/delete`, ({ request }) => {
         resetCredentials = request.credentials;
         return loginResponse('new-member-token', 2, true);
       }),
@@ -316,7 +316,7 @@ describe('초기화', () => {
     setAuthentication({ accessToken: 'old-token', tokenType: 'Bearer', expiresIn: 900, memberId: 1 });
     queryClient.setQueryData(propertyQueryKeys.detail(10), { name: '보던 매물' });
     server.use(
-      http.post(`${config.apiBaseUrl}/api/auth/reset`, () =>
+      http.post(`${config.apiBaseUrl}/api/auth/delete`, () =>
         HttpResponse.json({ code: 'REFRESH_TOKEN_INVALID', message: '거절', errors: [] }, { status: 401 }),
       ),
     );
@@ -342,7 +342,7 @@ describe('초기화', () => {
         order.push('refresh-end');
         return loginResponse('refreshed-token', 1);
       }),
-      http.post(`${config.apiBaseUrl}/api/auth/reset`, () => {
+      http.post(`${config.apiBaseUrl}/api/auth/delete`, () => {
         order.push('reset');
         return loginResponse('new-member-token', 2, true);
       }),
@@ -378,7 +378,7 @@ describe('초기화', () => {
         refreshCalls += 1;
         return loginResponse('refreshed-token', 1);
       }),
-      http.post(`${config.apiBaseUrl}/api/auth/reset`, async () => {
+      http.post(`${config.apiBaseUrl}/api/auth/delete`, async () => {
         await resetGate;
         return loginResponse('new-member-token', 2, true);
       }),

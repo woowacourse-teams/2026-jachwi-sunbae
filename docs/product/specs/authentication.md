@@ -42,7 +42,7 @@
 
 ### 3.3. 초기화
 
-- `POL-AUTH-012`: `POST /api/auth/reset`은 요청의 Refresh Token을 폐기하고 새 익명 회원을 만들어 새 `refresh_token` 쿠키로 덮어쓴다. 응답 본문은 `POST /api/auth/login`과 같은 `LoginResponse`이며 `newMember`는 `true`다.
+- `POL-AUTH-012`: `POST /api/auth/delete`는 요청의 Refresh Token을 폐기하고 새 익명 회원을 만들어 새 `refresh_token` 쿠키로 덮어쓴다. 응답 본문은 `POST /api/auth/login`과 같은 `LoginResponse`이며 `newMember`는 `true`다.
 - `POL-AUTH-013`: 초기화가 실패하면 기존 Refresh Token과 회원을 그대로 둔다. 프론트엔드는 실패를 안내하고 기존 인증 상태와 화면을 유지한다.
 - `POL-AUTH-014`: 초기화 전 아이디의 기록은 초기화한 날부터 90일 동안 보관한 뒤 파기한다. 사용자가 앱에서 삭제한 매물, 체크리스트, 거리 메모도 삭제한 날부터 90일 뒤 같은 기준으로 완전히 파기한다.
 - `POL-AUTH-015`: 메일로 계정과 데이터의 완전 삭제를 요청하면 지금 아이디와 초기화 전 이전 아이디의 데이터를 함께 파기한다.
