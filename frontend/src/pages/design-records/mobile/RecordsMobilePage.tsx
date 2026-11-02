@@ -4,19 +4,13 @@ import { Link, useSearchParams } from 'react-router-dom';
 
 import type { MapAddress } from '@/features/map/model/Map';
 import useDelayedLoading from '@/shared/lib/hooks/useDelayedLoading';
-import { HOME_PATH } from '@/shared/lib/navigation/appPaths';
+import { HOME_PATH, RECORDS_VIEW_PARAM } from '@/shared/lib/navigation/appPaths';
 import Icon from '@/shared/ui/icon/Icon';
 
 import useQuickCreateProperty from '../hooks/useQuickCreateProperty';
 import useRecords from '../hooks/useRecords';
 import useRecordsMapLayers from '../hooks/useRecordsMapLayers';
-import {
-  parseRecordsView,
-  readLastRecordsView,
-  RECORDS_VIEW_PARAM,
-  type RecordsView,
-  writeLastRecordsView,
-} from '../model/recordsView';
+import { parseRecordsView, readLastRecordsView, type RecordsView, writeLastRecordsView } from '../model/recordsView';
 import RecordAddressSearch from '../ui/record-address-search/RecordAddressSearch';
 import RecordDistricts from '../ui/record-districts/RecordDistricts';
 import RecordList from '../ui/record-list/RecordList';
