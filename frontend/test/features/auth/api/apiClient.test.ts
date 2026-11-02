@@ -290,45 +290,89 @@ describe('API 클라이언트', () => {
 });
 
 describe('초기화', () => {
+  const RESET_URL = `${config.apiBaseUrl}/api/members/delete`;
   const loginResponse = (accessToken: string, memberId: number, newMember = false) =>
     success({ accessToken, tokenType: 'Bearer', expiresIn: 900, newMember, member: { memberId } });
+  const accessTokenInvalid = () =>
+    HttpResponse.json({ code: 'ACCESS_TOKEN_INVALID', message: '만료', errors: [] }, { status: 401 });
 
-  it('쿠키를 담아 초기화하면 새 회원 토큰으로 바꾸고 이전 회원의 화면 캐시를 지운다', async () => {
+  it('지금 회원의 Access Token과 쿠키를 담아 초기화하면 새 회원 토큰으로 바꾸고 이전 회원의 화면 캐시를 지운다', async () => {
     setAuthentication({ accessToken: 'old-token', tokenType: 'Bearer', expiresIn: 900, memberId: 1 });
     queryClient.setQueryData(propertyQueryKeys.detail(10), { name: '이전 회원 매물' });
-    let resetCredentials: RequestCredentials | undefined;
+    let resetRequest: { authorization: string | null; credentials: RequestCredentials } | undefined;
     server.use(
-      http.post(`${config.apiBaseUrl}/api/auth/delete`, ({ request }) => {
-        resetCredentials = request.credentials;
+      http.post(RESET_URL, ({ request }) => {
+        resetRequest = { authorization: request.headers.get('Authorization'), credentials: request.credentials };
         return loginResponse('new-member-token', 2, true);
       }),
     );
 
     await resetAuthentication(config);
 
-    expect(resetCredentials).toBe('include');
+    expect(resetRequest).toEqual({ authorization: 'Bearer old-token', credentials: 'include' });
     expect(getAccessToken()).toBe('new-member-token');
     expect(getAuthenticationSnapshot().session?.memberId).toBe(2);
     expect(queryClient.getQueryData(propertyQueryKeys.detail(10))).toBeUndefined();
   });
 
-  it('서버가 401로 거절해도 인증을 끝내지 않고 지금 회원과 캐시를 그대로 둔다', async () => {
+  it('초기화가 401을 받으면 같은 회원으로 한 번 갱신한 뒤 새 Access Token으로 다시 보낸다', async () => {
+    setAuthentication({ accessToken: 'stale-token', tokenType: 'Bearer', expiresIn: 900, memberId: 1 });
+    const authorizations: (string | null)[] = [];
+    let refreshCalls = 0;
+    server.use(
+      http.post(`${config.apiBaseUrl}/api/auth/refresh`, () => {
+        refreshCalls += 1;
+        return loginResponse('fresh-token', 1);
+      }),
+      http.post(RESET_URL, ({ request }) => {
+        authorizations.push(request.headers.get('Authorization'));
+        return request.headers.get('Authorization') === 'Bearer fresh-token'
+          ? loginResponse('new-member-token', 2, true)
+          : accessTokenInvalid();
+      }),
+    );
+
+    await resetAuthentication(config);
+
+    expect(authorizations).toEqual(['Bearer stale-token', 'Bearer fresh-token']);
+    expect(refreshCalls).toBe(1);
+    expect(getAuthenticationSnapshot().session).toMatchObject({ accessToken: 'new-member-token', memberId: 2 });
+  });
+
+  it('Access Token이 이미 만료됐으면 먼저 갱신하고 초기화를 보낸다', async () => {
+    setAuthentication({ accessToken: 'expired-token', tokenType: 'Bearer', expiresIn: 0, memberId: 1 });
+    const authorizations: (string | null)[] = [];
+    server.use(
+      http.post(`${config.apiBaseUrl}/api/auth/refresh`, () => loginResponse('fresh-token', 1)),
+      http.post(RESET_URL, ({ request }) => {
+        authorizations.push(request.headers.get('Authorization'));
+        return loginResponse('new-member-token', 2, true);
+      }),
+    );
+
+    await resetAuthentication(config);
+
+    expect(authorizations).toEqual(['Bearer fresh-token']);
+    expect(getAccessToken()).toBe('new-member-token');
+  });
+
+  it('서버가 초기화를 거절하면 지금 회원과 캐시를 그대로 둔다', async () => {
     setAuthentication({ accessToken: 'old-token', tokenType: 'Bearer', expiresIn: 900, memberId: 1 });
     queryClient.setQueryData(propertyQueryKeys.detail(10), { name: '보던 매물' });
     server.use(
-      http.post(`${config.apiBaseUrl}/api/auth/delete`, () =>
-        HttpResponse.json({ code: 'REFRESH_TOKEN_INVALID', message: '거절', errors: [] }, { status: 401 }),
+      http.post(RESET_URL, () =>
+        HttpResponse.json({ code: 'INTERNAL_ERROR', message: '실패', errors: [] }, { status: 500 }),
       ),
     );
 
-    await expect(resetAuthentication(config)).rejects.toMatchObject({ kind: 'server', code: 'REFRESH_TOKEN_INVALID' });
+    await expect(resetAuthentication(config)).rejects.toMatchObject({ kind: 'server', code: 'INTERNAL_ERROR' });
 
     expect(getAuthenticationSnapshot()).toMatchObject({ terminationReason: null, session: { memberId: 1 } });
     expect(getAccessToken()).toBe('old-token');
     expect(queryClient.getQueryData(propertyQueryKeys.detail(10))).toEqual({ name: '보던 매물' });
   });
 
-  it('진행 중인 토큰 갱신이 쿠키를 덮어쓴 뒤에 초기화를 보낸다', async () => {
+  it('진행 중인 토큰 갱신이 쿠키를 덮어쓴 뒤에 갱신된 토큰으로 초기화를 보낸다', async () => {
     setAuthentication({ accessToken: 'expired-token', tokenType: 'Bearer', expiresIn: 900, memberId: 1 });
     const order: string[] = [];
     let releaseRefresh: (() => void) | undefined;
@@ -342,13 +386,13 @@ describe('초기화', () => {
         order.push('refresh-end');
         return loginResponse('refreshed-token', 1);
       }),
-      http.post(`${config.apiBaseUrl}/api/auth/delete`, () => {
-        order.push('reset');
+      http.post(RESET_URL, ({ request }) => {
+        order.push(`reset ${request.headers.get('Authorization')}`);
         return loginResponse('new-member-token', 2, true);
       }),
       http.get(`${config.apiBaseUrl}/api/example`, ({ request }) =>
         request.headers.get('Authorization') === 'Bearer expired-token'
-          ? HttpResponse.json({ code: 'ACCESS_TOKEN_INVALID', message: '만료', errors: [] }, { status: 401 })
+          ? accessTokenInvalid()
           : success(request.headers.get('Authorization')),
       ),
     );
@@ -360,37 +404,44 @@ describe('초기화', () => {
     releaseRefresh?.();
     await reset;
 
-    expect(order).toEqual(['refresh-start', 'refresh-end', 'reset']);
+    expect(order).toEqual(['refresh-start', 'refresh-end', 'reset Bearer refreshed-token']);
     expect(getAccessToken()).toBe('new-member-token');
     // 초기화 전에 시작한 요청은 이전 회원의 갱신 토큰으로 마친다.
     await expect(expiredRequest).resolves.toBe('Bearer refreshed-token');
   });
 
-  it('초기화 중에 토큰이 필요해진 요청은 이전 회원 쿠키로 갱신하지 않고 초기화 응답을 기다린다', async () => {
-    setAuthentication({ accessToken: 'expired-token', tokenType: 'Bearer', expiresIn: 0, memberId: 1 });
+  it('초기화 중에 401을 받은 요청은 이전 회원 쿠키로 갱신하지 않고 초기화 응답을 기다린 뒤 버린다', async () => {
+    setAuthentication({ accessToken: 'old-token', tokenType: 'Bearer', expiresIn: 900, memberId: 1 });
     let refreshCalls = 0;
     let releaseReset: (() => void) | undefined;
     const resetGate = new Promise<void>((resolve) => {
       releaseReset = resolve;
+    });
+    let markResetStarted: (() => void) | undefined;
+    const resetStarted = new Promise<void>((resolve) => {
+      markResetStarted = resolve;
     });
     server.use(
       http.post(`${config.apiBaseUrl}/api/auth/refresh`, () => {
         refreshCalls += 1;
         return loginResponse('refreshed-token', 1);
       }),
-      http.post(`${config.apiBaseUrl}/api/auth/delete`, async () => {
+      http.post(RESET_URL, async () => {
+        markResetStarted?.();
         await resetGate;
         return loginResponse('new-member-token', 2, true);
       }),
-      http.get(`${config.apiBaseUrl}/api/example`, ({ request }) => success(request.headers.get('Authorization'))),
+      http.get(`${config.apiBaseUrl}/api/example`, () => accessTokenInvalid()),
     );
 
     const reset = resetAuthentication(config);
+    await resetStarted;
     const request = apiRequest({ config, path: '/api/example', parseData: (value) => value });
     releaseReset?.();
     await reset;
 
-    await expect(request).resolves.toBe('Bearer new-member-token');
+    await expect(request).rejects.toMatchObject({ kind: 'authentication-ended' });
     expect(refreshCalls).toBe(0);
+    expect(getAccessToken()).toBe('new-member-token');
   });
 });

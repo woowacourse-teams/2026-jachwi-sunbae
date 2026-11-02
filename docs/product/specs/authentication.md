@@ -15,7 +15,7 @@
 - `REQ-AUTH-003`: Access Token이 만료되면 화면 상태를 유지한 채 새 토큰을 발급받아 이용을 계속한다.
 - `REQ-AUTH-004`: 로그인 요청에서 기존 인증을 복원할 수 없으면 새 익명 회원으로 시작한다. 이전 회원의 데이터는 이 요청으로 삭제하지 않는다.
 - `REQ-AUTH-005`: 토큰 갱신 요청에서 기존 인증을 복원할 수 없으면 실패를 알리고 새 회원을 자동 생성하지 않는다.
-- `REQ-AUTH-006`: 로그인, 토큰 갱신, 초기화를 제외한 업무 API는 익명 회원에게도 Access Token을 요구한다.
+- `REQ-AUTH-006`: 로그인과 토큰 갱신을 제외한 업무 API는 익명 회원에게도 Access Token을 요구한다.
 - `REQ-AUTH-007`: 회원은 다른 회원의 매물·체크 기록을 조회·변경·삭제할 수 없다.
 - `REQ-AUTH-008`: DB 장애나 저장 데이터 손상을 인증 실패 또는 새 회원 생성으로 숨기지 않는다.
 - `REQ-AUTH-009`: 회원은 마이 화면의 초기화로 새 익명 아이디를 받아 다시 시작할 수 있다. 초기화는 탈퇴나 삭제가 아니며, 이전 아이디의 기록에는 더 이상 접근할 수 없다.
@@ -42,7 +42,7 @@
 
 ### 3.3. 초기화
 
-- `POL-AUTH-012`: `POST /api/auth/delete`는 요청의 Refresh Token을 폐기하고 새 익명 회원을 만들어 새 `refresh_token` 쿠키로 덮어쓴다. 응답 본문은 `POST /api/auth/login`과 같은 `LoginResponse`이며 `newMember`는 `true`다.
+- `POL-AUTH-012`: `POST /api/members/delete`는 경로 이름과 달리 회원을 삭제하지 않는 초기화다. `refresh_token` 쿠키(`Path=/api/auth`)는 이 요청에 실리지 않으므로 다른 회원 API처럼 Access Token으로 회원을 확인한다. 그 회원의 Refresh Token(회원당 하나)을 회원 번호로 폐기하고 새 익명 회원을 만들어 새 `refresh_token` 쿠키(`Path=/api/auth`, HttpOnly, Secure, `SameSite=Lax`, 365일)로 덮어쓴다. 응답 본문은 `POST /api/auth/login`과 같은 `LoginResponse`이며 `newMember`는 `true`다. Access Token이 없거나 유효하지 않으면 `401 ACCESS_TOKEN_INVALID`를 반환하고, 프론트엔드는 토큰을 한 번 갱신해 다시 보낸다.
 - `POL-AUTH-013`: 초기화가 실패하면 기존 Refresh Token과 회원을 그대로 둔다. 프론트엔드는 실패를 안내하고 기존 인증 상태와 화면을 유지한다.
 - `POL-AUTH-014`: 초기화 전 아이디의 기록은 초기화한 날부터 90일 동안 보관한 뒤 파기한다. 사용자가 앱에서 삭제한 매물, 체크리스트, 거리 메모도 삭제한 날부터 90일 뒤 같은 기준으로 완전히 파기한다.
 - `POL-AUTH-015`: 메일로 계정과 데이터의 완전 삭제를 요청하면 지금 아이디와 초기화 전 이전 아이디의 데이터를 함께 파기한다.
