@@ -11,12 +11,7 @@ type LocationAddressSheetProps = {
   onConfirm: () => void;
 };
 
-const LocationAddressSheet = ({
-  selected,
-  status,
-  onOpenSearch,
-  onConfirm,
-}: LocationAddressSheetProps) => {
+const LocationAddressSheet = ({ selected, status, onOpenSearch, onConfirm }: LocationAddressSheetProps) => {
   const selectedAddress = selected.roadAddress ?? selected.jibunAddress;
 
   return (
