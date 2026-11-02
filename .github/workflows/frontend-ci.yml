@@ -97,11 +97,16 @@ jobs:
         run: npm run typecheck
 
   test:
-    name: Test frontend
+    name: Test frontend (${{ matrix.shard }}/2)
     needs: changes
     if: needs.changes.outputs.frontend == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    # 테스트가 가장 긴 job이라 두 runner에 나눠 static job과 비슷한 시간에 끝나게 한다.
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2]
     defaults:
       run:
         working-directory: frontend
@@ -114,7 +119,7 @@ jobs:
         uses: ./.github/actions/setup-frontend
 
       - name: Test
-        run: npm run test
+        run: npm run test -- --shard=${{ matrix.shard }}/2
 
   build:
     name: Build frontend
