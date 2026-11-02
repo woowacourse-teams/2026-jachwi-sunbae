@@ -10,7 +10,7 @@ React 19·TypeScript 6·Webpack 5 기반 모바일 우선 SPA입니다.
 
 체크리스트 집계 막대와 범례는 괜찮음=초록, 주의=빨강, 미확인=회색을 사용합니다. 동네 찾기 통근 범례도 홈 집계처럼 짧은 세로 색상 막대와 텍스트로 표시하며, 통근 구간의 파랑·초록·빨강 의미는 유지합니다.
 
-페이지 전환의 화면 파일 로딩은 공용 `ProgressCircle`(40px)로 표시하되, 500ms 안에 끝나면 보여 주지 않습니다. 홈(`/properties`)은 사진·텍스트 형태의 매물 스켈레톤을 사용하며 목록 데이터 로딩에도 같은 스켈레톤을 재사용합니다. 실제 진행률을 알 수 없어 원형 로딩은 불확정 회전으로 표시합니다. `LazyRouteBoundary`의 fallback만 변경하면 기존 안내 UI로 되돌릴 수 있으며 오류·재시도 화면은 유지합니다.
+페이지 전환의 화면 파일 로딩은 공용 `ProgressCircle`(40px)로 표시하되, 300ms 안에 끝나면 보여 주지 않습니다. 홈(`/properties`)은 사진·텍스트 형태의 매물 스켈레톤을 사용하며 목록 데이터 로딩에도 같은 스켈레톤을 재사용합니다. 실제 진행률을 알 수 없어 원형 로딩은 불확정 회전으로 표시합니다. `LazyRouteBoundary`의 fallback만 변경하면 기존 안내 UI로 되돌릴 수 있으며 오류·재시도 화면은 유지합니다.
 
 - [백엔드와 프론트엔드 로컬 개발](../backend/docs/guides/local-development.md)
 - [백엔드 환경변수](../backend/docs/guides/environment-variables.md)
@@ -164,6 +164,6 @@ Storybook에서는 구현 내부가 아니라 기본·로딩·에러·빈 상태
 - 데스크탑·휴대폰 화면을 나눈 페이지(홈·본 방 기록·동네 찾기·방 비교·마이)는 그 아래를 `데스크탑`·`휴대폰`·`공통`으로 나눕니다. `desktop/`·`mobile/` 폴더의 화면과 조각은 meta에 `globals: { viewport: { value: 'desktop' | 'mobile' } }`을 두어 그 화면 폭으로 엽니다. 툴바의 화면 폭은 휴대폰(390)·태블릿(820)·데스크탑(1440)입니다.
 - 값은 `args`로 넘겨 Controls 패널에서 바꿔 볼 수 있게 합니다. 콜백은 `fn()`(`storybook/test`)으로 두어 Actions 패널에 호출이 찍히게 하고, 컨트롤로 바꿀 수 없는 ReactNode·함수 props는 `argTypes`에서 `control: false`로 숨깁니다. `className`·`ref`는 전역에서 숨깁니다.
 
-`npm run build`는 번들 생성 전에 `npm run typecheck`를 실행합니다. 개발 중 타입 오류만 빠르게 확인하려면 `npm run typecheck`를 직접 실행합니다.
+`npm run build`는 번들 생성 전에 `npm run typecheck`를 실행합니다. 개발 중 타입 오류만 빠르게 확인하려면 `npm run typecheck`를 직접 실행합니다. `npm run build:bundle`은 타입 검사 없이 번들만 만듭니다. Frontend CI는 타입 검사와 번들 생성을 다른 job에서 병렬로 돌리려고 이 스크립트를 씁니다.
 
 실제 모바일 브라우저 확인은 운영 엔트리포인트를 `390x844`와 일반 모바일 폭에서 실행해 위 표의 경로와 주요 CRUD·체크·지도 흐름을 확인합니다.
