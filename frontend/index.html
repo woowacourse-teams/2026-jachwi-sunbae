@@ -114,7 +114,10 @@
 
   <body>
     <div id="root">
-      <div class="boot-skeleton boot-skeleton--home" role="progressbar" aria-label="화면을 불러오는 중이에요."><div class="boot-skeleton__header"></div><div class="boot-skeleton__body"><span></span><span></span><span></span><span></span></div></div>
+      <div class="boot-skeleton boot-skeleton--home" role="progressbar" aria-label="화면을 불러오는 중이에요.">
+        <div class="boot-skeleton__header"></div>
+        <div class="boot-skeleton__body"><span></span><span></span><span></span><span></span></div>
+      </div>
     </div>
     <script>
       if (location.pathname !== '/') document.querySelector('.boot-skeleton').classList.remove('boot-skeleton--home');
