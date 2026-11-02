@@ -16,7 +16,9 @@ import useReturnNavigation from '@/shared/lib/navigation/useReturnNavigation';
 import ContentState from '@/shared/ui/content-state/ContentState';
 import Icon from '@/shared/ui/icon/Icon';
 import IconButton from '@/shared/ui/icon-button/IconButton';
+import LoadingRegion from '@/shared/ui/skeleton/LoadingRegion';
 
+import PropertyChecklistSkeleton from './PropertyChecklistSkeleton';
 import PropertyChecklistItemControl from './ui/property-checklist-item-control/PropertyChecklistItemControl';
 
 import * as styles from './PropertyChecklistPage.styles';
@@ -65,7 +67,13 @@ const ResolvedPropertyChecklistPage = ({
   });
 
   // 페이지 전체를 바꾸는 중이라 남겨 둘 내용이 없으므로 로딩을 늦추지 않고 바로 보여 준다.
-  if (checklist.isPending) return <ContentState loading title="체크리스트를 불러오는 중이에요." />;
+  if (checklist.isPending) {
+    return (
+      <LoadingRegion label="체크리스트를 불러오는 중이에요.">
+        <PropertyChecklistSkeleton />
+      </LoadingRegion>
+    );
+  }
 
   if (checklist.isError) {
     const isNotFound = isApiErrorCode(checklist.error, 'PROPERTY_CHECKLIST_NOT_FOUND');

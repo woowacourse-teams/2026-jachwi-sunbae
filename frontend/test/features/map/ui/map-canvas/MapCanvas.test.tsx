@@ -148,20 +148,27 @@ describe('Naver 지도 상태 동기화', () => {
       <MapCanvas center={{ latitude: 37.5, longitude: 127 }} customStyleId="style" interactive />,
     );
     // 금방 준비되는 지도에서 안내가 번쩍이지 않게, 처음에는 띄우지 않는다.
-    expect(view.queryByRole('status')).not.toBeInTheDocument();
+    expect(view.queryByRole('progressbar', { name: '지도를 불러오는 중이에요.' })).not.toBeInTheDocument();
     await waitFor(() => expect(maps).toHaveLength(1));
-    expect(await view.findByRole('status', {}, { timeout: 1500 })).toHaveTextContent('지도를 불러오고 있어요');
+    // 지도 위에 덧그리는 작은 Overlay라 글자 없이 Progress Circle(24)만 둔다.
+    expect(
+      await view.findByRole('progressbar', { name: '지도를 불러오는 중이에요.' }, { timeout: 1500 }),
+    ).toBeInTheDocument();
+    expect(view.queryByText('지도를 불러오고 있어요')).not.toBeInTheDocument();
 
     (maps[0] as FakeMapInstance & { _glReady?: boolean })._glReady = true;
 
-    await waitFor(() => expect(view.queryByRole('status')).not.toBeInTheDocument(), { timeout: 1500 });
+    await waitFor(
+      () => expect(view.queryByRole('progressbar', { name: '지도를 불러오는 중이에요.' })).not.toBeInTheDocument(),
+      { timeout: 1500 },
+    );
   });
 
   it('화면이 자체 로딩으로 지도를 덮으면 지도 준비 안내를 띄우지 않는다', () => {
     const view = renderWithConfig(
       <MapCanvas center={{ latitude: 37.5, longitude: 127 }} customStyleId="style" interactive hideLoading />,
     );
-    expect(view.queryByRole('status')).not.toBeInTheDocument();
+    expect(view.queryByRole('progressbar', { name: '지도를 불러오는 중이에요.' })).not.toBeInTheDocument();
   });
 
   it('동네에 마우스를 올리면 채움이 진해지고 벗어나면 복원한다', async () => {

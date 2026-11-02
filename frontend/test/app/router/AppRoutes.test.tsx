@@ -1,5 +1,5 @@
 import { QueryClientProvider } from '@tanstack/react-query';
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import { StrictMode } from 'react';
@@ -194,6 +194,28 @@ describe('익명 자동 인증 흐름', () => {
 
       expect(await screen.findByRole('button', { name: '체크 항목 추가' })).toBeInTheDocument();
       expect(screen.queryByText('체크리스트를 불러오는 중이에요.')).not.toBeInTheDocument();
+    });
+
+    it.each([
+      ['/properties/10', '매물 상세를 불러오는 중이에요.'],
+      ['/properties/10/edit', '매물 정보를 불러오는 중이에요.'],
+      ['/properties/10/photos', '사진 정보를 불러오는 중이에요.'],
+      ['/properties/10/memo', '부가 정보를 불러오는 중이에요.'],
+      ['/properties/10/active-checklists/ON_SITE', '체크리스트를 불러오는 중이에요.'],
+      ['/properties/10/checklists/51', '체크리스트를 불러오는 중이에요.'],
+    ])('%s는 기다리는 동안 글자 로딩 대신 페이지 뼈대를 보여 준다', async (path, label) => {
+      const release = holdLogin();
+      renderWithMockServer(path);
+
+      const status = await screen.findByRole('status');
+      // 안내는 읽기 프로그램에만 알리고, 화면에는 뼈대만 둔다.
+      expect(status).toHaveTextContent(label);
+      expect(status.querySelector('.sr-only')).toHaveTextContent(label);
+      expect(status.querySelectorAll('[aria-hidden="true"]').length).toBeGreaterThan(1);
+      expect(screen.queryByRole('progressbar')).not.toBeInTheDocument();
+
+      release();
+      await waitFor(() => expect(status).not.toBeInTheDocument());
     });
 
     it('마이는 회원 정보가 필요해 회원이 정해진 뒤 본문을 그린다', async () => {

@@ -1,8 +1,9 @@
-import { css, keyframes } from '@emotion/css';
+import { css } from '@emotion/css';
 
 import useIsDesktop from '@/shared/lib/hooks/useIsDesktop';
 import { HOME_PATH } from '@/shared/lib/navigation/appPaths';
 import useReturnNavigation from '@/shared/lib/navigation/useReturnNavigation';
+import Skeleton from '@/shared/ui/skeleton/Skeleton';
 import TopNavigation from '@/shared/ui/top-navigation/TopNavigation';
 
 import ChecklistEditorFrame, { ChecklistDesktopHeading } from './ChecklistEditorFrame';
@@ -12,6 +13,7 @@ const ITEM_COUNT = 4;
 /**
  * 체크리스트 편집 화면(`/checklists`)의 뼈대. 처음 여는 화면이라 남겨 둘 내용이 없으므로 늦추지 않고 바로 보여 준다.
  * 체크리스트 목록, 상세, 기본 항목을 받는 동안 같은 자리에 같은 뼈대를 두어, 뼈대에서 편집 화면으로 한 번만 바뀐다.
+ * 읽기 프로그램 안내는 감싸는 쪽(`QueryState`, `LoadingRegion`)이 한다.
  * 첫 번들 크기 한도 때문에 라우트 Suspense 대체 화면으로는 쓰지 않는다. 화면 코드는 자동 로그인과 함께 받으므로 대개 먼저 도착한다.
  */
 const ChecklistEditorSkeleton = () => {
@@ -31,26 +33,17 @@ const ChecklistEditorSkeleton = () => {
           onBack={goBack}
         />
       )}
-      <div className={styles.body} role="status">
-        <span className="sr-only">체크리스트를 불러오는 중이에요.</span>
-        <div aria-hidden="true">
-          <span className={`${styles.block} ${styles.heading}`} />
-          <ul className={styles.items}>
-            {Array.from({ length: ITEM_COUNT }, (_, index) => (
-              <li key={index} className={`${styles.block} ${styles.item}`} />
-            ))}
-          </ul>
+      <div className={styles.body}>
+        <Skeleton width="40%" height="1rem" />
+        <div className={styles.items}>
+          {Array.from({ length: ITEM_COUNT }, (_, index) => (
+            <Skeleton key={index} shape="card" height="3.5rem" />
+          ))}
         </div>
       </div>
     </ChecklistEditorFrame>
   );
 };
-
-const shimmer = keyframes`
-  to {
-    background-position: -200% 0;
-  }
-`;
 
 const styles = {
   /* 체크리스트 편집 화면(ChecklistDetailPage)과 같은 바깥 여백 */
@@ -70,38 +63,13 @@ const styles = {
     padding: 0.75rem 0;
   `,
 
-  block: css`
-    label: ChecklistEditorSkeleton-block;
-    display: block;
-    border-radius: 0.6rem;
-    background: linear-gradient(90deg, #eff1f5 25%, #e3e6eb 50%, #eff1f5 75%);
-    background-size: 200% 100%;
-    animation: ${shimmer} 1.2s ease-in-out infinite;
-
-    @media (prefers-reduced-motion: reduce) {
-      animation: none;
-    }
-  `,
-
-  heading: css`
-    label: ChecklistEditorSkeleton-heading;
-    width: 40%;
-    height: 1rem;
-  `,
-
   items: css`
     label: ChecklistEditorSkeleton-items;
     display: grid;
     gap: 0.6rem;
-    margin: 1rem 0 0;
-    padding: 0;
-    list-style: none;
+    margin-top: 1rem;
   `,
 
-  item: css`
-    label: ChecklistEditorSkeleton-item;
-    height: 3.5rem;
-  `,
 };
 
 export default ChecklistEditorSkeleton;

@@ -6,8 +6,10 @@ import { usePropertyDetail } from '@/features/property/api/useProperties';
 import { parsePositiveId } from '@/features/property/lib/propertyFormat';
 import { HOME_PATH, propertyDetailPath } from '@/shared/lib/navigation/appPaths';
 import ContentState from '@/shared/ui/content-state/ContentState';
+import LoadingRegion from '@/shared/ui/skeleton/LoadingRegion';
 import TopNavigation from '@/shared/ui/top-navigation/TopNavigation';
 
+import PropertyMemoSkeleton from './PropertyMemoSkeleton';
 import PropertyAdditionalInfoForm from './ui/property-additional-info-form/PropertyAdditionalInfoForm';
 
 const PropertyMemoPage = () => {
@@ -37,7 +39,13 @@ const ResolvedPropertyMemoPage = ({ propertyId }: { propertyId: number }) => {
     );
   }
   // 페이지 전체를 바꾸는 중이라 남겨 둘 내용이 없으므로 로딩을 늦추지 않고 바로 보여 준다.
-  if (property.isPending) return <ContentState loading title="부가 정보를 불러오는 중이에요." />;
+  if (property.isPending) {
+    return (
+      <LoadingRegion label="부가 정보를 불러오는 중이에요.">
+        <PropertyMemoSkeleton />
+      </LoadingRegion>
+    );
+  }
 
   return (
     <main className={styles.page}>

@@ -25,14 +25,16 @@ describe('QueryState', () => {
     expect(screen.getByText('매물 상세')).toBeInTheDocument();
   });
 
-  it('페이지 전체를 그리는 조회라 기다리는 동안 로딩 안내를 늦추지 않고 바로 보여 준다', () => {
+  it('페이지 전체를 그리는 조회라 기다리는 동안 늦추지 않고 Progress Circle을 바로 둔다', () => {
     render(
       <QueryState query={{ ...baseQuery, isPending: true }} loadingTitle="불러오는 중" describeError={describeError}>
         {() => <p>본문</p>}
       </QueryState>,
     );
 
-    expect(screen.getByRole('status')).toHaveTextContent('불러오는 중');
+    // 글자로만 된 로딩은 두지 않고, 뼈대가 없으면 Progress Circle(40)만 둔다.
+    expect(screen.getByRole('progressbar', { name: '불러오는 중' })).toBeInTheDocument();
+    expect(screen.queryByText('불러오는 중')).not.toBeInTheDocument();
   });
 
   it('뼈대를 주면 로딩 안내 대신 뼈대를 보여 주고, 받으면 내용으로 바로 바꾼다', () => {
@@ -50,7 +52,8 @@ describe('QueryState', () => {
 
     expect(screen.getByText('화면 뼈대')).toBeInTheDocument();
     act(() => vi.advanceTimersByTime(300));
-    expect(screen.queryByText('불러오는 중')).not.toBeInTheDocument();
+    // 안내는 읽기 프로그램에만 한 번 알린다.
+    expect(screen.getByRole('status')).toHaveTextContent('불러오는 중');
 
     rerender(
       <QueryState

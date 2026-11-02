@@ -9,10 +9,11 @@ type PropertyListQuery = ReturnType<typeof usePropertyList>;
 const query = (overrides: Partial<Record<keyof PropertyListQuery, unknown>>) =>
   ({ isPending: false, isError: false, error: null, refetch: vi.fn(), ...overrides }) as unknown as PropertyListQuery;
 
-it('새로 연 비교 화면의 본문 전체라 매물을 기다리는 동안 안내를 늦추지 않고 바로 보여 준다', () => {
+it('새로 연 비교 화면의 본문 전체라 매물을 기다리는 동안 글자 없이 Progress Circle을 바로 둔다', () => {
   render(<CompareLoadState properties={query({ isPending: true })}>{() => <p>비교 내용</p>}</CompareLoadState>);
 
-  expect(screen.getByRole('status')).toHaveTextContent('매물을 불러오는 중이에요.');
+  expect(screen.getByRole('progressbar', { name: '매물을 불러오는 중이에요.' })).toBeInTheDocument();
+  expect(screen.queryByText('매물을 불러오는 중이에요.')).not.toBeInTheDocument();
   expect(screen.queryByText('비교 내용')).not.toBeInTheDocument();
 });
 

@@ -11,6 +11,7 @@ import EmptyState from '@/shared/ui/empty-state/EmptyState';
 import Icon from '@/shared/ui/icon/Icon';
 import InlineNotice from '@/shared/ui/inline-notice/InlineNotice';
 import ListDetailLayout from '@/shared/ui/list-detail-layout/ListDetailLayout';
+import ProgressCircle from '@/shared/ui/progress-circle/ProgressCircle';
 import SearchField from '@/shared/ui/search-field/SearchField';
 
 import type { MealLayout } from '../hooks/useMealTabs';
@@ -87,7 +88,7 @@ const RestaurantPanel = ({ isActive, layout }: RestaurantPanelProps) => {
   );
   const storeList =
     map.query.isPending || isLoadingVisible ? (
-      isLoadingVisible && <p role="status">주변 가게를 찾고 있어요…</p>
+      isLoadingVisible && <ProgressCircle size={24} label="주변 가게를 찾고 있어요." />
     ) : map.query.isError ? (
       <div role="alert">
         <p>가게 정보를 불러오지 못했어요.</p>
