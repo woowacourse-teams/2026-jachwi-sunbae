@@ -1,15 +1,15 @@
-import { css, cx } from '@emotion/css';
+import { css, cx, keyframes } from '@emotion/css';
 
 import { usePropertyList } from '@/features/property/api/useProperties';
 import { formatRentSummary } from '@/features/property/lib/propertyFormat';
 import AuthenticatedPhoto from '@/features/property/ui/authenticated-photo/AuthenticatedPhoto';
 import { Button } from '@/shared/ui/button/Button';
-import DelayedFallback from '@/shared/ui/delayed-fallback/DelayedFallback';
 import HorizontalRail from '@/shared/ui/horizontal-rail/HorizontalRail';
 import Icon from '@/shared/ui/icon/Icon';
 import RailCard from '@/shared/ui/rail-card/RailCard';
 
 const RECENT_ROOM_LIMIT = 5;
+const SKELETON_CARD_COUNT = 3;
 
 type RecentRoomsProps = {
   /** 켜면 좁은 오른쪽 열에 맞게 카드를 두 장 남짓 보이도록 둔다(데스크탑). */
@@ -24,61 +24,83 @@ const RecentRooms = ({ inSideColumn = false }: RecentRoomsProps) => {
       <div className={styles.sectionHeading}>
         <h2 id="recent-heading">최근 기록한 방</h2>
       </div>
-      {/* 빠른 응답에는 로딩 문구 없이 바로 목록을 보여 주고, 오래 걸릴 때만 알린다. */}
-      <DelayedFallback isPending={properties.isPending} fallback={<p role="status">기록을 불러오는 중이에요.</p>}>
-        {() =>
-          properties.isError ? (
-            <div className={styles.loadError} role="alert">
-              {/* 불러오기 실패 이미지는 준비되면 이 자리에 넣는다. */}
-              <span className={styles.loadErrorImage} aria-hidden="true" />
-              <p>기록을 불러오지 못했어요.</p>
-              <Button variant="secondary" isLoading={properties.isFetching} onClick={() => void properties.refetch()}>
-                다시 시도
-              </Button>
-            </div>
-          ) : rooms.length === 0 ? (
-            <p>아직 기록한 방이 없어요.</p>
-          ) : (
-            <HorizontalRail className={styles.rooms} aria-label="최근 기록한 방 목록">
-              {rooms.map((property) => (
-                <RailCard
-                  // 데스크탑은 같은 주소에서 본 방 기록 화면이 이 매물을 고른 채로 열린다.
-                  to={`/properties/${property.propertyId}`}
-                  state={{ returnTo: '/' }}
-                  key={property.propertyId}
-                  className={styles.roomCard}
-                >
-                  {property.representativePhoto ? (
-                    <AuthenticatedPhoto
-                      propertyId={property.propertyId}
-                      photoId={property.representativePhoto.photoId}
-                      contentUrl={property.representativePhoto.contentUrl}
-                      alt={`${property.name} 대표 사진`}
-                      className={styles.roomPicture}
-                      errorMode="retry-only"
-                    />
-                  ) : (
-                    <span className={`${styles.roomPicture} ${styles.photoFallback}`} aria-label="대표 사진 없음">
-                      <Icon name="image" size={18} />
-                    </span>
-                  )}
-                  <div className={styles.roomInfo}>
-                    <strong>{property.name}</strong>
-                    <span className={styles.rent}>
-                      {property.monthlyRentAmount > 0 ? '월세 ' : ''}
-                      {formatRentSummary(property.depositAmount, property.monthlyRentAmount)}
-                    </span>
-                    <p>{property.location.address ?? '주소 미등록'}</p>
-                  </div>
-                </RailCard>
-              ))}
-            </HorizontalRail>
-          )
-        }
-      </DelayedFallback>
+      {/* 기록을 처음 받을 때는 남겨 둘 내용이 없으므로, 늦추지 않고 카드 뼈대를 바로 두었다가 카드로 한 번만 바꾼다. */}
+      {properties.isPending ? (
+        <RecentRoomsSkeleton />
+      ) : properties.isError ? (
+        <div className={styles.loadError} role="alert">
+          {/* 불러오기 실패 이미지는 준비되면 이 자리에 넣는다. */}
+          <span className={styles.loadErrorImage} aria-hidden="true" />
+          <p>기록을 불러오지 못했어요.</p>
+          <Button variant="secondary" isLoading={properties.isFetching} onClick={() => void properties.refetch()}>
+            다시 시도
+          </Button>
+        </div>
+      ) : rooms.length === 0 ? (
+        <p>아직 기록한 방이 없어요.</p>
+      ) : (
+        <HorizontalRail className={styles.rooms} aria-label="최근 기록한 방 목록">
+          {rooms.map((property) => (
+            <RailCard
+              // 데스크탑은 같은 주소에서 본 방 기록 화면이 이 매물을 고른 채로 열린다.
+              to={`/properties/${property.propertyId}`}
+              state={{ returnTo: '/' }}
+              key={property.propertyId}
+              className={styles.roomCard}
+            >
+              {property.representativePhoto ? (
+                <AuthenticatedPhoto
+                  propertyId={property.propertyId}
+                  photoId={property.representativePhoto.photoId}
+                  contentUrl={property.representativePhoto.contentUrl}
+                  alt={`${property.name} 대표 사진`}
+                  className={styles.roomPicture}
+                  errorMode="retry-only"
+                />
+              ) : (
+                <span className={`${styles.roomPicture} ${styles.photoFallback}`} aria-label="대표 사진 없음">
+                  <Icon name="image" size={18} />
+                </span>
+              )}
+              <div className={styles.roomInfo}>
+                <strong>{property.name}</strong>
+                <span className={styles.rent}>
+                  {property.monthlyRentAmount > 0 ? '월세 ' : ''}
+                  {formatRentSummary(property.depositAmount, property.monthlyRentAmount)}
+                </span>
+                <p>{property.location.address ?? '주소 미등록'}</p>
+              </div>
+            </RailCard>
+          ))}
+        </HorizontalRail>
+      )}
     </section>
   );
 };
+
+/** 최근 기록 카드와 같은 크기의 뼈대. 읽기 프로그램에는 불러오는 중이라고만 알린다. */
+const RecentRoomsSkeleton = () => (
+  <div role="status">
+    <span className="sr-only">기록을 불러오는 중이에요.</span>
+    <div className={`${styles.rooms} ${styles.skeletonRail}`} aria-hidden="true">
+      {Array.from({ length: SKELETON_CARD_COUNT }, (_, index) => (
+        <div key={index} className={styles.roomCard}>
+          <span className={`${styles.roomPicture} ${styles.skeleton}`} />
+          <div className={styles.roomInfo}>
+            <span className={`${styles.skeleton} ${styles.skeletonLine}`} />
+            <span className={`${styles.skeleton} ${styles.skeletonLine}`} />
+          </div>
+        </div>
+      ))}
+    </div>
+  </div>
+);
+
+const skeletonShimmer = keyframes`
+  to {
+    background-position: -200% 0;
+  }
+`;
 
 const styles = {
   // 다른 요소의 선택자에서 `.RecentRooms-section`로 가리킨다.
@@ -198,6 +220,36 @@ const styles = {
       padding: 0.1rem 0.25rem;
       font-size: 0.58rem;
       text-decoration: none;
+    }
+  `,
+
+  /* 뼈대 카드는 넘겨 볼 필요가 없어 가로 레일 대신 한 줄에 두고 넘치는 카드는 자른다. */
+  skeletonRail: css`
+    label: RecentRooms-skeletonRail;
+    display: flex;
+    gap: var(--horizontal-rail-gap);
+    overflow: hidden;
+  `,
+
+  skeleton: css`
+    label: RecentRooms-skeleton;
+    display: block;
+    border-radius: 0.4rem;
+    background: linear-gradient(90deg, #eff1f5 25%, #e3e6eb 50%, #eff1f5 75%);
+    background-size: 200% 100%;
+    animation: ${skeletonShimmer} 1.2s ease-in-out infinite;
+
+    @media (prefers-reduced-motion: reduce) {
+      animation: none;
+    }
+  `,
+
+  skeletonLine: css`
+    label: RecentRooms-skeletonLine;
+    height: 0.75rem;
+
+    &:last-child {
+      width: 70%;
     }
   `,
 

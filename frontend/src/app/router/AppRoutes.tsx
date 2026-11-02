@@ -4,7 +4,10 @@ import { Navigate, Route, Routes, useLocation, useParams } from 'react-router-do
 
 import PropertyAppLayout from '@/app/layouts/property-app-layout/PropertyAppLayout';
 import PublicExploreLayout from '@/app/layouts/public-explore-layout/PublicExploreLayout';
+// 첫 주소(`/`)인 홈은 화면 코드를 따로 받지 않고 앱과 함께 받아, 처음 열 때 Suspense 대체 화면 없이 바로 그린다.
+import DesignHomePage from '@/pages/design-home/DesignHomePage';
 import RecordsPageSkeleton from '@/pages/design-records/RecordsPageSkeleton';
+import ChecklistEditorSkeleton from '@/features/checklist/ui/checklist-editor-frame/ChecklistEditorSkeleton';
 import useIsDesktop from '@/shared/lib/hooks/useIsDesktop';
 import { RECORDS_PATH } from '@/shared/lib/navigation/appPaths';
 
@@ -12,7 +15,6 @@ import LazyRouteBoundary from './LazyRouteBoundary';
 import ProtectedRoute from './ProtectedRoute';
 
 const CheapMealsPage = lazy(() => import('@/pages/cheap-meals/CheapMealsPage'));
-const DesignHomePage = lazy(() => import('@/pages/design-home/DesignHomePage'));
 const DesignRecordsPage = lazy(() => import('@/pages/design-records/DesignRecordsPage'));
 const NeighborhoodPreviewPage = lazy(() => import('@/pages/neighborhood-preview/NeighborhoodPreviewPage'));
 const NeighborhoodRoutePage = lazy(() => import('@/pages/neighborhood-preview/NeighborhoodRoutePage'));
@@ -99,7 +101,7 @@ const AppRoutes = () => (
     <Route path="/privacy" element={lazyPage(<PrivacyPage />)} />
     {/* 로그인 화면은 없다. 예전 주소로 들어오면 홈에서 자동 로그인한다. */}
     <Route path="/login" element={<Navigate to="/" replace />} />
-    {/* 첫 주소(`/`)를 포함한 회원 화면은 자동 로그인(복원 또는 익명 회원 생성)을 마친 뒤 그린다. */}
+    {/* 첫 주소(`/`)를 포함한 회원 화면. 자동 로그인(복원 또는 익명 회원 생성)을 기다리는 동안에도 화면 뼈대를 바로 그린다. */}
     <Route element={<ProtectedRoute />}>
       <Route path="/cheap-meals" element={lazyPage(<CheapMealsPage />)} />
       <Route path="/" element={lazyPage(<DesignHomePage />)} />
@@ -120,7 +122,8 @@ const AppRoutes = () => (
           path="/properties/:propertyId/checklists/:propertyChecklistId"
           element={lazyPage(<PropertyChecklistPage />)}
         />
-        <Route path="/checklists" element={lazyPage(<ChecklistListPage />)} />
+        {/* 처음 여는 체크리스트는 진행 표시 대신 편집 화면 뼈대를 바로 보여, 코드와 체크리스트를 받는 동안 같은 뼈대가 이어지게 한다. */}
+        <Route path="/checklists" element={lazyPage(<ChecklistListPage />, <ChecklistEditorSkeleton />)} />
         {/* 사용자마다 체크리스트를 하나만 쓰므로 예전 만들기·개별 편집·단계별 주소는 모두 내 체크리스트 편집으로 보낸다. */}
         <Route path="/checklists/*" element={<Navigate to="/checklists" replace />} />
         <Route path="/me" element={lazyPage(<MyPage />)} />
