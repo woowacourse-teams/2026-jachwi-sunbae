@@ -5,7 +5,6 @@ import { Navigate, Route, Routes, useLocation, useParams } from 'react-router-do
 import PropertyAppLayout from '@/app/layouts/property-app-layout/PropertyAppLayout';
 import PublicExploreLayout from '@/app/layouts/public-explore-layout/PublicExploreLayout';
 import RecordsPageSkeleton from '@/pages/design-records/RecordsPageSkeleton';
-import ChecklistEditorSkeleton from '@/features/checklist/ui/checklist-editor-frame/ChecklistEditorSkeleton';
 import useIsDesktop from '@/shared/lib/hooks/useIsDesktop';
 import {
   ABOUT_PATH,
@@ -141,8 +140,7 @@ const AppRoutes = () => (
         <Route path={ROUTE_PATTERNS.propertyNearby} element={lazyPage(<NearbyAnalysisPage />)} />
         <Route path={ROUTE_PATTERNS.propertyActiveChecklist} element={lazyPage(<PropertyActiveChecklistPage />)} />
         <Route path={ROUTE_PATTERNS.propertyChecklist} element={lazyPage(<PropertyChecklistPage />)} />
-        {/* 처음 여는 체크리스트는 진행 표시 대신 편집 화면 뼈대를 바로 보여, 코드와 체크리스트를 받는 동안 같은 뼈대가 이어지게 한다. */}
-        <Route path={CHECKLISTS_PATH} element={lazyPage(<ChecklistListPage />, <ChecklistEditorSkeleton />)} />
+        <Route path={CHECKLISTS_PATH} element={lazyPage(<ChecklistListPage />)} />
         {/* 사용자마다 체크리스트를 하나만 쓰므로 예전 만들기·개별 편집·단계별 주소는 모두 내 체크리스트 편집으로 보낸다. */}
         <Route path={ROUTE_PATTERNS.legacyChecklists} element={<Navigate to={CHECKLISTS_PATH} replace />} />
         <Route path={MY_PATH} element={lazyPage(<MyPage />)} />

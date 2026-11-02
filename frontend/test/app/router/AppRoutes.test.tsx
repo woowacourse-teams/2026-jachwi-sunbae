@@ -182,11 +182,12 @@ describe('익명 자동 인증 흐름', () => {
       expect(screen.queryByText('기록을 불러오는 중이에요.')).not.toBeInTheDocument();
     });
 
-    it('체크리스트는 화면 코드와 로그인을 기다리는 동안 편집 화면 뼈대를 바로 보여 준다', async () => {
+    it('체크리스트는 로그인과 체크리스트를 기다리는 동안 준비 문구 없이 편집 화면 뼈대를 보여 준다', async () => {
       const release = holdLogin();
       renderWithMockServer('/checklists');
 
-      expect(screen.getByRole('heading', { name: '체크리스트 편집' })).toBeInTheDocument();
+      // 화면 코드는 로그인을 기다리지 않고 받으므로, 로그인이 끝나기 전에 뼈대가 나온다.
+      expect(await screen.findByRole('heading', { name: '체크리스트 편집' })).toBeInTheDocument();
       expect(screen.getByRole('status')).toHaveTextContent('체크리스트를 불러오는 중이에요.');
       expect(screen.queryByText('기록을 불러올 준비를 하고 있어요.')).not.toBeInTheDocument();
 
