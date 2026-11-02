@@ -89,7 +89,7 @@ describe('개인정보처리방침의 초기화와 파기 안내', () => {
     const reset = screen.getByRole('region', { name: '초기화' });
     expect(reset).toHaveTextContent('새 회원 아이디로 다시 시작합니다');
     expect(reset).toHaveTextContent('더 이상 접근할 수 없습니다');
-    expect(reset).toHaveTextContent('초기화해도 이전 아이디의 기록을 바로 지우지는 않습니다');
+    expect(reset).toHaveTextContent('초기화는 계정 삭제가 아닙니다');
     expect(reset).toHaveTextContent('초기화한 날부터 90일 동안 보관한 뒤 파기합니다');
   });
 

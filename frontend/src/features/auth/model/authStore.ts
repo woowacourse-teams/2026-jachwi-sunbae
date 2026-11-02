@@ -55,17 +55,6 @@ export const clearAuthentication = (reason: AuthenticationTerminationReason) => 
 };
 
 /**
- * 탈퇴한 회원의 세션을 버린다. 인증을 끝내지 않으므로 다음 인증 요청은 갱신 대신 로그인으로 새 회원을 받는다.
- * 진행 중인 요청은 회원이 바뀐 것으로 보고 버린다.
- */
-export const discardAuthentication = () => {
-  authenticationRevision += 1;
-  state = { session: null, terminationReason: null };
-  clearAuthenticationClientState();
-  emitChange();
-};
-
-/**
  * 로그인 응답으로 세션을 정한다. 첫 로그인과 같은 회원의 토큰 갱신이면 화면 캐시를 그대로 두고,
  * 다른 회원으로 바뀌면 이전 회원의 캐시를 지운다.
  */

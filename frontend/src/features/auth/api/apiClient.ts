@@ -10,7 +10,6 @@ import {
 
 import {
   clearAuthentication,
-  discardAuthentication,
   getAccessToken,
   getAuthenticationRevision,
   getAuthenticationSnapshot,
@@ -313,14 +312,15 @@ const requestMemberDeletion = async (config: PublicConfig): Promise<void> => {
 
 /**
  * 초기화. 지금 회원을 탈퇴 처리한 뒤, Refresh 쿠키 없이 로그인해 새 익명 회원을 받는다.
- * 진행 중인 로그인이나 갱신이 있으면 그 응답이 끝난 뒤에 보내고, 초기화가 끝날 때까지 뒤이은 로그인과 갱신은
- * 초기화를 함께 기다린다. 탈퇴가 실패하면 지금 회원과 화면 상태를 그대로 두고 오류를 던진다.
- * 탈퇴 뒤 로그인이 실패해도 이전 회원으로 돌아가지 않는다. 세션을 비워 두어 다음 요청의 자동 로그인이 새 회원을 만든다.
+ * 진행 중인 로그인이나 갱신이 끝난 뒤에 보내고, 탈퇴가 끝날 때까지 뒤이은 로그인과 갱신은 초기화를 함께 기다린다.
+ * 탈퇴가 실패하면 지금 회원과 화면 상태를 그대로 두고 오류를 던진다.
+ * 탈퇴 뒤 로그인이 실패해도 세션은 이미 비었으므로, 다음 요청의 자동 로그인이 새 회원을 받는다.
  */
 export const resetAuthentication = async (config: PublicConfig): Promise<void> => {
   const previous = pendingAuthentication;
   let isMemberDeleted = false;
-  const reset = sharePendingAuthentication(
+  let reset: Promise<string> | null = null;
+  reset = sharePendingAuthentication(
     (async () => {
       if (previous !== null) await previous.catch(() => undefined);
       try {
@@ -334,16 +334,14 @@ export const resetAuthentication = async (config: PublicConfig): Promise<void> =
         throw error;
       }
       isMemberDeleted = true;
-      discardAuthentication();
+      // 인증을 끝내지 않고 세션과 회원 캐시만 비운다. 'unauthorized'를 넘기면 오류 화면이 뜬다.
+      clearAuthentication(null);
       // 성공 이벤트는 이전 회원으로 남기고, 새 회원은 회원 조회가 끝나면 다시 식별한다.
       trackPostHogEvent('account_reset_succeeded');
       resetPostHogIdentity();
-      try {
-        return await requestToken(config, LOGIN_PATH);
-      } catch (error) {
-        trackLoginFailure(error);
-        throw error;
-      }
+      // 탈퇴가 끝났으니 초기화 대기를 풀고, 공용 자동 로그인으로 새 회원을 받는다. 기다리던 요청은 그 토큰을 받는다.
+      if (pendingAuthentication === reset) pendingAuthentication = null;
+      return authenticate(config);
     })(),
   );
   try {
