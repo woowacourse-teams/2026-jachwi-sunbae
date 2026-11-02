@@ -4,6 +4,7 @@ import { Navigate, Route, Routes, useLocation, useParams } from 'react-router-do
 
 import PropertyAppLayout from '@/app/layouts/property-app-layout/PropertyAppLayout';
 import PublicExploreLayout from '@/app/layouts/public-explore-layout/PublicExploreLayout';
+import HomePageSkeleton from '@/pages/design-home/HomePageSkeleton';
 import RecordsPageSkeleton from '@/pages/design-records/RecordsPageSkeleton';
 import useIsDesktop from '@/shared/lib/hooks/useIsDesktop';
 import {
@@ -128,7 +129,7 @@ const AppRoutes = () => (
     {/* 첫 주소(`/`)를 포함한 회원 화면. 자동 로그인(복원 또는 익명 회원 생성)을 기다리는 동안에도 화면 뼈대를 바로 그린다. */}
     <Route element={<ProtectedRoute />}>
       <Route path={CHEAP_MEALS_PATH} element={lazyPage(<CheapMealsPage />)} />
-      <Route path={HOME_PATH} element={lazyPage(<DesignHomePage />)} />
+      <Route path={HOME_PATH} element={lazyPage(<DesignHomePage />, <HomePageSkeleton />)} />
       <Route path={ROUTE_PATTERNS.propertyRecords} element={<RecordsRoute />}>
         <Route index element={lazyPage(<PropertyDetailPage />)} />
       </Route>
