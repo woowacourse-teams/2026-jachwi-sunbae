@@ -23,7 +23,6 @@ const PropertyAppLayout = () => {
   const shell: AppShellState = {
     fullScreen:
       location.pathname === '/map/select-location' ||
-      location.pathname.startsWith('/properties/new') ||
       isPropertyDetailPath ||
       // 체크리스트 편집은 자체 상단 내비게이션을 쓴다.
       location.pathname === '/checklists' ||

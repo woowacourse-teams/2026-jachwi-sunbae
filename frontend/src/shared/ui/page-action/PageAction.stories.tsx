@@ -35,7 +35,7 @@ type Story = StoryObj<typeof PageAction>;
 
 export const FloatingLink: Story = {
   args: {
-    to: '/properties/new',
+    to: '/properties',
     onClick: undefined,
   },
 };
