@@ -142,23 +142,28 @@ describe('마이 화면', () => {
 });
 
 describe('마이 화면의 초기화', () => {
-  /** 초기화 요청 수를 세고, 성공하면 2번 새 회원을 돌려주는 인증 API */
+  /** 탈퇴 요청 수를 세고, 성공하면 이어지는 로그인에서 2번 새 회원을 돌려주는 인증 API */
   const useResetServer = (result: 'success' | 'failure') => {
-    const state = { resetCalls: 0 };
+    const state = { resetCalls: 0, isDeleted: false };
     server.use(
-      http.post('*/api/members/delete', () => {
+      http.delete('*/api/members/me', () => {
         state.resetCalls += 1;
         if (result === 'failure') {
           return HttpResponse.json({ code: 'INTERNAL_ERROR', message: '실패', errors: [] }, { status: 500 });
         }
-        return success({
-          accessToken: 'reset-member-token',
+        state.isDeleted = true;
+        return new HttpResponse(null, { status: 204 });
+      }),
+      // 탈퇴로 Refresh 쿠키가 만료된 뒤의 로그인만 새 회원을 만든다.
+      http.post('*/api/auth/login', () =>
+        success({
+          accessToken: state.isDeleted ? 'reset-member-token' : 'test-auto-login-token',
           tokenType: 'Bearer',
           expiresIn: 900,
-          newMember: true,
-          member: { memberId: 2 },
-        });
-      }),
+          newMember: state.isDeleted,
+          member: { memberId: state.isDeleted ? 2 : 1 },
+        }),
+      ),
     );
     return state;
   };

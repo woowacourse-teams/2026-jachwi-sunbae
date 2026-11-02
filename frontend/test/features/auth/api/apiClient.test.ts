@@ -290,46 +290,53 @@ describe('API 클라이언트', () => {
 });
 
 describe('초기화', () => {
-  const RESET_URL = `${config.apiBaseUrl}/api/members/delete`;
+  const MEMBER_URL = `${config.apiBaseUrl}/api/members/me`;
+  const LOGIN_URL = `${config.apiBaseUrl}/api/auth/login`;
+  const REFRESH_URL = `${config.apiBaseUrl}/api/auth/refresh`;
   const loginResponse = (accessToken: string, memberId: number, newMember = false) =>
     success({ accessToken, tokenType: 'Bearer', expiresIn: 900, newMember, member: { memberId } });
   const accessTokenInvalid = () =>
     HttpResponse.json({ code: 'ACCESS_TOKEN_INVALID', message: '만료', errors: [] }, { status: 401 });
+  const deleted = () => new HttpResponse(null, { status: 204 });
+  const newMemberLogin = () => http.post(LOGIN_URL, () => loginResponse('new-member-token', 2, true));
 
-  it('지금 회원의 Access Token과 쿠키를 담아 초기화하면 새 회원 토큰으로 바꾸고 이전 회원의 화면 캐시를 지운다', async () => {
+  it('지금 회원의 Access Token과 쿠키로 탈퇴한 뒤 로그인해 새 회원 토큰으로 바꾸고 이전 회원의 화면 캐시를 지운다', async () => {
     setAuthentication({ accessToken: 'old-token', tokenType: 'Bearer', expiresIn: 900, memberId: 1 });
     queryClient.setQueryData(propertyQueryKeys.detail(10), { name: '이전 회원 매물' });
-    let resetRequest: { authorization: string | null; credentials: RequestCredentials } | undefined;
+    const requests: string[] = [];
     server.use(
-      http.post(RESET_URL, ({ request }) => {
-        resetRequest = { authorization: request.headers.get('Authorization'), credentials: request.credentials };
+      http.delete(MEMBER_URL, ({ request }) => {
+        requests.push(`DELETE ${request.headers.get('Authorization')} ${request.credentials}`);
+        return deleted();
+      }),
+      http.post(LOGIN_URL, ({ request }) => {
+        requests.push(`login ${request.headers.get('Authorization')} ${request.credentials}`);
         return loginResponse('new-member-token', 2, true);
       }),
     );
 
     await resetAuthentication(config);
 
-    expect(resetRequest).toEqual({ authorization: 'Bearer old-token', credentials: 'include' });
+    expect(requests).toEqual(['DELETE Bearer old-token include', 'login null include']);
     expect(getAccessToken()).toBe('new-member-token');
     expect(getAuthenticationSnapshot().session?.memberId).toBe(2);
     expect(queryClient.getQueryData(propertyQueryKeys.detail(10))).toBeUndefined();
   });
 
-  it('초기화가 401을 받으면 같은 회원으로 한 번 갱신한 뒤 새 Access Token으로 다시 보낸다', async () => {
+  it('탈퇴가 401을 받으면 같은 회원으로 한 번 갱신한 뒤 새 Access Token으로 다시 보낸다', async () => {
     setAuthentication({ accessToken: 'stale-token', tokenType: 'Bearer', expiresIn: 900, memberId: 1 });
     const authorizations: (string | null)[] = [];
     let refreshCalls = 0;
     server.use(
-      http.post(`${config.apiBaseUrl}/api/auth/refresh`, () => {
+      http.post(REFRESH_URL, () => {
         refreshCalls += 1;
         return loginResponse('fresh-token', 1);
       }),
-      http.post(RESET_URL, ({ request }) => {
+      http.delete(MEMBER_URL, ({ request }) => {
         authorizations.push(request.headers.get('Authorization'));
-        return request.headers.get('Authorization') === 'Bearer fresh-token'
-          ? loginResponse('new-member-token', 2, true)
-          : accessTokenInvalid();
+        return request.headers.get('Authorization') === 'Bearer fresh-token' ? deleted() : accessTokenInvalid();
       }),
+      newMemberLogin(),
     );
 
     await resetAuthentication(config);
@@ -339,15 +346,16 @@ describe('초기화', () => {
     expect(getAuthenticationSnapshot().session).toMatchObject({ accessToken: 'new-member-token', memberId: 2 });
   });
 
-  it('Access Token이 이미 만료됐으면 먼저 갱신하고 초기화를 보낸다', async () => {
+  it('Access Token이 이미 만료됐으면 먼저 갱신하고 탈퇴를 보낸다', async () => {
     setAuthentication({ accessToken: 'expired-token', tokenType: 'Bearer', expiresIn: 0, memberId: 1 });
     const authorizations: (string | null)[] = [];
     server.use(
-      http.post(`${config.apiBaseUrl}/api/auth/refresh`, () => loginResponse('fresh-token', 1)),
-      http.post(RESET_URL, ({ request }) => {
+      http.post(REFRESH_URL, () => loginResponse('fresh-token', 1)),
+      http.delete(MEMBER_URL, ({ request }) => {
         authorizations.push(request.headers.get('Authorization'));
-        return loginResponse('new-member-token', 2, true);
+        return deleted();
       }),
+      newMemberLogin(),
     );
 
     await resetAuthentication(config);
@@ -356,23 +364,57 @@ describe('초기화', () => {
     expect(getAccessToken()).toBe('new-member-token');
   });
 
-  it('서버가 초기화를 거절하면 지금 회원과 캐시를 그대로 둔다', async () => {
+  it('서버가 탈퇴를 거절하면 로그인하지 않고 지금 회원과 캐시를 그대로 둔다', async () => {
     setAuthentication({ accessToken: 'old-token', tokenType: 'Bearer', expiresIn: 900, memberId: 1 });
     queryClient.setQueryData(propertyQueryKeys.detail(10), { name: '보던 매물' });
+    let loginCalls = 0;
     server.use(
-      http.post(RESET_URL, () =>
+      http.delete(MEMBER_URL, () =>
         HttpResponse.json({ code: 'INTERNAL_ERROR', message: '실패', errors: [] }, { status: 500 }),
       ),
+      http.post(LOGIN_URL, () => {
+        loginCalls += 1;
+        return loginResponse('new-member-token', 2, true);
+      }),
     );
 
     await expect(resetAuthentication(config)).rejects.toMatchObject({ kind: 'server', code: 'INTERNAL_ERROR' });
 
+    expect(loginCalls).toBe(0);
     expect(getAuthenticationSnapshot()).toMatchObject({ terminationReason: null, session: { memberId: 1 } });
     expect(getAccessToken()).toBe('old-token');
     expect(queryClient.getQueryData(propertyQueryKeys.detail(10))).toEqual({ name: '보던 매물' });
   });
 
-  it('진행 중인 토큰 갱신이 쿠키를 덮어쓴 뒤에 갱신된 토큰으로 초기화를 보낸다', async () => {
+  it('탈퇴 뒤 로그인이 실패해도 이전 회원으로 돌아가지 않고 다음 요청의 자동 로그인이 새 회원을 받는다', async () => {
+    setAuthentication({ accessToken: 'old-token', tokenType: 'Bearer', expiresIn: 900, memberId: 1 });
+    let loginCalls = 0;
+    let refreshCalls = 0;
+    server.use(
+      http.delete(MEMBER_URL, () => deleted()),
+      http.post(REFRESH_URL, () => {
+        refreshCalls += 1;
+        return loginResponse('old-member-token', 1);
+      }),
+      http.post(LOGIN_URL, () => {
+        loginCalls += 1;
+        return loginCalls === 1 ? HttpResponse.error() : loginResponse('new-member-token', 2, true);
+      }),
+      http.get(`${config.apiBaseUrl}/api/example`, ({ request }) => success(request.headers.get('Authorization'))),
+    );
+
+    await expect(resetAuthentication(config)).resolves.toBeUndefined();
+
+    expect(getAuthenticationSnapshot()).toEqual({ session: null, terminationReason: null });
+    await expect(apiRequest({ config, path: '/api/example', parseData: (value) => value })).resolves.toBe(
+      'Bearer new-member-token',
+    );
+    expect(loginCalls).toBe(2);
+    expect(refreshCalls).toBe(0);
+    expect(getAuthenticationSnapshot().session?.memberId).toBe(2);
+  });
+
+  it('진행 중인 토큰 갱신이 끝난 뒤에 갱신된 토큰으로 탈퇴를 보낸다', async () => {
     setAuthentication({ accessToken: 'expired-token', tokenType: 'Bearer', expiresIn: 900, memberId: 1 });
     const order: string[] = [];
     let releaseRefresh: (() => void) | undefined;
@@ -380,14 +422,18 @@ describe('초기화', () => {
       releaseRefresh = resolve;
     });
     server.use(
-      http.post(`${config.apiBaseUrl}/api/auth/refresh`, async () => {
+      http.post(REFRESH_URL, async () => {
         order.push('refresh-start');
         await refreshGate;
         order.push('refresh-end');
         return loginResponse('refreshed-token', 1);
       }),
-      http.post(RESET_URL, ({ request }) => {
-        order.push(`reset ${request.headers.get('Authorization')}`);
+      http.delete(MEMBER_URL, ({ request }) => {
+        order.push(`delete ${request.headers.get('Authorization')}`);
+        return deleted();
+      }),
+      http.post(LOGIN_URL, () => {
+        order.push('login');
         return loginResponse('new-member-token', 2, true);
       }),
       http.get(`${config.apiBaseUrl}/api/example`, ({ request }) =>
@@ -404,40 +450,44 @@ describe('초기화', () => {
     releaseRefresh?.();
     await reset;
 
-    expect(order).toEqual(['refresh-start', 'refresh-end', 'reset Bearer refreshed-token']);
+    expect(order).toEqual(['refresh-start', 'refresh-end', 'delete Bearer refreshed-token', 'login']);
     expect(getAccessToken()).toBe('new-member-token');
-    // 초기화 전에 시작한 요청은 이전 회원의 갱신 토큰으로 마친다.
-    await expect(expiredRequest).resolves.toBe('Bearer refreshed-token');
+    // 초기화 전에 시작한 요청은 이전 회원의 갱신 토큰으로 마치거나, 탈퇴가 먼저 끝나면 버려진다. 새 회원 토큰으로는 보내지 않는다.
+    const settled = await expiredRequest.catch((error: unknown) => error);
+    expect(
+      settled === 'Bearer refreshed-token' || (settled instanceof ApiError && settled.kind === 'authentication-ended'),
+    ).toBe(true);
   });
 
-  it('초기화 중에 401을 받은 요청은 이전 회원 쿠키로 갱신하지 않고 초기화 응답을 기다린 뒤 버린다', async () => {
+  it('초기화 중에 401을 받은 요청은 이전 회원 쿠키로 갱신하지 않고 초기화를 기다린 뒤 버린다', async () => {
     setAuthentication({ accessToken: 'old-token', tokenType: 'Bearer', expiresIn: 900, memberId: 1 });
     let refreshCalls = 0;
-    let releaseReset: (() => void) | undefined;
-    const resetGate = new Promise<void>((resolve) => {
-      releaseReset = resolve;
+    let releaseDelete: (() => void) | undefined;
+    const deleteGate = new Promise<void>((resolve) => {
+      releaseDelete = resolve;
     });
-    let markResetStarted: (() => void) | undefined;
-    const resetStarted = new Promise<void>((resolve) => {
-      markResetStarted = resolve;
+    let markDeleteStarted: (() => void) | undefined;
+    const deleteStarted = new Promise<void>((resolve) => {
+      markDeleteStarted = resolve;
     });
     server.use(
-      http.post(`${config.apiBaseUrl}/api/auth/refresh`, () => {
+      http.post(REFRESH_URL, () => {
         refreshCalls += 1;
         return loginResponse('refreshed-token', 1);
       }),
-      http.post(RESET_URL, async () => {
-        markResetStarted?.();
-        await resetGate;
-        return loginResponse('new-member-token', 2, true);
+      http.delete(MEMBER_URL, async () => {
+        markDeleteStarted?.();
+        await deleteGate;
+        return deleted();
       }),
+      newMemberLogin(),
       http.get(`${config.apiBaseUrl}/api/example`, () => accessTokenInvalid()),
     );
 
     const reset = resetAuthentication(config);
-    await resetStarted;
+    await deleteStarted;
     const request = apiRequest({ config, path: '/api/example', parseData: (value) => value });
-    releaseReset?.();
+    releaseDelete?.();
     await reset;
 
     await expect(request).rejects.toMatchObject({ kind: 'authentication-ended' });
