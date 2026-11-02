@@ -11,6 +11,7 @@ import RecordDistricts from '../ui/record-districts/RecordDistricts';
 import RecordList from '../ui/record-list/RecordList';
 import RecordListSkeleton from '../ui/record-list/RecordListSkeleton';
 import RecordLoadError from '../ui/record-load-error/RecordLoadError';
+import RecordMapSkeleton from '../ui/record-map-skeleton/RecordMapSkeleton';
 import RecordNotice from '../ui/record-notice/RecordNotice';
 import RecordsMobileHeader from './RecordsMobileHeader';
 import RecordsMobileMap from './RecordsMobileMap';
@@ -90,9 +91,14 @@ const RecordsMobilePage = () => {
           )}
         </div>
         <div className={styles.body}>
-          {/* 처음 여는 화면이라 남겨 둘 목록이 없다. 늦추지 않고 바로 뼈대를 보여, 화면 코드를 받는 동안의 뼈대에서 이어지게 한다. */}
+          {/* 처음 여는 화면이라 남겨 둘 목록이 없다. 늦추지 않고 바로 뼈대를 보여, 화면 코드를 받는 동안의 뼈대에서 이어지게 한다.
+              뼈대는 지금 보기 방식의 모양(지도 영역, 리스트)으로 둔다. */}
           {records.properties.isPending ? (
-            <RecordListSkeleton className={styles.list} />
+            showsMap ? (
+              <RecordMapSkeleton />
+            ) : (
+              <RecordListSkeleton className={styles.list} />
+            )
           ) : records.properties.isError ? (
             <RecordLoadError
               className={styles.list}

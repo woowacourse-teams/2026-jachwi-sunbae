@@ -16,6 +16,7 @@ import RecordDistricts from '../ui/record-districts/RecordDistricts';
 import RecordList from '../ui/record-list/RecordList';
 import RecordListSkeleton from '../ui/record-list/RecordListSkeleton';
 import RecordLoadError from '../ui/record-load-error/RecordLoadError';
+import RecordMapSkeleton from '../ui/record-map-skeleton/RecordMapSkeleton';
 import RecordNotice from '../ui/record-notice/RecordNotice';
 import RecordsDesktopMap from './RecordsDesktopMap';
 
@@ -111,6 +112,8 @@ const RecordsDesktopPage = () => {
             onCloseDetail={closeDetail}
             closeLabel="매물 상세 칸 닫기"
           >
+            {/* 기록을 받는 동안 지도 칸도 비워 두지 않고 화면 코드를 받는 동안의 뼈대와 같은 지도 뼈대를 둔다. 알림은 리스트 뼈대가 맡는다. */}
+            {records.properties.isPending && <RecordMapSkeleton announce={false} />}
             {!records.properties.isPending && !records.properties.isError && (
               <RecordsDesktopMap
                 records={records}

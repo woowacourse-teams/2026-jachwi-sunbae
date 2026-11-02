@@ -471,11 +471,29 @@ it('시설 카테고리를 켜면 반경 원 없이 지도 화면 안의 시설�
   expect(await screen.findByRole('button', { name: /^병원 숨기기, \d+개$/ })).toHaveAttribute('aria-pressed', 'true');
 });
 
-it('기록을 받는 동안에는 기다리지 않고 바로 리스트 뼈대를 보여 준다', () => {
+it('기록을 받는 동안에는 기다리지 않고 바로 지금 보기 방식의 뼈대를 보여 준다', () => {
   server.use(http.get('*/api/properties', () => new Promise<never>(() => undefined)));
-  renderRecords();
+  const view = renderRecords('/properties?view=map');
   // 화면 코드를 받는 동안의 뼈대에서 이어지도록, 빈 칸으로 두었다가 늦게 띄우지 않는다.
   expect(screen.getByRole('status')).toHaveTextContent('기록을 불러오는 중이에요.');
+  // 지도 보기에서는 리스트 모양 대신 지도 영역 뼈대를 둔다.
+  expect(screen.getByTestId('record-map-skeleton')).toBeInTheDocument();
+  expect(screen.queryByRole('list', { hidden: true })).not.toBeInTheDocument();
+  view.unmount();
+
+  renderRecords('/properties?view=list');
+  expect(screen.queryByTestId('record-map-skeleton')).not.toBeInTheDocument();
+  expect(screen.getByRole('list', { hidden: true })).toBeInTheDocument();
+});
+
+it('데스크탑에서 기록을 받는 동안 리스트 칸과 지도 칸에 함께 뼈대를 둔다', () => {
+  const matchMedia = useDesktopViewport();
+  server.use(http.get('*/api/properties', () => new Promise<never>(() => undefined)));
+  renderRecords();
+  expect(screen.getByRole('status')).toHaveTextContent('기록을 불러오는 중이에요.');
+  expect(screen.getByRole('list', { hidden: true })).toBeInTheDocument();
+  expect(screen.getByTestId('record-map-skeleton')).toHaveAttribute('aria-hidden', 'true');
+  matchMedia.mockRestore();
 });
 
 it('기록을 불러오지 못하면 지도 위 헤더 없이 오류 안내와 다시 시도를 보여 준다', async () => {
