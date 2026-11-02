@@ -4,6 +4,7 @@ import {
   capturePostHogException,
   type PostHogErrorCategory,
   type PostHogErrorSeverity,
+  resetPostHogIdentity,
   trackPostHogEvent,
 } from '@/shared/lib/analytics/posthog';
 
@@ -187,13 +188,16 @@ const sendRequest = async (
 
 const LOGIN_PATH = '/api/auth/login';
 const REFRESH_PATH = '/api/auth/refresh';
+const RESET_PATH = '/api/auth/reset';
 
-type AuthenticationPath = typeof LOGIN_PATH | typeof REFRESH_PATH;
+type AuthenticationPath = typeof LOGIN_PATH | typeof REFRESH_PATH | typeof RESET_PATH;
 
 /**
  * Refresh 쿠키로 같은 회원의 Access Token을 받는다. 로그인은 쿠키로 복원하지 못하면 서버가 새 익명 회원을 만들고,
  * 갱신은 새 회원 없이 401 REFRESH_TOKEN_INVALID로 거절한다.
- * 서버가 401로 복원을 거절하면 인증을 끝내고, 통신 장애는 인증 상태를 바꾸지 않는다.
+ * 초기화는 지금 Refresh 쿠키를 폐기하고 새 익명 회원의 쿠키로 덮어쓴다.
+ * 로그인과 갱신은 서버가 401로 복원을 거절하면 인증을 끝내고, 통신 장애는 인증 상태를 바꾸지 않는다.
+ * 초기화는 실패하면 어떤 경우에도 지금 회원을 그대로 둔다.
  */
 const requestToken = async (config: PublicConfig, path: AuthenticationPath): Promise<string> => {
   let response: Response;
@@ -207,7 +211,7 @@ const requestToken = async (config: PublicConfig, path: AuthenticationPath): Pro
     throw new ApiError({ kind: 'network' });
   }
 
-  if (response.status === 401) clearAuthentication('unauthorized');
+  if (response.status === 401 && path !== RESET_PATH) clearAuthentication('unauthorized');
   if (!response.ok) return throwResponseError(response);
 
   const payload = await readJson(response);
@@ -234,13 +238,23 @@ const requestToken = async (config: PublicConfig, path: AuthenticationPath): Pro
   return login.accessToken;
 };
 
-// 로그인과 갱신은 둘 다 같은 Refresh 쿠키로 토큰을 받으므로, 진행 중인 요청 하나를 함께 기다린다.
+// 로그인, 갱신, 초기화는 모두 같은 Refresh 쿠키로 토큰을 받으므로, 진행 중인 요청 하나를 함께 기다린다.
 let pendingAuthentication: Promise<string> | null = null;
 
+/** 진행 중인 인증 요청으로 등록한다. 끝나면 자기 자신일 때만 지워, 뒤이어 등록된 요청을 지우지 않는다. */
+const sharePendingAuthentication = (request: Promise<string>): Promise<string> => {
+  const shared = request.finally(() => {
+    if (pendingAuthentication === shared) pendingAuthentication = null;
+  });
+  pendingAuthentication = shared;
+  return shared;
+};
+
 /** 앱 시작과 사용자의 다시 시도에 쓴다. 동시에 여러 요청이 불러도 로그인 요청은 한 번만 보낸다. */
-export const authenticate = (config: PublicConfig): Promise<string> => {
-  pendingAuthentication ??= requestToken(config, LOGIN_PATH)
-    .catch((error: unknown) => {
+export const authenticate = (config: PublicConfig): Promise<string> =>
+  pendingAuthentication ??
+  sharePendingAuthentication(
+    requestToken(config, LOGIN_PATH).catch((error: unknown) => {
       captureUnexpectedApiError({ error, path: LOGIN_PATH, method: 'POST' });
       trackPostHogEvent('login_failed', {
         login_method: 'anonymous',
@@ -248,24 +262,46 @@ export const authenticate = (config: PublicConfig): Promise<string> => {
         error_code: error instanceof ApiError ? error.code : null,
       });
       throw error;
-    })
-    .finally(() => {
-      pendingAuthentication = null;
-    });
-  return pendingAuthentication;
-};
+    }),
+  );
 
 /** Access Token이 만료됐을 때 쓴다. 복원하지 못해도 새 회원을 만들지 않고 인증을 끝낸다. */
-const refreshAuthentication = (config: PublicConfig): Promise<string> => {
-  pendingAuthentication ??= requestToken(config, REFRESH_PATH)
-    .catch((error: unknown) => {
+const refreshAuthentication = (config: PublicConfig): Promise<string> =>
+  pendingAuthentication ??
+  sharePendingAuthentication(
+    requestToken(config, REFRESH_PATH).catch((error: unknown) => {
       captureUnexpectedApiError({ error, path: REFRESH_PATH, method: 'POST' });
       throw error;
-    })
-    .finally(() => {
-      pendingAuthentication = null;
-    });
-  return pendingAuthentication;
+    }),
+  );
+
+/**
+ * 초기화. 지금 회원의 Refresh 쿠키를 폐기하고 새 익명 회원으로 바꾼다.
+ * 진행 중인 로그인이나 갱신이 있으면 그 응답이 쿠키를 덮어쓴 뒤에 보내고, 초기화가 끝날 때까지 뒤이은 로그인과 갱신은
+ * 초기화 응답을 함께 기다린다. 실패하면 지금 회원과 화면 상태를 그대로 둔다.
+ */
+export const resetAuthentication = async (config: PublicConfig): Promise<void> => {
+  const previous = pendingAuthentication;
+  const reset = sharePendingAuthentication(
+    (async () => {
+      if (previous !== null) await previous.catch(() => undefined);
+      try {
+        const accessToken = await requestToken(config, RESET_PATH);
+        // 성공 이벤트는 이전 회원으로 남기고, 새 회원은 회원 조회가 끝나면 다시 식별한다.
+        trackPostHogEvent('account_reset_succeeded');
+        resetPostHogIdentity();
+        return accessToken;
+      } catch (error) {
+        captureUnexpectedApiError({ error, path: RESET_PATH, method: 'POST' });
+        trackPostHogEvent('account_reset_failed', {
+          error_kind: error instanceof ApiError ? error.kind : 'unknown',
+          error_code: error instanceof ApiError ? error.code : null,
+        });
+        throw error;
+      }
+    })(),
+  );
+  await reset;
 };
 
 /**
