@@ -31,7 +31,10 @@ const RecentRooms = ({ inSideColumn = false }: RecentRoomsProps) => {
         몇 개가 올지 모르는 목록이라 카드 뼈대는 두지 않고, 데이터 전에도 문구 한 줄 높이를 잡아 아래가 덜 밀리게 한다.
       */}
       <div className={styles.body}>
-        <DelayedFallback isPending={properties.isPending} fallback={<ProgressCircle size={24} label="기록을 불러오는 중이에요." />}>
+        <DelayedFallback
+          isPending={properties.isPending}
+          fallback={<ProgressCircle size={24} label="기록을 불러오는 중이에요." />}
+        >
           {() =>
             properties.isError ? (
               <div className={styles.loadError} role="alert">

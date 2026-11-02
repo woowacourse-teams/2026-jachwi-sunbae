@@ -38,7 +38,6 @@ const styles = {
     display: grid;
     gap: 0.75rem;
   `,
-
 };
 
 export default CompareLoadState;
