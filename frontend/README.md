@@ -126,6 +126,7 @@ JWT secret, 지도 Client Secret, S3 자격증명은 프론트에 넣지 않습�
 
 - Access Token은 메모리에만 둡니다. 앱을 열면 `POST /api/auth/login`이 HttpOnly Refresh 쿠키로 같은 익명 회원을 복원하거나 새 익명 회원을 만듭니다.
 - Access Token이 만료되거나 업무 API가 401을 주면 `POST /api/auth/refresh`로 갱신해 원래 요청을 한 번 다시 보냅니다. 갱신이 `401 REFRESH_TOKEN_INVALID`로 거절되면 새 회원을 만들지 않고 인증 Query Cache와 토큰을 지운 뒤 안내합니다.
+- 마이의 초기화는 `DELETE /api/members/me`를 Access Token으로 보내 지금 회원을 탈퇴 처리하고, 메모리의 Access Token을 비운 뒤 `POST /api/auth/login`으로 새 익명 회원의 토큰을 받고 Query Cache를 비우고 홈으로 갑니다. 진행 중인 로그인과 갱신이 끝난 뒤 보내고, 초기화 중의 갱신은 초기화를 함께 기다립니다. 탈퇴 요청이 401을 받으면 한 번 갱신해 다시 보냅니다. 탈퇴가 실패하면 기존 회원을 그대로 두고, 탈퇴 뒤 로그인이 실패하면 이전 회원으로 돌아가지 않고 다음 요청의 자동 로그인이 새 회원을 만듭니다.
 - 사진 콘텐츠는 URL을 `<img>`에 직접 주지 않고 Bearer 인증 Blob으로 조회해 Object URL을 만든 뒤 해제합니다.
 - 사진은 JPEG·PNG·WebP, 파일당 5MiB, 매물당 30장으로 선택 단계부터 검증합니다.
 - 서버 상태는 TanStack Query가 관리하고, 체크 항목 상태와 메모 저장 채널은 서로 독립적입니다.
@@ -164,6 +165,6 @@ Storybook에서는 구현 내부가 아니라 기본·로딩·에러·빈 상태
 - 데스크탑·휴대폰 화면을 나눈 페이지(홈·본 방 기록·동네 찾기·방 비교·마이)는 그 아래를 `데스크탑`·`휴대폰`·`공통`으로 나눕니다. `desktop/`·`mobile/` 폴더의 화면과 조각은 meta에 `globals: { viewport: { value: 'desktop' | 'mobile' } }`을 두어 그 화면 폭으로 엽니다. 툴바의 화면 폭은 휴대폰(390)·태블릿(820)·데스크탑(1440)입니다.
 - 값은 `args`로 넘겨 Controls 패널에서 바꿔 볼 수 있게 합니다. 콜백은 `fn()`(`storybook/test`)으로 두어 Actions 패널에 호출이 찍히게 하고, 컨트롤로 바꿀 수 없는 ReactNode·함수 props는 `argTypes`에서 `control: false`로 숨깁니다. `className`·`ref`는 전역에서 숨깁니다.
 
-`npm run build`는 번들 생성 전에 `npm run typecheck`를 실행합니다. 개발 중 타입 오류만 빠르게 확인하려면 `npm run typecheck`를 직접 실행합니다.
+`npm run build`는 번들 생성 전에 `npm run typecheck`를 실행합니다. 개발 중 타입 오류만 빠르게 확인하려면 `npm run typecheck`를 직접 실행합니다. `npm run build:bundle`은 타입 검사 없이 번들만 만듭니다. Frontend CI는 타입 검사와 번들 생성을 다른 job에서 병렬로 돌리려고 이 스크립트를 씁니다.
 
 실제 모바일 브라우저 확인은 운영 엔트리포인트를 `390x844`와 일반 모바일 폭에서 실행해 위 표의 경로와 주요 CRUD·체크·지도 흐름을 확인합니다.
