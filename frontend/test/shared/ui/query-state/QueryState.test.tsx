@@ -38,6 +38,39 @@ describe('QueryState', () => {
     expect(screen.getByRole('status')).toHaveTextContent('불러오는 중');
   });
 
+  it('뼈대를 주면 기다리지 않고 바로 뼈대를 보여 주고, 로딩 안내는 띄우지 않는다', () => {
+    vi.useFakeTimers();
+    const { rerender } = render(
+      <QueryState
+        query={{ ...baseQuery, isPending: true }}
+        loadingTitle="불러오는 중"
+        skeleton={<p>화면 뼈대</p>}
+        describeError={describeError}
+      >
+        {(data) => <p>{String(data)} 본문</p>}
+      </QueryState>,
+    );
+
+    expect(screen.getByText('화면 뼈대')).toBeInTheDocument();
+    act(() => vi.advanceTimersByTime(300));
+    expect(screen.queryByText('불러오는 중')).not.toBeInTheDocument();
+
+    rerender(
+      <QueryState
+        query={{ ...baseQuery, data: '체크리스트' }}
+        loadingTitle="불러오는 중"
+        skeleton={<p>화면 뼈대</p>}
+        describeError={describeError}
+      >
+        {(data) => <p>{String(data)} 본문</p>}
+      </QueryState>,
+    );
+
+    // 뼈대에서 내용으로 바로 바뀌고, 로딩 안내를 잠깐 붙잡아 두지 않는다.
+    expect(screen.getByText('체크리스트 본문')).toBeInTheDocument();
+    expect(screen.queryByText('화면 뼈대')).not.toBeInTheDocument();
+  });
+
   it('다시 시도할 수 있는 오류는 재시도 버튼과 추가 동작을 보여 준다', async () => {
     const refetch = vi.fn();
     render(
