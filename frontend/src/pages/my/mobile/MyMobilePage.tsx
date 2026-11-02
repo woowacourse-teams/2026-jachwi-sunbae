@@ -4,7 +4,7 @@ import { useMember } from '@/features/auth/api/useCurrentMember';
 import WeatherSummaryCard from '@/features/weather/ui/weather-summary-card/WeatherSummaryCard';
 import { usePublicConfig } from '@/shared/config/PublicConfigContext';
 
-import AccountDeletionCard from '../ui/account-deletion-card/AccountDeletionCard';
+import AccountResetCard from '../ui/account-reset-card/AccountResetCard';
 import PrivacyLinkCard from '../ui/privacy-link-card/PrivacyLinkCard';
 
 import * as shared from '../MyPage.styles';
@@ -20,7 +20,7 @@ const MyMobilePage = () => {
         <WeatherSummaryCard />
         <div className={styles.links}>
           <PrivacyLinkCard />
-          <AccountDeletionCard memberId={member.memberId} />
+          <AccountResetCard memberId={member.memberId} />
         </div>
       </div>
       <footer className={`${shared.footer} ${styles.footer}`}>
@@ -84,7 +84,7 @@ const styles = {
     }
   `,
 
-  /* 개인정보 처리방침·계정 삭제 요청은 한 묶음으로 쌓는다(넓은 화면에서는 날씨 옆 열). */
+  /* 개인정보 처리방침과 초기화는 한 묶음으로 쌓는다(넓은 화면에서는 날씨 옆 열). */
   links: css`
     label: MyMobilePage-links;
     display: grid;

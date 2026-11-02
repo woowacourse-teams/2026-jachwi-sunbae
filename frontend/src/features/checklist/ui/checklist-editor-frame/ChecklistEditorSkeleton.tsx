@@ -1,6 +1,7 @@
 import { css, keyframes } from '@emotion/css';
 
 import useIsDesktop from '@/shared/lib/hooks/useIsDesktop';
+import { HOME_PATH } from '@/shared/lib/navigation/appPaths';
 import useReturnNavigation from '@/shared/lib/navigation/useReturnNavigation';
 import TopNavigation from '@/shared/ui/top-navigation/TopNavigation';
 
@@ -15,7 +16,7 @@ const ITEM_COUNT = 4;
  */
 const ChecklistEditorSkeleton = () => {
   const isDesktop = useIsDesktop();
-  const goBack = useReturnNavigation({ cameFromTarget: true, fallback: '/' });
+  const goBack = useReturnNavigation({ cameFromTarget: true, fallback: HOME_PATH });
 
   return (
     <ChecklistEditorFrame isDesktop={isDesktop} className={styles.page}>

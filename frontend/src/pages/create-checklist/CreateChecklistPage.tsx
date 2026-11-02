@@ -17,6 +17,7 @@ import ChecklistEditorFrame, {
 import ChecklistEditorSkeleton from '@/features/checklist/ui/checklist-editor-frame/ChecklistEditorSkeleton';
 import { trackPostHogEvent } from '@/shared/lib/analytics/posthog';
 import useIsDesktop from '@/shared/lib/hooks/useIsDesktop';
+import { HOME_PATH } from '@/shared/lib/navigation/appPaths';
 import useReturnNavigation from '@/shared/lib/navigation/useReturnNavigation';
 import TopNavigation from '@/shared/ui/top-navigation/TopNavigation';
 
@@ -29,7 +30,7 @@ const MY_CHECKLIST_NAME = '내 체크리스트';
 
 /** 아직 체크리스트가 없는 사용자에게 기본 항목으로 채운 편집 화면을 연다. `/checklists`가 열어 준다. */
 const CreateChecklistPage = () => {
-  const goBack = useReturnNavigation({ cameFromTarget: true, fallback: '/' });
+  const goBack = useReturnNavigation({ cameFromTarget: true, fallback: HOME_PATH });
   const preset = useChecklistPreset(stage, 'ONE_ROOM', true);
   const isDesktop = useIsDesktop();
 
@@ -52,7 +53,7 @@ const CreateChecklistPage = () => {
 };
 
 const CreateChecklistForm = ({ presetItems }: { presetItems: ChecklistPresetItem[] }) => {
-  const goBack = useReturnNavigation({ cameFromTarget: true, fallback: '/' });
+  const goBack = useReturnNavigation({ cameFromTarget: true, fallback: HOME_PATH });
   const create = useCreateChecklist();
   const isDesktop = useIsDesktop();
   const { isPickerOpen, openPicker, closePicker } = useChecklistItemPickerRoute();
