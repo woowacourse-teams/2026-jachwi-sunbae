@@ -25,73 +25,87 @@ const RecentRooms = ({ inSideColumn = false }: RecentRoomsProps) => {
       <div className={styles.sectionHeading}>
         <h2 id="recent-heading">최근 기록한 방</h2>
       </div>
-      {/* 기록을 처음 받을 때는 남겨 둘 내용이 없으므로, 늦추지 않고 카드 뼈대를 바로 두었다가 카드로 한 번만 바꾼다. */}
-      {properties.isPending ? (
-        <RecentRoomsSkeleton />
-      ) : properties.isError ? (
-        <div className={styles.loadError} role="alert">
-          {/* 불러오기 실패 이미지는 준비되면 이 자리에 넣는다. */}
-          <span className={styles.loadErrorImage} aria-hidden="true" />
-          <p>기록을 불러오지 못했어요.</p>
-          <Button variant="secondary" isLoading={properties.isFetching} onClick={() => void properties.refetch()}>
-            다시 시도
-          </Button>
+      {/*
+        기록을 처음 받을 때는 남겨 둘 내용이 없으므로, 늦추지 않고 카드 뼈대를 바로 두었다가 카드로 한 번만 바꾼다.
+        뼈대, 카드, 빈 기록 안내가 같은 높이를 쓰도록 보이지 않는 카드 한 줄로 칸 높이를 잡아 둔다.
+      */}
+      <div className={styles.body}>
+        <div className={`${styles.rooms} ${styles.sizer}`} aria-hidden="true">
+          <RoomCardSkeleton />
         </div>
-      ) : rooms.length === 0 ? (
-        <p>아직 기록한 방이 없어요.</p>
-      ) : (
-        <HorizontalRail className={styles.rooms} aria-label="최근 기록한 방 목록">
-          {rooms.map((property) => (
-            <RailCard
-              // 데스크탑은 같은 주소에서 본 방 기록 화면이 이 매물을 고른 채로 열린다.
-              to={propertyDetailPath(property.propertyId)}
-              state={{ returnTo: HOME_PATH }}
-              key={property.propertyId}
-              className={styles.roomCard}
-            >
-              {property.representativePhoto ? (
-                <AuthenticatedPhoto
-                  propertyId={property.propertyId}
-                  photoId={property.representativePhoto.photoId}
-                  contentUrl={property.representativePhoto.contentUrl}
-                  alt={`${property.name} 대표 사진`}
-                  className={styles.roomPicture}
-                  errorMode="retry-only"
-                />
-              ) : (
-                <span className={`${styles.roomPicture} ${styles.photoFallback}`} aria-label="대표 사진 없음">
-                  <Icon name="image" size={18} />
-                </span>
-              )}
-              <div className={styles.roomInfo}>
-                <strong>{property.name}</strong>
-                <span className={styles.rent}>
-                  {property.monthlyRentAmount > 0 ? '월세 ' : ''}
-                  {formatRentSummary(property.depositAmount, property.monthlyRentAmount)}
-                </span>
-                <p>{property.location.address ?? '주소 미등록'}</p>
-              </div>
-            </RailCard>
-          ))}
-        </HorizontalRail>
-      )}
+        {properties.isPending ? (
+          <RecentRoomsSkeleton />
+        ) : properties.isError ? (
+          <div className={styles.loadError} role="alert">
+            {/* 불러오기 실패 이미지는 준비되면 이 자리에 넣는다. */}
+            <span className={styles.loadErrorImage} aria-hidden="true" />
+            <p>기록을 불러오지 못했어요.</p>
+            <Button variant="secondary" isLoading={properties.isFetching} onClick={() => void properties.refetch()}>
+              다시 시도
+            </Button>
+          </div>
+        ) : rooms.length === 0 ? (
+          <p>아직 기록한 방이 없어요.</p>
+        ) : (
+          <HorizontalRail className={styles.rooms} aria-label="최근 기록한 방 목록">
+            {rooms.map((property) => (
+              <RailCard
+                // 데스크탑은 같은 주소에서 본 방 기록 화면이 이 매물을 고른 채로 열린다.
+                to={propertyDetailPath(property.propertyId)}
+                state={{ returnTo: HOME_PATH }}
+                key={property.propertyId}
+                className={styles.roomCard}
+              >
+                {property.representativePhoto ? (
+                  <AuthenticatedPhoto
+                    propertyId={property.propertyId}
+                    photoId={property.representativePhoto.photoId}
+                    contentUrl={property.representativePhoto.contentUrl}
+                    alt={`${property.name} 대표 사진`}
+                    className={styles.roomPicture}
+                    errorMode="retry-only"
+                  />
+                ) : (
+                  <span className={`${styles.roomPicture} ${styles.photoFallback}`} aria-label="대표 사진 없음">
+                    <Icon name="image" size={18} />
+                  </span>
+                )}
+                <div className={styles.roomInfo}>
+                  <strong>{property.name}</strong>
+                  <span className={styles.rent}>
+                    {property.monthlyRentAmount > 0 ? '월세 ' : ''}
+                    {formatRentSummary(property.depositAmount, property.monthlyRentAmount)}
+                  </span>
+                  <p>{property.location.address ?? '주소 미등록'}</p>
+                </div>
+              </RailCard>
+            ))}
+          </HorizontalRail>
+        )}
+      </div>
     </section>
   );
 };
 
-/** 최근 기록 카드와 같은 크기의 뼈대. 읽기 프로그램에는 불러오는 중이라고만 알린다. */
+/** 최근 기록 카드와 같은 구조의 뼈대 카드. 글자 줄에 실제와 같은 글꼴의 한글 한 글자를 투명하게 넣어 줄 높이까지 실제 카드와 같다. */
+const RoomCardSkeleton = () => (
+  <div className={styles.roomCard}>
+    <span className={`${styles.roomPicture} ${styles.skeleton}`} />
+    <div className={`${styles.roomInfo} ${styles.skeletonInfo}`}>
+      <strong className={styles.skeleton}>가</strong>
+      <span className={`${styles.rent} ${styles.skeleton}`}>가</span>
+      <p className={styles.skeleton}>가</p>
+    </div>
+  </div>
+);
+
+/** 기록을 받는 동안의 카드 뼈대. 읽기 프로그램에는 불러오는 중이라고만 알린다. */
 const RecentRoomsSkeleton = () => (
   <div role="status">
     <span className="sr-only">기록을 불러오는 중이에요.</span>
     <div className={`${styles.rooms} ${styles.skeletonRail}`} aria-hidden="true">
       {Array.from({ length: SKELETON_CARD_COUNT }, (_, index) => (
-        <div key={index} className={styles.roomCard}>
-          <span className={`${styles.roomPicture} ${styles.skeleton}`} />
-          <div className={styles.roomInfo}>
-            <span className={`${styles.skeleton} ${styles.skeletonLine}`} />
-            <span className={`${styles.skeleton} ${styles.skeletonLine}`} />
-          </div>
-        </div>
+        <RoomCardSkeleton key={index} />
       ))}
     </div>
   </div>
@@ -224,6 +238,24 @@ const styles = {
     }
   `,
 
+  /* 높이 기준 카드와 실제 내용을 같은 칸에 겹쳐, 둘 중 큰 높이를 쓴다. */
+  body: css`
+    label: RecentRooms-body;
+    display: grid;
+
+    & > * {
+      grid-area: 1 / 1;
+      min-width: 0;
+    }
+  `,
+
+  /* 보이지 않는 높이 기준 카드. 화면에서는 자리만 차지한다. */
+  sizer: css`
+    label: RecentRooms-sizer;
+    visibility: hidden;
+    pointer-events: none;
+  `,
+
   /* 뼈대 카드는 넘겨 볼 필요가 없어 가로 레일 대신 한 줄에 두고 넘치는 카드는 자른다. */
   skeletonRail: css`
     label: RecentRooms-skeletonRail;
@@ -245,12 +277,24 @@ const styles = {
     }
   `,
 
-  skeletonLine: css`
-    label: RecentRooms-skeletonLine;
-    height: 0.75rem;
+  /* 뼈대 글자 줄은 글자를 감추고 줄마다 길이만 다르게 둔다. */
+  skeletonInfo: css`
+    label: RecentRooms-skeletonInfo;
 
-    &:last-child {
+    .RecentRooms-roomInfo& > * {
+      color: transparent;
+    }
+
+    .RecentRooms-roomInfo& > strong {
       width: 70%;
+    }
+
+    .RecentRooms-roomInfo& > span {
+      width: 50%;
+    }
+
+    .RecentRooms-roomInfo& > p {
+      width: 85%;
     }
   `,
 

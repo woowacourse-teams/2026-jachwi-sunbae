@@ -3,7 +3,7 @@ import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
-import { afterEach, beforeEach, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import { propertyHandlers } from '@/app/mocks/handlers/propertyHandlers';
 import { getMockProperties, resetMockStore, setMockProperties } from '@/app/mocks/mockStore';
@@ -106,4 +106,41 @@ it('푸터에 사용 방법과 개인정보 안내 링크를 둔다', () => {
   expect(footer.getByRole('link', { name: '사용 방법' })).toHaveAttribute('href', '/guide');
   expect(footer.getByRole('link', { name: '개인정보·광고 측정 안내' })).toHaveAttribute('href', '/privacy');
   expect(footer.getByText('© 2026 자취선배')).toBeInTheDocument();
+});
+
+describe('최근 기록 칸 높이', () => {
+  /** 칸 안에서 보이지 않는 높이 기준 카드. 뼈대, 빈 기록, 카드 상태가 모두 이 카드 한 줄 높이를 쓴다. */
+  const sizerOf = (section: HTMLElement) => section.querySelector('[class*="RecentRooms-sizer"]');
+  const recentSection = () => screen.getByRole('heading', { name: '최근 기록한 방' }).closest('section') as HTMLElement;
+
+  it.each([
+    ['매물이 없을 때', [] as ReturnType<typeof getMockProperties>, '아직 기록한 방이 없어요.'],
+    ['매물이 하나일 때', getMockProperties().slice(0, 1), '신림역 원룸'],
+    ['매물이 여럿일 때', getMockProperties(), '망원동 투룸'],
+  ])(
+    '%s도 뼈대와 같은 높이 기준 카드를 두어, 뼈대에서 내용으로 바뀌어도 칸 높이가 그대로다',
+    async (_, properties, text) => {
+      setMockProperties(properties);
+      renderHome();
+
+      const skeletonSizer = sizerOf(recentSection());
+      expect(within(recentSection()).getByRole('status')).toHaveTextContent('기록을 불러오는 중이에요.');
+      expect(skeletonSizer).not.toBeNull();
+
+      expect(await screen.findByText(text)).toBeInTheDocument();
+      expect(within(recentSection()).queryByRole('status')).not.toBeInTheDocument();
+      // 같은 기준 카드가 그대로 남아 있어야 상태가 바뀌어도 칸이 펼쳐지거나 줄지 않는다.
+      expect(sizerOf(recentSection())).toBe(skeletonSizer);
+      expect(skeletonSizer).toHaveAttribute('aria-hidden', 'true');
+    },
+  );
+
+  it('뼈대 카드는 실제 카드와 같은 카드, 사진, 정보 줄 구조를 쓴다', () => {
+    renderHome();
+    const skeletonCard = sizerOf(recentSection())?.firstElementChild as HTMLElement;
+    expect(skeletonCard.className).toMatch(/RecentRooms-roomCard/);
+    expect(skeletonCard.querySelector('[class*="RecentRooms-roomPicture"]')).not.toBeNull();
+    const info = skeletonCard.querySelector('[class*="RecentRooms-roomInfo"]') as HTMLElement;
+    expect([...info.children].map((child) => child.tagName)).toEqual(['STRONG', 'SPAN', 'P']);
+  });
 });
