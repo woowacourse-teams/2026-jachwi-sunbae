@@ -4,6 +4,13 @@ const { loadLocalEnv, readBuildEnvironment } = require('./build-environment.cjs'
 const { createModuleRules } = require('./webpack-rules.cjs');
 const { createPlugins } = require('./webpack-plugins.cjs');
 
+// react-router는 package.json exports가 개발용 빌드만 가리킨다. 운영 빌드에서는 개발 경고를 뺀 운영용 빌드를 쓴다.
+const reactRouterDirectory = path.dirname(require.resolve('react-router/package.json'));
+const reactRouterProductionAlias = {
+  'react-router$': path.join(reactRouterDirectory, 'dist/production/index.mjs'),
+  'react-router/dom$': path.join(reactRouterDirectory, 'dist/production/dom-export.mjs'),
+};
+
 module.exports = (_env, argv) => {
   loadLocalEnv();
   const isProduction = argv.mode === 'production';
@@ -41,6 +48,7 @@ module.exports = (_env, argv) => {
       extensions: ['.tsx', '.ts', '.js'],
       alias: {
         '@': path.resolve(__dirname, '../src'),
+        ...(isProduction ? reactRouterProductionAlias : {}),
       },
     },
     performance: {
