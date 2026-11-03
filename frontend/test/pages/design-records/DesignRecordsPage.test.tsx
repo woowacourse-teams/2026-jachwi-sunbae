@@ -2,7 +2,7 @@ import { QueryClientProvider } from '@tanstack/react-query';
 import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
-import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
+import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 
 import { mapHandlers } from '@/app/mocks/handlers/mapHandlers';
@@ -57,16 +57,6 @@ vi.mock('@/features/map/ui/map-canvas/MapCanvas', () => ({
   ),
 }));
 
-const CreateRoute = () => {
-  const state = useLocation().state as { selectedLocation?: { latitude: number; roadAddress: string | null } } | null;
-  return (
-    <>
-      <h1>매물 등록 화면</h1>
-      <output aria-label="넘겨받은 위치">{JSON.stringify(state?.selectedLocation ?? null)}</output>
-    </>
-  );
-};
-
 beforeEach(() => {
   setAuthentication({ accessToken: 'valid-token', tokenType: 'Bearer', expiresIn: 60 });
   server.use(...propertyHandlers, ...mapHandlers, ...createStreetMemoHandlers());
@@ -84,7 +74,6 @@ const renderRecords = (initialEntry = '/properties') =>
         <MemoryRouter initialEntries={[initialEntry]}>
           <Routes>
             <Route path="/properties/:propertyId?" element={<DesignRecordsPage />} />
-            <Route path="/properties/new" element={<CreateRoute />} />
           </Routes>
         </MemoryRouter>
       </PublicConfigProvider>
@@ -352,7 +341,6 @@ it('휴대폰도 데스크탑처럼 빈 곳을 찍은 말풍선에서 매물을 
     await user.click(screen.getByRole('button', { name: '말풍선 🏠 여기에 매물 등록' }));
     // 등록 화면을 거치지 않고 찍은 위치의 주소로 바로 만든다.
     await waitFor(() => expect(created.bodies).toEqual([expect.objectContaining(quickCreatedBody)]));
-    expect(screen.queryByRole('heading', { name: '매물 등록 화면' })).not.toBeInTheDocument();
     // 지도에 머물러 만든 자리로 다가가고, 새 매물을 아래 시트에 열어 둔다.
     expect(await screen.findByText(/매물을 기록했어요/)).toBeInTheDocument();
     expect(screen.getByLabelText('지도 중심')).toHaveTextContent('37.5662,126.9785');
@@ -471,11 +459,33 @@ it('시설 카테고리를 켜면 반경 원 없이 지도 화면 안의 시설�
   expect(await screen.findByRole('button', { name: /^병원 숨기기, \d+개$/ })).toHaveAttribute('aria-pressed', 'true');
 });
 
-it('기록을 받는 동안에는 기다리지 않고 바로 리스트 뼈대를 보여 준다', () => {
+it('기록을 받는 동안에는 기다리지 않고 바로 지금 보기 방식의 영역 하나만 뼈대로 채운다', () => {
   server.use(http.get('*/api/properties', () => new Promise<never>(() => undefined)));
-  renderRecords();
+  const view = renderRecords('/properties?view=map');
   // 화면 코드를 받는 동안의 뼈대에서 이어지도록, 빈 칸으로 두었다가 늦게 띄우지 않는다.
   expect(screen.getByRole('status')).toHaveTextContent('기록을 불러오는 중이에요.');
+  expect(screen.getByTestId('map-area-skeleton')).toBeInTheDocument();
+  expect(screen.queryByTestId('list-area-skeleton')).not.toBeInTheDocument();
+  // 카드와 동네 칩 모양은 그리지 않는다.
+  expect(screen.queryByRole('list', { hidden: true })).not.toBeInTheDocument();
+  expect(screen.queryByRole('button', { name: /전체/ })).not.toBeInTheDocument();
+  view.unmount();
+
+  renderRecords('/properties?view=list');
+  expect(screen.getByTestId('list-area-skeleton')).toBeInTheDocument();
+  expect(screen.queryByTestId('map-area-skeleton')).not.toBeInTheDocument();
+  expect(screen.queryByRole('list', { hidden: true })).not.toBeInTheDocument();
+});
+
+it('데스크탑에서 기록을 받는 동안 목록 영역과 지도 영역을 함께 뼈대로 채우고 한 번만 알린다', () => {
+  const matchMedia = useDesktopViewport();
+  server.use(http.get('*/api/properties', () => new Promise<never>(() => undefined)));
+  renderRecords();
+  expect(screen.getByRole('status')).toHaveTextContent('기록을 불러오는 중이에요.');
+  expect(screen.getByTestId('list-area-skeleton')).toHaveAttribute('role', 'status');
+  expect(screen.getByTestId('map-area-skeleton')).toHaveAttribute('aria-hidden', 'true');
+  expect(screen.queryByRole('list', { hidden: true })).not.toBeInTheDocument();
+  matchMedia.mockRestore();
 });
 
 it('기록을 불러오지 못하면 지도 위 헤더 없이 오류 안내와 다시 시도를 보여 준다', async () => {
