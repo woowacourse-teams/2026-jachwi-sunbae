@@ -4,15 +4,8 @@ import { getAnalyticsDeviceContext } from '../deviceContext';
 import { getAnalyticsTrafficContext } from '../trafficContext';
 import { classifyPostHogException } from './errorClassification';
 import type { PostHogAuthStatus, PostHogSessionContext } from './types';
-export const isValidPostHogConfiguration = (projectToken: string, host: string): boolean => {
-  if (projectToken.trim().length === 0) return false;
-  try {
-    const url = new URL(host);
-    return url.protocol === 'http:' || url.protocol === 'https:';
-  } catch {
-    return false;
-  }
-};
+
+/** SDK 초기화 설정. SDK와 함께 늦게 불러와 첫 번들에 넣지 않는다(sdk.ts). */
 export const getPostHogOptions = (
   host: string,
   getContext: () => PostHogSessionContext | null,

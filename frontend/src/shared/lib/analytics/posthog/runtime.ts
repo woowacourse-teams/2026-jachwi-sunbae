@@ -1,10 +1,12 @@
 import { getAnalyticsTrafficContext } from '../trafficContext';
-import { getPostHogOptions, isValidPostHogConfiguration } from './configuration';
+import type { getPostHogOptions } from './configuration';
 import type { PostHogAction, PostHogAuthStatus, PostHogClient, PostHogSessionContext } from './types';
+import { isValidPostHogConfiguration } from './validation';
 type Configuration = { key: string; projectToken: string; host: string };
 let requestedConfiguration: Configuration | null = null;
 let initializedConfiguration: string | null = null;
 let client: PostHogClient | null = null;
+let getOptions: typeof getPostHogOptions | null = null;
 let loadPromise: Promise<void> | null = null;
 let pendingActions: PostHogAction[] = [];
 const MAX_PENDING_ACTIONS = 100;
@@ -56,10 +58,10 @@ const executeAction = (action: PostHogAction, loadedClient: PostHogClient): bool
 };
 const initializeClient = (loadedClient: PostHogClient): void => {
   const configuration = requestedConfiguration;
-  if (configuration === null || initializedConfiguration === configuration.key) return;
+  if (configuration === null || getOptions === null || initializedConfiguration === configuration.key) return;
   loadedClient.init(
     configuration.projectToken,
-    getPostHogOptions(
+    getOptions(
       configuration.host,
       () => sessionContext,
       () => requestedConfiguration !== null,
@@ -77,8 +79,9 @@ const loadClient = (): void => {
   if (loadPromise !== null) return;
   status = 'loading';
   const currentGeneration = generation;
-  loadPromise = import('posthog-js')
-    .then(({ default: loadedClient }) => {
+  loadPromise = import('./sdk')
+    .then(({ default: loadedClient, getPostHogOptions: loadedGetOptions }) => {
+      getOptions = loadedGetOptions;
       if (currentGeneration !== generation || requestedConfiguration === null) return;
       initializeClient(loadedClient);
       client = loadedClient;
