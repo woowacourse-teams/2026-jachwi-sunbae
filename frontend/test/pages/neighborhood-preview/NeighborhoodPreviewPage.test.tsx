@@ -39,6 +39,7 @@ vi.mock('@/features/map/ui/map-canvas/MapCanvas', async () => {
     return (
       <div>
         <button onClick={() => props.onSelectLocation?.(37.4, 127.12)}>지도에서 위치 찍기</button>
+        {props.onReady && <button onClick={props.onReady}>지도 준비 완료</button>}
         {props.onSelectLocation && (
           <button onClick={() => props.onSelectLocation?.(37.45, 127.15)}>다른 위치 찍기</button>
         )}
@@ -952,6 +953,54 @@ it('분할 manifest에서는 결과에 나온 시도 파일만 받아 합치고 
   await user.click(screen.getByRole('button', { name: /에서 찾기$/ }));
   await screen.findByRole('region', { name: '행정동 프리셋 지도' });
   expect(requested).toHaveLength(1);
+});
+
+it('지도가 준비되면 수도권 경계를 미리 받아 두고, 검색 뒤에는 경계 파일을 다시 받지 않는다', async () => {
+  vi.stubGlobal('requestIdleCallback', (callback: () => void) => window.setTimeout(callback, 0));
+  const files = {
+    '11': 'admin-dongs.11.20250630.111111111111.geojson',
+    '23': 'admin-dongs.23.20250630.333333333333.geojson',
+    '31': 'admin-dongs.31.20250630.222222222222.geojson',
+  };
+  const requested: string[] = [];
+  server.use(
+    http.get('*/boundaries/manifest.json', () =>
+      HttpResponse.json({ version: '20250630', file: 'admin-dongs.20250630.123456abcdef.geojson', files }),
+    ),
+    http.get('*/boundaries/:filename', ({ params }) => {
+      const filename = String(params.filename);
+      requested.push(filename);
+      const prefix = filename.split('.')[1];
+      return HttpResponse.json({
+        type: 'FeatureCollection',
+        features: commuteBoundaryFixtures
+          .filter((fixture) => fixture.sourceCode.startsWith(prefix))
+          .map((fixture) => ({
+            type: 'Feature',
+            properties: {
+              code: fixture.sourceCode,
+              name: fixture.fullName.split(' ').at(-1),
+              fullName: fixture.fullName,
+              baseDate: '20250630',
+            },
+            geometry: fixture.boundary,
+          })),
+      });
+    }),
+  );
+  try {
+    show();
+    const user = userEvent.setup();
+    await user.click(screen.getByRole('button', { name: '지도 준비 완료' }));
+    await waitFor(() => expect(requested).toEqual([files['11'], files['31'], files['23']]));
+    await user.click(screen.getByRole('button', { name: '지도에서 위치 찍기' }));
+    await user.click(screen.getByRole('button', { name: /에서 찾기$/ }));
+    await screen.findByRole('region', { name: '행정동 프리셋 지도' });
+    expect(await screen.findByRole('button', { name: '역삼1동' })).toBeInTheDocument();
+    expect(requested).toHaveLength(3);
+  } finally {
+    vi.unstubAllGlobals();
+  }
 });
 
 it('manifest의 해시가 바뀌면 이전 경계 캐시 대신 새 파일을 받는다', async () => {

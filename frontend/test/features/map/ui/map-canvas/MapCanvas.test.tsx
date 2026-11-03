@@ -157,6 +157,20 @@ describe('Naver 지도 상태 동기화', () => {
     await waitFor(() => expect(view.queryByRole('status')).not.toBeInTheDocument(), { timeout: 1500 });
   });
 
+  it('지도가 처음 그려진 뒤에야 onReady를 부른다', async () => {
+    const onReady = vi.fn();
+    renderWithConfig(
+      <MapCanvas center={{ latitude: 37.5, longitude: 127 }} customStyleId="style" interactive onReady={onReady} />,
+    );
+    await waitFor(() => expect(maps).toHaveLength(1));
+    // 지도 객체를 만든 것만으로는 타일이 그려지지 않았으니 급하지 않은 요청을 시작하지 않는다.
+    expect(onReady).not.toHaveBeenCalled();
+
+    (maps[0] as FakeMapInstance & { _glReady?: boolean })._glReady = true;
+
+    await waitFor(() => expect(onReady).toHaveBeenCalledOnce());
+  });
+
   it('화면이 자체 로딩으로 지도를 덮으면 지도 준비 안내를 띄우지 않는다', () => {
     const view = renderWithConfig(
       <MapCanvas center={{ latitude: 37.5, longitude: 127 }} customStyleId="style" interactive hideLoading />,
