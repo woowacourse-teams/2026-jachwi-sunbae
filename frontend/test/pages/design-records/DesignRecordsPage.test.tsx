@@ -127,6 +127,31 @@ it('리스트 메뉴의 삭제는 실제 매물 삭제 API를 호출한다', asy
   expect(removed).toHaveBeenCalledTimes(1);
 });
 
+it('리스트 카드의 더보기 메뉴는 메뉴 밖을 누르거나 Esc를 누르면 닫힌다', async () => {
+  const user = userEvent.setup();
+  renderRecords();
+  await screen.findByText('신림역 원룸');
+  await user.click(screen.getByRole('button', { name: /리스트/ }));
+  const toggle = screen.getByRole('button', { name: '망원동 투룸 메뉴' });
+
+  await user.click(toggle);
+  expect(toggle).toHaveAttribute('aria-expanded', 'true');
+  expect(screen.getByRole('button', { name: /삭제/ })).toBeInTheDocument();
+  await user.click(screen.getByRole('heading', { name: '모든 기록' }));
+  expect(toggle).toHaveAttribute('aria-expanded', 'false');
+  expect(screen.queryByRole('button', { name: /삭제/ })).not.toBeInTheDocument();
+
+  // 다른 카드의 메뉴를 열면 앞 메뉴는 닫힌다.
+  await user.click(toggle);
+  await user.click(screen.getByRole('button', { name: '신림역 원룸 메뉴' }));
+  expect(toggle).toHaveAttribute('aria-expanded', 'false');
+  expect(screen.getAllByRole('button', { name: /삭제/ })).toHaveLength(1);
+
+  await user.keyboard('{Escape}');
+  expect(screen.queryByRole('button', { name: /삭제/ })).not.toBeInTheDocument();
+  expect(screen.getByRole('button', { name: '신림역 원룸 메뉴' })).toHaveFocus();
+});
+
 it('출퇴근 장소를 정하지 않았으면 통근 시간을 부르지 않고, 리스트에 장소를 정하는 줄도 두지 않는다', async () => {
   const user = userEvent.setup();
   const requested = vi.fn();
