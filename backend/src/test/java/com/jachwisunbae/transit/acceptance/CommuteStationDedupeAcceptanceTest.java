@@ -7,10 +7,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.jachwisunbae.support.TestClock;
+import com.jachwisunbae.support.TestClockConfig;
 import com.jachwisunbae.transit.service.AdminDongImportService;
 import com.jachwisunbae.transit.service.GtfsImportService;
-import com.jachwisunbae.transit.support.MutableClock;
-import com.jachwisunbae.transit.support.MutableClockConfig;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
@@ -45,7 +45,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 @AutoConfigureMockMvc(print = MockMvcPrint.NONE)
 @ActiveProfiles("test")
 @Tag("acceptance")
-@Import(MutableClockConfig.class)
+@Import(TestClockConfig.class)
 class CommuteStationDedupeAcceptanceTest {
 
     @Container
@@ -53,7 +53,7 @@ class CommuteStationDedupeAcceptanceTest {
     private static final Path FIXTURE = createFixture();
 
     @Autowired
-    private MutableClock clock;
+    private TestClock clock;
     @Autowired
     private MockMvc mvc;
     @Autowired

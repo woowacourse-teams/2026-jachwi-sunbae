@@ -4,17 +4,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.jachwisunbae.common.exception.server.ServiceUnavailableException;
+import com.jachwisunbae.support.TestClock;
 import com.jachwisunbae.transit.domain.GtfsFeed;
 import com.jachwisunbae.transit.domain.GtfsRoute;
 import com.jachwisunbae.transit.domain.GtfsStop;
 import com.jachwisunbae.transit.domain.network.TransitNetwork;
 import com.jachwisunbae.transit.domain.vo.Coordinate;
 import com.jachwisunbae.transit.domain.vo.Seconds;
-import java.time.Clock;
-import java.time.Duration;
 import java.time.Instant;
-import java.time.ZoneId;
-import java.time.ZoneOffset;
 import java.util.List;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -22,7 +19,7 @@ import org.junit.jupiter.api.Test;
 class TransitNetworkCacheTest {
 
     private final InMemoryGtfsNetworkRepository repository = new InMemoryGtfsNetworkRepository();
-    private final MutableClock clock = new MutableClock(Instant.parse("2026-10-14T00:00:00Z"));
+    private final TestClock clock = new TestClock(Instant.parse("2026-10-14T00:00:00Z"));
     private final TransitNetworkCache cache = new TransitNetworkCache(new TransitNetworkLoader(repository), clock);
 
     @Test
@@ -64,33 +61,5 @@ class TransitNetworkCacheTest {
     private static GtfsFeed feed() {
         return new GtfsFeed(List.of(new GtfsRoute("R1", "1", "1번", 3, new Seconds(120))),
                 List.of(new GtfsStop("S1", "서울역", new Coordinate(37.55, 126.97))), List.of(), List.of());
-    }
-
-    private static class MutableClock extends Clock {
-
-        private Instant instant;
-
-        MutableClock(Instant instant) {
-            this.instant = instant;
-        }
-
-        void advance(Duration duration) {
-            instant = instant.plus(duration);
-        }
-
-        @Override
-        public ZoneId getZone() {
-            return ZoneOffset.UTC;
-        }
-
-        @Override
-        public Clock withZone(ZoneId zone) {
-            return this;
-        }
-
-        @Override
-        public Instant instant() {
-            return instant;
-        }
     }
 }

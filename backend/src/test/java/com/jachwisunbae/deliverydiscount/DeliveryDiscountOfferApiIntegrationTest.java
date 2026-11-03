@@ -11,21 +11,18 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.jachwisunbae.auth.token.JwtTokenProvider;
 import com.jachwisunbae.member.entity.Member;
 import com.jachwisunbae.member.repository.MemberRepository;
-import java.time.Clock;
+import com.jachwisunbae.support.TestClock;
+import com.jachwisunbae.support.TestClockConfig;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.ZoneOffset;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.context.TestConfiguration;
-import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
-import org.springframework.context.annotation.Primary;
 import org.springframework.dao.DataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
@@ -40,16 +37,19 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
-@Import(DeliveryDiscountOfferApiIntegrationTest.FixedClockConfig.class)
+@Import(TestClockConfig.class)
 class DeliveryDiscountOfferApiIntegrationTest {
 
     // UTC로는 10월 29일이지만 KST로는 10월 30일 00:30이다.
-    private static final Clock CLOCK = Clock.fixed(Instant.parse("2026-10-29T15:30:00Z"), ZoneOffset.UTC);
+    private static final Instant NOW = Instant.parse("2026-10-29T15:30:00Z");
     private static final LocalDate TODAY = LocalDate.of(2026, 10, 30);
     private static final LocalDateTime VERIFIED_AT = LocalDateTime.of(2026, 10, 29, 9, 0);
 
     @Container
     private static final MySQLContainer<?> MYSQL = new MySQLContainer<>("mysql:8.4.10");
+
+    @Autowired
+    private TestClock clock;
 
     @Autowired
     private MockMvc mvc;
@@ -70,8 +70,9 @@ class DeliveryDiscountOfferApiIntegrationTest {
 
     @BeforeEach
     void clearOffers() {
+        clock.set(NOW);
         jdbc.update("DELETE FROM delivery_discount_offers");
-        memberId = members.save(Member.create(LocalDateTime.now(CLOCK))).getId();
+        memberId = members.save(Member.create(LocalDateTime.now(clock))).getId();
     }
 
     @Test
@@ -165,15 +166,5 @@ class DeliveryDiscountOfferApiIntegrationTest {
 
     private String bearer() {
         return "Bearer " + tokens.createAccessToken(memberId);
-    }
-
-    @TestConfiguration
-    static class FixedClockConfig {
-
-        @Bean
-        @Primary
-        Clock deliveryDiscountClock() {
-            return CLOCK;
-        }
     }
 }

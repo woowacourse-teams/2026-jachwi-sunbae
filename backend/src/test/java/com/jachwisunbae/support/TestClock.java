@@ -1,4 +1,4 @@
-package com.jachwisunbae.transit.support;
+package com.jachwisunbae.support;
 
 import java.time.Clock;
 import java.time.Duration;
@@ -7,9 +7,22 @@ import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.util.concurrent.atomic.AtomicReference;
 
-public class MutableClock extends Clock {
+// 시각을 정하고 앞으로 돌릴 수 있는 시계다. 단위 테스트는 직접 만들고, 스프링 테스트는 TestClockConfig로 주입받는다.
+public class TestClock extends Clock {
 
-    private final AtomicReference<Instant> now = new AtomicReference<>(Instant.now());
+    private final AtomicReference<Instant> now;
+
+    public TestClock() {
+        this(Instant.now());
+    }
+
+    public TestClock(final Instant instant) {
+        this.now = new AtomicReference<>(instant);
+    }
+
+    public void set(final Instant instant) {
+        now.set(instant);
+    }
 
     public void advance(final Duration duration) {
         now.updateAndGet(instant -> instant.plus(duration));

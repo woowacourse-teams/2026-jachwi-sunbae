@@ -2,11 +2,10 @@ package com.jachwisunbae.map.provider.publicdata.sgis;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.jachwisunbae.support.TestClock;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
-import java.time.ZoneId;
-import java.time.ZoneOffset;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.web.client.RestClient;
@@ -16,7 +15,7 @@ class SgisTokenProviderTest {
     private static final Instant NOW = Instant.parse("2026-09-26T00:00:00Z");
     private static final Duration TOKEN_LIFETIME = Duration.ofHours(4);
 
-    private final MutableClock clock = new MutableClock(NOW);
+    private final TestClock clock = new TestClock(NOW);
     private final FakeSgisAuthClient authClient = new FakeSgisAuthClient(clock);
     private final SgisTokenProvider tokenProvider = new SgisTokenProvider(authClient, clock);
 
@@ -65,34 +64,6 @@ class SgisTokenProviderTest {
         public SgisAccessToken issue() {
             issueCount++;
             return new SgisAccessToken("token-" + issueCount, clock.instant().plus(TOKEN_LIFETIME));
-        }
-    }
-
-    private static class MutableClock extends Clock {
-
-        private Instant instant;
-
-        MutableClock(Instant instant) {
-            this.instant = instant;
-        }
-
-        void advance(Duration duration) {
-            instant = instant.plus(duration);
-        }
-
-        @Override
-        public ZoneId getZone() {
-            return ZoneOffset.UTC;
-        }
-
-        @Override
-        public Clock withZone(ZoneId zone) {
-            return this;
-        }
-
-        @Override
-        public Instant instant() {
-            return instant;
         }
     }
 }

@@ -7,9 +7,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import java.time.Clock;
+import com.jachwisunbae.support.TestClock;
+import com.jachwisunbae.support.TestClockConfig;
 import java.time.Instant;
-import java.time.ZoneOffset;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
@@ -20,10 +20,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.context.TestConfiguration;
-import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
-import org.springframework.context.annotation.Primary;
 import org.springframework.http.HttpHeaders;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
@@ -39,12 +36,16 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
-@Import(RentalTransactionAcceptanceTest.FixedClockConfig.class)
+@Import(TestClockConfig.class)
 @Tag("acceptance")
 class RentalTransactionAcceptanceTest {
     @Container
     private static final MySQLContainer<?> MYSQL = new MySQLContainer<>("mysql:8.4.10");
-    private static final Clock CLOCK = Clock.fixed(Instant.parse("2026-10-10T15:30:00Z"), ZoneOffset.UTC);
+    private static final Instant NOW = Instant.parse("2026-10-10T15:30:00Z");
+
+    @Autowired
+    private TestClock clock;
+
     @Autowired
     private JdbcTemplate jdbc;
     @Autowired
@@ -63,6 +64,7 @@ class RentalTransactionAcceptanceTest {
 
     @BeforeEach
     void setUpTransactions() throws Exception {
+        clock.set(NOW);
         jdbc.update("DELETE FROM rental_transactions");
         jdbc.update("DELETE FROM rental_datasets");
         jdbc.update("DELETE FROM legal_dongs");
@@ -249,14 +251,5 @@ class RentalTransactionAcceptanceTest {
             VALUES ('seoul-eastern-gyeonggi', '1162010200', 'ROWHOUSE', 5000000, 450000, 20, ?, 'NEW',
                 '신림빌라', '3', '', 'raw/source.csv', ?)
             """, contractDate, rowNumber);
-    }
-
-    @TestConfiguration
-    static class FixedClockConfig {
-        @Bean
-        @Primary
-        Clock rentalAcceptanceClock() {
-            return CLOCK;
-        }
     }
 }

@@ -10,6 +10,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jachwisunbae.auth.token.JwtTokenProvider;
+import com.jachwisunbae.support.TestClock;
+import com.jachwisunbae.support.TestClockConfig;
 import com.jachwisunbae.weather.domain.DailyForecast;
 import com.jachwisunbae.weather.domain.DailyTemperature;
 import com.jachwisunbae.weather.domain.ForecastTimes;
@@ -17,11 +19,9 @@ import com.jachwisunbae.weather.domain.GridPoint;
 import com.jachwisunbae.weather.domain.HourlyForecast;
 import com.jachwisunbae.weather.repository.JdbcWeatherForecastRepository;
 import com.jachwisunbae.weather.repository.MemberWeatherLocationRepository;
-import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.ZoneOffset;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -29,15 +29,12 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.context.TestConfiguration;
-import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
-import org.springframework.context.annotation.Primary;
 import org.springframework.http.MediaType;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.web.servlet.MockMvc;
 import org.testcontainers.containers.MySQLContainer;
 import org.testcontainers.junit.jupiter.Container;
@@ -47,12 +44,16 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
-@Import(WeatherApiIntegrationTest.FixedClockConfig.class)
+@Import(TestClockConfig.class)
 class WeatherApiIntegrationTest {
     @Container
     private static final MySQLContainer<?> MYSQL = new MySQLContainer<>("mysql:8.4.10");
-    private static final Clock CLOCK = Clock.fixed(Instant.parse("2026-10-25T13:00:00Z"), ZoneOffset.UTC);
+    private static final Instant NOW = Instant.parse("2026-10-25T13:00:00Z");
     private static final LocalDate TODAY = LocalDate.of(2026, 10, 25);
+
+    @Autowired
+    private TestClock clock;
+
     @Autowired
     private JdbcTemplate jdbc;
     @Autowired
@@ -74,17 +75,9 @@ class WeatherApiIntegrationTest {
         registry.add("spring.datasource.password", MYSQL::getPassword);
     }
 
-    @TestConfiguration
-    static class FixedClockConfig {
-        @Bean
-        @Primary
-        Clock weatherTestClock() {
-            return CLOCK;
-        }
-    }
-
     @BeforeEach
     void setup() {
+        clock.set(NOW);
         jdbc.update("DELETE FROM member_weather_locations");
         jdbc.update("DELETE FROM refresh_tokens");
         jdbc.update("DELETE FROM members");
@@ -236,7 +229,7 @@ class WeatherApiIntegrationTest {
     @Test
     @DisplayName("서버 시각이 같아도 새 위치의 격자로 바꾼다")
     void replacesTheMembersGridEvenWhenTheServerTimestampIsUnchanged() throws Exception {
-        locations.sync(1, new GridPoint(98, 76), CLOCK.instant().minusSeconds(7 * 86400));
+        locations.sync(1, new GridPoint(98, 76), NOW.minusSeconds(7 * 86400));
         mvc.perform(put("/api/members/me/weather-location").header("Authorization", bearer(1))
                         .contentType(MediaType.APPLICATION_JSON).content(locationBody(37.5665, 126.978)))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.data.gridX").value(60));
@@ -247,7 +240,7 @@ class WeatherApiIntegrationTest {
         mvc.perform(get("/api/members/me/weather-location").header("Authorization", bearer(1)))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.data.gridX").value(98))
                 .andExpect(jsonPath("$.data.updatedAt").value("2026-10-25T13:00:00Z"));
-        assertThat(locations.find(1).orElseThrow().updatedAt()).isEqualTo(CLOCK.instant());
+        assertThat(locations.find(1).orElseThrow().updatedAt()).isEqualTo(NOW);
         assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM member_weather_locations WHERE member_id = 1", Integer.class)).isOne();
     }
 
