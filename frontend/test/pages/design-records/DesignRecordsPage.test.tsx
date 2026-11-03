@@ -350,6 +350,30 @@ it('데스크탑에서 지도나 리스트의 방을 누르면 리스트 옆 칸
   matchMedia.mockRestore();
 });
 
+it('데스크탑 리스트에서 방을 누르면 옆 칸에 상세를 열고 지도를 그 방 핀 자리로 옮긴다', async () => {
+  const matchMedia = useDesktopViewport();
+  const user = userEvent.setup();
+  try {
+    renderRecords();
+    await screen.findByRole('heading', { name: '모든 기록' });
+    const target = getMockProperties().find((property) => property.name === '신림역 원룸');
+    expect(screen.getByLabelText('지도 중심')).not.toHaveTextContent(`${target?.latitude},${target?.longitude}`);
+    const level = screen.getByLabelText('지도 배율').textContent;
+
+    await user.click(screen.getByRole('link', { name: /신림역 원룸/ }));
+    expect(screen.getByLabelText('지도 중심')).toHaveTextContent(`${target?.latitude},${target?.longitude}`);
+    expect(screen.getByLabelText('지도 배율')).toHaveTextContent(level ?? '');
+    expect(
+      await within(screen.getByRole('complementary', { name: '선택한 매물 상세' })).findByRole('heading', {
+        level: 1,
+        name: '신림역 원룸',
+      }),
+    ).toBeInTheDocument();
+  } finally {
+    matchMedia.mockRestore();
+  }
+});
+
 const viewSwitch = () => within(screen.getByRole('navigation', { name: '기록 보기 방식' }));
 
 it('주소에 리스트 보기가 있으면 리스트로 연다', async () => {
