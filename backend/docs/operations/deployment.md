@@ -117,7 +117,7 @@ Thread Dump 스크립트와 logrotate 설정도 `scripts/` 아래에 두어 기�
 
 EC2에는 Java 21, 실행 사용자 `jachwi`, CodeDeploy 에이전트와 배포 디렉터리가 필요하다. Vault 준비 스크립트는 Java·사용자·CodeDeploy 에이전트를 설치하지 않는다.
 
-[jachwi-sunbae.service](../../deploy/jachwi-sunbae.service)는 환경변수 파일을 읽어 `jachwi` 사용자로 실행한다. Dev는 `SPRING_PROFILES_ACTIVE=dev`, Prod는 `SPRING_PROFILES_ACTIVE=prod`를 사용한다. 기존 Dev의 `prod` 설정은 이 버전 배포 전에 Vault의 Dev `app_env`에서 변경해야 한다. 기존 날씨 실행 여부·Firebase 프로젝트 ID 환경변수는 YAML보다 우선하므로 제거한다. 현재 Dev·Prod FCM은 인증정보·앱 연동 준비가 끝나기 전이라 OFF다.
+[jachwi-sunbae.service](../../deploy/jachwi-sunbae.service)는 환경변수 파일을 읽어 `jachwi` 사용자로 실행한다. Dev는 `SPRING_PROFILES_ACTIVE=dev`, Prod는 `SPRING_PROFILES_ACTIVE=prod`를 사용한다. 기존 Dev의 `prod` 설정은 이 버전 배포 전에 Vault의 Dev `app_env`에서 변경해야 한다. 기존 날씨 실행 여부·Firebase 프로젝트 ID 환경변수는 YAML보다 우선하므로 제거한다. 현재 저장소는 Dev FCM ON, Prod OFF이며 예약 발송은 양쪽 OFF다. 실제 Vault 오버라이드·ADC·기기 수신은 별도 확인한다. [생활 날씨 배포 기록](../../../docs/operations/weather-push-release.md)에 활성화 순서와 단일 기기 검증 범위를 적는다.
 
 ### 포트와 파일 권한
 
