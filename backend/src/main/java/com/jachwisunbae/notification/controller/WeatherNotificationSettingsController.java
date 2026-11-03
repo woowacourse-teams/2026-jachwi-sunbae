@@ -2,6 +2,7 @@ package com.jachwisunbae.notification.controller;
 
 import com.jachwisunbae.auth.web.AuthenticatedMemberId;
 import com.jachwisunbae.common.web.ApiResponse;
+import com.jachwisunbae.notification.config.WeatherPushTestPolicy;
 import com.jachwisunbae.notification.controller.dto.WeatherDeviceRequest;
 import com.jachwisunbae.notification.controller.dto.WeatherDeviceResponse;
 import com.jachwisunbae.notification.controller.dto.WeatherNotificationSettingsRequest;
@@ -26,15 +27,17 @@ import org.springframework.web.bind.annotation.RestController;
 @SecurityRequirement(name = "bearerAuth")
 public class WeatherNotificationSettingsController {
     private final WeatherNotificationSettingsService service;
+    private final WeatherPushTestPolicy testPolicy;
 
-    public WeatherNotificationSettingsController(final WeatherNotificationSettingsService service) {
+    public WeatherNotificationSettingsController(final WeatherNotificationSettingsService service, final WeatherPushTestPolicy testPolicy) {
         this.service = service;
+        this.testPolicy = testPolicy;
     }
 
     @GetMapping("/weather-notification-settings")
     @Operation(summary = "날씨 알림 수신 설정 조회", description = "200: 기본 OFF. 401 인증 오류, 404 MEMBER_NOT_FOUND.")
     public ApiResponse<WeatherNotificationSettingsResponse> settings(@AuthenticatedMemberId final Long memberId) {
-        return ApiResponse.of(new WeatherNotificationSettingsResponse(service.enabled(memberId)));
+        return ApiResponse.of(response(memberId, service.enabled(memberId)));
     }
 
     @PutMapping("/weather-notification-settings")
@@ -43,7 +46,13 @@ public class WeatherNotificationSettingsController {
     public ApiResponse<WeatherNotificationSettingsResponse> settings(@AuthenticatedMemberId final Long memberId,
             @Valid @RequestBody final WeatherNotificationSettingsRequest request) {
         service.setEnabled(memberId, request.enabled());
-        return ApiResponse.of(new WeatherNotificationSettingsResponse(request.enabled()));
+        return ApiResponse.of(response(memberId, request.enabled()));
+    }
+
+    private WeatherNotificationSettingsResponse response(final long memberId, final boolean enabled) {
+        boolean testAvailable = testPolicy.enabled() && service.device(memberId)
+                .map(device -> testPolicy.allows(device.installationId())).orElse(false);
+        return new WeatherNotificationSettingsResponse(enabled, testAvailable);
     }
 
     @GetMapping("/weather-devices/current")

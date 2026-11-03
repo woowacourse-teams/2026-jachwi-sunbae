@@ -32,6 +32,8 @@ weather:
   cleanup:
     enabled: true
   notification:
-    # 운영 Firebase 프로젝트·ADC·운영 앱의 등록정보를 준비한 뒤 true로 변경한다.
+    # 기존 스토어 2.1.1(8)의 프로젝트. 실제 ADC/APNs·실기기 확인 후 별도로 활성화한다.
     enabled: false
-    firebase-project-id: "jachwi-sunbae-prod"
+    schedule-enabled: false
+    test-enabled: false
+    firebase-project-id: "jachwi-sunbae-de"

@@ -22,3 +22,7 @@ photo:
 map:
   provider:
     mode: demo
+
+weather:
+  notification:
+    test-enabled: true

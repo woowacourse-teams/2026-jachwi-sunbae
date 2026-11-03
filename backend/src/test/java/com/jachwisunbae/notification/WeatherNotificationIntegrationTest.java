@@ -21,6 +21,7 @@ import com.jachwisunbae.notification.domain.NotificationSlot;
 import com.jachwisunbae.notification.domain.WeatherDevice;
 import com.jachwisunbae.notification.domain.WeatherNotification;
 import com.jachwisunbae.notification.provider.WeatherPushSender;
+import com.jachwisunbae.member.service.MemberService;
 import com.jachwisunbae.notification.provider.WeatherPushSender.Push;
 import com.jachwisunbae.notification.repository.WeatherNotificationRepository;
 import com.jachwisunbae.notification.repository.WeatherNotificationSettingsRepository;
@@ -87,6 +88,7 @@ class WeatherNotificationIntegrationTest {
     @Autowired private MemberWeatherLocationRepository locations;
     @Autowired private MemberWeatherLocationService locationService;
     @Autowired private WeatherNotificationSettingsService settings;
+    @Autowired private MemberService members;
     @Autowired private WeatherNotificationSettingsRepository settingsRepository;
     @Autowired private WeatherNotificationRepository notifications;
     @Autowired private LifeWeatherAnalysisService analysis;
@@ -151,12 +153,47 @@ class WeatherNotificationIntegrationTest {
     }
 
     @Test
+    void scheduledVerificationSendsOnlyToDesignatedInstallation() {
+        register(2);
+        settings.setEnabled(2, true);
+        locations.sync(2, GRID, MORNING);
+        dispatch.dispatch(NotificationSlot.MORNING, device.installationId());
+        dispatch.dispatch(NotificationSlot.MORNING, device.installationId());
+        assertThat(pushes).hasSize(1);
+        assertThat(pushes.getFirst().token()).isEqualTo(device.token());
+        assertThat(notificationCount()).isOne();
+        assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM weather_notifications WHERE member_id=2", Integer.class)).isZero();
+    }
+
+    @Test
     void testPushDoesNotSaveNotificationAndReportsMissingDevice() throws Exception {
+        mvc.perform(get("/api/members/me/weather-notification-settings").header("Authorization", bearer(1)))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.data.testAvailable").value(true));
+        mvc.perform(get("/api/members/me/weather-notification-settings").header("Authorization", bearer(2)))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.data.testAvailable").value(false));
         mvc.perform(post("/api/members/me/weather-notifications/test").header("Authorization", bearer(1)))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.data.sent").value(false));
         mvc.perform(post("/api/members/me/weather-notifications/test").header("Authorization", bearer(2)))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.data.sent").value(false));
         assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM weather_notifications", Integer.class)).isZero();
+    }
+
+    @Test
+    void testPushOnlySendsToTheDesignatedInstallationSnapshot() {
+        var sender = (WeatherPushSender) push -> { pushes.add(push); return true; };
+        var service = new WeatherNotificationSettingsService(members, settingsRepository, sender, CLOCK);
+        var other = register(2);
+        assertThat(service.sendTest(1, other.installationId())).isFalse();
+        assertThat(service.sendTest(2, device.installationId())).isFalse();
+        assertThat(pushes).isEmpty();
+        assertThat(service.sendTest(1, device.installationId())).isTrue();
+        assertThat(pushes).hasSize(1);
+        assertThat(pushes.getFirst().token()).isEqualTo(device.token());
+        assertThat(notificationCount()).isZero();
+        // 검증 도중 등록이 다른 설치로 바뀌어도 기존 허용 ID로 새 설치에 보내지 않는다.
+        register(1);
+        assertThat(service.sendTest(1, device.installationId())).isFalse();
+        assertThat(pushes).hasSize(1);
     }
 
     @Test

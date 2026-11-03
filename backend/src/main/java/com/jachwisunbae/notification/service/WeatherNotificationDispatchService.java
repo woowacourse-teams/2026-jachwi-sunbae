@@ -37,8 +37,15 @@ public class WeatherNotificationDispatchService {
     }
 
     public void dispatch(final NotificationSlot slot) {
+        dispatch(slot, null);
+    }
+
+    public void dispatch(final NotificationSlot slot, final UUID testInstallationId) {
         LocalDate date = LocalDate.ofInstant(clock.instant(), NotificationSlot.KST);
         for (WeatherDevice device : settings.enabledDevices()) {
+            if (testInstallationId != null && !testInstallationId.equals(device.installationId())) {
+                continue;
+            }
             try {
                 send(device, date, slot);
             } catch (RuntimeException exception) {

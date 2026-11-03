@@ -52,7 +52,12 @@ public class WeatherNotificationSettingsService {
 
     // 수신 확인용이라 수신 동의·위치·예보를 보지 않고 이력도 저장하지 않는다.
     public boolean sendTest(final long memberId) {
-        return device(memberId).map(device -> sender.send(
+        return sendTest(memberId, null);
+    }
+
+    public boolean sendTest(final long memberId, final UUID allowedInstallationId) {
+        return device(memberId).filter(device -> allowedInstallationId == null || allowedInstallationId.equals(device.installationId()))
+                .map(device -> sender.send(
                 new Push(UUID.randomUUID(), device.token(), "날씨 알림 테스트", "알림이 정상적으로 도착했어요"))).orElse(false);
     }
 

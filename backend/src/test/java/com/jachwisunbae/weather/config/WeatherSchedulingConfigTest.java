@@ -55,17 +55,17 @@ class WeatherSchedulingConfigTest {
     }
 
     @ParameterizedTest
-    @CsvSource({"dev, jachwi-sunbae-de, true", "prod, jachwi-sunbae-prod, false"})
-    void serverProfilesCollectAndCleanAndNotifyOnlyInDev(final String profile, final String projectId,
-            final boolean notifies) {
+    @CsvSource({"dev, jachwi-sunbae-de, true", "prod, jachwi-sunbae-de, false"})
+    void serverProfilesKeepSchedulesOffUntilVerification(final String profile, final String projectId,
+            final boolean senderEnabled) {
         profile(profile).run(context -> {
             assertThat(context).hasNotFailed().hasSingleBean(WeatherCollectionScheduler.class)
                     .hasSingleBean(WeatherCleanupScheduler.class);
-            assertThat(context.getBeansOfType(WeatherNotificationScheduler.class)).hasSize(notifies ? 1 : 0);
+            assertThat(context).doesNotHaveBean(WeatherNotificationScheduler.class);
             assertThat(context.getBean(ScheduledAnnotationBeanPostProcessor.class).getScheduledTasks())
-                    .hasSize(notifies ? 4 : 2);
+                    .hasSize(2);
             assertThat(context.getEnvironment().getProperty("weather.notification.enabled", Boolean.class))
-                    .isEqualTo(notifies);
+                    .isEqualTo(senderEnabled);
             assertThat(context.getEnvironment().getProperty("weather.notification.firebase-project-id")).isEqualTo(projectId);
             assertThat(context.getEnvironment().getProperty("server.port", Integer.class)).isEqualTo(80);
             verifyNoInteractions(collection, cleanup, notification);
@@ -76,7 +76,7 @@ class WeatherSchedulingConfigTest {
     @ValueSource(strings = {"dev", "prod"})
     void enablingPreparedNotificationsRegistersAllThreeSchedulers(final String profile) {
         // 실제 Firebase에 연결하지 않고 서비스 대역으로 YAML의 enabled=true 전환만 검증한다.
-        profile(profile).withPropertyValues("weather.notification.enabled=true").run(context -> {
+        profile(profile).withPropertyValues("weather.notification.enabled=true", "weather.notification.schedule-enabled=true").run(context -> {
             assertThat(context).hasNotFailed().hasSingleBean(WeatherCollectionScheduler.class)
                     .hasSingleBean(WeatherCleanupScheduler.class).hasSingleBean(WeatherNotificationScheduler.class);
             assertThat(context.getBean(ScheduledAnnotationBeanPostProcessor.class).getScheduledTasks()).hasSize(4);
@@ -87,7 +87,7 @@ class WeatherSchedulingConfigTest {
     @Test
     void eachFlagRegistersOnlyItsOwnJobs() {
         for (String feature : new String[]{"collection", "cleanup", "notification"}) {
-            runner.withPropertyValues("weather." + feature + ".enabled=true").run(context -> {
+            runner.withPropertyValues("weather." + feature + ".enabled=true", "weather.notification.schedule-enabled=true").run(context -> {
                 assertThat(context).hasNotFailed();
                 assertThat(context.getBean(ScheduledAnnotationBeanPostProcessor.class).getScheduledTasks())
                         .hasSize(feature.equals("notification") ? 2 : 1);

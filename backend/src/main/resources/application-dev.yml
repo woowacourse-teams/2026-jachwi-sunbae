@@ -33,4 +33,6 @@ weather:
     enabled: true
   notification:
     enabled: true
+    schedule-enabled: false
+    test-enabled: true
     firebase-project-id: "jachwi-sunbae-de"
