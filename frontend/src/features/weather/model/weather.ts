@@ -24,4 +24,4 @@ export type WeatherForecastResponse = {
   tmxPublishedAt: string | null;
 };
 
-export type WeatherNotificationSettingsResponse = { enabled: boolean };
+export type WeatherNotificationSettingsResponse = { enabled: boolean; testAvailable?: boolean };
