@@ -2,7 +2,8 @@
 import { http, HttpResponse } from 'msw';
 import { describe, expect, it, vi } from 'vitest';
 
-import { ApiError, apiRequest, getApiErrorTrackingContext, resetAuthentication } from '@/features/auth/api/apiClient';
+import { resetAuthentication } from '@/features/auth/api/accountReset';
+import { ApiError, apiRequest, getApiErrorTrackingContext } from '@/features/auth/api/apiClient';
 import {
   clearAuthentication,
   getAccessToken,

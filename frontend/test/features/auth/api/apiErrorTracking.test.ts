@@ -8,7 +8,8 @@ vi.mock('@/shared/lib/analytics/posthog', () => ({
   trackPostHogEvent: vi.fn(),
 }));
 
-import { apiBlobRequest, apiRequest } from '@/features/auth/api/apiClient';
+import { apiBlobRequest } from '@/features/auth/api/apiBlobRequest';
+import { apiRequest } from '@/features/auth/api/apiClient';
 import { clearAuthentication, setAuthentication } from '@/features/auth/model/authStore';
 
 import { server } from '../../../server';

@@ -1,4 +1,5 @@
-import { apiBlobRequest, apiRequest } from '@/features/auth/api/apiClient';
+import { apiBlobRequest } from '@/features/auth/api/apiBlobRequest';
+import { apiRequest } from '@/features/auth/api/apiClient';
 import type { PublicConfig } from '@/shared/config/publicConfigTypes';
 
 import type { PropertyPhoto, PropertyPhotoList } from '../model/Property';

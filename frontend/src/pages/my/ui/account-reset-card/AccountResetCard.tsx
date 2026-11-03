@@ -3,7 +3,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-import { resetAuthentication } from '@/features/auth/api/apiClient';
+import { resetAuthentication } from '@/features/auth/api/accountReset';
 import { createAccountDeletionMailto } from '@/shared/config/accountDeletion';
 import { usePublicConfig } from '@/shared/config/PublicConfigContext';
 import ConfirmDialog from '@/shared/ui/confirm-dialog/ConfirmDialog';

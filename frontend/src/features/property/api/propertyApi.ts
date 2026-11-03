@@ -1,4 +1,5 @@
-import { apiBlobRequest, apiRequest } from '@/features/auth/api/apiClient';
+import { apiBlobRequest } from '@/features/auth/api/apiBlobRequest';
+import { apiRequest } from '@/features/auth/api/apiClient';
 import { readInteger, readRecord, readString } from '@/shared/api/responseParsers';
 import type { PublicConfig } from '@/shared/config/publicConfigTypes';
 

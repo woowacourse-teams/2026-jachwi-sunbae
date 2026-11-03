@@ -4,7 +4,6 @@ import {
   capturePostHogException,
   type PostHogErrorCategory,
   type PostHogErrorSeverity,
-  resetPostHogIdentity,
   trackPostHogEvent,
 } from '@/shared/lib/analytics/posthog';
 
@@ -16,6 +15,9 @@ import {
   setAuthentication,
 } from '../model/authStore';
 import { parseLoginResponseDto } from './authParsers';
+
+// 계정 초기화(accountReset.ts)와 파일 요청(apiBlobRequest.ts)은 첫 화면에 쓰지 않아 첫 번들에 넣지 않으려고 따로 둔다.
+// 그 두 파일만 쓰는 내부 함수도 여기서 export한다.
 
 type ApiErrorKind = 'network' | 'server' | 'invalid-response' | 'authentication-ended';
 
@@ -46,7 +48,7 @@ export class ApiError extends Error {
 }
 
 // DOMException은 실행 환경에 따라 Error의 instanceof 검사에 걸리지 않을 수 있다.
-const isAbortError = (error: unknown): boolean =>
+export const isAbortError = (error: unknown): boolean =>
   typeof error === 'object' && error !== null && 'name' in error && error.name === 'AbortError';
 
 type ApiRequestOptions<T> = {
@@ -60,7 +62,7 @@ type ApiRequestOptions<T> = {
   parseData: (value: unknown) => T;
 };
 
-const captureUnexpectedApiError = ({
+export const captureUnexpectedApiError = ({
   error,
   path,
   method,
@@ -159,7 +161,7 @@ export const createApiUrl = (config: PublicConfig, path: string): string => {
   return resolvedUrl.toString();
 };
 
-type ExecuteRequestOptions = {
+export type ExecuteRequestOptions = {
   config: PublicConfig;
   path: string;
   method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
@@ -187,9 +189,9 @@ const sendRequest = async (
 };
 
 const LOGIN_PATH = '/api/auth/login';
-const REFRESH_PATH = '/api/auth/refresh';
+export const REFRESH_PATH = '/api/auth/refresh';
 // 초기화의 첫 단계. 지금 회원을 탈퇴 처리(논리 삭제)하고 Refresh Token을 폐기한다. 새 회원은 이어서 로그인으로 받는다.
-const MEMBER_PATH = '/api/members/me';
+export const MEMBER_PATH = '/api/members/me';
 
 type TokenPath = typeof LOGIN_PATH | typeof REFRESH_PATH;
 
@@ -197,7 +199,7 @@ type TokenPath = typeof LOGIN_PATH | typeof REFRESH_PATH;
  * 인증 요청을 보낸다. 로그인과 갱신은 Refresh 쿠키(Path=/api/auth)로, 탈퇴는 Access Token으로 회원을 확인한다.
  * 다른 출처의 응답이 Refresh 쿠키를 저장하거나 만료시킬 수 있도록 모두 쿠키를 함께 보낸다.
  */
-const sendAuthenticationRequest = async (
+export const sendAuthenticationRequest = async (
   config: PublicConfig,
   path: TokenPath | typeof MEMBER_PATH,
   method: 'POST' | 'DELETE',
@@ -245,7 +247,7 @@ const acceptTokenResponse = async (response: Response, path: TokenPath): Promise
  * 갱신은 새 회원 없이 401 REFRESH_TOKEN_INVALID로 거절한다.
  * 서버가 401로 복원을 거절하면 인증을 끝내고, 통신 장애는 인증 상태를 바꾸지 않는다.
  */
-const requestToken = async (config: PublicConfig, path: TokenPath): Promise<string> => {
+export const requestToken = async (config: PublicConfig, path: TokenPath): Promise<string> => {
   const response = await sendAuthenticationRequest(config, path, 'POST');
   if (response.status === 401) clearAuthentication('unauthorized');
   return acceptTokenResponse(response, path);
@@ -264,12 +266,17 @@ const trackLoginFailure = (error: unknown) => {
 let pendingAuthentication: Promise<string> | null = null;
 
 /** 진행 중인 인증 요청으로 등록한다. 끝나면 자기 자신일 때만 지워, 뒤이어 등록된 요청을 지우지 않는다. */
-const sharePendingAuthentication = (request: Promise<string>): Promise<string> => {
-  const shared = request.finally(() => {
-    if (pendingAuthentication === shared) pendingAuthentication = null;
-  });
+export const sharePendingAuthentication = (request: Promise<string>): Promise<string> => {
+  const shared = request.finally(() => releasePendingAuthentication(shared));
   pendingAuthentication = shared;
   return shared;
+};
+
+export const getPendingAuthentication = (): Promise<string> | null => pendingAuthentication;
+
+/** 진행 중인 인증 요청이 `request`일 때만 비운다. */
+export const releasePendingAuthentication = (request: Promise<string> | null): void => {
+  if (pendingAuthentication === request) pendingAuthentication = null;
 };
 
 /** 앱 시작과 사용자의 다시 시도에 쓴다. 동시에 여러 요청이 불러도 로그인 요청은 한 번만 보낸다. */
@@ -293,65 +300,6 @@ const refreshAuthentication = (config: PublicConfig): Promise<string> =>
   );
 
 /**
- * 지금 회원의 Access Token으로 탈퇴를 요청한다. 토큰이 만료됐거나 401을 받으면 같은 회원으로 한 번 갱신해 다시 보낸다.
- * 초기화가 진행 중인 인증으로 등록돼 있어 공용 갱신은 초기화 자신을 기다리게 되므로, 여기서는 갱신을 직접 보낸다.
- */
-const requestMemberDeletion = async (config: PublicConfig): Promise<void> => {
-  const { session, terminationReason } = getAuthenticationSnapshot();
-  if (session === null || terminationReason !== null) throw new ApiError({ kind: 'authentication-ended' });
-
-  const accessToken = getAccessToken() ?? (await requestToken(config, REFRESH_PATH));
-  let response = await sendAuthenticationRequest(config, MEMBER_PATH, 'DELETE', accessToken);
-  if (response.status === 401) {
-    const refreshedToken = await requestToken(config, REFRESH_PATH);
-    response = await sendAuthenticationRequest(config, MEMBER_PATH, 'DELETE', refreshedToken);
-  }
-  // 탈퇴가 거절되면 지금 회원은 그대로 둔다.
-  if (!response.ok) await throwResponseError(response);
-};
-
-/**
- * 초기화. 지금 회원을 탈퇴 처리한 뒤, Refresh 쿠키 없이 로그인해 새 익명 회원을 받는다.
- * 진행 중인 로그인이나 갱신이 끝난 뒤에 보내고, 탈퇴가 끝날 때까지 뒤이은 로그인과 갱신은 초기화를 함께 기다린다.
- * 탈퇴가 실패하면 지금 회원과 화면 상태를 그대로 두고 오류를 던진다.
- * 탈퇴 뒤 로그인이 실패해도 세션은 이미 비었으므로, 다음 요청의 자동 로그인이 새 회원을 받는다.
- */
-export const resetAuthentication = async (config: PublicConfig): Promise<void> => {
-  const previous = pendingAuthentication;
-  let isMemberDeleted = false;
-  let reset: Promise<string> | null = null;
-  reset = sharePendingAuthentication(
-    (async () => {
-      if (previous !== null) await previous.catch(() => undefined);
-      try {
-        await requestMemberDeletion(config);
-      } catch (error) {
-        captureUnexpectedApiError({ error, path: MEMBER_PATH, method: 'DELETE' });
-        trackPostHogEvent('account_reset_failed', {
-          error_kind: error instanceof ApiError ? error.kind : 'unknown',
-          error_code: error instanceof ApiError ? error.code : null,
-        });
-        throw error;
-      }
-      isMemberDeleted = true;
-      // 인증을 끝내지 않고 세션과 회원 캐시만 비운다. 'unauthorized'를 넘기면 오류 화면이 뜬다.
-      clearAuthentication(null);
-      // 성공 이벤트는 이전 회원으로 남기고, 새 회원은 회원 조회가 끝나면 다시 식별한다.
-      trackPostHogEvent('account_reset_succeeded');
-      resetPostHogIdentity();
-      // 탈퇴가 끝났으니 초기화 대기를 풀고, 공용 자동 로그인으로 새 회원을 받는다. 기다리던 요청은 그 토큰을 받는다.
-      if (pendingAuthentication === reset) pendingAuthentication = null;
-      return authenticate(config);
-    })(),
-  );
-  try {
-    await reset;
-  } catch (error) {
-    if (!isMemberDeleted) throw error;
-  }
-};
-
-/**
  * 토큰이 없으면 처음 회원을 정할 때는 로그인하고, 이미 회원이 정해졌으면 갱신한다.
  * 서버가 이미 복원을 거절했다면 사용자가 다시 시도할 때까지 로그인을 되풀이하지 않는다.
  */
@@ -365,7 +313,7 @@ const getOrStartAuthentication = (config: PublicConfig): Promise<string> => {
   return session === null ? authenticate(config) : refreshAuthentication(config);
 };
 
-const executeRequest = async (options: ExecuteRequestOptions): Promise<Response> => {
+export const executeRequest = async (options: ExecuteRequestOptions): Promise<Response> => {
   if (!options.requiresAuthentication) return sendRequest(options, null);
 
   const accessToken = await getOrStartAuthentication(options.config);
@@ -397,7 +345,7 @@ const executeRequest = async (options: ExecuteRequestOptions): Promise<Response>
   return retried;
 };
 
-const throwResponseError = async (response: Response): Promise<never> => {
+export const throwResponseError = async (response: Response): Promise<never> => {
   let payload: unknown;
 
   try {
@@ -483,62 +431,6 @@ const apiRequestInternal = async <T>({
 export const apiRequest = async <T>(options: ApiRequestOptions<T>): Promise<T> => {
   try {
     return await apiRequestInternal(options);
-  } catch (error) {
-    captureUnexpectedApiError({ error, path: options.path, method: options.method ?? 'GET' });
-    throw error;
-  }
-};
-
-const apiBlobRequestInternal = async ({
-  config,
-  path,
-  method = 'GET',
-  body,
-  acceptedContentTypes = ['image/jpeg', 'image/png', 'image/webp'],
-  signal,
-}: {
-  config: PublicConfig;
-  path: string;
-  method?: 'GET' | 'POST';
-  body?: unknown;
-  acceptedContentTypes?: string[];
-  signal?: AbortSignal;
-}): Promise<Blob> => {
-  const headers = new Headers({ Accept: acceptedContentTypes.join(', ') });
-  if (body !== undefined) headers.set('Content-Type', 'application/json');
-  const response = await executeRequest({
-    config,
-    path,
-    method,
-    headers,
-    body: body === undefined ? undefined : JSON.stringify(body),
-    signal,
-    requiresAuthentication: true,
-  });
-
-  if (!response.ok) {
-    return throwResponseError(response);
-  }
-
-  const contentType = response.headers.get('Content-Type')?.split(';')[0]?.trim();
-
-  if (contentType === undefined || !acceptedContentTypes.includes(contentType)) {
-    throw new ApiError({ kind: 'invalid-response', status: response.status });
-  }
-
-  let blob: Blob;
-  try {
-    blob = await response.blob();
-  } catch (error) {
-    if (isAbortError(error)) throw error;
-    throw new ApiError({ kind: 'invalid-response', status: response.status });
-  }
-  return blob.type === contentType ? blob : blob.slice(0, blob.size, contentType);
-};
-
-export const apiBlobRequest = async (options: Parameters<typeof apiBlobRequestInternal>[0]): Promise<Blob> => {
-  try {
-    return await apiBlobRequestInternal(options);
   } catch (error) {
     captureUnexpectedApiError({ error, path: options.path, method: options.method ?? 'GET' });
     throw error;
