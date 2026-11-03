@@ -9,6 +9,8 @@ App Store와 Google Play에 올리는 스크린샷 6장은 `../template/index.ht
 
 파일 이름은 `01-hero.png`부터 `06-cheap-meals.png`까지이며, 이 순서대로 올려야 배경 물결이 이어집니다.
 
+> `02-explore.png`는 지금 동네 찾기 캡처를 임시로 쓴다. 동네 찾기 디자인 변경 후 `frontend/src/shared/assets/app-screens/explore-mobile.jpg` 교체 → `render.sh` 재실행.
+
 ## 다시 만들기
 
 앱 화면이 바뀌면 캡처를 바꾼 뒤 스크립트를 다시 돌립니다.
