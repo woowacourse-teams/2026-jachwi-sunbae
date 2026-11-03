@@ -7,6 +7,7 @@ import { commuteAreaToRegion } from '@/features/map/api/commuteApi';
 import { fetchCommuteRoute } from '@/features/map/api/commuteRouteApi';
 import { reverseGeocode, searchAddress } from '@/features/map/api/mapApi';
 import { useCommuteAreas } from '@/features/map/api/useCommuteAreas';
+import { usePrefetchMetroBoundaries } from '@/features/map/api/usePrefetchMetroBoundaries';
 import { writeCommuteDestination } from '@/features/map/lib/commuteDestinationStore';
 import { readGeolocationPermission, requestCurrentMapLocation } from '@/features/map/lib/mapLocation';
 import { MapLocationError } from '@/features/map/lib/mapLocation';
@@ -116,6 +117,8 @@ const useNeighborhoodPreview = () => {
       cancelled = true;
     };
   }, []);
+  // 진입부터 첫 검색까지 중앙값 22초 동안 수도권 경계를 받아 두어, 검색 뒤에는 통근 API만 기다리게 한다.
+  const prefetchBoundaries = usePrefetchMetroBoundaries({ isSearching: phase === 'analyzing' });
   const commute = useCommuteAreas({
     destination,
     maxMinutes,
@@ -188,6 +191,7 @@ const useNeighborhoodPreview = () => {
   return {
     isPublicExplore,
     mapPath,
+    prefetchBoundaries,
     rentPeriod: commute.data?.rentPeriod ?? null,
     isLocating,
     locationError,
