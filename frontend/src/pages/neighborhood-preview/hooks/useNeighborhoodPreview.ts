@@ -118,6 +118,7 @@ const useNeighborhoodPreview = () => {
     };
   }, []);
   // 진입부터 첫 검색까지 중앙값 22초 동안 수도권 경계를 받아 두어, 검색 뒤에는 통근 API만 기다리게 한다.
+  // 지도가 처음 그려지면(onReady) 시작하고, 느린 연결에서 지도보다 장소를 먼저 고르면 그때 시작한다.
   const prefetchBoundaries = usePrefetchMetroBoundaries({ isSearching: phase === 'analyzing' });
   const commute = useCommuteAreas({
     destination,
@@ -215,6 +216,7 @@ const useNeighborhoodPreview = () => {
           setHasChosenMapPoint(true);
           setShouldFocusMapSearch(false);
           setPhase('conditions');
+          prefetchBoundaries();
         }
       } catch (error) {
         if (intent !== locationIntent.current) return;
@@ -288,6 +290,7 @@ const useNeighborhoodPreview = () => {
       setHasChosenMapPoint(true);
       setShouldFocusMapSearch(false);
       setPhase('conditions');
+      prefetchBoundaries();
     },
     changeQuery: (value: string) => {
       locationIntent.current += 1;
@@ -352,6 +355,7 @@ const useNeighborhoodPreview = () => {
       // 지도를 직접 누르면 시점을 옮기지 않는다. 가운데로 옮기거나 확대하면 핀이 누른 자리에서 벗어나 다른 곳에 찍힌 것처럼 보인다.
       setHasChosenMapPoint(true);
       setPhase('conditions');
+      prefetchBoundaries();
       const intent = locationIntent.current;
       void reverseGeocode(config, latitude, longitude)
         .then((address) => {
