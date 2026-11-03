@@ -26,7 +26,10 @@ const DesktopSkeleton = () => (
     <main className={desktopStyles.page}>
       <div className={desktopStyles.frame}>
         <DesktopHeader />
-        <ListDetailLayout className={desktopStyles.body} list={<AreaSkeleton area="list" label={RECORDS_LOADING_LABEL} />}>
+        <ListDetailLayout
+          className={desktopStyles.body}
+          list={<AreaSkeleton area="list" label={RECORDS_LOADING_LABEL} />}
+        >
           <AreaSkeleton area="map" />
         </ListDetailLayout>
       </div>
