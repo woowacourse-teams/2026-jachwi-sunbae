@@ -18,6 +18,7 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.util.List;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 class WeatherForecastQueryServiceTest {
@@ -28,6 +29,7 @@ class WeatherForecastQueryServiceTest {
             Clock.fixed(Instant.parse("2026-10-25T13:00:00Z"), ZoneOffset.UTC));
 
     @Test
+    @DisplayName("예보가 없는 시간은 0으로 채우지 않고 빈 값으로 둔다")
     void fillsMissingHoursWithoutInventingZero() {
         var result = service.find(37.5665, 126.978, null);
         assertThat(result.grid()).isEqualTo(GRID);
@@ -43,6 +45,7 @@ class WeatherForecastQueryServiceTest {
     }
 
     @Test
+    @DisplayName("0과 빈 값을 구분하고 일 최저·최고기온의 발표 시각을 따로 둔다")
     void preservesZeroMissingAndIndependentDailyPublications() {
         LocalDate tomorrow = TODAY.plusDays(1);
         var publication = TODAY.atTime(20, 0);
@@ -59,6 +62,7 @@ class WeatherForecastQueryServiceTest {
     }
 
     @Test
+    @DisplayName("수집이 끝난 예보는 6시간이 지나도 돌려준다")
     void returnsCompletedForecastWithoutSixHourFreshnessLimit() {
         var publication = TODAY.minusDays(1).atTime(23, 0);
         when(repository.findHourly(GRID, TODAY)).thenReturn(List.of(
@@ -69,12 +73,14 @@ class WeatherForecastQueryServiceTest {
     }
 
     @Test
+    @DisplayName("DB를 읽기 전에 좌표를 검증한다")
     void validatesCoordinatesBeforeReadingDatabase() {
         assertThatThrownBy(() -> service.find(Double.NaN, 127, TODAY)).isInstanceOf(InvalidInputException.class);
         verifyNoInteractions(repository);
     }
 
     @Test
+    @DisplayName("UTC 날짜가 바뀌기 전이어도 한국 날짜로 조회한다")
     void usesKstDateAtUtcDateBoundary() {
         var boundary = new WeatherForecastQueryService(repository, new KmaGridConverter(),
                 Clock.fixed(Instant.parse("2026-12-31T15:00:00Z"), ZoneOffset.UTC));

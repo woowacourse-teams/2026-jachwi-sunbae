@@ -9,6 +9,7 @@ import com.google.firebase.FirebaseApp;
 import com.jachwisunbae.notification.provider.WeatherPushSender;
 import java.time.Clock;
 import java.util.Date;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -18,6 +19,7 @@ import org.springframework.core.env.StandardEnvironment;
 
 class WeatherNotificationConfigTest {
     @Test
+    @DisplayName("알림을 끄면 Firebase 인증 정보 없이 보내지 않는 발송기를 쓴다")
     void offNeedsNoFirebaseCredentials() {
         new ApplicationContextRunner().withUserConfiguration(DisabledWeatherPushConfig.class, FirebaseWeatherPushConfig.class)
                 .run(context -> {
@@ -27,6 +29,7 @@ class WeatherNotificationConfigTest {
     }
 
     @Test
+    @DisplayName("알림을 켜면 인증 정보를 읽기 전에 Firebase project ID를 요구한다")
     void onRequiresProjectIdBeforeLoadingCredentials() {
         new ApplicationContextRunner().withUserConfiguration(FirebaseWeatherPushConfig.class)
                 .withPropertyValues("weather.notification.enabled=true").withBean(Clock.class, Clock::systemUTC)
@@ -34,6 +37,7 @@ class WeatherNotificationConfigTest {
     }
 
     @ParameterizedTest
+    @DisplayName("현재 프로필은 Firebase 인증 정보를 읽지 않고 시작한다")
     @ValueSource(strings = {"local", "prod"})
     void currentProfilesStartWithoutReadingFirebaseCredentials(final String name) {
         try (var credentials = mockStatic(GoogleCredentials.class)) {
@@ -45,6 +49,7 @@ class WeatherNotificationConfigTest {
     }
 
     @ParameterizedTest
+    @DisplayName("project ID가 비어 있으면 알림을 켜도 시작하지 않는다")
     @ValueSource(strings = {"dev", "prod"})
     void missingProjectIdPreventsAccidentalActivation(final String name) {
         try (var credentials = mockStatic(GoogleCredentials.class)) {
@@ -57,6 +62,7 @@ class WeatherNotificationConfigTest {
     }
 
     @ParameterizedTest
+    @DisplayName("설정한 project ID와 기본 인증 정보로 Firebase를 만들고 푸시는 보내지 않는다")
     @ValueSource(strings = {"dev", "prod"})
     void configuredProjectIdIsUsedWithAdcWithoutSendingPush(final String name) {
         // 설정 주입 검증용 ID·토큰이며 실제 환경의 ID나 자격증명이 아니다.

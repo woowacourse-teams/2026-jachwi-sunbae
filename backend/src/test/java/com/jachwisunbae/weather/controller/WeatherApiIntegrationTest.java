@@ -24,6 +24,7 @@ import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -95,6 +96,7 @@ class WeatherApiIntegrationTest {
     }
 
     @Test
+    @DisplayName("익명 로그인 복원과 토큰 재발급 뒤에도 회원의 날씨 위치와 동의를 유지한다")
     void anonymousLoginRestorationAndRefreshKeepTheMembersWeatherLocationAndConsent() throws Exception {
         var login = mvc.perform(post("/api/auth/login"))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.data.newMember").value(true))
@@ -138,6 +140,7 @@ class WeatherApiIntegrationTest {
     }
 
     @Test
+    @DisplayName("선택한 격자와 날짜의 수집 완료 값만 한국 시간 정보와 함께 돌려준다")
     void returnsOnlySelectedGridDateAndVerifiedValuesWithKstMetadata() throws Exception {
         var publication = TODAY.atTime(20, 0);
         complete(publication);
@@ -161,6 +164,7 @@ class WeatherApiIntegrationTest {
     }
 
     @Test
+    @DisplayName("다시 수집하는 중에는 이전 값이나 일부 값을 보여 주지 않는다")
     void incompleteRecollectionDoesNotExposePreviousOrPartialValues() throws Exception {
         var publication = TODAY.atTime(20, 0);
         complete(publication);
@@ -174,6 +178,7 @@ class WeatherApiIntegrationTest {
     }
 
     @Test
+    @DisplayName("일 최저·최고기온은 각자의 발표분 수집이 끝나야 보여 준다")
     void dailyValuesRequireTheirOwnCompletedPublication() throws Exception {
         var minimumPublication = TODAY.atTime(2, 0);
         var maximumPublication = TODAY.atTime(11, 0);
@@ -190,6 +195,7 @@ class WeatherApiIntegrationTest {
     }
 
     @Test
+    @DisplayName("인증 없음, 잘못된 좌표, 빠진 파라미터를 거부한다")
     void validatesAuthenticationCoordinatesAndMissingParameters() throws Exception {
         mvc.perform(get("/api/weather/forecasts").param("latitude", "37").param("longitude", "127"))
                 .andExpect(status().isUnauthorized());
@@ -205,6 +211,7 @@ class WeatherApiIntegrationTest {
     }
 
     @Test
+    @DisplayName("인증한 회원의 위치만 격자로 저장하고 정확한 좌표는 남기지 않는다")
     void synchronizesOnlyAuthenticatedMemberWithoutPersistingExactCoordinates() throws Exception {
         mvc.perform(put("/api/members/me/weather-location").header("Authorization", bearer(1))
                 .contentType(MediaType.APPLICATION_JSON).content(locationBody(37.5665, 126.978)))
@@ -227,6 +234,7 @@ class WeatherApiIntegrationTest {
     }
 
     @Test
+    @DisplayName("서버 시각이 같아도 새 위치의 격자로 바꾼다")
     void replacesTheMembersGridEvenWhenTheServerTimestampIsUnchanged() throws Exception {
         locations.sync(1, new GridPoint(98, 76), CLOCK.instant().minusSeconds(7 * 86400));
         mvc.perform(put("/api/members/me/weather-location").header("Authorization", bearer(1))
@@ -244,6 +252,7 @@ class WeatherApiIntegrationTest {
     }
 
     @Test
+    @DisplayName("위치 삭제는 본인 것만 지우고 같은 요청으로 다시 등록할 수 있다")
     void deletesOnlyTheMembersRowAndAllowsTheSameRequestToRegisterAgain() throws Exception {
         String request = locationBody(37.5665, 126.978);
         mvc.perform(put("/api/members/me/weather-location").header("Authorization", bearer(1))
@@ -275,6 +284,7 @@ class WeatherApiIntegrationTest {
     }
 
     @Test
+    @DisplayName("잘못된 위치 좌표와 없는 회원을 거부한다")
     void rejectsInvalidLocationCoordinatesAndUnknownMembers() throws Exception {
         for (String body : List.of("{}", "{\"latitude\":37}", "{\"longitude\":127}",
                 locationBody(91, 127), locationBody(37, 181), locationBody(0, 0),
@@ -293,6 +303,7 @@ class WeatherApiIntegrationTest {
     }
 
     @Test
+    @DisplayName("OpenAPI 문서에 날씨 API 계약과 인증 요구를 공개한다")
     void publishesWeatherContractsWithAuthenticationInOpenApi() throws Exception {
         mvc.perform(get("/v3/api-docs"))
                 .andExpect(status().isOk())

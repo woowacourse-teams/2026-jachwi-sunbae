@@ -32,8 +32,8 @@ class PropertyTest {
     private static final LocalDateTime NOW = LocalDateTime.now(FIXED_CLOCK);
     private static final LocalDate TODAY = LocalDate.now(FIXED_CLOCK);
 
-    @DisplayName("매물 생성은 null, 빈 문자열, 공백 이름을 거부한다")
     @ParameterizedTest(name = "[{index}] 이름: [{0}]")
+    @DisplayName("매물 생성은 null, 빈 문자열, 공백 이름을 거부한다")
     @NullAndEmptySource
     @ValueSource(strings = {"   "})
     void createRejectsBlankName(String name) {
@@ -41,8 +41,8 @@ class PropertyTest {
                 ErrorCode.PROPERTY_INPUT_INVALID);
     }
 
-    @DisplayName("매물 생성은 1자와 30자 이름을 허용한다")
     @ParameterizedTest(name = "[{index}] 이름 길이: {0}")
+    @DisplayName("매물 생성은 1자와 30자 이름을 허용한다")
     @ValueSource(ints = {1, 30})
     void createAcceptsNameLengthBoundary(int length) {
         String name = "가".repeat(length);
@@ -52,23 +52,23 @@ class PropertyTest {
         assertThat(property.getName()).isEqualTo(name);
     }
 
-    @DisplayName("매물 생성은 31자 이름을 거부한다")
     @Test
+    @DisplayName("매물 생성은 31자 이름을 거부한다")
     void createRejectsThirtyOneCharacterName() {
         assertPropertyError(() -> createProperty(input -> input.name = "가".repeat(31)),
                 ErrorCode.PROPERTY_INPUT_INVALID);
     }
 
-    @DisplayName("매물 생성은 이름의 앞뒤 공백을 제거한다")
     @Test
+    @DisplayName("매물 생성은 이름의 앞뒤 공백을 제거한다")
     void createStoresTrimmedName() {
         Property property = createProperty(input -> input.name = "  새 매물  ");
 
         assertThat(property.getName()).isEqualTo("새 매물");
     }
 
-    @DisplayName("매물 수정도 null, 빈 문자열, 공백 이름을 거부한다")
     @ParameterizedTest(name = "[{index}] 이름: [{0}]")
+    @DisplayName("매물 수정도 null, 빈 문자열, 공백 이름을 거부한다")
     @NullAndEmptySource
     @ValueSource(strings = {"   "})
     void updateRejectsBlankName(String name) {
@@ -78,8 +78,8 @@ class PropertyTest {
                 ErrorCode.PROPERTY_INPUT_INVALID);
     }
 
-    @DisplayName("매물 수정은 유효한 이름의 앞뒤 공백을 제거한다")
     @Test
+    @DisplayName("매물 수정은 유효한 이름의 앞뒤 공백을 제거한다")
     void updateStoresTrimmedValidName() {
         Property property = createProperty();
 
@@ -88,8 +88,8 @@ class PropertyTest {
         assertThat(property.getName()).isEqualTo("수정 매물");
     }
 
-    @DisplayName("생성과 수정은 입주 가능일과 방문 예정 시각의 과거, 현재, 미래를 모두 허용한다")
     @ParameterizedTest(name = "[{index}] 기준 시점과의 날짜 차이: {0}일")
+    @DisplayName("생성과 수정은 입주 가능일과 방문 예정 시각의 과거, 현재, 미래를 모두 허용한다")
     @ValueSource(ints = {-1, 0, 1})
     void createAndUpdateAcceptAllDateRelations(int dayOffset) {
         LocalDate availableMoveInDate = TODAY.plusDays(dayOffset);
@@ -111,8 +111,8 @@ class PropertyTest {
         assertThat(updated.getVisitScheduledAt()).isEqualTo(visitScheduledAt);
     }
 
-    @DisplayName("입주 가능일과 방문 예정 시각은 입력하지 않아도 된다")
     @Test
+    @DisplayName("입주 가능일과 방문 예정 시각은 입력하지 않아도 된다")
     void createAcceptsNullOptionalDates() {
         Property property = createProperty(input -> {
             input.availableMoveInDate = null;
@@ -123,15 +123,15 @@ class PropertyTest {
         assertThat(property.getVisitScheduledAt()).isNull();
     }
 
-    @DisplayName("매물은 소유 회원 없이 생성할 수 없다")
     @Test
+    @DisplayName("매물은 소유 회원 없이 생성할 수 없다")
     void createRejectsNullMemberId() {
         assertThatThrownBy(() -> createProperty(input -> input.memberId = null))
                 .isInstanceOf(IllegalArgumentException.class);
     }
 
-    @DisplayName("입력하지 않은 금액은 0으로 저장한다")
     @Test
+    @DisplayName("입력하지 않은 금액은 0으로 저장한다")
     void createNormalizesNullAmountsToZero() {
         Property property = createProperty(input -> {
             input.depositAmount = null;
@@ -144,8 +144,8 @@ class PropertyTest {
         assertThat(property.getMaintenanceFeeAmount()).isZero();
     }
 
-    @DisplayName("보증금, 월세, 관리비는 음수일 수 없다")
     @Test
+    @DisplayName("보증금, 월세, 관리비는 음수일 수 없다")
     void createRejectsNegativeAmounts() {
         assertPropertyError(() -> createProperty(input -> input.depositAmount = -1L),
                 ErrorCode.PROPERTY_INPUT_INVALID);
@@ -155,8 +155,8 @@ class PropertyTest {
                 ErrorCode.PROPERTY_INPUT_INVALID);
     }
 
-    @DisplayName("입력하지 않은 선택 정보는 빈 값으로 정규화한다")
     @Test
+    @DisplayName("입력하지 않은 선택 정보는 빈 값으로 정규화한다")
     void createNormalizesNullOptionalValues() {
         Property property = createProperty(input -> {
             input.discoverySource = null;
@@ -171,8 +171,8 @@ class PropertyTest {
         assertThat(property.getUtilityOptions()).isEmpty();
     }
 
-    @DisplayName("발견 경로와 주소의 최대 길이를 초과하면 생성할 수 없다")
     @Test
+    @DisplayName("발견 경로와 주소의 최대 길이를 초과하면 생성할 수 없다")
     void createRejectsTextOverMaximumLength() {
         assertPropertyError(() -> createProperty(input -> input.discoverySource = "출".repeat(501)),
                 ErrorCode.PROPERTY_INPUT_INVALID);
@@ -180,8 +180,8 @@ class PropertyTest {
                 ErrorCode.PROPERTY_INPUT_INVALID);
     }
 
-    @DisplayName("위도와 경도는 함께 입력해야 한다")
     @Test
+    @DisplayName("위도와 경도는 함께 입력해야 한다")
     void createRejectsIncompleteLocationPair() {
         assertPropertyError(() -> createProperty(input -> input.longitude = null),
                 ErrorCode.PROPERTY_LOCATION_INVALID);
@@ -189,8 +189,8 @@ class PropertyTest {
                 ErrorCode.PROPERTY_LOCATION_INVALID);
     }
 
-    @DisplayName("위도와 경도는 유효한 좌표 범위 안에 있어야 한다")
     @Test
+    @DisplayName("위도와 경도는 유효한 좌표 범위 안에 있어야 한다")
     void createRejectsLocationOutsideRange() {
         assertPropertyError(() -> createProperty(input -> input.latitude = BigDecimal.valueOf(90.0000001)),
                 ErrorCode.PROPERTY_LOCATION_INVALID);
@@ -198,8 +198,8 @@ class PropertyTest {
                 ErrorCode.PROPERTY_LOCATION_INVALID);
     }
 
-    @DisplayName("지원하는 방 옵션과 공과금 옵션은 중복 없이 저장한다")
     @Test
+    @DisplayName("지원하는 방 옵션과 공과금 옵션은 중복 없이 저장한다")
     void createParsesAndDeduplicatesOptions() {
         Property property = createProperty(input -> {
             input.roomOptions = List.of("BED", "BED", "DESK");
@@ -211,8 +211,8 @@ class PropertyTest {
                 UtilityOption.INTERNET);
     }
 
-    @DisplayName("지원하지 않는 방 옵션과 공과금 옵션은 거부한다")
     @Test
+    @DisplayName("지원하지 않는 방 옵션과 공과금 옵션은 거부한다")
     void createRejectsUnknownOptions() {
         assertPropertyError(() -> createProperty(input -> input.roomOptions = List.of("UNKNOWN")),
                 ErrorCode.PROPERTY_INPUT_INVALID);
@@ -220,8 +220,8 @@ class PropertyTest {
                 ErrorCode.PROPERTY_INPUT_INVALID);
     }
 
-    @DisplayName("비어 있는 옵션 값은 NullPointerException이 아니라 입력 오류로 거부한다")
     @Test
+    @DisplayName("비어 있는 옵션 값은 NullPointerException이 아니라 입력 오류로 거부한다")
     void createRejectsNullOptionCode() {
         List<String> nullCode = Arrays.asList((String) null);
 
@@ -231,8 +231,8 @@ class PropertyTest {
                 ErrorCode.PROPERTY_INPUT_INVALID);
     }
 
-    @DisplayName("매물 수정은 생성과 동일한 기본 정보 검증을 적용한다")
     @Test
+    @DisplayName("매물 수정은 생성과 동일한 기본 정보 검증을 적용한다")
     void updateAppliesSameBasicInfoValidationAsCreate() {
         assertUpdatePropertyError(input -> input.name = "가".repeat(31),
                 ErrorCode.PROPERTY_INPUT_INVALID);
@@ -248,8 +248,8 @@ class PropertyTest {
                 ErrorCode.PROPERTY_INPUT_INVALID);
     }
 
-    @DisplayName("매물 수정은 기본 정보와 수정 시각만 바꾸고 식별자와 생성 시각을 유지한다")
     @Test
+    @DisplayName("매물 수정은 기본 정보와 수정 시각만 바꾸고 식별자와 생성 시각을 유지한다")
     void updateReplacesBasicInfoAndPreservesIdentity() {
         LocalDateTime createdAt = NOW.minusDays(10);
         Property property = Property.reconstruct(10L, 20L, "기존 매물", 1L, 2L, "기존 주소",

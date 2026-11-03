@@ -11,6 +11,7 @@ import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -86,6 +87,7 @@ class RentalTransactionAcceptanceTest {
     }
 
     @Test
+    @DisplayName("한국 날짜 기준 조회 기간의 거래를 금액·면적 기준과 함께 최신순으로 돌려준다")
     void returnsKoreanDateWindowAmountsAreaBasisAndStableLatestOrder() throws Exception {
         var response = mvc.perform(request().param("size", "2"))
             .andExpect(status().isOk()).andExpect(jsonPath("$.code").value("SUCCESS"))
@@ -114,6 +116,7 @@ class RentalTransactionAcceptanceTest {
     }
 
     @Test
+    @DisplayName("다음 페이지는 같은 계약일의 거래를 중복하지 않고 이어서 돌려준다")
     void returnsNextPageWithoutRepeatingSameDateTransactions() throws Exception {
         mvc.perform(request().param("size", "2").param("page", "1"))
             .andExpect(status().isOk()).andExpect(jsonPath("$.data.items.length()").value(1))
@@ -122,6 +125,7 @@ class RentalTransactionAcceptanceTest {
     }
 
     @Test
+    @DisplayName("마지막 페이지 뒤를 요청하면 빈 목록을 돌려준다")
     void returnsEmptyPageAfterLastPage() throws Exception {
         mvc.perform(request().param("page", "10000"))
             .andExpect(status().isOk()).andExpect(jsonPath("$.data.items").isEmpty())
@@ -129,6 +133,7 @@ class RentalTransactionAcceptanceTest {
     }
 
     @Test
+    @DisplayName("거래가 없는 법정동도 법정동 이름은 돌려준다")
     void returnsKnownDongNameWhenNoTransactionsExist() throws Exception {
         mvc.perform(baseRequest().param("legalDongCode", "1162010100"))
             .andExpect(status().isOk()).andExpect(jsonPath("$.data.items").isEmpty())
@@ -137,6 +142,7 @@ class RentalTransactionAcceptanceTest {
     }
 
     @Test
+    @DisplayName("수집 정보가 없는 법정동은 이름 없이 빈 목록을 돌려준다")
     void returnsEmptyListForDongWithoutCollectedInformation() throws Exception {
         mvc.perform(baseRequest().param("legalDongCode", "9999999999"))
             .andExpect(status().isOk()).andExpect(jsonPath("$.data.items").isEmpty())
@@ -144,6 +150,7 @@ class RentalTransactionAcceptanceTest {
     }
 
     @Test
+    @DisplayName("자료 기간과 수집 시각은 조회 기간과 따로 돌려준다")
     void returnsCoverageAndCollectionTimeSeparatelyFromQueryWindow() throws Exception {
         jdbc.update("UPDATE rental_datasets SET contract_from = '2026-04-09', contract_to = '2026-10-09'");
 
@@ -156,6 +163,7 @@ class RentalTransactionAcceptanceTest {
     }
 
     @Test
+    @DisplayName("단독주택은 계약면적, 오피스텔은 전용면적 기준을 그대로 돌려준다")
     void preservesContractAreaForDetachedHomesAndExclusiveAreaForOfficetels() throws Exception {
         jdbc.update("""
             UPDATE rental_transactions SET housing_type = 'DETACHED'
@@ -172,6 +180,7 @@ class RentalTransactionAcceptanceTest {
     }
 
     @Test
+    @DisplayName("처음 적재하기 전에는 빈 목록과 빈 수집 정보를 돌려준다")
     void returnsEmptyListBeforeFirstImport() throws Exception {
         jdbc.update("DELETE FROM rental_transactions");
         jdbc.update("DELETE FROM rental_datasets");
@@ -181,6 +190,7 @@ class RentalTransactionAcceptanceTest {
     }
 
     @ParameterizedTest
+    @DisplayName("10자리 숫자가 아닌 법정동 코드는 거부한다")
     @ValueSource(strings = {"123", "abcdefghij", "11620102000", "1162010200'"})
     void rejectsInvalidDongCode(final String code) throws Exception {
         mvc.perform(baseRequest().param("legalDongCode", code)).andExpect(status().isBadRequest())
@@ -188,6 +198,7 @@ class RentalTransactionAcceptanceTest {
     }
 
     @ParameterizedTest
+    @DisplayName("범위를 벗어난 페이지 번호와 크기는 거부한다")
     @CsvSource({"page,-1", "page,10001", "size,0", "size,101"})
     void rejectsPageBounds(final String parameter, final String value) throws Exception {
         mvc.perform(request().param(parameter, value)).andExpect(status().isBadRequest())
@@ -195,6 +206,7 @@ class RentalTransactionAcceptanceTest {
     }
 
     @Test
+    @DisplayName("법정동 코드가 없거나 페이지가 숫자가 아니면 요청 오류로 거부한다")
     void rejectsMissingCodeAndNonNumericPage() throws Exception {
         mvc.perform(baseRequest()).andExpect(status().isBadRequest())
             .andExpect(jsonPath("$.code").value("INVALID_REQUEST"));
@@ -203,6 +215,7 @@ class RentalTransactionAcceptanceTest {
     }
 
     @Test
+    @DisplayName("인증 없이 월세 거래를 조회하면 거부한다")
     void rejectsTransactionsWithoutAuthentication() throws Exception {
         mvc.perform(get("/api/rental-transactions").param("legalDongCode", "1162010200"))
             .andExpect(status().isUnauthorized())
@@ -210,6 +223,7 @@ class RentalTransactionAcceptanceTest {
     }
 
     @Test
+    @DisplayName("저장된 거래 정보가 잘못되면 서버 오류로 응답한다")
     void treatsInvalidStoredTransactionAsServerError() throws Exception {
         jdbc.update("UPDATE legal_dongs SET name = '' WHERE code = '1162010200'");
 

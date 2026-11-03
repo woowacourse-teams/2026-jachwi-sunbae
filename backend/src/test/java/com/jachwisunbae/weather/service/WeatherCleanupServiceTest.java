@@ -8,10 +8,12 @@ import com.jachwisunbae.weather.repository.JdbcWeatherForecastRepository;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 class WeatherCleanupServiceTest {
     @Test
+    @DisplayName("정리 중 자정을 넘겨도 한국 날짜 기준 하나로 삭제한다")
     void calculatesOneKstCutoffEvenWhenExecutionCrossesMidnight() {
         Clock clock = mock(Clock.class);
         when(clock.instant()).thenReturn(Instant.parse("2026-12-31T14:59:59Z"), Instant.parse("2026-12-31T15:00:00Z"));

@@ -8,8 +8,8 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.jachwisunbae.weather.domain.GridPoint;
 import com.jachwisunbae.weather.domain.DailyForecast;
+import com.jachwisunbae.weather.domain.GridPoint;
 import com.jachwisunbae.weather.provider.kma.GridForecast;
 import com.jachwisunbae.weather.provider.kma.KmaForecastClient;
 import com.jachwisunbae.weather.provider.kma.KmaForecastRequest;
@@ -19,6 +19,7 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.List;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 class WeatherCollectionServiceTest {
@@ -29,6 +30,7 @@ class WeatherCollectionServiceTest {
     private final WeatherCollectionService service = new WeatherCollectionService(client, repository, clock);
 
     @Test
+    @DisplayName("필수 요소 수집이 실패하면 불완전한 시간을 저장하지 않고 발표분을 완료하지 않는다")
     void failedRequiredElementDoesNotSaveAnIncompleteHourOrCompleteThePublication() {
         when(client.fetch(any())).thenAnswer(call -> {
             KmaForecastRequest request = call.getArgument(0);
@@ -46,6 +48,7 @@ class WeatherCollectionServiceTest {
     }
 
     @Test
+    @DisplayName("일별 예보는 시간별 기온이 있는 격자를 모두 모아 저장한다")
     void dailyForecastsUseTheUnionOfHourlyTmpGrids() {
         GridPoint first = new GridPoint(60, 127);
         GridPoint second = new GridPoint(61, 127);
@@ -65,6 +68,7 @@ class WeatherCollectionServiceTest {
     }
 
     @Test
+    @DisplayName("계획한 일별 응답이 실패하면 발표분을 완료하지 않는다")
     void failedPlannedDailyResponseDoesNotCompletePublication() {
         when(client.fetch(any())).thenAnswer(call -> {
             KmaForecastRequest request = call.getArgument(0);
@@ -82,6 +86,7 @@ class WeatherCollectionServiceTest {
     }
 
     @Test
+    @DisplayName("잘못된 발표 시각은 요청과 저장 전에 거부한다")
     void invalidPublicationIsRejectedBeforeHttpOrStorage() {
         assertThatThrownBy(() -> service.collect(publication.plusMinutes(1))).isInstanceOf(IllegalArgumentException.class);
         org.mockito.Mockito.verifyNoInteractions(client, repository);

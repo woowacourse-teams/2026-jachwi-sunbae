@@ -8,10 +8,12 @@ import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 class WeatherCollectionSchedulerTest {
     @Test
+    @DisplayName("UTC 시계에서도 한국 시간 기준 발표분을 고른다")
     void selectsTheKstPublicationEvenWithAUtcClock() {
         WeatherCollectionService service = mock(WeatherCollectionService.class);
         new WeatherCollectionScheduler(service, Clock.fixed(Instant.parse("2026-12-31T17:15:00Z"), ZoneOffset.UTC)).collect();

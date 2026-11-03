@@ -4,13 +4,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verifyNoInteractions;
 
-import com.jachwisunbae.weather.cleanup.WeatherCleanupScheduler;
-import com.jachwisunbae.weather.collector.WeatherCollectionScheduler;
 import com.jachwisunbae.notification.scheduler.WeatherNotificationScheduler;
 import com.jachwisunbae.notification.service.WeatherNotificationDispatchService;
+import com.jachwisunbae.weather.cleanup.WeatherCleanupScheduler;
+import com.jachwisunbae.weather.collector.WeatherCollectionScheduler;
 import com.jachwisunbae.weather.service.WeatherCleanupService;
 import com.jachwisunbae.weather.service.WeatherCollectionService;
 import java.time.Clock;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
@@ -34,6 +35,7 @@ class WeatherSchedulingConfigTest {
             .withBean(WeatherNotificationDispatchService.class, () -> notification);
 
     @Test
+    @DisplayName("기본 설정에서는 날씨 작업을 하나도 등록하지 않는다")
     void allJobsAreOffByDefault() {
         runner.run(context -> {
             assertThat(context).hasNotFailed().doesNotHaveBean(WeatherCollectionScheduler.class)
@@ -44,6 +46,7 @@ class WeatherSchedulingConfigTest {
     }
 
     @Test
+    @DisplayName("local 프로필은 외부 인증 정보 없이 작업을 등록하지 않는다")
     void localProfileRegistersNoJobsWithoutExternalCredentials() {
         profile("local").run(context -> {
             assertThat(context).hasNotFailed().doesNotHaveBean(WeatherCollectionScheduler.class)
@@ -55,6 +58,7 @@ class WeatherSchedulingConfigTest {
     }
 
     @ParameterizedTest
+    @DisplayName("서버 프로필은 수집과 정리를 등록하고 알림은 dev에서만 등록한다")
     @CsvSource({"dev, jachwi-sunbae-de, true", "prod, jachwi-sunbae-prod, false"})
     void serverProfilesCollectAndCleanAndNotifyOnlyInDev(final String profile, final String projectId,
             final boolean notifies) {
@@ -73,6 +77,7 @@ class WeatherSchedulingConfigTest {
     }
 
     @ParameterizedTest
+    @DisplayName("알림을 켜면 세 작업을 모두 등록한다")
     @ValueSource(strings = {"dev", "prod"})
     void enablingPreparedNotificationsRegistersAllThreeSchedulers(final String profile) {
         // 실제 Firebase에 연결하지 않고 서비스 대역으로 YAML의 enabled=true 전환만 검증한다.
@@ -85,6 +90,7 @@ class WeatherSchedulingConfigTest {
     }
 
     @Test
+    @DisplayName("설정 하나를 켜면 그 작업만 등록한다")
     void eachFlagRegistersOnlyItsOwnJobs() {
         for (String feature : new String[]{"collection", "cleanup", "notification"}) {
             runner.withPropertyValues("weather." + feature + ".enabled=true").run(context -> {
@@ -97,6 +103,7 @@ class WeatherSchedulingConfigTest {
     }
 
     @Test
+    @DisplayName("작업은 한국 시간 기준 cron으로 실행하고 재시도 주기를 두지 않는다")
     void usesStandardKstCronsWithoutRetryPolling() throws Exception {
         cron(WeatherCollectionScheduler.class, "collect", "0 15 2,5,8,11,14,17,20,23 * * *");
         cron(WeatherCleanupScheduler.class, "cleanup", "0 30 0 * * *");

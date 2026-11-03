@@ -11,6 +11,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.function.UnaryOperator;
 import java.util.stream.IntStream;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
@@ -23,6 +24,7 @@ class LifeWeatherRulesTest {
     private final LifeWeatherRules rules = new LifeWeatherRules();
 
     @ParameterizedTest
+    @DisplayName("비와 눈 안내는 강수 형태로만 판단한다")
     @CsvSource({"0,false,false", "1,true,false", "2,true,true", "3,false,true", "4,true,false"})
     void precipitationUsesOnlyType(final double pty, final boolean rain, final boolean snow) {
         var report = evaluate(replace(hours(), 12, h -> new Hour(h.at(), h.temperature(), pty, h.humidity())), null, null);
@@ -31,6 +33,7 @@ class LifeWeatherRulesTest {
     }
 
     @ParameterizedTest
+    @DisplayName("시간별 기온이 영하 5℃ 이하이면 추위 안내를 만든다")
     @CsvSource({"-5.1,true", "-5,true", "-4.9,false"})
     void hourlyColdBoundary(final double temperature, final boolean expected) {
         var report = evaluate(replace(hours(), 7, h -> new Hour(h.at(), temperature, 0.0, h.humidity())), null, null);
@@ -38,6 +41,7 @@ class LifeWeatherRulesTest {
     }
 
     @ParameterizedTest
+    @DisplayName("일 최저기온만으로도 영하 5℃ 이하이면 추위 안내를 만든다")
     @CsvSource({"-5.1,true", "-5,true", "-4.9,false", "NULL,false"})
     void dailyMinimumCanIndependentlyCreateColdNotice(final String minimum, final boolean expected) {
         var report = evaluate(hours(), number(minimum), null);
@@ -47,6 +51,7 @@ class LifeWeatherRulesTest {
     }
 
     @ParameterizedTest
+    @DisplayName("일교차 안내는 올바른 일 최저·최고기온의 차가 10℃ 이상일 때만 만든다")
     @CsvSource({"0,9.9,false", "0,10,true", "0,10.1,true", "NULL,20,false", "10,NULL,false",
             "20,10,false"})
     void dailyRangeRequiresValidDailyTemperatures(final String minimum, final String maximum, final boolean expected) {
@@ -56,6 +61,7 @@ class LifeWeatherRulesTest {
     }
 
     @ParameterizedTest
+    @DisplayName("빨래 안내는 시간마다가 아니라 10시간 평균 습도로 판단한다")
     @CsvSource({"60,60,true", "60,61,false", "50,100,true", "61,61,false", "0,0,true"})
     void laundryUsesTheTenHourAverageRatherThanEveryHoursThreshold(final double humidity, final double noonHumidity,
             final boolean expected) {
@@ -65,6 +71,7 @@ class LifeWeatherRulesTest {
     }
 
     @ParameterizedTest
+    @DisplayName("낮 시간 습도가 없으면 빨래 안내만 빼고 알림은 보낸다")
     @NullSource
     void missingDaytimeHumidityOnlyOmitsLaundry(final Double humidity) {
         var report = evaluate(replace(hours(), 9, h -> new Hour(h.at(), h.temperature(), 0.0, humidity)), null, null);
@@ -74,6 +81,7 @@ class LifeWeatherRulesTest {
     }
 
     @ParameterizedTest
+    @DisplayName("빨래 안내는 9시부터 18시까지의 강수만 본다")
     @CsvSource({"8,true", "9,false", "18,false", "19,true"})
     void laundryChecksOnlyNineThroughEighteen(final int hour, final boolean expected) {
         var report = evaluate(replace(hours(), hour, h -> new Hour(h.at(), h.temperature(), 1.0, null)), null, null);
@@ -82,6 +90,7 @@ class LifeWeatherRulesTest {
     }
 
     @Test
+    @DisplayName("안내는 해당하는 것만 메시지 우선순위대로 담고 본문은 가장 앞선 안내로 쓴다")
     void noticesContainOnlyMatchesInMessagePriorityOrder() {
         var report = evaluate(replace(hours(), 20, h -> new Hour(h.at(), -5.0, 2.0, h.humidity())), -5.0, 5.0);
         assertThat(report.notices()).extracting(Notice::condition).containsExactly(
@@ -91,6 +100,7 @@ class LifeWeatherRulesTest {
     }
 
     @Test
+    @DisplayName("주의 안내가 있으면 빨래 안내보다 먼저 본문에 쓴다")
     void cautionComesBeforeLaundryInBody() {
         var report = evaluate(hours(), -5.0, null);
         assertThat(report.notices()).extracting(Notice::condition).containsExactly(Condition.FREEZE, Condition.LAUNDRY);
@@ -98,6 +108,7 @@ class LifeWeatherRulesTest {
     }
 
     @Test
+    @DisplayName("주의 안내가 없으면 빨래 안내를 본문으로 쓴다")
     void laundryIsTheBodyWithoutCautions() {
         var report = evaluate(hours(), null, null);
         assertThat(report.notices()).extracting(Notice::condition).containsExactly(Condition.LAUNDRY);
@@ -105,6 +116,7 @@ class LifeWeatherRulesTest {
     }
 
     @ParameterizedTest
+    @DisplayName("안내가 없으면 알림 대상 시간대의 최저·최고 예보기온을 본문으로 쓴다")
     @EnumSource(NotificationSlot.class)
     void noNoticeUsesTargetWindowTemperatures(final NotificationSlot slot) {
         LocalDate date = slot.targetDate(DATE);
@@ -119,6 +131,7 @@ class LifeWeatherRulesTest {
     }
 
     @ParameterizedTest
+    @DisplayName("필수 값이 하나라도 잘못되면 알림 전체를 보내지 않는다")
     @CsvSource({"NULL,0", "15,NULL"})
     void anyInvalidEssentialValuePreventsTheWholeNotification(final String temperature, final String pty) {
         var hours = replace(hours(), 23, h -> new Hour(h.at(), number(temperature), number(pty), h.humidity()));
@@ -126,6 +139,7 @@ class LifeWeatherRulesTest {
     }
 
     @ParameterizedTest
+    @DisplayName("대상 시간대의 예보가 빠지거나 어긋나면 알림을 보내지 않는다")
     @ValueSource(strings = {"missing", "duplicate", "wrong-date", "wrong-minute", "extra", "empty"})
     void incompleteWindowPreventsNotification(final String cause) {
         var hours = new ArrayList<>(hours());
@@ -142,6 +156,7 @@ class LifeWeatherRulesTest {
     }
 
     @Test
+    @DisplayName("예보 입력 순서가 달라도 안내는 같다")
     void inputOrderDoesNotChangeNotices() {
         var hours = new ArrayList<>(hours());
         Collections.reverse(hours);

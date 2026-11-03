@@ -3,6 +3,7 @@ package com.jachwisunbae.common.config;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.List;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.mock.web.MockFilterChain;
 import org.springframework.mock.web.MockHttpServletRequest;
@@ -13,7 +14,8 @@ class CorsConfigTest {
     private static final String FRONTEND_ORIGIN = "https://dev.jachwi-sunbae.kr";
 
     @Test
-    void 리프레시_쿠키를_보내는_교차_출처_요청에_자격_증명을_허용한다() throws Exception {
+    @DisplayName("리프레시 쿠키를 보내는 교차 출처 요청에 자격 증명을 허용한다")
+    void allowsCredentialsForCrossOriginRefreshRequest() throws Exception {
         MockHttpServletRequest request = new MockHttpServletRequest("POST", "/api/auth/refresh");
         request.addHeader("Origin", FRONTEND_ORIGIN);
         MockHttpServletResponse response = new MockHttpServletResponse();

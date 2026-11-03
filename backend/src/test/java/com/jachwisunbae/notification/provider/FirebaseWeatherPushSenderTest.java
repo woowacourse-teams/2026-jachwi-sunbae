@@ -14,6 +14,7 @@ import com.google.firebase.messaging.Message;
 import com.jachwisunbae.notification.provider.WeatherPushSender.Push;
 import com.jachwisunbae.notification.provider.fcm.FirebaseWeatherPushSender;
 import java.util.UUID;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
@@ -22,6 +23,7 @@ class FirebaseWeatherPushSenderTest {
     private final FirebaseWeatherPushSender sender = new FirebaseWeatherPushSender(messaging);
 
     @Test
+    @DisplayName("제목·본문과 알림 식별 정보를 담아 보낸다")
     void sendsTitleBodyAndClickIdentity() throws Exception {
         var push = push();
         when(messaging.send(any(Message.class))).thenReturn("projects/test/messages/123");
@@ -42,6 +44,7 @@ class FirebaseWeatherPushSenderTest {
     }
 
     @Test
+    @DisplayName("발송이 실패하면 다시 보내지 않고 실패만 돌려준다")
     void failedRequestIsReturnedWithoutRetryOrSensitiveExceptionText() throws Exception {
         when(messaging.send(any(Message.class))).thenThrow(new IllegalStateException("sensitive-provider-response"));
         var result = sender.send(push());
@@ -50,6 +53,7 @@ class FirebaseWeatherPushSenderTest {
     }
 
     @Test
+    @DisplayName("Firebase 오류가 나도 다시 보내지 않는다")
     void firebaseFailureIsNotRetried() throws Exception {
         when(messaging.send(any(Message.class))).thenThrow(mock(FirebaseMessagingException.class));
         assertThat(sender.send(push())).isFalse();

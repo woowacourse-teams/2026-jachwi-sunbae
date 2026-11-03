@@ -14,6 +14,7 @@ import com.jachwisunbae.weather.service.dto.result.WeatherForecastResult.Daily;
 import com.jachwisunbae.weather.service.dto.result.WeatherForecastResult.Hour;
 import java.time.LocalDate;
 import java.util.stream.IntStream;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.NullSource;
@@ -26,6 +27,7 @@ class LifeWeatherAnalysisServiceTest {
     private final LifeWeatherAnalysisService service = new LifeWeatherAnalysisService(forecasts);
 
     @ParameterizedTest
+    @DisplayName("기온이나 강수 형태가 잘못되면 보낼 수 없는 분석 결과를 만든다")
     @CsvSource({"NULL,0", "NaN,0", "Infinity,0", "-99,0", "61,0", "15,NULL", "15,NaN", "15,Infinity",
             "15,-1", "15,5", "15,1.5"})
     void rejectsInvalidEssentialValuesAtAnalysisBoundary(final String temperature, final String pty) {
@@ -36,6 +38,7 @@ class LifeWeatherAnalysisServiceTest {
     }
 
     @ParameterizedTest
+    @DisplayName("습도가 잘못되면 빨래 안내만 뺀다")
     @NullSource
     @ValueSource(doubles = {-1, 101, Double.NaN, Double.POSITIVE_INFINITY})
     void invalidHumidityOnlyOmitsLaundry(final Double humidity) {
@@ -46,6 +49,7 @@ class LifeWeatherAnalysisServiceTest {
     }
 
     @ParameterizedTest
+    @DisplayName("일 최저·최고기온이 잘못되면 추위와 일교차 안내를 만들지 않는다")
     @CsvSource({"-99,20", "NaN,20", "Infinity,20", "10,NaN", "10,Infinity", "10,61"})
     void invalidDailyValuesDoNotCreateColdOrSwingNotices(final String minimum, final String maximum) {
         stub(15.0, 0.0, 55.0, number(minimum), number(maximum));

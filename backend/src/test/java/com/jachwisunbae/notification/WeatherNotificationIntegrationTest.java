@@ -46,6 +46,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.stream.IntStream;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
@@ -125,6 +126,7 @@ class WeatherNotificationIntegrationTest {
     }
 
     @Test
+    @DisplayName("같은 시간대에 두 번 발송해도 알림 하나만 보내고 해당하는 안내만 저장해 상세 조회에 돌려준다")
     void sendsOneCombinedPushAndPreservesOnlyMatchingNotices() throws Exception {
         dispatch.dispatch(NotificationSlot.MORNING);
         dispatch.dispatch(NotificationSlot.MORNING);
@@ -151,6 +153,7 @@ class WeatherNotificationIntegrationTest {
     }
 
     @Test
+    @DisplayName("테스트 발송은 알림 기록을 남기지 않고 발송 여부만 돌려준다")
     void testPushDoesNotSaveNotificationAndReportsMissingDevice() throws Exception {
         mvc.perform(post("/api/members/me/weather-notifications/test").header("Authorization", bearer(1)))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.data.sent").value(false));
@@ -160,6 +163,7 @@ class WeatherNotificationIntegrationTest {
     }
 
     @Test
+    @DisplayName("해당하는 안내가 없으면 기온 요약만 보내고 빈 안내 목록을 저장해 조회한다")
     void summaryWithEmptyNoticesRoundTripsWithoutOptionalData() throws Exception {
         jdbc.update("UPDATE weather_forecasts SET reh = NULL, pop = NULL, pcp = NULL, sno = NULL, wsd = NULL");
         dispatch.dispatch(NotificationSlot.MORNING);
@@ -173,6 +177,7 @@ class WeatherNotificationIntegrationTest {
     }
 
     @ParameterizedTest
+    @DisplayName("판단에 쓰지 않는 예보 요소는 비 안내를 만들지도 빨래 안내를 막지도 않는다")
     @ValueSource(strings = {"pop = 100, pcp = 10, sno = 10, wsd = 100", "pop = NULL, pcp = NULL, sno = NULL, wsd = NULL"})
     void unusedElementsNeitherCreateRainNorPreventLaundry(final String values) {
         jdbc.update("UPDATE weather_forecasts SET " + values);
@@ -182,6 +187,7 @@ class WeatherNotificationIntegrationTest {
     }
 
     @Test
+    @DisplayName("저녁 알림은 다음 날 하루 예보로 만든다")
     void eveningUsesTomorrowsFullDay() {
         CLOCK.now.set(Instant.parse("2026-10-25T13:00:00Z"));
         seedForecasts(NotificationSlot.EVENING, DATE.atTime(20, 0));
@@ -192,6 +198,7 @@ class WeatherNotificationIntegrationTest {
     }
 
     @Test
+    @DisplayName("FCM 발송이 실패해도 기록만 남기고 다시 보내지 않는다")
     void failedFcmAttemptIsRecordedAndNeverRetried() {
         outcome = push -> false;
         dispatch.dispatch(NotificationSlot.MORNING);
@@ -200,6 +207,7 @@ class WeatherNotificationIntegrationTest {
     }
 
     @Test
+    @DisplayName("발송 중 예외가 나도 기록만 남기고 다시 보내지 않는다")
     void runtimeFailureIsRecordedWithoutLeakingOrRetrying() {
         outcome = push -> { throw new IllegalStateException("sensitive-provider-message"); };
         dispatch.dispatch(NotificationSlot.MORNING);
@@ -208,6 +216,7 @@ class WeatherNotificationIntegrationTest {
     }
 
     @ParameterizedTest
+    @DisplayName("동의·권한·위치가 없거나 쓸 수 있는 예보가 없으면 보내지 않는다")
     @ValueSource(strings = {"off", "permission", "location", "incomplete", "missing", "temperature", "hour"})
     void doesNotSendWithoutConsentLocationOrUsableForecasts(final String cause) {
         switch (cause) {
@@ -226,6 +235,7 @@ class WeatherNotificationIntegrationTest {
     }
 
     @ParameterizedTest
+    @DisplayName("저장된 위치는 갱신 시각과 관계없이 그대로 쓰고 갱신 시각을 바꾸지 않는다")
     @CsvSource({"MORNING, 1", "MORNING, 7", "EVENING, 7", "MORNING, -1"})
     void usesTheSavedGridWithoutCheckingItsTimestamp(final NotificationSlot slot, final int daysAgo) {
         Instant storedAt = MORNING.minusSeconds(daysAgo * 86400L);
@@ -242,6 +252,7 @@ class WeatherNotificationIntegrationTest {
 
 
     @ParameterizedTest
+    @DisplayName("분석 중 동의·회원·권한·토큰이 바뀌면 보내기 전에 다시 확인해 보내지 않는다")
     @ValueSource(strings = {"consent", "member-transfer", "permission", "token"})
     void eligibilityIsRecheckedAfterAnalysisBeforeSending(final String change) {
         var changed = org.mockito.Mockito.spy(analysis);
@@ -262,6 +273,7 @@ class WeatherNotificationIntegrationTest {
     }
 
     @Test
+    @DisplayName("회원은 기기 등록을 하나만 두고 토큰을 바꾸거나 해제할 수 있다")
     void oneMemberKeepsOneRegistrationAndUpdatesOrRevokesIt() {
         WeatherDevice replacement = register(1);
         assertThat(settings.device(1).orElseThrow().installationId()).isEqualTo(replacement.installationId());
@@ -274,6 +286,7 @@ class WeatherNotificationIntegrationTest {
     }
 
     @Test
+    @DisplayName("토큰만으로는 다른 회원의 기기 등록을 가져올 수 없고 실패하면 기존 등록을 유지한다")
     void tokenAloneCannotTakeAnotherMembersRegistrationAndFailureRollsBackReplacement() {
         WeatherDevice second = register(2);
         assertThatThrownBy(() -> settings.register(2, UUID.randomUUID(), SECRET, device.token()))
@@ -285,6 +298,7 @@ class WeatherNotificationIntegrationTest {
     }
 
     @Test
+    @DisplayName("설치 비밀값으로 기기를 옮기면 이전 회원의 등록을 끊고 새 회원은 알림이 꺼진 상태로 시작한다")
     void anonymousMemberTransferRequiresProofAndDisconnectsThePreviousMember() {
         settings.register(2, device.installationId(), SECRET, device.token());
         assertThat(settings.device(1)).isEmpty();
@@ -295,6 +309,7 @@ class WeatherNotificationIntegrationTest {
     }
 
     @Test
+    @DisplayName("같은 발송 작업이 동시에 돌아도 알림과 발송 시도는 하나만 생긴다")
     void duplicateConcurrentJobsCreateOnlyOneNotificationAndAttempt() throws Exception {
         try (var executor = Executors.newFixedThreadPool(2)) {
             CountDownLatch start = new CountDownLatch(1);
@@ -309,6 +324,7 @@ class WeatherNotificationIntegrationTest {
     }
 
     @Test
+    @DisplayName("기기 API는 토큰과 비밀값을 응답하지 않고 알림 상세는 본인 것만 조회된다")
     void apiUsesOnePrivateRegistrationAndOwnedNotificationDetails() throws Exception {
         String body = "{\"installationId\":\"" + device.installationId() + "\",\"installationSecret\":\"" + SECRET
                 + "\",\"token\":\"updated-fcm-token-1234567890\"}";
@@ -332,6 +348,7 @@ class WeatherNotificationIntegrationTest {
     }
 
     @ParameterizedTest
+    @DisplayName("잘못된 기기 등록 요청은 거부하고 현재 기기를 그대로 둔다")
     @ValueSource(strings = {"installationId", "installationSecret", "token"})
     void rejectsInvalidRegistrationWithoutChangingCurrentDevice(final String invalidField) throws Exception {
         String id = invalidField.equals("installationId") ? "null" : "\"" + device.installationId() + "\"";
@@ -348,6 +365,7 @@ class WeatherNotificationIntegrationTest {
     }
 
     @Test
+    @DisplayName("아침 알림은 수집이 끝난 이전 발표분으로도 만든다")
     void completedOlderPublicationCanBeUsedForMorningNotification() {
         jdbc.update("DELETE FROM weather_forecasts");
         seedForecasts(NotificationSlot.MORNING, DATE.minusDays(1).atTime(23, 0));
@@ -356,6 +374,7 @@ class WeatherNotificationIntegrationTest {
     }
 
     @Test
+    @DisplayName("분석 중 위치가 바뀌어도 처음 읽은 위치로 보낸다")
     void usesInitiallyReadLocationWhenItChangesDuringAnalysis() {
         var changed = org.mockito.Mockito.spy(analysis);
         org.mockito.Mockito.doAnswer(call -> {
@@ -369,6 +388,7 @@ class WeatherNotificationIntegrationTest {
     }
 
     @Test
+    @DisplayName("민감한 객체의 문자열 표현에는 토큰·비밀값·위치가 드러나지 않는다")
     void sensitiveObjectsDoNotExposeCredentialsOrLocation() {
         String token = "sensitive-fcm-token";
         var request = new com.jachwisunbae.notification.controller.dto.WeatherDeviceRequest(device.installationId(), SECRET, token);
@@ -381,6 +401,7 @@ class WeatherNotificationIntegrationTest {
     }
 
     @Test
+    @DisplayName("FCM 토큰은 비어 있는지와 4,096자 이하인지만 검사한다")
     void tokenValidationUsesOnlyBlankAndLengthLimits() throws Exception {
         for (String token : List.of("", " ", "x".repeat(4097))) {
             String body = new ObjectMapper().writeValueAsString(java.util.Map.of(

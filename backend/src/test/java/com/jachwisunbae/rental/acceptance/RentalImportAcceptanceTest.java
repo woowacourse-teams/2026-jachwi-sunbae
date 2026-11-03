@@ -13,6 +13,7 @@ import java.util.concurrent.TimeUnit;
 import org.flywaydb.core.Flyway;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -59,6 +60,7 @@ class RentalImportAcceptanceTest {
     }
 
     @Test
+    @DisplayName("CREATE 권한 없는 계정으로 적재하고 다시 적재하면 교체하며 같은 자료는 건너뛴다")
     void importsReplacesAndSkipsRepeatedDataWithoutCreatePrivilege() throws Exception {
         var grants = new JdbcTemplate(new DriverManagerDataSource(
             jdbcUrl, MYSQL.getUsername(), MYSQL.getPassword())).queryForList("SHOW GRANTS", String.class);
@@ -82,6 +84,7 @@ class RentalImportAcceptanceTest {
     }
 
     @Test
+    @DisplayName("테이블이 없으면 기존 자료를 바꾸기 전에 실패한다")
     void missingTableFailsBeforeChangingExistingSnapshot() throws Exception {
         assertThat(runImport(true)).isZero();
         String snapshotHash = snapshotHash();
@@ -98,6 +101,7 @@ class RentalImportAcceptanceTest {
     }
 
     @Test
+    @DisplayName("필수 컬럼이 없으면 기존 거래를 지우기 전에 실패한다")
     void missingColumnFailsBeforeDeletingExistingTransactions() throws Exception {
         assertThat(runImport(true)).isZero();
         String snapshotHash = snapshotHash();
@@ -112,6 +116,7 @@ class RentalImportAcceptanceTest {
     }
 
     @Test
+    @DisplayName("InnoDB가 아닌 테이블이 있으면 자료를 교체하기 전에 실패한다")
     void nonTransactionalTableFailsBeforeReplacingData() throws Exception {
         assertThat(runImport(true)).isZero();
         String snapshotHash = snapshotHash();
@@ -127,6 +132,7 @@ class RentalImportAcceptanceTest {
     }
 
     @Test
+    @DisplayName("검증 모드는 DB 스키마 없이 실행하고 아무 테이블도 만들지 않는다")
     void validationModeWorksWithoutDatabaseConnectionOrSchema() throws Exception {
         admin.execute("DROP TABLE rental_transactions");
         admin.execute("DROP TABLE rental_datasets");
@@ -142,6 +148,7 @@ class RentalImportAcceptanceTest {
     }
 
     @ParameterizedTest
+    @DisplayName("알 수 없는 옵션은 보고서를 쓰기 전에 거부한다")
     @ValueSource(strings = {"--unknown=true", "--apply=true", "unexpected"})
     void rejectsInvalidOptionsBeforeWritingReports(final String option) throws Exception {
         assertThat(runImport(false, option)).isNotZero();
@@ -150,6 +157,7 @@ class RentalImportAcceptanceTest {
     }
 
     @Test
+    @DisplayName("거래 건수가 예상과 다르면 보고서를 쓰기 전에 거부한다")
     void rejectsUnexpectedRowCountBeforeWritingReports() throws Exception {
         Path csvPath = work.resolve("거래 자료.csv");
         String csv = Files.readString(csvPath);
@@ -164,6 +172,7 @@ class RentalImportAcceptanceTest {
     }
 
     @Test
+    @DisplayName("요청 기간을 벗어난 계약일이 있으면 보고서를 쓰기 전에 거부한다")
     void rejectsContractDateOutsideRequestedPeriodBeforeWritingReports() throws Exception {
         Path csvPath = work.resolve("거래 자료.csv");
         Files.writeString(csvPath, Files.readString(csvPath).replace("2026-10-09", "2026-04-08"));
@@ -175,6 +184,7 @@ class RentalImportAcceptanceTest {
     }
 
     @Test
+    @DisplayName("주택 유형과 면적 기준이 맞지 않으면 적재하기 전에 거부한다")
     void rejectsAreaBasisThatDoesNotMatchHousingTypeBeforeImport() throws Exception {
         Path csvPath = work.resolve("거래 자료.csv");
         Files.writeString(csvPath, Files.readString(csvPath).replace(",exclusive,", ",contract,"));
@@ -185,6 +195,7 @@ class RentalImportAcceptanceTest {
     }
 
     @Test
+    @DisplayName("매핑되지 않은 법정동은 보고서로 남기고 DB를 바꾸지 않은 채 적재를 거부한다")
     void writesUnmatchedReportsAndRejectsImportWithoutChangingDatabase() throws Exception {
         Path csvPath = work.resolve("거래 자료.csv");
         Files.writeString(csvPath, Files.readString(csvPath).replace("관악구 신림동", "관악구 미등록동"));
