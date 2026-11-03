@@ -255,6 +255,23 @@ it('데스크탑은 기록하기 버튼 없이 지도를 찍으면 등록 화면
   }
 });
 
+it('체크리스트 탭을 보다가 지도에서 매물을 새로 만들어도 옆 칸 상세는 정보 탭부터 연다', async () => {
+  const matchMedia = useDesktopViewport();
+  const user = userEvent.setup();
+  sessionStorage.setItem('jachwi:property-detail-tab', 'checklist');
+  try {
+    renderRecords();
+    await screen.findByRole('heading', { name: '모든 기록' });
+    await user.click(screen.getByRole('button', { name: '빈 곳 찍기' }));
+    await user.click(screen.getByRole('button', { name: '말풍선 🏠 여기에 매물 등록' }));
+    const detail = within(await screen.findByRole('complementary', { name: '선택한 매물 상세' }));
+    expect(await detail.findByRole('tab', { name: '정보' })).toHaveAttribute('aria-selected', 'true');
+    expect(detail.getByRole('tabpanel', { name: '정보' })).toBeInTheDocument();
+  } finally {
+    matchMedia.mockRestore();
+  }
+});
+
 it('데스크탑에서 지도나 리스트의 방을 누르면 리스트 옆 칸에 매물 상세를 열고, 지도 위 버튼으로 접는다', async () => {
   const matchMedia = useDesktopViewport();
   const user = userEvent.setup();
