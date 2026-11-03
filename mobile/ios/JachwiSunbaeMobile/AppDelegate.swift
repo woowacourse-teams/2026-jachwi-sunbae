@@ -7,6 +7,7 @@ import FirebaseCore
 @main
 class AppDelegate: UIResponder, UIApplicationDelegate {
   var window: UIWindow?
+  var rootViewController: UIViewController?
 
   var reactNativeDelegate: ReactNativeDelegate?
   var reactNativeFactory: RCTReactNativeFactory?
@@ -25,15 +26,40 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     reactNativeDelegate = delegate
     reactNativeFactory = factory
 
-    window = UIWindow(frame: UIScreen.main.bounds)
-
-    factory.startReactNative(
+    // Scene이 없는 무음 푸시 기동에서도 JS 백그라운드 핸들러를 등록한다.
+    let rootView = factory.rootViewFactory.view(
       withModuleName: "JachwiSunbaeMobile",
-      in: window,
+      initialProperties: nil,
       launchOptions: launchOptions
     )
+    let controller = delegate.createRootViewController()
+    delegate.setRootView(rootView, toRootViewController: controller)
+    rootViewController = controller
 
     return true
+  }
+}
+
+
+// Xcode 27 SDK에서는 화면의 UIWindow가 UIWindowScene에 연결되어야 한다.
+class SceneDelegate: UIResponder, UIWindowSceneDelegate {
+  var window: UIWindow?
+
+  func scene(
+    _ scene: UIScene,
+    willConnectTo session: UISceneSession,
+    options connectionOptions: UIScene.ConnectionOptions
+  ) {
+    guard let windowScene = scene as? UIWindowScene,
+      let appDelegate = UIApplication.shared.delegate as? AppDelegate,
+      let rootViewController = appDelegate.rootViewController
+    else { return }
+
+    let window = UIWindow(windowScene: windowScene)
+    window.rootViewController = rootViewController
+    self.window = window
+    appDelegate.window = window
+    window.makeKeyAndVisible()
   }
 }
 

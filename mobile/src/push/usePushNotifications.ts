@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Alert, AppState, Linking } from 'react-native';
+import { Alert, AppState, DevSettings, Linking } from 'react-native';
 import {
   getInitialNotification,
   onMessage,
@@ -40,6 +40,34 @@ export const usePushNotifications = (
     }
   }, [push]);
 
+  const showPrompt = useCallback(() => {
+    Alert.alert(
+      '서비스 알림을 받아볼까요?',
+      '자취선배의 서비스 안내를 알림으로 받을 수 있어요. 나중에 선택해도 계속 이용할 수 있어요.',
+      [
+        { text: '나중에', style: 'cancel' },
+        {
+          text: '알림 받기',
+          onPress: () => {
+            enabledNotice();
+          },
+        },
+      ],
+    );
+  }, [enabledNotice]);
+
+  useEffect(() => {
+    if (!__DEV__ || !push) return undefined;
+    let active = true;
+    DevSettings.addMenuItem('알림 받기 안내 다시 보기', () => {
+      // 선택 기록을 초기화하지 않고 기존 권한 요청 흐름만 다시 실행한다.
+      if (active && AppState.currentState === 'active') showPrompt();
+    });
+    return () => {
+      active = false;
+    };
+  }, [push, showPrompt]);
+
   const onLoad = useCallback(async () => {
     if (!push || promptShown.current || AppState.currentState !== 'active')
       return;
@@ -47,23 +75,11 @@ export const usePushNotifications = (
     try {
       if (!(await push.shouldPrompt())) return;
       await push.defer();
-      Alert.alert(
-        '서비스 알림을 받아볼까요?',
-        '자취선배의 서비스 안내를 알림으로 받을 수 있어요. 나중에 선택해도 계속 이용할 수 있어요.',
-        [
-          { text: '나중에', style: 'cancel' },
-          {
-            text: '알림 받기',
-            onPress: () => {
-              enabledNotice();
-            },
-          },
-        ],
-      );
+      showPrompt();
     } catch {
       // 저장소/푸시 오류가 웹 서비스 이용을 막지 않도록 한다.
     }
-  }, [push, enabledNotice]);
+  }, [push, showPrompt]);
 
   useEffect(() => {
     const messaging = getConfiguredMessaging();

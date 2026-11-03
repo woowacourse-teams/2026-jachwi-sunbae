@@ -15,6 +15,7 @@ import {
 } from '@react-native-firebase/messaging';
 import { PermissionsAndroid, Platform } from 'react-native';
 import { createPushController } from './controller';
+import { tracePushStep } from './diagnostics';
 
 const CHOICE_KEY = '@jachwi/push/choice-v1';
 const REGISTERED_KEY = '@jachwi/push/registered-v1';
@@ -45,37 +46,45 @@ export const createNativePush = () => {
   };
   return createPushController({
     getChoice: () => AsyncStorage.getItem(CHOICE_KEY),
-    setChoice: value => AsyncStorage.setItem(CHOICE_KEY, value),
+    setChoice: value =>
+      tracePushStep('save-choice', () => AsyncStorage.setItem(CHOICE_KEY, value)),
     hasPermission: checkPermission,
-    requestPermission: async () => {
-      if (Platform.OS === 'android') {
-        return (
-          Number(Platform.Version) < 33 ||
-          (await PermissionsAndroid.request(
-            PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS,
-          )) === PermissionsAndroid.RESULTS.GRANTED
-        );
-      }
-      await requestPermission(messaging, {
-        alert: true,
-        badge: true,
-        sound: true,
-      });
-      return checkPermission();
-    },
+    requestPermission: () =>
+      tracePushStep('permission', async () => {
+        if (Platform.OS === 'android') {
+          return (
+            Number(Platform.Version) < 33 ||
+            (await PermissionsAndroid.request(
+              PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS,
+            )) === PermissionsAndroid.RESULTS.GRANTED
+          );
+        }
+        await requestPermission(messaging, {
+          alert: true,
+          badge: true,
+          sound: true,
+        });
+        return checkPermission();
+      }),
     register: async () => {
-      await setAutoInitEnabled(messaging, true);
-      if (
-        Platform.OS === 'ios' &&
-        !isDeviceRegisteredForRemoteMessages(messaging)
-      ) {
-        await registerDeviceForRemoteMessages(messaging);
+      await tracePushStep('auto-init', () => setAutoInitEnabled(messaging, true));
+      if (Platform.OS === 'ios') {
+        await tracePushStep('apns-registration', async () => {
+          if (!isDeviceRegisteredForRemoteMessages(messaging)) {
+            await registerDeviceForRemoteMessages(messaging);
+          }
+        });
       }
-      const token = await getToken(messaging);
-      await AsyncStorage.setItem(REGISTERED_KEY, 'yes');
+      const token = await tracePushStep('fcm-token', () => getToken(messaging));
+      await tracePushStep('save-registration', () =>
+        AsyncStorage.setItem(REGISTERED_KEY, 'yes'),
+      );
       return token;
     },
-    subscribe: () => subscribeToTopic(messaging, PUSH_TOPIC),
+    subscribe: () =>
+      tracePushStep('topic-subscription', () =>
+        subscribeToTopic(messaging, PUSH_TOPIC),
+      ),
     unregister: async () => {
       await setAutoInitEnabled(messaging, false);
       // 동의한 적 없는 최초 실행에서는 토큰을 새로 만들지 않는다.

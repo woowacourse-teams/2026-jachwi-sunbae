@@ -1,3 +1,5 @@
+import { tracePushStep } from './diagnostics';
+
 export type PushStatus = { enabled: boolean; permissionGranted: boolean };
 export type PushPort = {
   getChoice(): Promise<string | null>;
@@ -34,13 +36,15 @@ export const createPushController = (port: PushPort) => {
     shouldPrompt: () => serial(async () => (await port.getChoice()) === null),
     defer: () => serial(() => port.setChoice('deferred')),
     enable: () =>
-      serial(async () => {
-        if (!(await port.requestPermission())) return null;
-        const token = await port.register();
-        await port.subscribe();
-        await port.setChoice('enabled');
-        return token;
-      }),
+      serial(() =>
+        tracePushStep('enable', async () => {
+          if (!(await port.requestPermission())) return null;
+          const token = await port.register();
+          await port.subscribe();
+          await port.setChoice('enabled');
+          return token;
+        }),
+      ),
     disable: () =>
       serial(async () => {
         // 수신 철회 의사를 먼저 보관한다. 네트워크 실패 때 다음 실행에서 재시도한다.

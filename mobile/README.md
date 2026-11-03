@@ -37,6 +37,17 @@ Debug는 `https://dev.jachwi-sunbae.kr`, Release는 `https://www.jachwi-sunbae.k
 
 앱 권한·토큰·토픽·알림 이동 모듈과 서버용 Firebase Admin 발송 예제를 포함한다. 서버 발송은 기본 dry-run이고, 실제 운영 발송에는 명시적인 플래그가 필요하다.
 
+Debug에서는 아이폰을 흔들어 React Native 개발자 메뉴를 열고 **알림 받기 안내 다시 보기**를 선택하면 안내를 다시 띄울 수 있다. Firebase가 설정된 경우에만 메뉴가 표시되며, 안내를 다시 보거나 나중에를 눌러도 저장된 알림 선택·로그인·쿠키를 초기화하지 않는다. 알림 받기를 누르면 기존 OS 권한 요청과 FCM 등록 흐름을 실행한다. Release에는 이 메뉴를 추가하지 않는다.
+
+iOS 권한 팝업에서 이미 허용·거절을 선택했다면 요청을 다시 호출해도 OS 팝업은 반복되지 않는다. 이 경우 설정 → 알림 → 자취선배에서 현재 권한을 확인하거나 변경한다. 앱의 안내 재표시는 iOS 권한 초기화와 별개다.
+
+Debug 푸시 진단 로그는 `[push-debug]`로 필터링한다. Xcode로 실행한 앱은 Debug 콘솔에서 확인하고, Metro 터미널에 JS 로그가 보이지 않으면 Metro에서 `j`를 눌러 React Native DevTools의 Console을 연다. 재시도는 개발자 메뉴의 Reload로 최신 JS를 반영한 뒤 **알림 받기 안내 다시 보기 → 알림 받기**를 선택한다. 앱 삭제나 데이터 초기화는 필요 없다.
+
+- `enable`: 전체 활성화 요청의 시작·종료. 그 안에서 `permission` → `auto-init` → `apns-registration`(iOS) → `fcm-token` → `save-registration` → `topic-subscription` → `save-choice` 순서로 기록한다.
+- 각 단계는 `start`, `success`, `failure`를 기록한다. `permission denied`는 권한 미허용이며 기존처럼 등록을 진행하지 않는다. `apns-registration success`는 이미 등록되어 추가 요청이 필요 없는 경우도 포함한다.
+- `failure`가 붙은 구체적인 단계가 실패 지점이다. 뒤따르는 `enable failure`는 전체 요청의 실패 요약이다. `start`만 남으면 해당 작업이 아직 응답하지 않은 상태일 수 있다.
+- 예시: `[push-debug] fcm-token failure code=messaging/unknown nativeCode=505`. 오류 코드는 허용 목록의 값만 출력하고 나머지는 `unknown`으로 처리한다. 실제 토큰, 인증키, 오류 메시지·스택·원본 객체는 출력하지 않으며 Release에서는 진단 로그를 출력하지 않는다.
+
 **설정 파일, APNs 인증 연결, 실제 기기 수신 검증이 완료되기 전에는 배포하지 않는다.** 사용자별 발송은 웹/서버의 인증된 토큰 등록·로그아웃 해제 연동이 추가로 필요하다. 현재 준비 범위와 서버 연동 규약은 [푸시 운영 문서](docs/push-notifications.md)를 따른다.
 
 ## 검사
