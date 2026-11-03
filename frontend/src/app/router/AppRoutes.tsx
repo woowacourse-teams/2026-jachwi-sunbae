@@ -5,6 +5,7 @@ import { Navigate, Route, Routes, useLocation, useParams } from 'react-router-do
 import PropertyAppLayout from '@/app/layouts/property-app-layout/PropertyAppLayout';
 import PublicExploreLayout from '@/app/layouts/public-explore-layout/PublicExploreLayout';
 import RecordsPageSkeleton from '@/pages/design-records/RecordsPageSkeleton';
+import NeighborhoodPageSkeleton from '@/pages/neighborhood-preview/NeighborhoodPageSkeleton';
 import useIsDesktop from '@/shared/lib/hooks/useIsDesktop';
 import {
   ABOUT_PATH,
@@ -26,6 +27,7 @@ import {
   PRIVACY_PATH,
   PROPERTY_NEW_PATH,
   propertyDetailPath,
+  RECORDS_MAP_PATH,
   RECORDS_PATH,
   ROUTE_PATTERNS,
   TIPS_PATH,
@@ -43,7 +45,6 @@ const UsageGuidePage = lazy(() => import('@/pages/usage-guide/UsageGuidePage'));
 const LandingPage = lazy(() => import('@/pages/landing/LandingPage'));
 const PrivacyPage = lazy(() => import('@/pages/privacy/PrivacyPage'));
 const NotFoundPage = lazy(() => import('@/pages/not-found/NotFoundPage'));
-const CreatePropertyPage = lazy(() => import('@/pages/create-property/CreatePropertyPage'));
 const PropertyDetailPage = lazy(() => import('@/pages/property-detail/PropertyDetailPage'));
 const EditPropertyPage = lazy(() => import('@/pages/edit-property/EditPropertyPage'));
 const PropertyPhotosPage = lazy(() => import('@/pages/property-photos/PropertyPhotosPage'));
@@ -99,7 +100,7 @@ const LegacyNeighborhoodRoute = ({ base }: { base: NeighborhoodBasePath }) => {
 const AppRoutes = () => (
   <Routes>
     <Route element={<PublicExploreLayout />}>
-      <Route path={EXPLORE_PATH} element={lazyPage(<NeighborhoodPreviewPage />)}>
+      <Route path={EXPLORE_PATH} element={lazyPage(<NeighborhoodPreviewPage />, <NeighborhoodPageSkeleton />)}>
         <Route path={ROUTE_PATTERNS.area} element={lazyPage(<NeighborhoodRoutePage />)} />
         <Route path={ROUTE_PATTERNS.areaDetails} element={lazyPage(<NeighborhoodRoutePage />)} />
       </Route>
@@ -109,7 +110,7 @@ const AppRoutes = () => (
     </Route>
     <Route element={<PropertyAppLayout />}>
       <Route path={GUIDE_PATH} element={lazyPage(<UsageGuidePage />)} />
-      <Route path={NEIGHBORHOODS_PATH} element={lazyPage(<NeighborhoodPreviewPage />)}>
+      <Route path={NEIGHBORHOODS_PATH} element={lazyPage(<NeighborhoodPreviewPage />, <NeighborhoodPageSkeleton />)}>
         <Route path={ROUTE_PATTERNS.area} element={lazyPage(<NeighborhoodRoutePage />)} />
         <Route path={ROUTE_PATTERNS.areaDetails} element={lazyPage(<NeighborhoodRoutePage />)} />
       </Route>
@@ -125,6 +126,8 @@ const AppRoutes = () => (
     <Route path={PRIVACY_PATH} element={lazyPage(<PrivacyPage />)} />
     {/* 로그인 화면은 없다. 예전 주소로 들어오면 홈에서 자동 로그인한다. */}
     <Route path={LOGIN_PATH} element={<Navigate to={HOME_PATH} replace />} />
+    {/* 매물은 본 방 기록 지도에서 바로 등록한다. 예전 매물 등록 주소로 들어오면 기록 지도로 보낸다. */}
+    <Route path={PROPERTY_NEW_PATH} element={<Navigate to={RECORDS_MAP_PATH} replace />} />
     {/* 첫 주소(`/`)를 포함한 회원 화면은 자동 로그인(복원 또는 익명 회원 생성)을 마친 뒤 그린다. */}
     <Route element={<ProtectedRoute />}>
       <Route path={CHEAP_MEALS_PATH} element={lazyPage(<CheapMealsPage />)} />
@@ -133,7 +136,6 @@ const AppRoutes = () => (
         <Route index element={lazyPage(<PropertyDetailPage />)} />
       </Route>
       <Route element={<PropertyAppLayout />}>
-        <Route path={PROPERTY_NEW_PATH} element={lazyPage(<CreatePropertyPage />)} />
         <Route path={ROUTE_PATTERNS.propertyEdit} element={lazyPage(<EditPropertyPage />)} />
         <Route path={ROUTE_PATTERNS.propertyPhotos} element={lazyPage(<PropertyPhotosPage />)} />
         <Route path={ROUTE_PATTERNS.propertyMemo} element={lazyPage(<PropertyMemoPage />)} />
