@@ -35,5 +35,4 @@ weather:
     # 기존 스토어 2.1.1(8)의 프로젝트. 실제 ADC/APNs·실기기 확인 후 별도로 활성화한다.
     enabled: false
     schedule-enabled: false
-    test-enabled: false
     firebase-project-id: "jachwi-sunbae-de"

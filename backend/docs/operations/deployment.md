@@ -117,7 +117,7 @@ Thread Dump 스크립트와 logrotate 설정도 `scripts/` 아래에 두어 기�
 
 EC2에는 Java 21, 실행 사용자 `jachwi`, CodeDeploy 에이전트와 배포 디렉터리가 필요하다. Vault 준비 스크립트는 Java·사용자·CodeDeploy 에이전트를 설치하지 않는다.
 
-[jachwi-sunbae.service](../../deploy/jachwi-sunbae.service)는 환경변수 파일을 읽어 `jachwi` 사용자로 실행한다. Dev는 `SPRING_PROFILES_ACTIVE=dev`, Prod는 `SPRING_PROFILES_ACTIVE=prod`를 사용한다. 기존 Dev의 `prod` 설정은 이 버전 배포 전에 Vault의 Dev `app_env`에서 변경해야 한다. 기존 날씨 실행 여부·Firebase 프로젝트 ID 환경변수는 YAML보다 우선하므로 제거한다. 현재 저장소는 Dev FCM ON, Prod OFF이며 예약 발송은 양쪽 OFF다. 실제 Vault 오버라이드·ADC·기기 수신은 별도 확인한다. [생활 날씨 배포 기록](../../../docs/operations/weather-push-release.md)에 활성화 순서와 단일 기기 검증 범위를 적는다.
+[jachwi-sunbae.service](../../deploy/jachwi-sunbae.service)는 환경변수 파일을 읽어 `jachwi` 사용자로 실행한다. Dev는 `SPRING_PROFILES_ACTIVE=dev`, Prod는 `SPRING_PROFILES_ACTIVE=prod`를 사용한다. 기존 Dev의 `prod` 설정은 이 버전 배포 전에 Vault의 Dev `app_env`에서 변경해야 한다. Vault의 날씨 실행 여부·Firebase 프로젝트 ID 환경변수는 YAML보다 우선하므로 배포 전에 최종 적용값을 확인한다. 현재 저장소는 Dev FCM ON, Prod OFF이며 예약 발송은 양쪽 OFF다. 실제 Vault 오버라이드·ADC·기기 수신은 별도 확인한다. [생활 날씨 배포 기록](../../../docs/operations/weather-push-release.md)에 활성화 순서와 단일 기기 검증 범위를 적는다.
 
 ### 포트와 파일 권한
 
@@ -193,14 +193,14 @@ Firebase JSON은 같은 디렉터리의 임시 파일로 받아 단일 JSON 객�
 
 systemd는 `GOOGLE_APPLICATION_CREDENTIALS=/etc/jachwi-sunbae/firebase/service-account.json`을 고정한다. `EnvironmentFile`이 `Environment`보다 우선하므로 Vault `app_env`에는 이 변수를 넣지 않고 기존 DB·JWT·`KMA_API_KEY`를 유지한다. [systemd 환경변수 우선순위](https://www.freedesktop.org/software/systemd/man/latest/systemd.exec.html#EnvironmentFile=)를 따른다.
 
-Vault 관리자는 기존 환경별 KV에 `firebase_service_account_json` 필드를 추가한다. Dev는 `jachwi-sunbae-de`, Prod는 현재 YAML의 `jachwi-sunbae-prod`와 실제 프로젝트가 일치하는지 확인한다. 저장소 밖에 보관한 Dev JSON을 등록하는 예시이며 여기서 명령을 실행한 것은 아니다. 기존 `app_env`를 보존하려면 [KV patch](https://developer.hashicorp.com/vault/docs/commands/kv/patch)를 사용한다.
+Vault 관리자는 기존 환경별 KV에 `firebase_service_account_json` 필드를 추가한다. Dev·Prod 발신 대상은 기존 스토어 앱과 같은 `jachwi-sunbae-de`이며, 해당 프로젝트의 FCM 발송 권한이 있는 서비스 계정을 사용한다. 저장소 밖에 보관한 Dev JSON을 등록하는 예시이며 여기서 명령을 실행한 것은 아니다. 기존 `app_env`를 보존하려면 [KV patch](https://developer.hashicorp.com/vault/docs/commands/kv/patch)를 사용한다.
 
 ```bash
 set +x
 vault kv patch -mount=secret jachwi-sunbae/dev firebase_service_account_json=- < /secure/path/dev-service-account.json
 ```
 
-Prod는 경로를 `jachwi-sunbae/prod`로 바꾸고 Prod 전용 JSON을 입력한다. 별도 훅 없이 다음 CodeDeploy 배포에서 새 ASG 인스턴스에도 배치된다. 알림은 Dev만 ON이며, Dev는 이 JSON이 없으면 서버가 시작되지 않는다. Prod는 실제 프로젝트·자격증명·앱 연동 확인 후 별도로 활성화한다.
+Prod는 경로를 `jachwi-sunbae/prod`로 바꾸고 Prod용 JSON을 입력한다. 별도 훅 없이 다음 CodeDeploy 배포에서 새 ASG 인스턴스에도 배치된다. Firebase Sender는 Dev만 ON이며, Dev는 이 JSON이 없으면 서버가 시작되지 않는다. 예약 발송은 양쪽 OFF다. Prod는 실제 프로젝트·자격증명·앱 연동 확인 후 별도로 활성화한다.
 
 Vault 값 변경은 실행 중인 앱에 즉시 반영되지 않는다. 이 리비전 배포 후 파일을 갱신하고 성공했을 때만 재시작한다. prod에서는 인자를 `prod`로 바꾼다.
 

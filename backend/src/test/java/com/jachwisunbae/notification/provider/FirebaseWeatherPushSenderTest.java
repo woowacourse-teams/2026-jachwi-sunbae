@@ -34,8 +34,7 @@ class FirebaseWeatherPushSenderTest {
         assertThat(json.at("/data/notificationId").asText()).isEqualTo(push.notificationId().toString());
         assertThat(json.at("/notification/title").asText()).isEqualTo(push.title());
         assertThat(json.at("/notification/body").asText()).isEqualTo(push.body());
-        assertThat(json.at("/data/url").asText()).isEqualTo("/me");
-        assertThat(json.get("data").size()).isEqualTo(2);
+        assertThat(json.get("data").size()).isOne();
         assertThat(json.has("android")).isFalse();
         assertThat(json.has("apns")).isFalse();
         assertThat(json.get("data").toString()).doesNotContain("token", "grid", "member", "latitude", "longitude");

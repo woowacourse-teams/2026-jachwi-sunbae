@@ -50,9 +50,6 @@ export const parseWeatherForecast = (value: unknown): WeatherForecastResponse =>
 
 const parseSettings = (value: unknown): WeatherNotificationSettingsResponse => ({
   enabled: readBoolean(readRecord(value), 'enabled'),
-  ...(readRecord(value).testAvailable === undefined
-    ? {}
-    : { testAvailable: readBoolean(readRecord(value), 'testAvailable') }),
 });
 
 /** 위경도의 기상청 격자에서 오늘(한국 시간) 00–23시 예보를 조회한다. */
@@ -92,15 +89,6 @@ export const syncWeatherLocation = (config: PublicConfig, coordinate: MapCoordin
   });
 
 const DEVICE_PATH = '/api/members/me/weather-devices/current';
-
-export const sendWeatherTest = (config: PublicConfig, expectedMemberId: number) =>
-  apiRequest({
-    config,
-    expectedMemberId,
-    path: '/api/members/me/weather-notifications/test',
-    method: 'POST',
-    parseData: (value) => readBoolean(readRecord(value), 'sent'),
-  });
 
 export const registerWeatherDevice = (
   config: PublicConfig,

@@ -2,7 +2,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { http, HttpResponse } from 'msw';
 import type { ReactNode } from 'react';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { setAuthentication } from '@/features/auth/model/authStore';
 import { useWeatherPushSync } from '@/features/weather/model/useWeatherPushSync';
@@ -19,10 +19,11 @@ const login = (memberId: number) =>
 afterEach(() => {
   delete window.__JACHWI_NATIVE_APP__;
   delete window.ReactNativeWebView;
+  vi.restoreAllMocks();
 });
 
 describe('앱 전체 날씨 기기 동기화', () => {
-  it('마이를 열지 않아도 로그인·토큰 갱신·앱 복귀에 등록하고 회원 변경 후 OFF를 유지한다', async () => {
+  it('마이 밖에서도 토큰 갱신·앱 복귀·연결 복구에 등록하고 회원 변경 후 OFF를 유지한다', async () => {
     const native = installNativePush();
     const calls: { token: string; authorization: string | null }[] = [];
     let enabled = true;
@@ -58,10 +59,25 @@ describe('앱 전체 날씨 기기 동기화', () => {
     await waitFor(() => expect(calls.at(-1)?.token).toBe(native.token));
     await waitFor(() => expect(result.current.isFetching).toBe(false));
     const before = calls.length;
+    const visibility = vi.spyOn(document, 'visibilityState', 'get');
     act(() => {
-      window.dispatchEvent(new Event('focus'));
+      visibility.mockReturnValue('hidden');
+      window.dispatchEvent(new Event('visibilitychange'));
+    });
+    act(() => {
+      visibility.mockReturnValue('visible');
+      window.dispatchEvent(new Event('visibilitychange'));
     });
     await waitFor(() => expect(calls.length).toBeGreaterThan(before));
+    await waitFor(() => expect(result.current.isFetching).toBe(false));
+    const beforeReconnect = calls.length;
+    act(() => {
+      window.dispatchEvent(new Event('offline'));
+    });
+    act(() => {
+      window.dispatchEvent(new Event('online'));
+    });
+    await waitFor(() => expect(calls.length).toBeGreaterThan(beforeReconnect));
     await waitFor(() => expect(result.current.isFetching).toBe(false));
     enabled = false;
     act(() => {

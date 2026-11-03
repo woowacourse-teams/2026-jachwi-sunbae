@@ -20,8 +20,7 @@ public class FirebaseWeatherPushSender implements WeatherPushSender {
     public boolean send(final Push push) {
         Message message = Message.builder().setToken(push.token())
                 .setNotification(Notification.builder().setTitle(push.title()).setBody(push.body()).build())
-                .putData("notificationId", push.notificationId().toString())
-                .putData("url", "/me").build();
+                .putData("notificationId", push.notificationId().toString()).build();
         try {
             messaging.send(message);
             return true;

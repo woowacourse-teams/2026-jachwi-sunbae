@@ -1,7 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-webpack5';
 
-import { currentMemberQueryKey } from '@/shared/api/queryClient';
-
 import type { WeatherForecastResponse, WeatherHour } from '../../model/weather';
 import { weatherQueryKeys } from '../../model/weatherQueryKeys';
 import WeatherSummaryCard from './WeatherSummaryCard';
@@ -52,10 +50,7 @@ type Story = StoryObj<typeof meta>;
 
 export const NotificationOff: Story = {
   parameters: {
-    queryData: [
-      [currentMemberQueryKey, { id: 1 }],
-      [weatherQueryKeys.settings(null), { enabled: false }],
-    ],
+    queryData: [[weatherQueryKeys.settings(null), { enabled: false }]],
   },
 };
 
@@ -63,7 +58,6 @@ export const NotificationOff: Story = {
 export const WithForecast: Story = {
   parameters: {
     queryData: [
-      [currentMemberQueryKey, { id: 1 }],
       [weatherQueryKeys.settings(null), { enabled: true }],
       [weatherQueryKeys.forecast(coordinate), forecast],
       [weatherQueryKeys.place(coordinate), '관악구 신림동'],

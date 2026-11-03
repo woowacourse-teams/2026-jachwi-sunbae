@@ -1,42 +1,25 @@
 package com.jachwisunbae.notification.config;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.mockStatic;
 
 import com.google.auth.oauth2.AccessToken;
 import com.google.auth.oauth2.GoogleCredentials;
 import com.google.firebase.FirebaseApp;
 import com.jachwisunbae.notification.provider.WeatherPushSender;
-import com.jachwisunbae.notification.controller.WeatherNotificationTestController;
 import com.jachwisunbae.notification.scheduler.WeatherNotificationScheduler;
 import com.jachwisunbae.notification.service.WeatherNotificationDispatchService;
-import com.jachwisunbae.notification.service.WeatherNotificationSettingsService;
 import java.time.Clock;
 import java.util.Date;
-import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.boot.test.context.ConfigDataApplicationContextInitializer;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.core.env.StandardEnvironment;
-import org.springframework.mock.env.MockEnvironment;
 
 class WeatherNotificationConfigTest {
-    @Test
-    void productionTestPolicyOnlyExposesTheDesignatedDevice() {
-        var environment = new MockEnvironment();
-        environment.setActiveProfiles("prod");
-        var id = UUID.randomUUID();
-        assertThat(new WeatherPushTestPolicy(environment, true, "").allows(id)).isFalse();
-        assertThat(new WeatherPushTestPolicy(environment, false, id.toString()).allows(id)).isFalse();
-        var policy = new WeatherPushTestPolicy(environment, true, id.toString());
-        assertThat(policy.allows(id)).isTrue();
-        assertThat(policy.allows(UUID.randomUUID())).isFalse();
-    }
-
     @Test
     void enablingSenderAloneDoesNotStartScheduledBroadcasts() {
         new ApplicationContextRunner().withUserConfiguration(WeatherNotificationScheduler.class)
@@ -54,26 +37,6 @@ class WeatherNotificationConfigTest {
                 .run(context -> assertThat(context).doesNotHaveBean(WeatherNotificationScheduler.class));
         runner.withPropertyValues("weather.notification.enabled=true")
                 .run(context -> assertThat(context).hasSingleBean(WeatherNotificationScheduler.class));
-    }
-
-    @Test
-    void testEndpointIsAbsentUnlessExplicitlyEnabled() {
-        new ApplicationContextRunner().withUserConfiguration(WeatherNotificationTestController.class, WeatherPushTestPolicy.class)
-                .withBean(WeatherNotificationSettingsService.class, () -> mock(WeatherNotificationSettingsService.class))
-                .run(context -> assertThat(context).doesNotHaveBean(WeatherNotificationTestController.class));
-    }
-
-    @Test
-    void productionTestWithoutDesignatedInstallationDoesNotCallSender() {
-        var service = mock(WeatherNotificationSettingsService.class);
-        new ApplicationContextRunner().withUserConfiguration(WeatherNotificationTestController.class, WeatherPushTestPolicy.class)
-                .withBean(WeatherNotificationSettingsService.class, () -> service)
-                .withPropertyValues("weather.notification.test-enabled=true")
-                .withInitializer(context -> context.getEnvironment().setActiveProfiles("prod"))
-                .run(context -> {
-                    context.getBean(WeatherNotificationTestController.class).send(1L);
-                    verifyNoInteractions(service);
-                });
     }
 
     @Test

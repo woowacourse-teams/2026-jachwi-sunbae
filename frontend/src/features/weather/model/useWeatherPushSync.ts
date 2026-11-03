@@ -23,6 +23,9 @@ export const useWeatherPushSync = (backgroundOnly = false) => {
     enabled: memberId !== null && (!backgroundOnly || hasNativePush),
     staleTime: Infinity,
     retry: false,
+    // 앱 복귀·네트워크 복구 감시는 기존 QueryClient의 이벤트 처리를 재사용한다.
+    refetchOnWindowFocus: backgroundOnly && hasNativePush ? 'always' : false,
+    refetchOnReconnect: backgroundOnly && hasNativePush ? 'always' : false,
   });
 
   useEffect(() => {
@@ -38,15 +41,9 @@ export const useWeatherPushSync = (backgroundOnly = false) => {
     };
     window.addEventListener('jachwi-native-ready', sync);
     window.addEventListener('jachwi-push', changed);
-    window.addEventListener('focus', sync);
-    window.addEventListener('online', sync);
-    document.addEventListener('visibilitychange', sync);
     return () => {
       window.removeEventListener('jachwi-native-ready', sync);
       window.removeEventListener('jachwi-push', changed);
-      window.removeEventListener('focus', sync);
-      window.removeEventListener('online', sync);
-      document.removeEventListener('visibilitychange', sync);
     };
   }, [client, memberId, backgroundOnly]);
 

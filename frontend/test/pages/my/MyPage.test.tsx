@@ -8,7 +8,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import { createMockWeatherForecast } from '@/app/mocks/handlers/weatherHandlers';
 import AppRoutes from '@/app/router/AppRoutes';
-import { getAuthenticationSnapshot } from '@/features/auth/model/authStore';
+import { getAuthenticationSnapshot, setAuthentication } from '@/features/auth/model/authStore';
 import WeatherSummaryCard from '@/features/weather/ui/weather-summary-card/WeatherSummaryCard';
 import { PublicConfigProvider } from '@/shared/config/PublicConfigContext';
 
@@ -23,14 +23,11 @@ const SEOUL = { latitude: 37.5665, longitude: 126.978 };
 const useWeatherServer = ({
   enabled = false,
   failUpdate = false,
-  testAvailable = false,
   forecast = createMockWeatherForecast('2026-10-26'),
-}: { enabled?: boolean; failUpdate?: boolean; forecast?: unknown; testAvailable?: boolean } = {}) => {
+}: { enabled?: boolean; failUpdate?: boolean; forecast?: unknown } = {}) => {
   const state = { enabled, savedLocations: [] as unknown[], updates: [] as boolean[] };
   server.use(
-    http.get('*/api/members/me/weather-notification-settings', () =>
-      success({ enabled: state.enabled, testAvailable }),
-    ),
+    http.get('*/api/members/me/weather-notification-settings', () => success({ enabled: state.enabled })),
     http.put('*/api/members/me/weather-devices/current', async ({ request }) => {
       const body = (await request.json()) as { installationId: string };
       return success({ installationId: body.installationId });
@@ -93,8 +90,10 @@ const renderMyPage = () =>
     </StrictMode>,
   );
 
-const renderWeatherCard = () =>
-  render(
+const renderWeatherCard = () => {
+  // 실제 화면은 ProtectedRoute에서 인증을 마친 뒤 카드를 렌더링한다.
+  setAuthentication({ accessToken: 'fake-weather-member', tokenType: 'Bearer', memberId: 1, expiresIn: 900 });
+  return render(
     <QueryClientProvider
       client={
         new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 }, mutations: { retry: false } } })
@@ -105,6 +104,7 @@ const renderWeatherCard = () =>
       </PublicConfigProvider>
     </QueryClientProvider>,
   );
+};
 
 beforeEach(() => {
   installNativePush();
@@ -235,33 +235,6 @@ describe('마이 화면의 초기화', () => {
 });
 
 describe('생활 날씨 카드의 알림 받기', () => {
-  it('서버가 허용한 기기에서 직접 눌렀을 때만 테스트를 요청하고 수신 성공으로 단정하지 않는다', async () => {
-    const user = userEvent.setup();
-    useWeatherServer({ enabled: true, testAvailable: true });
-    mockGeolocation('allowed');
-    let sends = 0;
-    server.use(
-      http.post('*/api/members/me/weather-notifications/test', () => {
-        sends += 1;
-        return success({ sent: true });
-      }),
-    );
-    renderWeatherCard();
-    const button = await screen.findByRole('button', { name: '테스트 알림 보내기' });
-    expect(sends).toBe(0);
-    await user.click(button);
-    expect(await screen.findByText('발송 요청을 접수했어요. 실제 알림 도착을 확인해 주세요.')).toBeInTheDocument();
-    expect(sends).toBe(1);
-  });
-
-  it('서버가 테스트를 허용하지 않으면 발송 버튼을 숨긴다', async () => {
-    useWeatherServer({ enabled: true });
-    mockGeolocation('allowed');
-    renderWeatherCard();
-    await screen.findByText(/^\d{2}시 예보$/);
-    expect(screen.queryByRole('button', { name: '테스트 알림 보내기' })).not.toBeInTheDocument();
-  });
-
   it('알림을 켜 둔 채 열면 현재 위치를 다시 저장한다', async () => {
     const weather = useWeatherServer({ enabled: true });
     mockGeolocation('allowed');

@@ -19,7 +19,7 @@ import {
 } from '../api/weatherApi';
 import { getWeatherInstallation } from '../lib/weatherInstallation';
 
-export type WeatherPushState = { enabled: boolean; testAvailable?: boolean; problem: 'permission' | 'cleanup' | null };
+export type WeatherPushState = { enabled: boolean; problem: 'permission' | 'cleanup' | null };
 
 // ON/OFF와 백그라운드 동기화가 역순으로 서버에 도착하지 않게 한다.
 let queue: Promise<unknown> = Promise.resolve();

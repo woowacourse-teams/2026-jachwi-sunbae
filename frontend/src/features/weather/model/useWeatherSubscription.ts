@@ -1,15 +1,14 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-import { useCurrentMember } from '@/features/auth/api/useCurrentMember';
 import { reverseGeocode } from '@/features/map/api/mapApi';
 import type { MapCoordinate } from '@/features/map/lib/mapLocation';
 import { MapLocationError, requestCurrentMapLocation } from '@/features/map/lib/mapLocation';
 import { usePublicConfig } from '@/shared/config/PublicConfigContext';
 import { isRunningInNativeApp } from '@/shared/lib/native-app/nativeApp';
-import { NativePushError, openNativePushSettings, supportsNativePush } from '@/shared/lib/native-app/nativePush';
+import { NativePushError, supportsNativePush } from '@/shared/lib/native-app/nativePush';
 
-import { fetchWeatherForecast, sendWeatherTest, syncWeatherLocation } from '../api/weatherApi';
+import { fetchWeatherForecast, syncWeatherLocation } from '../api/weatherApi';
 import { readLastWeatherCoordinate, writeLastWeatherCoordinate } from '../lib/lastWeatherCoordinate';
 import { useWeatherPushSync } from './useWeatherPushSync';
 import { changeWeatherPush } from './weatherPush';
@@ -38,7 +37,6 @@ export const useWeatherSubscription = () => {
   const config = usePublicConfig();
   const queryClient = useQueryClient();
   const platform = isRunningInNativeApp() ? 'app' : 'web';
-  useCurrentMember();
   const hasSyncedRef = useRef(false);
   const [location, setLocation] = useState<WeatherLocationState>(() => ({
     status: 'idle',
@@ -62,11 +60,10 @@ export const useWeatherSubscription = () => {
           if (persist && memberId !== null) await syncWeatherLocation(config, coordinate, memberId);
           return coordinate;
         },
-        async (error: unknown) => {
+        (error: unknown) => {
           const last = readLastWeatherCoordinate();
           const denied = error instanceof MapLocationError && error.reason === 'denied';
           setLocation({ status: denied ? 'denied' : 'unavailable', coordinate: last, isStale: last !== null });
-          if (persist && memberId !== null && last !== null) await syncWeatherLocation(config, last, memberId);
           return last;
         },
       );
@@ -100,8 +97,6 @@ export const useWeatherSubscription = () => {
     onSuccess: (data, variables) => queryClient.setQueryData(weatherQueryKeys.settings(variables.memberId), data),
   });
 
-  const [hasSettingsFailed, setHasSettingsFailed] = useState(false);
-  const testPush = useMutation({ mutationFn: (memberId: number) => sendWeatherTest(config, memberId) });
   const pushMessage = !supportsNativePush()
     ? platform === 'web'
       ? '알림은 앱에서 받을 수 있어요.'
@@ -110,7 +105,7 @@ export const useWeatherSubscription = () => {
       ? '기기 설정에서 자취선배 알림을 허용한 뒤 다시 켜 주세요.'
       : settings.data?.problem === 'cleanup'
         ? '알림은 꺼졌지만 기기 연결 정리가 필요해요. 다시 시도해 주세요.'
-        : settings.isError || hasSettingsFailed
+        : settings.isError
           ? '기기 알림 연결을 확인하지 못했어요. 다시 시도해 주세요.'
           : toggle.error instanceof NativePushError
             ? '기기 알림 연결을 확인하지 못했어요. 다시 시도해 주세요.'
@@ -140,21 +135,6 @@ export const useWeatherSubscription = () => {
     isUpdating: toggle.isPending || settings.isFetching || location.status === 'locating',
     hasUpdateFailed: toggle.isError || hasLocationFailed,
     pushMessage,
-    canSendTest: isEnabled && settings.data?.testAvailable === true && supportsNativePush(),
-    isSendingTest: testPush.isPending,
-    testMessage:
-      testPush.isError || testPush.data === false
-        ? '테스트 알림을 보내지 못했어요. 연결 상태를 확인해 주세요.'
-        : testPush.data === true
-          ? '발송 요청을 접수했어요. 실제 알림 도착을 확인해 주세요.'
-          : null,
-    sendTest: () => {
-      if (memberId !== null && !testPush.isPending) testPush.mutate(memberId);
-    },
-    canOpenSettings: settings.data?.problem === 'permission',
-    openSettings: () => {
-      void openNativePushSettings().catch(() => setHasSettingsFailed(true));
-    },
     canRetry: settings.isError || settings.data?.problem === 'cleanup',
     retry: () => {
       void settings.refetch();

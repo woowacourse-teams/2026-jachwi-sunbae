@@ -11,7 +11,7 @@ export const supportsNativePush = () =>
   typeof window.ReactNativeWebView?.postMessage === 'function';
 
 /** 응답은 메모리에서만 사용한다. 네이티브 오류 원문·토큰을 로그나 분석으로 보내지 않는다. */
-const request = (action: 'status' | 'enable' | 'disable' | 'token' | 'settings'): Promise<Record<string, unknown>> => {
+const request = (action: 'status' | 'enable' | 'disable' | 'token'): Promise<Record<string, unknown>> => {
   if (!supportsNativePush()) return Promise.reject(new NativePushError('unsupported'));
   return new Promise((resolve, reject) => {
     const requestId = crypto.randomUUID();
@@ -52,10 +52,6 @@ export const readNativePushToken = async (): Promise<string> => {
     throw new NativePushError('unavailable');
   }
   return value.token;
-};
-
-export const openNativePushSettings = async (): Promise<void> => {
-  await request('settings');
 };
 
 export const disableNativePush = async (): Promise<void> => {

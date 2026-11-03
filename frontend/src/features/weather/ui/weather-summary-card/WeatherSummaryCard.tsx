@@ -24,14 +24,8 @@ const WeatherSummaryCard = () => {
     forecast,
     toggle,
     pushMessage,
-    canOpenSettings,
-    openSettings,
     canRetry,
     retry,
-    canSendTest,
-    isSendingTest,
-    testMessage,
-    sendTest,
   } = useWeatherSubscription();
   const hour = forecast.data?.hourly[Number(forecastHour(new Date().toISOString()))];
   const showsWeather = isEnabled && hour !== undefined && hour.tmp !== null;
@@ -113,23 +107,10 @@ const WeatherSummaryCard = () => {
           message={message}
           onToggle={toggle}
         />
-        {canOpenSettings && (
-          <Button variant="secondary" onClick={openSettings}>
-            기기 알림 설정 열기
-          </Button>
-        )}
         {canRetry && (
           <Button variant="secondary" onClick={retry}>
             알림 연결 다시 시도
           </Button>
-        )}
-        {canSendTest && (
-          <>
-            <Button variant="secondary" isLoading={isSendingTest} onClick={sendTest}>
-              테스트 알림 보내기
-            </Button>
-            {testMessage && <p role="status">{testMessage}</p>}
-          </>
         )}
       </div>
     </section>

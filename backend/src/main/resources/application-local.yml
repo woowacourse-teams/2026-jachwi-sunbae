@@ -22,4 +22,3 @@ weather:
     enabled: false
   notification:
     enabled: false
-    test-enabled: true
