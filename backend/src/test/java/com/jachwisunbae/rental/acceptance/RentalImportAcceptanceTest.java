@@ -50,7 +50,7 @@ class RentalImportAcceptanceTest {
         databaseAdmin.execute("CREATE DATABASE `" + databaseName + "`");
         databaseAdmin.execute("GRANT SELECT, INSERT, UPDATE, DELETE ON `" + databaseName + "`.* TO 'rental_app'@'%'");
         jdbcUrl = "jdbc:mysql://" + MYSQL.getHost() + ":" + MYSQL.getMappedPort(3306) + "/" + databaseName;
-        var adminSource = new DriverManagerDataSource(jdbcUrl, "root", MYSQL.getPassword());
+        DriverManagerDataSource adminSource = new DriverManagerDataSource(jdbcUrl, "root", MYSQL.getPassword());
         admin = new JdbcTemplate(adminSource);
         Flyway.configure().dataSource(adminSource).cleanDisabled(true).load().migrate();
         Files.writeString(work.resolve("법정동 코드.txt"),
@@ -62,7 +62,7 @@ class RentalImportAcceptanceTest {
     @Test
     @DisplayName("CREATE 권한 없는 계정으로 적재하고 다시 적재하면 교체하며 같은 자료는 건너뛴다")
     void importsReplacesAndSkipsRepeatedDataWithoutCreatePrivilege() throws Exception {
-        var grants = new JdbcTemplate(new DriverManagerDataSource(
+        List<String> grants = new JdbcTemplate(new DriverManagerDataSource(
             jdbcUrl, MYSQL.getUsername(), MYSQL.getPassword())).queryForList("SHOW GRANTS", String.class);
         assertThat(grants).noneMatch(grant -> grant.contains("CREATE") || grant.contains("ALL PRIVILEGES"));
 

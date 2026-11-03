@@ -27,7 +27,7 @@ class LifeWeatherRulesTest {
     @DisplayName("비와 눈 안내는 강수 형태로만 판단한다")
     @CsvSource({"0,false,false", "1,true,false", "2,true,true", "3,false,true", "4,true,false"})
     void precipitationUsesOnlyType(final double pty, final boolean rain, final boolean snow) {
-        var report = evaluate(replace(hours(), 12, h -> new Hour(h.at(), h.temperature(), pty, h.humidity())), null, null);
+        LifeWeatherReport report = evaluate(replace(hours(), 12, h -> new Hour(h.at(), h.temperature(), pty, h.humidity())), null, null);
         assertThat(has(report, Condition.RAIN)).isEqualTo(rain);
         assertThat(has(report, Condition.SNOW)).isEqualTo(snow);
     }
@@ -36,7 +36,7 @@ class LifeWeatherRulesTest {
     @DisplayName("시간별 기온이 영하 5℃ 이하이면 추위 안내를 만든다")
     @CsvSource({"-5.1,true", "-5,true", "-4.9,false"})
     void hourlyColdBoundary(final double temperature, final boolean expected) {
-        var report = evaluate(replace(hours(), 7, h -> new Hour(h.at(), temperature, 0.0, h.humidity())), null, null);
+        LifeWeatherReport report = evaluate(replace(hours(), 7, h -> new Hour(h.at(), temperature, 0.0, h.humidity())), null, null);
         assertThat(has(report, Condition.FREEZE)).isEqualTo(expected);
     }
 
@@ -44,7 +44,7 @@ class LifeWeatherRulesTest {
     @DisplayName("일 최저기온만으로도 영하 5℃ 이하이면 추위 안내를 만든다")
     @CsvSource({"-5.1,true", "-5,true", "-4.9,false", "NULL,false"})
     void dailyMinimumCanIndependentlyCreateColdNotice(final String minimum, final boolean expected) {
-        var report = evaluate(hours(), number(minimum), null);
+        LifeWeatherReport report = evaluate(hours(), number(minimum), null);
         assertThat(report.sendable()).isTrue();
         assertThat(has(report, Condition.FREEZE)).isEqualTo(expected);
         assertThat(has(report, Condition.TEMPERATURE_SWING)).isFalse();
@@ -55,7 +55,7 @@ class LifeWeatherRulesTest {
     @CsvSource({"0,9.9,false", "0,10,true", "0,10.1,true", "NULL,20,false", "10,NULL,false",
             "20,10,false"})
     void dailyRangeRequiresValidDailyTemperatures(final String minimum, final String maximum, final boolean expected) {
-        var report = evaluate(hours(), number(minimum), number(maximum));
+        LifeWeatherReport report = evaluate(hours(), number(minimum), number(maximum));
         assertThat(report.sendable()).isTrue();
         assertThat(has(report, Condition.TEMPERATURE_SWING)).isEqualTo(expected);
     }
@@ -65,8 +65,8 @@ class LifeWeatherRulesTest {
     @CsvSource({"60,60,true", "60,61,false", "50,100,true", "61,61,false", "0,0,true"})
     void laundryUsesTheTenHourAverageRatherThanEveryHoursThreshold(final double humidity, final double noonHumidity,
             final boolean expected) {
-        var hours = hours().stream().map(h -> new Hour(h.at(), h.temperature(), 0.0, humidity)).toList();
-        var report = evaluate(replace(hours, 12, h -> new Hour(h.at(), h.temperature(), 0.0, noonHumidity)), null, null);
+        List<Hour> hours = hours().stream().map(h -> new Hour(h.at(), h.temperature(), 0.0, humidity)).toList();
+        LifeWeatherReport report = evaluate(replace(hours, 12, h -> new Hour(h.at(), h.temperature(), 0.0, noonHumidity)), null, null);
         assertThat(has(report, Condition.LAUNDRY)).isEqualTo(expected);
     }
 
@@ -74,7 +74,7 @@ class LifeWeatherRulesTest {
     @DisplayName("낮 시간 습도가 없으면 빨래 안내만 빼고 알림은 보낸다")
     @NullSource
     void missingDaytimeHumidityOnlyOmitsLaundry(final Double humidity) {
-        var report = evaluate(replace(hours(), 9, h -> new Hour(h.at(), h.temperature(), 0.0, humidity)), null, null);
+        LifeWeatherReport report = evaluate(replace(hours(), 9, h -> new Hour(h.at(), h.temperature(), 0.0, humidity)), null, null);
         assertThat(report.sendable()).isTrue();
         assertThat(report.notices()).isEmpty();
         assertThat(report.body()).contains("예보기온");
@@ -84,7 +84,7 @@ class LifeWeatherRulesTest {
     @DisplayName("빨래 안내는 9시부터 18시까지의 강수만 본다")
     @CsvSource({"8,true", "9,false", "18,false", "19,true"})
     void laundryChecksOnlyNineThroughEighteen(final int hour, final boolean expected) {
-        var report = evaluate(replace(hours(), hour, h -> new Hour(h.at(), h.temperature(), 1.0, null)), null, null);
+        LifeWeatherReport report = evaluate(replace(hours(), hour, h -> new Hour(h.at(), h.temperature(), 1.0, null)), null, null);
         assertThat(report.sendable()).isTrue();
         assertThat(has(report, Condition.LAUNDRY)).isEqualTo(expected);
     }
@@ -92,7 +92,7 @@ class LifeWeatherRulesTest {
     @Test
     @DisplayName("안내는 해당하는 것만 메시지 우선순위대로 담고 본문은 가장 앞선 안내로 쓴다")
     void noticesContainOnlyMatchesInMessagePriorityOrder() {
-        var report = evaluate(replace(hours(), 20, h -> new Hour(h.at(), -5.0, 2.0, h.humidity())), -5.0, 5.0);
+        LifeWeatherReport report = evaluate(replace(hours(), 20, h -> new Hour(h.at(), -5.0, 2.0, h.humidity())), -5.0, 5.0);
         assertThat(report.notices()).extracting(Notice::condition).containsExactly(
                 Condition.SNOW, Condition.RAIN, Condition.FREEZE, Condition.TEMPERATURE_SWING, Condition.LAUNDRY);
         assertThat(report.title()).isEqualTo("자취선배 생활정보");
@@ -102,7 +102,7 @@ class LifeWeatherRulesTest {
     @Test
     @DisplayName("주의 안내가 있으면 빨래 안내보다 먼저 본문에 쓴다")
     void cautionComesBeforeLaundryInBody() {
-        var report = evaluate(hours(), -5.0, null);
+        LifeWeatherReport report = evaluate(hours(), -5.0, null);
         assertThat(report.notices()).extracting(Notice::condition).containsExactly(Condition.FREEZE, Condition.LAUNDRY);
         assertThat(report.body()).isEqualTo("오늘 영하 5℃ 이하 추위가 예상돼요. 수도관 보온을 점검하세요!");
     }
@@ -110,7 +110,7 @@ class LifeWeatherRulesTest {
     @Test
     @DisplayName("주의 안내가 없으면 빨래 안내를 본문으로 쓴다")
     void laundryIsTheBodyWithoutCautions() {
-        var report = evaluate(hours(), null, null);
+        LifeWeatherReport report = evaluate(hours(), null, null);
         assertThat(report.notices()).extracting(Notice::condition).containsExactly(Condition.LAUNDRY);
         assertThat(report.body()).isEqualTo("오늘은 비 예보가 없고 습도가 낮아요. 빨래하기 괜찮겠어요!");
     }
@@ -120,10 +120,10 @@ class LifeWeatherRulesTest {
     @EnumSource(NotificationSlot.class)
     void noNoticeUsesTargetWindowTemperatures(final NotificationSlot slot) {
         LocalDate date = slot.targetDate(DATE);
-        var hours = hours(date, slot).stream().map(h -> new Hour(h.at(), 15.0, 0.0, null)).toList();
+        List<Hour> hours = hours(date, slot).stream().map(h -> new Hour(h.at(), 15.0, 0.0, null)).toList();
         hours = replace(hours, slot.firstForecastHour(), h -> new Hour(h.at(), 5.0, 0.0, null));
         hours = replace(hours, 23, h -> new Hour(h.at(), 20.0, 0.0, null));
-        var report = rules.evaluate(new LifeWeatherForecast(date, slot, hours, null, null));
+        LifeWeatherReport report = rules.evaluate(new LifeWeatherForecast(date, slot, hours, null, null));
         assertThat(report.sendable()).isTrue();
         assertThat(report.notices()).isEmpty();
         assertThat(report.body()).isEqualTo(slot == NotificationSlot.MORNING
@@ -134,7 +134,7 @@ class LifeWeatherRulesTest {
     @DisplayName("필수 값이 하나라도 잘못되면 알림 전체를 보내지 않는다")
     @CsvSource({"NULL,0", "15,NULL"})
     void anyInvalidEssentialValuePreventsTheWholeNotification(final String temperature, final String pty) {
-        var hours = replace(hours(), 23, h -> new Hour(h.at(), number(temperature), number(pty), h.humidity()));
+        List<Hour> hours = replace(hours(), 23, h -> new Hour(h.at(), number(temperature), number(pty), h.humidity()));
         assertUnsendable(evaluate(hours, -5.0, 10.0));
     }
 
@@ -142,7 +142,7 @@ class LifeWeatherRulesTest {
     @DisplayName("대상 시간대의 예보가 빠지거나 어긋나면 알림을 보내지 않는다")
     @ValueSource(strings = {"missing", "duplicate", "wrong-date", "wrong-minute", "extra", "empty"})
     void incompleteWindowPreventsNotification(final String cause) {
-        var hours = new ArrayList<>(hours());
+        ArrayList<Hour> hours = new ArrayList<>(hours());
         switch (cause) {
             case "missing" -> hours.removeFirst();
             case "duplicate" -> hours.set(0, hours.get(1));
@@ -158,7 +158,7 @@ class LifeWeatherRulesTest {
     @Test
     @DisplayName("예보 입력 순서가 달라도 안내는 같다")
     void inputOrderDoesNotChangeNotices() {
-        var hours = new ArrayList<>(hours());
+        ArrayList<Hour> hours = new ArrayList<>(hours());
         Collections.reverse(hours);
         assertThat(evaluate(hours, null, null)).isEqualTo(evaluate(hours(), null, null));
     }

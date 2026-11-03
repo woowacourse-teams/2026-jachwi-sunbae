@@ -11,6 +11,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jachwisunbae.auth.domain.RefreshToken;
 import com.jachwisunbae.auth.repository.RefreshTokenRepository;
 import com.jachwisunbae.auth.token.RefreshTokenProvider;
+import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 import jakarta.servlet.http.Cookie;
 import java.time.LocalDateTime;
@@ -31,6 +32,8 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
+import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 import org.testcontainers.containers.MySQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -72,7 +75,7 @@ class AnonymousAuthenticationAcceptanceTest {
     @Test
     @DisplayName("입력 없이 익명 로그인하고 발급받은 JWT로 내 정보를 조회한다")
     void startsAnonymouslyAndReadsOwnProfile() throws Exception {
-        var login = mvc.perform(post("/api/auth/login"))
+        MvcResult login = mvc.perform(post("/api/auth/login"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value("SUCCESS"))
                 .andExpect(jsonPath("$.data.accessToken").isNotEmpty())
@@ -88,7 +91,7 @@ class AnonymousAuthenticationAcceptanceTest {
         JsonNode data = objectMapper.readTree(login.getResponse().getContentAsString()).path("data");
         long memberId = data.path("member").path("memberId").asLong();
         String token = data.path("accessToken").asText();
-        var claims = SignedJWT.parse(token).getJWTClaimsSet();
+        JWTClaimsSet claims = SignedJWT.parse(token).getJWTClaimsSet();
         assertThat(claims.getExpirationTime().getTime() - claims.getIssueTime().getTime())
                 .isEqualTo(900_000L);
 
@@ -126,7 +129,7 @@ class AnonymousAuthenticationAcceptanceTest {
         jdbcTemplate.update("UPDATE refresh_tokens SET expires_at = ? WHERE member_id = ?",
                 shortenedExpiry, original.memberId());
 
-        var result = mvc.perform(post(path).cookie(original.refreshCookie()))
+        MvcResult result = mvc.perform(post(path).cookie(original.refreshCookie()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.newMember").value(false))
                 .andExpect(jsonPath("$.data.member.memberId").value(original.memberId()))
@@ -172,7 +175,7 @@ class AnonymousAuthenticationAcceptanceTest {
         AnonymousLogin original = startAnonymous();
         invalidateAuthentication(original, state);
 
-        var result = mvc.perform(post("/api/auth/login").cookie(original.refreshCookie()))
+        MvcResult result = mvc.perform(post("/api/auth/login").cookie(original.refreshCookie()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.newMember").value(true))
                 .andReturn();
@@ -193,7 +196,7 @@ class AnonymousAuthenticationAcceptanceTest {
     @ValueSource(strings = {"", "not-registered"})
     @DisplayName("갱신 요청의 쿠키가 없거나 등록되지 않았으면 새 회원을 만들지 않고 401을 응답한다")
     void rejectsRefreshWithoutRegisteredToken(String rawToken) throws Exception {
-        var request = post("/api/auth/refresh");
+        MockHttpServletRequestBuilder request = post("/api/auth/refresh");
         if (rawToken != null) {
             request.cookie(new Cookie("refresh_token", rawToken));
         }
@@ -239,7 +242,7 @@ class AnonymousAuthenticationAcceptanceTest {
     @Test
     @DisplayName("JWT가 유효해도 탈퇴한 회원의 정보는 조회할 수 없다")
     void rejectsDeletedMemberWithValidToken() throws Exception {
-        var login = mvc.perform(post("/api/auth/login"))
+        MvcResult login = mvc.perform(post("/api/auth/login"))
                 .andExpect(status().isOk())
                 .andReturn();
         JsonNode data = objectMapper.readTree(login.getResponse().getContentAsString()).path("data");
@@ -288,7 +291,7 @@ class AnonymousAuthenticationAcceptanceTest {
     }
 
     private AnonymousLogin startAnonymous() throws Exception {
-        var result = mvc.perform(post("/api/auth/login"))
+        MvcResult result = mvc.perform(post("/api/auth/login"))
                 .andExpect(status().isOk())
                 .andReturn();
         long memberId = objectMapper.readTree(result.getResponse().getContentAsString())

@@ -8,6 +8,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jachwisunbae.auth.token.JwtTokenProvider;
 import com.jachwisunbae.support.TestClock;
@@ -19,6 +20,7 @@ import com.jachwisunbae.weather.domain.GridPoint;
 import com.jachwisunbae.weather.domain.HourlyForecast;
 import com.jachwisunbae.weather.repository.JdbcWeatherForecastRepository;
 import com.jachwisunbae.weather.repository.MemberWeatherLocationRepository;
+import jakarta.servlet.http.Cookie;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -32,6 +34,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
@@ -91,13 +94,13 @@ class WeatherApiIntegrationTest {
     @Test
     @DisplayName("익명 로그인 복원과 토큰 재발급 뒤에도 회원의 날씨 위치와 동의를 유지한다")
     void anonymousLoginRestorationAndRefreshKeepTheMembersWeatherLocationAndConsent() throws Exception {
-        var login = mvc.perform(post("/api/auth/login"))
+        MockHttpServletResponse login = mvc.perform(post("/api/auth/login"))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.data.newMember").value(true))
                 .andReturn().getResponse();
-        var data = objectMapper.readTree(login.getContentAsString()).path("data");
+        JsonNode data = objectMapper.readTree(login.getContentAsString()).path("data");
         long memberId = data.path("member").path("memberId").asLong();
         String authorization = "Bearer " + data.path("accessToken").asText();
-        var refreshCookie = login.getCookie("refresh_token");
+        Cookie refreshCookie = login.getCookie("refresh_token");
         assertThat(refreshCookie).isNotNull();
 
         mvc.perform(put("/api/members/me/weather-location").header("Authorization", authorization)
@@ -109,11 +112,11 @@ class WeatherApiIntegrationTest {
         assertThat(locations.find(memberId).orElseThrow().grid()).isEqualTo(new GridPoint(60, 127));
         assertThat(locations.find(1)).isEmpty();
 
-        var publication = TODAY.atTime(20, 0);
+        LocalDateTime publication = TODAY.atTime(20, 0);
         complete(publication);
         forecasts.upsertHourly(List.of(hourly(new GridPoint(60, 127), TODAY.atTime(23, 0), publication, 12.0)));
         for (String path : List.of("/api/auth/login", "/api/auth/refresh")) {
-            var restored = mvc.perform(post(path).cookie(refreshCookie))
+            MockHttpServletResponse restored = mvc.perform(post(path).cookie(refreshCookie))
                     .andExpect(status().isOk()).andExpect(jsonPath("$.data.newMember").value(false))
                     .andExpect(jsonPath("$.data.member.memberId").value(memberId))
                     .andReturn().getResponse();
@@ -135,7 +138,7 @@ class WeatherApiIntegrationTest {
     @Test
     @DisplayName("선택한 격자와 날짜의 수집 완료 값만 한국 시간 정보와 함께 돌려준다")
     void returnsOnlySelectedGridDateAndVerifiedValuesWithKstMetadata() throws Exception {
-        var publication = TODAY.atTime(20, 0);
+        LocalDateTime publication = TODAY.atTime(20, 0);
         complete(publication);
         forecasts.upsertHourly(List.of(hourly(new GridPoint(60, 127), TODAY.atTime(23, 0), publication, 0.0),
                 hourly(new GridPoint(98, 76), TODAY.atTime(23, 0), publication, 99.0),
@@ -159,7 +162,7 @@ class WeatherApiIntegrationTest {
     @Test
     @DisplayName("다시 수집하는 중에는 이전 값이나 일부 값을 보여 주지 않는다")
     void incompleteRecollectionDoesNotExposePreviousOrPartialValues() throws Exception {
-        var publication = TODAY.atTime(20, 0);
+        LocalDateTime publication = TODAY.atTime(20, 0);
         complete(publication);
         forecasts.upsertHourly(List.of(hourly(new GridPoint(60, 127), TODAY.atTime(23, 0), publication, 22.0)));
         forecasts.startCollection(publication);
@@ -173,8 +176,8 @@ class WeatherApiIntegrationTest {
     @Test
     @DisplayName("일 최저·최고기온은 각자의 발표분 수집이 끝나야 보여 준다")
     void dailyValuesRequireTheirOwnCompletedPublication() throws Exception {
-        var minimumPublication = TODAY.atTime(2, 0);
-        var maximumPublication = TODAY.atTime(11, 0);
+        LocalDateTime minimumPublication = TODAY.atTime(2, 0);
+        LocalDateTime maximumPublication = TODAY.atTime(11, 0);
         complete(minimumPublication);
         forecasts.startCollection(maximumPublication);
         forecasts.upsertDaily(List.of(new DailyForecast(new GridPoint(60, 127), TODAY,

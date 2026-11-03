@@ -25,6 +25,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
 import org.testcontainers.containers.MySQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -68,7 +69,7 @@ class MemberDeletionAcceptanceTest {
     @Test
     @DisplayName("탈퇴하면 소유 기록을 논리 삭제하고 Refresh 쿠키와 기존 Access Token을 무효화한다")
     void deletesMemberDataAndAuthentication() throws Exception {
-        var login = mvc.perform(post("/api/auth/login"))
+        MvcResult login = mvc.perform(post("/api/auth/login"))
                 .andExpect(status().isOk())
                 .andReturn();
         JsonNode loginData = objectMapper.readTree(login.getResponse().getContentAsString()).path("data");
@@ -102,7 +103,7 @@ class MemberDeletionAcceptanceTest {
                 VALUES ('00000000-0000-0000-0000-000000000001', ?, REPEAT('a', 64), 'push-token', REPEAT('b', 64), ?)
                 """, memberId, now);
 
-        var deletion = mvc.perform(delete("/api/members/me")
+        MvcResult deletion = mvc.perform(delete("/api/members/me")
                         .header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken))
                 .andExpect(status().isNoContent())
                 .andReturn();

@@ -2,6 +2,7 @@ package com.jachwisunbae.common.observability;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -14,10 +15,12 @@ import org.springframework.boot.actuate.autoconfigure.metrics.MetricsProperties;
 import org.springframework.boot.actuate.autoconfigure.web.server.ManagementServerProperties;
 import org.springframework.boot.context.config.ConfigDataEnvironmentPostProcessor;
 import org.springframework.boot.context.properties.bind.Binder;
-import org.springframework.core.env.StandardEnvironment;
 import org.springframework.core.env.Profiles;
+import org.springframework.core.env.StandardEnvironment;
 import org.springframework.core.io.DefaultResourceLoader;
+import org.w3c.dom.Document;
 import org.w3c.dom.Element;
+import org.w3c.dom.NodeList;
 
 // 애플리케이션을 띄우지 않고 실제 application*.yml을 프로필 순서대로 읽어 Actuator 설정만 확인한다.
 class ActuatorProfileConfigurationTest {
@@ -46,13 +49,13 @@ class ActuatorProfileConfigurationTest {
         StandardEnvironment environment = new StandardEnvironment();
         environment.setActiveProfiles(profile);
         List<String> appenders = new ArrayList<>();
-        try (var input = getClass().getResourceAsStream("/logback-spring.xml")) {
-            var document = DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(input);
-            var configurations = document.getElementsByTagName("springProfile");
+        try (InputStream input = getClass().getResourceAsStream("/logback-spring.xml")) {
+            Document document = DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(input);
+            NodeList configurations = document.getElementsByTagName("springProfile");
             for (int i = 0; i < configurations.getLength(); i++) {
                 Element configuration = (Element) configurations.item(i);
                 if (environment.acceptsProfiles(Profiles.of(configuration.getAttribute("name")))) {
-                    var references = configuration.getElementsByTagName("appender-ref");
+                    NodeList references = configuration.getElementsByTagName("appender-ref");
                     for (int j = 0; j < references.getLength(); j++) {
                         appenders.add(((Element) references.item(j)).getAttribute("ref"));
                     }

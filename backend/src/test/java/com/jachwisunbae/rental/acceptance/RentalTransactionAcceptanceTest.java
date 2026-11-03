@@ -6,6 +6,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jachwisunbae.support.TestClock;
 import com.jachwisunbae.support.TestClockConfig;
@@ -27,6 +28,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 import org.testcontainers.containers.MySQLContainer;
 import org.testcontainers.junit.jupiter.Container;
@@ -81,7 +83,7 @@ class RentalTransactionAcceptanceTest {
         insert("2026-10-11", 4);
         insert("2026-10-12", 5);
 
-        var login = mvc.perform(post("/api/auth/login"))
+        MvcResult login = mvc.perform(post("/api/auth/login"))
             .andExpect(status().isOk())
             .andReturn();
         accessToken = objectMapper.readTree(login.getResponse().getContentAsString())
@@ -91,7 +93,7 @@ class RentalTransactionAcceptanceTest {
     @Test
     @DisplayName("한국 날짜 기준 조회 기간의 거래를 금액·면적 기준과 함께 최신순으로 돌려준다")
     void returnsKoreanDateWindowAmountsAreaBasisAndStableLatestOrder() throws Exception {
-        var response = mvc.perform(request().param("size", "2"))
+        MvcResult response = mvc.perform(request().param("size", "2"))
             .andExpect(status().isOk()).andExpect(jsonPath("$.code").value("SUCCESS"))
             .andExpect(jsonPath("$.data.legalDongName").value("서울특별시 관악구 신림동"))
             .andExpect(jsonPath("$.data.referenceLabel").value("소형 주택 월세 참고 정보"))
@@ -112,7 +114,7 @@ class RentalTransactionAcceptanceTest {
             .andExpect(jsonPath("$.data.items[0].sourceRowNumber").doesNotExist())
             .andExpect(jsonPath("$.data.hasNext").value(true)).andReturn();
 
-        var items = objectMapper.readTree(response.getResponse().getContentAsString()).path("data").path("items");
+        JsonNode items = objectMapper.readTree(response.getResponse().getContentAsString()).path("data").path("items");
         assertThat(items.get(0).path("rentalTransactionId").asLong())
             .isGreaterThan(items.get(1).path("rentalTransactionId").asLong());
     }

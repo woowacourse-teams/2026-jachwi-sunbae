@@ -6,6 +6,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import com.jachwisunbae.common.config.LocalDatabaseSampleConfig;
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import javax.sql.DataSource;
 import org.flywaydb.core.Flyway;
@@ -97,10 +98,13 @@ class DatabaseBaselineIntegrationTest {
                 WHERE id = 101
                 """);
         insertBusStop("existing", "기존 정류장");
-        var busStopsBefore = jdbcTemplate.queryForList("SELECT * FROM bus_stops ORDER BY id");
-        var membersBefore = jdbcTemplate.queryForList("SELECT id, created_at, updated_at FROM members ORDER BY id");
-        var checklistsBefore = jdbcTemplate.queryForList("SELECT * FROM user_checklists ORDER BY id");
-        var systemItemsBefore = jdbcTemplate.queryForList("SELECT * FROM system_check_items ORDER BY id");
+        List<Map<String, Object>> busStopsBefore = jdbcTemplate.queryForList("SELECT * FROM bus_stops ORDER BY id");
+        List<Map<String, Object>> membersBefore =
+                jdbcTemplate.queryForList("SELECT id, created_at, updated_at FROM members ORDER BY id");
+        List<Map<String, Object>> checklistsBefore =
+                jdbcTemplate.queryForList("SELECT * FROM user_checklists ORDER BY id");
+        List<Map<String, Object>> systemItemsBefore =
+                jdbcTemplate.queryForList("SELECT * FROM system_check_items ORDER BY id");
         Flyway flyway = Flyway.configure()
                 .dataSource(dataSource)
                 .baselineVersion("1")
@@ -135,7 +139,7 @@ class DatabaseBaselineIntegrationTest {
     @DisplayName("좌표 인덱스를 수동으로 만든 별도 DB는 버전 2 기준선으로 편입된다")
     void manuallyIndexedDatabaseJoinsOnVersion2Baseline() {
         prepareManuallyIndexedDatabase();
-        var busStopsBefore = jdbcTemplate.queryForList("SELECT * FROM bus_stops ORDER BY id");
+        List<Map<String, Object>> busStopsBefore = jdbcTemplate.queryForList("SELECT * FROM bus_stops ORDER BY id");
 
         assertThat(baselineFlyway("2").migrate().migrationsExecuted).isEqualTo(7);
         assertThat(history()).containsExactly("2:BASELINE:1", "3:SQL:1", "4:SQL:1", "5:SQL:1",
@@ -168,11 +172,14 @@ class DatabaseBaselineIntegrationTest {
                 """);
         insertMemberRecords();
         insertBusStop("existing", "보존할 정류장");
-        var membersBefore = jdbcTemplate.queryForList("SELECT id, created_at, updated_at FROM members ORDER BY id");
-        var propertiesBefore = jdbcTemplate.queryForList("SELECT * FROM properties ORDER BY id");
-        var checklistsBefore = jdbcTemplate.queryForList("SELECT * FROM user_checklists ORDER BY id");
-        var busStopsBefore = jdbcTemplate.queryForList("SELECT * FROM bus_stops ORDER BY id");
-        var systemItemsBefore = jdbcTemplate.queryForList("SELECT * FROM system_check_items ORDER BY id");
+        List<Map<String, Object>> membersBefore =
+                jdbcTemplate.queryForList("SELECT id, created_at, updated_at FROM members ORDER BY id");
+        List<Map<String, Object>> propertiesBefore = jdbcTemplate.queryForList("SELECT * FROM properties ORDER BY id");
+        List<Map<String, Object>> checklistsBefore =
+                jdbcTemplate.queryForList("SELECT * FROM user_checklists ORDER BY id");
+        List<Map<String, Object>> busStopsBefore = jdbcTemplate.queryForList("SELECT * FROM bus_stops ORDER BY id");
+        List<Map<String, Object>> systemItemsBefore =
+                jdbcTemplate.queryForList("SELECT * FROM system_check_items ORDER BY id");
 
         assertThat(flyway().migrate().migrationsExecuted).isEqualTo(9 - version);
 
@@ -203,10 +210,11 @@ class DatabaseBaselineIntegrationTest {
                 VALUES (999, ?, NOW(6), NOW(6), DATE_ADD(NOW(6), INTERVAL 365 DAY))
                 """, "a".repeat(64));
         insertMemberRecords();
-        var membersBefore = jdbcTemplate.queryForList("SELECT * FROM members ORDER BY id");
-        var tokensBefore = jdbcTemplate.queryForList("SELECT * FROM refresh_tokens ORDER BY id");
-        var propertiesBefore = jdbcTemplate.queryForList("SELECT * FROM properties ORDER BY id");
-        var checklistsBefore = jdbcTemplate.queryForList("SELECT * FROM user_checklists ORDER BY id");
+        List<Map<String, Object>> membersBefore = jdbcTemplate.queryForList("SELECT * FROM members ORDER BY id");
+        List<Map<String, Object>> tokensBefore = jdbcTemplate.queryForList("SELECT * FROM refresh_tokens ORDER BY id");
+        List<Map<String, Object>> propertiesBefore = jdbcTemplate.queryForList("SELECT * FROM properties ORDER BY id");
+        List<Map<String, Object>> checklistsBefore =
+                jdbcTemplate.queryForList("SELECT * FROM user_checklists ORDER BY id");
 
         assertThat(flyway().migrate().migrationsExecuted).isEqualTo(6);
 
@@ -303,7 +311,7 @@ class DatabaseBaselineIntegrationTest {
     void upgradesVersion5DatabaseAndStoresStreetMemos() {
         Flyway.configure().dataSource(dataSource).target("5").load().migrate();
         insertStreetMemoAuthor();
-        var membersBefore = jdbcTemplate.queryForList("SELECT * FROM members ORDER BY id");
+        List<Map<String, Object>> membersBefore = jdbcTemplate.queryForList("SELECT * FROM members ORDER BY id");
 
         assertThat(flyway().migrate().migrationsExecuted).isEqualTo(4);
 

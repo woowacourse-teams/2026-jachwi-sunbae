@@ -21,6 +21,7 @@ import java.time.ZoneOffset;
 import java.util.List;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 
 class WeatherCollectionServiceTest {
     private final KmaForecastClient client = mock(KmaForecastClient.class);
@@ -60,9 +61,9 @@ class WeatherCollectionServiceTest {
             return new GridForecast(request.times(), request.element(), values);
         });
         service.collect(publication);
-        var daily = org.mockito.ArgumentCaptor.<List<DailyForecast>>captor();
+        ArgumentCaptor<List<DailyForecast>> daily = org.mockito.ArgumentCaptor.<List<DailyForecast>>captor();
         verify(repository, org.mockito.Mockito.times(3)).upsertDaily(daily.capture());
-        for (var rows : daily.getAllValues()) {
+        for (List<DailyForecast> rows : daily.getAllValues()) {
             assertThat(rows).extracting(DailyForecast::point).containsExactlyInAnyOrder(first, second);
         }
     }

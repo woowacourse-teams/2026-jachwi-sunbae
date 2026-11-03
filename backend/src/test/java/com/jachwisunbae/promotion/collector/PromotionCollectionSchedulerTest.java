@@ -8,6 +8,7 @@ import static org.mockito.Mockito.verify;
 
 import com.jachwisunbae.promotion.service.PromotionCollectionService;
 import com.jachwisunbae.weather.config.WeatherSchedulingConfig;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -21,6 +22,7 @@ import org.springframework.boot.test.system.OutputCaptureExtension;
 import org.springframework.core.env.StandardEnvironment;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.scheduling.annotation.ScheduledAnnotationBeanPostProcessor;
+import org.springframework.scheduling.config.ScheduledTask;
 
 @ExtendWith(OutputCaptureExtension.class)
 class PromotionCollectionSchedulerTest {
@@ -61,7 +63,7 @@ class PromotionCollectionSchedulerTest {
     @DisplayName("활성화하면 정기 수집과 최초 수집 작업을 등록하고 실행 시 Service를 호출한다")
     void enabledTasksCallService() {
         runner.withPropertyValues("promotion.collection.enabled=true").run(context -> {
-            var tasks = context.getBean(ScheduledAnnotationBeanPostProcessor.class).getScheduledTasks();
+            Set<ScheduledTask> tasks = context.getBean(ScheduledAnnotationBeanPostProcessor.class).getScheduledTasks();
             assertThat(tasks).hasSize(2);
 
             tasks.forEach(task -> task.getTask().getRunnable().run());

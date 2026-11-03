@@ -159,7 +159,7 @@ class WeatherCollectionIntegrationTest {
         }
         assertThat(count("weather_forecasts")).isEqualTo(hourlyCount);
         long dailyCount = 0;
-        for (var entry : dailyPoints.entrySet()) {
+        for (Map.Entry<LocalDate, Set<Integer>> entry : dailyPoints.entrySet()) {
             Map<WeatherElement, double[]> elements = new EnumMap<>(WeatherElement.class);
             plan.dailyRequests().stream().filter(request -> request.times().forecastAt().toLocalDate().equals(entry.getKey()))
                     .forEach(request -> elements.put(request.element(), tokens(raw.get(request))));

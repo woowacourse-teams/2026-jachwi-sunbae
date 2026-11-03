@@ -6,6 +6,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.api.client.json.gson.GsonFactory;
 import com.google.firebase.messaging.FirebaseMessaging;
@@ -25,13 +26,13 @@ class FirebaseWeatherPushSenderTest {
     @Test
     @DisplayName("제목·본문과 알림 식별 정보를 담아 보낸다")
     void sendsTitleBodyAndClickIdentity() throws Exception {
-        var push = push();
+        Push push = push();
         when(messaging.send(any(Message.class))).thenReturn("projects/test/messages/123");
-        var result = sender.send(push);
+        boolean result = sender.send(push);
         assertThat(result).isTrue();
-        var captor = ArgumentCaptor.forClass(Message.class);
+        ArgumentCaptor<Message> captor = ArgumentCaptor.forClass(Message.class);
         verify(messaging).send(captor.capture());
-        var json = new ObjectMapper().readTree(GsonFactory.getDefaultInstance().toString(captor.getValue()));
+        JsonNode json = new ObjectMapper().readTree(GsonFactory.getDefaultInstance().toString(captor.getValue()));
         assertThat(json.at("/token").asText()).isEqualTo(push.token());
         assertThat(json.at("/data/notificationId").asText()).isEqualTo(push.notificationId().toString());
         assertThat(json.at("/notification/title").asText()).isEqualTo(push.title());
@@ -47,7 +48,7 @@ class FirebaseWeatherPushSenderTest {
     @DisplayName("발송이 실패하면 다시 보내지 않고 실패만 돌려준다")
     void failedRequestIsReturnedWithoutRetryOrSensitiveExceptionText() throws Exception {
         when(messaging.send(any(Message.class))).thenThrow(new IllegalStateException("sensitive-provider-response"));
-        var result = sender.send(push());
+        boolean result = sender.send(push());
         assertThat(result).isFalse();
         verify(messaging).send(any(Message.class));
     }

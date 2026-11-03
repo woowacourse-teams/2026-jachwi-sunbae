@@ -165,7 +165,7 @@ class HourlyForecastAssemblerTest {
     @SafeVarargs
     private final GridForecast forecast(final WeatherElement element, final Map.Entry<GridPoint, Double>... values) {
         Double[] cells = new Double[37697];
-        for (var value : values) {
+        for (Map.Entry<GridPoint, Double> value : values) {
             cells[value.getKey().toIndex()] = value.getValue();
         }
         return new GridForecast(TIMES, element, cells);

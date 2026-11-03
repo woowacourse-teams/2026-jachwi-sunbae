@@ -12,6 +12,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jachwisunbae.auth.token.JwtTokenProvider;
 import com.jachwisunbae.common.exception.client.InvalidInputException;
+import com.jachwisunbae.notification.controller.dto.WeatherDeviceRequest;
+import com.jachwisunbae.notification.domain.LifeWeatherReport;
 import com.jachwisunbae.notification.domain.LifeWeatherReport.Condition;
 import com.jachwisunbae.notification.domain.LifeWeatherReport.Notice;
 import com.jachwisunbae.notification.domain.NotificationSlot;
@@ -39,7 +41,9 @@ import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.IntStream;
@@ -121,7 +125,7 @@ class WeatherNotificationIntegrationTest {
         dispatch.dispatch(NotificationSlot.MORNING);
         dispatch.dispatch(NotificationSlot.MORNING);
         assertThat(pushes).hasSize(1);
-        var saved = notification();
+        WeatherNotification saved = notification();
         assertThat(saved.notices()).extracting(Notice::condition).containsExactly(Condition.LAUNDRY);
         assertThat(pushes.getFirst().notificationId()).isEqualTo(saved.notificationId());
         String json = jdbc.queryForObject("SELECT notices FROM weather_notifications", String.class);
@@ -158,7 +162,7 @@ class WeatherNotificationIntegrationTest {
         jdbc.update("UPDATE weather_forecasts SET reh = NULL, pop = NULL, pcp = NULL, sno = NULL, wsd = NULL");
         dispatch.dispatch(NotificationSlot.MORNING);
         assertThat(pushes).hasSize(1);
-        var saved = notification();
+        WeatherNotification saved = notification();
         assertThat(saved.notices()).isEmpty();
         assertThat(saved.body()).isEqualTo("오늘 07~23시 예보기온 15~15℃");
         assertThat(jdbc.queryForObject("SELECT notices FROM weather_notifications", String.class)).isEqualTo("[]");
@@ -244,9 +248,9 @@ class WeatherNotificationIntegrationTest {
     @DisplayName("분석 중 동의·회원·권한·토큰이 바뀌면 보내기 전에 다시 확인해 보내지 않는다")
     @ValueSource(strings = {"consent", "member-transfer", "permission", "token"})
     void eligibilityIsRecheckedAfterAnalysisBeforeSending(final String change) {
-        var changed = org.mockito.Mockito.spy(analysis);
+        LifeWeatherAnalysisService changed = org.mockito.Mockito.spy(analysis);
         org.mockito.Mockito.doAnswer(call -> {
-            var report = analysis.analyze(GRID, DATE, NotificationSlot.MORNING);
+            LifeWeatherReport report = analysis.analyze(GRID, DATE, NotificationSlot.MORNING);
             switch (change) {
                 case "consent" -> settings.setEnabled(1, false);
                 case "member-transfer" -> settings.register(2, device.installationId(), SECRET, device.token());
@@ -300,10 +304,10 @@ class WeatherNotificationIntegrationTest {
     @Test
     @DisplayName("같은 발송 작업이 동시에 돌아도 알림과 발송 시도는 하나만 생긴다")
     void duplicateConcurrentJobsCreateOnlyOneNotificationAndAttempt() throws Exception {
-        try (var executor = Executors.newFixedThreadPool(2)) {
+        try (ExecutorService executor = Executors.newFixedThreadPool(2)) {
             CountDownLatch start = new CountDownLatch(1);
-            var first = executor.submit(() -> { start.await(); newDispatch(analysis).dispatch(NotificationSlot.MORNING); return null; });
-            var second = executor.submit(() -> { start.await(); newDispatch(analysis).dispatch(NotificationSlot.MORNING); return null; });
+            Future<Object> first = executor.submit(() -> { start.await(); newDispatch(analysis).dispatch(NotificationSlot.MORNING); return null; });
+            Future<Object> second = executor.submit(() -> { start.await(); newDispatch(analysis).dispatch(NotificationSlot.MORNING); return null; });
             start.countDown();
             first.get(20, TimeUnit.SECONDS);
             second.get(20, TimeUnit.SECONDS);
@@ -365,9 +369,9 @@ class WeatherNotificationIntegrationTest {
     @Test
     @DisplayName("분석 중 위치가 바뀌어도 처음 읽은 위치로 보낸다")
     void usesInitiallyReadLocationWhenItChangesDuringAnalysis() {
-        var changed = org.mockito.Mockito.spy(analysis);
+        LifeWeatherAnalysisService changed = org.mockito.Mockito.spy(analysis);
         org.mockito.Mockito.doAnswer(call -> {
-            var report = analysis.analyze(GRID, DATE, NotificationSlot.MORNING);
+            LifeWeatherReport report = analysis.analyze(GRID, DATE, NotificationSlot.MORNING);
             locations.delete(1);
             return report;
         }).when(changed).analyze(GRID, DATE, NotificationSlot.MORNING);
@@ -380,10 +384,10 @@ class WeatherNotificationIntegrationTest {
     @DisplayName("민감한 객체의 문자열 표현에는 토큰·비밀값·위치가 드러나지 않는다")
     void sensitiveObjectsDoNotExposeCredentialsOrLocation() {
         String token = "sensitive-fcm-token";
-        var request = new com.jachwisunbae.notification.controller.dto.WeatherDeviceRequest(device.installationId(), SECRET, token);
+        WeatherDeviceRequest request = new com.jachwisunbae.notification.controller.dto.WeatherDeviceRequest(device.installationId(), SECRET, token);
         assertThat(request.toString()).doesNotContain(SECRET, token);
         assertThat(device.toString()).doesNotContain(SECRET, device.secretHash(), device.token());
-        var push = new Push(UUID.randomUUID(), token, "제목", "본문");
+        Push push = new Push(UUID.randomUUID(), token, "제목", "본문");
         assertThat(push.toString()).doesNotContain(token);
         dispatch.dispatch(NotificationSlot.MORNING);
         assertThat(notification().toString()).isEqualTo("WeatherNotification[notificationId=" + notification().notificationId() + "]");

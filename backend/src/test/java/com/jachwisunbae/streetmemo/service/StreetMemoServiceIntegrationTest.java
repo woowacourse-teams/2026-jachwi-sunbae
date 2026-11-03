@@ -25,6 +25,7 @@ import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -35,9 +36,9 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.context.annotation.Bean;
-import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Import;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
@@ -128,7 +129,7 @@ class StreetMemoServiceIntegrationTest {
         StreetMemoResult result = create(member, "37.3948000", "127.1112000", StreetMemoPreference.LIKE);
         CountDownLatch start = new CountDownLatch(1);
 
-        try (var executor = Executors.newFixedThreadPool(2)) {
+        try (ExecutorService executor = Executors.newFixedThreadPool(2)) {
             Future<Boolean> first = executor.submit(() -> deleteAfterStart(start, member, result.id()));
             Future<Boolean> second = executor.submit(() -> deleteAfterStart(start, member, result.id()));
             start.countDown();

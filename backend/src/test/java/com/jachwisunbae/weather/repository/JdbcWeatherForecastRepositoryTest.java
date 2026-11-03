@@ -260,7 +260,7 @@ class JdbcWeatherForecastRepositoryTest {
     void annotationTransactionRollsBackEveryBatch(final boolean daily) {
         DataSource source = dataSource(false);
         JdbcTemplate jdbc = new JdbcTemplate(source);
-        var target = com.jachwisunbae.weather.support.WeatherTransactionTestSupport.transactional(
+        JdbcWeatherForecastRepository target = com.jachwisunbae.weather.support.WeatherTransactionTestSupport.transactional(
                 new JdbcWeatherForecastRepository(jdbc), source);
         String table = daily ? "weather_daily_forecasts" : "weather_forecasts";
         jdbc.execute("ALTER TABLE " + table + " ADD CONSTRAINT fail_weather_batch CHECK (NOT (grid_x = 107 AND grid_y = 7))");

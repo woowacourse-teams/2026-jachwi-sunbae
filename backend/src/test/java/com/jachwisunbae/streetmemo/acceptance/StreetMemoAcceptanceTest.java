@@ -28,6 +28,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
@@ -257,7 +258,7 @@ class StreetMemoAcceptanceTest {
     }
 
     private JsonNode create(final MemberSession member, final ObjectNode body) throws Exception {
-        var response = mvc.perform(authorized(post("/api/street-memos"), member)
+        MockHttpServletResponse response = mvc.perform(authorized(post("/api/street-memos"), member)
                         .contentType(MediaType.APPLICATION_JSON).content(objectMapper.writeValueAsString(body)))
                 .andExpect(status().isCreated()).andExpect(jsonPath("$.code").value("SUCCESS"))
                 .andExpect(jsonPath("$.data.isMine").value(true))
