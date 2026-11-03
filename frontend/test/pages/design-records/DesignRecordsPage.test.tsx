@@ -222,7 +222,7 @@ it('데스크탑에서는 보기 전환 없이 지도와 리스트를 함께 보
   expect(screen.getByRole('region', { name: '본 방 기록 지도' })).toBeInTheDocument();
   expect(screen.getByRole('heading', { level: 1, name: '본 방 기록' })).toBeInTheDocument();
   expect(screen.queryByRole('navigation', { name: '기록 보기 방식' })).not.toBeInTheDocument();
-  // 통근은 리스트가 아니라 지도 레일 맨 아래에 두고, 통근 시간은 아직 두지 않는다.
+  // 통근 장소는 지도 레일 맨 아래에서 정한다. 장소를 정하지 않았으면 리스트에 통근 시간 버튼이 없다.
   expect(
     within(screen.getByRole('complementary', { name: '지도 시설 카테고리' })).getByRole('button', {
       name: /통근 장소 정하기|까지 통근거리/,
@@ -232,6 +232,26 @@ it('데스크탑에서는 보기 전환 없이 지도와 리스트를 함께 보
   // 주소 검색창은 공용 레이아웃 밖에서도 헤더 가운데 자리에 들어간다.
   await waitFor(() => expect(within(screen.getByRole('banner')).getByLabelText('주소 검색')).toBeInTheDocument());
   matchMedia.mockRestore();
+});
+
+it('데스크탑 리스트에도 휴대폰처럼 통근 시간 버튼을 두고, 누르면 매물마다 통근 시간을 붙인다', async () => {
+  const matchMedia = useDesktopViewport();
+  const user = userEvent.setup();
+  localStorage.setItem(
+    'jachwi-sunbae:commute-destination',
+    JSON.stringify({ latitude: 37.4842, longitude: 126.9297, name: '신림역' }),
+  );
+  try {
+    renderRecords();
+    await screen.findByRole('heading', { name: '모든 기록' });
+    await user.click(screen.getByRole('button', { name: '통근 시간' }));
+    expect(
+      await within(screen.getByRole('link', { name: /신림역 원룸/ })).findByText(/^신림역까지 대중교통 \d+분$/),
+    ).toBeInTheDocument();
+  } finally {
+    localStorage.removeItem('jachwi-sunbae:commute-destination');
+    matchMedia.mockRestore();
+  }
 });
 
 it('데스크탑은 기록하기 버튼 없이 지도를 찍으면 등록 화면 없이 바로 매물을 만들고 옆 칸에 상세를 연다', async () => {
