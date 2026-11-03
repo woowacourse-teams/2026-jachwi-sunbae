@@ -9,10 +9,11 @@ import { usePublicConfig } from '@/shared/config/PublicConfigContext';
 import { isRunningInNativeApp } from '@/shared/lib/native-app/nativeApp';
 import { NativePushError, openNativePushSettings, supportsNativePush } from '@/shared/lib/native-app/nativePush';
 
-import { fetchWeatherForecast, sendWeatherTest, syncWeatherLocation, weatherQueryKeys } from '../api/weatherApi';
+import { fetchWeatherForecast, sendWeatherTest, syncWeatherLocation } from '../api/weatherApi';
 import { readLastWeatherCoordinate, writeLastWeatherCoordinate } from '../lib/lastWeatherCoordinate';
 import { useWeatherPushSync } from './useWeatherPushSync';
 import { changeWeatherPush } from './weatherPush';
+import { weatherQueryKeys } from './weatherQueryKeys';
 
 export type WeatherLocationStatus = 'idle' | 'locating' | 'ready' | 'denied' | 'unavailable';
 

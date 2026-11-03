@@ -5,7 +5,7 @@ import { useAuthentication } from '@/features/auth/model/useAuthentication';
 import { usePublicConfig } from '@/shared/config/PublicConfigContext';
 import { supportsNativePush } from '@/shared/lib/native-app/nativePush';
 
-import { weatherQueryKeys } from '../api/weatherApi';
+import { weatherQueryKeys } from './weatherQueryKeys';
 
 /** 앱의 어느 화면에 있어도 로그인·재진입·토큰 갱신 때 현재 회원의 기기를 동기화한다. */
 export const useWeatherPushSync = (backgroundOnly = false) => {
