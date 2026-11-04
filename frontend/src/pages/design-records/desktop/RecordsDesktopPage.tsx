@@ -83,7 +83,6 @@ const RecordsDesktopPage = () => {
       records={records.records}
       district={records.district}
       commute={records.commute}
-      distance={records.distance}
       onOpen={records.showRecord}
       onNotice={setNotice}
     />
