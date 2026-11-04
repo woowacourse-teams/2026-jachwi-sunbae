@@ -10,6 +10,7 @@ import {
 } from '@/features/map/lib/mapLocation';
 import type { MapMarker } from '@/features/map/model/Map';
 
+import { countBusinessTypes, filterByBusinessType } from '../model/businessTypeFilter';
 import { readRestaurantArea, writeRestaurantArea } from '../model/restaurantAreaSession';
 import { MAP_SEARCH_DELAY_MS, RESTAURANT_SEARCH_RADIUS, type RestaurantArea } from '../model/RestaurantMap';
 import storePin from '../ui/store-pin.svg';
@@ -28,6 +29,8 @@ const useRestaurantMap = (isActive: boolean) => {
   const [locationError, setLocationError] = useState<string | null>(null);
   // 사용자가 지도를 끌어 옮긴 자리. 지도가 멈추고 잠시 뒤 이 자리를 새 기준 위치로 다시 찾는다.
   const [movedTo, setMovedTo] = useState<MapCoordinate | null>(null);
+  // 고른 업종. null이면 모든 업종을 보여 준다. 동네를 바꿔도 그대로 두어 같은 업종을 이어서 찾는다.
+  const [businessType, setBusinessType] = useState<string | null>(null);
   const requestId = useRef(0);
   useEffect(() => {
     setIsLocating(false);
@@ -65,17 +68,25 @@ const useRestaurantMap = (isActive: boolean) => {
   useEffect(() => {
     if (isStoreMissing) forgetStore();
   }, [isStoreMissing, forgetStore]);
+  const businessTypes = useMemo(
+    () => countBusinessTypes(query.data?.stores ?? [], businessType),
+    [query.data, businessType],
+  );
+  const stores = useMemo(
+    () => filterByBusinessType(query.data?.stores ?? [], businessType),
+    [query.data, businessType],
+  );
   const markers = useMemo<MapMarker[]>(
     () =>
-      query.data?.stores.map((store) => ({
+      stores.map((store) => ({
         id: String(store.id),
         latitude: store.latitude,
         longitude: store.longitude,
         label: `${store.name} 상세 보기`,
         image: { src: storePin },
         actionable: true,
-      })) ?? [],
-    [query.data],
+      })),
+    [stores],
   );
   const chooseArea = (next: RestaurantArea) => {
     requestId.current += 1;
@@ -109,6 +120,10 @@ const useRestaurantMap = (isActive: boolean) => {
     radius: RESTAURANT_SEARCH_RADIUS,
     level,
     query,
+    stores,
+    businessType,
+    businessTypes,
+    selectBusinessType: setBusinessType,
     markers,
     selectedStore,
     isListOpen,

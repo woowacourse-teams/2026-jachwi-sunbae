@@ -240,6 +240,49 @@ it('식당 탭에서 옮긴 동네는 다른 탭을 다녀와도 남는다', asy
   expect(calls.stores).toHaveBeenLastCalledWith('2000', '37.5665', '126.978');
 });
 
+it('업종 칩으로 식당 목록을 거르고 다시 누르면 전체 업종으로 돌아간다', async () => {
+  const shop = (id: number, name: string, businessType: string) => ({
+    id,
+    name,
+    businessType,
+    phone: null,
+    address: '테스트 주소',
+    latitude: 37.3948,
+    longitude: 127.1119,
+    distanceMeters: 100 * id,
+    menus: [],
+  });
+  server.use(
+    http.get('http://localhost:8080/api/maps/good-price-stores', () =>
+      success({
+        center: { latitude: 37.3948, longitude: 127.1112 },
+        radius: 2000,
+        count: 3,
+        dataAsOf: '2026-06-30',
+        stores: [shop(1, '스시집', '일식'), shop(2, '국밥집', '한식'), shop(3, '세탁소', '기타비요식업')],
+      }),
+    ),
+  );
+  const user = setup('/cheap-meals/restaurant');
+  const list = await screen.findByRole('list', { name: '가게 목록' });
+  const chips = within(screen.getByRole('group', { name: '업종으로 거르기' }));
+  expect(chips.getAllByRole('button').map((chip) => chip.textContent)).toEqual([
+    '전체 3',
+    '기타비요식업 1',
+    '일식 1',
+    '한식 1',
+  ]);
+  expect(chips.getByRole('button', { name: '전체 3' })).toHaveAttribute('aria-pressed', 'true');
+
+  await user.click(chips.getByRole('button', { name: '한식 1' }));
+  expect(within(list).getAllByRole('listitem')).toHaveLength(1);
+  expect(within(list).getByRole('button', { name: '국밥집 상세 보기' })).toBeInTheDocument();
+  expect(screen.getByRole('heading', { name: '착한가격 가게 1곳' })).toBeInTheDocument();
+
+  await user.click(chips.getByRole('button', { name: '한식 1' }));
+  expect(within(screen.getByRole('list', { name: '가게 목록' })).getAllByRole('listitem')).toHaveLength(3);
+});
+
 it('가게 상세를 연 채 새로고침하면 판교로 돌아가지 않고 고른 동네에서 같은 가게를 다시 연다', async () => {
   const first = renderAt('/cheap-meals/restaurant');
   await first.user.click(await screen.findByRole('button', { name: '지도 이동 테스트' }));
@@ -430,12 +473,12 @@ it('위치 확인 중 다른 탭으로 떠났다가 돌아와도 위치 버튼�
     const user = setup('/cheap-meals/restaurant');
     await screen.findByText('기타비요식업');
     expect(locate).not.toHaveBeenCalled();
-    await user.click(screen.getByRole('button', { name: '현재 위치로 찾기' }));
-    expect(screen.getByRole('button', { name: '현재 위치로 찾기' })).toBeDisabled();
+    await user.click(screen.getByRole('button', { name: '내 현재 위치로 이동' }));
+    expect(screen.getByRole('button', { name: '내 현재 위치로 이동' })).toBeDisabled();
     await user.click(tab('편의점'));
     await user.click(tab('식당'));
-    expect(screen.getByRole('button', { name: '현재 위치로 찾기' })).toBeEnabled();
-    await user.click(screen.getByRole('button', { name: '현재 위치로 찾기' }));
+    expect(screen.getByRole('button', { name: '내 현재 위치로 이동' })).toBeEnabled();
+    await user.click(screen.getByRole('button', { name: '내 현재 위치로 이동' }));
     expect(locate).toHaveBeenCalledTimes(2);
   } finally {
     locate.mockRestore();
@@ -459,18 +502,16 @@ it('주소 검색 결과를 선택하면 선택한 좌표의 2km 반경을 조�
   await waitFor(() => expect(calls.stores).toHaveBeenCalledWith('2000', '37.5665', '126.978'));
 });
 
-it('현재 위치 버튼을 주소 검색과 같은 줄에 두고 업종 안내와 위치 오류를 그 바로 아래에 붙인다', async () => {
+it('휴대폰 식당 탭은 검색창, 업종 칩, 공용 현재 위치 버튼을 지도 위에 띄우고 위치 오류를 버튼 옆에 알린다', async () => {
   const locate = vi.spyOn(mapLocation, 'requestCurrentMapLocation').mockRejectedValueOnce(new Error('denied'));
   try {
     const user = setup('/cheap-meals/restaurant');
     await screen.findByRole('list', { name: '가게 목록' });
-    const locateButton = screen.getByRole('button', { name: '현재 위치로 찾기' });
-    const row = locateButton.parentElement!;
-    expect(within(row).getByRole('button', { name: /주소 검색/ })).toBeInTheDocument();
-    const hint = row.nextElementSibling;
-    expect(hint).toHaveTextContent('음식점 외 업종도 있어요. 가게별 업종을 확인해 주세요.');
+    const locateButton = screen.getByRole('button', { name: '내 현재 위치로 이동' });
+    const overlay = locateButton.parentElement!.parentElement!;
+    expect(within(overlay).getByRole('button', { name: /주소 검색/ })).toBeInTheDocument();
     await user.click(locateButton);
-    expect(hint?.nextElementSibling).toBe(await screen.findByRole('alert'));
+    expect(within(locateButton.parentElement!).getByRole('alert')).toHaveTextContent('현재 위치를 확인하지 못했어요.');
   } finally {
     locate.mockRestore();
   }
@@ -485,9 +526,9 @@ it('명시적으로 요청한 현재 위치가 거부되면 안내하고 재요�
     const user = setup('/cheap-meals/restaurant');
     await screen.findByRole('list', { name: '가게 목록' });
     expect(locate).not.toHaveBeenCalled();
-    await user.click(screen.getByRole('button', { name: '현재 위치로 찾기' }));
+    await user.click(screen.getByRole('button', { name: '내 현재 위치로 이동' }));
     expect(await screen.findByRole('alert')).toHaveTextContent('권한을 확인하거나 주소를 검색');
-    await user.click(screen.getByRole('button', { name: '현재 위치로 찾기' }));
+    await user.click(screen.getByRole('button', { name: '내 현재 위치로 이동' }));
     await waitFor(() => expect(calls.stores).toHaveBeenCalledWith('2000', '37.5665', '126.978'));
     expect(screen.getByText('현재 위치 주변')).toBeInTheDocument();
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
@@ -620,7 +661,7 @@ it.each(['닫기', '뒤로가기'])('주소 검색에서 %s하면 진행 중이�
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     await act(async () => complete({ latitude: 37.5665, longitude: 126.978 }));
     expect(screen.getByRole('button', { name: /판교 주변/ })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: '현재 위치로 찾기' })).toBeEnabled();
+    expect(screen.getByRole('button', { name: '내 현재 위치로 이동' })).toBeEnabled();
   } finally {
     locate.mockRestore();
   }
