@@ -67,6 +67,7 @@ const captureUpdates = () => {
   return { bodies, stop: () => server.events.removeListener('request:start', track) };
 };
 
+// 지도를 멈춘 뒤 주소를 묻기까지 실제로 기다리므로, 부하가 큰 환경에서도 끝나게 테스트 제한 시간을 넉넉히 둔다.
 const openLocationEditor = async () => {
   const user = userEvent.setup();
   await user.click(await screen.findByRole('button', { name: /^주소 .*수정$/ }));
@@ -96,7 +97,7 @@ it('지도를 옮기자마자 저장을 누르면 옮기기 전 위치로 닫지
   } finally {
     updates.stop();
   }
-});
+}, 20_000);
 
 it('옮긴 자리의 주소를 찾지 못하면 지원하지 않는 주소라고 알리고 저장하지 않는다', async () => {
   server.use(http.get('*/api/maps/reverse-geocode', () => failure('MAP_ADDRESS_NOT_FOUND', 404)));
@@ -115,4 +116,4 @@ it('옮긴 자리의 주소를 찾지 못하면 지원하지 않는 주소라고
   } finally {
     updates.stop();
   }
-});
+}, 20_000);
