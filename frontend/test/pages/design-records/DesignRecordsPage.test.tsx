@@ -109,7 +109,7 @@ it('휴대폰은 지도와 리스트 보기 모두 기록하기 버튼 없이 �
   expect(screen.queryByRole('button', { name: /기록하기/ })).not.toBeInTheDocument();
 });
 
-it('리스트 메뉴의 삭제는 실제 매물 삭제 API를 호출한다', async () => {
+it('리스트 헤더의 삭제 버튼으로 삭제 모드를 켜고, 카드의 삭제는 실제 매물 삭제 API를 호출한다', async () => {
   const user = userEvent.setup();
   const removed = vi.fn();
   server.use(
@@ -121,35 +121,42 @@ it('리스트 메뉴의 삭제는 실제 매물 삭제 API를 호출한다', asy
   renderRecords();
   await screen.findByText('신림역 원룸');
   await user.click(screen.getByRole('button', { name: /리스트/ }));
-  await user.click(screen.getByRole('button', { name: '망원동 투룸 메뉴' }));
-  await user.click(screen.getByRole('button', { name: /삭제/ }));
+  // 카드에는 더보기 메뉴가 없고, 삭제 모드를 켜기 전에는 카드 삭제 버튼도 없다.
+  expect(screen.queryByRole('button', { name: '망원동 투룸 메뉴' })).not.toBeInTheDocument();
+  expect(screen.queryByRole('button', { name: '망원동 투룸 삭제' })).not.toBeInTheDocument();
+
+  const toggle = screen.getByRole('button', { name: '기록 삭제' });
+  await user.click(toggle);
+  expect(toggle).toHaveAttribute('aria-pressed', 'true');
+  await user.click(screen.getByRole('button', { name: '망원동 투룸 삭제' }));
   expect(await screen.findByText('기록을 삭제했어요.')).toBeInTheDocument();
-  expect(removed).toHaveBeenCalledTimes(1);
+  expect(removed.mock.calls).toEqual([[expect.any(String)]]);
+  // 하나를 지워도 삭제 모드는 이어져 다른 기록을 바로 지울 수 있다.
+  expect(toggle).toHaveAttribute('aria-pressed', 'true');
 });
 
-it('리스트 카드의 더보기 메뉴는 메뉴 밖을 누르거나 Esc를 누르면 닫힌다', async () => {
+it('삭제 모드는 헤더 버튼을 다시 누르거나 바깥을 누르거나 Esc를 누르면 풀린다', async () => {
   const user = userEvent.setup();
   renderRecords();
   await screen.findByText('신림역 원룸');
   await user.click(screen.getByRole('button', { name: /리스트/ }));
-  const toggle = screen.getByRole('button', { name: '망원동 투룸 메뉴' });
+  const toggle = screen.getByRole('button', { name: '기록 삭제' });
 
   await user.click(toggle);
-  expect(toggle).toHaveAttribute('aria-expanded', 'true');
-  expect(screen.getByRole('button', { name: /삭제/ })).toBeInTheDocument();
+  expect(screen.getByRole('button', { name: '신림역 원룸 삭제' })).toBeInTheDocument();
+  await user.click(toggle);
+  expect(toggle).toHaveAttribute('aria-pressed', 'false');
+  expect(screen.queryByRole('button', { name: '신림역 원룸 삭제' })).not.toBeInTheDocument();
+
+  await user.click(toggle);
   await user.click(screen.getByRole('heading', { name: '모든 기록' }));
-  expect(toggle).toHaveAttribute('aria-expanded', 'false');
-  expect(screen.queryByRole('button', { name: /삭제/ })).not.toBeInTheDocument();
+  expect(toggle).toHaveAttribute('aria-pressed', 'false');
+  expect(screen.queryByRole('button', { name: '신림역 원룸 삭제' })).not.toBeInTheDocument();
 
-  // 다른 카드의 메뉴를 열면 앞 메뉴는 닫힌다.
   await user.click(toggle);
-  await user.click(screen.getByRole('button', { name: '신림역 원룸 메뉴' }));
-  expect(toggle).toHaveAttribute('aria-expanded', 'false');
-  expect(screen.getAllByRole('button', { name: /삭제/ })).toHaveLength(1);
-
   await user.keyboard('{Escape}');
-  expect(screen.queryByRole('button', { name: /삭제/ })).not.toBeInTheDocument();
-  expect(screen.getByRole('button', { name: '신림역 원룸 메뉴' })).toHaveFocus();
+  expect(toggle).toHaveAttribute('aria-pressed', 'false');
+  expect(toggle).toHaveFocus();
 });
 
 it('리스트 위에는 통근 시간 버튼을 두지 않고, 동네 찾기에서 출퇴근 장소를 골라 두어도 통근 시간을 부르지 않는다', async () => {
