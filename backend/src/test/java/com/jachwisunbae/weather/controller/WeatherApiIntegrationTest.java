@@ -21,9 +21,11 @@ import com.jachwisunbae.weather.domain.HourlyForecast;
 import com.jachwisunbae.weather.repository.JdbcWeatherForecastRepository;
 import com.jachwisunbae.weather.repository.MemberWeatherLocationRepository;
 import jakarta.servlet.http.Cookie;
-import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -51,8 +53,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 class WeatherApiIntegrationTest {
     @Container
     private static final MySQLContainer<?> MYSQL = new MySQLContainer<>("mysql:8.4.10");
-    private static final Instant NOW = Instant.parse("2026-10-25T13:00:00Z");
-    private static final LocalDate TODAY = LocalDate.of(2026, 10, 25);
+    private LocalDate today;
 
     @Autowired
     private TestClock clock;
@@ -80,14 +81,15 @@ class WeatherApiIntegrationTest {
 
     @BeforeEach
     void setup() {
-        clock.set(NOW);
+        today = LocalDate.now(clock.withZone(ZoneId.of("Asia/Seoul")));
         jdbc.update("DELETE FROM member_weather_locations");
         jdbc.update("DELETE FROM refresh_tokens");
         jdbc.update("DELETE FROM members");
         jdbc.update("DELETE FROM weather_forecasts");
         jdbc.update("DELETE FROM weather_daily_forecasts");
         jdbc.update("DELETE FROM weather_collection_publications");
-        jdbc.update("INSERT INTO members (id, created_at, updated_at) VALUES (1, NOW(), NOW()), (2, NOW(), NOW())");
+        jdbc.update("INSERT INTO members (id, created_at, updated_at) VALUES (1, ?, ?), (2, ?, ?)",
+                LocalDateTime.now(clock), LocalDateTime.now(clock), LocalDateTime.now(clock), LocalDateTime.now(clock));
 
     }
 
@@ -112,9 +114,9 @@ class WeatherApiIntegrationTest {
         assertThat(locations.find(memberId).orElseThrow().grid()).isEqualTo(new GridPoint(60, 127));
         assertThat(locations.find(1)).isEmpty();
 
-        LocalDateTime publication = TODAY.atTime(20, 0);
+        LocalDateTime publication = today.atTime(20, 0);
         complete(publication);
-        forecasts.upsertHourly(List.of(hourly(new GridPoint(60, 127), TODAY.atTime(23, 0), publication, 12.0)));
+        forecasts.upsertHourly(List.of(hourly(new GridPoint(60, 127), today.atTime(23, 0), publication, 12.0)));
         for (String path : List.of("/api/auth/login", "/api/auth/refresh")) {
             MockHttpServletResponse restored = mvc.perform(post(path).cookie(refreshCookie))
                     .andExpect(status().isOk()).andExpect(jsonPath("$.data.newMember").value(false))
@@ -138,22 +140,22 @@ class WeatherApiIntegrationTest {
     @Test
     @DisplayName("선택한 격자와 날짜의 수집 완료 값만 한국 시간 정보와 함께 돌려준다")
     void returnsOnlySelectedGridDateAndVerifiedValuesWithKstMetadata() throws Exception {
-        LocalDateTime publication = TODAY.atTime(20, 0);
+        LocalDateTime publication = today.atTime(20, 0);
         complete(publication);
-        forecasts.upsertHourly(List.of(hourly(new GridPoint(60, 127), TODAY.atTime(23, 0), publication, 0.0),
-                hourly(new GridPoint(98, 76), TODAY.atTime(23, 0), publication, 99.0),
-                hourly(new GridPoint(60, 127), TODAY.plusDays(1).atStartOfDay(), publication, 88.0)));
-        complete(TODAY.atTime(2, 0));
-        complete(TODAY.atTime(11, 0));
-        forecasts.upsertDaily(List.of(new DailyForecast(new GridPoint(60, 127), TODAY,
-                new DailyTemperature(0.0, TODAY.atTime(2, 0), TODAY.atTime(2, 20)),
-                new DailyTemperature(null, TODAY.atTime(11, 0), TODAY.atTime(11, 20)))));
+        forecasts.upsertHourly(List.of(hourly(new GridPoint(60, 127), today.atTime(23, 0), publication, 0.0),
+                hourly(new GridPoint(98, 76), today.atTime(23, 0), publication, 99.0),
+                hourly(new GridPoint(60, 127), today.plusDays(1).atStartOfDay(), publication, 88.0)));
+        complete(today.atTime(2, 0));
+        complete(today.atTime(11, 0));
+        forecasts.upsertDaily(List.of(new DailyForecast(new GridPoint(60, 127), today,
+                new DailyTemperature(0.0, today.atTime(2, 0), today.atTime(2, 20)),
+                new DailyTemperature(null, today.atTime(11, 0), today.atTime(11, 20)))));
         mvc.perform(get("/api/weather/forecasts").header("Authorization", bearer(1))
                         .param("latitude", "37.5665").param("longitude", "126.978"))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.data.gridX").value(60))
                 .andExpect(jsonPath("$.data.hourly.length()").value(24))
                 .andExpect(jsonPath("$.data.hourly[23].tmp").value(0.0))
-                .andExpect(jsonPath("$.data.hourly[23].publishedAt").value("2026-10-25T20:00:00+09:00"))
+                .andExpect(jsonPath("$.data.hourly[23].publishedAt").value(publication.atOffset(ZoneOffset.ofHours(9)).format(DateTimeFormatter.ISO_OFFSET_DATE_TIME)))
                 .andExpect(jsonPath("$.data.hourly[0].tmp").isEmpty())
                 .andExpect(jsonPath("$.data.tmn").value(0.0))
                 .andExpect(jsonPath("$.data.tmx").isEmpty());
@@ -162,9 +164,9 @@ class WeatherApiIntegrationTest {
     @Test
     @DisplayName("다시 수집하는 중에는 이전 값이나 일부 값을 보여 주지 않는다")
     void incompleteRecollectionDoesNotExposePreviousOrPartialValues() throws Exception {
-        LocalDateTime publication = TODAY.atTime(20, 0);
+        LocalDateTime publication = today.atTime(20, 0);
         complete(publication);
-        forecasts.upsertHourly(List.of(hourly(new GridPoint(60, 127), TODAY.atTime(23, 0), publication, 22.0)));
+        forecasts.upsertHourly(List.of(hourly(new GridPoint(60, 127), today.atTime(23, 0), publication, 22.0)));
         forecasts.startCollection(publication);
         assertUnverified();
         forecasts.completeCollection(publication, publication.plusMinutes(90));
@@ -176,17 +178,17 @@ class WeatherApiIntegrationTest {
     @Test
     @DisplayName("일 최저·최고기온은 각자의 발표분 수집이 끝나야 보여 준다")
     void dailyValuesRequireTheirOwnCompletedPublication() throws Exception {
-        LocalDateTime minimumPublication = TODAY.atTime(2, 0);
-        LocalDateTime maximumPublication = TODAY.atTime(11, 0);
+        LocalDateTime minimumPublication = today.atTime(2, 0);
+        LocalDateTime maximumPublication = today.atTime(11, 0);
         complete(minimumPublication);
         forecasts.startCollection(maximumPublication);
-        forecasts.upsertDaily(List.of(new DailyForecast(new GridPoint(60, 127), TODAY,
+        forecasts.upsertDaily(List.of(new DailyForecast(new GridPoint(60, 127), today,
                 new DailyTemperature(-5.0, minimumPublication, minimumPublication.plusMinutes(20)),
                 new DailyTemperature(20.0, maximumPublication, maximumPublication.plusMinutes(20)))));
         mvc.perform(get("/api/weather/forecasts").header("Authorization", bearer(1))
                         .param("latitude", "37.5665").param("longitude", "126.978"))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.data.tmn").value(-5.0))
-                .andExpect(jsonPath("$.data.tmnPublishedAt").value("2026-10-25T02:00:00+09:00"))
+                .andExpect(jsonPath("$.data.tmnPublishedAt").value(minimumPublication.atOffset(ZoneOffset.ofHours(9)).format(DateTimeFormatter.ISO_OFFSET_DATE_TIME)))
                 .andExpect(jsonPath("$.data.tmx").isEmpty()).andExpect(jsonPath("$.data.tmxPublishedAt").isEmpty());
     }
 
@@ -202,7 +204,7 @@ class WeatherApiIntegrationTest {
         mvc.perform(get("/api/weather/forecasts").header("Authorization", bearer(1)).param("latitude", "37"))
                 .andExpect(status().isBadRequest());
         mvc.perform(get("/api/weather/forecasts").header("Authorization", bearer(1))
-                .param("latitude", "34").param("longitude", "125").param("date", "2026-10-26"))
+                .param("latitude", "34").param("longitude", "125").param("date", today.plusDays(1).toString()))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.data.hourly[0].tmp").isEmpty());
     }
 
@@ -213,7 +215,7 @@ class WeatherApiIntegrationTest {
                 .contentType(MediaType.APPLICATION_JSON).content(locationBody(37.5665, 126.978)))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.data.available").value(true))
                 .andExpect(jsonPath("$.data.gridX").value(60)).andExpect(jsonPath("$.data.gridY").value(127))
-                .andExpect(jsonPath("$.data.updatedAt").value("2026-10-25T13:00:00Z"))
+                .andExpect(jsonPath("$.data.updatedAt").value(clock.instant().toString()))
                 .andExpect(jsonPath("$.data.length()").value(4));
         mvc.perform(get("/api/members/me/weather-location").header("Authorization", bearer(2)).param("memberId", "1"))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.data.available").value(false));
@@ -232,7 +234,7 @@ class WeatherApiIntegrationTest {
     @Test
     @DisplayName("서버 시각이 같아도 새 위치의 격자로 바꾼다")
     void replacesTheMembersGridEvenWhenTheServerTimestampIsUnchanged() throws Exception {
-        locations.sync(1, new GridPoint(98, 76), NOW.minusSeconds(7 * 86400));
+        locations.sync(1, new GridPoint(98, 76), clock.instant().minusSeconds(7 * 86400));
         mvc.perform(put("/api/members/me/weather-location").header("Authorization", bearer(1))
                         .contentType(MediaType.APPLICATION_JSON).content(locationBody(37.5665, 126.978)))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.data.gridX").value(60));
@@ -242,8 +244,8 @@ class WeatherApiIntegrationTest {
                 .andExpect(jsonPath("$.data.gridY").value(76));
         mvc.perform(get("/api/members/me/weather-location").header("Authorization", bearer(1)))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.data.gridX").value(98))
-                .andExpect(jsonPath("$.data.updatedAt").value("2026-10-25T13:00:00Z"));
-        assertThat(locations.find(1).orElseThrow().updatedAt()).isEqualTo(NOW);
+                .andExpect(jsonPath("$.data.updatedAt").value(clock.instant().toString()));
+        assertThat(locations.find(1).orElseThrow().updatedAt()).isEqualTo(clock.instant());
         assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM member_weather_locations WHERE member_id = 1", Integer.class)).isOne();
     }
 

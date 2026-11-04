@@ -13,9 +13,11 @@ import com.jachwisunbae.member.entity.Member;
 import com.jachwisunbae.member.repository.MemberRepository;
 import com.jachwisunbae.support.TestClock;
 import com.jachwisunbae.support.TestClockConfig;
-import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -40,10 +42,8 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 @Import(TestClockConfig.class)
 class DeliveryDiscountOfferApiIntegrationTest {
 
-    // UTC로는 10월 29일이지만 KST로는 10월 30일 00:30이다.
-    private static final Instant NOW = Instant.parse("2026-10-29T15:30:00Z");
-    private static final LocalDate TODAY = LocalDate.of(2026, 10, 30);
-    private static final LocalDateTime VERIFIED_AT = LocalDateTime.of(2026, 10, 29, 9, 0);
+    private LocalDate today;
+    private LocalDateTime verifiedAt;
 
     @Container
     private static final MySQLContainer<?> MYSQL = new MySQLContainer<>("mysql:8.4.10");
@@ -70,7 +70,8 @@ class DeliveryDiscountOfferApiIntegrationTest {
 
     @BeforeEach
     void clearOffers() {
-        clock.set(NOW);
+        today = LocalDate.now(clock.withZone(ZoneId.of("Asia/Seoul")));
+        verifiedAt = LocalDateTime.now(clock).minusDays(1).truncatedTo(ChronoUnit.SECONDS);
         jdbc.update("DELETE FROM delivery_discount_offers");
         memberId = members.save(Member.create(LocalDateTime.now(clock))).getId();
     }
@@ -78,11 +79,11 @@ class DeliveryDiscountOfferApiIntegrationTest {
     @Test
     @DisplayName("KST 오늘 기준 활성화된 기간 내 할인만 두 플랫폼 모두 id 순으로 반환한다")
     void returnsOnlyAvailableOffers() throws Exception {
-        insert(1, "BAEMIN", "피자헛", 7500, 22000, null, TODAY, null, true);
-        insert(2, "BAEMIN", "피자헛", 3000, null, TODAY, null, "포장 주문", true);
+        insert(1, "BAEMIN", "피자헛", 7500, 22000, null, today, null, true);
+        insert(2, "BAEMIN", "피자헛", 3000, null, today, null, "포장 주문", true);
         insert(3, "COUPANG_EATS", "피자헛", 9000, 22000, null, null, null, true);
-        insert(4, "BAEMIN", "버거킹", 5000, null, null, TODAY.minusDays(1), null, true);
-        insert(5, "BAEMIN", "버거킹", 4000, null, TODAY.plusDays(1), null, null, true);
+        insert(4, "BAEMIN", "버거킹", 5000, null, null, today.minusDays(1), null, true);
+        insert(5, "BAEMIN", "버거킹", 4000, null, today.plusDays(1), null, null, true);
         insert(6, "COUPANG_EATS", "버거킹", 3000, null, null, null, null, false);
 
         mvc.perform(get("/api/delivery-discount-offers").header("Authorization", bearer()))
@@ -95,7 +96,7 @@ class DeliveryDiscountOfferApiIntegrationTest {
     @Test
     @DisplayName("응답 필드를 반환하고 모르는 최소주문금액·날짜·조건은 null로 반환한다")
     void returnsFieldsAndNulls() throws Exception {
-        insert(1, "BAEMIN", "피자헛", 7500, 22000, TODAY.minusDays(3), TODAY.plusDays(2), "첫 주문", true);
+        insert(1, "BAEMIN", "피자헛", 7500, 22000, today.minusDays(3), today.plusDays(2), "첫 주문", true);
         insert(2, "COUPANG_EATS", "피자헛", 9000, null, null, null, null, true);
 
         mvc.perform(get("/api/delivery-discount-offers").header("Authorization", bearer()))
@@ -107,10 +108,10 @@ class DeliveryDiscountOfferApiIntegrationTest {
                 .andExpect(jsonPath("$.data[0].brandName").value("피자헛"))
                 .andExpect(jsonPath("$.data[0].discountAmount").value(7500))
                 .andExpect(jsonPath("$.data[0].minOrderAmount").value(22000))
-                .andExpect(jsonPath("$.data[0].startDate").value("2026-10-27"))
-                .andExpect(jsonPath("$.data[0].endDate").value("2026-11-01"))
+                .andExpect(jsonPath("$.data[0].startDate").value(today.minusDays(3).toString()))
+                .andExpect(jsonPath("$.data[0].endDate").value(today.plusDays(2).toString()))
                 .andExpect(jsonPath("$.data[0].conditions").value("첫 주문"))
-                .andExpect(jsonPath("$.data[0].lastVerifiedAt").value("2026-10-29T09:00:00"))
+                .andExpect(jsonPath("$.data[0].lastVerifiedAt").value(verifiedAt.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME)))
                 .andExpect(jsonPath("$.data[1].minOrderAmount").value(nullValue()))
                 .andExpect(jsonPath("$.data[1].startDate").value(nullValue()))
                 .andExpect(jsonPath("$.data[1].endDate").value(nullValue()))
@@ -149,7 +150,7 @@ class DeliveryDiscountOfferApiIntegrationTest {
         jdbc.update("""
                 INSERT INTO delivery_discount_offers (platform, brand_name, discount_amount, last_verified_at)
                 VALUES ('BAEMIN', '피자헛', 1000, ?)
-                """, VERIFIED_AT);
+                """, verifiedAt);
         assertThat(jdbc.queryForObject("SELECT is_active FROM delivery_discount_offers", Boolean.class)).isTrue();
     }
 
@@ -161,7 +162,7 @@ class DeliveryDiscountOfferApiIntegrationTest {
                     start_date, end_date, conditions, last_verified_at, is_active)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """, id, platform, brandName, discountAmount, minOrderAmount, startDate, endDate, conditions,
-                VERIFIED_AT, active);
+                verifiedAt, active);
     }
 
     private String bearer() {

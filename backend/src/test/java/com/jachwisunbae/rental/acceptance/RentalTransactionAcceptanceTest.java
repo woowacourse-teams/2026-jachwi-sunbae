@@ -11,6 +11,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jachwisunbae.support.TestClock;
 import com.jachwisunbae.support.TestClockConfig;
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
+import java.time.temporal.ChronoUnit;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
@@ -43,7 +48,9 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 class RentalTransactionAcceptanceTest {
     @Container
     private static final MySQLContainer<?> MYSQL = new MySQLContainer<>("mysql:8.4.10");
-    private static final Instant NOW = Instant.parse("2026-10-10T15:30:00Z");
+    private LocalDate queryStartDate;
+    private LocalDate queryEndDate;
+    private Instant collectedAt;
 
     @Autowired
     private TestClock clock;
@@ -66,7 +73,9 @@ class RentalTransactionAcceptanceTest {
 
     @BeforeEach
     void setUpTransactions() throws Exception {
-        clock.set(NOW);
+        queryEndDate = LocalDate.now(clock.withZone(ZoneId.of("Asia/Seoul")));
+        queryStartDate = queryEndDate.minusMonths(6);
+        collectedAt = clock.instant().minusSeconds(1800).truncatedTo(ChronoUnit.SECONDS);
         jdbc.update("DELETE FROM rental_transactions");
         jdbc.update("DELETE FROM rental_datasets");
         jdbc.update("DELETE FROM legal_dongs");
@@ -75,13 +84,14 @@ class RentalTransactionAcceptanceTest {
         jdbc.update("""
             INSERT INTO rental_datasets (dataset_key, transaction_sha256, legal_dong_sha256,
                 contract_from, contract_to, collected_at, imported_at, row_count)
-            VALUES ('seoul-eastern-gyeonggi', ?, ?, '2026-04-11', '2026-10-11', '2026-10-10 15:00:00', UTC_TIMESTAMP(6), 5)
-            """, "a".repeat(64), "b".repeat(64));
-        insert("2026-04-10", 1);
-        insert("2026-04-11", 2);
-        insert("2026-10-11", 3);
-        insert("2026-10-11", 4);
-        insert("2026-10-12", 5);
+            VALUES ('seoul-eastern-gyeonggi', ?, ?, ?, ?, ?, ?, 5)
+            """, "a".repeat(64), "b".repeat(64), queryStartDate, queryEndDate,
+            LocalDateTime.ofInstant(collectedAt, ZoneOffset.UTC), LocalDateTime.now(clock));
+        insert(queryStartDate.minusDays(1), 1);
+        insert(queryStartDate, 2);
+        insert(queryEndDate, 3);
+        insert(queryEndDate, 4);
+        insert(queryEndDate.plusDays(1), 5);
 
         MvcResult login = mvc.perform(post("/api/auth/login"))
             .andExpect(status().isOk())
@@ -97,11 +107,11 @@ class RentalTransactionAcceptanceTest {
             .andExpect(status().isOk()).andExpect(jsonPath("$.code").value("SUCCESS"))
             .andExpect(jsonPath("$.data.legalDongName").value("서울특별시 관악구 신림동"))
             .andExpect(jsonPath("$.data.referenceLabel").value("소형 주택 월세 참고 정보"))
-            .andExpect(jsonPath("$.data.queryStartDate").value("2026-04-11"))
-            .andExpect(jsonPath("$.data.queryEndDate").value("2026-10-11"))
+            .andExpect(jsonPath("$.data.queryStartDate").value(queryStartDate.toString()))
+            .andExpect(jsonPath("$.data.queryEndDate").value(queryEndDate.toString()))
             .andExpect(jsonPath("$.data.totalCount").value(3))
             .andExpect(jsonPath("$.data.items.length()").value(2))
-            .andExpect(jsonPath("$.data.items[0].contractDate").value("2026-10-11"))
+            .andExpect(jsonPath("$.data.items[0].contractDate").value(queryEndDate.toString()))
             .andExpect(jsonPath("$.data.items[0].depositAmountKrw").value(5000000))
             .andExpect(jsonPath("$.data.items[0].monthlyRentAmountKrw").value(450000))
             .andExpect(jsonPath("$.data.items[0].areaBasis").value("EXCLUSIVE"))
@@ -124,7 +134,7 @@ class RentalTransactionAcceptanceTest {
     void returnsNextPageWithoutRepeatingSameDateTransactions() throws Exception {
         mvc.perform(request().param("size", "2").param("page", "1"))
             .andExpect(status().isOk()).andExpect(jsonPath("$.data.items.length()").value(1))
-            .andExpect(jsonPath("$.data.items[0].contractDate").value("2026-04-11"))
+            .andExpect(jsonPath("$.data.items[0].contractDate").value(queryStartDate.toString()))
             .andExpect(jsonPath("$.data.totalCount").value(3)).andExpect(jsonPath("$.data.hasNext").value(false));
     }
 
@@ -156,14 +166,15 @@ class RentalTransactionAcceptanceTest {
     @Test
     @DisplayName("자료 기간과 수집 시각은 조회 기간과 따로 돌려준다")
     void returnsCoverageAndCollectionTimeSeparatelyFromQueryWindow() throws Exception {
-        jdbc.update("UPDATE rental_datasets SET contract_from = '2026-04-09', contract_to = '2026-10-09'");
+        jdbc.update("UPDATE rental_datasets SET contract_from = ?, contract_to = ?",
+            queryStartDate.minusDays(2), queryEndDate.minusDays(2));
 
         mvc.perform(request())
-            .andExpect(status().isOk()).andExpect(jsonPath("$.data.queryStartDate").value("2026-04-11"))
-            .andExpect(jsonPath("$.data.queryEndDate").value("2026-10-11"))
-            .andExpect(jsonPath("$.data.datasetPeriodStart").value("2026-04-09"))
-            .andExpect(jsonPath("$.data.datasetPeriodEnd").value("2026-10-09"))
-            .andExpect(jsonPath("$.data.collectedAt").value("2026-10-10T15:00:00Z"));
+            .andExpect(status().isOk()).andExpect(jsonPath("$.data.queryStartDate").value(queryStartDate.toString()))
+            .andExpect(jsonPath("$.data.queryEndDate").value(queryEndDate.toString()))
+            .andExpect(jsonPath("$.data.datasetPeriodStart").value(queryStartDate.minusDays(2).toString()))
+            .andExpect(jsonPath("$.data.datasetPeriodEnd").value(queryEndDate.minusDays(2).toString()))
+            .andExpect(jsonPath("$.data.collectedAt").value(collectedAt.toString()));
     }
 
     @Test
@@ -245,7 +256,7 @@ class RentalTransactionAcceptanceTest {
         return baseRequest().param("legalDongCode", "1162010200");
     }
 
-    private void insert(final String contractDate, final long rowNumber) {
+    private void insert(final LocalDate contractDate, final long rowNumber) {
         jdbc.update("""
             INSERT INTO rental_transactions (dataset_key, legal_dong_code, housing_type, deposit_amount_krw,
                 monthly_rent_amount_krw, area_m2, contract_date, contract_type,

@@ -75,8 +75,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 @Import(TestClockConfig.class)
 class WeatherNotificationIntegrationTest {
     @Container private static final MySQLContainer<?> MYSQL = new MySQLContainer<>("mysql:8.4.10");
-    private static final Instant MORNING = Instant.parse("2026-10-24T22:00:00Z");
-    private static final LocalDate DATE = LocalDate.of(2026, 10, 25);
+    private LocalDate date;
     private static final GridPoint GRID = new GridPoint(60, 127);
     private static final String SECRET = "test-installation-secret-with-at-least-43-characters";
     @Autowired private TestClock clock;
@@ -104,19 +103,20 @@ class WeatherNotificationIntegrationTest {
 
     @BeforeEach
     void setup() {
-        clock.set(MORNING);
+        date = LocalDate.now(clock.withZone(NotificationSlot.KST));
         jdbc.update("DELETE FROM members");
         jdbc.update("DELETE FROM weather_forecasts");
         jdbc.update("DELETE FROM weather_daily_forecasts");
         jdbc.update("DELETE FROM weather_collection_publications");
-        jdbc.update("INSERT INTO members (id, created_at, updated_at) VALUES (1, NOW(), NOW()), (2, NOW(), NOW())");
+        jdbc.update("INSERT INTO members (id, created_at, updated_at) VALUES (1, ?, ?), (2, ?, ?)",
+                LocalDateTime.now(clock), LocalDateTime.now(clock), LocalDateTime.now(clock), LocalDateTime.now(clock));
         pushes.clear();
         outcome = push -> true;
         dispatch = newDispatch(analysis);
         device = register(1);
         settings.setEnabled(1, true);
-        locations.sync(1, GRID, MORNING);
-        seedForecasts(NotificationSlot.MORNING, DATE.atTime(5, 0));
+        locations.sync(1, GRID, clock.instant());
+        seedForecasts(NotificationSlot.MORNING, date.atTime(5, 0));
     }
 
     @Test
@@ -133,7 +133,7 @@ class WeatherNotificationIntegrationTest {
                 [{"condition":"LAUNDRY","message":"오늘은 비 예보가 없고 습도가 낮아요. 빨래하기 괜찮겠어요!"}]
                 """));
         jdbc.update("DELETE FROM weather_forecasts");
-        locations.sync(1, new GridPoint(61, 120), MORNING.plusSeconds(1));
+        locations.sync(1, new GridPoint(61, 120), clock.instant().plusSeconds(1));
         mvc.perform(get("/api/members/me/weather-notifications/" + saved.notificationId()).header("Authorization", bearer(1)))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.data.gridX").value(60))
                 .andExpect(jsonPath("$.data.notices.length()").value(1)).andExpect(jsonPath("$.data.result").doesNotExist())
@@ -183,11 +183,10 @@ class WeatherNotificationIntegrationTest {
     @Test
     @DisplayName("저녁 알림은 다음 날 하루 예보로 만든다")
     void eveningUsesTomorrowsFullDay() {
-        clock.set(Instant.parse("2026-10-25T13:00:00Z"));
-        seedForecasts(NotificationSlot.EVENING, DATE.atTime(20, 0));
+        seedForecasts(NotificationSlot.EVENING, date.atTime(20, 0));
         dispatch.dispatch(NotificationSlot.EVENING);
         assertThat(pushes).hasSize(1);
-        assertThat(notification().targetDate()).isEqualTo(DATE.plusDays(1));
+        assertThat(notification().targetDate()).isEqualTo(date.plusDays(1));
         assertThat(notification().slot()).isEqualTo(NotificationSlot.EVENING);
     }
 
@@ -232,11 +231,10 @@ class WeatherNotificationIntegrationTest {
     @DisplayName("저장된 위치는 갱신 시각과 관계없이 그대로 쓰고 갱신 시각을 바꾸지 않는다")
     @CsvSource({"MORNING, 1", "MORNING, 7", "EVENING, 7", "MORNING, -1"})
     void usesTheSavedGridWithoutCheckingItsTimestamp(final NotificationSlot slot, final int daysAgo) {
-        Instant storedAt = MORNING.minusSeconds(daysAgo * 86400L);
+        Instant storedAt = clock.instant().minusSeconds(daysAgo * 86400L);
         locations.sync(1, GRID, storedAt);
         if (slot == NotificationSlot.EVENING) {
-            clock.set(Instant.parse("2026-10-25T13:00:00Z"));
-            seedForecasts(slot, DATE.atTime(20, 0));
+            seedForecasts(slot, date.atTime(20, 0));
         }
         dispatch.dispatch(slot);
         assertThat(pushes).hasSize(1);
@@ -250,7 +248,7 @@ class WeatherNotificationIntegrationTest {
     void eligibilityIsRecheckedAfterAnalysisBeforeSending(final String change) {
         LifeWeatherAnalysisService changed = org.mockito.Mockito.spy(analysis);
         org.mockito.Mockito.doAnswer(call -> {
-            LifeWeatherReport report = analysis.analyze(GRID, DATE, NotificationSlot.MORNING);
+            LifeWeatherReport report = analysis.analyze(GRID, date, NotificationSlot.MORNING);
             switch (change) {
                 case "consent" -> settings.setEnabled(1, false);
                 case "member-transfer" -> settings.register(2, device.installationId(), SECRET, device.token());
@@ -260,7 +258,7 @@ class WeatherNotificationIntegrationTest {
                 default -> throw new IllegalArgumentException();
             }
             return report;
-        }).when(changed).analyze(GRID, DATE, NotificationSlot.MORNING);
+        }).when(changed).analyze(GRID, date, NotificationSlot.MORNING);
         newDispatch(changed).dispatch(NotificationSlot.MORNING);
         assertThat(pushes).isEmpty();
     }
@@ -361,7 +359,7 @@ class WeatherNotificationIntegrationTest {
     @DisplayName("아침 알림은 수집이 끝난 이전 발표분으로도 만든다")
     void completedOlderPublicationCanBeUsedForMorningNotification() {
         jdbc.update("DELETE FROM weather_forecasts");
-        seedForecasts(NotificationSlot.MORNING, DATE.minusDays(1).atTime(23, 0));
+        seedForecasts(NotificationSlot.MORNING, date.minusDays(1).atTime(23, 0));
         dispatch.dispatch(NotificationSlot.MORNING);
         assertThat(pushes).hasSize(1);
     }
@@ -371,10 +369,10 @@ class WeatherNotificationIntegrationTest {
     void usesInitiallyReadLocationWhenItChangesDuringAnalysis() {
         LifeWeatherAnalysisService changed = org.mockito.Mockito.spy(analysis);
         org.mockito.Mockito.doAnswer(call -> {
-            LifeWeatherReport report = analysis.analyze(GRID, DATE, NotificationSlot.MORNING);
+            LifeWeatherReport report = analysis.analyze(GRID, date, NotificationSlot.MORNING);
             locations.delete(1);
             return report;
-        }).when(changed).analyze(GRID, DATE, NotificationSlot.MORNING);
+        }).when(changed).analyze(GRID, date, NotificationSlot.MORNING);
         newDispatch(changed).dispatch(NotificationSlot.MORNING);
         assertThat(pushes).hasSize(1);
         assertThat(notification().grid()).isEqualTo(GRID);
@@ -436,7 +434,7 @@ class WeatherNotificationIntegrationTest {
     private void seedForecasts(final NotificationSlot slot, final LocalDateTime publication) {
         forecasts.startCollection(publication);
         forecasts.upsertHourly(IntStream.range(slot.firstForecastHour(), 24).mapToObj(hour ->
-                new HourlyForecast(GRID, new ForecastTimes(publication, slot.targetDate(DATE).atTime(hour, 0)),
+                new HourlyForecast(GRID, new ForecastTimes(publication, slot.targetDate(date).atTime(hour, 0)),
                         15.0, 1.0, 0.0, 0.0, 0.0, 0.0, 55.0, 2.0, publication.plusMinutes(20))).toList());
         forecasts.completeCollection(publication, publication.plusMinutes(30));
     }

@@ -76,6 +76,7 @@ class CommuteStationDedupeAcceptanceTest {
 
     @BeforeEach
     void importTransitData() throws Exception {
+        clock.reset();
         adminDongImportService.importBoundaries();
         gtfsImportService.importFeed();
         clock.advance(Duration.ofSeconds(31));

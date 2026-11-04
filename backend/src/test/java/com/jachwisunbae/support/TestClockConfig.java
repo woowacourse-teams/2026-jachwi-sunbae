@@ -6,7 +6,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Primary;
 import org.springframework.test.context.event.BeforeTestMethodEvent;
 
-// 컨텍스트 시작 시각에 시계를 고정하고 테스트마다 그 시각으로 복원한다.
+// 모든 테스트 컨텍스트가 테스트 JVM의 시작 시각을 공유하고 테스트마다 그 시각으로 복원한다.
 // 특정 날짜나 시간 경계를 검증할 때만 @BeforeEach에서 시각을 바꾼다.
 @TestConfiguration(proxyBeanMethods = false)
 public class TestClockConfig {
