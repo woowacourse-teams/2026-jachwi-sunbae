@@ -3,7 +3,7 @@ import { useMemo, useState } from 'react';
 import { reverseGeocode } from '@/features/map/api/mapApi';
 import { useViewportBusStops } from '@/features/map/api/useViewportBusStops';
 import { useViewportFacilities } from '@/features/map/api/useViewportFacilities';
-import { clusterNearbyPlaces } from '@/features/map/lib/mapClustering';
+import { placeMarkers } from '@/features/map/lib/mapClustering';
 import { SERVICE_MAP_STYLE_ID } from '@/features/map/lib/mapStyle';
 import { facilityCells, viewportTiles } from '@/features/map/lib/mapViewportQuery';
 import type { MapAddress, MapBounds, MapCategory, MapMarker, NearbyPlace } from '@/features/map/model/Map';
@@ -105,7 +105,7 @@ const useRecordsMapLayers = (
   const memo = useStreetMemoLayer(category === 'MEMO' && level <= MEMO_MAX_LEVEL, bounds);
 
   const facilityCategory = category !== null && category !== 'MEMO' ? category : null;
-  // 시설은 화면 가장자리까지 빠짐없이 보이게 화면을 칸으로 나눠 조회한다. 정류장은 큰 칸 네 개로, 다른 시설은 촘촘해 작은 격자 칸으로 나눈다.
+  // 시설은 화면 가장자리까지 빠짐없이 보이게 화면을 칸으로 나눠 조회한다. 정류장은 큰 칸 네 개로, 다른 시설은 촘촘해 격자 칸으로 나누고 화면이 넓으면 칸을 키운다.
   const showsTransport = facilityCategory === 'TRANSPORT';
   const cells = useMemo(
     () => (bounds && facilityCategory !== null && !showsTransport ? facilityCells(bounds) : []),
@@ -140,13 +140,10 @@ const useRecordsMapLayers = (
     });
     return result;
   }, [visiblePlaces]);
+  // 시설은 묶지 않고 화면 안의 것을 모두 낱개로 보여 준다.
   const facilityMarkers = useMemo(
-    () =>
-      clusterNearbyPlaces(
-        visiblePlaces.filter((place) => place.category === facilityCategory),
-        level,
-      ),
-    [visiblePlaces, facilityCategory, level],
+    () => placeMarkers(visiblePlaces.filter((place) => place.category === facilityCategory)),
+    [visiblePlaces, facilityCategory],
   );
   const markers = useMemo<MapMarker[]>(
     () => [
