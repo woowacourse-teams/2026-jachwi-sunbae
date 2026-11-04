@@ -11,7 +11,6 @@ import com.jachwisunbae.transit.domain.GtfsStop;
 import com.jachwisunbae.transit.domain.network.TransitNetwork;
 import com.jachwisunbae.transit.domain.vo.Coordinate;
 import com.jachwisunbae.transit.domain.vo.Seconds;
-import java.time.Instant;
 import java.util.List;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -19,7 +18,7 @@ import org.junit.jupiter.api.Test;
 class TransitNetworkCacheTest {
 
     private final InMemoryGtfsNetworkRepository repository = new InMemoryGtfsNetworkRepository();
-    private final TestClock clock = new TestClock(Instant.parse("2026-10-14T00:00:00Z"));
+    private final TestClock clock = new TestClock();
     private final TransitNetworkCache cache = new TransitNetworkCache(new TransitNetworkLoader(repository), clock);
 
     @Test

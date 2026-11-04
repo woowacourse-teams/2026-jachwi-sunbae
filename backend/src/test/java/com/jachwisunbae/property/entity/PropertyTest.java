@@ -7,12 +7,10 @@ import com.jachwisunbae.common.exception.client.InvalidInputException;
 import com.jachwisunbae.common.exception.errorcode.ErrorCode;
 import com.jachwisunbae.property.type.RoomOption;
 import com.jachwisunbae.property.type.UtilityOption;
+import com.jachwisunbae.support.TestClock;
 import java.math.BigDecimal;
-import java.time.Clock;
-import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.ZoneOffset;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
@@ -27,10 +25,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 @DisplayName("매물 도메인")
 class PropertyTest {
 
-    private static final Clock FIXED_CLOCK = Clock.fixed(
-            Instant.parse("2026-09-24T10:00:00Z"), ZoneOffset.UTC);
-    private static final LocalDateTime NOW = LocalDateTime.now(FIXED_CLOCK);
-    private static final LocalDate TODAY = LocalDate.now(FIXED_CLOCK);
+    private static final TestClock CLOCK = new TestClock();
 
     @ParameterizedTest(name = "[{index}] 이름: [{0}]")
     @DisplayName("매물 생성은 null, 빈 문자열, 공백 이름을 거부한다")
@@ -92,8 +87,8 @@ class PropertyTest {
     @DisplayName("생성과 수정은 입주 가능일과 방문 예정 시각의 과거, 현재, 미래를 모두 허용한다")
     @ValueSource(ints = {-1, 0, 1})
     void createAndUpdateAcceptAllDateRelations(int dayOffset) {
-        LocalDate availableMoveInDate = TODAY.plusDays(dayOffset);
-        LocalDateTime visitScheduledAt = NOW.plusDays(dayOffset);
+        LocalDate availableMoveInDate = LocalDate.now(CLOCK).plusDays(dayOffset);
+        LocalDateTime visitScheduledAt = LocalDateTime.now(CLOCK).plusDays(dayOffset);
 
         Property created = createProperty(input -> {
             input.availableMoveInDate = availableMoveInDate;
@@ -251,11 +246,12 @@ class PropertyTest {
     @Test
     @DisplayName("매물 수정은 기본 정보와 수정 시각만 바꾸고 식별자와 생성 시각을 유지한다")
     void updateReplacesBasicInfoAndPreservesIdentity() {
-        LocalDateTime createdAt = NOW.minusDays(10);
+        LocalDateTime now = LocalDateTime.now(CLOCK);
+        LocalDateTime createdAt = now.minusDays(10);
         Property property = Property.reconstruct(10L, 20L, "기존 매물", 1L, 2L, "기존 주소",
-                BigDecimal.valueOf(37), BigDecimal.valueOf(127), TODAY, 3L, NOW,
-                Set.of(RoomOption.BED), Set.of(UtilityOption.WATER), "기존 경로", "기존 메모", createdAt, NOW.minusDays(1));
-        LocalDateTime updatedAt = NOW.plusHours(1);
+                BigDecimal.valueOf(37), BigDecimal.valueOf(127), now.toLocalDate(), 3L, now,
+                Set.of(RoomOption.BED), Set.of(UtilityOption.WATER), "기존 경로", "기존 메모", createdAt, now.minusDays(1));
+        LocalDateTime updatedAt = now.plusHours(1);
 
         updateProperty(property, input -> {
             input.name = "수정 매물";
@@ -264,9 +260,9 @@ class PropertyTest {
             input.address = "수정 주소";
             input.latitude = BigDecimal.valueOf(38);
             input.longitude = BigDecimal.valueOf(128);
-            input.availableMoveInDate = TODAY.minusDays(1);
+            input.availableMoveInDate = now.toLocalDate().minusDays(1);
             input.maintenanceFeeAmount = 30L;
-            input.visitScheduledAt = NOW.minusHours(1);
+            input.visitScheduledAt = now.minusHours(1);
             input.roomOptions = List.of("DESK", "DESK");
             input.utilityOptions = List.of("INTERNET", "INTERNET");
             input.discoverySource = "수정 경로";
@@ -284,9 +280,9 @@ class PropertyTest {
         assertThat(property.getAddress()).isEqualTo("수정 주소");
         assertThat(property.getLatitude()).isEqualByComparingTo("38");
         assertThat(property.getLongitude()).isEqualByComparingTo("128");
-        assertThat(property.getAvailableMoveInDate()).isEqualTo(TODAY.minusDays(1));
+        assertThat(property.getAvailableMoveInDate()).isEqualTo(now.toLocalDate().minusDays(1));
         assertThat(property.getMaintenanceFeeAmount()).isEqualTo(30L);
-        assertThat(property.getVisitScheduledAt()).isEqualTo(NOW.minusHours(1));
+        assertThat(property.getVisitScheduledAt()).isEqualTo(now.minusHours(1));
         assertThat(property.getRoomOptions()).containsExactly(RoomOption.DESK);
         assertThat(property.getUtilityOptions()).containsExactly(UtilityOption.INTERNET);
     }
@@ -329,13 +325,13 @@ class PropertyTest {
         private String address = "서울시 강남구";
         private BigDecimal latitude = BigDecimal.valueOf(37.5);
         private BigDecimal longitude = BigDecimal.valueOf(127);
-        private LocalDate availableMoveInDate = TODAY;
+        private LocalDate availableMoveInDate = LocalDate.now(CLOCK);
         private Long maintenanceFeeAmount = 100_000L;
-        private LocalDateTime visitScheduledAt = NOW;
+        private LocalDateTime visitScheduledAt = LocalDateTime.now(CLOCK);
         private List<String> roomOptions = List.of("AIR_CONDITIONER");
         private List<String> utilityOptions = List.of("WATER");
         private String discoverySource = "부동산 앱";
-        private LocalDateTime now = NOW;
+        private LocalDateTime now = LocalDateTime.now(CLOCK);
 
         private Property create() {
             return Property.create(memberId, name, depositAmount, monthlyRentAmount, address,

@@ -5,16 +5,14 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.jachwisunbae.common.exception.client.AuthenticationFailedException;
 import com.jachwisunbae.common.exception.errorcode.ErrorCode;
+import com.jachwisunbae.support.TestClock;
 import com.nimbusds.jose.JWSAlgorithm;
 import com.nimbusds.jose.JWSHeader;
 import com.nimbusds.jose.crypto.MACSigner;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 import java.nio.charset.StandardCharsets;
-import java.time.Clock;
 import java.time.Duration;
-import java.time.Instant;
-import java.time.ZoneOffset;
 import java.util.Date;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -28,9 +26,9 @@ class JwtTokenProviderTest {
     private static final String ISSUER = "jachwi-sunbae";
     private static final String AUDIENCE = "jachwi-sunbae-api";
     private static final long ACCESS_TOKEN_SECONDS = 43_200;
-    private static final Instant NOW = Instant.parse("2026-09-28T00:00:00Z");
 
-    private final JwtTokenProvider provider = provider(SECRET, ISSUER, AUDIENCE, NOW);
+    private final TestClock clock = new TestClock();
+    private final JwtTokenProvider provider = provider(SECRET, ISSUER, AUDIENCE);
 
     @Test
     @DisplayName("발급한 토큰에서 회원 ID를 꺼낸다")
@@ -44,16 +42,15 @@ class JwtTokenProviderTest {
     @DisplayName("만료된 토큰은 거부한다")
     void rejectsExpiredToken() {
         String token = provider.createAccessToken(7L);
-        JwtTokenProvider later = provider(SECRET, ISSUER, AUDIENCE,
-                NOW.plus(Duration.ofSeconds(ACCESS_TOKEN_SECONDS + 1)));
+        clock.advance(Duration.ofSeconds(ACCESS_TOKEN_SECONDS + 1));
 
-        assertInvalidToken(() -> later.parseMemberId(token));
+        assertInvalidToken(() -> provider.parseMemberId(token));
     }
 
     @Test
     @DisplayName("다른 비밀키로 서명한 토큰은 거부한다")
     void rejectsTokenSignedWithOtherSecret() {
-        String token = provider(OTHER_SECRET, ISSUER, AUDIENCE, NOW).createAccessToken(7L);
+        String token = provider(OTHER_SECRET, ISSUER, AUDIENCE).createAccessToken(7L);
 
         assertInvalidToken(() -> provider.parseMemberId(token));
     }
@@ -61,8 +58,8 @@ class JwtTokenProviderTest {
     @Test
     @DisplayName("발급자나 대상이 다른 토큰은 거부한다")
     void rejectsTokenWithOtherIssuerOrAudience() {
-        String otherIssuerToken = provider(SECRET, "other-issuer", AUDIENCE, NOW).createAccessToken(7L);
-        String otherAudienceToken = provider(SECRET, ISSUER, "other-audience", NOW).createAccessToken(7L);
+        String otherIssuerToken = provider(SECRET, "other-issuer", AUDIENCE).createAccessToken(7L);
+        String otherAudienceToken = provider(SECRET, ISSUER, "other-audience").createAccessToken(7L);
 
         assertInvalidToken(() -> provider.parseMemberId(otherIssuerToken));
         assertInvalidToken(() -> provider.parseMemberId(otherAudienceToken));
@@ -77,15 +74,15 @@ class JwtTokenProviderTest {
     @Test
     @DisplayName("비밀키가 비어 있으면 만들 수 없다")
     void rejectsBlankSecret() {
-        assertThatThrownBy(() -> provider(" ", ISSUER, AUDIENCE, NOW))
+        assertThatThrownBy(() -> provider(" ", ISSUER, AUDIENCE))
                 .isInstanceOf(IllegalStateException.class);
     }
 
     @Test
     @DisplayName("비밀키가 32바이트보다 짧으면 만들 수 없다")
     void rejectsShortSecret() {
-        assertThat(provider("a".repeat(32), ISSUER, AUDIENCE, NOW)).isNotNull();
-        assertThatThrownBy(() -> provider("a".repeat(31), ISSUER, AUDIENCE, NOW))
+        assertThat(provider("a".repeat(32), ISSUER, AUDIENCE)).isNotNull();
+        assertThatThrownBy(() -> provider("a".repeat(31), ISSUER, AUDIENCE))
                 .isInstanceOf(IllegalStateException.class);
     }
 
@@ -96,7 +93,7 @@ class JwtTokenProviderTest {
                 .subject("7").issuer(ISSUER).audience(AUDIENCE).build();
         JWTClaimsSet nonNumericSubject = new JWTClaimsSet.Builder()
                 .subject("admin").issuer(ISSUER).audience(AUDIENCE)
-                .expirationTime(Date.from(NOW.plusSeconds(60))).build();
+                .expirationTime(Date.from(clock.instant().plusSeconds(60))).build();
 
         assertInvalidToken(() -> provider.parseMemberId(sign(withoutExpiration)));
         assertInvalidToken(() -> provider.parseMemberId(sign(nonNumericSubject)));
@@ -108,8 +105,8 @@ class JwtTokenProviderTest {
         return jwt.serialize();
     }
 
-    private static JwtTokenProvider provider(String secret, String issuer, String audience, Instant now) {
-        return new JwtTokenProvider(secret, issuer, audience, ACCESS_TOKEN_SECONDS, Clock.fixed(now, ZoneOffset.UTC));
+    private JwtTokenProvider provider(String secret, String issuer, String audience) {
+        return new JwtTokenProvider(secret, issuer, audience, ACCESS_TOKEN_SECONDS, clock);
     }
 
     private static void assertInvalidToken(Executable call) {

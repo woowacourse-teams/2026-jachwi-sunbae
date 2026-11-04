@@ -18,11 +18,10 @@ import com.jachwisunbae.member.service.MemberService;
 import com.jachwisunbae.streetmemo.domain.StreetMemoPreference;
 import com.jachwisunbae.streetmemo.repository.JdbcStreetMemoRepository;
 import com.jachwisunbae.streetmemo.service.dto.result.StreetMemoResult;
+import com.jachwisunbae.support.TestClock;
+import com.jachwisunbae.support.TestClockConfig;
 import java.math.BigDecimal;
-import java.time.Clock;
-import java.time.Instant;
 import java.time.LocalDateTime;
-import java.time.ZoneOffset;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
@@ -55,14 +54,13 @@ class StreetMemoServiceIntegrationTest {
     @Container
     private static final MySQLContainer<?> MYSQL = new MySQLContainer<>("mysql:8.4.10");
 
-    private static final Clock CLOCK = Clock.fixed(Instant.parse("2026-10-26T12:00:00Z"), ZoneOffset.UTC);
-    private static final LocalDateTime NOW = LocalDateTime.now(CLOCK);
     private static final BigDecimal MIN_LATITUDE = new BigDecimal("37.39");
     private static final BigDecimal MAX_LATITUDE = new BigDecimal("37.40");
     private static final BigDecimal MIN_LONGITUDE = new BigDecimal("127.11");
     private static final BigDecimal MAX_LONGITUDE = new BigDecimal("127.12");
 
     private static AnnotationConfigApplicationContext context;
+    private static TestClock clock;
     private static DataSource dataSource;
     private static JdbcTemplate jdbcTemplate;
     private static JdbcStreetMemoRepository repository;
@@ -74,9 +72,9 @@ class StreetMemoServiceIntegrationTest {
         Flyway.configure().dataSource(dataSource).load().migrate();
         context = new AnnotationConfigApplicationContext();
         context.registerBean(DataSource.class, () -> dataSource);
-        context.registerBean(Clock.class, () -> CLOCK);
-        context.register(TestConfig.class);
+        context.register(TestConfig.class, TestClockConfig.class);
         context.refresh();
+        clock = context.getBean(TestClock.class);
         jdbcTemplate = context.getBean(JdbcTemplate.class);
         repository = context.getBean(JdbcStreetMemoRepository.class);
         service = context.getBean(StreetMemoService.class);
@@ -177,7 +175,8 @@ class StreetMemoServiceIntegrationTest {
     }
 
     private static long insertMember() {
-        jdbcTemplate.update("INSERT INTO members (created_at, updated_at) VALUES (?, ?)", NOW, NOW);
+        LocalDateTime now = LocalDateTime.now(clock);
+        jdbcTemplate.update("INSERT INTO members (created_at, updated_at) VALUES (?, ?)", now, now);
         return jdbcTemplate.queryForObject("SELECT MAX(id) FROM members", Long.class);
     }
 

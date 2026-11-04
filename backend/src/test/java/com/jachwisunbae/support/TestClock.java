@@ -10,6 +10,7 @@ import java.util.concurrent.atomic.AtomicReference;
 // 시각을 정하고 앞으로 돌릴 수 있는 시계다. 단위 테스트는 직접 만들고, 스프링 테스트는 TestClockConfig로 주입받는다.
 public class TestClock extends Clock {
 
+    private final Instant initialInstant;
     private final AtomicReference<Instant> now;
 
     public TestClock() {
@@ -17,7 +18,12 @@ public class TestClock extends Clock {
     }
 
     public TestClock(final Instant instant) {
+        this.initialInstant = instant;
         this.now = new AtomicReference<>(instant);
+    }
+
+    public void reset() {
+        now.set(initialInstant);
     }
 
     public void set(final Instant instant) {

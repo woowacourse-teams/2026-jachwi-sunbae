@@ -5,17 +5,15 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.jachwisunbae.support.TestClock;
 import java.time.Clock;
 import java.time.Duration;
-import java.time.Instant;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.web.client.RestClient;
 
 class SgisTokenProviderTest {
 
-    private static final Instant NOW = Instant.parse("2026-09-26T00:00:00Z");
     private static final Duration TOKEN_LIFETIME = Duration.ofHours(4);
 
-    private final TestClock clock = new TestClock(NOW);
+    private final TestClock clock = new TestClock();
     private final FakeSgisAuthClient authClient = new FakeSgisAuthClient(clock);
     private final SgisTokenProvider tokenProvider = new SgisTokenProvider(authClient, clock);
 
