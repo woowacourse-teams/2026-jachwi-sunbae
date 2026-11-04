@@ -14,7 +14,7 @@
 - `UsageDemo`: 이벤트를 보내지 않는다. 시나리오 영상 재생을 실제 기능 사용으로 기록하지 않는다. 예전 `usage_guide_demo_interacted`는 이전 기간 비교에만 쓴다.
 - 예전 랜딩의 `landing_page_viewed`, `service_introduction_viewed`, `landing_cta_clicked`, `landing_demo_interacted`는 더 이상 보내지 않는다. 이전 기간 데이터를 볼 때만 쓴다.
 - 새 랜딩(`/landing`)은 진입(`landing_viewed`)과 앱 스토어(`landing_app_store_clicked`), 웹 바로가기(`landing_web_start_clicked`) 클릭을 보낸다.
-- 서비스 안(마이의 `자취선배 소개`, 홈 푸터)에서 랜딩으로 가면 주소는 `/landing` 그대로 두고 라우터 state로 진입 위치를 넘긴다. 그래서 `$pageview` 경로는 광고 유입과 같고, 랜딩 이벤트의 `entry`로 서비스 안 진입을 가른다. 광고 유입 지표는 `entry=direct`로 거른다.
+- 서비스 안(홈 푸터의 `자취선배 소개`)에서 랜딩으로 가면 주소는 `/landing` 그대로 두고 라우터 state로 진입 위치를 넘긴다. 그래서 `$pageview` 경로는 광고 유입과 같고, 랜딩 이벤트의 `entry`로 서비스 안 진입을 가른다. 광고 유입 지표는 `entry=direct`로 거른다.
 
 선행 랜딩 변경이 병합되어 별도 적용 패치는 제거하고 실제 코드에 반영했다. 제거한 준비 패치는 Git 이력에서 복구할 수 있다.
 
@@ -32,7 +32,7 @@
 | ------------------------------------ | --------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------- |
 | `usage_guide_viewed`                 | 사용 방법 진입, StrictMode 중복 제외                                                                                        | 없음                                                          |
 | `usage_guide_demo_interacted`        | 더 이상 보내지 않음. 예전 시연의 탐색 모드 버튼 직접 조작                                                                   | `action`, 미리 정한 `value`                                   |
-| `landing_viewed`                     | 랜딩 진입                                                                                                                   | `entry=direct/my/home_footer`                                 |
+| `landing_viewed`                     | 랜딩 진입                                                                                                                   | `entry=direct/home_footer`                                    |
 | `landing_app_store_clicked`          | 랜딩의 App Store, Google Play 배지 클릭. 앱 안에서는 배지를 숨긴다                                                          | `store=app_store/google_play`, `position=top/bottom`, `entry` |
 | `landing_web_start_clicked`          | 랜딩의 웹에서 바로 시작하기 클릭. 서비스 안에서 들어왔으면 서비스로 돌아가기 클릭                                           | `position=top/bottom`, `entry`                                |
 | `neighborhood_feature_viewed`        | 동네 찾기 지도 진입                                                                                                         | 공통 기능 속성                                                |

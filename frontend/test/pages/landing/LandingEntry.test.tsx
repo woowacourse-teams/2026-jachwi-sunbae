@@ -49,26 +49,6 @@ afterEach(() => {
 });
 
 describe('서비스 안에서 랜딩으로 가는 길', () => {
-  it('마이의 자취선배 소개로 랜딩에 갔다가 돌아가기로 마이에 돌아온다', async () => {
-    const user = userEvent.setup();
-    renderWithProviders(<AppRoutes />, '/me');
-
-    await user.click(await screen.findByRole('link', { name: /자취선배 소개/ }));
-
-    expect(await screen.findByRole('heading', { level: 1, name: /자취할 동네를 찾고/ })).toBeInTheDocument();
-    // 주소에 진입 위치를 붙이지 않아 페이지뷰 경로는 광고 유입과 같다.
-    expect(screen.getByRole('status', { name: '현재 경로' })).toHaveTextContent(/^\/landing$/);
-    expect(landingViews()).toEqual([expect.objectContaining({ entry: 'my' })]);
-    // 첫 화면과 마지막 화면의 웹 바로가기가 모두 돌아가기로 바뀐다.
-    expect(screen.queryByRole('link', { name: '웹에서 바로 시작하기' })).not.toBeInTheDocument();
-    const [goBack] = screen.getAllByRole('link', { name: '서비스로 돌아가기' });
-    expect(goBack).toHaveAttribute('href', '/me');
-
-    await user.click(goBack);
-    expect(await screen.findByRole('link', { name: /자취선배 소개/ })).toBeInTheDocument();
-    expect(screen.getByRole('status', { name: '현재 경로' })).toHaveTextContent(/^\/me$/);
-  });
-
   it('홈 푸터의 자취선배 소개로 랜딩에 가면 돌아가기가 홈으로 잇는다', async () => {
     const user = userEvent.setup();
     renderWithProviders(
@@ -82,8 +62,17 @@ describe('서비스 안에서 랜딩으로 가는 길', () => {
     await user.click(screen.getByRole('link', { name: '자취선배 소개' }));
 
     expect(await screen.findByRole('heading', { level: 1, name: /자취할 동네를 찾고/ })).toBeInTheDocument();
+    // 주소에 진입 위치를 붙이지 않아 페이지뷰 경로는 광고 유입과 같다.
+    expect(screen.getByRole('status', { name: '현재 경로' })).toHaveTextContent(/^\/landing$/);
     expect(landingViews()).toEqual([expect.objectContaining({ entry: 'home_footer' })]);
-    expect(screen.getAllByRole('link', { name: '서비스로 돌아가기' })[0]).toHaveAttribute('href', '/');
+    // 첫 화면과 마지막 화면의 웹 바로가기가 모두 돌아가기로 바뀐다.
+    expect(screen.queryByRole('link', { name: '웹에서 바로 시작하기' })).not.toBeInTheDocument();
+    const [goBack] = screen.getAllByRole('link', { name: '서비스로 돌아가기' });
+    expect(goBack).toHaveAttribute('href', '/');
+
+    await user.click(goBack);
+    expect(await screen.findByRole('link', { name: '자취선배 소개' })).toBeInTheDocument();
+    expect(screen.getByRole('status', { name: '현재 경로' })).toHaveTextContent(/^\/$/);
   });
 
   it('광고나 주소로 바로 들어오면 진입 위치는 direct이고 웹 바로가기를 그대로 둔다', async () => {
@@ -111,19 +100,16 @@ describe('서비스 안에서 랜딩으로 가는 길', () => {
 
 describe('랜딩 진입 state 읽기', () => {
   it.each([
-    [
-      { landingEntry: 'my', returnTo: '/me' },
-      { landingEntry: 'my', returnTo: '/me' },
-    ],
+    [{ landingEntry: 'my', returnTo: '/me' }, null],
     [
       { landingEntry: 'home_footer', returnTo: '/' },
       { landingEntry: 'home_footer', returnTo: '/' },
     ],
-    [{ landingEntry: 'my', returnTo: 'https://example.com' }, null],
-    [{ landingEntry: 'my', returnTo: '//example.com' }, null],
+    [{ landingEntry: 'home_footer', returnTo: 'https://example.com' }, null],
+    [{ landingEntry: 'home_footer', returnTo: '//example.com' }, null],
     [{ landingEntry: 'ad', returnTo: '/' }, null],
     [null, null],
-    ['my', null],
+    ['home_footer', null],
   ])('%j는 %j로 읽는다', (state, expected) => {
     expect(readLandingEntryState(state)).toEqual(expected);
   });

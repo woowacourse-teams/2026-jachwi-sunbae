@@ -122,7 +122,7 @@ afterEach(() => {
 });
 
 describe('마이 화면', () => {
-  it('생활 날씨, 서비스 소개, 개인정보 처리방침, 초기화만 두고, 알림을 켜면 현재 위치를 저장하고 그 위치의 날씨를 보인다', async () => {
+  it('생활 날씨, 개인정보 처리방침, 초기화만 두고, 알림을 켜면 현재 위치를 저장하고 그 위치의 날씨를 보인다', async () => {
     const user = userEvent.setup();
     const weather = useWeatherServer();
     mockGeolocation('allowed');
@@ -131,7 +131,6 @@ describe('마이 화면', () => {
     // 홈의 빠른 메뉴와 겹치는 기록 메뉴나 날씨 상세·설정으로 가는 길은 두지 않는다.
     expect(screen.queryByRole('navigation', { name: '내 기록' })).not.toBeInTheDocument();
     expect(screen.queryByText(/프로토타입|샘플|시연/)).not.toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /자취선배 소개/ })).toHaveAttribute('href', '/landing');
     expect(screen.getByRole('link', { name: /개인정보 처리방침/ })).toHaveAttribute('href', '/privacy');
 
     // 계정과 데이터를 완전히 지우는 것은 초기화 아래 링크로, 회원 번호가 채워진 메일을 연다.
