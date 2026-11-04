@@ -7,6 +7,7 @@ import TopNavigation from '@/shared/ui/top-navigation/TopNavigation';
 
 import { formatAppVersionLabel } from '../lib/appVersionLabel';
 import AccountResetCard from '../ui/account-reset-card/AccountResetCard';
+import LandingLinkCard from '../ui/landing-link-card/LandingLinkCard';
 import PrivacyLinkCard from '../ui/privacy-link-card/PrivacyLinkCard';
 
 import * as shared from '../MyPage.styles';
@@ -24,6 +25,7 @@ const MyDesktopPage = () => {
         </div>
         <WeatherSummaryCard />
         <div className={styles.links}>
+          <LandingLinkCard />
           <PrivacyLinkCard />
           <AccountResetCard memberId={member.memberId} />
         </div>
@@ -77,7 +79,7 @@ const styles = {
     margin-bottom: 0.5rem;
   `,
 
-  /* 개인정보 처리방침과 초기화는 한 묶음으로 쌓는다(넓은 화면에서는 날씨 옆 열). */
+  /* 서비스 소개, 개인정보 처리방침, 초기화는 한 묶음으로 쌓는다(넓은 화면에서는 날씨 옆 열). */
   links: css`
     label: MyDesktopPage-links;
     display: grid;
