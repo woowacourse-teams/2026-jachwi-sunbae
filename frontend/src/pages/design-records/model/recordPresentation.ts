@@ -1,6 +1,6 @@
 import type { MapCategory } from '@/features/map/model/Map';
 import { formatRentSummary } from '@/features/property/lib/propertyFormat';
-import type { PropertyCommuteTime, PropertySummary } from '@/features/property/model/Property';
+import type { PropertySummary } from '@/features/property/model/Property';
 
 /** 본 방 기록 지도 레일에서 빼는 카테고리. 중개업소는 동네 찾기 주변 분석에서 따로 본다. */
 export const RECORDS_HIDDEN_CATEGORIES: MapCategory[] = ['AGENCY'];
@@ -45,11 +45,4 @@ export const recordsMapHint = (
   return records.some((record) => record.latitude === null || record.longitude === null)
     ? `${base} · 위치 없는 기록은 리스트에서 확인해요`
     : base;
-};
-
-/** 카드에 붙이는 출퇴근 장소까지 통근 시간 한 줄. 서버는 60분·환승 2회 안에서만 시간을 구한다. */
-export const commuteLabel = (commute: PropertyCommuteTime, destinationName: string, maxMinutes: number) => {
-  if (commute.status === 'NO_LOCATION') return '위치가 없어 통근 시간을 몰라요';
-  if (commute.status === 'UNREACHABLE') return `${destinationName}까지 ${maxMinutes}분 넘게 걸려요`;
-  return `${destinationName}까지 대중교통 ${commute.commuteMinutes}분`;
 };

@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 
-import { readCommuteDestination } from '@/features/map/lib/commuteDestinationStore';
 import {
   DEFAULT_MAP_CENTER,
   type MapCoordinate,
@@ -9,9 +8,9 @@ import {
   requestCurrentMapLocation,
 } from '@/features/map/lib/mapLocation';
 import type { MapMarker } from '@/features/map/model/Map';
-import { usePropertyCommuteTimes, usePropertyList } from '@/features/property/api/useProperties';
+import { usePropertyList } from '@/features/property/api/useProperties';
 
-import { commuteLabel, recordPresentation } from '../model/recordPresentation';
+import { recordPresentation } from '../model/recordPresentation';
 
 type RecordsLocationState = { focusHeading?: boolean } | null;
 
@@ -37,27 +36,6 @@ const useRecords = (selection?: RecordsSelection) => {
     () => properties.data?.pages.flatMap((page) => page.content).map(recordPresentation) ?? [],
     [properties.data],
   );
-  // 동네 찾기에서 마지막으로 고른 출퇴근 장소까지 매물마다 통근 시간을 붙인다.
-  // 들어오자마자 계산하지 않고, 리스트 위 `통근 시간` 버튼을 눌렀을 때만 부른다. 장소가 없으면 버튼도 없다.
-  // 장소는 동네 찾기에서만 정한다. 본 방 기록에서는 읽기만 한다.
-  const [destination] = useState(readCommuteDestination);
-  const [showsCommute, setShowsCommute] = useState(false);
-  const commuteTimes = usePropertyCommuteTimes(showsCommute ? destination : null);
-  const commuteLabels = useMemo(() => {
-    const labels = new Map<string, string>();
-    if (!showsCommute || !destination || !commuteTimes.data) return labels;
-    for (const commute of commuteTimes.data.properties)
-      labels.set(String(commute.propertyId), commuteLabel(commute, destination.name, commuteTimes.data.maxMinutes));
-    return labels;
-  }, [showsCommute, destination, commuteTimes.data]);
-  const commute = {
-    destinationName: destination?.name ?? null,
-    labels: commuteLabels,
-    isError: commuteTimes.isError,
-    isShown: showsCommute,
-    isLoading: showsCommute && commuteTimes.isFetching,
-    toggle: () => setShowsCommute((current) => !current),
-  };
   const districts = ['전체', ...new Set(allRecords.map((record) => record.district))];
   const [district, setDistrict] = useState('전체');
   const [localSelectedId, setLocalSelectedId] = useState<string | null>(null);
@@ -189,7 +167,6 @@ const useRecords = (selection?: RecordsSelection) => {
     showRecord,
     notice,
     setNotice,
-    commute,
   };
 };
 
