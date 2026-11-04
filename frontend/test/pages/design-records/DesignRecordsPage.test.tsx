@@ -408,6 +408,9 @@ it('휴대폰도 데스크탑처럼 빈 곳을 찍은 말풍선에서 매물을 
     expect(Number(screen.getByLabelText('지도 배율').textContent)).toBeLessThanOrEqual(4);
     const sheet = within(await screen.findByRole('region', { name: '선택한 매물' }));
     expect(sheet.getByRole('link', { name: '새 매물' })).toBeInTheDocument();
+    // 보증금과 월세가 둘 다 0인 새 매물은 금액 대신 가격 입력 전으로 보인다. 월세만 다루므로 전세로 쓰지 않는다.
+    expect(sheet.getByText('가격 입력 전')).toBeInTheDocument();
+    expect(screen.queryByText(/전세/)).not.toBeInTheDocument();
     expect(screen.getByRole('region', { name: '본 방 기록 지도' })).toBeInTheDocument();
   } finally {
     created.stop();

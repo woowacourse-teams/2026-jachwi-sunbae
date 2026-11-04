@@ -1,6 +1,6 @@
 import { useState } from 'react';
 
-import { formatManwon } from '@/features/property/lib/propertyFormat';
+import { formatPropertyPrice, hasPropertyPrice } from '@/features/property/lib/propertyFormat';
 import type { PropertyDetail } from '@/features/property/model/Property';
 import InfoValue from '@/shared/ui/info-value/InfoValue';
 
@@ -21,11 +21,11 @@ type PropertyBasicInfoSectionProps = {
   savedField: PropertyEditField | null;
 };
 
-/** 새 매물은 보증금과 월세를 0으로 만든다. 둘 다 0이면 아직 입력하지 않은 것으로 본다. */
+/** 새 매물은 보증금과 월세를 0으로 만든다. 둘 다 0이면 비워 두어 입력을 권하는 안내(`emptyText`)를 보인다. */
 const formatPrice = ({ depositAmount, monthlyRentAmount }: PropertyDetail): string =>
-  depositAmount === 0 && monthlyRentAmount === 0
-    ? ''
-    : `${formatManwon(depositAmount)} / ${formatManwon(monthlyRentAmount)}`;
+  hasPropertyPrice(depositAmount, monthlyRentAmount)
+    ? formatPropertyPrice(depositAmount, monthlyRentAmount, 'plain')
+    : '';
 
 const SAVED_TEXT = '✓ 저장했어요';
 
