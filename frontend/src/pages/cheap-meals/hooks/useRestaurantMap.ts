@@ -10,13 +10,17 @@ import {
 } from '@/features/map/lib/mapLocation';
 import type { MapMarker } from '@/features/map/model/Map';
 
+import { readRestaurantArea, writeRestaurantArea } from '../model/restaurantAreaSession';
 import { MAP_SEARCH_DELAY_MS, RESTAURANT_SEARCH_RADIUS, type RestaurantArea } from '../model/RestaurantMap';
 import storePin from '../ui/store-pin.svg';
 import useRestaurantOverlay from './useRestaurantOverlay';
 
+const DEFAULT_AREA: RestaurantArea = { ...DEFAULT_MAP_CENTER, label: '판교 주변' };
+
 const useRestaurantMap = (isActive: boolean) => {
   const overlay = useRestaurantOverlay();
-  const [area, setArea] = useState<RestaurantArea>({ ...DEFAULT_MAP_CENTER, label: '판교 주변' });
+  // 새로고침하면 이 탭에서 마지막으로 고른 동네로 돌아와, 주소에 남은 가게(`?store=`)를 같은 목록에서 다시 연다.
+  const [area, setArea] = useState<RestaurantArea>(() => readRestaurantArea() ?? DEFAULT_AREA);
   const [viewport, setViewport] = useState<MapCoordinate>(area);
   const [level, setLevel] = useState(7);
   const [isListOpen, setIsListOpen] = useState(true);
@@ -44,8 +48,23 @@ const useRestaurantMap = (isActive: boolean) => {
     }, MAP_SEARCH_DELAY_MS);
     return () => window.clearTimeout(timer);
   }, [isActive, movedTo]);
+  useEffect(() => {
+    writeRestaurantArea(area);
+  }, [area]);
   const query = useGoodPriceStores(area, RESTAURANT_SEARCH_RADIUS, isActive);
   const selectedStore = query.data?.stores.find((store) => String(store.id) === overlay.selectedStoreId) ?? null;
+  // 지금 동네 목록에 없는 가게 주소(다른 기기나 오래된 세션에서 연 상세 등)는 열 수 없으니 주소에서 지운다.
+  // 동네를 바꾸는 동안 이전 목록(placeholder)으로는 판단하지 않는다.
+  const isStoreMissing =
+    isActive &&
+    overlay.selectedStoreId !== null &&
+    query.isSuccess &&
+    !query.isPlaceholderData &&
+    selectedStore === null;
+  const { forgetStore } = overlay;
+  useEffect(() => {
+    if (isStoreMissing) forgetStore();
+  }, [isStoreMissing, forgetStore]);
   const markers = useMemo<MapMarker[]>(
     () =>
       query.data?.stores.map((store) => ({

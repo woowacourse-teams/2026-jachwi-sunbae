@@ -1,11 +1,12 @@
 import { css } from '@emotion/css';
-import { Link, NavLink } from 'react-router-dom';
+import { Link, NavLink, useLocation } from 'react-router-dom';
 
 import iconProfile from '@/shared/assets/icon-profile.webp';
 import logo from '@/shared/assets/jachwi-sunbae-goose.webp';
 import logo2x from '@/shared/assets/jachwi-sunbae-goose@2x.webp';
 import {
   CHEAP_MEALS_PATH,
+  CHEAP_MEALS_RESTAURANT_PATH,
   CHECKLISTS_PATH,
   COMPARE_PATH,
   HOME_PATH,
@@ -16,14 +17,24 @@ import {
 
 import { useRegisterDesktopHeaderSlot } from './DesktopHeaderSlot';
 
+type DesktopNavItem = {
+  label: string;
+  to: string;
+  /** 메뉴가 여는 주소(`to`)와 화면 주소가 다를 때 현재 화면으로 볼 주소. 이 주소 아래 어디서든 메뉴를 고른 상태로 둔다. */
+  section?: string;
+};
+
 /** 데스크탑 헤더에서 바로 옮겨 갈 수 있는 주요 화면. */
-const DESKTOP_NAV_ITEMS = [
+const DESKTOP_NAV_ITEMS: readonly DesktopNavItem[] = [
   { label: '본 방 기록', to: RECORDS_PATH },
   { label: '동네 찾기', to: NEIGHBORHOODS_PATH },
   { label: '체크리스트', to: CHECKLISTS_PATH },
   { label: '방 비교', to: COMPARE_PATH },
-  { label: '저렴한 한 끼', to: CHEAP_MEALS_PATH },
-] as const;
+  // 탭 없는 주소를 거쳐 탭 주소로 다시 옮기지 않도록 첫 탭을 바로 연다. 다른 탭에 있어도 메뉴는 고른 상태다.
+  { label: '저렴한 한 끼', to: CHEAP_MEALS_RESTAURANT_PATH, section: CHEAP_MEALS_PATH },
+];
+
+const isInSection = (pathname: string, section: string) => pathname === section || pathname.startsWith(`${section}/`);
 
 type DesktopHeaderProps = {
   className?: string;
@@ -36,6 +47,7 @@ type DesktopHeaderProps = {
  */
 const DesktopHeader = ({ className }: DesktopHeaderProps) => {
   const registerSlot = useRegisterDesktopHeaderSlot();
+  const { pathname } = useLocation();
 
   return (
     <header className={`${styles.header} ${className ?? ''}`.trim()}>
@@ -45,11 +57,17 @@ const DesktopHeader = ({ className }: DesktopHeaderProps) => {
       {/* 지도 화면의 검색창처럼 화면마다 헤더 가운데에 두는 요소가 들어오는 자리. */}
       <div ref={registerSlot} className={styles.slot} />
       <nav className={styles.nav} aria-label="주요 화면">
-        {DESKTOP_NAV_ITEMS.map((item) => (
-          <NavLink key={item.to} to={item.to}>
-            {item.label}
-          </NavLink>
-        ))}
+        {DESKTOP_NAV_ITEMS.map((item) =>
+          item.section === undefined ? (
+            <NavLink key={item.to} to={item.to}>
+              {item.label}
+            </NavLink>
+          ) : (
+            <Link key={item.to} to={item.to} aria-current={isInSection(pathname, item.section) ? 'page' : undefined}>
+              {item.label}
+            </Link>
+          ),
+        )}
       </nav>
       <Link className={styles.profile} to={MY_PATH} aria-label="마이페이지">
         <img src={iconProfile} alt="" width={96} height={96} />
