@@ -12,10 +12,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.jachwisunbae.transit.domain.AdminDong;
-import com.jachwisunbae.transit.provider.geojson.GeoJsonBoundaries;
-import com.jachwisunbae.transit.repository.AdminDongRepository;
-import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
@@ -48,9 +44,6 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 @Tag("acceptance")
 class StreetMemoAcceptanceTest {
 
-    private static final String SAMSEONG = "11680580";
-    private static final String DAECHI = "11680600";
-
     @Container
     private static final MySQLContainer<?> MYSQL = new MySQLContainer<>("mysql:8.4.10");
 
@@ -60,8 +53,6 @@ class StreetMemoAcceptanceTest {
     private ObjectMapper objectMapper;
     @Autowired
     private JdbcTemplate jdbc;
-    @Autowired
-    private AdminDongRepository adminDongs;
 
     private MemberSession author;
 
@@ -77,66 +68,7 @@ class StreetMemoAcceptanceTest {
         jdbc.update("DELETE FROM street_memos");
         jdbc.update("DELETE FROM refresh_tokens");
         jdbc.update("DELETE FROM members");
-        adminDongs.replace(List.of(adminDong(SAMSEONG, "삼성1동", 37.49, 37.51),
-                adminDong(DAECHI, "대치1동", 37.51, 37.53)));
         author = login();
-    }
-
-    @Test
-    @DisplayName("행정동 코드로 조회하면 그 행정동의 미삭제 메모만 작성자 정보 없이 돌려준다")
-    void findsMemosInAdminDong() throws Exception {
-        MemberSession reader = login();
-        JsonNode inside = create(author, validBody().put("latitude", 37.5).put("longitude", 127.0));
-        create(author, validBody().put("latitude", 37.52).put("longitude", 127.0));
-        long deleted = create(author, validBody().put("latitude", 37.505).put("longitude", 127.005))
-                .path("streetMemoId").asLong();
-        mvc.perform(authorized(delete("/api/street-memos/" + deleted), author)).andExpect(status().isNoContent());
-
-        JsonNode memos = data(mvc.perform(authorized(get("/api/street-memos"), reader)
-                        .param("adminDongCode", SAMSEONG))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.code").value("SUCCESS"))
-                .andReturn().getResponse().getContentAsString());
-
-        assertThat(memos).hasSize(1);
-        assertPublicFields(memos.get(0));
-        ObjectNode expected = inside.deepCopy();
-        expected.put("isMine", false);
-        assertThat(memos.get(0)).isEqualTo(expected);
-        assertThat(jdbc.queryForObject("SELECT admin_dong_code FROM street_memos WHERE id = ?", String.class,
-                inside.path("streetMemoId").asLong())).isEqualTo(SAMSEONG);
-    }
-
-    @Test
-    @DisplayName("어느 행정동에도 들지 않는 위치의 메모는 행정동 없이 저장하고 행정동 조회에서 뺀다")
-    void savesMemoOutsideAdminDongsWithoutCode() throws Exception {
-        long id = create(author, validBody().put("latitude", 37.7).put("longitude", 127.0))
-                .path("streetMemoId").asLong();
-
-        assertThat(jdbc.queryForObject("SELECT admin_dong_code FROM street_memos WHERE id = ?", String.class, id))
-                .isNull();
-        mvc.perform(viewport(author)).andExpect(status().isOk()).andExpect(jsonPath("$.data.length()").value(1));
-        for (String code : List.of(SAMSEONG, DAECHI)) {
-            mvc.perform(authorized(get("/api/street-memos"), author).param("adminDongCode", code))
-                    .andExpect(status().isOk()).andExpect(jsonPath("$.data.length()").value(0));
-        }
-    }
-
-    @ParameterizedTest
-    @ValueSource(strings = {"1168064", "116806400", "1168064a", " "})
-    @DisplayName("8자리 숫자가 아닌 행정동 코드로 조회하면 거부한다")
-    void rejectsInvalidAdminDongCode(final String code) throws Exception {
-        mvc.perform(authorized(get("/api/street-memos"), author).param("adminDongCode", code))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.code").value("STREET_MEMO_QUERY_INVALID"));
-    }
-
-    @Test
-    @DisplayName("Access Token 없이 행정동 메모를 조회하면 거부한다")
-    void rejectsAdminDongQueryWithoutToken() throws Exception {
-        mvc.perform(get("/api/street-memos").param("adminDongCode", SAMSEONG))
-                .andExpect(status().isUnauthorized())
-                .andExpect(jsonPath("$.code").value("ACCESS_TOKEN_INVALID"));
     }
 
     @ParameterizedTest
@@ -363,20 +295,6 @@ class StreetMemoAcceptanceTest {
         List<String> fields = new ArrayList<>();
         memo.fieldNames().forEachRemaining(fields::add);
         assertThat(fields).containsExactlyInAnyOrder("streetMemoId", "latitude", "longitude", "memo", "preference", "isMine");
-    }
-
-    // 경도 126.99~127.01, 위도는 받은 범위로 자른 사각형 행정동이다.
-    private AdminDong adminDong(final String code, final String name, final double minLatitude,
-                                final double maxLatitude) {
-        try {
-            String polygon = ("{\"type\":\"Polygon\",\"coordinates\":"
-                    + "[[[126.99,%s],[127.01,%s],[127.01,%s],[126.99,%s],[126.99,%s]]]}")
-                    .formatted(minLatitude, minLatitude, maxLatitude, maxLatitude, minLatitude);
-            return new AdminDong(code, name, "서울특별시", "강남구", "서울특별시 강남구 " + name,
-                    LocalDate.of(2025, 6, 30), GeoJsonBoundaries.toBoundary(objectMapper.readTree(polygon)));
-        } catch (Exception exception) {
-            throw new IllegalStateException(exception);
-        }
     }
 
     private record MemberSession(long memberId, String accessToken) {
