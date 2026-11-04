@@ -3,9 +3,8 @@ import userEvent from '@testing-library/user-event';
 import { BrowserRouter, Link, MemoryRouter, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
 import { afterEach, describe, expect, it } from 'vitest';
 
-import { resetAuthenticationForTests, setAuthentication } from '@/features/auth/model/authStore';
-
 import PrivacyPage from '@/pages/privacy/PrivacyPage';
+import { resetAuthenticationForTests, setAuthentication } from '@/features/auth/model/authStore';
 
 const SourcePage = () => {
   const location = useLocation();
