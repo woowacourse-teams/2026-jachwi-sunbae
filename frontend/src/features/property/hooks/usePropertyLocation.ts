@@ -1,11 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { reverseGeocode } from '@/features/map/api/mapApi';
+import { hasAddress, isAddressNotFound } from '@/features/map/lib/mapAddress';
 import { DEFAULT_MAP_CENTER, readLastMapCenter } from '@/features/map/lib/mapLocation';
 import type { MapAddress } from '@/features/map/model/Map';
 import { usePublicConfig } from '@/shared/config/PublicConfigContext';
 
-export type PropertyLocationStatus = 'loading' | 'ready' | 'error';
+/** `unsupported`는 그 자리에 주소가 없다는 응답(바다, 산 등), `error`는 네트워크 같은 일시 실패다. */
+export type PropertyLocationStatus = 'loading' | 'ready' | 'unsupported' | 'error';
 
 const CENTER_RESOLVE_DELAY_MS = 450;
 
@@ -40,12 +42,16 @@ const usePropertyLocation = (presetLocation: MapAddress | undefined, onLocationR
         const address = await reverseGeocode(config, latitude, longitude);
         if (sequenceRef.current !== sequence) return;
         setSelectedLocation(address);
+        if (!hasAddress(address)) {
+          setLocationStatus('unsupported');
+          return;
+        }
         setLocationStatus('ready');
         onLocationReady();
-      } catch {
+      } catch (error) {
         if (sequenceRef.current === sequence) {
-          setSelectedLocation((current) => ({ ...current, address: null, roadAddress: null, jibunAddress: null }));
-          setLocationStatus('error');
+          setSelectedLocation(blankAddress(latitude, longitude));
+          setLocationStatus(isAddressNotFound(error) ? 'unsupported' : 'error');
         }
       }
     },
@@ -68,9 +74,14 @@ const usePropertyLocation = (presetLocation: MapAddress | undefined, onLocationR
     [],
   );
 
-  /** 지도를 끌어 옮기면 멈춘 뒤에 주소를 확인한다. */
+  /**
+   * 지도를 끌어 옮기면 멈춘 뒤에 주소를 확인한다. 기다리는 동안에도 확인 중으로 두어,
+   * 그 사이 저장을 누르면 옮기기 전 위치로 저장하지 않고 새 주소를 기다리게 한다.
+   */
   const handleCenterChange = (latitude: number, longitude: number) => {
     if (timerRef.current !== null) window.clearTimeout(timerRef.current);
+    ++sequenceRef.current;
+    setLocationStatus('loading');
     timerRef.current = window.setTimeout(() => void resolveLocation(latitude, longitude), CENTER_RESOLVE_DELAY_MS);
   };
 

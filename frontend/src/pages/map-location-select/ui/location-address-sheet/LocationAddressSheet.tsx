@@ -1,5 +1,6 @@
 import { css } from '@emotion/css';
 
+import { UNSUPPORTED_ADDRESS_MESSAGE } from '@/features/map/lib/mapAddress';
 import type { MapAddress } from '@/features/map/model/Map';
 
 import type { LocationSelectionStatus } from '../../hooks/useLocationSelection';
@@ -17,14 +18,19 @@ const LocationAddressSheet = ({ selected, status, onOpenSearch, onConfirm }: Loc
   return (
     <section className={styles.sheet} aria-live="polite">
       <strong>
-        {selectedAddress ?? (status === 'error' ? '주소를 확인하지 못했어요' : '주소를 확인하는 중이에요')}
+        {selectedAddress ??
+          (status === 'unsupported'
+            ? UNSUPPORTED_ADDRESS_MESSAGE
+            : status === 'error'
+              ? '주소를 확인하지 못했어요'
+              : '주소를 확인하는 중이에요')}
       </strong>
       <p>
         {selected.roadAddress !== null && selected.jibunAddress !== null
           ? selected.jibunAddress
           : '지도를 움직이거나 위치를 눌러 주세요.'}
       </p>
-      {status === 'error' ? (
+      {status === 'error' || status === 'unsupported' ? (
         <button className={styles.addressNotice} type="button" onClick={onOpenSearch}>
           주소로 다시 찾아볼까요?
         </button>

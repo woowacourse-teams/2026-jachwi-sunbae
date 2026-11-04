@@ -1,5 +1,6 @@
 import { css, cx } from '@emotion/css';
 
+import { UNSUPPORTED_ADDRESS_MESSAGE } from '@/features/map/lib/mapAddress';
 import type { MapAddress } from '@/features/map/model/Map';
 import MapCanvas from '@/features/map/ui/map-canvas/MapCanvas';
 import Icon from '@/shared/ui/icon/Icon';
@@ -79,7 +80,12 @@ const PropertyLocationPicker = ({ location, search }: PropertyLocationPickerProp
     <p className={styles.selectedAddress} aria-live="polite">
       {location.status === 'loading'
         ? '주소를 확인하는 중이에요.'
-        : (location.selected.roadAddress ?? location.selected.jibunAddress ?? '주소를 확인하지 못했어요.')}
+        : location.status === 'unsupported'
+          ? UNSUPPORTED_ADDRESS_MESSAGE
+          : (location.selected.roadAddress ??
+            location.selected.jibunAddress ??
+            location.selected.address ??
+            '주소를 확인하지 못했어요.')}
     </p>
     {location.status === 'error' && <p className={styles.errorNotice}>지도를 움직여 위치를 다시 선택해 주세요.</p>}
   </section>

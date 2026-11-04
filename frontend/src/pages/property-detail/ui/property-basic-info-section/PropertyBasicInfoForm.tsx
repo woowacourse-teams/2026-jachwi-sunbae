@@ -1,6 +1,7 @@
 import { css } from '@emotion/css';
 import { type FocusEvent, type FormEvent, type KeyboardEvent, useCallback, useEffect, useRef, useState } from 'react';
 
+import { UNSUPPORTED_ADDRESS_MESSAGE } from '@/features/map/lib/mapAddress';
 import { requestCurrentMapLocation } from '@/features/map/lib/mapLocation';
 import type { MapAddress } from '@/features/map/model/Map';
 import { useUpdateProperty } from '@/features/property/api/usePropertyMutations';
@@ -76,6 +77,16 @@ const PropertyBasicInfoForm = ({ property, field, onSaved, onCancel }: PropertyB
     longitude: location.selectedLocation.longitude,
   });
   const { setInitialQuery } = search;
+  const formRef = useRef<HTMLFormElement>(null);
+  // 주소를 확인하는 중에 저장을 누르면 주소를 받을 때까지 기다렸다가 저장한다.
+  const [isWaitingAddress, setIsWaitingAddress] = useState(false);
+  const { locationStatus } = location;
+
+  useEffect(() => {
+    if (!isWaitingAddress || locationStatus === 'loading') return;
+    setIsWaitingAddress(false);
+    formRef.current?.requestSubmit();
+  }, [isWaitingAddress, locationStatus]);
 
   useEffect(() => {
     if (property.location.address) setInitialQuery(property.location.address);
@@ -116,17 +127,25 @@ const PropertyBasicInfoForm = ({ property, field, onSaved, onCancel }: PropertyB
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length > 0) return;
 
-    const { selectedLocation, locationStatus } = location;
+    const { selectedLocation } = location;
     const moved =
       Math.abs(selectedLocation.latitude - initialCoordinate.current.latitude) > COORDINATE_EPSILON ||
       Math.abs(selectedLocation.longitude - initialCoordinate.current.longitude) > COORDINATE_EPSILON;
-    if (moved && locationStatus !== 'ready') {
-      setNotice(
-        locationStatus === 'loading'
-          ? '주소를 확인하는 중이에요. 잠시 후 다시 눌러 주세요.'
-          : '위치를 다시 선택해 주세요.',
-      );
-      return;
+    if (field === 'location') {
+      // 지도를 막 옮긴 뒤라 주소를 아직 받지 못했으면, 옮기기 전 위치로 저장하거나 닫지 않고 주소를 기다린다.
+      if (locationStatus === 'loading') {
+        setNotice(null);
+        setIsWaitingAddress(true);
+        return;
+      }
+      if (moved && locationStatus === 'unsupported') {
+        setNotice(`${UNSUPPORTED_ADDRESS_MESSAGE} 지도를 움직여 다른 위치를 골라 주세요.`);
+        return;
+      }
+      if (moved && locationStatus === 'error') {
+        setNotice('위치를 다시 선택해 주세요.');
+        return;
+      }
     }
 
     if (field === 'location' && !moved) {
@@ -173,6 +192,7 @@ const PropertyBasicInfoForm = ({ property, field, onSaved, onCancel }: PropertyB
 
   return (
     <form
+      ref={formRef}
       className={styles.editor}
       aria-label={field === 'price' ? '보증금 / 월세 입력' : '주소 입력'}
       noValidate
@@ -244,7 +264,12 @@ const PropertyBasicInfoForm = ({ property, field, onSaved, onCancel }: PropertyB
           <Button type="button" variant="secondary" onClick={onCancel}>
             취소
           </Button>
-          <Button type="submit" variant="soft" isLoading={updateProperty.isPending} loadingLabel="저장 중…">
+          <Button
+            type="submit"
+            variant="soft"
+            isLoading={updateProperty.isPending || isWaitingAddress}
+            loadingLabel={isWaitingAddress ? '주소 확인 중…' : '저장 중…'}
+          >
             이 위치로 저장
           </Button>
         </div>

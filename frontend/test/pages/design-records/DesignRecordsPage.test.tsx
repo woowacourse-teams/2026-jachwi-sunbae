@@ -8,10 +8,11 @@ import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { mapHandlers } from '@/app/mocks/handlers/mapHandlers';
 import { propertyHandlers } from '@/app/mocks/handlers/propertyHandlers';
 import { createStreetMemoHandlers } from '@/app/mocks/handlers/streetMemoHandlers';
-import { getMockProperties, propertyListItemResponse, success } from '@/app/mocks/mockStore';
+import { failure, getMockProperties, propertyListItemResponse, success } from '@/app/mocks/mockStore';
 import DesignRecordsPage from '@/pages/design-records/DesignRecordsPage';
 import { resetAuthenticationForTests, setAuthentication } from '@/features/auth/model/authStore';
 import type { MapCanvasProps } from '@/features/map/model/MapCanvas';
+import { rememberMovedProperty, resetMovedPropertyForTests } from '@/features/property/model/movedProperty';
 import { queryClient } from '@/shared/api/queryClient';
 import { PublicConfigProvider } from '@/shared/config/PublicConfigContext';
 
@@ -63,6 +64,7 @@ beforeEach(() => {
 });
 afterEach(() => {
   resetAuthenticationForTests();
+  resetMovedPropertyForTests();
   queryClient.clear();
   sessionStorage.clear();
 });
@@ -410,6 +412,72 @@ it('휴대폰도 데스크탑처럼 빈 곳을 찍은 말풍선에서 매물을 
   } finally {
     created.stop();
   }
+});
+
+it('주소 응답이 늦으면 등록 핀과 확인 중 안내를 먼저 띄우고, 기다리는 동안 다시 찍어도 매물을 하나만 만든다', async () => {
+  let respond: () => void = () => undefined;
+  server.use(
+    http.get(
+      '*/api/maps/reverse-geocode',
+      () =>
+        new Promise<Response>((resolve) => {
+          respond = () =>
+            resolve(
+              success({
+                roadAddress: '서울특별시 중구 세종대로 110',
+                jibunAddress: null,
+                latitude: 37.5662,
+                longitude: 126.9785,
+              }),
+            );
+        }),
+    ),
+  );
+  const user = userEvent.setup();
+  renderRecords();
+  await screen.findByText('신림역 원룸');
+  const created = captureCreatedProperties();
+  try {
+    await user.click(screen.getByRole('button', { name: '빈 곳 찍기' }));
+    await user.click(screen.getByRole('button', { name: '말풍선 🏠 여기에 매물 등록' }));
+    expect(await screen.findByText('주소를 확인하는 중이에요.')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '매물 등록 위치' })).toBeInTheDocument();
+    // 주소를 기다리는 동안 다시 찍어도 말풍선을 띄우지 않아 두 번 등록하지 못한다.
+    await user.click(screen.getByRole('button', { name: '빈 곳 찍기' }));
+    expect(screen.queryByRole('button', { name: '말풍선 🏠 여기에 매물 등록' })).not.toBeInTheDocument();
+    respond();
+    expect(await screen.findByText(/매물을 기록했어요/)).toBeInTheDocument();
+    expect(created.bodies).toEqual([expect.objectContaining({ address: '서울특별시 중구 세종대로 110' })]);
+  } finally {
+    created.stop();
+  }
+});
+
+it('찍은 자리의 주소를 찾지 못하면 주소 없는 매물을 만들지 않고 지원하지 않는 주소라고 알린다', async () => {
+  server.use(http.get('*/api/maps/reverse-geocode', () => failure('MAP_ADDRESS_NOT_FOUND', 404)));
+  const user = userEvent.setup();
+  renderRecords();
+  await screen.findByText('신림역 원룸');
+  const created = captureCreatedProperties();
+  try {
+    await user.click(screen.getByRole('button', { name: '빈 곳 찍기' }));
+    await user.click(screen.getByRole('button', { name: '말풍선 🏠 여기에 매물 등록' }));
+    expect(await screen.findByText('지원하지 않는 주소입니다.')).toBeInTheDocument();
+    expect(created.bodies).toEqual([]);
+    expect(screen.queryByRole('button', { name: '매물 등록 위치' })).not.toBeInTheDocument();
+  } finally {
+    created.stop();
+  }
+});
+
+it('상세에서 위치를 바꿔 저장한 매물이 있으면 첫 기록 대신 그 매물의 새 자리로 지도를 옮겨 고른다', async () => {
+  const moved = getMockProperties().find((property) => property.name === '신림역 원룸');
+  if (moved?.latitude == null || moved.longitude == null) throw new Error('목 매물 좌표가 없다');
+  rememberMovedProperty({ propertyId: moved.id, latitude: moved.latitude, longitude: moved.longitude });
+  renderRecords();
+  const sheet = within(await screen.findByRole('region', { name: '선택한 매물' }));
+  expect(sheet.getByRole('link', { name: '신림역 원룸' })).toBeInTheDocument();
+  expect(screen.getByLabelText('지도 중심')).toHaveTextContent(`${moved.latitude},${moved.longitude}`);
 });
 
 it('휴대폰 지도 아래 매물 시트에서도 더보기 메뉴로 매물을 삭제한다', async () => {
