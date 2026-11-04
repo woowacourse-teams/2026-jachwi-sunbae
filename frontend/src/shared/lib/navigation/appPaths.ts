@@ -13,7 +13,7 @@ export const RECORDS_PATH = '/properties';
 export const CHECKLISTS_PATH = '/checklists';
 export const MY_PATH = '/me';
 export const COMPARE_PATH = '/compare';
-/** 저렴한 한 끼. 탭마다 주소가 따로 있고(`/cheap-meals/restaurant` 등), 탭 없이 들어오면 식당 탭 주소로 바꾼다. */
+/** 저렴한 한 끼. 탭마다 주소가 따로 있고(`/cheap-meals/restaurant` 등), 탭 없이 들어오면 마지막으로 연 탭(처음이면 식당 탭) 주소로 바꾼다. */
 export const CHEAP_MEALS_PATH = '/cheap-meals';
 export const GUIDE_PATH = '/guide';
 export const PRIVACY_PATH = '/privacy';
@@ -66,8 +66,6 @@ export const propertyChecklistPath = (propertyId: PathId, propertyChecklistId: P
 
 /** 저렴한 한 끼 탭 주소. 탭 이름은 `restaurant`, `convenience`, `delivery`이다. */
 export const cheapMealsTabPath = (tab: string) => `${CHEAP_MEALS_PATH}/${tab}`;
-/** 저렴한 한 끼 첫 탭(식당). 홈 카드와 헤더 메뉴가 탭 없는 주소를 거치지 않고 바로 연다. */
-export const CHEAP_MEALS_RESTAURANT_PATH = cheapMealsTabPath('restaurant');
 
 /** 동네 찾기 주소. 회원은 `/neighborhoods`, 공개는 `/explore`이다. */
 export type NeighborhoodBasePath = typeof EXPLORE_PATH | typeof NEIGHBORHOODS_PATH;

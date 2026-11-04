@@ -36,7 +36,7 @@ const renderHome = () => {
             <Route path="/compare" element={target('방 비교 화면')} />
             <Route path="/neighborhoods" element={target('동네 찾기 화면')} />
             <Route path="/me" element={target('마이페이지 화면')} />
-            <Route path="/cheap-meals/restaurant" element={target('저렴한 한 끼 화면')} />
+            <Route path="/cheap-meals" element={target('저렴한 한 끼 화면')} />
           </Routes>
         </MemoryRouter>
       </PublicConfigProvider>

@@ -166,10 +166,34 @@ it('예전 주소의 전체 탭(?tab=all)으로 들어와도 식당 탭으로 �
   await waitFor(() => expect(currentUrl()).toBe('/cheap-meals/restaurant'));
 });
 
-it('홈 카드는 탭 없는 주소를 거치지 않고 식당 탭 주소로 바로 연다', async () => {
+it('처음 홈 카드로 들어오면 이력을 늘리지 않고 식당 탭 주소로 바꾼다', async () => {
   const user = setup('/');
   await user.click(screen.getByRole('link', { name: /오늘 한 끼/ }));
-  expect(currentUrl()).toBe('/cheap-meals/restaurant');
+  await waitFor(() => expect(currentUrl()).toBe('/cheap-meals/restaurant'));
+  await user.click(screen.getByRole('button', { name: '브라우저 뒤로' }));
+  expect(currentUrl()).toBe('/');
+});
+
+it('배달 탭을 보다가 다른 화면을 다녀와 홈 카드로 다시 들어오면 배달 탭을 연다', async () => {
+  const first = renderAt('/cheap-meals/restaurant');
+  await first.user.click(tab('배달'));
+  expect(currentUrl()).toBe('/cheap-meals/delivery');
+  first.unmount();
+  calls.stores.mockClear();
+
+  const { user } = renderAt('/');
+  await user.click(screen.getByRole('link', { name: /오늘 한 끼/ }));
+  expect(tab('배달')).toHaveAttribute('aria-selected', 'true');
+  await waitFor(() => expect(currentUrl()).toBe('/cheap-meals/delivery'));
+  expect(calls.stores).not.toHaveBeenCalled();
+});
+
+it('탭 주소로 바로 들어오면 마지막 탭보다 주소의 탭을 연다', async () => {
+  const first = renderAt('/cheap-meals/delivery');
+  first.unmount();
+  setup('/cheap-meals/convenience');
+  expect(tab('편의점')).toHaveAttribute('aria-selected', 'true');
+  expect(currentUrl()).toBe('/cheap-meals/convenience');
 });
 
 it.each([
