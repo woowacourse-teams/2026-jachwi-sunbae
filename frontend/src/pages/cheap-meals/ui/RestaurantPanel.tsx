@@ -32,12 +32,13 @@ const RestaurantPanel = ({ isActive, layout }: RestaurantPanelProps) => {
   const locate = () => void map.locate();
   const controls = (
     <div className={styles.controls}>
-      <button type="button" className={styles.search} onClick={map.openSearch}>
-        <Icon name="search" size={18} />
-        <span>{map.area.label}</span>
-        <small>주소 검색</small>
-      </button>
+      {/* 검색창과 현재 위치를 한 줄에 두고 안내 문구를 바로 아래에 붙여 지도 위 빈 줄을 줄인다. */}
       <div className={styles.row}>
+        <button type="button" className={styles.search} onClick={map.openSearch}>
+          <Icon name="search" size={18} />
+          <span>{map.area.label}</span>
+          <small>주소 검색</small>
+        </button>
         <button
           type="button"
           className={styles.locate}
@@ -49,9 +50,9 @@ const RestaurantPanel = ({ isActive, layout }: RestaurantPanelProps) => {
           {map.isLocating ? '확인 중' : '현재 위치'}
         </button>
       </div>
-      <p className={styles.notice}>음식점 외 업종도 있어요. 가게별 업종을 확인해 주세요.</p>
+      <p className={styles.hint}>음식점 외 업종도 있어요. 가게별 업종을 확인해 주세요.</p>
       {map.locationError && (
-        <p className={styles.notice} role="alert">
+        <p className={styles.hint} role="alert">
           {map.locationError}
         </p>
       )}
@@ -219,16 +220,17 @@ const styles = {
   `,
   controls: css`
     label: RestaurantPanel-controls;
-    padding: 0.8rem 1rem 0.5rem;
+    padding: 0.8rem 1rem 0.6rem;
     flex-shrink: 0;
     border-bottom: 1px solid var(--color-border);
   `,
   search: css`
     label: RestaurantPanel-search;
     display: flex;
+    flex: 1;
+    min-width: 0;
     align-items: center;
     gap: 0.55rem;
-    width: 100%;
     min-height: 44px;
     padding: 0.6rem 0.8rem;
     border: 0;
@@ -254,13 +256,12 @@ const styles = {
     label: RestaurantPanel-row;
     display: flex;
     align-items: center;
-    justify-content: flex-end;
-    gap: 0.5rem;
-    margin-top: 0.5rem;
+    gap: 0.25rem;
   `,
   locate: css`
     label: RestaurantPanel-locate;
     display: flex;
+    flex-shrink: 0;
     align-items: center;
     gap: 0.3rem;
     min-height: 44px;
@@ -270,6 +271,18 @@ const styles = {
     color: var(--color-ink);
     font-size: 0.75rem;
     cursor: pointer;
+  `,
+  hint: css`
+    label: RestaurantPanel-hint;
+    font-size: 0.7rem;
+    color: var(--color-ink-soft);
+    line-height: 1.5;
+    margin: 0.4rem 0 0;
+    /* 좁은 칸이나 큰 글씨에서 줄이 넘어가도 낱말 가운데서 끊지 않는다. */
+    word-break: keep-all;
+    & + & {
+      margin-top: 0.15rem;
+    }
   `,
   notice: css`
     label: RestaurantPanel-notice;

@@ -348,6 +348,23 @@ it('주소 검색 결과를 선택하면 선택한 좌표의 2km 반경을 조�
   await waitFor(() => expect(calls.stores).toHaveBeenCalledWith('2000', '37.5665', '126.978'));
 });
 
+it('현재 위치 버튼을 주소 검색과 같은 줄에 두고 업종 안내와 위치 오류를 그 바로 아래에 붙인다', async () => {
+  const locate = vi.spyOn(mapLocation, 'requestCurrentMapLocation').mockRejectedValueOnce(new Error('denied'));
+  try {
+    const user = setup('/cheap-meals?tab=restaurant');
+    await screen.findByRole('list', { name: '가게 목록' });
+    const locateButton = screen.getByRole('button', { name: '현재 위치로 찾기' });
+    const row = locateButton.parentElement!;
+    expect(within(row).getByRole('button', { name: /주소 검색/ })).toBeInTheDocument();
+    const hint = row.nextElementSibling;
+    expect(hint).toHaveTextContent('음식점 외 업종도 있어요. 가게별 업종을 확인해 주세요.');
+    await user.click(locateButton);
+    expect(hint?.nextElementSibling).toBe(await screen.findByRole('alert'));
+  } finally {
+    locate.mockRestore();
+  }
+});
+
 it('명시적으로 요청한 현재 위치가 거부되면 안내하고 재요청 성공 시 해당 좌표를 조회한다', async () => {
   const locate = vi
     .spyOn(mapLocation, 'requestCurrentMapLocation')
