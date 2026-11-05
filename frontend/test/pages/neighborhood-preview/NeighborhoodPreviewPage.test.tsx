@@ -616,8 +616,9 @@ it('상위 동네 카드를 고르면 시트에서 출발 정류장을 골라 �
   await screen.findByRole('region', { name: '행정동 프리셋 지도' });
   expect(screen.getByLabelText('통근 시간 상위 동네').querySelectorAll('button')).toHaveLength(2);
   await user.click(screen.getByRole('button', { name: /1위 역삼1동/ }));
-  // 출발 정류장은 고르기 전에는 지도 마커로 찍지 않는다.
+  // 출발 정류장은 고르기 전에는 지도 마커로 찍지 않고, 순위 이름표는 고른 동네 것만 남긴다.
   expect(JSON.parse(screen.getByLabelText('목적지 좌표').textContent ?? '[]')).toEqual([
+    expect.objectContaining({ id: 'area-rank:11230640', caption: '역삼1동' }),
     expect.objectContaining({ id: 'destination' }),
   ]);
   expect(trackPostHogEvent).toHaveBeenCalledWith(
@@ -740,8 +741,9 @@ it('결과 지도의 순위 알약을 누르면 그 동네를 고르고, 휴대�
   expect(screen.queryByText(/교통 탭에서 정류장이 보여요/)).not.toBeInTheDocument();
   await user.click(screen.getByRole('button', { name: '마커 신림동 2위' }));
   expect(await screen.findByRole('region', { name: '신림동' })).toBeInTheDocument();
-  // 동네 시트를 열면 정류장·공인중개사 마커를 가리지 않게 순위 알약을 거둔다.
-  expect(screen.queryByRole('button', { name: '마커 신림동 2위' })).not.toBeInTheDocument();
+  // 동네를 고르면 다른 동네 순위 이름표는 거두고 고른 동네 이름표만 남긴다.
+  expect(screen.getByRole('button', { name: '마커 신림동 2위' })).toBeInTheDocument();
+  expect(screen.queryByRole('button', { name: '마커 역삼1동 1위' })).not.toBeInTheDocument();
   expect(screen.getByRole('button', { name: '동네 찾기 나가기' })).toBeInTheDocument();
 });
 it('결과 지도를 가까이 확대하면 화면 안 정류장·부동산을 올리고 눌러 정보를 본다', async () => {
@@ -1147,16 +1149,25 @@ it('동네를 고르면 그 동네로 다가가 확대하지 않아도 마커를
   await user.click(screen.getByRole('button', { name: /^교통 숨기기/ }));
   expect(categories().has('TRANSPORT')).toBe(false);
 });
-it('휴대폰은 검색 결과에 처음 들어오면 순위 카드 줄을 펼쳐 두고, 지도를 끌면 순위 보기 버튼으로 접었다 다시 펼친다', async () => {
+it('휴대폰은 검색 결과에 처음 들어오면 순위 카드 줄과 순위 이름표를 펼쳐 두고, 지도를 끌거나 레일 칸을 켜면 함께 접었다 순위 보기로 다시 펼친다', async () => {
   show();
   const user = await choosePoint();
   await user.click(screen.getByRole('button', { name: /에서 찾기$/ }));
   expect(await screen.findByLabelText('통근 시간 상위 동네')).toBeInTheDocument();
   expect(screen.queryByRole('button', { name: '순위 보기' })).not.toBeInTheDocument();
+  expect(screen.getByRole('button', { name: '마커 역삼1동 1위' })).toBeInTheDocument();
   await user.click(screen.getByRole('button', { name: '지도 끌기' }));
+  // 순위를 접으면 지도 위 순위 이름표도 함께 숨긴다.
   expect(screen.queryByLabelText('통근 시간 상위 동네')).not.toBeInTheDocument();
+  expect(screen.queryByRole('button', { name: /^마커 .*위$/ })).not.toBeInTheDocument();
   await user.click(screen.getByRole('button', { name: '순위 보기' }));
   expect(screen.getByLabelText('통근 시간 상위 동네')).toBeInTheDocument();
+  expect(screen.getByRole('button', { name: '마커 역삼1동 1위' })).toBeInTheDocument();
+  // 레일 칸을 켜도 순위를 접고 이름표를 숨긴다.
+  await user.click(screen.getByRole('button', { name: /^병원 표시하기/ }));
+  expect(screen.queryByRole('button', { name: '마커 역삼1동 1위' })).not.toBeInTheDocument();
+  await user.click(screen.getByRole('button', { name: /^병원 숨기기/ }));
+  await user.click(screen.getByRole('button', { name: '순위 보기' }));
   // 동네를 고르면 지금처럼 그 동네 시트로 간다.
   await user.click(screen.getByRole('button', { name: /1위 역삼1동/ }));
   expect(await screen.findByRole('region', { name: '역삼1동' })).toBeInTheDocument();
@@ -1562,6 +1573,21 @@ it('데스크탑은 고른 동네 카드를 다시 누르거나 옆 칸을 닫�
     await user.click(screen.getByRole('button', { name: '동네 정보 닫기' }));
     expect(panel.getByRole('button', { name: /1위 역삼1동/ })).toHaveAttribute('aria-pressed', 'false');
     expect(screen.queryByRole('region', { name: '역삼1동 요약' })).not.toBeInTheDocument();
+  } finally {
+    matchMedia.mockRestore();
+  }
+});
+it('데스크탑은 레일 칸을 켠 동안 지도 위 순위 이름표를 숨기고, 끄면 다시 보인다', async () => {
+  const matchMedia = useDesktopViewport();
+  try {
+    show();
+    const user = await choosePoint();
+    await user.click(screen.getByRole('button', { name: '이 조건으로 동네 찾기' }));
+    expect(await screen.findByRole('button', { name: '마커 역삼1동 1위' })).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: /^학교 표시하기/ }));
+    expect(screen.queryByRole('button', { name: '마커 역삼1동 1위' })).not.toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: /^학교 숨기기/ }));
+    expect(screen.getByRole('button', { name: '마커 역삼1동 1위' })).toBeInTheDocument();
   } finally {
     matchMedia.mockRestore();
   }

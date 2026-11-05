@@ -66,6 +66,7 @@ const NeighborhoodPreviewMobilePage = ({ preview }: Props) => {
     onEmptyTap: () => setPeekSignal((value) => value + 1),
     // 시트가 열린 채 지도의 동네를 찍으면 시트를 닫고 랭킹을 다시 보여 준다.
     deselectOnRegionTap: true,
+    rankCollapsible: true,
   });
   const { isResultMap, mapProps, places, closeLayers, rail, railSelection, railArea } = mapView;
   // 레일 칸을 켰을 때 시트에 보일 그 칸의 목록. 동네를 고르면 동네 시트 안에, 고르기 전에는 따로 띄운 시트에 둔다.
@@ -101,18 +102,9 @@ const NeighborhoodPreviewMobilePage = ({ preview }: Props) => {
   // 결과에 들어오자마자 예전 본 방 기록 지도처럼 오른쪽 위에 확대 축소, 분류 레일, 현재 위치 버튼을 한 줄로 세운다.
   // 레일은 동네를 고르기 전에는 1위 동네, 고르면 그 동네 기준이다. 아래 시트는 그 밑에서 올라온다.
   // 동네를 고르기 전 결과 화면의 아래 묶음(내 매물 통근 시간, 순위 레일).
-  // 아래 순위 카드 줄은 검색 결과에 처음 들어왔을 때만 펼쳐 둔다. 레일 칸을 켜거나 지도를 끌면 `순위 보기` 버튼으로 접는다.
-  const [isRankOpen, setIsRankOpen] = useState(true);
-  const [wasResultMap, setWasResultMap] = useState(isResultMap);
-  if (wasResultMap !== isResultMap) {
-    setWasResultMap(isResultMap);
-    if (isResultMap) setIsRankOpen(true);
-  }
-  const [lastRailSelection, setLastRailSelection] = useState(railSelection);
-  if (lastRailSelection !== railSelection) {
-    setLastRailSelection(railSelection);
-    if (railSelection !== null) setIsRankOpen(false);
-  }
+  // 아래 순위 카드 줄은 검색 결과에 처음 들어왔을 때만 펼쳐 둔다. 레일 칸을 켜거나 지도를 끌면 `순위 보기` 버튼으로 접고,
+  // 지도 위 순위 이름표도 함께 숨긴다(`useNeighborhoodMapView`의 `rankCollapsible`).
+  const { isRankOpen, openRank } = mapView;
   const showsRankArea =
     !isRoutePage && preview.topAreas.length > 0 && places.selectedPlace === null && railSelection === null;
   const showsResultStack = showsRankArea && isRankOpen;
@@ -192,7 +184,6 @@ const NeighborhoodPreviewMobilePage = ({ preview }: Props) => {
           interactive
           onReady={preview.prefetchBoundaries}
           {...mapProps}
-          onDragStart={isResultMap ? () => setIsRankOpen(false) : undefined}
         />
         <AnalysisOverlay preview={preview} />
         {preview.isSelectingOnMap && (
@@ -340,7 +331,7 @@ const NeighborhoodPreviewMobilePage = ({ preview }: Props) => {
               </div>
             )}
             {showsRankArea && !isRankOpen && (
-              <Button variant="secondary" className={styles.rankToggle} onClick={() => setIsRankOpen(true)}>
+              <Button variant="secondary" className={styles.rankToggle} onClick={openRank}>
                 <Icon name="chevron-up" size={18} />
                 순위 보기
               </Button>

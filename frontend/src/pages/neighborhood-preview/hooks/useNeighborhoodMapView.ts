@@ -36,6 +36,11 @@ type MapViewOptions = {
   onEmptyTap?: () => void;
   /** 동네를 고른 채 지도의 동네(같은 동네든 다른 동네든)를 찍으면 동네 선택을 풀고 랭킹으로 돌아간다. 휴대폰은 시트를 닫는다. */
   deselectOnRegionTap?: boolean;
+  /**
+   * 휴대폰처럼 순위를 접었다 펼 수 있는지. 켜면 순위는 결과에 처음 들어왔을 때만 펼쳐 두고, 레일 칸을 켜거나 지도를 끌면 접는다.
+   * 끄면(데스크탑) 레일 칸을 켠 동안만 순위를 숨긴다.
+   */
+  rankCollapsible?: boolean;
 };
 
 /** 결과 지도 레일에서 고르는 주변 시설 분류. 메모는 따로 켜고 끈다. */
@@ -63,7 +68,7 @@ type MemoView = { bounds: MapBounds; level: number };
 
 const useNeighborhoodMapView = (
   preview: NeighborhoodPreviewContext,
-  { showAreaAction = true, onEmptyTap, deselectOnRegionTap = false }: MapViewOptions = {},
+  { showAreaAction = true, onEmptyTap, deselectOnRegionTap = false, rankCollapsible = false }: MapViewOptions = {},
 ) => {
   const isResultMap = !preview.isAnalyzing && !preview.error && !preview.isSelectingOnMap;
   const places = useNeighborhoodPlaces(isResultMap);
@@ -137,7 +142,16 @@ const useNeighborhoodMapView = (
     preview.toggleMapCategory(next, value !== null);
     places.closePlace();
     setRailSelection(value);
+    if (value !== null) setIsRankOpen(false);
   };
+  // 순위(아래 카드 줄과 지도 위 순위 이름표)를 펼쳐 둘지. 결과에 새로 들어올 때마다 펼친다.
+  const [isRankOpen, setIsRankOpen] = useState(true);
+  const [wasResultMap, setWasResultMap] = useState(isResultMap);
+  if (wasResultMap !== isResultMap) {
+    setWasResultMap(isResultMap);
+    if (isResultMap) setIsRankOpen(true);
+  }
+  const showsRank = railSelection === null && (!rankCollapsible || isRankOpen);
   const facilityMarkers = useMemo(
     () =>
       facilityCategory === null
@@ -189,23 +203,28 @@ const useNeighborhoodMapView = (
     }
     places.selectMarker(marker);
   };
-  // 상위 1~5위 동네는 동네 가운데에 순위 알약을 띄운다.
-  // 가까이 확대했거나 동네를 골라 시트(칸)를 열면 마커와 시트를 가리지 않게 거둔다.
-  const hasSelectedArea = selectedCode !== null;
+  // 상위 1~5위 동네는 동네 가운데에 순위 이름표를 띄운다. 순위를 접으면 함께 숨기고, 동네를 고르면 그 동네 이름표만 남긴다.
+  // 가까이 확대하면 마커를 가리지 않게 거둔다.
   const rankMarkers = useMemo<MapMarker[]>(
     () =>
-      places.isClose || hasSelectedArea
+      places.isClose
         ? []
-        : preview.topAreas.map((area, index) => ({
-            ...area.center,
-            id: `${RANK_MARKER_PREFIX}${area.adminDongCode}`,
-            label: `${area.name} ${index + 1}위`,
-            caption: area.name,
-            tone: 'rank' as const,
-            rank: index + 1,
-            actionable: true,
-          })),
-    [preview.topAreas, places.isClose, hasSelectedArea],
+        : preview.topAreas.flatMap((area, index) =>
+            (selectedCode !== null ? area.adminDongCode === selectedCode : showsRank)
+              ? [
+                  {
+                    ...area.center,
+                    id: `${RANK_MARKER_PREFIX}${area.adminDongCode}`,
+                    label: `${area.name} ${index + 1}위`,
+                    caption: area.name,
+                    tone: 'rank' as const,
+                    rank: index + 1,
+                    actionable: true,
+                  },
+                ]
+              : [],
+          ),
+    [preview.topAreas, places.isClose, selectedCode, showsRank],
   );
   const destinationMarkers = useMemo(
     () => [
@@ -250,6 +269,8 @@ const useNeighborhoodMapView = (
           places.rememberLevel(level);
           levelRef.current = level;
         },
+        // 휴대폰은 손으로 지도를 끌면 순위를 접어 지도를 넓게 보이게 한다.
+        onDragStart: rankCollapsible ? () => setIsRankOpen(false) : undefined,
         onBoundsChange: (bounds: MapBounds) => {
           places.rememberBounds(bounds);
           const level = levelRef.current;
@@ -319,6 +340,10 @@ const useNeighborhoodMapView = (
         },
       ],
     },
+    /** 순위(아래 카드 줄과 지도 위 순위 이름표)를 펼쳐 두었는지. */
+    isRankOpen,
+    /** 접어 둔 순위를 다시 펼친다(`순위 보기`). */
+    openRank: () => setIsRankOpen(true),
     /** 레일에서 켠 칸. 없으면 null이고, 시트(칸)는 동네 순위와 시세를 보인다. */
     railSelection,
     /** 켠 레일 칸을 끈다(목록 시트를 끌어 내려 닫았을 때). */
