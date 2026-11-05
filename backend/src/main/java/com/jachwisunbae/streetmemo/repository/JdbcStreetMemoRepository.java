@@ -4,6 +4,7 @@ import com.jachwisunbae.common.exception.client.ClientException;
 import com.jachwisunbae.common.exception.errorcode.ErrorCode;
 import com.jachwisunbae.common.exception.server.DataInconsistencyException;
 import com.jachwisunbae.streetmemo.domain.StreetMemo;
+import com.jachwisunbae.streetmemo.domain.StreetMemoCategory;
 import com.jachwisunbae.streetmemo.domain.StreetMemoPreference;
 import java.math.BigDecimal;
 import java.sql.PreparedStatement;
@@ -28,6 +29,7 @@ public class JdbcStreetMemoRepository implements StreetMemoRepository {
                     resultSet.getBigDecimal("latitude"),
                     resultSet.getBigDecimal("longitude"),
                     resultSet.getString("admin_dong_code"),
+                    StreetMemoCategory.fromCode(resultSet.getString("category")),
                     resultSet.getString("memo"),
                     StreetMemoPreference.fromCode(resultSet.getString("preference")),
                     resultSet.getTimestamp("created_at").toLocalDateTime(),
@@ -51,9 +53,9 @@ public class JdbcStreetMemoRepository implements StreetMemoRepository {
             throw new IllegalArgumentException("새 거리 메모만 저장할 수 있습니다.");
         }
         String sql = """
-                INSERT INTO street_memos (member_id, latitude, longitude, admin_dong_code, memo, preference,
+                INSERT INTO street_memos (member_id, latitude, longitude, admin_dong_code, category, memo, preference,
                     created_at, updated_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """;
         GeneratedKeyHolder keyHolder = new GeneratedKeyHolder();
         jdbcTemplate.update(connection -> {
@@ -62,10 +64,11 @@ public class JdbcStreetMemoRepository implements StreetMemoRepository {
             statement.setBigDecimal(2, streetMemo.getLatitude());
             statement.setBigDecimal(3, streetMemo.getLongitude());
             statement.setString(4, streetMemo.getAdminDongCode());
-            statement.setString(5, streetMemo.getMemo());
-            statement.setString(6, streetMemo.getPreference().name());
-            statement.setObject(7, streetMemo.getCreatedAt());
-            statement.setObject(8, streetMemo.getUpdatedAt());
+            statement.setString(5, streetMemo.getCategory().name());
+            statement.setString(6, streetMemo.getMemo());
+            statement.setString(7, streetMemo.getPreference().name());
+            statement.setObject(8, streetMemo.getCreatedAt());
+            statement.setObject(9, streetMemo.getUpdatedAt());
             return statement;
         }, keyHolder);
         Number key = keyHolder.getKey();
@@ -73,8 +76,8 @@ public class JdbcStreetMemoRepository implements StreetMemoRepository {
             throw new IllegalStateException("거리 메모 저장 후 생성된 ID를 확인할 수 없습니다.");
         }
         return jdbcTemplate.queryForObject("""
-                SELECT id, member_id, latitude, longitude, admin_dong_code, memo, preference, created_at,
-                       updated_at, deleted_at
+                SELECT id, member_id, latitude, longitude, admin_dong_code, category, memo, preference,
+                       created_at, updated_at, deleted_at
                 FROM street_memos WHERE id = ?
                 """, ROW_MAPPER, key.longValue());
     }
@@ -83,8 +86,8 @@ public class JdbcStreetMemoRepository implements StreetMemoRepository {
     public List<StreetMemo> findAllWithin(final BigDecimal minLatitude, final BigDecimal maxLatitude,
                                          final BigDecimal minLongitude, final BigDecimal maxLongitude) {
         return jdbcTemplate.query("""
-                        SELECT id, member_id, latitude, longitude, admin_dong_code, memo, preference, created_at,
-                               updated_at, deleted_at
+                        SELECT id, member_id, latitude, longitude, admin_dong_code, category, memo, preference,
+                               created_at, updated_at, deleted_at
                         FROM street_memos
                         WHERE deleted_at IS NULL
                           AND latitude BETWEEN ? AND ? AND longitude BETWEEN ? AND ?
@@ -94,8 +97,8 @@ public class JdbcStreetMemoRepository implements StreetMemoRepository {
     @Override
     public Optional<StreetMemo> findByIdForUpdate(final long id) {
         return jdbcTemplate.query("""
-                SELECT id, member_id, latitude, longitude, admin_dong_code, memo, preference, created_at,
-                       updated_at, deleted_at
+                SELECT id, member_id, latitude, longitude, admin_dong_code, category, memo, preference,
+                       created_at, updated_at, deleted_at
                 FROM street_memos
                 WHERE id = ? AND deleted_at IS NULL
                 FOR UPDATE

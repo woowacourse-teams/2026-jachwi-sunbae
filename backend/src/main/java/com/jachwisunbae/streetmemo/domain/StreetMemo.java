@@ -15,12 +15,14 @@ public final class StreetMemo extends BaseTimeEntity {
     private final Long memberId;
     private final StreetMemoLocation location;
     private final String adminDongCode;
+    private final StreetMemoCategory category;
     private final String memo;
     private final StreetMemoPreference preference;
     private LocalDateTime deletedAt;
 
     private StreetMemo(final Long id, final Long memberId, final BigDecimal latitude,
-                       final BigDecimal longitude, final String adminDongCode, final String memo,
+                       final BigDecimal longitude, final String adminDongCode,
+                       final StreetMemoCategory category, final String memo,
                        final StreetMemoPreference preference,
                        final LocalDateTime createdAt, final LocalDateTime updatedAt,
                        final LocalDateTime deletedAt) {
@@ -30,6 +32,7 @@ public final class StreetMemo extends BaseTimeEntity {
         this.memberId = requirePositiveId(memberId, "작성자 회원 ID");
         this.location = new StreetMemoLocation(latitude, longitude);
         this.adminDongCode = adminDongCode;
+        this.category = requireCategory(category);
         this.memo = requireMemo(memo);
         this.preference = requirePreference(preference);
         this.deletedAt = deletedAt;
@@ -37,18 +40,21 @@ public final class StreetMemo extends BaseTimeEntity {
 
     // 행정동 코드는 서버가 좌표로 찾아 넣는다. 찾지 못하면 null이다.
     public static StreetMemo create(final Long memberId, final BigDecimal latitude, final BigDecimal longitude,
-                                    final String adminDongCode, final String memo,
-                                    final StreetMemoPreference preference, final LocalDateTime now) {
-        return new StreetMemo(null, memberId, latitude, longitude, adminDongCode, memo, preference, now, now, null);
+                                    final String adminDongCode, final StreetMemoCategory category,
+                                    final String memo, final StreetMemoPreference preference,
+                                    final LocalDateTime now) {
+        return new StreetMemo(null, memberId, latitude, longitude, adminDongCode, category, memo, preference,
+                now, now, null);
     }
 
     public static StreetMemo reconstruct(final Long id, final Long memberId, final BigDecimal latitude,
                                          final BigDecimal longitude, final String adminDongCode,
-                                         final String memo, final StreetMemoPreference preference,
+                                         final StreetMemoCategory category, final String memo,
+                                         final StreetMemoPreference preference,
                                          final LocalDateTime createdAt, final LocalDateTime updatedAt,
                                          final LocalDateTime deletedAt) {
         return new StreetMemo(requirePositiveId(id, "거리 메모 ID"), memberId, latitude, longitude,
-                adminDongCode, memo, preference, createdAt, updatedAt, deletedAt);
+                adminDongCode, category, memo, preference, createdAt, updatedAt, deletedAt);
     }
 
     public boolean isOwnedBy(final Long memberId) {
@@ -102,6 +108,14 @@ public final class StreetMemo extends BaseTimeEntity {
                     "거리 메모 선호는 필수입니다.");
         }
         return preference;
+    }
+
+    private static StreetMemoCategory requireCategory(final StreetMemoCategory category) {
+        if (category == null) {
+            throw new InvalidInputException(ErrorCode.STREET_MEMO_CATEGORY_INVALID,
+                    "거리 메모 카테고리는 필수입니다.");
+        }
+        return category;
     }
 
     private static LocalDateTime requireTime(final LocalDateTime time, final String name) {
