@@ -14,6 +14,8 @@ type MapCategoryRailProps = {
   showIcons?: boolean;
   /** 이 화면에서 빼는 카테고리. 본 방 기록 지도는 동네 찾기에서 따로 보는 `중개`를 뺀다. */
   hiddenCategories?: MapCategory[];
+  /** 시설 분류 아래에 이어 붙일 칸(동네 찾기의 `My` 등). 모양은 시설 칸과 같다. */
+  extraItems?: { key: string; label: string; ariaLabel: string; selected: boolean; onToggle: () => void }[];
   className?: string;
 };
 
@@ -25,6 +27,7 @@ const MapCategoryRail = ({
   showMemo = false,
   showIcons = true,
   hiddenCategories = [],
+  extraItems = [],
   className,
 }: MapCategoryRailProps) => (
   <aside
@@ -52,6 +55,19 @@ const MapCategoryRail = ({
         </button>
       );
     })}
+    {extraItems.map((item) => (
+      <button
+        key={item.key}
+        type="button"
+        className={styles.categoryButton}
+        data-category={item.key}
+        aria-pressed={item.selected}
+        aria-label={item.ariaLabel}
+        onClick={item.onToggle}
+      >
+        {item.label}
+      </button>
+    ))}
   </aside>
 );
 

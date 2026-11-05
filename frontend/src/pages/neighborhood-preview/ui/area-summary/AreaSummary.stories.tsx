@@ -47,22 +47,11 @@ const meta = {
   ],
   argTypes: {
     area: { control: 'object', description: '선택한 동네. rent가 null이면 시세 대신 거래가 적다는 안내를 보여준다.' },
-    selectedStopId: {
-      control: 'select',
-      options: ['BS_TAGO_11440001', 'BS_TAGO_11440002', '선택 안 함'],
-      mapping: { '선택 안 함': null },
-      description: '경로를 보고 있는 출발 정류장',
-    },
-    onSelectStation: { description: '출발 정류장 고르기' },
     onOpenListing: { description: '매물 보기 열기' },
-    showsStations: { control: 'boolean', description: '지도 레일에서 교통을 켜 출발 정류장 목록을 보여 줄지' },
   },
   args: {
     area,
-    selectedStopId: 'BS_TAGO_11440001',
-    onSelectStation: fn(),
     onOpenListing: fn(),
-    showsStations: false,
   },
 } satisfies Meta<typeof AreaSummary>;
 
@@ -72,14 +61,8 @@ type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {};
 
-/** 지도 레일에서 교통을 켜면 그 동네의 출발 정류장을 고른다. */
-export const Stations: Story = {
-  args: { showsStations: true },
-};
-
 export const WithoutRent: Story = {
   args: {
     area: { ...area, rent: null },
-    selectedStopId: null,
   },
 };

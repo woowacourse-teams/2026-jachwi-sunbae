@@ -8,6 +8,7 @@ import MapCategoryRail from '@/features/map/ui/map-category-rail/MapCategoryRail
 import ExplorationRecordAction from '@/features/onboarding/ui/exploration-record-action/ExplorationRecordAction';
 import { LogClick } from '@/shared/lib/analytics/logging';
 import { ROUTE_PATTERNS } from '@/shared/lib/navigation/appPaths';
+import BottomSheet from '@/shared/ui/bottom-sheet/BottomSheet';
 import { Button } from '@/shared/ui/button/Button';
 import Chip from '@/shared/ui/chip/Chip';
 import HorizontalRail from '@/shared/ui/horizontal-rail/HorizontalRail';
@@ -30,10 +31,11 @@ import LocationControls from '../ui/location-controls/LocationControls';
 import NeighborhoodMapSearch from '../ui/map-search/NeighborhoodMapSearch';
 import MapTapHint from '../ui/map-tap-hint/MapTapHint';
 import NeighborhoodPlaceSheet from '../ui/place-panel/NeighborhoodPlaceSheet';
-import PropertyCommuteList from '../ui/property-commute/PropertyCommuteList';
+import RailCategoryPanel, { railSelectionTitle } from '../ui/rail-category-panel/RailCategoryPanel';
 import RentSlider from '../ui/rent-slider/RentSlider';
 
 import * as shared from '../NeighborhoodPreviewPage.styles';
+import { sheetSwap } from '../ui/rail-category-panel/railSwap.styles';
 
 const CARD_RANKS = [1, 2, 3, 4, 5] as const;
 
@@ -54,12 +56,35 @@ const NeighborhoodPreviewMobilePage = ({ preview }: Props) => {
   // 지도 빈 곳을 찍으면 시트를 닫지 않고 제목만 보이게 내린다.
   const [peekSignal, setPeekSignal] = useState(0);
   // 고른 동네의 정보는 지도 위 말풍선 대신 아래 시트(AreaPlacesSheet)에 둔다.
-  const { isResultMap, mapProps, places, closeLayers, rail, showsStations } = useNeighborhoodMapView(preview, {
+  const mapView = useNeighborhoodMapView(preview, {
     showAreaAction: false,
     onEmptyTap: () => setPeekSignal((value) => value + 1),
     // 시트가 열린 채 지도의 동네를 찍으면 시트를 닫고 랭킹을 다시 보여 준다.
     deselectOnRegionTap: true,
   });
+  const { isResultMap, mapProps, places, closeLayers, rail, railSelection, railArea } = mapView;
+  // 레일 칸을 켰을 때 시트에 보일 그 칸의 목록. 동네를 고르면 동네 시트 안에, 고르기 전에는 따로 띄운 시트에 둔다.
+  const railPanel =
+    railSelection !== null && railArea ? (
+      <RailCategoryPanel
+        selection={railSelection}
+        areaName={railArea.name}
+        places={mapView.railPlaces}
+        placesState={mapView.railPlacesState}
+        onSelectPlace={mapView.selectRailPlace}
+        stations={preview.selected?.stations}
+        onSelectStation={(station) => {
+          places.selectStation(areaStation(station));
+          preview.selectStation(station.stopId);
+          preview.focusRoute(station);
+        }}
+        my={mapView.my}
+        isPublicExplore={preview.isPublicExplore}
+        destinationName={preview.destination.name}
+        onOpenProperty={preview.openPropertyCommute}
+      />
+    ) : null;
+  const railTitle = railSelection !== null && railArea ? railSelectionTitle(railSelection, railArea.name) : '';
   const recordArea = preview.selected ?? preview.topAreas[0];
   const hasAreaSheet = !!isRoutePage && !!preview.selected;
   // 지도는 화면 전체를 쓰고, 위 조건 줄과 동네를 고르면 올라올 아래 시트가 가리는 만큼 비우고 시점을 맞춘다.
@@ -71,7 +96,10 @@ const NeighborhoodPreviewMobilePage = ({ preview }: Props) => {
   // 결과에 들어오자마자 예전 본 방 기록 지도처럼 오른쪽 위에 확대 축소, 분류 레일, 현재 위치 버튼을 한 줄로 세운다.
   // 레일은 동네를 고르기 전에는 1위 동네, 고르면 그 동네 기준이다. 아래 시트는 그 밑에서 올라온다.
   // 동네를 고르기 전 결과 화면의 아래 묶음(내 매물 통근 시간, 순위 레일).
-  const showsResultStack = !isRoutePage && preview.topAreas.length > 0 && places.selectedPlace === null;
+  const showsResultStack =
+    !isRoutePage && preview.topAreas.length > 0 && places.selectedPlace === null && railSelection === null;
+  // 동네를 고르기 전에 레일 칸을 켜면 순위 레일 대신 그 칸의 목록 시트를 띄운다.
+  const showsRailSheet = !hasAreaSheet && places.selectedPlace === null && railPanel !== null;
   const resultControls = (
     <LocationControls
       preview={preview}
@@ -281,12 +309,6 @@ const NeighborhoodPreviewMobilePage = ({ preview }: Props) => {
             )}
             {showsResultStack && (
               <div className={`${shared.topAreaRail} ${styles.resultStack}`}>
-                {/* 동네를 고르기 전에도 내 매물 통근 시간을 처음부터 둔다. */}
-                {!preview.isPublicExplore && (
-                  <div className={`${styles.resultCards} ${styles.commuteCard}`}>
-                    <PropertyCommuteList destination={preview.destination} onOpen={preview.openPropertyCommute} />
-                  </div>
-                )}
                 <div aria-label="통근 시간 상위 동네" role="group">
                   <HorizontalRail className={shared.areaCards}>
                     {preview.topAreas.map((area, index) => (
@@ -306,26 +328,38 @@ const NeighborhoodPreviewMobilePage = ({ preview }: Props) => {
                 </div>
               </div>
             )}
-            {/* 동네를 고르면 동네 정보 시트를 올린다. 레일의 교통을 켜고 출발 정류장을 고르면 시트 안에서 경로로 넘어가고, 뒤로가기로 목록에 돌아온다. */}
+            {/* 동네를 고르면 동네 정보 시트를 올린다. 레일 칸을 켜면 시트가 그 목록으로 바뀌고, 교통에서 출발 정류장을 고르면 시트 안에서 경로로 넘어간다. */}
             {hasAreaSheet && preview.selected && (
               <AreaPlacesSheet
-                key={preview.selected.adminDongCode}
+                // 레일 칸이 바뀌면 시트를 새로 그려 다시 올라오게 해, 내용이 바뀐 것을 보인다.
+                key={`${preview.selected.adminDongCode}:${railSelection ?? 'none'}`}
+                className={sheetSwap}
+                rail={railPanel ? { title: railTitle, content: railPanel } : undefined}
                 area={preview.selected}
                 place={places.selectedPlace}
                 preview={preview}
-                showsStations={showsStations}
                 peekSignal={peekSignal}
-                onSelectStation={(station) => {
-                  places.selectStation(areaStation(station));
-                  preview.selectStation(station.stopId);
-                  preview.focusRoute(station);
-                }}
                 onBack={places.closePlace}
                 onClose={() => {
                   closeLayers();
                   preview.selectRegion(null);
                 }}
               />
+            )}
+            {showsRailSheet && (
+              <BottomSheet
+                key={railSelection}
+                title={railTitle}
+                subtitle={railArea?.fullName}
+                className={sheetSwap}
+                initialHeightPercent={38}
+                showCloseButton={false}
+                closeLabel="목록 닫기"
+                peekSignal={peekSignal}
+                onClose={mapView.clearRail}
+              >
+                {railPanel}
+              </BottomSheet>
             )}
             {/* 동네를 고르지 않고 마커로 연 장소는 따로 시트를 띄운다. */}
             {!hasAreaSheet && places.selectedPlace && (
@@ -354,31 +388,6 @@ const styles = {
       flex-direction: column;
       gap: 0.5rem;
       padding-top: 0;
-    }
-  `,
-
-  resultCards: css`
-    label: NeighborhoodPreviewMobilePage-resultCards;
-    display: grid;
-    gap: 0.5rem;
-    margin-right: 0.75rem;
-  `,
-
-  /* 기록한 매물이 많아도 지도를 덮지 않게 몇 줄만 보이고 안에서 스크롤한다. */
-  commuteCard: css`
-    label: NeighborhoodPreviewMobilePage-commuteCard;
-    max-height: 7.5rem;
-    overflow-y: auto;
-    border-radius: 0.9rem;
-    background: var(--color-surface);
-    box-shadow: var(--shadow-floating);
-
-    &:empty {
-      display: none;
-    }
-
-    & > section {
-      padding: 0.6rem 0.85rem 0.2rem;
     }
   `,
 

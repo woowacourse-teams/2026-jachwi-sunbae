@@ -27,11 +27,12 @@ import LocationControls from '../ui/location-controls/LocationControls';
 import NeighborhoodMapSearch from '../ui/map-search/NeighborhoodMapSearch';
 import MapTapHint from '../ui/map-tap-hint/MapTapHint';
 import NeighborhoodPlacePanel from '../ui/place-panel/NeighborhoodPlacePanel';
-import PropertyCommuteList from '../ui/property-commute/PropertyCommuteList';
+import RailCategoryPanel, { railSelectionTitle } from '../ui/rail-category-panel/RailCategoryPanel';
 import RentSlider from '../ui/rent-slider/RentSlider';
 
 import * as shared from '../NeighborhoodPreviewPage.styles';
 import * as placeStyles from '../ui/place-panel/NeighborhoodPlacePanel.styles';
+import { panelSwap } from '../ui/rail-category-panel/railSwap.styles';
 
 const CARD_RANKS = [1, 2, 3, 4, 5] as const;
 
@@ -47,9 +48,10 @@ const NeighborhoodPreviewDesktopPage = ({ preview }: Props) => {
   const isRoutePage = useMatch(`${preview.mapPath}/${ROUTE_PATTERNS.area}/*`);
   const isDetailPage = useMatch(`${preview.mapPath}/${ROUTE_PATTERNS.areaDetails}`);
   const submitSearch = preview.startAnalysis;
-  const { isResultMap, mapProps, places, closeLayers, rail, showsStations } = useNeighborhoodMapView(preview, {
+  const mapView = useNeighborhoodMapView(preview, {
     showAreaAction: false,
   });
+  const { isResultMap, mapProps, places, closeLayers, rail, railSelection, railArea } = mapView;
   // 지도 칸은 목록, 상세 칸 오른쪽에 있다. 상세 칸이 아직 닫혀 있으면 고른 뒤 열릴 폭을 미리 빼고 시점을 맞춘다.
   const mapSectionRef = useResultMapViewport<HTMLElement>(preview, (section) => {
     const layout = section.parentElement?.parentElement;
@@ -66,6 +68,24 @@ const NeighborhoodPreviewDesktopPage = ({ preview }: Props) => {
     preview.selectStation(station.stopId);
     preview.focusRoute(station);
   };
+  // 레일 칸을 켜면 목록 칸이 동네 순위 대신 그 칸의 목록으로 바뀐다.
+  const railPanel =
+    railSelection !== null && railArea ? (
+      <RailCategoryPanel
+        selection={railSelection}
+        areaName={railArea.name}
+        places={mapView.railPlaces}
+        placesState={mapView.railPlacesState}
+        onSelectPlace={mapView.selectRailPlace}
+        stations={preview.selected?.stations}
+        selectedStopId={places.selectedPlace?.kind === 'station' ? places.selectedPlace.station.stopId : null}
+        onSelectStation={(station) => selectAreaStation(areaStation(station))}
+        my={mapView.my}
+        isPublicExplore={preview.isPublicExplore}
+        destinationName={preview.destination.name}
+        onOpenProperty={preview.openPropertyCommute}
+      />
+    ) : null;
   // 정보 칸에서 같은 동네의 앞뒤 출발 정류장으로 넘긴다.
   const areaStations = preview.selected?.stations ?? [];
   const selectedPlace = places.selectedPlace;
@@ -111,38 +131,44 @@ const NeighborhoodPreviewDesktopPage = ({ preview }: Props) => {
         <Chip disabled>{transferLabel(preview.maxTransfers)}</Chip>
         <Chip>{rentLabel(preview.maxRent)}</Chip>
       </div>
-      {preview.topAreas.length > 0 ? (
-        <div className={styles.areaList}>
-          {/* 동네를 고르면 경로를 바로 그리지 않고 목록 옆 칸에 동네 정보를 연다. 교통 탭에서 정류장을 고르면 그 칸에서 경로를 본다. */}
-          {preview.topAreas.map((area, index) => {
-            const isSelected = preview.selected?.adminDongCode === area.adminDongCode;
-            return (
-              <RankedCard
-                key={area.adminDongCode}
-                rank={CARD_RANKS[index]}
-                title={area.name}
-                value={area.commuteMinutes}
-                unit="분"
-                description={areaCardDescription(area)}
-                selected={isSelected}
-                onSelect={() => {
-                  closeLayers();
-                  // 고른 동네를 다시 누르면 옆 칸의 동네 정보를 닫는다.
-                  preview.selectRegion(isSelected ? null : area.adminDongCode, { openDetails: false });
-                }}
-              />
-            );
-          })}
+      {railPanel && railSelection !== null && railArea ? (
+        // 칸이 바뀌면 새로 그려 짧게 떠오르며 바뀐 것을 보인다.
+        <div key={railSelection} className={`${styles.railList} ${panelSwap}`}>
+          <h3>{railSelectionTitle(railSelection, railArea.name)}</h3>
+          {railPanel}
         </div>
       ) : (
-        <div className={styles.empty} role="status">
-          <StateIllustration name="empty-search" size={7} />
-          <p>{emptyAreaMessage(preview.maxRent)}</p>
-        </div>
-      )}
-      {/* 동네를 고르지 않아도 기록한 매물마다 이번 출퇴근 장소까지 통근 시간을 처음부터 둔다. */}
-      {!preview.isPublicExplore && (
-        <PropertyCommuteList destination={preview.destination} onOpen={preview.openPropertyCommute} />
+        <>
+          {preview.topAreas.length > 0 ? (
+            <div className={styles.areaList}>
+              {/* 동네를 고르면 경로를 바로 그리지 않고 목록 옆 칸에 동네 정보를 연다. 교통 탭에서 정류장을 고르면 그 칸에서 경로를 본다. */}
+              {preview.topAreas.map((area, index) => {
+                const isSelected = preview.selected?.adminDongCode === area.adminDongCode;
+                return (
+                  <RankedCard
+                    key={area.adminDongCode}
+                    rank={CARD_RANKS[index]}
+                    title={area.name}
+                    value={area.commuteMinutes}
+                    unit="분"
+                    description={areaCardDescription(area)}
+                    selected={isSelected}
+                    onSelect={() => {
+                      closeLayers();
+                      // 고른 동네를 다시 누르면 옆 칸의 동네 정보를 닫는다.
+                      preview.selectRegion(isSelected ? null : area.adminDongCode, { openDetails: false });
+                    }}
+                  />
+                );
+              })}
+            </div>
+          ) : (
+            <div className={styles.empty} role="status">
+              <StateIllustration name="empty-search" size={7} />
+              <p>{emptyAreaMessage(preview.maxRent)}</p>
+            </div>
+          )}
+        </>
       )}
     </aside>
   ) : (
@@ -163,14 +189,7 @@ const NeighborhoodPreviewDesktopPage = ({ preview }: Props) => {
           ) : isResultMap && preview.selected ? (
             <div className={placeStyles.panel}>
               <h1 className={placeStyles.title}>{preview.selected.name}</h1>
-              <AreaSummary
-                area={preview.selected}
-                selectedStopId={null}
-                onSelectStation={selectAreaStation}
-                onOpenListing={preview.openListing}
-                maxRent={preview.maxRent}
-                showsStations={showsStations}
-              />
+              <AreaSummary area={preview.selected} onOpenListing={preview.openListing} maxRent={preview.maxRent} />
             </div>
           ) : undefined
         }
@@ -327,6 +346,17 @@ const styles = {
     display: flex;
     flex-wrap: wrap;
     gap: 0.35rem;
+  `,
+
+  railList: css`
+    label: NeighborhoodPreviewDesktopPage-railList;
+    display: grid;
+    gap: 0.5rem;
+
+    & h3 {
+      margin: 0;
+      font-size: 0.95rem;
+    }
   `,
 
   areaList: css`

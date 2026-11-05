@@ -2,7 +2,6 @@ import { css } from '@emotion/css';
 import type { ReactNode } from 'react';
 
 import { formatManwon } from '@/features/map/api/commuteApi';
-import { stationIconSrc } from '@/features/map/lib/mapIconAssets';
 import BottomSheet from '@/shared/ui/bottom-sheet/BottomSheet';
 
 import { type NeighborhoodPlace, placeTitle } from '../../hooks/useNeighborhoodPlaces';
@@ -10,7 +9,6 @@ import type { NeighborhoodPreviewContext } from '../../hooks/useNeighborhoodPrev
 import { overRentNotice } from '../../model/criteriaLabels';
 import ListingLink from '../listing-link/ListingLink';
 import PlaceDetails from '../place-panel/PlaceDetails';
-import PropertyCommuteList from '../property-commute/PropertyCommuteList';
 
 type Area = NonNullable<NeighborhoodPreviewContext['selected']>;
 
@@ -20,18 +18,12 @@ type Props = {
   place: NeighborhoodPlace | null;
   preview: Pick<
     NeighborhoodPreviewContext,
-    | 'destination'
-    | 'maxMinutes'
-    | 'maxTransfers'
-    | 'rentPeriod'
-    | 'openListing'
-    | 'maxRent'
-    | 'isPublicExplore'
-    | 'openPropertyCommute'
+    'destination' | 'maxMinutes' | 'maxTransfers' | 'rentPeriod' | 'openListing' | 'maxRent'
   >;
-  /** 지도 레일에서 `교통`을 켰으면 시세 아래에 출발 정류장 목록을, 아니면 내 매물 통근 시간을 둔다. */
-  showsStations: boolean;
-  onSelectStation: (station: Area['stations'][number]) => void;
+  /** 지도 레일에서 칸을 켰으면 시세 대신 보여 줄 그 칸의 목록과 시트 제목. 없으면 시세를 보인다. */
+  rail?: { title: string; content: ReactNode };
+  /** 시트 상자에 덧붙일 클래스. 레일 칸이 바뀌면 다시 올라오는 전환에 쓴다. */
+  className?: string;
   onBack: () => void;
   /** 끌어 내려 닫으면 동네 선택을 푼다. */
   onClose: () => void;
@@ -42,27 +34,18 @@ type Props = {
 };
 
 /**
- * 휴대폰에서 동네를 고르면 아래에 올리는 시트. 시세와 내 매물 통근 시간을 보여 주고,
- * 지도 레일에서 `교통`을 켜면 출발 정류장 목록을 둔다. 정류장을 고르면 시트를 바꾸지 않고 그 안에서 경로로 넘어간다. 지도에서 공인중개사 마커를 눌러도 같은 시트 안에서 연다.
+ * 휴대폰에서 동네를 고르면 아래에 올리는 시트. 처음에는 시세를 보이고, 지도 레일에서 칸을 켜면 그 칸의 목록으로 바뀐다
+ * (시설 이름과 거리, 교통은 출발 정류장, `My`는 매물과 통근 시간). 정류장을 고르면 시트를 바꾸지 않고 그 안에서 경로로 넘어간다. 지도에서 공인중개사 마커를 눌러도 같은 시트 안에서 연다.
  * 닫기 버튼은 두지 않는다. 끌어 내려 닫고, 끝까지 끌어 올리면 헤더에 뒤로가기·닫기가 있는 페이지로 본다.
  */
-const AreaPlacesSheet = ({
-  area,
-  place,
-  preview,
-  showsStations,
-  onSelectStation,
-  onBack,
-  onClose,
-  peekSignal,
-  floating,
-}: Props) => {
+const AreaPlacesSheet = ({ area, place, preview, rail, className, onBack, onClose, peekSignal, floating }: Props) => {
   const overRent = overRentNotice(area.rent, preview.maxRent);
   return (
     <BottomSheet
-      title={place ? `${placeTitle(place)} 정보` : area.name}
+      title={place ? `${placeTitle(place)} 정보` : (rail?.title ?? area.name)}
       // 목록에서는 동네 이름 아래 전체 주소를 적는다.
       subtitle={place ? undefined : area.fullName}
+      className={className}
       initialHeightPercent={place && (place.kind === 'busStop' || place.kind === 'station') ? 55 : 38}
       showCloseButton={false}
       closeLabel="동네 정보 닫기"
@@ -82,39 +65,26 @@ const AreaPlacesSheet = ({
         <PlaceDetails place={place} preview={preview} phoneAction="call" />
       ) : (
         <div className={styles.body}>
-          {/* 동네 대중교통 상세로 넘어가지 않으므로 시세도 이 시트에 둔다. 끝까지 올리면 페이지처럼 본다. */}
-          <section className={styles.rent} aria-label="월세 시세">
-            {area.rent ? (
-              <>
-                <strong>
-                  월세 {formatManwon(area.rent.monthlyRentKrw)} · 보증금 {formatManwon(area.rent.depositKrw)}
-                </strong>
-                <small>
-                  {area.rent.legalDongNames.join('·')} 거래 {area.rent.transactionCount}건 중앙값
-                  {preview.rentPeriod && ` · ${preview.rentPeriod.startDate} ~ ${preview.rentPeriod.endDate} 계약`}
-                </small>
-              </>
-            ) : (
-              <strong>거래가 적어 시세를 내지 않았어요</strong>
-            )}
-            {overRent && <p className={styles.overRent}>{overRent}</p>}
-          </section>
-          {showsStations ? (
-            <ul className={styles.items} aria-label={`${area.name} 출발 정류장`}>
-              {area.stations.map((station) => (
-                <li key={station.stopId}>
-                  <button type="button" onClick={() => onSelectStation(station)}>
-                    <img src={stationIconSrc(station.stopId)} alt="" draggable={false} decoding="async" />
-                    <span>{station.stopName}</span>
-                    <small>{station.travelMinutes}분</small>
-                  </button>
-                </li>
-              ))}
-            </ul>
+          {/* 레일 칸을 켰으면 그 목록을, 아니면 시세를 둔다. 끝까지 올리면 페이지처럼 본다. */}
+          {rail ? (
+            rail.content
           ) : (
-            !preview.isPublicExplore && (
-              <PropertyCommuteList destination={preview.destination} onOpen={preview.openPropertyCommute} />
-            )
+            <section className={styles.rent} aria-label="월세 시세">
+              {area.rent ? (
+                <>
+                  <strong>
+                    월세 {formatManwon(area.rent.monthlyRentKrw)} · 보증금 {formatManwon(area.rent.depositKrw)}
+                  </strong>
+                  <small>
+                    {area.rent.legalDongNames.join('·')} 거래 {area.rent.transactionCount}건 중앙값
+                    {preview.rentPeriod && ` · ${preview.rentPeriod.startDate} ~ ${preview.rentPeriod.endDate} 계약`}
+                  </small>
+                </>
+              ) : (
+                <strong>거래가 적어 시세를 내지 않았어요</strong>
+              )}
+              {overRent && <p className={styles.overRent}>{overRent}</p>}
+            </section>
           )}
         </div>
       )}

@@ -4,8 +4,10 @@ import { formatManwon } from '@/features/map/api/commuteApi';
 import { useNearbyFacilities } from '@/features/map/api/useNearbyFacilities';
 import { placeMarkers } from '@/features/map/lib/mapClustering';
 import { SEOUL_MAP_CENTER } from '@/features/map/lib/mapLocation';
-import type { MapBounds, MapCategory, MapMarker } from '@/features/map/model/Map';
+import type { MapBounds, MapCategory, MapMarker, NearbyPlace } from '@/features/map/model/Map';
 import type { MapCanvasProps, MapRegion } from '@/features/map/model/MapCanvas';
+import { usePropertyCommuteTimes, usePropertyList } from '@/features/property/api/useProperties';
+import type { PropertyCommuteTime } from '@/features/property/model/Property';
 import { useStreetMemos } from '@/features/street-memo/api/useStreetMemos';
 import {
   dongMemoMarkers,
@@ -13,6 +15,7 @@ import {
   STREET_MEMO_DONG_MARKER_PREFIX,
 } from '@/features/street-memo/lib/streetMemoDongGroups';
 
+import { propertyCommuteLabel } from '../model/propertyCommute';
 import useNeighborhoodPlaces from './useNeighborhoodPlaces';
 import type { NeighborhoodPreviewContext } from './useNeighborhoodPreview';
 
@@ -37,6 +40,17 @@ type MapViewOptions = {
 
 /** 결과 지도 레일에서 고르는 주변 시설 분류. 메모는 따로 켜고 끈다. */
 export type FacilityCategory = Exclude<MapCategory, 'MEMO'>;
+/** 레일에서 고르는 칸. 시설 분류에 더해 `MY`(회원이 기록한 매물)가 있다. */
+export type RailSelection = FacilityCategory | 'MY';
+/** 레일 `My`를 켰을 때 시트(칸)와 지도에 보이는 매물 한 줄. */
+export type MyPropertyRow = {
+  propertyId: number;
+  name: string;
+  latitude: number | null;
+  longitude: number | null;
+  commute: PropertyCommuteTime | null;
+};
+const MY_PROPERTY_PREFIX = 'my-property:';
 /**
  * 레일에서 빼는 분류. 결과 지도 레일은 예전 본 방 기록 레일 모양으로 병원, 교통, 학교, 편의, 중개 다섯 칸이다.
  * 거리 메모는 버튼 없이 늘 보인다.
@@ -57,9 +71,49 @@ const useNeighborhoodMapView = (
   // 레일은 동네를 고르기 전에는 1위 동네, 고르면 그 동네를 기준으로 가운데 2km 안 시설을 센다.
   const selectedCode = preview.selected?.adminDongCode ?? null;
   const railArea = preview.selected ?? preview.topAreas[0] ?? null;
-  const [facilityCategory, setFacilityCategory] = useState<FacilityCategory | null>(null);
+  const [railSelection, setRailSelection] = useState<RailSelection | null>(null);
+  const facilityCategory = railSelection === 'MY' ? null : railSelection;
+  const showsMy = railSelection === 'MY';
   // `교통`을 켜면 동네를 고른 동안 출발 정류장 목록(시트, 칸)도 보여 준다.
   const showsTransport = facilityCategory === 'TRANSPORT';
+  // `My`를 켜면 기록한 매물과 이번 출퇴근 장소까지 통근 시간을 받는다. 공개 동네 찾기는 로그인 전이라 부르지 않는다.
+  const loadsMy = showsMy && isResultMap && !preview.isPublicExplore;
+  const propertyList = usePropertyList(loadsMy);
+  const commuteTimes = usePropertyCommuteTimes(loadsMy ? preview.destination : null);
+  const myRows = useMemo<MyPropertyRow[]>(() => {
+    const commutes = new Map(commuteTimes.data?.properties.map((item) => [item.propertyId, item]) ?? []);
+    return (propertyList.data?.pages ?? [])
+      .flatMap((page) => page.content)
+      .map((property) => ({
+        propertyId: property.propertyId,
+        name: property.name,
+        latitude: property.location.latitude,
+        longitude: property.location.longitude,
+        commute: commutes.get(property.propertyId) ?? null,
+      }));
+  }, [propertyList.data, commuteTimes.data]);
+  const commuteMaxMinutes = commuteTimes.data?.maxMinutes ?? 60;
+  const myMarkers = useMemo<MapMarker[]>(
+    () =>
+      showsMy
+        ? myRows.flatMap((row) =>
+            row.latitude === null || row.longitude === null
+              ? []
+              : [
+                  {
+                    id: `${MY_PROPERTY_PREFIX}${row.propertyId}`,
+                    latitude: row.latitude,
+                    longitude: row.longitude,
+                    label: row.name,
+                    // 매물 핀 금액 자리에 이번 출퇴근 장소까지 통근 시간을 적는다.
+                    summary: { amount: row.commute ? propertyCommuteLabel(row.commute, commuteMaxMinutes) : '…' },
+                    tone: 'property' as const,
+                  },
+                ],
+          )
+        : [],
+    [showsMy, myRows, commuteMaxMinutes],
+  );
   // 거리 메모는 버튼 없이 늘 보기만 한다. 멀리 보면 행정동 묶음, 가까이 보면 메모 하나씩 보여 준다.
   // 지도는 멈출 때 확대 단계를 먼저, 화면 범위를 나중에 알린다. 둘을 함께 상태에 올려 한 번만 다시 그린다.
   const levelRef = useRef(preview.resultLevel);
@@ -77,6 +131,13 @@ const useNeighborhoodMapView = (
     isResultMap && railArea !== null,
     { loadAllCategories: true },
   );
+  /** 레일 칸을 켜고 끈다. 같은 칸을 다시 누르면 끈다. 열어 둔 정류장, 부동산 정보는 닫는다. */
+  const selectRail = (next: RailSelection) => {
+    const value = railSelection === next ? null : next;
+    preview.toggleMapCategory(next, value !== null);
+    places.closePlace();
+    setRailSelection(value);
+  };
   const facilityMarkers = useMemo(
     () =>
       facilityCategory === null
@@ -151,16 +212,24 @@ const useNeighborhoodMapView = (
       ...rankMarkers,
       ...memoMarkers,
       ...facilityMarkers,
+      ...myMarkers,
       // 가까이 보면 올리는 화면 안 마커. 레일로 분류를 켰으면 그 분류 마커와 겹치지 않게 거두고(고른 출발 정류장은 남긴다),
       // 아무 분류도 켜지 않았으면 정류장을 뺀 부동산만 둔다.
       ...places.markers.filter((marker) =>
-        facilityCategory === null
-          ? marker.category !== 'TRANSPORT'
-          : showsTransport && marker.id.startsWith('station:'),
+        railSelection === null ? marker.category !== 'TRANSPORT' : showsTransport && marker.id.startsWith('station:'),
       ),
       { ...preview.destination, id: 'destination', label: DESTINATION_LABEL, tone: 'destination' as const },
     ],
-    [rankMarkers, memoMarkers, facilityMarkers, preview.destination, places.markers, showsTransport, facilityCategory],
+    [
+      rankMarkers,
+      memoMarkers,
+      facilityMarkers,
+      myMarkers,
+      preview.destination,
+      places.markers,
+      showsTransport,
+      facilityCategory,
+    ],
   );
   const candidateMarkers = useMemo(
     () => [
@@ -237,12 +306,46 @@ const useNeighborhoodMapView = (
       counts: nearby.isSuccess ? nearby.data.counts : undefined,
       onToggle: (category: MapCategory) => {
         if (category === 'MEMO') return;
-        const next = facilityCategory === category ? null : category;
-        preview.toggleMapCategory(category, next !== null);
-        // 분류를 바꾸면 열어 둔 정류장, 부동산 정보는 닫는다.
-        closeLayers();
-        setFacilityCategory(next);
+        selectRail(category);
       },
+      /** 시설 분류 아래에 붙이는 `My` 칸. */
+      extraItems: [
+        {
+          key: 'MY',
+          label: 'My',
+          ariaLabel: `내 매물 통근 시간 ${showsMy ? '숨기기' : '표시하기'}`,
+          selected: showsMy,
+          onToggle: () => selectRail('MY'),
+        },
+      ],
+    },
+    /** 레일에서 켠 칸. 없으면 null이고, 시트(칸)는 동네 순위와 시세를 보인다. */
+    railSelection,
+    /** 켠 레일 칸을 끈다(목록 시트를 끌어 내려 닫았을 때). */
+    clearRail: () => {
+      if (railSelection !== null) selectRail(railSelection);
+    },
+    /** 레일 기준 동네(고른 동네, 없으면 1위 동네). */
+    railArea,
+    /** 레일로 켠 시설 분류의 목록. 가까운 순이다. */
+    railPlaces: useMemo(
+      () =>
+        facilityCategory === null
+          ? []
+          : nearby.data.places
+              .filter((place) => place.category === facilityCategory)
+              .sort((left, right) => left.distanceMeters - right.distanceMeters),
+      [facilityCategory, nearby.data.places],
+    ),
+    railPlacesState: nearby.isError ? ('error' as const) : nearby.isSuccess ? ('ready' as const) : ('loading' as const),
+    /** 목록에서 시설을 고르면 지도 마커를 누른 것처럼 그 정보를 연다. */
+    selectRailPlace: (place: NearbyPlace) => places.selectFacility(placeMarkers([place])[0], place),
+    /** `My`를 켰을 때의 매물과 통근 시간. */
+    my: {
+      rows: myRows,
+      maxMinutes: commuteMaxMinutes,
+      isLoading: loadsMy && (propertyList.isPending || commuteTimes.isPending),
+      isError: propertyList.isError || commuteTimes.isError,
     },
     /** 레일에서 `교통`을 켜 출발 정류장 목록을 보여 줄지. */
     showsStations: showsTransport,

@@ -74,20 +74,18 @@ const meta = {
   ],
   argTypes: {
     area: { control: 'object', description: '고른 동네. 이 동네의 출발 정류장을 보여 준다.' },
-    onSelectStation: { description: '출발 정류장 고르기' },
     place: {
       control: 'object',
       description: '고른 정류장이나 지도에서 누른 공인중개사. 있으면 시트 안에서 그 정보로 넘어가고 뒤로가기를 둔다.',
     },
     preview: { control: 'object', description: '목적지·통근 조건(정류장 경로), 시세 기간, 다방 열기 기록' },
-    showsStations: { control: 'boolean', description: '지도 레일에서 교통을 켜 출발 정류장 목록을 보여 줄지' },
+    rail: { control: false, description: '지도 레일에서 켠 칸의 목록과 제목. 있으면 시세 대신 보인다.' },
     onBack: { description: '정보에서 목록으로 돌아가기' },
     peekSignal: { control: 'number', description: '값을 바꾸면 시트를 제목만 보이게 내린다' },
     onClose: { description: '끌어 내려 닫고 동네 선택 풀기' },
   },
   args: {
     area,
-    onSelectStation: fn(),
     place: null,
     preview: {
       destination: { latitude: 37.5559, longitude: 126.9101, name: '망원역', address: '서울 마포구' },
@@ -96,10 +94,7 @@ const meta = {
       rentPeriod: { startDate: '2026-04-09', endDate: '2026-10-09' },
       openListing: () => true,
       maxRent: 0,
-      isPublicExplore: false,
-      openPropertyCommute: () => true,
     },
-    showsStations: false,
     onBack: fn(),
     peekSignal: 0,
     onClose: fn(),
@@ -112,9 +107,19 @@ type Story = StoryObj<typeof meta>;
 
 export const Overview: Story = {};
 
-/** 지도 레일에서 교통을 켜면 그 동네의 출발 정류장을 고른다. */
-export const Stations: Story = {
-  args: { showsStations: true },
+/** 지도 레일에서 칸을 켜면 시세 대신 그 칸의 목록을 보인다. */
+export const RailList: Story = {
+  args: {
+    rail: {
+      title: '망원동 주변 병원',
+      content: (
+        <ul>
+          <li>망원내과 120m</li>
+          <li>망원정형외과 340m</li>
+        </ul>
+      ),
+    },
+  },
 };
 
 /** 월세 조건 밖(지도의 회색) 동네를 고르면 시세 아래에 조건보다 비싸다고 알린다. */
