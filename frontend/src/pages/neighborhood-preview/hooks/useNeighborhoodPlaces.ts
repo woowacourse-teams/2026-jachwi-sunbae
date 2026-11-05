@@ -14,7 +14,7 @@ export type NeighborhoodPlace =
   | { kind: 'agency'; agency: NearbyAgency }
   | { kind: 'busStop'; busStop: BusStop }
   | { kind: 'station'; station: AreaStation }
-  /** 분류 레일로 켠 병원, 학교, 편의점 마커. */
+  /** 분류 레일로 켠 병원, 학교, 편의점, 중개 마커. 교통 마커는 버스 정류장(busStop)으로 연다. */
   | { kind: 'facility'; facility: NearbyPlace };
 
 export const placeTitle = (place: NeighborhoodPlace) =>
@@ -132,7 +132,22 @@ const useNeighborhoodPlaces = (enabled: boolean) => {
     // 동네의 출발 정류장은 지도 화면과 상관없이 목록에서 고르므로 확대 여부와 무관하게 유지한다.
     if (selectedId.startsWith(STATION_PREFIX)) return station ? { kind: 'station', station } : null;
     // 분류 레일 시설은 지도 화면 범위로 따로 받으므로 확대 여부와 무관하게 고른 것을 유지한다.
-    if (selectedId.startsWith(FACILITY_PREFIX)) return facility ? { kind: 'facility', facility } : null;
+    if (selectedId.startsWith(FACILITY_PREFIX)) {
+      if (!facility) return null;
+      // 레일의 교통 마커는 버스 정류장이라, 그 정류장에서 출퇴근 장소까지 경로를 보여 준다.
+      if (facility.category === 'TRANSPORT')
+        return {
+          kind: 'busStop',
+          busStop: {
+            nodeId: facility.providerPlaceId,
+            name: facility.name,
+            latitude: facility.latitude,
+            longitude: facility.longitude,
+            distanceMeters: facility.distanceMeters,
+          },
+        };
+      return { kind: 'facility', facility };
+    }
     if (!isClose) return null;
     if (selectedId.startsWith(AGENCY_PREFIX)) {
       const agency = places.agencies.find((item) => `${AGENCY_PREFIX}${item.providerPlaceId}` === selectedId);

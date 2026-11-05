@@ -21,7 +21,6 @@ import { COMMUTE_COLORS, commuteLegend, OUT_OF_RENT_COLOR } from '../model/commu
 import { areaCardDescription, emptyAreaMessage, placesHint, rentLabel, transferLabel } from '../model/criteriaLabels';
 import { desktopMapViewport } from '../model/resultMapView';
 import AnalysisOverlay from '../ui/analysis-overlay/AnalysisOverlay';
-import AreaNearbyCard from '../ui/area-nearby-card/AreaNearbyCard';
 import AreaSummary, { areaStation } from '../ui/area-summary/AreaSummary';
 import ConditionPanel from '../ui/condition-panel/ConditionPanel';
 import LocationControls from '../ui/location-controls/LocationControls';
@@ -84,8 +83,6 @@ const NeighborhoodPreviewDesktopPage = ({ preview }: Props) => {
         }
       : undefined;
   const hasDetail = isResultMap && !!isDetailPage;
-  // 주변 분석 카드의 동네. 고른 동네가 없으면 1위 동네다.
-  const cardArea = preview.selected ?? preview.topAreas[0];
 
   const list = isResultMap ? (
     <aside className={styles.areaPanel} aria-label="통근 시간 상위 동네">
@@ -143,8 +140,7 @@ const NeighborhoodPreviewDesktopPage = ({ preview }: Props) => {
           <p>{emptyAreaMessage(preview.maxRent)}</p>
         </div>
       )}
-      {/* 동네를 고르지 않아도 1위 동네 기준 주변 분석과, 기록한 매물마다 이번 출퇴근 장소까지 통근 시간을 처음부터 둔다. */}
-      {cardArea && <AreaNearbyCard key={cardArea.adminDongCode} area={cardArea} />}
+      {/* 동네를 고르지 않아도 기록한 매물마다 이번 출퇴근 장소까지 통근 시간을 처음부터 둔다. */}
       {!preview.isPublicExplore && (
         <PropertyCommuteList destination={preview.destination} onOpen={preview.openPropertyCommute} />
       )}
@@ -238,16 +234,19 @@ const NeighborhoodPreviewDesktopPage = ({ preview }: Props) => {
               </div>
               {/* 월세 시세는 찾기 전이 아니라 결과 지도 위에서 고른다. 끄는 동안 지도 색과 왼쪽 순위가 바로 바뀐다. */}
               <RentSlider preview={preview} className={styles.rentCard} />
-              {/* 동네를 고르면 본 방 기록 지도처럼 오른쪽 위에 확대 축소, 분류 레일, 현재 위치 버튼을 한 줄로 세운다. */}
+              {/* 결과에 들어오자마자 예전 본 방 기록 지도처럼 오른쪽 위에 확대 축소, 분류 레일, 현재 위치 버튼을 한 줄로 세운다. */}
               <LocationControls
                 preview={preview}
                 isResult
                 zoom={{ level: preview.resultLevel, onZoom: preview.zoomResultBy }}
-                className={preview.selected ? styles.railControls : undefined}
+                className={styles.railControls}
                 rail={
-                  preview.selected ? (
-                    <MapCategoryRail showMemo hiddenCategories={RESULT_RAIL_HIDDEN_CATEGORIES} {...rail} />
-                  ) : undefined
+                  <MapCategoryRail
+                    showMemo
+                    showIcons={false}
+                    hiddenCategories={RESULT_RAIL_HIDDEN_CATEGORIES}
+                    {...rail}
+                  />
                 }
               />
               {preview.isPublicExplore && recordArea && (

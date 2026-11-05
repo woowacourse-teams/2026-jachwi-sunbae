@@ -1,7 +1,9 @@
 import { useMemo, useRef, useState } from 'react';
 
 import { formatManwon } from '@/features/map/api/commuteApi';
-import useViewportFacilityLayer from '@/features/map/hooks/useViewportFacilityLayer';
+import { useNearbyFacilities } from '@/features/map/api/useNearbyFacilities';
+import { placeMarkers } from '@/features/map/lib/mapClustering';
+import { SEOUL_MAP_CENTER } from '@/features/map/lib/mapLocation';
 import type { MapBounds, MapCategory, MapMarker } from '@/features/map/model/Map';
 import type { MapCanvasProps, MapRegion } from '@/features/map/model/MapCanvas';
 import { useStreetMemos } from '@/features/street-memo/api/useStreetMemos';
@@ -36,10 +38,13 @@ type MapViewOptions = {
 /** 결과 지도 레일에서 고르는 주변 시설 분류. 메모는 따로 켜고 끈다. */
 export type FacilityCategory = Exclude<MapCategory, 'MEMO'>;
 /**
- * 레일에서 빼는 분류. 본 방 기록 지도에서 옮겨 온 레일은 병원, 교통, 학교, 편의 네 칸이다.
- * 거리 메모는 버튼 없이 늘 보이고, 공인중개사는 가까이 확대하면 늘 보인다.
+ * 레일에서 빼는 분류. 결과 지도 레일은 예전 본 방 기록 레일 모양으로 병원, 교통, 학교, 편의, 중개 다섯 칸이다.
+ * 거리 메모는 버튼 없이 늘 보인다.
  */
-export const RESULT_RAIL_HIDDEN_CATEGORIES: MapCategory[] = ['MEMO', 'AGENCY'];
+export const RESULT_RAIL_HIDDEN_CATEGORIES: MapCategory[] = ['MEMO'];
+/** 레일 시설을 세고 올리는 반경. 기준 동네 가운데에서 잰다. */
+const RAIL_FACILITY_RADIUS = 2000;
+const NO_CATEGORIES: MapCategory[] = [];
 type MemoView = { bounds: MapBounds; level: number };
 
 const useNeighborhoodMapView = (
@@ -48,16 +53,13 @@ const useNeighborhoodMapView = (
 ) => {
   const isResultMap = !preview.isAnalyzing && !preview.error && !preview.isSelectingOnMap;
   const places = useNeighborhoodPlaces(isResultMap);
-  // 동네를 고르면 결과 지도 오른쪽에 본 방 기록 지도와 같은 분류 레일을 둔다. 한 번에 한 분류만 켜고,
-  // 다른 동네를 고르면 분류를 끈 채로 다시 연다.
+  // 결과 지도 오른쪽에는 들어오자마자 예전 본 방 기록 레일 모양의 분류 레일을 둔다. 한 번에 한 분류만 켠다.
+  // 레일은 동네를 고르기 전에는 1위 동네, 고르면 그 동네를 기준으로 가운데 2km 안 시설을 센다.
   const selectedCode = preview.selected?.adminDongCode ?? null;
-  const [rail, setRail] = useState<{ code: string | null; category: FacilityCategory | null }>({
-    code: null,
-    category: null,
-  });
-  const facilityCategory = rail.code === selectedCode ? rail.category : null;
-  // `교통`을 켜면 출발 정류장 목록(시트, 칸)과 정류장 마커를 보여 주고, 그때는 지도에 정류장만 둔다.
-  const showsTransport = selectedCode !== null && facilityCategory === 'TRANSPORT';
+  const railArea = preview.selected ?? preview.topAreas[0] ?? null;
+  const [facilityCategory, setFacilityCategory] = useState<FacilityCategory | null>(null);
+  // `교통`을 켜면 동네를 고른 동안 출발 정류장 목록(시트, 칸)도 보여 준다.
+  const showsTransport = facilityCategory === 'TRANSPORT';
   // 거리 메모는 버튼 없이 늘 보기만 한다. 멀리 보면 행정동 묶음, 가까이 보면 메모 하나씩 보여 준다.
   // 지도는 멈출 때 확대 단계를 먼저, 화면 범위를 나중에 알린다. 둘을 함께 상태에 올려 한 번만 다시 그린다.
   const levelRef = useRef(preview.resultLevel);
@@ -67,11 +69,25 @@ const useNeighborhoodMapView = (
     () => (isResultMap && memoView ? dongMemoMarkers(memos, memoView.level) : []),
     [isResultMap, memoView, memos],
   );
-  // 본 방 기록 지도에서 옮겨 온 시설 분류. 병원, 학교, 편의점은 지금 화면 안 시설을 낱개 마커로 올리고 누르면 정보를 연다.
-  const facilities = useViewportFacilityLayer(
-    isResultMap && selectedCode !== null ? (memoView?.bounds ?? null) : null,
-    facilityCategory,
+  // 레일로 켠 분류의 시설을 기준 동네 가운데 2km 안에서 받아 낱개 마커로 올리고, 누르면 정보를 연다.
+  const nearby = useNearbyFacilities(
+    railArea?.center ?? SEOUL_MAP_CENTER,
+    RAIL_FACILITY_RADIUS,
+    NO_CATEGORIES,
+    isResultMap && railArea !== null,
+    { loadAllCategories: true },
   );
+  const facilityMarkers = useMemo(
+    () =>
+      facilityCategory === null
+        ? []
+        : placeMarkers(nearby.data.places.filter((place) => place.category === facilityCategory)),
+    [facilityCategory, nearby.data.places],
+  );
+  const facilityOf = (marker: MapMarker) =>
+    marker.placeId === undefined
+      ? null
+      : (nearby.data.places.find((place) => place.providerPlaceId === marker.placeId) ?? null);
   const hasOpenLayer = places.selectedPlace !== null;
   const closeLayers = () => places.closePlace();
   /** 지도 빈 곳·고른 동네 안을 찍었을 때. 화면별 동작(시트 내리기) 또는 열린 정보 닫기를 한다. */
@@ -105,7 +121,7 @@ const useNeighborhoodMapView = (
       selectRegion(marker.id.slice(RANK_MARKER_PREFIX.length));
       return;
     }
-    const facility = facilities.placeOf(marker);
+    const facility = facilityOf(marker);
     if (facility) {
       places.selectFacility(marker, facility);
       return;
@@ -134,23 +150,17 @@ const useNeighborhoodMapView = (
     () => [
       ...rankMarkers,
       ...memoMarkers,
-      ...facilities.markers,
-      // 가까이 보면 올리는 화면 안 마커. 교통을 켰으면 정류장만, 다른 분류를 켰으면 그 분류만 보이게 거두고,
+      ...facilityMarkers,
+      // 가까이 보면 올리는 화면 안 마커. 레일로 분류를 켰으면 그 분류 마커와 겹치지 않게 거두고(고른 출발 정류장은 남긴다),
       // 아무 분류도 켜지 않았으면 정류장을 뺀 부동산만 둔다.
       ...places.markers.filter((marker) =>
-        showsTransport ? marker.category === 'TRANSPORT' : facilityCategory === null && marker.category !== 'TRANSPORT',
+        facilityCategory === null
+          ? marker.category !== 'TRANSPORT'
+          : showsTransport && marker.id.startsWith('station:'),
       ),
       { ...preview.destination, id: 'destination', label: DESTINATION_LABEL, tone: 'destination' as const },
     ],
-    [
-      rankMarkers,
-      memoMarkers,
-      facilities.markers,
-      preview.destination,
-      places.markers,
-      showsTransport,
-      facilityCategory,
-    ],
+    [rankMarkers, memoMarkers, facilityMarkers, preview.destination, places.markers, showsTransport, facilityCategory],
   );
   const candidateMarkers = useMemo(
     () => [
@@ -221,28 +231,21 @@ const useNeighborhoodMapView = (
     isResultMap,
     mapProps,
     places,
-    /** 동네를 고른 동안 결과 지도 오른쪽에 두는 분류 레일(병원, 교통, 학교, 편의)의 값. */
+    /** 결과 지도 오른쪽에 처음부터 두는 분류 레일(병원, 교통, 학교, 편의, 중개)의 값. */
     rail: {
       selectedCategories: (facilityCategory ? [facilityCategory] : []) as MapCategory[],
-      counts: {
-        ...facilities.counts,
-        ...(showsTransport
-          ? { TRANSPORT: places.markers.filter((marker) => marker.category === 'TRANSPORT').length }
-          : {}),
-      } as Partial<Record<MapCategory, number>>,
+      counts: nearby.isSuccess ? nearby.data.counts : undefined,
       onToggle: (category: MapCategory) => {
         if (category === 'MEMO') return;
         const next = facilityCategory === category ? null : category;
         preview.toggleMapCategory(category, next !== null);
-        // 분류를 바꾸면 열어 둔 정류장, 부동산 정보는 닫는다. 교통을 끄면 정류장 마커도 거둔다.
+        // 분류를 바꾸면 열어 둔 정류장, 부동산 정보는 닫는다.
         closeLayers();
-        setRail({ code: selectedCode, category: next });
+        setFacilityCategory(next);
       },
     },
     /** 레일에서 `교통`을 켜 출발 정류장 목록을 보여 줄지. */
     showsStations: showsTransport,
-    /** 시설을 받지 못했는지. */
-    facilitiesFailed: facilities.isError,
     /** 동네·조건을 바꾸거나 다시 고를 때 열어 둔 정류장·부동산 정보를 모두 닫는다. */
     closeLayers,
   };
