@@ -8,8 +8,8 @@ import MapCategoryRail from '@/features/map/ui/map-category-rail/MapCategoryRail
 import ExplorationRecordAction from '@/features/onboarding/ui/exploration-record-action/ExplorationRecordAction';
 import { LogClick } from '@/shared/lib/analytics/logging';
 import { ROUTE_PATTERNS } from '@/shared/lib/navigation/appPaths';
-import BottomSheet from '@/shared/ui/bottom-sheet/BottomSheet';
 import { Button } from '@/shared/ui/button/Button';
+import Chip from '@/shared/ui/chip/Chip';
 import HorizontalRail from '@/shared/ui/horizontal-rail/HorizontalRail';
 import Icon from '@/shared/ui/icon/Icon';
 import RankedCard from '@/shared/ui/ranked-card/RankedCard';
@@ -22,14 +22,17 @@ import { COMMUTE_COLORS, commuteLegend, OUT_OF_RENT_COLOR } from '../model/commu
 import { areaCardDescription, emptyAreaMessage, placesHint, rentLabel, transferLabel } from '../model/criteriaLabels';
 import { mobileMapViewport } from '../model/resultMapView';
 import type { NeighborhoodFilterField } from '../NeighborhoodFilters';
-import NeighborhoodFilters, { NeighborhoodFilterPicker } from '../NeighborhoodFilters';
+import { NeighborhoodFilterPicker } from '../NeighborhoodFilters';
 import AnalysisOverlay from '../ui/analysis-overlay/AnalysisOverlay';
+import AreaNearbyCard from '../ui/area-nearby-card/AreaNearbyCard';
 import AreaPlacesSheet from '../ui/area-places-sheet/AreaPlacesSheet';
 import { areaStation } from '../ui/area-summary/AreaSummary';
 import LocationControls from '../ui/location-controls/LocationControls';
 import NeighborhoodMapSearch from '../ui/map-search/NeighborhoodMapSearch';
 import MapTapHint from '../ui/map-tap-hint/MapTapHint';
 import NeighborhoodPlaceSheet from '../ui/place-panel/NeighborhoodPlaceSheet';
+import PropertyCommuteList from '../ui/property-commute/PropertyCommuteList';
+import RentSlider from '../ui/rent-slider/RentSlider';
 
 import * as shared from '../NeighborhoodPreviewPage.styles';
 
@@ -44,8 +47,6 @@ type Props = {
  * 대중교통 상세는 지도 없이 화면 전체로 연다.
  */
 const NeighborhoodPreviewMobilePage = ({ preview }: Props) => {
-  // 결과 화면에서 월세만 고치는 시트.
-  const [filterField, setFilterField] = useState<'rent' | null>(null);
   // 위치를 고르는 동안 조건 칸 아래에 바로 펼친 피커. 같은 칸을 다시 누르면 접는다.
   const [pickerField, setPickerField] = useState<NeighborhoodFilterField | null>(null);
   const isRoutePage = useMatch(`${preview.mapPath}/${ROUTE_PATTERNS.area}/*`);
@@ -71,6 +72,8 @@ const NeighborhoodPreviewMobilePage = ({ preview }: Props) => {
   // 동네를 고르면 본 방 기록 지도처럼 오른쪽 위에 확대 축소, 분류 레일, 현재 위치 버튼을 한 줄로 세운다.
   // 동네 없이 마커로 연 정보 시트만 있으면 확대 축소, 현재 위치 버튼을 시트 바로 위에 붙여 시트와 함께 오르내리게 한다.
   const hasSheet = hasAreaSheet || places.selectedPlace !== null;
+  // 동네를 고르기 전 결과 화면의 아래 묶음(확대 축소와 현재 위치, 주변 분석 카드, 내 매물 통근 시간, 순위 레일).
+  const showsResultStack = !isRoutePage && preview.topAreas.length > 0 && places.selectedPlace === null;
   const resultControls = (
     <LocationControls
       preview={preview}
@@ -221,14 +224,17 @@ const NeighborhoodPreviewMobilePage = ({ preview }: Props) => {
               </button>
               <div className={shared.resultCriteria}>
                 <div className={shared.criteriaBadges} aria-label="선택한 탐색 조건">
-                  {/* 통근과 환승은 찾은 결과를 정한 조건이라 결과에서는 바꿀 수 없다. 회색으로 두고, 바꾸려면 다시 선택한다. */}
-                  <span aria-disabled="true">통근 {preview.maxMinutes}분 이내</span>
-                  <span aria-disabled="true">{transferLabel(preview.maxTransfers)}</span>
-                  {/* 월세는 받은 시세를 거르는 조건이라 결과에서도 다시 찾지 않고 바로 바꾼다. */}
-                  <Button variant="secondary" className={shared.filterBadge} onClick={() => setFilterField('rent')}>
-                    {rentLabel(preview.maxRent)} <Icon name="chevron-down" size={16} />
-                  </Button>
+                  {/* 통근과 환승은 찾은 결과를 정한 조건이라 결과에서는 바꿀 수 없다. 흐리게 두고, 바꾸려면 다시 선택한다. */}
+                  <Chip disabled floating>
+                    통근 {preview.maxMinutes}분 이내
+                  </Chip>
+                  <Chip disabled floating>
+                    {transferLabel(preview.maxTransfers)}
+                  </Chip>
+                  <Chip floating>{rentLabel(preview.maxRent)}</Chip>
                 </div>
+                {/* 월세는 받은 시세를 거르는 조건이라 데스크탑처럼 끌어서 바로 바꾼다. 끄는 동안 지도 색과 순위가 바뀐다. */}
+                <RentSlider preview={preview} compact className={styles.rentSlider} />
                 <div className={shared.colorLegend} aria-label="통근 시간 색상 기준">
                   {commuteLegend(preview.maxMinutes).map(([group, label]) => (
                     <span key={group}>
@@ -259,7 +265,7 @@ const NeighborhoodPreviewMobilePage = ({ preview }: Props) => {
                 다시 선택하기
               </Button>
             </header>
-            {(!hasSheet || hasAreaSheet) && resultControls}
+            {(hasAreaSheet || (!hasSheet && !showsResultStack)) && resultControls}
             {preview.isPublicExplore && recordArea && (
               <div className={shared.recordAction}>
                 <ExplorationRecordAction
@@ -280,23 +286,41 @@ const NeighborhoodPreviewMobilePage = ({ preview }: Props) => {
                 </div>
               </div>
             )}
-            {!isRoutePage && preview.topAreas.length > 0 && (
-              <div className={shared.topAreaRail} aria-label="통근 시간 상위 동네">
-                <HorizontalRail className={shared.areaCards}>
-                  {preview.topAreas.map((area, index) => (
-                    <RankedCard
-                      key={area.adminDongCode}
-                      className={shared.areaCard}
-                      rank={CARD_RANKS[index]}
-                      title={area.name}
-                      value={area.commuteMinutes}
-                      unit="분"
-                      description={areaCardDescription(area)}
-                      selected={preview.selected?.adminDongCode === area.adminDongCode}
-                      onSelect={() => preview.selectRegion(area.adminDongCode)}
-                    />
-                  ))}
-                </HorizontalRail>
+            {showsResultStack && (
+              <div className={`${shared.topAreaRail} ${styles.resultStack}`}>
+                {/* 확대 축소, 현재 위치 버튼을 카드 바로 위에 붙여 카드에 가리지 않게 한다. */}
+                <LocationControls
+                  preview={preview}
+                  isResult
+                  docked
+                  zoom={{ level: preview.resultLevel, onZoom: preview.zoomResultBy }}
+                />
+                {/* 동네를 고르기 전에도 1위 동네 기준 주변 분석과 내 매물 통근 시간을 처음부터 둔다. */}
+                <div className={styles.resultCards}>
+                  <AreaNearbyCard key={preview.topAreas[0].adminDongCode} area={preview.topAreas[0]} />
+                  {!preview.isPublicExplore && (
+                    <div className={styles.commuteCard}>
+                      <PropertyCommuteList destination={preview.destination} onOpen={preview.openPropertyCommute} />
+                    </div>
+                  )}
+                </div>
+                <div aria-label="통근 시간 상위 동네" role="group">
+                  <HorizontalRail className={shared.areaCards}>
+                    {preview.topAreas.map((area, index) => (
+                      <RankedCard
+                        key={area.adminDongCode}
+                        className={shared.areaCard}
+                        rank={CARD_RANKS[index]}
+                        title={area.name}
+                        value={area.commuteMinutes}
+                        unit="분"
+                        description={areaCardDescription(area)}
+                        selected={preview.selected?.adminDongCode === area.adminDongCode}
+                        onSelect={() => preview.selectRegion(area.adminDongCode)}
+                      />
+                    ))}
+                  </HorizontalRail>
+                </div>
               </div>
             )}
             {/* 동네를 고르면 동네 정보 시트를 올린다. 레일의 교통을 켜고 출발 정류장을 고르면 시트 안에서 경로로 넘어가고, 뒤로가기로 목록에 돌아온다. */}
@@ -307,8 +331,6 @@ const NeighborhoodPreviewMobilePage = ({ preview }: Props) => {
                 place={places.selectedPlace}
                 preview={preview}
                 showsStations={showsStations}
-                selectedCategory={rail.selectedCategories[0] ?? null}
-                onSelectCategory={rail.onToggle}
                 peekSignal={peekSignal}
                 onSelectStation={(station) => {
                   places.selectStation(areaStation(station));
@@ -332,16 +354,6 @@ const NeighborhoodPreviewMobilePage = ({ preview }: Props) => {
                 onClose={places.closePlace}
               />
             )}
-            {filterField === 'rent' && (
-              <BottomSheet
-                title="월세 시세"
-                initialHeightPercent={55}
-                resizable={false}
-                onClose={() => setFilterField(null)}
-              >
-                <NeighborhoodFilters preview={preview} field="rent" onClose={() => setFilterField(null)} />
-              </BottomSheet>
-            )}
             {isRoutePage && <Outlet context={preview} />}
           </>
         )}
@@ -351,6 +363,58 @@ const NeighborhoodPreviewMobilePage = ({ preview }: Props) => {
 };
 
 const styles = {
+  /* 동네를 고르기 전 결과 화면의 아래 묶음. 위에서부터 확대 축소와 현재 위치, 카드, 순위 레일을 쌓는다. */
+  resultStack: css`
+    label: NeighborhoodPreviewMobilePage-resultStack;
+
+    && {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      padding-top: 0;
+    }
+
+    && > [data-docked] {
+      align-self: flex-end;
+      margin-right: 0.85rem;
+    }
+  `,
+
+  resultCards: css`
+    label: NeighborhoodPreviewMobilePage-resultCards;
+    display: grid;
+    gap: 0.5rem;
+    margin-right: 0.75rem;
+  `,
+
+  /* 기록한 매물이 많아도 지도를 덮지 않게 몇 줄만 보이고 안에서 스크롤한다. */
+  commuteCard: css`
+    label: NeighborhoodPreviewMobilePage-commuteCard;
+    max-height: 7.5rem;
+    overflow-y: auto;
+    border-radius: 0.9rem;
+    background: var(--color-surface);
+    box-shadow: var(--shadow-floating);
+
+    &:empty {
+      display: none;
+    }
+
+    & > section {
+      padding: 0.6rem 0.85rem 0.2rem;
+    }
+  `,
+
+  /* 위쪽 조건 줄의 월세 슬라이더. 칩과 같은 흰 바탕으로 지도 위에서도 읽히게 한다. */
+  rentSlider: css`
+    label: NeighborhoodPreviewMobilePage-rentSlider;
+    padding: 0.45rem 0.8rem 0.1rem;
+    border: 1px solid var(--color-border);
+    border-radius: 0.9rem;
+    background: var(--color-surface);
+    box-shadow: var(--shadow-floating);
+  `,
+
   /* 동네를 고르면 위 조건 줄 아래 오른쪽에 확대 축소, 분류 레일, 현재 위치 버튼을 세운다. 아래 시트는 그 밑에서 올라온다. */
   railControls: css`
     label: NeighborhoodPreviewMobilePage-railControls;

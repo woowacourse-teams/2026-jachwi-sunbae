@@ -3,7 +3,6 @@ import type { ReactNode } from 'react';
 
 import { formatManwon } from '@/features/map/api/commuteApi';
 import { stationIconSrc } from '@/features/map/lib/mapIconAssets';
-import type { MapCategory } from '@/features/map/model/Map';
 import BottomSheet from '@/shared/ui/bottom-sheet/BottomSheet';
 
 import { type NeighborhoodPlace, placeTitle } from '../../hooks/useNeighborhoodPlaces';
@@ -33,9 +32,6 @@ type Props = {
   >;
   /** 지도 레일에서 `교통`을 켰으면 시세 아래에 출발 정류장 목록을, 아니면 내 매물 통근 시간을 둔다. */
   showsStations: boolean;
-  /** 지도 레일에서 켜 둔 시설 분류와 켜고 끄기. 주변 분석 카드가 레일과 같은 상태를 쓴다. */
-  selectedCategory: MapCategory | null;
-  onSelectCategory: (category: MapCategory) => void;
   onSelectStation: (station: Area['stations'][number]) => void;
   onBack: () => void;
   /** 끌어 내려 닫으면 동네 선택을 푼다. */
@@ -48,7 +44,7 @@ type Props = {
 
 /**
  * 휴대폰에서 동네를 고르면 아래에 올리는 시트. 시세와 내 매물 통근 시간을 보여 주고,
- * 주변 분석 카드를 두며, 지도 레일(또는 카드)에서 `교통`을 켜면 출발 정류장 목록을 둔다. 정류장을 고르면 시트를 바꾸지 않고 그 안에서 경로로 넘어간다. 지도에서 공인중개사 마커를 눌러도 같은 시트 안에서 연다.
+ * 주변 분석 카드를 두며, 지도 레일에서 `교통`을 켜면 출발 정류장 목록을 둔다. 정류장을 고르면 시트를 바꾸지 않고 그 안에서 경로로 넘어간다. 지도에서 공인중개사 마커를 눌러도 같은 시트 안에서 연다.
  * 닫기 버튼은 두지 않는다. 끌어 내려 닫고, 끝까지 끌어 올리면 헤더에 뒤로가기·닫기가 있는 페이지로 본다.
  */
 const AreaPlacesSheet = ({
@@ -56,8 +52,6 @@ const AreaPlacesSheet = ({
   place,
   preview,
   showsStations,
-  selectedCategory,
-  onSelectCategory,
   onSelectStation,
   onBack,
   onClose,
@@ -106,7 +100,7 @@ const AreaPlacesSheet = ({
             )}
             {overRent && <p className={styles.overRent}>{overRent}</p>}
           </section>
-          <AreaNearbyCard area={area} selectedCategory={selectedCategory} onSelectCategory={onSelectCategory} />
+          <AreaNearbyCard area={area} />
           {showsStations ? (
             <ul className={styles.items} aria-label={`${area.name} 출발 정류장`}>
               {area.stations.map((station) => (

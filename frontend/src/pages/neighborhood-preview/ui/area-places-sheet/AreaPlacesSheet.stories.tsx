@@ -100,8 +100,6 @@ const meta = {
       openPropertyCommute: () => true,
     },
     showsStations: false,
-    selectedCategory: null,
-    onSelectCategory: fn(),
     onBack: fn(),
     peekSignal: 0,
     onClose: fn(),

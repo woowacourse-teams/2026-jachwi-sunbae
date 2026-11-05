@@ -7,6 +7,7 @@ import MapCategoryRail from '@/features/map/ui/map-category-rail/MapCategoryRail
 import ExplorationRecordAction from '@/features/onboarding/ui/exploration-record-action/ExplorationRecordAction';
 import { ROUTE_PATTERNS } from '@/shared/lib/navigation/appPaths';
 import { Button } from '@/shared/ui/button/Button';
+import Chip from '@/shared/ui/chip/Chip';
 import Icon from '@/shared/ui/icon/Icon';
 import ListDetailLayout from '@/shared/ui/list-detail-layout/ListDetailLayout';
 import RankedCard from '@/shared/ui/ranked-card/RankedCard';
@@ -17,15 +18,17 @@ import type { AreaStation } from '../hooks/useNeighborhoodPlaces';
 import type { NeighborhoodPreviewContext } from '../hooks/useNeighborhoodPreview';
 import useResultMapViewport from '../hooks/useResultMapViewport';
 import { COMMUTE_COLORS, commuteLegend, OUT_OF_RENT_COLOR } from '../model/commuteColors';
-import { areaCardDescription, emptyAreaMessage, placesHint, transferLabel } from '../model/criteriaLabels';
+import { areaCardDescription, emptyAreaMessage, placesHint, rentLabel, transferLabel } from '../model/criteriaLabels';
 import { desktopMapViewport } from '../model/resultMapView';
 import AnalysisOverlay from '../ui/analysis-overlay/AnalysisOverlay';
+import AreaNearbyCard from '../ui/area-nearby-card/AreaNearbyCard';
 import AreaSummary, { areaStation } from '../ui/area-summary/AreaSummary';
 import ConditionPanel from '../ui/condition-panel/ConditionPanel';
 import LocationControls from '../ui/location-controls/LocationControls';
 import NeighborhoodMapSearch from '../ui/map-search/NeighborhoodMapSearch';
 import MapTapHint from '../ui/map-tap-hint/MapTapHint';
 import NeighborhoodPlacePanel from '../ui/place-panel/NeighborhoodPlacePanel';
+import PropertyCommuteList from '../ui/property-commute/PropertyCommuteList';
 import RentSlider from '../ui/rent-slider/RentSlider';
 
 import * as shared from '../NeighborhoodPreviewPage.styles';
@@ -81,6 +84,8 @@ const NeighborhoodPreviewDesktopPage = ({ preview }: Props) => {
         }
       : undefined;
   const hasDetail = isResultMap && !!isDetailPage;
+  // 주변 분석 카드의 동네. 고른 동네가 없으면 1위 동네다.
+  const cardArea = preview.selected ?? preview.topAreas[0];
 
   const list = isResultMap ? (
     <aside className={styles.areaPanel} aria-label="통근 시간 상위 동네">
@@ -104,8 +109,10 @@ const NeighborhoodPreviewDesktopPage = ({ preview }: Props) => {
         </Button>
       </header>
       <div className={styles.criteria} aria-label="선택한 탐색 조건">
-        <span>통근 {preview.maxMinutes}분 이내</span>
-        <span>{transferLabel(preview.maxTransfers)}</span>
+        {/* 통근과 환승은 찾은 결과를 정한 조건이라 흐리게 두고, 월세는 지도 아래 슬라이더로 바꾼다. */}
+        <Chip disabled>통근 {preview.maxMinutes}분 이내</Chip>
+        <Chip disabled>{transferLabel(preview.maxTransfers)}</Chip>
+        <Chip>{rentLabel(preview.maxRent)}</Chip>
       </div>
       {preview.topAreas.length > 0 ? (
         <div className={styles.areaList}>
@@ -136,6 +143,11 @@ const NeighborhoodPreviewDesktopPage = ({ preview }: Props) => {
           <p>{emptyAreaMessage(preview.maxRent)}</p>
         </div>
       )}
+      {/* 동네를 고르지 않아도 1위 동네 기준 주변 분석과, 기록한 매물마다 이번 출퇴근 장소까지 통근 시간을 처음부터 둔다. */}
+      {cardArea && <AreaNearbyCard key={cardArea.adminDongCode} area={cardArea} />}
+      {!preview.isPublicExplore && (
+        <PropertyCommuteList destination={preview.destination} onOpen={preview.openPropertyCommute} />
+      )}
     </aside>
   ) : (
     <ConditionPanel preview={preview} disabled={preview.isAnalyzing} onSubmit={submitSearch} />
@@ -162,9 +174,6 @@ const NeighborhoodPreviewDesktopPage = ({ preview }: Props) => {
                 onOpenListing={preview.openListing}
                 maxRent={preview.maxRent}
                 showsStations={showsStations}
-                selectedCategory={rail.selectedCategories[0] ?? null}
-                onSelectCategory={rail.onToggle}
-                preview={preview}
               />
             </div>
           ) : undefined
@@ -319,15 +328,6 @@ const styles = {
     display: flex;
     flex-wrap: wrap;
     gap: 0.35rem;
-
-    & > span {
-      padding: 0.4rem 0.65rem;
-      border: 1px solid var(--color-border);
-      border-radius: 999px;
-      background: white;
-      color: var(--color-ink);
-      font-size: 0.75rem;
-    }
   `,
 
   areaList: css`

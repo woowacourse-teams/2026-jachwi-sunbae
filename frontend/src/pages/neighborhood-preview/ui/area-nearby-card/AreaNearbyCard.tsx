@@ -5,52 +5,45 @@ import { getMapCategoryLabel } from '@/features/map/lib/mapPresentation';
 import type { MapCategory } from '@/features/map/model/Map';
 import MapCategoryIcon from '@/features/map/ui/map-category-icon/MapCategoryIcon';
 
-/** 카드에 세는 생활 인프라. 지도 오른쪽 분류 레일과 같은 네 칸이다. */
-const INFRA_CATEGORIES: Exclude<MapCategory, 'MEMO' | 'AGENCY'>[] = ['HOSPITAL', 'TRANSPORT', 'SCHOOL', 'CONVENIENCE'];
+/** 카드에 세는 생활 인프라. 지도 레일(병원, 교통, 학교, 편의)에 중개사를 더한다. */
+const INFRA_CATEGORIES: Exclude<MapCategory, 'MEMO'>[] = ['HOSPITAL', 'TRANSPORT', 'SCHOOL', 'CONVENIENCE', 'AGENCY'];
 /** 동네 가운데에서 세는 반경. */
 const NEARBY_RADIUS = 2000;
+/** 카카오 장소 검색이 한 번에 주는 최대 개수. 이 값에 닿으면 실제로는 더 있을 수 있어 `45+`로 적는다. */
+export const KAKAO_PLACE_LIMIT = 45;
 const NO_CATEGORIES: MapCategory[] = [];
+
+/** 카드 숫자. 교통(버스정류장)은 따로 받아 상한이 없고, 나머지는 카카오 상한에 닿으면 `45+`로 적는다. */
+export const nearbyCountLabel = (category: MapCategory, count: number) =>
+  category !== 'TRANSPORT' && count >= KAKAO_PLACE_LIMIT ? `${KAKAO_PLACE_LIMIT}+곳` : `${count}곳`;
 
 type Props = {
   area: { name: string; center: { latitude: number; longitude: number } };
-  /** 지도 레일에서 켜 둔 분류. 카드와 레일이 같은 상태를 쓴다. */
-  selectedCategory: MapCategory | null;
-  /** 분류를 누르면 다른 화면으로 가지 않고 지도 레일의 그 분류를 켠다(켜진 분류를 다시 누르면 끈다). */
-  onSelectCategory: (category: MapCategory) => void;
 };
 
 /**
- * 고른 동네 가운데에서 2km 안의 병원, 교통, 학교, 편의점 수를 보여 주는 카드. 시세, 내 매물 통근 시간과 함께 시트(칸)에 둔다.
- * 분류를 누르면 지도 오른쪽 레일의 그 분류를 켜서 결과 지도에 시설을 보여 준다.
+ * 동네 가운데에서 2km 안의 병원, 교통, 학교, 편의점, 중개사 수를 보여 주는 카드.
+ * 결과가 나오면 처음부터 1위 동네 기준으로 띄우고, 동네를 고르면 그 동네로 바꾼다.
+ * 숫자만 보여 주고 지도 마커는 켜지 않는다. 마커는 지도 오른쪽 레일로만 켠다.
  */
-const AreaNearbyCard = ({ area, selectedCategory, onSelectCategory }: Props) => {
+const AreaNearbyCard = ({ area }: Props) => {
   const nearby = useNearbyFacilities(area.center, NEARBY_RADIUS, NO_CATEGORIES, true, { loadAllCategories: true });
   return (
     <section className={styles.card} aria-label={`${area.name} 주변 분석`}>
       <span className={styles.head}>
-        <strong>주변 분석</strong>
+        <strong>{area.name} 주변</strong>
         <small>반경 2km</small>
       </span>
       <ul className={styles.counts} aria-label={`${area.name} 주변 시설 수`}>
-        {INFRA_CATEGORIES.map((category) => {
-          const label = getMapCategoryLabel(category);
-          const count = nearby.isSuccess ? `${nearby.data.counts[category]}곳` : nearby.isError ? '-' : '…';
-          const selected = selectedCategory === category;
-          return (
-            <li key={category}>
-              <button
-                type="button"
-                aria-pressed={selected}
-                aria-label={`${label} ${count} 지도에 ${selected ? '숨기기' : '표시하기'}`}
-                onClick={() => onSelectCategory(category)}
-              >
-                <MapCategoryIcon category={category} />
-                <span>{label}</span>
-                <b>{count}</b>
-              </button>
-            </li>
-          );
-        })}
+        {INFRA_CATEGORIES.map((category) => (
+          <li key={category}>
+            <MapCategoryIcon category={category} />
+            <span>{category === 'AGENCY' ? '중개사' : getMapCategoryLabel(category)}</span>
+            <b>
+              {nearby.isSuccess ? nearbyCountLabel(category, nearby.data.counts[category]) : nearby.isError ? '-' : '…'}
+            </b>
+          </li>
+        ))}
       </ul>
     </section>
   );
@@ -89,48 +82,18 @@ const styles = {
   counts: css`
     label: AreaNearbyCard-counts;
     display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(5, minmax(0, 1fr));
     gap: 0.4rem;
     margin: 0;
     padding: 0;
     list-style: none;
 
     & li {
-      min-width: 0;
-    }
-
-    /* 켜진 분류는 지도 레일처럼 파란색으로 칠한다. */
-    & button {
       display: grid;
       justify-items: center;
       gap: 0.2rem;
-      width: 100%;
-      padding: 0.35rem 0;
-      border: 0;
-      border-radius: 0.6rem;
-      background: transparent;
-      color: var(--color-ink);
-      font: inherit;
+      min-width: 0;
       font-size: 0.72rem;
-      cursor: pointer;
-    }
-
-    & button:hover {
-      background: var(--color-surface-muted);
-    }
-
-    & button[aria-pressed='true'] {
-      background: #648fff;
-      color: #fff;
-    }
-
-    & button[aria-pressed='true'] span {
-      color: #fff;
-    }
-
-    & button:focus-visible {
-      outline: 2px solid var(--color-focus);
-      outline-offset: 1px;
     }
 
     & img {
