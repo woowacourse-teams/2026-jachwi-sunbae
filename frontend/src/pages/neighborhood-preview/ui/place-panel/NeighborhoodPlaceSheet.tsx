@@ -23,9 +23,9 @@ type Props = {
 const NeighborhoodPlaceSheet = ({ place, preview, onClose, peekSignal, floating }: Props) => (
   <BottomSheet
     // 부동산과 정류장은 처음 높이가 달라, 서로 바꿔 열면 처음 높이로 다시 연다.
-    key={place.kind === 'agency' ? 'agency' : 'route'}
+    key={place.kind === 'agency' || place.kind === 'facility' ? 'info' : 'route'}
     title={`${placeTitle(place)} 정보`}
-    initialHeightPercent={place.kind === 'agency' ? 32 : 55}
+    initialHeightPercent={place.kind === 'agency' || place.kind === 'facility' ? 32 : 55}
     showCloseButton={false}
     closeLabel="정보 닫기"
     fullPage

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 
+import { getMapCategoryLabel } from '@/features/map/lib/mapPresentation';
 import { transitStopIdForBusStop } from '@/features/map/lib/transitStop';
 
 import type { NeighborhoodPlace } from '../../hooks/useNeighborhoodPlaces';
@@ -18,7 +19,7 @@ type Props = {
 
 const COPIED_NOTICE_MS = 2000;
 
-/** 지도에서 고른 정류장·부동산의 내용. 데스크탑 옆 칸(NeighborhoodPlacePanel)과 휴대폰 바텀시트(NeighborhoodPlaceSheet)가 함께 쓴다. */
+/** 지도에서 고른 정류장, 부동산, 시설의 내용. 데스크탑 옆 칸(NeighborhoodPlacePanel)과 휴대폰 바텀시트(NeighborhoodPlaceSheet)가 함께 쓴다. */
 const PlaceDetails = ({ place, preview, phoneAction }: Props) => {
   const stopId =
     place.kind === 'busStop'
@@ -34,6 +35,15 @@ const PlaceDetails = ({ place, preview, phoneAction }: Props) => {
     const timer = window.setTimeout(() => setCopyState('idle'), COPIED_NOTICE_MS);
     return () => window.clearTimeout(timer);
   }, [copyState]);
+  if (place.kind === 'facility')
+    return (
+      <div className={styles.details}>
+        <p className={styles.lead}>
+          {getMapCategoryLabel(place.facility.category)}
+          {place.facility.address ? ` · ${place.facility.address}` : ''}
+        </p>
+      </div>
+    );
   if (place.kind !== 'agency')
     return (
       <div className={styles.details}>

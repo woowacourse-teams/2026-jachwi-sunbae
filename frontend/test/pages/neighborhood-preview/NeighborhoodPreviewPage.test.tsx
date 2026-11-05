@@ -980,41 +980,39 @@ it('동네를 고르면 결과 지도 오른쪽에 분류 레일을 두고, 누�
   expect(screen.queryByRole('complementary', { name: '지도 시설 카테고리' })).not.toBeInTheDocument();
   await user.click(screen.getByRole('button', { name: /1위 역삼1동/ }));
   const rail = within(await findRail());
-  // 본 방 기록 지도처럼 메모, 병원, 교통, 학교, 편의 순이고, 메모는 처음부터 켜 둔다. 중개는 레일에 두지 않는다.
-  expect(rail.getAllByRole('button').map((button) => button.textContent)).toEqual([
-    '메모',
-    '병원',
-    '교통',
-    '학교',
-    '편의',
-  ]);
-  expect(rail.getByRole('button', { name: /^거리 메모 숨기기/ })).toHaveAttribute('aria-pressed', 'true');
+  // 본 방 기록 지도에서 옮겨 온 병원, 교통, 학교, 편의 네 칸이다. 메모 버튼과 중개는 두지 않는다.
+  expect(rail.getAllByRole('button').map((button) => button.textContent)).toEqual(['병원', '교통', '학교', '편의']);
   // 확대 축소, 레일, 현재 위치 버튼은 한 줄로 세운다.
   const column = screen.getByRole('complementary', { name: '지도 시설 카테고리' }).parentElement!;
   expect(within(column).getByRole('group', { name: '지도 확대·축소' })).toBeInTheDocument();
   expect(within(column).getByRole('button', { name: '내 현재 위치로 이동' })).toBeInTheDocument();
   const markers = () =>
-    JSON.parse(screen.getByLabelText('목적지 좌표').textContent ?? '[]') as { category?: string; tone?: string }[];
-  // 병원을 켜면 다른 화면으로 가지 않고 그 동네 주변 병원 마커를 결과 지도에 바로 그린다.
-  await waitFor(() => expect(rail.getByRole('button', { name: /^병원 표시하기, \d+개$/ })).toBeInTheDocument());
+    JSON.parse(screen.getByLabelText('목적지 좌표').textContent ?? '[]') as {
+      category?: string;
+      label: string;
+    }[];
+  // 거리 메모는 버튼 없이 늘 보인다.
+  await user.click(screen.getByRole('button', { name: '화면 범위 알림' }));
+  await waitFor(() => expect(markers().some((marker) => marker.category === 'MEMO')).toBe(true));
+  // 병원을 켜면 다른 화면으로 가지 않고 지금 화면 안 병원 마커를 결과 지도에 바로 그린다.
   await user.click(rail.getByRole('button', { name: /^병원 표시하기/ }));
   await waitFor(() => expect(markers().some((marker) => marker.category === 'HOSPITAL')).toBe(true));
+  expect(rail.getByRole('button', { name: /^병원 숨기기, \d+개$/ })).toHaveAttribute('aria-pressed', 'true');
   expect(trackPostHogEvent).toHaveBeenCalledWith(
     'neighborhood_map_category_toggled',
     expect.objectContaining({ category: 'HOSPITAL', selected: true }),
   );
-  expect(screen.getByRole('region', { name: '행정동 프리셋 지도' })).toBeInTheDocument();
+  // 시설 마커를 누르면 동네 시트 안에서 그 시설 정보를 연다.
+  const hospital = markers().find((marker) => marker.category === 'HOSPITAL')!;
+  await user.click(screen.getAllByRole('button', { name: `마커 ${hospital.label}` })[0]);
+  const info = within(await screen.findByRole('region', { name: `${hospital.label} 정보` }));
+  expect(info.getByText(/^병원/)).toBeInTheDocument();
+  await user.click(info.getByRole('button', { name: '뒤로 가기' }));
   // 한 번에 한 분류만 켠다. 학교로 바꾸면 병원 마커를 거둔다.
   await user.click(rail.getByRole('button', { name: /^학교 표시하기/ }));
   await waitFor(() => expect(markers().some((marker) => marker.category === 'SCHOOL')).toBe(true));
   expect(markers().some((marker) => marker.category === 'HOSPITAL')).toBe(false);
-  // 메모를 끄면 거리 메모 묶음을 거두고 다시 켜면 올린다.
-  await user.click(screen.getByRole('button', { name: '화면 범위 알림' }));
-  await waitFor(() => expect(markers().some((marker) => marker.category === 'MEMO')).toBe(true));
-  await user.click(rail.getByRole('button', { name: /^거리 메모 숨기기/ }));
-  expect(markers().some((marker) => marker.category === 'MEMO')).toBe(false);
-  await user.click(rail.getByRole('button', { name: /^거리 메모 표시하기/ }));
-  await waitFor(() => expect(markers().some((marker) => marker.category === 'MEMO')).toBe(true));
+  expect(markers().some((marker) => marker.category === 'MEMO')).toBe(true);
 });
 it('기록한 매물이 없으면 내 매물 통근 시간을 그리지 않고, 공개 동네 찾기는 매물 통근 시간을 부르지 않는다', async () => {
   let commuteRequests = 0;

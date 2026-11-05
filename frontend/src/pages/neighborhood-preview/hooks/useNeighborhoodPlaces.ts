@@ -3,7 +3,7 @@ import { useMemo, useRef, useState } from 'react';
 import { useViewportPlaces } from '@/features/map/api/useViewportPlaces';
 import { stationVariant } from '@/features/map/lib/mapIconAssets';
 import { viewportQuery } from '@/features/map/lib/mapViewportQuery';
-import type { MapBounds, MapMarker, NearbyAgency } from '@/features/map/model/Map';
+import type { MapBounds, MapMarker, NearbyAgency, NearbyPlace } from '@/features/map/model/Map';
 
 import { nextPlacesVisible } from '../model/resultMapView';
 
@@ -13,15 +13,25 @@ export type AreaStation = { stopId: string; name: string; latitude: number; long
 export type NeighborhoodPlace =
   | { kind: 'agency'; agency: NearbyAgency }
   | { kind: 'busStop'; busStop: BusStop }
-  | { kind: 'station'; station: AreaStation };
+  | { kind: 'station'; station: AreaStation }
+  /** 분류 레일로 켠 병원, 학교, 편의점 마커. */
+  | { kind: 'facility'; facility: NearbyPlace };
 
 export const placeTitle = (place: NeighborhoodPlace) =>
-  place.kind === 'agency' ? place.agency.name : place.kind === 'busStop' ? place.busStop.name : place.station.name;
+  place.kind === 'agency'
+    ? place.agency.name
+    : place.kind === 'busStop'
+      ? place.busStop.name
+      : place.kind === 'station'
+        ? place.station.name
+        : place.facility.name;
 
 const NO_AGENCIES: NearbyAgency[] = [];
 const AGENCY_PREFIX = 'agency:';
 const BUS_STOP_PREFIX = 'bus-stop:';
 const STATION_PREFIX = 'station:';
+/** 분류 레일 시설 마커 id의 머리(`placeMarkers`가 붙인다). */
+const FACILITY_PREFIX = 'place-';
 
 /**
  * 결과 지도를 가까이 확대하면 지금 화면 안의 버스정류장과 공인중개사를 지도에 올린다.
@@ -54,6 +64,7 @@ const useNeighborhoodPlaces = (enabled: boolean) => {
   };
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [station, setStation] = useState<AreaStation | null>(null);
+  const [facility, setFacility] = useState<NearbyPlace | null>(null);
   // 결과 지도가 아닌 동안(다시 고르기, 분석 중)은 지도가 확대 단계와 범위를 알려 주지 않는다.
   // 결과 지도를 떠날 때 기억한 값을 비워, 돌아온 지도가 멈추기 전에 예전 확대 단계로 마커를 올리지 않게 한다.
   const [wasEnabled, setWasEnabled] = useState(enabled);
@@ -120,6 +131,8 @@ const useNeighborhoodPlaces = (enabled: boolean) => {
     if (!enabled || selectedId === null) return null;
     // 동네의 출발 정류장은 지도 화면과 상관없이 목록에서 고르므로 확대 여부와 무관하게 유지한다.
     if (selectedId.startsWith(STATION_PREFIX)) return station ? { kind: 'station', station } : null;
+    // 분류 레일 시설은 지도 화면 범위로 따로 받으므로 확대 여부와 무관하게 고른 것을 유지한다.
+    if (selectedId.startsWith(FACILITY_PREFIX)) return facility ? { kind: 'facility', facility } : null;
     if (!isClose) return null;
     if (selectedId.startsWith(AGENCY_PREFIX)) {
       const agency = places.agencies.find((item) => `${AGENCY_PREFIX}${item.providerPlaceId}` === selectedId);
@@ -127,7 +140,7 @@ const useNeighborhoodPlaces = (enabled: boolean) => {
     }
     const busStop = places.busStops.find((item) => `${BUS_STOP_PREFIX}${item.nodeId}` === selectedId);
     return busStop ? { kind: 'busStop', busStop } : null;
-  }, [enabled, isClose, selectedId, station, places.agencies, places.busStops]);
+  }, [enabled, isClose, selectedId, station, facility, places.agencies, places.busStops]);
   return {
     isClose,
     markers: stationMarker.length ? [...markers, ...stationMarker] : markers,
@@ -146,6 +159,11 @@ const useNeighborhoodPlaces = (enabled: boolean) => {
         (station !== null && marker.id === `${STATION_PREFIX}${station.stopId}`)
       )
         setSelectedId(marker.id);
+    },
+    /** 분류 레일로 올린 시설 마커를 고른다. */
+    selectFacility: (marker: MapMarker, place: NearbyPlace) => {
+      setFacility(place);
+      setSelectedId(marker.id);
     },
     /** 동네 목록에서 출발 정류장을 고른다. */
     selectStation: (next: AreaStation) => {

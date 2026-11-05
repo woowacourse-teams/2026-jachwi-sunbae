@@ -45,7 +45,7 @@
 | `commute_departure_station_changed`     | 데스크탑 동네 요약 목록에서 다른 유효한 출발 정류장 직접 선택                                                               | `search_id`(있는 경우)                                        |
 | `neighborhood_nearby_link_clicked`      | (수집 중단) 동네 상세의 정류장·공인중개사 보기 카드 클릭. 결과 지도를 확대하면 정류장·부동산을 바로 보여 주어 카드를 없앴다 | `search_id`(있는 경우)                                        |
 | `neighborhood_listing_link_clicked`     | 동네 상세의 현재 매물 확인하기 카드 클릭                                                                                    | `provider=dabang`, `search_id`(있는 경우)                     |
-| `neighborhood_map_category_toggled`     | 동네를 고른 결과 지도의 분류 레일(메모, 병원, 교통, 학교, 편의)을 켜거나 끔                                                 | `category`, `selected`, `search_id`(있는 경우)                |
+| `neighborhood_map_category_toggled`     | 동네를 고른 결과 지도의 분류 레일(병원, 교통, 학교, 편의)을 켜거나 끔                                                       | `category`, `selected`, `search_id`(있는 경우)                |
 | `neighborhood_property_commute_clicked` | 동네 시트(칸)의 내 매물 통근 시간 목록에서 매물을 눌러 매물 상세로 이동                                                     | `search_id`(있는 경우)                                        |
 | `street_memo_dong_group_selected`       | 결과 지도의 거리 메모 행정동 묶음을 눌러 그 동으로 확대                                                                     | `memo_count`, `search_id`(있는 경우)                          |
 

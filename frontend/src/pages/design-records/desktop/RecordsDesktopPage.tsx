@@ -55,9 +55,7 @@ const RecordsDesktopPage = () => {
       setNotice('매물을 만들지 못했어요. 다시 시도해 주세요.');
     },
   });
-  // 휴대폰처럼 처음 들어오면 거리 메모를 켠 채로 연다.
   const layers = useRecordsMapLayers(records, {
-    initialCategory: 'MEMO',
     registeringAt: creatingAt,
     groupAction: 'zoom',
     onRegister: (location) => {

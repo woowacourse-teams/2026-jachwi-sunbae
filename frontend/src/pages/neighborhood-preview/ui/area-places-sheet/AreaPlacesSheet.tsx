@@ -63,7 +63,7 @@ const AreaPlacesSheet = ({
       title={place ? `${placeTitle(place)} 정보` : area.name}
       // 목록에서는 동네 이름 아래 전체 주소를 적는다.
       subtitle={place ? undefined : area.fullName}
-      initialHeightPercent={place && place.kind !== 'agency' ? 55 : 38}
+      initialHeightPercent={place && (place.kind === 'busStop' || place.kind === 'station') ? 55 : 38}
       showCloseButton={false}
       closeLabel="동네 정보 닫기"
       fullPage
