@@ -16,6 +16,7 @@ import com.jachwisunbae.common.exception.errorcode.ErrorCode;
 import com.jachwisunbae.common.exception.server.DataInconsistencyException;
 import com.jachwisunbae.member.repository.JdbcMemberRepository;
 import com.jachwisunbae.member.service.MemberService;
+import com.jachwisunbae.streetmemo.domain.StreetMemoCategory;
 import com.jachwisunbae.streetmemo.domain.StreetMemoPreference;
 import com.jachwisunbae.streetmemo.repository.JdbcStreetMemoRepository;
 import com.jachwisunbae.streetmemo.service.dto.result.StreetMemoResult;
@@ -175,7 +176,7 @@ class StreetMemoServiceIntegrationTest {
 
     private static StreetMemoResult create(long member, String latitude, String longitude, StreetMemoPreference preference) {
         return service.create(member, new BigDecimal(latitude), new BigDecimal(longitude),
-                "  동네 메모 🏠\n원문 유지  ", preference);
+                "  동네 메모 🏠\n원문 유지  ", preference, StreetMemoCategory.GENERAL);
     }
 
     private static long insertMember() {

@@ -13,7 +13,9 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
@@ -177,6 +179,30 @@ class StreetMemoAcceptanceTest {
         assertInvalidCreate(validBody().put("preference", preference), "STREET_MEMO_PREFERENCE_INVALID");
     }
 
+    @Test
+    @DisplayName("고른 카테고리는 그대로, 보내지 않은 카테고리는 GENERAL로 저장해 조회한다")
+    void storesChosenCategoryOrGeneral() throws Exception {
+        JsonNode place = create(author, validBody().put("category", "PLACE"));
+        JsonNode general = create(author, validBody());
+        assertThat(place.path("category").asText()).isEqualTo("PLACE");
+        assertThat(general.path("category").asText()).isEqualTo("GENERAL");
+
+        JsonNode items = data(mvc.perform(viewport(author)).andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString());
+        Map<Long, String> categories = new HashMap<>();
+        items.forEach(item -> categories.put(item.path("streetMemoId").asLong(), item.path("category").asText()));
+        assertThat(categories).containsExactlyInAnyOrderEntriesOf(Map.of(
+                place.path("streetMemoId").asLong(), "PLACE",
+                general.path("streetMemoId").asLong(), "GENERAL"));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"", "place", "SHOP"})
+    @DisplayName("대문자 PLACE, STREET, GENERAL 외의 카테고리를 거부한다")
+    void rejectsInvalidCategory(final String category) throws Exception {
+        assertInvalidCreate(validBody().put("category", category), "STREET_MEMO_CATEGORY_INVALID");
+    }
+
     @ParameterizedTest
     @CsvSource({"latitude, 90.0000001", "longitude, 180.0000001"})
     @DisplayName("허용 범위 밖의 작성 좌표를 거부한다")
@@ -295,7 +321,7 @@ class StreetMemoAcceptanceTest {
         List<String> fields = new ArrayList<>();
         memo.fieldNames().forEachRemaining(fields::add);
         assertThat(fields).containsExactlyInAnyOrder("streetMemoId", "latitude", "longitude", "memo", "adminDongCode",
-                "preference", "isMine");
+                "category", "preference", "isMine");
     }
 
     private record MemberSession(long memberId, String accessToken) {
