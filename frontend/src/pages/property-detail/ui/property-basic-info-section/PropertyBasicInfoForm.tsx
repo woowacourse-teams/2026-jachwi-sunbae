@@ -1,7 +1,6 @@
 import { css } from '@emotion/css';
-import { type FocusEvent, type FormEvent, type KeyboardEvent, useCallback, useEffect, useRef, useState } from 'react';
+import { type FocusEvent, type FormEvent, type KeyboardEvent, useEffect, useRef, useState } from 'react';
 
-import { UNSUPPORTED_ADDRESS_MESSAGE } from '@/features/map/lib/mapAddress';
 import { requestCurrentMapLocation } from '@/features/map/lib/mapLocation';
 import type { MapAddress } from '@/features/map/model/Map';
 import { useUpdateProperty } from '@/features/property/api/usePropertyMutations';
@@ -67,10 +66,8 @@ const PropertyBasicInfoForm = ({ property, field, onSaved, onCancel }: PropertyB
   const [initialValues] = useState<BasicInfoValues>(() => toPriceInputs(property));
   const [values, setValues] = useState<BasicInfoValues>(initialValues);
   const [errors, setErrors] = useState<PropertyFormErrors>({});
-  const [notice, setNotice] = useState<string | null>(null);
   const [presetLocation] = useState(() => toPresetLocation(property));
-  const clearNotice = useCallback(() => setNotice(null), []);
-  const location = usePropertyLocation(presetLocation, clearNotice);
+  const location = usePropertyLocation(presetLocation);
   const search = useAddressSearch();
   const initialCoordinate = useRef({
     latitude: location.selectedLocation.latitude,
@@ -131,21 +128,11 @@ const PropertyBasicInfoForm = ({ property, field, onSaved, onCancel }: PropertyB
     const moved =
       Math.abs(selectedLocation.latitude - initialCoordinate.current.latitude) > COORDINATE_EPSILON ||
       Math.abs(selectedLocation.longitude - initialCoordinate.current.longitude) > COORDINATE_EPSILON;
-    if (field === 'location') {
-      // 지도를 막 옮긴 뒤라 주소를 아직 받지 못했으면, 옮기기 전 위치로 저장하거나 닫지 않고 주소를 기다린다.
-      if (locationStatus === 'loading') {
-        setNotice(null);
-        setIsWaitingAddress(true);
-        return;
-      }
-      if (moved && locationStatus === 'unsupported') {
-        setNotice(`${UNSUPPORTED_ADDRESS_MESSAGE} 지도를 움직여 다른 위치를 골라 주세요.`);
-        return;
-      }
-      if (moved && locationStatus === 'error') {
-        setNotice('위치를 다시 선택해 주세요.');
-        return;
-      }
+    // 지도를 막 옮긴 뒤라 주소를 아직 받지 못했으면, 옮기기 전 위치로 저장하거나 닫지 않고 주소를 기다린다.
+    // 주소를 찾지 못했거나 조회가 실패한 자리는 주소 없이 좌표만 저장한다.
+    if (field === 'location' && locationStatus === 'loading') {
+      setIsWaitingAddress(true);
+      return;
     }
 
     if (field === 'location' && !moved) {
@@ -238,11 +225,6 @@ const PropertyBasicInfoForm = ({ property, field, onSaved, onCancel }: PropertyB
             },
           }}
         />
-      )}
-      {notice !== null && (
-        <p className={styles.errorNotice} role="alert">
-          {notice}
-        </p>
       )}
       {updateProperty.isError && (
         <p className={styles.errorNotice} role="alert">

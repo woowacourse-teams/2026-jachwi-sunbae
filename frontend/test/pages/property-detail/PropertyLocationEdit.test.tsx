@@ -99,21 +99,30 @@ it('지도를 옮기자마자 저장을 누르면 옮기기 전 위치로 닫지
   }
 }, 20_000);
 
-it('옮긴 자리의 주소를 찾지 못하면 지원하지 않는 주소라고 알리고 저장하지 않는다', async () => {
-  server.use(http.get('*/api/maps/reverse-geocode', () => failure('MAP_ADDRESS_NOT_FOUND', 404)));
-  drag.to = { latitude: 34.9, longitude: 125.1 };
-  renderDetail();
-  const user = await openLocationEditor();
-  const updates = captureUpdates();
-  try {
-    await user.click(screen.getByRole('button', { name: '지도 끌기' }));
-    expect(await screen.findByText('지원하지 않는 주소입니다.')).toBeInTheDocument();
-    await user.click(screen.getByRole('button', { name: '이 위치로 저장' }));
-    expect(screen.getByRole('alert')).toHaveTextContent(
-      '지원하지 않는 주소입니다. 지도를 움직여 다른 위치를 골라 주세요.',
-    );
-    expect(updates.bodies).toEqual([]);
-  } finally {
-    updates.stop();
-  }
-}, 20_000);
+it.each([
+  ['주소를 찾지 못하면', () => failure('MAP_ADDRESS_NOT_FOUND', 404), { latitude: 34.9, longitude: 125.1 }],
+  ['주소 조회가 실패하면', () => failure('INTERNAL_SERVER_ERROR', 500), { latitude: 34.8, longitude: 125.2 }],
+])(
+  '옮긴 자리의 %s 지원하지 않는 주소라고 보이고, 주소 없이 좌표만 저장한다',
+  async (_, respond, to) => {
+    server.use(http.get('*/api/maps/reverse-geocode', respond));
+    drag.to = to;
+    renderDetail();
+    const user = await openLocationEditor();
+    const updates = captureUpdates();
+    try {
+      await user.click(screen.getByRole('button', { name: '지도 끌기' }));
+      expect(await screen.findByText('지원하지 않는 주소입니다', {}, { timeout: 8000 })).toBeInTheDocument();
+      await user.click(screen.getByRole('button', { name: '이 위치로 저장' }));
+      await waitFor(() => expect(updates.bodies).toHaveLength(1), { timeout: 8000 });
+      expect(updates.bodies[0]).toEqual(expect.objectContaining({ ...to, address: null }));
+      // 저장한 뒤 상세의 주소 칸도 빈칸 대신 지원하지 않는 주소라고 보인다.
+      expect(await screen.findByRole('button', { name: /^주소 .*수정$/ })).toHaveTextContent(
+        '지원하지 않는 주소입니다',
+      );
+    } finally {
+      updates.stop();
+    }
+  },
+  20_000,
+);

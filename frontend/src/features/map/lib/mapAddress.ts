@@ -2,8 +2,11 @@ import { ApiError } from '@/features/auth/api/apiClient';
 
 import type { MapAddress } from '../model/Map';
 
-/** 역지오코딩으로 주소를 찾지 못한 자리(바다, 산, 공터 등)에 보이는 안내. */
-export const UNSUPPORTED_ADDRESS_MESSAGE = '지원하지 않는 주소입니다.';
+/**
+ * 주소가 없는 매물과 위치의 주소 칸에 빈칸 대신 흐리게 보이는 글.
+ * 역지오코딩이 주소를 찾지 못했거나(바다, 산, 공터 등) 주소 조회가 실패한 자리도 매물은 좌표만으로 등록한다.
+ */
+export const UNSUPPORTED_ADDRESS_MESSAGE = '지원하지 않는 주소입니다';
 
 /** 서버가 그 좌표의 주소를 찾지 못했다고 답할 때 쓰는 오류 코드. */
 const ADDRESS_NOT_FOUND_CODE = 'MAP_ADDRESS_NOT_FOUND';

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 
+import { UNSUPPORTED_ADDRESS_MESSAGE } from '@/features/map/lib/mapAddress';
 import { formatPropertyPrice, hasPropertyPrice } from '@/features/property/lib/propertyFormat';
 import type { PropertyDetail } from '@/features/property/model/Property';
 import InfoValue from '@/shared/ui/info-value/InfoValue';
@@ -66,7 +67,7 @@ const PropertyBasicInfoSection = ({
       <InfoValue
         label="주소"
         value={property.location.address ?? ''}
-        emptyText="주소를 입력해 주세요"
+        emptyText={UNSUPPORTED_ADDRESS_MESSAGE}
         onEdit={() => onEdit('location')}
         editor={editor('location')}
         editorLayout="block"

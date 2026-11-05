@@ -456,8 +456,11 @@ it('주소 응답이 늦으면 등록 핀과 확인 중 안내를 먼저 띄우�
   }
 });
 
-it('찍은 자리의 주소를 찾지 못하면 주소 없는 매물을 만들지 않고 지원하지 않는 주소라고 알린다', async () => {
-  server.use(http.get('*/api/maps/reverse-geocode', () => failure('MAP_ADDRESS_NOT_FOUND', 404)));
+it.each([
+  ['주소를 찾지 못한 자리', () => failure('MAP_ADDRESS_NOT_FOUND', 404)],
+  ['주소 조회가 실패한 자리', () => failure('INTERNAL_SERVER_ERROR', 500)],
+])('%s도 주소 없이 매물을 만들고, 주소 칸에 지원하지 않는 주소라고 보인다', async (_, respond) => {
+  server.use(http.get('*/api/maps/reverse-geocode', respond));
   const user = userEvent.setup();
   renderRecords();
   await screen.findByText('신림역 원룸');
@@ -465,9 +468,14 @@ it('찍은 자리의 주소를 찾지 못하면 주소 없는 매물을 만들�
   try {
     await user.click(screen.getByRole('button', { name: '빈 곳 찍기' }));
     await user.click(screen.getByRole('button', { name: '말풍선 🏠 여기에 매물 등록' }));
-    expect(await screen.findByText('지원하지 않는 주소입니다.')).toBeInTheDocument();
-    expect(created.bodies).toEqual([]);
-    expect(screen.queryByRole('button', { name: '매물 등록 위치' })).not.toBeInTheDocument();
+    await waitFor(() =>
+      expect(created.bodies).toEqual([
+        expect.objectContaining({ address: null, latitude: 37.5662, longitude: 126.9785 }),
+      ]),
+    );
+    expect(await screen.findByText(/매물을 기록했어요/)).toBeInTheDocument();
+    const sheet = within(await screen.findByRole('region', { name: '선택한 매물' }));
+    expect(sheet.getByText('지원하지 않는 주소입니다')).toBeInTheDocument();
   } finally {
     created.stop();
   }

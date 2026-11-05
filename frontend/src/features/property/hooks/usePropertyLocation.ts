@@ -6,7 +6,10 @@ import { DEFAULT_MAP_CENTER, readLastMapCenter } from '@/features/map/lib/mapLoc
 import type { MapAddress } from '@/features/map/model/Map';
 import { usePublicConfig } from '@/shared/config/PublicConfigContext';
 
-/** `unsupported`는 그 자리에 주소가 없다는 응답(바다, 산 등), `error`는 네트워크 같은 일시 실패다. */
+/**
+ * `unsupported`는 그 자리에 주소가 없다는 응답(바다, 산 등), `error`는 네트워크 같은 일시 실패다.
+ * 둘 다 주소 없이 좌표만으로 저장할 수 있다.
+ */
 export type PropertyLocationStatus = 'loading' | 'ready' | 'unsupported' | 'error';
 
 const CENTER_RESOLVE_DELAY_MS = 450;
@@ -23,7 +26,7 @@ const blankAddress = (latitude: number, longitude: number): MapAddress => ({
  * 매물 위치를 관리한다. 지도 중앙 좌표를 주소로 바꾸며, 늦게 도착한 이전 응답은 버린다.
  * 주소가 확정될 때마다 `onLocationReady`를 부른다. 매번 새로 만들지 않도록 useCallback으로 넘긴다.
  */
-const usePropertyLocation = (presetLocation: MapAddress | undefined, onLocationReady: () => void) => {
+const usePropertyLocation = (presetLocation: MapAddress | undefined, onLocationReady?: () => void) => {
   const config = usePublicConfig();
   const [selectedLocation, setSelectedLocation] = useState<MapAddress>(() => {
     const lastCenter = readLastMapCenter() ?? DEFAULT_MAP_CENTER;
@@ -47,7 +50,7 @@ const usePropertyLocation = (presetLocation: MapAddress | undefined, onLocationR
           return;
         }
         setLocationStatus('ready');
-        onLocationReady();
+        onLocationReady?.();
       } catch (error) {
         if (sequenceRef.current === sequence) {
           setSelectedLocation(blankAddress(latitude, longitude));
@@ -90,7 +93,7 @@ const usePropertyLocation = (presetLocation: MapAddress | undefined, onLocationR
     ++sequenceRef.current;
     setSelectedLocation(address);
     setLocationStatus('ready');
-    onLocationReady();
+    onLocationReady?.();
   };
 
   return { selectedLocation, locationStatus, resolveLocation, handleCenterChange, selectAddress };

@@ -10,6 +10,7 @@ import { propertyDetailPath } from '@/shared/lib/navigation/appPaths';
 import type { PropertyReturnPath } from '../../lib/propertyNavigation';
 import type { PropertySummary } from '../../model/Property';
 import AuthenticatedPhoto from '../authenticated-photo/AuthenticatedPhoto';
+import PropertyAddress from '../property-address/PropertyAddress';
 import PropertyPrice from '../property-price/PropertyPrice';
 
 type PropertyPhotoThumbnailProps = {
@@ -113,7 +114,9 @@ const PropertyCard = ({
             variant="labeled"
           />
           {meta !== undefined && <span className={styles.meta}>{meta}</span>}
-          {property.location.address !== null && <small className={styles.address}>{property.location.address}</small>}
+          <small className={styles.address}>
+            <PropertyAddress address={property.location.address} />
+          </small>
         </div>
         {onSiteStage !== undefined && (
           <div className={styles.stageProgress} aria-label="현장 체크리스트 진행 현황">

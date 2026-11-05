@@ -3,7 +3,6 @@ import { useMemo, useState } from 'react';
 import { reverseGeocode } from '@/features/map/api/mapApi';
 import { useViewportBusStops } from '@/features/map/api/useViewportBusStops';
 import { useViewportFacilities } from '@/features/map/api/useViewportFacilities';
-import { hasAddress, isAddressNotFound, UNSUPPORTED_ADDRESS_MESSAGE } from '@/features/map/lib/mapAddress';
 import { placeMarkers } from '@/features/map/lib/mapClustering';
 import { SERVICE_MAP_STYLE_ID } from '@/features/map/lib/mapStyle';
 import { facilityCells, viewportTiles } from '@/features/map/lib/mapViewportQuery';
@@ -28,11 +27,11 @@ type MapPoint = { latitude: number; longitude: number };
 
 type Options = {
   /**
-   * 찍은 위치에서 매물 등록을 고르면 주소를 찾은 뒤에 넘긴다. 등록 화면을 여는 방식은 화면이 정한다.
-   * 주소를 찾지 못하면 넘기지 않는다(주소 없는 매물을 만들지 않는다). 넘기지 않으면 찍은 위치에서는 메모만 남긴다.
+   * 찍은 위치에서 매물 등록을 고르면 주소 응답을 기다린 뒤에 넘긴다. 등록 화면을 여는 방식은 화면이 정한다.
+   * 주소를 찾지 못했거나 조회가 실패하면 주소 없이 좌표만 넘긴다. 넘기지 않으면 찍은 위치에서는 메모만 남긴다.
    */
   onRegister?: (location: MapAddress) => void;
-  /** 매물 등록에서 주소를 찾는 동안과 찾지 못했을 때 화면 아래에 띄울 안내. */
+  /** 매물 등록에서 주소를 찾는 동안 화면 아래에 띄울 안내. */
   onRegisterNotice?: (message: string) => void;
   /** 처음 켜 둘 카테고리. 휴대폰은 거리 메모를 켠 채로 연다. */
   initialCategory?: MapCategory | null;
@@ -172,27 +171,19 @@ const useRecordsMapLayers = (
   );
 
   /**
-   * 주소를 받은 뒤에만 매물을 만든다. 예전에는 주소 응답을 기다리는 동안 아무 표시가 없어 다시 누르면 매물이 둘 생겼고,
-   * 주소를 못 받으면 좌표만으로 만들어 주소가 빈 매물이 남았다.
+   * 주소 응답을 기다린 뒤 매물을 만든다. 예전에는 기다리는 동안 아무 표시가 없어 다시 누르면 매물이 둘 생겼다.
+   * 주소를 찾지 못했거나 조회가 실패해도 등록은 막지 않고 주소 없이 좌표만으로 만든다.
    */
   const registerAt = (point: MapPoint) => {
     setTapPoint(null);
     if (isRegistering) return;
     setResolvingAt(point);
     onRegisterNotice?.('주소를 확인하는 중이에요.');
+    const withoutAddress: MapAddress = { address: null, roadAddress: null, jibunAddress: null, ...point };
     reverseGeocode(config, point.latitude, point.longitude)
       .then(
-        (address) => {
-          if (!hasAddress(address)) {
-            onRegisterNotice?.(UNSUPPORTED_ADDRESS_MESSAGE);
-            return;
-          }
-          onRegister?.({ ...address, ...point });
-        },
-        (error: unknown) =>
-          onRegisterNotice?.(
-            isAddressNotFound(error) ? UNSUPPORTED_ADDRESS_MESSAGE : '주소를 확인하지 못했어요. 다시 시도해 주세요.',
-          ),
+        (address) => onRegister?.({ ...address, ...point }),
+        () => onRegister?.(withoutAddress),
       )
       .finally(() => setResolvingAt(null));
   };
