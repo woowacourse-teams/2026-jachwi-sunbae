@@ -56,15 +56,6 @@ public class StreetMemoService {
                 .stream().map(streetMemo -> StreetMemoResult.from(streetMemo, memberId)).toList();
     }
 
-    public List<StreetMemoResult> findAllInAdminDong(final Long memberId, final String adminDongCode) {
-        if (adminDongCode == null || !ADMIN_DONG_CODE.matcher(adminDongCode).matches()) {
-            throw new InvalidInputException(ErrorCode.STREET_MEMO_QUERY_INVALID,
-                    "행정동 코드는 8자리 숫자여야 합니다.");
-        }
-        return streetMemoRepository.findAllByAdminDongCode(adminDongCode)
-                .stream().map(streetMemo -> StreetMemoResult.from(streetMemo, memberId)).toList();
-    }
-
     @Transactional
     public void delete(final Long memberId, final long streetMemoId) {
         memberService.findById(memberId);

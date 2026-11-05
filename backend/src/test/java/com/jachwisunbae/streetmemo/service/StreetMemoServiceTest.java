@@ -99,20 +99,6 @@ class StreetMemoServiceTest {
         verifyNoInteractions(adminDongFinder, repository);
     }
 
-    @ParameterizedTest
-    @NullAndEmptySource
-    @ValueSource(strings = {"1168064", "116806400", "1168064a"})
-    @DisplayName("8자리 숫자가 아닌 행정동 코드는 저장소를 조회하지 않고 거부한다")
-    void rejectsInvalidAdminDongCode(final String adminDongCode) {
-        StreetMemoService service = new StreetMemoService(repository, memberService, adminDongFinder, clock);
-
-        assertThatThrownBy(() -> service.findAllInAdminDong(1L, adminDongCode))
-                .isInstanceOfSatisfying(InvalidInputException.class,
-                        exception -> assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.STREET_MEMO_QUERY_INVALID));
-
-        verifyNoInteractions(repository);
-    }
-
     private StreetMemo saved(final StreetMemo memo) {
         return StreetMemo.reconstruct(10L, memo.getMemberId(), memo.getLatitude(), memo.getLongitude(),
                 memo.getAdminDongCode(), memo.getMemo(), memo.getPreference(), memo.getCreatedAt(),
