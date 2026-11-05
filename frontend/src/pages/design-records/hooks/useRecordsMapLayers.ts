@@ -5,6 +5,7 @@ import { SERVICE_MAP_STYLE_ID } from '@/features/map/lib/mapStyle';
 import type { MapAddress, MapBounds, MapMarker } from '@/features/map/model/Map';
 import type { MapCanvasProps, MapCoordinateMenu, MapTapAction } from '@/features/map/model/MapCanvas';
 import useStreetMemoLayer from '@/features/street-memo/hooks/useStreetMemoLayer';
+import { MEMO_INDIVIDUAL_MAX_LEVEL } from '@/features/street-memo/lib/streetMemoDongGroups';
 import { focusOnMemos, OVERLAP_HEIGHT_RATIO, OVERLAP_WIDTH_RATIO } from '@/features/street-memo/lib/streetMemoFocus';
 import addProperty from '@/shared/assets/illustrations/add-property.webp';
 import addProperty2x from '@/shared/assets/illustrations/add-property@2x.webp';
@@ -95,7 +96,7 @@ const useRecordsMapLayers = (
   const [tapPoint, setTapPoint] = useState<MapPoint | null>(null);
   const [isResolvingAddress, setIsResolvingAddress] = useState(false);
   // 거리 메모는 버튼 없이 늘 띄운다. 겹치는 메모는 개수 말풍선으로 묶이므로 웬만큼 축소해도 띄우고, 아주 멀리 축소했을 때만 숨긴다.
-  const memo = useStreetMemoLayer(level <= MEMO_MAX_LEVEL, bounds);
+  const memo = useStreetMemoLayer(level <= MEMO_MAX_LEVEL, bounds, level);
 
   const markers = useMemo<MapMarker[]>(
     () => [
@@ -185,10 +186,19 @@ const useRecordsMapLayers = (
       records.setLevel(focus.level);
       return true;
     }
+    // 행정동 메모 묶음은 열지 않고 묶음 자리(동 메모 평균 좌표)로 메모가 하나씩 보이는 단계까지 확대한다.
+    if (memo.isDongGroup(marker)) {
+      memo.close();
+      setTapPoint(null);
+      closeSelection();
+      records.setCenter({ latitude: marker.latitude, longitude: marker.longitude });
+      records.setLevel(MEMO_INDIVIDUAL_MAX_LEVEL);
+      return true;
+    }
     if (!memo.selectMarker(marker)) return false;
     setTapPoint(null);
     closeSelection();
-    // 누른 메모가 화면을 채우도록 다가간다. 겹쳐 묶인 메모는 말풍선이 서로 갈라질 만큼 확대한다.
+    // 누른 메모가 화면을 채우도록 다가간다.
     if (memos.length > 0) {
       const focus = focusOnMemos(memos, bounds, level);
       records.setCenter(focus.center);

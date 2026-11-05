@@ -48,7 +48,8 @@ export const groupMemosByDong = (memos: StreetMemo[]): DongMemoGroup[] => {
     });
 };
 
-const dongGroupMarker = (group: DongMemoGroup): MapMarker => ({
+/** 동 묶음 말풍선. 좋아요, 싫어요 개수를 두 색으로 나눠 그리고, 누르면 그 동이 보이게 확대한다. */
+export const dongGroupMarker = (group: DongMemoGroup): MapMarker => ({
   id: `${STREET_MEMO_DONG_MARKER_PREFIX}${group.adminDongCode}`,
   latitude: group.latitude,
   longitude: group.longitude,

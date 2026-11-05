@@ -25,6 +25,7 @@ const SEED_MEMOS: MockStreetMemo[] = [
     memo: '늦게까지 여는 세탁소가 있어요.',
     preference: 'LIKE',
     isMine: false,
+    adminDongCode: '11140550',
   },
   {
     streetMemoId: 2,
@@ -33,6 +34,7 @@ const SEED_MEMOS: MockStreetMemo[] = [
     memo: '저녁에 배달 오토바이가 많이 다녀요.',
     preference: 'DISLIKE',
     isMine: false,
+    adminDongCode: '11140550',
   },
   {
     streetMemoId: 3,
