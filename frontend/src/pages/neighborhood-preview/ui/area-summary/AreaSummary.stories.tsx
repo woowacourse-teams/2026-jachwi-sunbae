@@ -63,6 +63,8 @@ const meta = {
     onSelectStation: fn(),
     onOpenListing: fn(),
     showsStations: false,
+    selectedCategory: null,
+    onSelectCategory: fn(),
     preview: {
       destination: { latitude: 37.5559, longitude: 126.9101, name: '망원역', address: '서울 마포구' },
       isPublicExplore: false,

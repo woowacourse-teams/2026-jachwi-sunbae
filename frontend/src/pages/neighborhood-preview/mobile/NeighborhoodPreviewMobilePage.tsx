@@ -307,6 +307,8 @@ const NeighborhoodPreviewMobilePage = ({ preview }: Props) => {
                 place={places.selectedPlace}
                 preview={preview}
                 showsStations={showsStations}
+                selectedCategory={rail.selectedCategories[0] ?? null}
+                onSelectCategory={rail.onToggle}
                 peekSignal={peekSignal}
                 onSelectStation={(station) => {
                   places.selectStation(areaStation(station));

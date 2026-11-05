@@ -162,6 +162,8 @@ const NeighborhoodPreviewDesktopPage = ({ preview }: Props) => {
                 onOpenListing={preview.openListing}
                 maxRent={preview.maxRent}
                 showsStations={showsStations}
+                selectedCategory={rail.selectedCategories[0] ?? null}
+                onSelectCategory={rail.onToggle}
                 preview={preview}
               />
             </div>

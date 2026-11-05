@@ -2,10 +2,12 @@ import { css } from '@emotion/css';
 
 import { formatManwon } from '@/features/map/api/commuteApi';
 import { stationIconSrc } from '@/features/map/lib/mapIconAssets';
+import type { MapCategory } from '@/features/map/model/Map';
 
 import type { AreaStation } from '../../hooks/useNeighborhoodPlaces';
 import type { NeighborhoodPreviewContext } from '../../hooks/useNeighborhoodPreview';
 import { overRentNotice } from '../../model/criteriaLabels';
+import AreaNearbyCard from '../area-nearby-card/AreaNearbyCard';
 import ListingLink from '../listing-link/ListingLink';
 import PropertyCommuteList from '../property-commute/PropertyCommuteList';
 
@@ -27,12 +29,15 @@ type Props = {
   maxRent?: number;
   /** 지도 레일에서 `교통`을 켰으면 출발 정류장 목록을, 아니면 내 매물 통근 시간을 둔다. */
   showsStations: boolean;
+  /** 지도 레일에서 켜 둔 시설 분류와 켜고 끄기. 주변 분석 카드가 레일과 같은 상태를 쓴다. */
+  selectedCategory: MapCategory | null;
+  onSelectCategory: (category: MapCategory) => void;
   preview: Pick<NeighborhoodPreviewContext, 'destination' | 'isPublicExplore' | 'openPropertyCommute'>;
 };
 
 /**
  * 데스크탑 랭킹에서 동네를 고르면 목록 옆 칸에 여는 요약. 동네의 경로를 바로 그리지 않는다.
- * 월세 시세와 내 매물 통근 시간을 보여 주고, 지도 레일에서 `교통`을 켜면 출발 정류장 목록을 둔다.
+ * 월세 시세와 내 매물 통근 시간을 보여 주고, 주변 분석 카드를 두며, 지도 레일(또는 카드)에서 `교통`을 켜면 출발 정류장 목록을 둔다.
  * 정류장을 고르면 같은 칸에서 그 정류장에서 출발하는 경로를 연다. 공인중개사는 지도에서 마커를 눌러 본다.
  */
 const AreaSummary = ({
@@ -42,6 +47,8 @@ const AreaSummary = ({
   onOpenListing,
   maxRent = 0,
   showsStations,
+  selectedCategory,
+  onSelectCategory,
   preview,
 }: Props) => (
   <section className={styles.summary} aria-label={`${area.name} 요약`}>
@@ -51,6 +58,7 @@ const AreaSummary = ({
         : '거래가 적어 시세를 내지 않았어요'}
     </p>
     {overRentNotice(area.rent, maxRent) && <p className={styles.overRent}>{overRentNotice(area.rent, maxRent)}</p>}
+    <AreaNearbyCard area={area} selectedCategory={selectedCategory} onSelectCategory={onSelectCategory} />
     {showsStations ? (
       <ul className={styles.stations} aria-label={`${area.name} 출발 정류장`}>
         {area.stations.map((station) => (

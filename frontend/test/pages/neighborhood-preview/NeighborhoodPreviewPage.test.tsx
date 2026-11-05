@@ -1014,6 +1014,32 @@ it('동네를 고르면 결과 지도 오른쪽에 분류 레일을 두고, 누�
   expect(markers().some((marker) => marker.category === 'HOSPITAL')).toBe(false);
   expect(markers().some((marker) => marker.category === 'MEMO')).toBe(true);
 });
+it('동네 시트의 주변 분석 카드는 2km 안 시설 수를 보여 주고, 분류를 누르면 다른 화면 없이 지도 레일의 그 분류를 켠다', async () => {
+  show();
+  const user = await choosePoint();
+  await user.click(screen.getByRole('button', { name: /에서 찾기$/ }));
+  await user.click(await screen.findByRole('button', { name: /1위 역삼1동/ }));
+  const card = within(await screen.findByRole('region', { name: '역삼1동 주변 분석' }));
+  await waitFor(() => expect(card.getByRole('button', { name: /^병원 \d+곳 지도에 표시하기$/ })).toBeInTheDocument());
+  await user.click(screen.getByRole('button', { name: '화면 범위 알림' }));
+  await user.click(card.getByRole('button', { name: /^병원 \d+곳/ }));
+  // 카드와 레일이 같은 상태를 쓴다. 다른 화면으로 넘어가지 않고 지도에 병원을 올린다.
+  const rail = within(await findRail());
+  expect(rail.getByRole('button', { name: /^병원 숨기기/ })).toHaveAttribute('aria-pressed', 'true');
+  expect(card.getByRole('button', { name: /^병원 \d+곳 지도에 숨기기$/ })).toHaveAttribute('aria-pressed', 'true');
+  await waitFor(() =>
+    expect(
+      (JSON.parse(screen.getByLabelText('목적지 좌표').textContent ?? '[]') as { category?: string }[]).some(
+        (marker) => marker.category === 'HOSPITAL',
+      ),
+    ).toBe(true),
+  );
+  expect(screen.getByRole('region', { name: '행정동 프리셋 지도' })).toBeInTheDocument();
+  // 카드에서 교통을 누르면 레일처럼 출발 정류장 목록을 연다.
+  await user.click(card.getByRole('button', { name: /^교통 / }));
+  expect(screen.getByRole('list', { name: '역삼1동 출발 정류장' })).toBeInTheDocument();
+  expect(rail.getByRole('button', { name: /^교통 숨기기/ })).toHaveAttribute('aria-pressed', 'true');
+});
 it('기록한 매물이 없으면 내 매물 통근 시간을 그리지 않고, 공개 동네 찾기는 매물 통근 시간을 부르지 않는다', async () => {
   let commuteRequests = 0;
   server.use(
