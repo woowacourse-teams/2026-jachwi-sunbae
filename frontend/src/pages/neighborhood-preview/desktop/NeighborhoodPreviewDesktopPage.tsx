@@ -18,7 +18,7 @@ import type { AreaStation } from '../hooks/useNeighborhoodPlaces';
 import type { NeighborhoodPreviewContext } from '../hooks/useNeighborhoodPreview';
 import useResultMapViewport from '../hooks/useResultMapViewport';
 import { COMMUTE_COLORS, commuteLegend, OUT_OF_RENT_COLOR } from '../model/commuteColors';
-import { areaCardDescription, emptyAreaMessage, placesHint, rentLabel, transferLabel } from '../model/criteriaLabels';
+import { areaCardDescription, emptyAreaMessage, rentLabel, transferLabel } from '../model/criteriaLabels';
 import { desktopMapViewport } from '../model/resultMapView';
 import AnalysisOverlay from '../ui/analysis-overlay/AnalysisOverlay';
 import AreaSummary, { areaStation } from '../ui/area-summary/AreaSummary';
@@ -233,26 +233,24 @@ const NeighborhoodPreviewDesktopPage = ({ preview }: Props) => {
           )}
           {isResultMap && (
             <>
-              {/* 지도 색이 무엇을 뜻하는지는 지도 위에 둔다. 상세 닫기 버튼은 이 상자 아래에 뜬다. */}
-              <div className={`${shared.colorLegend} ${styles.legend}`} aria-label="통근 시간 색상 기준">
-                {commuteLegend(preview.maxMinutes).map(([group, label]) => (
-                  <span key={group}>
-                    <i style={{ background: COMMUTE_COLORS[group].fillColor }} />
-                    {label}
-                  </span>
-                ))}
-                {preview.maxRent > 0 && (
-                  <span>
-                    <i style={{ background: OUT_OF_RENT_COLOR.fillColor }} />
-                    월세 조건 밖
-                  </span>
-                )}
-                <small className={shared.placesHint}>
-                  {placesHint({ isClose: places.isClose, failed: places.failed })}
-                </small>
+              {/* 월세 시세 슬라이더와 지도 색 기준을 지도 아래 왼쪽 카드 하나에 둔다. 끄는 동안 지도 색과 왼쪽 순위가 바로 바뀐다. */}
+              <div className={styles.rentCard}>
+                <RentSlider preview={preview} />
+                <div className={`${shared.colorLegend} ${styles.legend}`} aria-label="통근 시간 색상 기준">
+                  {commuteLegend(preview.maxMinutes).map(([group, label]) => (
+                    <span key={group}>
+                      <i style={{ background: COMMUTE_COLORS[group].fillColor }} />
+                      {label}
+                    </span>
+                  ))}
+                  {preview.maxRent > 0 && (
+                    <span>
+                      <i style={{ background: OUT_OF_RENT_COLOR.fillColor }} />
+                      월세 조건 밖
+                    </span>
+                  )}
+                </div>
               </div>
-              {/* 월세 시세는 찾기 전이 아니라 결과 지도 위에서 고른다. 끄는 동안 지도 색과 왼쪽 순위가 바로 바뀐다. */}
-              <RentSlider preview={preview} className={styles.rentCard} />
               {/* 결과에 들어오자마자 예전 본 방 기록 지도처럼 오른쪽 위에 확대 축소, 분류 레일, 현재 위치 버튼을 한 줄로 세운다. */}
               <LocationControls
                 preview={preview}
@@ -294,8 +292,8 @@ const styles = {
   /* 데스크탑 동네 찾기. 공용 틀(NeighborhoodPreviewPage.module.css) 위에 덧씌운다. */
   page: css`
     label: NeighborhoodPreviewDesktopPage-page;
-    /* 지도 왼쪽 위 색상 기준 상자 아래에 상세 닫기 버튼을 둔다. */
-    --list-detail-close-top: 5rem;
+    /* 상세 닫기 버튼은 지도 왼쪽 위에 둔다. */
+    --list-detail-close-top: 1rem;
     overflow: hidden;
   `,
 
@@ -379,12 +377,11 @@ const styles = {
     }
   `,
 
+  /* 카드 안 색 기준 줄. 카드가 흰 바탕이라 따로 바탕을 두지 않는다. */
   legend: css`
     label: NeighborhoodPreviewDesktopPage-legend;
-    position: absolute;
-    top: 1rem;
-    left: 1rem;
-    z-index: 31;
+    padding: 0.2rem 0 0;
+    background: none;
   `,
 
   /* 지도 아래 왼쪽에 띄우는 월세 슬라이더 카드. 오른쪽 위치 버튼과 겹치지 않게 폭을 둔다. */

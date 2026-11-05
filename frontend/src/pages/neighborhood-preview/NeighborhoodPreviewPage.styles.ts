@@ -1017,12 +1017,6 @@ export const mapOverlay = css`
 `;
 
 /* 지도 색상 기준 아래 정류장·부동산 안내. */
-export const placesHint = css`
-  label: NeighborhoodPreviewPage-placesHint;
-  flex-basis: 100%;
-  color: var(--color-muted);
-  font-size: 0.65rem;
-`;
 
 /* 휴대폰에서 위치를 고르면 아래에 올리는 찾기 버튼. 버튼 글자에 고른 장소 이름을 넣는다.
    공용 바텀시트처럼 태블릿(1023px까지)도 화면 폭을 채운다. 1024px부터는 데스크탑 화면이라 이 시트를 쓰지 않는다. */

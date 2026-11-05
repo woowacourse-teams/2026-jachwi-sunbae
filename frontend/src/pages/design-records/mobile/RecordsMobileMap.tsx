@@ -56,11 +56,11 @@ const styles = {
     min-height: 0;
   `,
 
-  /* 확대 축소 버튼 바로 아래에 둔다. */
+  /* 세로 확대 축소 버튼 바로 아래에 둔다. */
   recenter: css`
     label: RecordsMobileMap-recenter;
     position: absolute;
-    top: calc(max(0.85rem, env(safe-area-inset-top)) + 11.4rem);
+    top: calc(max(0.85rem, env(safe-area-inset-top)) + 14.05rem);
     right: 0.95rem;
     z-index: 12;
     display: grid;
@@ -84,7 +84,7 @@ const styles = {
   zoom: css`
     label: RecordsMobileMap-zoom;
     top: calc(max(0.85rem, env(safe-area-inset-top)) + 8.15rem);
-    right: 0.75rem;
+    right: 0.95rem;
   `,
 
   /* 아무것도 열리지 않았을 때 가운데 아래에 띄우는 지도 안내. 지도 조작을 막지 않는다. */

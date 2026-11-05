@@ -17,10 +17,18 @@ export const emptyAreaMessage = (maxRent: number) =>
 /** 동네 카드 설명. 시세가 없는 동네는 그리지 않지만, 넘겨받으면 "시세 없음"으로 적는다. */
 export const areaCardDescription = (area: { rent: CommuteArea['rent']; stations: { stopName: string }[] }) =>
   `${area.rent ? `월세 ${formatManwon(area.rent.monthlyRentKrw)}` : '시세 없음'} · ${area.stations[0].stopName}에서 출발`;
-/** 결과 지도 위 안내. 가까이 보면 부동산을, 동네 교통 탭에서는 정류장을 올린다. */
-export const placesHint = ({ isClose, failed }: { isClose: boolean; failed: boolean }) =>
-  !isClose
-    ? '가까이 보면 부동산, 교통 탭에서 정류장이 보여요'
-    : failed
-      ? '주변 정보를 일부 불러오지 못했어요'
-      : '마커를 눌러 정보를 볼 수 있어요';
+/** 휴대폰 결과 머리의 조건 요약 한 줄. 예: `통근 40분 · 환승 1회 · 월세 전체`. */
+export const criteriaSummary = ({
+  maxMinutes,
+  maxTransfers,
+  maxRent,
+}: {
+  maxMinutes: number;
+  maxTransfers: number;
+  maxRent: number;
+}) =>
+  [
+    `통근 ${maxMinutes}분`,
+    maxTransfers === 0 ? '환승 없음' : `환승 ${maxTransfers}회`,
+    maxRent === 0 ? '월세 전체' : `월세 ${maxRent}만원`,
+  ].join(' · ');

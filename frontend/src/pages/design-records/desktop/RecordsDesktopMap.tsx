@@ -64,15 +64,15 @@ const styles = {
     right: 0;
     left: 0;
     padding-top: 0.75rem;
-    /* 오른쪽 위 확대·축소 버튼 자리를 비워 둔다. */
-    padding-right: 6.5rem;
+    /* 오른쪽 위 확대 축소 버튼 자리를 비워 둔다. */
+    padding-right: 4rem;
   `,
 
-  /* 오른쪽 위 확대 축소 버튼 바로 아래에 둔다. */
+  /* 오른쪽 위 세로 확대 축소 버튼 바로 아래에 둔다. */
   recenter: css`
     label: RecordsDesktopMap-recenter;
     position: absolute;
-    top: 4.6rem;
+    top: 7.25rem;
     right: 1.15rem;
     z-index: 12;
     display: grid;
@@ -96,7 +96,7 @@ const styles = {
   zoom: css`
     label: RecordsDesktopMap-zoom;
     top: 1.35rem;
-    right: 1rem;
+    right: 1.15rem;
   `,
 
   hint: css`

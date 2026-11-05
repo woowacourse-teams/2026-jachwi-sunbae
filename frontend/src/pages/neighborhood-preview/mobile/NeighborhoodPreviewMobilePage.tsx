@@ -10,7 +10,6 @@ import { LogClick } from '@/shared/lib/analytics/logging';
 import { ROUTE_PATTERNS } from '@/shared/lib/navigation/appPaths';
 import BottomSheet from '@/shared/ui/bottom-sheet/BottomSheet';
 import { Button } from '@/shared/ui/button/Button';
-import Chip from '@/shared/ui/chip/Chip';
 import HorizontalRail from '@/shared/ui/horizontal-rail/HorizontalRail';
 import Icon from '@/shared/ui/icon/Icon';
 import RankedCard from '@/shared/ui/ranked-card/RankedCard';
@@ -20,7 +19,13 @@ import useNeighborhoodMapView, { RESULT_RAIL_HIDDEN_CATEGORIES } from '../hooks/
 import type { NeighborhoodPreviewContext } from '../hooks/useNeighborhoodPreview';
 import useResultMapViewport from '../hooks/useResultMapViewport';
 import { COMMUTE_COLORS, commuteLegend, OUT_OF_RENT_COLOR } from '../model/commuteColors';
-import { areaCardDescription, emptyAreaMessage, placesHint, rentLabel, transferLabel } from '../model/criteriaLabels';
+import {
+  areaCardDescription,
+  criteriaSummary,
+  emptyAreaMessage,
+  rentLabel,
+  transferLabel,
+} from '../model/criteriaLabels';
 import { mobileMapViewport } from '../model/resultMapView';
 import type { NeighborhoodFilterField } from '../NeighborhoodFilters';
 import { NeighborhoodFilterPicker } from '../NeighborhoodFilters';
@@ -96,8 +101,21 @@ const NeighborhoodPreviewMobilePage = ({ preview }: Props) => {
   // 결과에 들어오자마자 예전 본 방 기록 지도처럼 오른쪽 위에 확대 축소, 분류 레일, 현재 위치 버튼을 한 줄로 세운다.
   // 레일은 동네를 고르기 전에는 1위 동네, 고르면 그 동네 기준이다. 아래 시트는 그 밑에서 올라온다.
   // 동네를 고르기 전 결과 화면의 아래 묶음(내 매물 통근 시간, 순위 레일).
-  const showsResultStack =
+  // 아래 순위 카드 줄은 검색 결과에 처음 들어왔을 때만 펼쳐 둔다. 레일 칸을 켜거나 지도를 끌면 `순위 보기` 버튼으로 접는다.
+  const [isRankOpen, setIsRankOpen] = useState(true);
+  const [wasResultMap, setWasResultMap] = useState(isResultMap);
+  if (wasResultMap !== isResultMap) {
+    setWasResultMap(isResultMap);
+    if (isResultMap) setIsRankOpen(true);
+  }
+  const [lastRailSelection, setLastRailSelection] = useState(railSelection);
+  if (lastRailSelection !== railSelection) {
+    setLastRailSelection(railSelection);
+    if (railSelection !== null) setIsRankOpen(false);
+  }
+  const showsRankArea =
     !isRoutePage && preview.topAreas.length > 0 && places.selectedPlace === null && railSelection === null;
+  const showsResultStack = showsRankArea && isRankOpen;
   // 동네를 고르기 전에 레일 칸을 켜면 순위 레일 대신 그 칸의 목록 시트를 띄운다.
   const showsRailSheet = !hasAreaSheet && places.selectedPlace === null && railPanel !== null;
   const resultControls = (
@@ -174,6 +192,7 @@ const NeighborhoodPreviewMobilePage = ({ preview }: Props) => {
           interactive
           onReady={preview.prefetchBoundaries}
           {...mapProps}
+          onDragStart={isResultMap ? () => setIsRankOpen(false) : undefined}
         />
         <AnalysisOverlay preview={preview} />
         {preview.isSelectingOnMap && (
@@ -238,24 +257,30 @@ const NeighborhoodPreviewMobilePage = ({ preview }: Props) => {
         )}
         {isResultMap && (
           <>
-            <header className={shared.resultHeader}>
-              {/* 왼쪽은 들어온 곳(보통 홈)으로 한 번에 나가는 집 모양 버튼, 가운데는 조건과 색 기준, 오른쪽은 출퇴근 장소부터 다시 고르는 버튼이다. */}
-              <button type="button" className={shared.mapBack} aria-label="동네 찾기 나가기" onClick={preview.leave}>
-                <Icon name="home" size={22} />
-              </button>
-              <div className={shared.resultCriteria}>
-                <div className={shared.criteriaBadges} aria-label="선택한 탐색 조건">
-                  {/* 통근과 환승은 찾은 결과를 정한 조건이라 결과에서는 바꿀 수 없다. 흐리게 두고, 바꾸려면 다시 선택한다. */}
-                  <Chip disabled floating>
-                    통근 {preview.maxMinutes}분 이내
-                  </Chip>
-                  <Chip disabled floating>
-                    {transferLabel(preview.maxTransfers)}
-                  </Chip>
-                  <Chip floating>{rentLabel(preview.maxRent)}</Chip>
-                </div>
-                {/* 월세는 받은 시세를 거르는 조건이라 데스크탑처럼 끌어서 바로 바꾼다. 끄는 동안 지도 색과 순위가 바뀐다. */}
-                <RentSlider preview={preview} compact className={styles.rentSlider} />
+            <header className={`${shared.resultHeader} ${styles.resultHeader}`}>
+              {/* 첫 줄: 들어온 곳(보통 홈)으로 나가는 집 버튼, 조건 요약 한 줄, 출퇴근 장소부터 다시 고르는 아이콘 버튼. */}
+              <div className={styles.headerRow}>
+                <button type="button" className={shared.mapBack} aria-label="동네 찾기 나가기" onClick={preview.leave}>
+                  <Icon name="home" size={22} />
+                </button>
+                <p className={styles.criteriaSummary} aria-label="선택한 탐색 조건">
+                  {criteriaSummary(preview)}
+                </p>
+                <button
+                  type="button"
+                  className={styles.resetButton}
+                  aria-label="다시 선택하기"
+                  onClick={() => {
+                    closeLayers();
+                    preview.reset();
+                  }}
+                >
+                  <Icon name="refresh" size={22} />
+                </button>
+              </div>
+              {/* 둘째 줄: 월세를 끌어서 바로 바꾸는 슬라이더와 지도 색 기준을 카드 하나에 둔다. 끄는 동안 지도 색과 순위가 바뀐다. */}
+              <div className={styles.filterCard}>
+                <RentSlider preview={preview} compact />
                 <div className={shared.colorLegend} aria-label="통근 시간 색상 기준">
                   {commuteLegend(preview.maxMinutes).map(([group, label]) => (
                     <span key={group}>
@@ -269,22 +294,8 @@ const NeighborhoodPreviewMobilePage = ({ preview }: Props) => {
                       월세 조건 밖
                     </span>
                   )}
-                  <small className={shared.placesHint}>
-                    {placesHint({ isClose: places.isClose, failed: places.failed })}
-                  </small>
                 </div>
               </div>
-              <Button
-                variant="secondary"
-                className={shared.resultReset}
-                onClick={() => {
-                  closeLayers();
-                  preview.reset();
-                }}
-              >
-                <Icon name="refresh" size={22} />
-                다시 선택하기
-              </Button>
             </header>
             {resultControls}
             {preview.isPublicExplore && recordArea && (
@@ -327,6 +338,12 @@ const NeighborhoodPreviewMobilePage = ({ preview }: Props) => {
                   </HorizontalRail>
                 </div>
               </div>
+            )}
+            {showsRankArea && !isRankOpen && (
+              <Button variant="secondary" className={styles.rankToggle} onClick={() => setIsRankOpen(true)}>
+                <Icon name="chevron-up" size={18} />
+                순위 보기
+              </Button>
             )}
             {/* 동네를 고르면 동네 정보 시트를 올린다. 레일 칸을 켜면 시트가 그 목록으로 바뀌고, 교통에서 출발 정류장을 고르면 시트 안에서 경로로 넘어간다. */}
             {hasAreaSheet && preview.selected && (
@@ -391,22 +408,109 @@ const styles = {
     }
   `,
 
-  /* 위쪽 조건 줄의 월세 슬라이더. 칩과 같은 흰 바탕으로 지도 위에서도 읽히게 한다. */
-  rentSlider: css`
-    label: NeighborhoodPreviewMobilePage-rentSlider;
-    padding: 0.45rem 0.8rem 0.1rem;
+  /* 결과 머리. 첫 줄(집, 조건 요약, 다시 선택)과 둘째 줄(월세 슬라이더와 색 기준 카드)을 위아래로 쌓는다. */
+  resultHeader: css`
+    label: NeighborhoodPreviewMobilePage-resultHeader;
+
+    && {
+      flex-direction: column;
+      align-items: stretch;
+      gap: 0.45rem;
+    }
+  `,
+
+  headerRow: css`
+    label: NeighborhoodPreviewMobilePage-headerRow;
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+  `,
+
+  /* 조건 요약 한 줄. 넘치면 말줄임으로 자른다. */
+  criteriaSummary: css`
+    label: NeighborhoodPreviewMobilePage-criteriaSummary;
+    flex: 1;
+    min-width: 0;
+    margin: 0;
+    padding: 0 0.9rem;
+    overflow: hidden;
+    border: 1px solid var(--color-border);
+    border-radius: 99px;
+    background: var(--color-surface);
+    box-shadow: var(--shadow-floating);
+    color: var(--color-ink);
+    font-size: 0.82rem;
+    font-weight: 700;
+    line-height: 2.75rem;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  `,
+
+  resetButton: css`
+    label: NeighborhoodPreviewMobilePage-resetButton;
+    flex: none;
+    display: grid;
+    place-items: center;
+    width: 2.75rem;
+    height: 2.75rem;
+    padding: 0;
+    border: 1px solid var(--color-border);
+    border-radius: 50%;
+    background: var(--color-surface);
+    box-shadow: var(--shadow-floating);
+    color: var(--color-ink);
+    cursor: pointer;
+
+    &:focus-visible {
+      outline: 2px solid var(--color-focus);
+      outline-offset: 2px;
+    }
+  `,
+
+  /* 월세 슬라이더와 색 기준을 묶은 카드. 지도 위에서도 읽히게 흰 바탕과 그림자를 둔다. */
+  filterCard: css`
+    label: NeighborhoodPreviewMobilePage-filterCard;
+    display: grid;
+    gap: 0.2rem;
+    padding: 0.45rem 0.8rem 0.4rem;
     border: 1px solid var(--color-border);
     border-radius: 0.9rem;
     background: var(--color-surface);
     box-shadow: var(--shadow-floating);
+
+    & > [aria-label='통근 시간 색상 기준'] {
+      padding: 0;
+      background: none;
+    }
   `,
 
-  /* 위쪽 조건 줄(칩, 월세 슬라이더, 색 기준) 아래 오른쪽에 확대 축소, 분류 레일, 현재 위치 버튼을 세운다. */
+  /* 접어 둔 순위 줄을 다시 펼치는 작은 버튼. 지도 아래 왼쪽에 띄운다. */
+  rankToggle: css`
+    label: NeighborhoodPreviewMobilePage-rankToggle;
+
+    && {
+      position: absolute;
+      left: 0.85rem;
+      bottom: calc(var(--map-sheet-bottom, env(safe-area-inset-bottom)) + 1rem);
+      z-index: 2;
+      min-height: 2.5rem;
+      padding: 0 0.9rem;
+      border-radius: 99px;
+      box-shadow: var(--shadow-floating);
+      font-size: 0.8rem;
+    }
+
+    & > span {
+      gap: 0.3rem;
+    }
+  `,
+
+  /* 위쪽 결과 머리(조건 요약 줄, 월세와 색 기준 카드) 아래 오른쪽에 확대 축소, 분류 레일, 현재 위치 버튼을 세운다. */
   railControls: css`
     label: NeighborhoodPreviewMobilePage-railControls;
 
     && {
-      top: calc(env(safe-area-inset-top) + 12rem);
+      top: calc(env(safe-area-inset-top) + 10rem);
     }
   `,
 };
