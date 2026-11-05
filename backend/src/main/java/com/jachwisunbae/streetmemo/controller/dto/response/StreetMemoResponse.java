@@ -11,6 +11,7 @@ public record StreetMemoResponse(
         BigDecimal latitude,
         BigDecimal longitude,
         String memo,
+        @Schema(description = "메모 위치가 속한 8자리 행정동 코드. 찾지 못한 메모는 null", example = "11680640")
         String adminDongCode,
         @Schema(description = "작성자가 선택한 선호", allowableValues = {"LIKE", "DISLIKE"})
         StreetMemoPreference preference,

@@ -14,15 +14,12 @@ import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.regex.Pattern;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @Transactional(readOnly = true)
 public class StreetMemoService {
-
-    private static final Pattern ADMIN_DONG_CODE = Pattern.compile("\\d{8}");
 
     private final StreetMemoRepository streetMemoRepository;
     private final MemberService memberService;

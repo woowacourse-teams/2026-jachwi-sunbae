@@ -9,7 +9,6 @@ import static org.mockito.Mockito.when;
 
 import com.jachwisunbae.common.exception.client.InvalidInputException;
 import com.jachwisunbae.common.exception.client.ResourceNotFoundException;
-import com.jachwisunbae.common.exception.errorcode.ErrorCode;
 import com.jachwisunbae.member.service.MemberService;
 import com.jachwisunbae.streetmemo.domain.StreetMemo;
 import com.jachwisunbae.streetmemo.domain.StreetMemoPreference;
@@ -24,9 +23,6 @@ import java.util.Optional;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.NullAndEmptySource;
-import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
