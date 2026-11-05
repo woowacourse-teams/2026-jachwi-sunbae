@@ -1,8 +1,10 @@
+import { css } from '@emotion/css';
 import { useState } from 'react';
 import { Outlet, useMatch } from 'react-router-dom';
 
 import { SERVICE_MAP_STYLE_ID } from '@/features/map/lib/mapStyle';
 import MapCanvas from '@/features/map/ui/map-canvas/MapCanvas';
+import MapCategoryRail from '@/features/map/ui/map-category-rail/MapCategoryRail';
 import ExplorationRecordAction from '@/features/onboarding/ui/exploration-record-action/ExplorationRecordAction';
 import { LogClick } from '@/shared/lib/analytics/logging';
 import { ROUTE_PATTERNS } from '@/shared/lib/navigation/appPaths';
@@ -13,7 +15,7 @@ import Icon from '@/shared/ui/icon/Icon';
 import RankedCard from '@/shared/ui/ranked-card/RankedCard';
 import StateIllustration from '@/shared/ui/state-illustration/StateIllustration';
 
-import useNeighborhoodMapView from '../hooks/useNeighborhoodMapView';
+import useNeighborhoodMapView, { RESULT_RAIL_HIDDEN_CATEGORIES } from '../hooks/useNeighborhoodMapView';
 import type { NeighborhoodPreviewContext } from '../hooks/useNeighborhoodPreview';
 import useResultMapViewport from '../hooks/useResultMapViewport';
 import { COMMUTE_COLORS, commuteLegend, OUT_OF_RENT_COLOR } from '../model/commuteColors';
@@ -52,7 +54,7 @@ const NeighborhoodPreviewMobilePage = ({ preview }: Props) => {
   // 지도 빈 곳을 찍으면 시트를 닫지 않고 제목만 보이게 내린다.
   const [peekSignal, setPeekSignal] = useState(0);
   // 고른 동네의 정보는 지도 위 말풍선 대신 아래 시트(AreaPlacesSheet)에 둔다.
-  const { isResultMap, mapProps, places, closeLayers, areaTab, changeAreaTab } = useNeighborhoodMapView(preview, {
+  const { isResultMap, mapProps, places, closeLayers, rail, showsStations } = useNeighborhoodMapView(preview, {
     showAreaAction: false,
     onEmptyTap: () => setPeekSignal((value) => value + 1),
     // 시트가 열린 채 지도의 동네를 찍으면 시트를 닫고 랭킹을 다시 보여 준다.
@@ -66,7 +68,8 @@ const NeighborhoodPreviewMobilePage = ({ preview }: Props) => {
     const header = section.querySelector('header');
     return mobileMapViewport(rect, header ? header.getBoundingClientRect().bottom - rect.top : 0);
   });
-  // 시트를 띄우면 확대 축소, 현재 위치 버튼을 시트 바로 위에 붙여 시트와 함께 오르내리게 한다. 지도 위 고정 자리에 두면 시트에 가린다.
+  // 동네를 고르면 본 방 기록 지도처럼 오른쪽 위에 확대 축소, 분류 레일, 현재 위치 버튼을 한 줄로 세운다.
+  // 동네 없이 마커로 연 정보 시트만 있으면 확대 축소, 현재 위치 버튼을 시트 바로 위에 붙여 시트와 함께 오르내리게 한다.
   const hasSheet = hasAreaSheet || places.selectedPlace !== null;
   const resultControls = (
     <LocationControls
@@ -74,6 +77,12 @@ const NeighborhoodPreviewMobilePage = ({ preview }: Props) => {
       isResult
       docked={hasSheet}
       zoom={{ level: preview.resultLevel, onZoom: preview.zoomResultBy }}
+      className={hasAreaSheet ? styles.railControls : undefined}
+      rail={
+        hasAreaSheet ? (
+          <MapCategoryRail showMemo hiddenCategories={RESULT_RAIL_HIDDEN_CATEGORIES} {...rail} />
+        ) : undefined
+      }
     />
   );
   // 통근, 환승, 월세 조건 칸. 위치를 고르기 전후 모두 아래 시트에 둔다.
@@ -250,7 +259,7 @@ const NeighborhoodPreviewMobilePage = ({ preview }: Props) => {
                 다시 선택하기
               </Button>
             </header>
-            {!hasSheet && resultControls}
+            {(!hasSheet || hasAreaSheet) && resultControls}
             {preview.isPublicExplore && recordArea && (
               <div className={shared.recordAction}>
                 <ExplorationRecordAction
@@ -290,17 +299,15 @@ const NeighborhoodPreviewMobilePage = ({ preview }: Props) => {
                 </HorizontalRail>
               </div>
             )}
-            {/* 동네를 고르면 동네 정보 시트를 올린다. 교통 탭에서 출발 정류장을 고르면 시트 안에서 경로로 넘어가고, 뒤로가기로 목록에 돌아온다. */}
+            {/* 동네를 고르면 동네 정보 시트를 올린다. 레일의 교통을 켜고 출발 정류장을 고르면 시트 안에서 경로로 넘어가고, 뒤로가기로 목록에 돌아온다. */}
             {hasAreaSheet && preview.selected && (
               <AreaPlacesSheet
                 key={preview.selected.adminDongCode}
                 area={preview.selected}
                 place={places.selectedPlace}
                 preview={preview}
-                tab={areaTab}
-                onTabChange={changeAreaTab}
+                showsStations={showsStations}
                 peekSignal={peekSignal}
-                floating={resultControls}
                 onSelectStation={(station) => {
                   places.selectStation(areaStation(station));
                   preview.selectStation(station.stopId);
@@ -339,6 +346,17 @@ const NeighborhoodPreviewMobilePage = ({ preview }: Props) => {
       </section>
     </main>
   );
+};
+
+const styles = {
+  /* 동네를 고르면 위 조건 줄 아래 오른쪽에 확대 축소, 분류 레일, 현재 위치 버튼을 세운다. 아래 시트는 그 밑에서 올라온다. */
+  railControls: css`
+    label: NeighborhoodPreviewMobilePage-railControls;
+
+    && {
+      top: calc(env(safe-area-inset-top) + 7.75rem);
+    }
+  `,
 };
 
 export default NeighborhoodPreviewMobilePage;

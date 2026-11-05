@@ -91,10 +91,9 @@ const useNeighborhoodAnalytics = (options: AnalyticsOptions) => {
     selectArea: () => capture('neighborhood_area_selected'),
     changeStation: () => capture('commute_departure_station_changed'),
     openListing: () => capture('neighborhood_listing_link_clicked', { provider: 'dabang' }),
-    /** 고른 동네 시트(칸)의 `동네 정보`, `교통` 탭을 바꿀 때. */
-    changeAreaTab: (tab: 'overview' | 'transport') => capture('neighborhood_area_tab_changed', { tab }),
-    /** 고른 동네의 주변 분석 카드를 눌러 주변 분석 지도로 갈 때. */
-    openNearby: () => capture('neighborhood_nearby_card_clicked'),
+    /** 동네를 고른 결과 지도의 분류 레일(메모, 병원, 교통, 학교, 편의)을 켜거나 끌 때. */
+    toggleMapCategory: (category: string, selected: boolean) =>
+      capture('neighborhood_map_category_toggled', { category, selected }),
     /** 내 매물 통근 시간 목록에서 매물을 눌러 매물 상세로 갈 때. */
     openPropertyCommute: () => capture('neighborhood_property_commute_clicked'),
     /** 멀리 볼 때 띄우는 거리 메모 행정동 묶음을 눌러 그 동으로 확대할 때. */

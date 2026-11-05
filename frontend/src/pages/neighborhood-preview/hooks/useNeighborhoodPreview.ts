@@ -498,8 +498,7 @@ const useNeighborhoodPreview = () => {
       if (selected) navigate(neighborhoodAreaPath(mapPath, selected.adminDongCode), { replace: true });
     },
     openListing: analytics.openListing,
-    changeAreaTab: analytics.changeAreaTab,
-    openNearby: analytics.openNearby,
+    toggleMapCategory: analytics.toggleMapCategory,
     openPropertyCommute: analytics.openPropertyCommute,
     /** 거리 메모 행정동 묶음을 누르면 그 묶음 자리를 가운데 두고 메모가 하나씩 보이는 단계까지 확대한다. */
     focusMemoGroup: (point: { latitude: number; longitude: number }, memoCount: number) => {

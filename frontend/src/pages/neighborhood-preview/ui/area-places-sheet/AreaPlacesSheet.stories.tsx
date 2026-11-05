@@ -80,12 +80,7 @@ const meta = {
       description: '고른 정류장이나 지도에서 누른 공인중개사. 있으면 시트 안에서 그 정보로 넘어가고 뒤로가기를 둔다.',
     },
     preview: { control: 'object', description: '목적지·통근 조건(정류장 경로), 시세 기간, 다방 열기 기록' },
-    tab: {
-      control: 'inline-radio',
-      options: ['overview', 'transport'],
-      description: '동네 정보(시세, 주변 분석, 내 매물 통근 시간) 또는 교통(출발 정류장) 탭',
-    },
-    onTabChange: { description: '탭 바꾸기' },
+    showsStations: { control: 'boolean', description: '지도 레일에서 교통을 켜 출발 정류장 목록을 보여 줄지' },
     onBack: { description: '정보에서 목록으로 돌아가기' },
     peekSignal: { control: 'number', description: '값을 바꾸면 시트를 제목만 보이게 내린다' },
     onClose: { description: '끌어 내려 닫고 동네 선택 풀기' },
@@ -101,13 +96,10 @@ const meta = {
       rentPeriod: { startDate: '2026-04-09', endDate: '2026-10-09' },
       openListing: () => true,
       maxRent: 0,
-      mapPath: '/neighborhoods',
       isPublicExplore: false,
-      openNearby: () => true,
       openPropertyCommute: () => true,
     },
-    tab: 'overview',
-    onTabChange: fn(),
+    showsStations: false,
     onBack: fn(),
     peekSignal: 0,
     onClose: fn(),
@@ -120,9 +112,9 @@ type Story = StoryObj<typeof meta>;
 
 export const Overview: Story = {};
 
-/** 교통 탭에서 그 동네의 출발 정류장을 고른다. */
+/** 지도 레일에서 교통을 켜면 그 동네의 출발 정류장을 고른다. */
 export const Stations: Story = {
-  args: { tab: 'transport' },
+  args: { showsStations: true },
 };
 
 /** 월세 조건 밖(지도의 회색) 동네를 고르면 시세 아래에 조건보다 비싸다고 알린다. */

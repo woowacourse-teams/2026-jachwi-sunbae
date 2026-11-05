@@ -3,6 +3,7 @@ import { Outlet, useMatch } from 'react-router-dom';
 
 import { SERVICE_MAP_STYLE_ID } from '@/features/map/lib/mapStyle';
 import MapCanvas from '@/features/map/ui/map-canvas/MapCanvas';
+import MapCategoryRail from '@/features/map/ui/map-category-rail/MapCategoryRail';
 import ExplorationRecordAction from '@/features/onboarding/ui/exploration-record-action/ExplorationRecordAction';
 import { ROUTE_PATTERNS } from '@/shared/lib/navigation/appPaths';
 import { Button } from '@/shared/ui/button/Button';
@@ -11,7 +12,7 @@ import ListDetailLayout from '@/shared/ui/list-detail-layout/ListDetailLayout';
 import RankedCard from '@/shared/ui/ranked-card/RankedCard';
 import StateIllustration from '@/shared/ui/state-illustration/StateIllustration';
 
-import useNeighborhoodMapView from '../hooks/useNeighborhoodMapView';
+import useNeighborhoodMapView, { RESULT_RAIL_HIDDEN_CATEGORIES } from '../hooks/useNeighborhoodMapView';
 import type { AreaStation } from '../hooks/useNeighborhoodPlaces';
 import type { NeighborhoodPreviewContext } from '../hooks/useNeighborhoodPreview';
 import useResultMapViewport from '../hooks/useResultMapViewport';
@@ -44,7 +45,7 @@ const NeighborhoodPreviewDesktopPage = ({ preview }: Props) => {
   const isRoutePage = useMatch(`${preview.mapPath}/${ROUTE_PATTERNS.area}/*`);
   const isDetailPage = useMatch(`${preview.mapPath}/${ROUTE_PATTERNS.areaDetails}`);
   const submitSearch = preview.startAnalysis;
-  const { isResultMap, mapProps, places, closeLayers, areaTab, changeAreaTab } = useNeighborhoodMapView(preview, {
+  const { isResultMap, mapProps, places, closeLayers, rail, showsStations } = useNeighborhoodMapView(preview, {
     showAreaAction: false,
   });
   // 지도 칸은 목록, 상세 칸 오른쪽에 있다. 상세 칸이 아직 닫혀 있으면 고른 뒤 열릴 폭을 미리 빼고 시점을 맞춘다.
@@ -160,8 +161,7 @@ const NeighborhoodPreviewDesktopPage = ({ preview }: Props) => {
                 onSelectStation={selectAreaStation}
                 onOpenListing={preview.openListing}
                 maxRent={preview.maxRent}
-                tab={areaTab}
-                onTabChange={changeAreaTab}
+                showsStations={showsStations}
                 preview={preview}
               />
             </div>
@@ -227,10 +227,17 @@ const NeighborhoodPreviewDesktopPage = ({ preview }: Props) => {
               </div>
               {/* 월세 시세는 찾기 전이 아니라 결과 지도 위에서 고른다. 끄는 동안 지도 색과 왼쪽 순위가 바로 바뀐다. */}
               <RentSlider preview={preview} className={styles.rentCard} />
+              {/* 동네를 고르면 본 방 기록 지도처럼 오른쪽 위에 확대 축소, 분류 레일, 현재 위치 버튼을 한 줄로 세운다. */}
               <LocationControls
                 preview={preview}
                 isResult
                 zoom={{ level: preview.resultLevel, onZoom: preview.zoomResultBy }}
+                className={preview.selected ? styles.railControls : undefined}
+                rail={
+                  preview.selected ? (
+                    <MapCategoryRail showMemo hiddenCategories={RESULT_RAIL_HIDDEN_CATEGORIES} {...rail} />
+                  ) : undefined
+                }
               />
               {preview.isPublicExplore && recordArea && (
                 <div className={`${shared.recordAction} ${styles.recordAction}`}>
@@ -362,6 +369,15 @@ const styles = {
     border-radius: 1rem;
     background: white;
     box-shadow: 0 0.4rem 1.2rem rgb(0 0 0 / 12%);
+  `,
+
+  /* 지도 오른쪽 위. 왼쪽 위 색상 기준 상자와 같은 높이에서 시작한다. */
+  railControls: css`
+    label: NeighborhoodPreviewDesktopPage-railControls;
+
+    && {
+      top: 1rem;
+    }
   `,
 
   recordAction: css`

@@ -45,9 +45,8 @@
 | `commute_departure_station_changed`     | 데스크탑 동네 요약 목록에서 다른 유효한 출발 정류장 직접 선택                                                               | `search_id`(있는 경우)                                        |
 | `neighborhood_nearby_link_clicked`      | (수집 중단) 동네 상세의 정류장·공인중개사 보기 카드 클릭. 결과 지도를 확대하면 정류장·부동산을 바로 보여 주어 카드를 없앴다 | `search_id`(있는 경우)                                        |
 | `neighborhood_listing_link_clicked`     | 동네 상세의 현재 매물 확인하기 카드 클릭                                                                                    | `provider=dabang`, `search_id`(있는 경우)                     |
-| `neighborhood_area_tab_changed`         | 고른 동네 시트(칸)의 `동네 정보`, `교통` 탭을 바꿈                                                                          | `tab=overview/transport`, `search_id`(있는 경우)              |
-| `neighborhood_nearby_card_clicked`      | 동네 정보 탭의 주변 분석 카드를 눌러 그 동네 주변 분석 지도로 이동                                                          | `search_id`(있는 경우)                                        |
-| `neighborhood_property_commute_clicked` | 동네 정보 탭의 내 매물 통근 시간 목록에서 매물을 눌러 매물 상세로 이동                                                      | `search_id`(있는 경우)                                        |
+| `neighborhood_map_category_toggled`     | 동네를 고른 결과 지도의 분류 레일(메모, 병원, 교통, 학교, 편의)을 켜거나 끔                                                 | `category`, `selected`, `search_id`(있는 경우)                |
+| `neighborhood_property_commute_clicked` | 동네 시트(칸)의 내 매물 통근 시간 목록에서 매물을 눌러 매물 상세로 이동                                                     | `search_id`(있는 경우)                                        |
 | `street_memo_dong_group_selected`       | 결과 지도의 거리 메모 행정동 묶음을 눌러 그 동으로 확대                                                                     | `memo_count`, `search_id`(있는 경우)                          |
 
 검색에는 `max_minutes`, `max_transfers`, `max_rent_manwon`(0은 전체 가격, 클라이언트에서 거는 필터)을 함께 수집한다. `rent_area_count`는 결과 중 월세 시세가 있는 동네 수다. 시세가 없는 동네는 화면에 그리지 않으므로 지금은 `result_count`와 같다. 주소·목적지 이름·좌표·검색어·정류장 ID·거래 금액 원문을 새 로그에 보내지 않는다. 상세 중복 방지에 사용한 지역/정류장 키는 로컬 비교용이며 전송하지 않는다.
