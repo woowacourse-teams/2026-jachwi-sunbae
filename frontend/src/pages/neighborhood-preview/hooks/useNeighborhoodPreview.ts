@@ -14,12 +14,14 @@ import { MapLocationError } from '@/features/map/lib/mapLocation';
 import type { MapAddress } from '@/features/map/model/Map';
 import { MAX_MAP_LEVEL, MIN_MAP_LEVEL } from '@/features/map/ui/map-zoom-control/MapZoomControl';
 import { completeExploration, startExploration } from '@/features/onboarding/lib/explorationJourney';
+import { MEMO_INDIVIDUAL_MAX_LEVEL } from '@/features/street-memo/lib/streetMemoDongGroups';
 import { usePublicConfig } from '@/shared/config/PublicConfigContext';
 import {
   EXPLORE_PATH,
   HOME_PATH,
   neighborhoodAreaDetailsPath,
   neighborhoodAreaPath,
+  type NeighborhoodBasePath,
   NEIGHBORHOODS_PATH,
 } from '@/shared/lib/navigation/appPaths';
 import useReturnNavigation from '@/shared/lib/navigation/useReturnNavigation';
@@ -71,7 +73,7 @@ const useNeighborhoodPreview = () => {
   const [addressResults, setAddressResults] = useState<MapAddress[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [searchError, setSearchError] = useState<string | null>(null);
-  const mapPath = isPublicExplore ? EXPLORE_PATH : NEIGHBORHOODS_PATH;
+  const mapPath: NeighborhoodBasePath = isPublicExplore ? EXPLORE_PATH : NEIGHBORHOODS_PATH;
   // 첫 화면이 곧 지도라 돌아갈 탐색 기준 선택 화면이 없다. 들어온 화면으로 돌아가고, 직접 들어왔으면 홈으로 간다.
   const leave = useReturnNavigation({ cameFromTarget: true, fallback: HOME_PATH });
   const [phase, setPhase] = useState<'map' | 'conditions' | 'analyzing'>(restoredSearch ? 'analyzing' : 'map');
@@ -79,6 +81,8 @@ const useNeighborhoodPreview = () => {
   const [mapCandidate, setMapCandidate] = useState(restoredSearch?.destination ?? PREVIEW_DESTINATION);
   const [selectionCenter, setSelectionCenter] = useState(restoredSearch?.destination ?? PREVIEW_DESTINATION);
   const [selectionLevel, setSelectionLevel] = useState(6);
+  // 장소를 고르는 지도에서 손가락이나 휠로 옮긴 시점. 다시 그리지 않고 기억만 했다가 확대·축소 버튼을 누르면 이 자리에서 옮긴다.
+  const selectionView = useRef<{ latitude: number; longitude: number; level: number } | null>(null);
   const resultView = useRef<{ latitude: number; longitude: number; level: number } | null>(null);
   // 화면(휴대폰, 데스크탑)이 알려 주는 결과 지도 칸 크기와 가리는 여백. 동네나 출발 정류장을 고를 때 시점을 그 칸에 맞춘다.
   const mapViewportReader = useRef<(() => MapViewport | null) | null>(null);
@@ -296,6 +300,20 @@ const useNeighborhoodPreview = () => {
     },
     selectionCenter,
     selectionLevel,
+    rememberSelectionCenter: (latitude: number, longitude: number) => {
+      selectionView.current = { latitude, longitude, level: selectionView.current?.level ?? selectionLevel };
+    },
+    rememberSelectionLevel: (level: number) => {
+      selectionView.current = { ...(selectionView.current ?? selectionCenter), level };
+    },
+    /** 장소를 고르는 지도의 확대(-1), 축소(+1) 버튼. 지금 보이는 자리를 가운데 둔 채 한 단계 옮긴다. */
+    zoomSelectionBy: (delta: -1 | 1) => {
+      const current = selectionView.current ?? { ...selectionCenter, level: selectionLevel };
+      const level = Math.max(MIN_MAP_LEVEL, Math.min(MAX_MAP_LEVEL, current.level + delta));
+      selectionView.current = { latitude: current.latitude, longitude: current.longitude, level };
+      setSelectionCenter((previous) => ({ ...previous, latitude: current.latitude, longitude: current.longitude }));
+      setSelectionLevel(level);
+    },
     rememberResultCenter: (latitude: number, longitude: number) => {
       resultView.current = { latitude, longitude, level: resultView.current?.level ?? RESULT_OVERVIEW_LEVEL };
     },
@@ -480,6 +498,15 @@ const useNeighborhoodPreview = () => {
       if (selected) navigate(neighborhoodAreaPath(mapPath, selected.adminDongCode), { replace: true });
     },
     openListing: analytics.openListing,
+    changeAreaTab: analytics.changeAreaTab,
+    openNearby: analytics.openNearby,
+    openPropertyCommute: analytics.openPropertyCommute,
+    /** 거리 메모 행정동 묶음을 누르면 그 묶음 자리를 가운데 두고 메모가 하나씩 보이는 단계까지 확대한다. */
+    focusMemoGroup: (point: { latitude: number; longitude: number }, memoCount: number) => {
+      analytics.selectMemoGroup(memoCount);
+      resultView.current = { latitude: point.latitude, longitude: point.longitude, level: MEMO_INDIVIDUAL_MAX_LEVEL };
+      setResultViewVersion((version) => version + 1);
+    },
     /** 결과 지도 칸 크기와 가리는 여백을 읽는 함수를 둔다. 화면이 지도 칸을 그린 뒤 한 번 넣는다. */
     setMapViewportReader: (reader: (() => MapViewport | null) | null) => {
       mapViewportReader.current = reader;

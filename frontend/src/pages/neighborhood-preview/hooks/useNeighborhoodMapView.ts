@@ -1,8 +1,14 @@
-import { useMemo } from 'react';
+import { useMemo, useRef, useState } from 'react';
 
 import { formatManwon } from '@/features/map/api/commuteApi';
-import type { MapMarker } from '@/features/map/model/Map';
+import type { MapBounds, MapMarker } from '@/features/map/model/Map';
 import type { MapCanvasProps, MapRegion } from '@/features/map/model/MapCanvas';
+import { useStreetMemos } from '@/features/street-memo/api/useStreetMemos';
+import {
+  dongMemoMarkers,
+  groupMemosByDong,
+  STREET_MEMO_DONG_MARKER_PREFIX,
+} from '@/features/street-memo/lib/streetMemoDongGroups';
 
 import useNeighborhoodPlaces from './useNeighborhoodPlaces';
 import type { NeighborhoodPreviewContext } from './useNeighborhoodPreview';
@@ -24,17 +30,33 @@ type MapViewOptions = {
   onEmptyTap?: () => void;
   /** 동네를 고른 채 지도의 동네(같은 동네든 다른 동네든)를 찍으면 동네 선택을 풀고 랭킹으로 돌아간다. 휴대폰은 시트를 닫는다. */
   deselectOnRegionTap?: boolean;
-  /** 동네를 고른 동안 정류장 마커만 올린다. 시트와 목록이 출발 정류장을 보여 주므로 지도도 정류장만 둔다. */
-  stationMarkersOnly?: boolean;
 };
+
+/** 고른 동네 시트(칸)의 탭. `동네 정보`는 시세, 주변 분석, 내 매물 통근 시간을, `교통`은 출발 정류장을 보여 준다. */
+export type AreaTab = 'overview' | 'transport';
+type MemoView = { bounds: MapBounds; level: number };
 
 const useNeighborhoodMapView = (
   preview: NeighborhoodPreviewContext,
-  { showAreaAction = true, onEmptyTap, deselectOnRegionTap = false, stationMarkersOnly = false }: MapViewOptions = {},
+  { showAreaAction = true, onEmptyTap, deselectOnRegionTap = false }: MapViewOptions = {},
 ) => {
   const isResultMap = !preview.isAnalyzing && !preview.error && !preview.isSelectingOnMap;
   const places = useNeighborhoodPlaces(isResultMap);
-  // 거리 메모는 본 방 기록 지도에서만 남기고 본다. 동네 찾기 결과 지도는 동네, 정류장, 부동산만 올린다.
+  // 동네를 고르면 `동네 정보` 탭부터 연다. 다른 동네를 고르면 다시 `동네 정보` 탭으로 돌아간다.
+  const selectedCode = preview.selected?.adminDongCode ?? null;
+  const [areaTab, setAreaTab] = useState<{ code: string | null; tab: AreaTab }>({ code: null, tab: 'overview' });
+  const currentTab: AreaTab = areaTab.code === selectedCode ? areaTab.tab : 'overview';
+  // 출발 정류장과 버스 정류장 마커는 동네를 고르고 `교통` 탭을 연 동안에만 올리고, 그때는 정류장만 둔다.
+  const showsTransport = selectedCode !== null && currentTab === 'transport';
+  // 거리 메모는 남기지 않고 보기만 한다. 멀리 보면 행정동 묶음, 가까이 보면 메모 하나씩 보여 준다.
+  // 지도는 멈출 때 확대 단계를 먼저, 화면 범위를 나중에 알린다. 둘을 함께 상태에 올려 한 번만 다시 그린다.
+  const levelRef = useRef(preview.resultLevel);
+  const [memoView, setMemoView] = useState<MemoView | null>(null);
+  const memos = useStreetMemos(isResultMap ? (memoView?.bounds ?? null) : null).memos;
+  const memoMarkers = useMemo(
+    () => (isResultMap && memoView ? dongMemoMarkers(memos, memoView.level) : []),
+    [isResultMap, memoView, memos],
+  );
   const hasOpenLayer = places.selectedPlace !== null;
   const closeLayers = () => places.closePlace();
   /** 지도 빈 곳·고른 동네 안을 찍었을 때. 화면별 동작(시트 내리기) 또는 열린 정보 닫기를 한다. */
@@ -58,6 +80,12 @@ const useNeighborhoodMapView = (
     preview.selectRegion(id, showAreaAction ? undefined : { openDetails: false });
   };
   const selectMarker = (marker: MapMarker) => {
+    if (marker.id.startsWith(STREET_MEMO_DONG_MARKER_PREFIX)) {
+      const code = marker.id.slice(STREET_MEMO_DONG_MARKER_PREFIX.length);
+      const group = groupMemosByDong(memos).find((item) => item.adminDongCode === code);
+      if (group) preview.focusMemoGroup(group, group.memos.length);
+      return;
+    }
     if (marker.id.startsWith(RANK_MARKER_PREFIX)) {
       selectRegion(marker.id.slice(RANK_MARKER_PREFIX.length));
       return;
@@ -65,10 +93,11 @@ const useNeighborhoodMapView = (
     places.selectMarker(marker);
   };
   // 상위 1~5위 동네는 동네 가운데에 순위 알약을 띄운다.
-  // 가까이 확대했거나 동네를 골라 정류장 마커를 올릴 때는 그 마커를 가리지 않게 거둔다.
+  // 가까이 확대했거나 동네를 골라 시트(칸)를 열면 마커와 시트를 가리지 않게 거둔다.
+  const hasSelectedArea = selectedCode !== null;
   const rankMarkers = useMemo<MapMarker[]>(
     () =>
-      places.isClose || stationMarkersOnly
+      places.isClose || hasSelectedArea
         ? []
         : preview.topAreas.map((area, index) => ({
             ...area.center,
@@ -79,15 +108,16 @@ const useNeighborhoodMapView = (
             rank: index + 1,
             actionable: true,
           })),
-    [preview.topAreas, places.isClose, stationMarkersOnly],
+    [preview.topAreas, places.isClose, hasSelectedArea],
   );
   const destinationMarkers = useMemo(
     () => [
       ...rankMarkers,
-      ...(stationMarkersOnly ? places.markers.filter((marker) => marker.category === 'TRANSPORT') : places.markers),
+      ...memoMarkers,
+      ...places.markers.filter((marker) => (marker.category === 'TRANSPORT') === showsTransport),
       { ...preview.destination, id: 'destination', label: DESTINATION_LABEL, tone: 'destination' as const },
     ],
-    [rankMarkers, preview.destination, places.markers, stationMarkersOnly],
+    [rankMarkers, memoMarkers, preview.destination, places.markers, showsTransport],
   );
   const candidateMarkers = useMemo(
     () => [
@@ -106,8 +136,22 @@ const useNeighborhoodMapView = (
         onLevelChange: (level: number) => {
           preview.rememberResultLevel(level);
           places.rememberLevel(level);
+          levelRef.current = level;
         },
-        onBoundsChange: places.rememberBounds,
+        onBoundsChange: (bounds: MapBounds) => {
+          places.rememberBounds(bounds);
+          const level = levelRef.current;
+          setMemoView((current) =>
+            current &&
+            current.level === level &&
+            current.bounds.south === bounds.south &&
+            current.bounds.west === bounds.west &&
+            current.bounds.north === bounds.north &&
+            current.bounds.east === bounds.east
+              ? current
+              : { bounds, level },
+          );
+        },
         selectedMarkerId:
           places.selectedMarkerId ??
           (preview.selected ? `${RANK_MARKER_PREFIX}${preview.selected.adminDongCode}` : null),
@@ -131,6 +175,9 @@ const useNeighborhoodMapView = (
     : {
         center: preview.selectionCenter,
         level: preview.selectionLevel,
+        // 확대·축소 버튼이 지금 보이는 자리에서 옮기도록 움직인 시점을 기억한다.
+        onCenterChange: preview.rememberSelectionCenter,
+        onLevelChange: preview.rememberSelectionLevel,
         markers: candidateMarkers,
         regions: NO_REGIONS,
         // 분석 중이거나 실패 화면이 지도를 덮고 있을 때는 위치 찍기를 끈다.
@@ -141,6 +188,15 @@ const useNeighborhoodMapView = (
     isResultMap,
     mapProps,
     places,
+    /** 고른 동네 시트(칸)의 탭. 동네를 바꾸면 `동네 정보`로 돌아간다. */
+    areaTab: currentTab,
+    changeAreaTab: (tab: AreaTab) => {
+      if (tab === currentTab) return;
+      preview.changeAreaTab(tab);
+      // 탭을 바꾸면 열어 둔 정류장, 부동산 정보는 닫는다. 교통 탭을 떠나면 정류장 마커도 거둔다.
+      closeLayers();
+      setAreaTab({ code: selectedCode, tab });
+    },
     /** 동네·조건을 바꾸거나 다시 고를 때 열어 둔 정류장·부동산 정보를 모두 닫는다. */
     closeLayers,
   };

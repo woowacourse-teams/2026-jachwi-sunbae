@@ -3,9 +3,12 @@ import { css } from '@emotion/css';
 import { formatManwon } from '@/features/map/api/commuteApi';
 import { stationIconSrc } from '@/features/map/lib/mapIconAssets';
 
+import type { AreaTab } from '../../hooks/useNeighborhoodMapView';
 import type { AreaStation } from '../../hooks/useNeighborhoodPlaces';
 import type { NeighborhoodPreviewContext } from '../../hooks/useNeighborhoodPreview';
 import { overRentNotice } from '../../model/criteriaLabels';
+import AreaOverview from '../area-overview/AreaOverview';
+import AreaTabs from '../area-tabs/AreaTabs';
 import ListingLink from '../listing-link/ListingLink';
 
 type Area = NonNullable<NeighborhoodPreviewContext['selected']>;
@@ -24,39 +27,60 @@ type Props = {
   onOpenListing: () => void;
   /** 월세 상한(만원, 0은 전체). 넘는 동네(지도의 회색)를 고르면 조건보다 비싸다고 알린다. */
   maxRent?: number;
+  /** 열어 둔 탭. `동네 정보`는 시세, 주변 분석, 내 매물 통근 시간을, `교통`은 출발 정류장 목록을 보여 준다. */
+  tab: AreaTab;
+  onTabChange: (tab: AreaTab) => void;
+  preview: Parameters<typeof AreaOverview>[0]['preview'];
 };
 
 /**
- * 데스크탑 랭킹에서 동네를 고르면 목록 옆 칸에 여는 요약. 동네의 경로를 바로 그리지 않고 월세 시세와 출발 정류장 목록을 보여 준다.
+ * 데스크탑 랭킹에서 동네를 고르면 목록 옆 칸에 여는 요약. 동네의 경로를 바로 그리지 않는다.
+ * 처음에는 `동네 정보` 탭에 월세 시세, 주변 분석 카드, 내 매물 통근 시간을 보여 주고, 출발 정류장 목록은 `교통` 탭에 둔다.
  * 정류장을 고르면 같은 칸에서 그 정류장에서 출발하는 경로를 연다. 공인중개사는 지도에서 마커를 눌러 본다.
  */
-const AreaSummary = ({ area, selectedStopId, onSelectStation, onOpenListing, maxRent = 0 }: Props) => (
+const AreaSummary = ({
+  area,
+  selectedStopId,
+  onSelectStation,
+  onOpenListing,
+  maxRent = 0,
+  tab,
+  onTabChange,
+  preview,
+}: Props) => (
   <section className={styles.summary} aria-label={`${area.name} 요약`}>
-    <p className={styles.rent}>
-      {area.rent
-        ? `월세 ${formatManwon(area.rent.monthlyRentKrw)} / 보증금 ${formatManwon(area.rent.depositKrw)}`
-        : '거래가 적어 시세를 내지 않았어요'}
-    </p>
-    {overRentNotice(area.rent, maxRent) && <p className={styles.overRent}>{overRentNotice(area.rent, maxRent)}</p>}
-    <ul className={styles.stations} aria-label={`${area.name} 출발 정류장`}>
-      {area.stations.map((station) => (
-        <li key={station.stopId}>
-          <button
-            type="button"
-            aria-pressed={selectedStopId === station.stopId}
-            onClick={() => onSelectStation(areaStation(station))}
-          >
-            <img src={stationIconSrc(station.stopId)} alt="" draggable={false} decoding="async" />
-            <span>
-              {station.stopName}
-              {station.direction ? ` (${station.direction})` : ''}
-            </span>
-            <small>{station.travelMinutes}분</small>
-          </button>
-        </li>
-      ))}
-    </ul>
-    <ListingLink areaName={area.name} center={area.center} onOpen={onOpenListing} />
+    <AreaTabs areaName={area.name} value={tab} onChange={onTabChange} />
+    {tab === 'overview' ? (
+      <>
+        <p className={styles.rent}>
+          {area.rent
+            ? `월세 ${formatManwon(area.rent.monthlyRentKrw)} / 보증금 ${formatManwon(area.rent.depositKrw)}`
+            : '거래가 적어 시세를 내지 않았어요'}
+        </p>
+        {overRentNotice(area.rent, maxRent) && <p className={styles.overRent}>{overRentNotice(area.rent, maxRent)}</p>}
+        <AreaOverview area={area} preview={preview} />
+        <ListingLink areaName={area.name} center={area.center} onOpen={onOpenListing} />
+      </>
+    ) : (
+      <ul className={styles.stations} aria-label={`${area.name} 출발 정류장`}>
+        {area.stations.map((station) => (
+          <li key={station.stopId}>
+            <button
+              type="button"
+              aria-pressed={selectedStopId === station.stopId}
+              onClick={() => onSelectStation(areaStation(station))}
+            >
+              <img src={stationIconSrc(station.stopId)} alt="" draggable={false} decoding="async" />
+              <span>
+                {station.stopName}
+                {station.direction ? ` (${station.direction})` : ''}
+              </span>
+              <small>{station.travelMinutes}분</small>
+            </button>
+          </li>
+        ))}
+      </ul>
+    )}
   </section>
 );
 

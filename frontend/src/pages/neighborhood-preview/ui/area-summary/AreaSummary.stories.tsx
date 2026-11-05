@@ -55,12 +55,27 @@ const meta = {
     },
     onSelectStation: { description: '출발 정류장 고르기' },
     onOpenListing: { description: '매물 보기 열기' },
+    tab: {
+      control: 'inline-radio',
+      options: ['overview', 'transport'],
+      description: '동네 정보(시세, 주변 분석, 내 매물 통근 시간) 또는 교통(출발 정류장) 탭',
+    },
+    onTabChange: { description: '탭 바꾸기' },
   },
   args: {
     area,
     selectedStopId: 'BS_TAGO_11440001',
     onSelectStation: fn(),
     onOpenListing: fn(),
+    tab: 'overview',
+    onTabChange: fn(),
+    preview: {
+      mapPath: '/neighborhoods',
+      destination: { latitude: 37.5559, longitude: 126.9101, name: '망원역', address: '서울 마포구' },
+      isPublicExplore: false,
+      openNearby: () => true,
+      openPropertyCommute: () => true,
+    },
   },
 } satisfies Meta<typeof AreaSummary>;
 
@@ -69,6 +84,11 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {};
+
+/** 교통 탭에서 그 동네의 출발 정류장을 고른다. */
+export const Stations: Story = {
+  args: { tab: 'transport' },
+};
 
 export const WithoutRent: Story = {
   args: {

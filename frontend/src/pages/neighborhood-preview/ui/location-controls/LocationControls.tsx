@@ -13,13 +13,13 @@ type LocationControlsProps = {
   isResult: boolean;
   /** 조건 칸 아래 피커가 펼쳐져 카드가 높아지면 그만큼 올린다. */
   isFilterOpen?: boolean;
-  /** 결과 지도면 현재 위치 버튼 위에 확대(+)·축소(-) 버튼을 둔다. 두 손가락이나 휠 없이도 확대 단계를 바꾼다. */
+  /** 주면 현재 위치 버튼 위에 확대(+), 축소(-) 버튼을 둔다. 장소 고르기와 결과 지도 모두 넘겨, 두 손가락이나 휠 없이도 확대 단계를 바꾼다. */
   zoom?: { level: number; onZoom: (delta: -1 | 1) => void };
   /** 바텀시트 위에 붙여 띄운다(`BottomSheet`의 `floating`). 시트가 자리를 정하므로 지도 위 고정 위치를 쓰지 않는다. */
   docked?: boolean;
 };
 
-/** 지도 오른쪽 아래 현재 위치 버튼과 위치 확인 상태 말풍선. 결과 지도면 그 위에 확대·축소 버튼을 둔다. */
+/** 지도 오른쪽 아래 현재 위치 버튼과 위치 확인 상태 말풍선. `zoom`을 주면 그 위에 확대, 축소 버튼을 둔다. */
 const LocationControls = ({ preview, isResult, isFilterOpen = false, zoom, docked = false }: LocationControlsProps) => (
   <div
     className={shared.locationControls}

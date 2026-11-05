@@ -143,6 +143,13 @@ const preview: NeighborhoodPreviewContext = {
   openAreaDetails: noop,
   closeAreaDetails: noop,
   openListing: () => true,
+  changeAreaTab: () => true,
+  openNearby: () => true,
+  openPropertyCommute: () => true,
+  focusMemoGroup: noop,
+  rememberSelectionCenter: noop,
+  rememberSelectionLevel: noop,
+  zoomSelectionBy: noop,
   setMapViewportReader: () => undefined,
 };
 

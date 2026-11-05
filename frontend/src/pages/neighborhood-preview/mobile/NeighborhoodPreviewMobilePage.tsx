@@ -52,12 +52,11 @@ const NeighborhoodPreviewMobilePage = ({ preview }: Props) => {
   // 지도 빈 곳을 찍으면 시트를 닫지 않고 제목만 보이게 내린다.
   const [peekSignal, setPeekSignal] = useState(0);
   // 고른 동네의 정보는 지도 위 말풍선 대신 아래 시트(AreaPlacesSheet)에 둔다.
-  const { isResultMap, mapProps, places, closeLayers } = useNeighborhoodMapView(preview, {
+  const { isResultMap, mapProps, places, closeLayers, areaTab, changeAreaTab } = useNeighborhoodMapView(preview, {
     showAreaAction: false,
     onEmptyTap: () => setPeekSignal((value) => value + 1),
     // 시트가 열린 채 지도의 동네를 찍으면 시트를 닫고 랭킹을 다시 보여 준다.
     deselectOnRegionTap: true,
-    stationMarkersOnly: !!isRoutePage && !!preview.selected,
   });
   const recordArea = preview.selected ?? preview.topAreas[0];
   const hasAreaSheet = !!isRoutePage && !!preview.selected;
@@ -172,7 +171,12 @@ const NeighborhoodPreviewMobilePage = ({ preview }: Props) => {
                 </>
               )}
             </header>
-            <LocationControls preview={preview} isResult={false} isFilterOpen={pickerField !== null} />
+            <LocationControls
+              preview={preview}
+              isResult={false}
+              zoom={{ level: preview.selectionLevel, onZoom: preview.zoomSelectionBy }}
+              isFilterOpen={pickerField !== null}
+            />
             {showsTapHint && <MapTapHint />}
             {/* 조건 칸과 찾기 버튼은 위치를 고르기 전부터 아래 시트에 두어, 위치를 골라도 자리가 바뀌지 않게 한다.
                 위치를 고르기 전에는 찾기 버튼을 막아 두고 장소를 고르라고 적는다. 지도 위 버튼은 말풍선 핀과 겹쳐 두지 않는다. */}
@@ -286,13 +290,15 @@ const NeighborhoodPreviewMobilePage = ({ preview }: Props) => {
                 </HorizontalRail>
               </div>
             )}
-            {/* 동네를 고르면 출발 정류장 시트를 올리고, 정류장을 고르면 시트 안에서 경로로 넘어간다. 뒤로가기로 목록에 돌아온다. */}
+            {/* 동네를 고르면 동네 정보 시트를 올린다. 교통 탭에서 출발 정류장을 고르면 시트 안에서 경로로 넘어가고, 뒤로가기로 목록에 돌아온다. */}
             {hasAreaSheet && preview.selected && (
               <AreaPlacesSheet
                 key={preview.selected.adminDongCode}
                 area={preview.selected}
                 place={places.selectedPlace}
                 preview={preview}
+                tab={areaTab}
+                onTabChange={changeAreaTab}
                 peekSignal={peekSignal}
                 floating={resultControls}
                 onSelectStation={(station) => {

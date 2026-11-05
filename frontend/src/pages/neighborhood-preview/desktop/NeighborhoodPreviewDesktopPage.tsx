@@ -44,9 +44,8 @@ const NeighborhoodPreviewDesktopPage = ({ preview }: Props) => {
   const isRoutePage = useMatch(`${preview.mapPath}/${ROUTE_PATTERNS.area}/*`);
   const isDetailPage = useMatch(`${preview.mapPath}/${ROUTE_PATTERNS.areaDetails}`);
   const submitSearch = preview.startAnalysis;
-  const { isResultMap, mapProps, places, closeLayers } = useNeighborhoodMapView(preview, {
+  const { isResultMap, mapProps, places, closeLayers, areaTab, changeAreaTab } = useNeighborhoodMapView(preview, {
     showAreaAction: false,
-    stationMarkersOnly: !!preview.selected,
   });
   // 지도 칸은 목록, 상세 칸 오른쪽에 있다. 상세 칸이 아직 닫혀 있으면 고른 뒤 열릴 폭을 미리 빼고 시점을 맞춘다.
   const mapSectionRef = useResultMapViewport<HTMLElement>(preview, (section) => {
@@ -109,7 +108,7 @@ const NeighborhoodPreviewDesktopPage = ({ preview }: Props) => {
       </div>
       {preview.topAreas.length > 0 ? (
         <div className={styles.areaList}>
-          {/* 동네를 고르면 경로를 바로 그리지 않고 목록 옆 칸에 시세·출발 정류장을 연다. 정류장을 고르면 그 칸에서 경로를 본다. */}
+          {/* 동네를 고르면 경로를 바로 그리지 않고 목록 옆 칸에 동네 정보를 연다. 교통 탭에서 정류장을 고르면 그 칸에서 경로를 본다. */}
           {preview.topAreas.map((area, index) => {
             const isSelected = preview.selected?.adminDongCode === area.adminDongCode;
             return (
@@ -161,6 +160,9 @@ const NeighborhoodPreviewDesktopPage = ({ preview }: Props) => {
                 onSelectStation={selectAreaStation}
                 onOpenListing={preview.openListing}
                 maxRent={preview.maxRent}
+                tab={areaTab}
+                onTabChange={changeAreaTab}
+                preview={preview}
               />
             </div>
           ) : undefined
@@ -193,7 +195,11 @@ const NeighborhoodPreviewDesktopPage = ({ preview }: Props) => {
               <header className={shared.searchHeader}>
                 <NeighborhoodMapSearch preview={preview} />
               </header>
-              <LocationControls preview={preview} isResult={false} />
+              <LocationControls
+                preview={preview}
+                isResult={false}
+                zoom={{ level: preview.selectionLevel, onZoom: preview.zoomSelectionBy }}
+              />
               {!preview.hasChosenMapPoint && !preview.query.trim() && preview.addressResults.length === 0 && (
                 <MapTapHint />
               )}
