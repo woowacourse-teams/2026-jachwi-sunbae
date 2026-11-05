@@ -28,23 +28,27 @@
 
 모든 이벤트는 기존 수집 계층에서 `environment`, `platform`, `app_version`을 부여한다. 전송 직전에는 `device_category`, `operating_system`, `native_app_version`, `traffic_type`도 보강한다. 기능 이벤트에는 `feature`, `entrypoint=public_explore/neighborhoods`, `mock_data`를 추가한다. 통근과 월세를 한 지도에서 함께 찾도록 바뀐 뒤로 동네 찾기 이벤트의 `feature`는 늘 `commute`다. 이전 배포의 `feature=rental` 이벤트는 기준별 지도가 있던 기간에만 있다.
 
-| 이벤트                               | 발생 시점                                                                                                                   | 주요 추가 속성                                                |
-| ------------------------------------ | --------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------- |
-| `usage_guide_viewed`                 | 사용 방법 진입, StrictMode 중복 제외                                                                                        | 없음                                                          |
-| `usage_guide_demo_interacted`        | 더 이상 보내지 않음. 예전 시연의 탐색 모드 버튼 직접 조작                                                                   | `action`, 미리 정한 `value`                                   |
-| `landing_viewed`                     | 랜딩 진입                                                                                                                   | `entry=direct/home_footer`                                    |
-| `landing_app_store_clicked`          | 랜딩의 App Store, Google Play 배지 클릭. 앱 안에서는 배지를 숨긴다                                                          | `store=app_store/google_play`, `position=top/bottom`, `entry` |
-| `landing_web_start_clicked`          | 랜딩의 웹에서 바로 시작하기 클릭. 서비스 안에서 들어왔으면 서비스로 돌아가기 클릭                                           | `position=top/bottom`, `entry`                                |
-| `neighborhood_feature_viewed`        | 동네 찾기 지도 진입                                                                                                         | 공통 기능 속성                                                |
-| `neighborhood_search_submitted`      | 유효한 목적지·조건으로 동네 조회 실행                                                                                       | `search_id`, `trigger=search/retry`, 통근 조건과 월세 필터    |
-| `neighborhood_search_results_viewed` | 조회가 끝나 결과/빈 결과를 표시                                                                                             | `search_id`, `result_count`, `has_results`, `rent_area_count` |
-| `neighborhood_search_failed`         | 검색 요청/경계 조회 실패가 화면에 표시                                                                                      | `search_id`, `error_kind=request`                             |
-| `neighborhood_area_selected`         | 실제 조회 결과에 있는 동네 선택                                                                                             | `search_id`(현재 탭에서 검색한 경우)                          |
-| `commute_route_viewed`               | 경로 상세 화면에서 유효한 경로 표시                                                                                         | `has_rent`(상세에 월세 시세를 함께 보여줬는지)                |
-| `commute_route_failed`               | 경로 상세 화면에서 조회 실패 표시                                                                                           | 공통 기능 속성                                                |
-| `commute_departure_station_changed`  | 데스크탑 동네 요약 목록에서 다른 유효한 출발 정류장 직접 선택                                                               | `search_id`(있는 경우)                                        |
-| `neighborhood_nearby_link_clicked`   | (수집 중단) 동네 상세의 정류장·공인중개사 보기 카드 클릭. 결과 지도를 확대하면 정류장·부동산을 바로 보여 주어 카드를 없앴다 | `search_id`(있는 경우)                                        |
-| `neighborhood_listing_link_clicked`  | 동네 상세의 현재 매물 확인하기 카드 클릭                                                                                    | `provider=dabang`, `search_id`(있는 경우)                     |
+| 이벤트                                  | 발생 시점                                                                                                                   | 주요 추가 속성                                                |
+| --------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------- |
+| `usage_guide_viewed`                    | 사용 방법 진입, StrictMode 중복 제외                                                                                        | 없음                                                          |
+| `usage_guide_demo_interacted`           | 더 이상 보내지 않음. 예전 시연의 탐색 모드 버튼 직접 조작                                                                   | `action`, 미리 정한 `value`                                   |
+| `landing_viewed`                        | 랜딩 진입                                                                                                                   | `entry=direct/home_footer`                                    |
+| `landing_app_store_clicked`             | 랜딩의 App Store, Google Play 배지 클릭. 앱 안에서는 배지를 숨긴다                                                          | `store=app_store/google_play`, `position=top/bottom`, `entry` |
+| `landing_web_start_clicked`             | 랜딩의 웹에서 바로 시작하기 클릭. 서비스 안에서 들어왔으면 서비스로 돌아가기 클릭                                           | `position=top/bottom`, `entry`                                |
+| `neighborhood_feature_viewed`           | 동네 찾기 지도 진입                                                                                                         | 공통 기능 속성                                                |
+| `neighborhood_search_submitted`         | 유효한 목적지·조건으로 동네 조회 실행                                                                                       | `search_id`, `trigger=search/retry`, 통근 조건과 월세 필터    |
+| `neighborhood_search_results_viewed`    | 조회가 끝나 결과/빈 결과를 표시                                                                                             | `search_id`, `result_count`, `has_results`, `rent_area_count` |
+| `neighborhood_search_failed`            | 검색 요청/경계 조회 실패가 화면에 표시                                                                                      | `search_id`, `error_kind=request`                             |
+| `neighborhood_area_selected`            | 실제 조회 결과에 있는 동네 선택                                                                                             | `search_id`(현재 탭에서 검색한 경우)                          |
+| `commute_route_viewed`                  | 경로 상세 화면에서 유효한 경로 표시                                                                                         | `has_rent`(상세에 월세 시세를 함께 보여줬는지)                |
+| `commute_route_failed`                  | 경로 상세 화면에서 조회 실패 표시                                                                                           | 공통 기능 속성                                                |
+| `commute_departure_station_changed`     | 데스크탑 동네 요약 목록에서 다른 유효한 출발 정류장 직접 선택                                                               | `search_id`(있는 경우)                                        |
+| `neighborhood_nearby_link_clicked`      | (수집 중단) 동네 상세의 정류장·공인중개사 보기 카드 클릭. 결과 지도를 확대하면 정류장·부동산을 바로 보여 주어 카드를 없앴다 | `search_id`(있는 경우)                                        |
+| `neighborhood_listing_link_clicked`     | 동네 상세의 현재 매물 확인하기 카드 클릭                                                                                    | `provider=dabang`, `search_id`(있는 경우)                     |
+| `neighborhood_area_tab_changed`         | 고른 동네 시트(칸)의 `동네 정보`, `교통` 탭을 바꿈                                                                          | `tab=overview/transport`, `search_id`(있는 경우)              |
+| `neighborhood_nearby_card_clicked`      | 동네 정보 탭의 주변 분석 카드를 눌러 그 동네 주변 분석 지도로 이동                                                          | `search_id`(있는 경우)                                        |
+| `neighborhood_property_commute_clicked` | 동네 정보 탭의 내 매물 통근 시간 목록에서 매물을 눌러 매물 상세로 이동                                                      | `search_id`(있는 경우)                                        |
+| `street_memo_dong_group_selected`       | 결과 지도의 거리 메모 행정동 묶음을 눌러 그 동으로 확대                                                                     | `memo_count`, `search_id`(있는 경우)                          |
 
 검색에는 `max_minutes`, `max_transfers`, `max_rent_manwon`(0은 전체 가격, 클라이언트에서 거는 필터)을 함께 수집한다. `rent_area_count`는 결과 중 월세 시세가 있는 동네 수다. 시세가 없는 동네는 화면에 그리지 않으므로 지금은 `result_count`와 같다. 주소·목적지 이름·좌표·검색어·정류장 ID·거래 금액 원문을 새 로그에 보내지 않는다. 상세 중복 방지에 사용한 지역/정류장 키는 로컬 비교용이며 전송하지 않는다.
 
