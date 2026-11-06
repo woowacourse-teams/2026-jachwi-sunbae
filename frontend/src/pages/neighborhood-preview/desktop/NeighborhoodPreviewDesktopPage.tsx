@@ -1,40 +1,32 @@
 import { css } from '@emotion/css';
 import { Outlet, useMatch } from 'react-router-dom';
 
+import { formatManwon } from '@/features/map/api/commuteApi';
 import { SERVICE_MAP_STYLE_ID } from '@/features/map/lib/mapStyle';
 import MapCanvas from '@/features/map/ui/map-canvas/MapCanvas';
 import MapCategoryRail from '@/features/map/ui/map-category-rail/MapCategoryRail';
 import ExplorationRecordAction from '@/features/onboarding/ui/exploration-record-action/ExplorationRecordAction';
 import { ROUTE_PATTERNS } from '@/shared/lib/navigation/appPaths';
 import { Button } from '@/shared/ui/button/Button';
-import Chip from '@/shared/ui/chip/Chip';
 import Icon from '@/shared/ui/icon/Icon';
 import ListDetailLayout from '@/shared/ui/list-detail-layout/ListDetailLayout';
-import RankedCard from '@/shared/ui/ranked-card/RankedCard';
 import StateIllustration from '@/shared/ui/state-illustration/StateIllustration';
 
-import useNeighborhoodMapView, { RESULT_RAIL_HIDDEN_CATEGORIES } from '../hooks/useNeighborhoodMapView';
-import type { AreaStation } from '../hooks/useNeighborhoodPlaces';
+import useNeighborhoodMapView from '../hooks/useNeighborhoodMapView';
 import type { NeighborhoodPreviewContext } from '../hooks/useNeighborhoodPreview';
 import useResultMapViewport from '../hooks/useResultMapViewport';
 import { COMMUTE_COLORS, commuteLegend, OUT_OF_RENT_COLOR } from '../model/commuteColors';
-import { areaCardDescription, emptyAreaMessage, rentLabel, transferLabel } from '../model/criteriaLabels';
+import { emptyAreaMessage, transferLabel } from '../model/criteriaLabels';
 import { desktopMapViewport } from '../model/resultMapView';
 import AnalysisOverlay from '../ui/analysis-overlay/AnalysisOverlay';
-import AreaSummary, { areaStation } from '../ui/area-summary/AreaSummary';
 import ConditionPanel from '../ui/condition-panel/ConditionPanel';
 import LocationControls from '../ui/location-controls/LocationControls';
+import MapInfo, { type MapInfoSubject, mapInfoTitle } from '../ui/map-info/MapInfo';
 import NeighborhoodMapSearch from '../ui/map-search/NeighborhoodMapSearch';
 import MapTapHint from '../ui/map-tap-hint/MapTapHint';
-import NeighborhoodPlacePanel from '../ui/place-panel/NeighborhoodPlacePanel';
-import RailCategoryPanel, { railSelectionTitle } from '../ui/rail-category-panel/RailCategoryPanel';
 import RentSlider from '../ui/rent-slider/RentSlider';
 
 import * as shared from '../NeighborhoodPreviewPage.styles';
-import * as placeStyles from '../ui/place-panel/NeighborhoodPlacePanel.styles';
-import { panelSwap } from '../ui/rail-category-panel/railSwap.styles';
-
-const CARD_RANKS = [1, 2, 3, 4, 5] as const;
 
 type Props = {
   preview: NeighborhoodPreviewContext;
@@ -51,7 +43,7 @@ const NeighborhoodPreviewDesktopPage = ({ preview }: Props) => {
   const mapView = useNeighborhoodMapView(preview, {
     showAreaAction: false,
   });
-  const { isResultMap, mapProps, places, closeLayers, rail, railSelection, railArea } = mapView;
+  const { isResultMap, mapProps, places, closeLayers, rail, railSelection } = mapView;
   // 지도 칸은 목록, 상세 칸 오른쪽에 있다. 상세 칸이 아직 닫혀 있으면 고른 뒤 열릴 폭을 미리 빼고 시점을 맞춘다.
   const mapSectionRef = useResultMapViewport<HTMLElement>(preview, (section) => {
     const layout = section.parentElement?.parentElement;
@@ -61,56 +53,31 @@ const NeighborhoodPreviewDesktopPage = ({ preview }: Props) => {
     });
   });
   const recordArea = preview.selected ?? preview.topAreas[0];
-  /** 출발 정류장을 고르면 정보 칸에 경로를 열고 지도를 그 정류장으로 확대한다. */
-  const selectAreaStation = (station: AreaStation) => {
-    places.selectStation(station);
-    // 출발 정류장을 바꾼 지표(commute_departure_station_changed)는 동네 요약 목록에서 고를 때 남긴다.
-    preview.selectStation(station.stopId);
-    preview.focusRoute(station);
+  // 지도 안 왼쪽 아래 카드에 보일 정보 하나: 누른 마커, 고른 동네, `My` 매물 목록 가운데 하나.
+  const infoSubject: MapInfoSubject | null = !isResultMap
+    ? null
+    : places.selectedPlace
+      ? { kind: 'place', place: places.selectedPlace }
+      : preview.selected
+        ? { kind: 'area', area: preview.selected }
+        : railSelection === 'MY'
+          ? { kind: 'my' }
+          : null;
+  /** 지도 안 정보 카드를 닫는다. */
+  const closeInfo = () => {
+    if (infoSubject?.kind === 'place') closeLayers();
+    else if (infoSubject?.kind === 'area') preview.selectRegion(null);
+    else mapView.clearRail();
   };
-  // 레일 칸을 켜면 목록 칸이 동네 순위 대신 그 칸의 목록으로 바뀐다.
-  const railPanel =
-    railSelection !== null && railArea ? (
-      <RailCategoryPanel
-        selection={railSelection}
-        areaName={railArea.name}
-        places={mapView.railPlaces}
-        placesState={mapView.railPlacesState}
-        onSelectPlace={mapView.selectRailPlace}
-        stations={preview.selected?.stations}
-        selectedStopId={places.selectedPlace?.kind === 'station' ? places.selectedPlace.station.stopId : null}
-        onSelectStation={(station) => selectAreaStation(areaStation(station))}
-        my={mapView.my}
-        isPublicExplore={preview.isPublicExplore}
-        destinationName={preview.destination.name}
-        onOpenProperty={preview.openPropertyCommute}
-      />
-    ) : null;
-  // 정보 칸에서 같은 동네의 앞뒤 출발 정류장으로 넘긴다.
-  const areaStations = preview.selected?.stations ?? [];
-  const selectedPlace = places.selectedPlace;
-  const stationIndex =
-    selectedPlace?.kind === 'station'
-      ? areaStations.findIndex((station) => station.stopId === selectedPlace.station.stopId)
-      : -1;
-  const stationNav =
-    stationIndex >= 0 && areaStations.length > 1
-      ? {
-          index: stationIndex,
-          total: areaStations.length,
-          onPrevious: () => selectAreaStation(areaStation(areaStations[stationIndex - 1])),
-          onNext: () => selectAreaStation(areaStation(areaStations[stationIndex + 1])),
-        }
-      : undefined;
   const hasDetail = isResultMap && !!isDetailPage;
 
   const list = isResultMap ? (
-    <aside className={styles.areaPanel} aria-label="통근 시간 상위 동네">
+    <aside className={styles.areaPanel} aria-label="동네 찾기 결과">
       <header className={styles.areaHeader}>
         <div>
-          <h2>통근 시간 상위 동네</h2>
+          <h2>찾은 동네</h2>
           <p>
-            {preview.destination.name}까지 · {preview.matchedAreaCount}곳
+            {preview.destination.name}까지 · 통근 {preview.maxMinutes}분 이내 · {transferLabel(preview.maxTransfers)}
           </p>
         </div>
         <Button
@@ -125,50 +92,34 @@ const NeighborhoodPreviewDesktopPage = ({ preview }: Props) => {
           다시 선택하기
         </Button>
       </header>
-      <div className={styles.criteria} aria-label="선택한 탐색 조건">
-        {/* 통근과 환승은 찾은 결과를 정한 조건이라 흐리게 두고, 월세는 지도 아래 슬라이더로 바꾼다. */}
-        <Chip disabled>통근 {preview.maxMinutes}분 이내</Chip>
-        <Chip disabled>{transferLabel(preview.maxTransfers)}</Chip>
-        <Chip>{rentLabel(preview.maxRent)}</Chip>
-      </div>
-      {railPanel && railSelection !== null && railArea ? (
-        // 칸이 바뀌면 새로 그려 짧게 떠오르며 바뀐 것을 보인다.
-        <div key={railSelection} className={`${styles.railList} ${panelSwap}`}>
-          <h3>{railSelectionTitle(railSelection, railArea.name)}</h3>
-          {railPanel}
+      {/* 이번 검색으로 받은 동네 카드를 통근 시간 짧은 순(같으면 출퇴근 장소에서 가까운 순)으로 늘어놓는다. */}
+      {preview.resultAreas.length === 0 ? (
+        <div className={styles.empty} role="status">
+          <StateIllustration name="empty-search" size={7} />
+          <p>{emptyAreaMessage(preview.maxRent)}</p>
         </div>
       ) : (
-        <>
-          {preview.topAreas.length > 0 ? (
-            <div className={styles.areaList}>
-              {/* 동네를 고르면 경로를 바로 그리지 않고 목록 옆 칸에 동네 정보를 연다. 교통 탭에서 정류장을 고르면 그 칸에서 경로를 본다. */}
-              {preview.topAreas.map((area, index) => {
-                const isSelected = preview.selected?.adminDongCode === area.adminDongCode;
-                return (
-                  <RankedCard
-                    key={area.adminDongCode}
-                    rank={CARD_RANKS[index]}
-                    title={area.name}
-                    value={area.commuteMinutes}
-                    unit="분"
-                    description={areaCardDescription(area)}
-                    selected={isSelected}
-                    onSelect={() => {
-                      closeLayers();
-                      // 고른 동네를 다시 누르면 옆 칸의 동네 정보를 닫는다.
-                      preview.selectRegion(isSelected ? null : area.adminDongCode, { openDetails: false });
-                    }}
-                  />
-                );
-              })}
-            </div>
-          ) : (
-            <div className={styles.empty} role="status">
-              <StateIllustration name="empty-search" size={7} />
-              <p>{emptyAreaMessage(preview.maxRent)}</p>
-            </div>
-          )}
-        </>
+        <ul className={styles.areaList} aria-label="찾은 동네 목록">
+          {preview.resultAreas.map((area) => (
+            <li key={area.adminDongCode}>
+              {/* 카드를 누르면 지도를 그 행정동으로 옮기고 그 동네를 고른다. 목록은 그대로 두고 고른 카드만 표시한다. */}
+              <button
+                type="button"
+                aria-pressed={preview.selected?.adminDongCode === area.adminDongCode}
+                onClick={() => {
+                  closeLayers();
+                  preview.selectRegion(area.adminDongCode, { openDetails: false, focus: 'area' });
+                }}
+              >
+                <span>
+                  <strong>{area.name}</strong>
+                  <small>{area.rent ? `월세 ${formatManwon(area.rent.monthlyRentKrw)}` : '시세 없음'}</small>
+                </span>
+                <b>{area.commuteMinutes}분</b>
+              </button>
+            </li>
+          ))}
+        </ul>
       )}
     </aside>
   ) : (
@@ -179,28 +130,10 @@ const NeighborhoodPreviewDesktopPage = ({ preview }: Props) => {
     <main className={`${shared.page} ${styles.page}`} data-public-explore={preview.isPublicExplore || undefined}>
       <ListDetailLayout
         list={list}
-        // 목록 옆 칸에는 지도에서 고른 정류장·부동산, 고른 동네의 시세·출발 정류장 순으로 하나를 연다.
-        // 정류장 정보를 닫으면 그 동네의 출발 정류장 목록으로 돌아가고, 동네 정보를 닫으면 동네 선택을 푼다.
-        detail={
-          places.selectedPlace ? (
-            <NeighborhoodPlacePanel place={places.selectedPlace} preview={preview} stationNav={stationNav} />
-          ) : hasDetail ? (
-            <Outlet context={preview} />
-          ) : isResultMap && preview.selected ? (
-            <div className={placeStyles.panel}>
-              <h1 className={placeStyles.title}>{preview.selected.name}</h1>
-              <AreaSummary area={preview.selected} onOpenListing={preview.openListing} maxRent={preview.maxRent} />
-            </div>
-          ) : undefined
-        }
-        onCloseDetail={
-          places.selectedPlace
-            ? places.closePlace
-            : hasDetail
-              ? preview.closeAreaDetails
-              : () => preview.selectRegion(null)
-        }
-        closeLabel={places.selectedPlace ? '정보 닫기' : hasDetail ? '대중교통 상세 닫기' : '동네 정보 닫기'}
+        // 목록 옆 칸에는 동네 대중교통 상세만 연다. 장소, 동네, 내 매물 정보는 지도 안 왼쪽 아래 카드에 둔다.
+        detail={hasDetail ? <Outlet context={preview} /> : undefined}
+        onCloseDetail={preview.closeAreaDetails}
+        closeLabel="대중교통 상세 닫기"
       >
         <section
           ref={mapSectionRef}
@@ -233,8 +166,8 @@ const NeighborhoodPreviewDesktopPage = ({ preview }: Props) => {
           )}
           {isResultMap && (
             <>
-              {/* 월세 시세 슬라이더와 지도 색 기준을 지도 아래 왼쪽 카드 하나에 둔다. 끄는 동안 지도 색과 왼쪽 순위가 바로 바뀐다. */}
-              <div className={styles.rentCard}>
+              {/* 지도 안 왼쪽 위: 월세 시세 슬라이더와 지도 색 기준. 끄는 동안 지도 색과 왼쪽 목록이 바로 바뀐다. */}
+              <div className={styles.rentFilter}>
                 <RentSlider preview={preview} />
                 <div className={`${shared.colorLegend} ${styles.legend}`} aria-label="통근 시간 색상 기준">
                   {commuteLegend(preview.maxMinutes).map(([group, label]) => (
@@ -251,20 +184,31 @@ const NeighborhoodPreviewDesktopPage = ({ preview }: Props) => {
                   )}
                 </div>
               </div>
+              {/* 지도 안 왼쪽 아래: 지도에서 누른 마커(또는 지도에서 고른 동네, My 목록) 정보 카드. */}
+              {infoSubject && (
+                <section className={styles.info} aria-label={mapInfoTitle(infoSubject)}>
+                  <header>
+                    <h3>{mapInfoTitle(infoSubject)}</h3>
+                    <button type="button" aria-label="정보 닫기" onClick={closeInfo}>
+                      <Icon name="close" size={20} />
+                    </button>
+                  </header>
+                  <MapInfo
+                    subject={infoSubject}
+                    preview={preview}
+                    my={mapView.my}
+                    onSelectProperty={mapView.selectMyProperty}
+                    phoneAction="copy"
+                  />
+                </section>
+              )}
               {/* 결과에 들어오자마자 예전 본 방 기록 지도처럼 오른쪽 위에 확대 축소, 분류 레일, 현재 위치 버튼을 한 줄로 세운다. */}
               <LocationControls
                 preview={preview}
                 isResult
                 zoom={{ level: preview.resultLevel, onZoom: preview.zoomResultBy }}
                 className={styles.railControls}
-                rail={
-                  <MapCategoryRail
-                    showMemo
-                    showIcons={false}
-                    hiddenCategories={RESULT_RAIL_HIDDEN_CATEGORIES}
-                    {...rail}
-                  />
-                }
+                rail={<MapCategoryRail showIcons={false} {...rail} />}
               />
               {preview.isPublicExplore && recordArea && (
                 <div className={`${shared.recordAction} ${styles.recordAction}`}>
@@ -278,6 +222,7 @@ const NeighborhoodPreviewDesktopPage = ({ preview }: Props) => {
                   />
                 </div>
               )}
+              {mapView.needsZoomForFacilities && <p className={styles.zoomHint}>가까이 확대하면 보여요</p>}
               {/* 동네만 고른 주소(`areas/:code`)는 화면을 그리지 않고, 저장된 검색이 없을 때의 안내만 맡는다. */}
               {isRoutePage && !isDetailPage && <Outlet context={preview} />}
             </>
@@ -289,22 +234,156 @@ const NeighborhoodPreviewDesktopPage = ({ preview }: Props) => {
 };
 
 const styles = {
+  /* 지도 안 왼쪽 아래 마커 정보 카드. 길면 카드 안에서 스크롤한다. */
+  info: css`
+    label: NeighborhoodPreviewDesktopPage-info;
+    position: absolute;
+    bottom: 1.25rem;
+    left: 1rem;
+    z-index: 32;
+    display: grid;
+    gap: 0.6rem;
+    width: min(22rem, calc(100% - 6rem));
+    max-height: calc(100% - 13rem);
+    overflow-y: auto;
+    padding: 0.9rem 1rem;
+    border: 1px solid var(--color-border);
+    border-radius: 1rem;
+    background: var(--color-surface);
+    box-shadow: 0 0.2rem 0.8rem rgb(0 0 0 / 8%);
+
+    & > header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.4rem;
+    }
+
+    & > header h3 {
+      margin: 0;
+      overflow: hidden;
+      font-size: 1rem;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    & > header button {
+      flex: none;
+      display: grid;
+      place-items: center;
+      width: 2rem;
+      height: 2rem;
+      padding: 0;
+      border: 0;
+      border-radius: 50%;
+      background: none;
+      color: var(--color-ink-soft);
+      cursor: pointer;
+    }
+  `,
+
+  /* 동네 카드 목록. 남은 높이를 채우고 안에서 스크롤한다. 고른 카드는 테두리와 바탕으로 표시한다. */
+  areaList: css`
+    label: NeighborhoodPreviewDesktopPage-areaList;
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    display: grid;
+    align-content: start;
+    gap: 0.5rem;
+    margin: 0;
+    padding: 0 0 0.25rem;
+    list-style: none;
+
+    & button {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
+      width: 100%;
+      padding: 0.85rem 1rem;
+      border: 1px solid var(--color-border);
+      border-radius: 0.9rem;
+      background: var(--color-surface);
+      color: var(--color-ink);
+      font: inherit;
+      text-align: left;
+      cursor: pointer;
+    }
+
+    & button:hover {
+      background: var(--color-surface-muted);
+    }
+
+    & button[aria-pressed='true'] {
+      border-color: var(--color-ink);
+      background: var(--color-surface-muted);
+      box-shadow: inset 0 0 0 1px var(--color-ink);
+    }
+
+    & button:focus-visible {
+      outline: 2px solid var(--color-focus);
+      outline-offset: 2px;
+    }
+
+    & span {
+      display: grid;
+      gap: 0.2rem;
+      min-width: 0;
+    }
+
+    & strong {
+      overflow: hidden;
+      font-size: 0.95rem;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    & small {
+      color: var(--color-muted);
+      font-size: 0.78rem;
+    }
+
+    & b {
+      flex: none;
+      font-size: 1.05rem;
+    }
+  `,
+
+  zoomHint: css`
+    label: NeighborhoodPreviewDesktopPage-zoomHint;
+    position: absolute;
+    top: 1rem;
+    left: 50%;
+    z-index: 31;
+    margin: 0;
+    padding: 0.5rem 0.9rem;
+    border-radius: 99px;
+    background: var(--color-surface);
+    box-shadow: var(--shadow-floating);
+    color: var(--color-ink-soft);
+    font-size: 0.8rem;
+    transform: translateX(-50%);
+    pointer-events: none;
+  `,
+
   /* 데스크탑 동네 찾기. 공용 틀(NeighborhoodPreviewPage.module.css) 위에 덧씌운다. */
   page: css`
     label: NeighborhoodPreviewDesktopPage-page;
-    /* 상세 닫기 버튼은 지도 왼쪽 위에 둔다. */
-    --list-detail-close-top: 1rem;
+    /* 상세 닫기 버튼은 지도 왼쪽 위 월세 필터 아래에 둔다. */
+    --list-detail-close-top: 9.5rem;
     overflow: hidden;
   `,
 
+  /* 왼쪽 칸. 머리 아래에 동네 목록만 두고, 목록이 남은 높이를 채운다. */
   areaPanel: css`
     label: NeighborhoodPreviewDesktopPage-areaPanel;
     display: flex;
     flex-direction: column;
-    gap: 1rem;
+    gap: 0.9rem;
     min-height: 0;
-    overflow-y: auto;
-    padding: 1.25rem 1.5rem 1.5rem;
+    overflow: hidden;
+    padding: 1.25rem 1.5rem 1.25rem;
   `,
 
   areaHeader: css`
@@ -339,30 +418,6 @@ const styles = {
     }
   `,
 
-  criteria: css`
-    label: NeighborhoodPreviewDesktopPage-criteria;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.35rem;
-  `,
-
-  railList: css`
-    label: NeighborhoodPreviewDesktopPage-railList;
-    display: grid;
-    gap: 0.5rem;
-
-    & h3 {
-      margin: 0;
-      font-size: 0.95rem;
-    }
-  `,
-
-  areaList: css`
-    label: NeighborhoodPreviewDesktopPage-areaList;
-    display: grid;
-    gap: 0.6rem;
-  `,
-
   empty: css`
     label: NeighborhoodPreviewDesktopPage-empty;
     display: grid;
@@ -377,26 +432,26 @@ const styles = {
     }
   `,
 
-  /* 카드 안 색 기준 줄. 카드가 흰 바탕이라 따로 바탕을 두지 않는다. */
+  /* 월세 필터 안 색 기준 줄. 필터가 흰 바탕이라 따로 바탕을 두지 않는다. */
   legend: css`
     label: NeighborhoodPreviewDesktopPage-legend;
     padding: 0.2rem 0 0;
     background: none;
   `,
 
-  /* 지도 아래 왼쪽에 띄우는 월세 슬라이더 카드. 오른쪽 위치 버튼과 겹치지 않게 폭을 둔다. */
-  rentCard: css`
-    label: NeighborhoodPreviewDesktopPage-rentCard;
+  /* 지도 안 왼쪽 위 월세 슬라이더와 색 기준. 오른쪽 위 버튼 줄과 겹치지 않게 폭을 둔다. */
+  rentFilter: css`
+    label: NeighborhoodPreviewDesktopPage-rentFilter;
     position: absolute;
-    bottom: 1.25rem;
+    top: 1rem;
     left: 1rem;
     z-index: 31;
     width: min(22rem, calc(100% - 6rem));
+    box-shadow: 0 0.4rem 1.2rem rgb(0 0 0 / 12%);
     padding: 0.9rem 1.1rem 0.6rem;
     border: 1px solid var(--color-border);
     border-radius: 1rem;
-    background: white;
-    box-shadow: 0 0.4rem 1.2rem rgb(0 0 0 / 12%);
+    background: var(--color-surface);
   `,
 
   /* 지도 오른쪽 위. 왼쪽 위 색상 기준 상자와 같은 높이에서 시작한다. */

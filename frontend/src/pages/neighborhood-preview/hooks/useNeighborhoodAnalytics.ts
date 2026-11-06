@@ -94,10 +94,6 @@ const useNeighborhoodAnalytics = (options: AnalyticsOptions) => {
     /** 동네를 고른 결과 지도의 분류 레일(메모, 병원, 교통, 학교, 편의)을 켜거나 끌 때. */
     toggleMapCategory: (category: string, selected: boolean) =>
       capture('neighborhood_map_category_toggled', { category, selected }),
-    /** 내 매물 통근 시간 목록에서 매물을 눌러 매물 상세로 갈 때. */
-    openPropertyCommute: () => capture('neighborhood_property_commute_clicked'),
-    /** 멀리 볼 때 띄우는 거리 메모 행정동 묶음을 눌러 그 동으로 확대할 때. */
-    selectMemoGroup: (memoCount: number) => capture('street_memo_dong_group_selected', { memo_count: memoCount }),
   };
 };
 

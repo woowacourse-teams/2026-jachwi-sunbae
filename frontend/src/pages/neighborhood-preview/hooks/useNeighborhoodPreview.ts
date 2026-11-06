@@ -11,10 +11,10 @@ import { usePrefetchMetroBoundaries } from '@/features/map/api/usePrefetchMetroB
 import { writeCommuteDestination } from '@/features/map/lib/commuteDestinationStore';
 import { readGeolocationPermission, requestCurrentMapLocation } from '@/features/map/lib/mapLocation';
 import { MapLocationError } from '@/features/map/lib/mapLocation';
+import { distanceMeters } from '@/features/map/lib/mapViewportQuery';
 import type { MapAddress } from '@/features/map/model/Map';
 import { MAX_MAP_LEVEL, MIN_MAP_LEVEL } from '@/features/map/ui/map-zoom-control/MapZoomControl';
 import { completeExploration, startExploration } from '@/features/onboarding/lib/explorationJourney';
-import { MEMO_INDIVIDUAL_MAX_LEVEL } from '@/features/street-memo/lib/streetMemoDongGroups';
 import { usePublicConfig } from '@/shared/config/PublicConfigContext';
 import {
   EXPLORE_PATH,
@@ -148,6 +148,15 @@ const useNeighborhoodPreview = () => {
       allAreas?.filter((area) => maxRent === 0 || (area.rent !== null && area.rent.monthlyRentKrw <= maxRent * 10000)),
     [allAreas, maxRent],
   );
+  const sortedAreas = useMemo(
+    () =>
+      [...(areas ?? [])].sort(
+        (left, right) =>
+          left.commuteMinutes - right.commuteMinutes ||
+          distanceMeters(destination, left.center) - distanceMeters(destination, right.center),
+      ),
+    [areas, destination],
+  );
   const analytics = useNeighborhoodAnalytics({
     mock: isMockData,
     analyzing: phase === 'analyzing',
@@ -268,6 +277,8 @@ const useNeighborhoodPreview = () => {
     },
     missingBoundaryCount: areas?.filter((area) => area.polygons.length === 0).length ?? 0,
     topAreas: areas?.slice(0, 5) ?? [],
+    /** 이번 검색으로 받은 동네(월세 조건까지 맞는 동네) 전체. 통근 시간 짧은 순, 같으면 출퇴근 장소에서 가까운 순이다. */
+    resultAreas: sortedAreas,
     /** 월세 조건까지 맞는 동네 수. 지도의 회색(월세 조건 밖) 동네는 세지 않는다. */
     matchedAreaCount: areas?.length ?? 0,
     selectedStation,
@@ -467,12 +478,18 @@ const useNeighborhoodPreview = () => {
     },
     regions,
     selected,
-    selectRegion: (id: string | null, options?: { openDetails?: boolean }) => {
+    selectRegion: (id: string | null, options?: { openDetails?: boolean; focus?: 'route' | 'area' }) => {
       // 회색(월세 조건 밖) 동네도 지도에서 고를 수 있어 받은 동네 전체에서 찾는다.
       const area = allAreas?.find((area) => area.adminDongCode === id);
       if (area) analytics.selectArea();
-      // 동네 경계와 첫 출발 정류장, 출퇴근 장소까지 통근 경로 전체가 한 화면에 들어오게 옮긴다.
-      if (area) resultView.current = areaRouteView(area, destination, readMapViewport());
+      // 기본은 동네 경계와 첫 출발 정류장, 출퇴근 장소까지 통근 경로 전체가 한 화면에 들어오게 옮긴다.
+      // 데스크탑 동네 목록에서 고르면(`area`) 그 행정동 경계만 화면에 들어오게 옮긴다.
+      if (area)
+        resultView.current =
+          options?.focus === 'area'
+            ? routeFocusView([area.center], area.polygons, readMapViewport())
+            : areaRouteView(area, destination, readMapViewport());
+      setResultViewVersion((version) => version + 1);
       setSelectedId(id);
       setSelectedStopId(area?.stations[0]?.stopId ?? null);
       // 데스크탑은 상세를 목록 옆에 붙여 지도를 가리지 않으므로, 동네를 고르면 바로 상세를 연다.
@@ -480,6 +497,21 @@ const useNeighborhoodPreview = () => {
       if (id) navigate(openDetails ? neighborhoodAreaDetailsPath(mapPath, id) : neighborhoodAreaPath(mapPath, id));
       // 선택을 풀면 동네 주소에서 지도 주소로 돌아가야 주소의 동네가 다시 골라지지 않는다.
       else if (routeAreaId) navigate(mapPath, { replace: true });
+    },
+    /** 지도에서 마커를 누르면 확대 단계는 그대로 두고 그 마커 자리를 가운데로 옮긴다. */
+    focusPoint: (point: { latitude: number; longitude: number }) => {
+      resultView.current = {
+        latitude: point.latitude,
+        longitude: point.longitude,
+        level: resultView.current?.level ?? resultLevel,
+      };
+      setResultViewVersion((version) => version + 1);
+    },
+    /** 점들이 가려지지 않은 지도 칸에 모두 들어오게 옮긴다(`My`를 켰을 때 내 매물 전체). 한 점이면 동네를 볼 때의 가까운 단계로 둔다. */
+    fitPoints: (points: { latitude: number; longitude: number }[]) => {
+      if (!points.length) return;
+      resultView.current = routeFocusView(points, [], readMapViewport());
+      setResultViewVersion((version) => version + 1);
     },
     /** 출발 정류장(경로)을 고르면 그 정류장부터 출퇴근 장소까지 경로 전체가 한 화면에 들어오게 옮긴다. */
     focusRoute: (station: { latitude: number; longitude: number }) => {
@@ -499,13 +531,6 @@ const useNeighborhoodPreview = () => {
     },
     openListing: analytics.openListing,
     toggleMapCategory: analytics.toggleMapCategory,
-    openPropertyCommute: analytics.openPropertyCommute,
-    /** 거리 메모 행정동 묶음을 누르면 그 묶음 자리를 가운데 두고 메모가 하나씩 보이는 단계까지 확대한다. */
-    focusMemoGroup: (point: { latitude: number; longitude: number }, memoCount: number) => {
-      analytics.selectMemoGroup(memoCount);
-      resultView.current = { latitude: point.latitude, longitude: point.longitude, level: MEMO_INDIVIDUAL_MAX_LEVEL };
-      setResultViewVersion((version) => version + 1);
-    },
     /** 결과 지도 칸 크기와 가리는 여백을 읽는 함수를 둔다. 화면이 지도 칸을 그린 뒤 한 번 넣는다. */
     setMapViewportReader: (reader: (() => MapViewport | null) | null) => {
       mapViewportReader.current = reader;

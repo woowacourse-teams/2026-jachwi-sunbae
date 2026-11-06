@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import {
-  dongMemoMarkers,
+  dongGroupMarker,
   groupMemosByDong,
   MEMO_INDIVIDUAL_MAX_LEVEL,
   showsDongMemoGroups,
@@ -56,30 +56,17 @@ describe('showsDongMemoGroups', () => {
   });
 });
 
-describe('dongMemoMarkers', () => {
-  it('묶음 단계에서는 화면의 메모를 모두 동 묶음으로 바꾸고 낱개 메모를 섞지 않는다', () => {
-    const markers = dongMemoMarkers(memos, 7);
-    expect(markers).toHaveLength(2);
-    expect(markers.every((marker) => marker.id.startsWith('street-memo-dong:'))).toBe(true);
-    expect(markers.find((marker) => marker.id === 'street-memo-dong:11680640')).toMatchObject({
+describe('dongGroupMarker', () => {
+  it('동 묶음을 좋아요, 싫어요 개수 말풍선 마커로 만들고 많은 쪽 색을 따른다', () => {
+    const [second, first] = groupMemosByDong(memos);
+    expect(dongGroupMarker(first)).toMatchObject({
+      id: 'street-memo-dong:11680640',
       tally: { positive: 2, negative: 1 },
       label: '거리 메모 3개, 좋아요 2개, 싫어요 1개',
       variant: 'positive',
       category: 'MEMO',
       actionable: true,
     });
-    expect(markers.find((marker) => marker.id === 'street-memo-dong:11620695')).toMatchObject({ variant: 'negative' });
-  });
-
-  it('낱개 단계에서는 행정동 코드가 없는 메모까지 모두 하나씩 보여 주고 묶지 않는다', () => {
-    const markers = dongMemoMarkers(memos, MEMO_INDIVIDUAL_MAX_LEVEL);
-    expect(markers.map((marker) => marker.id)).toEqual([1, 2, 3, 4, 5].map((id) => `street-memo:${id}`));
-    expect(markers.every((marker) => marker.tally === undefined && !marker.actionable)).toBe(true);
-    expect(markers[1]).toMatchObject({ label: '메모 2', variant: 'negative' });
-  });
-
-  it('긴 메모는 말풍선에 80자까지만 적는다', () => {
-    const [marker] = dongMemoMarkers([memo(1, { memo: '가'.repeat(90) })], 3);
-    expect(marker.label).toBe(`${'가'.repeat(80)}…`);
+    expect(dongGroupMarker(second)).toMatchObject({ variant: 'negative' });
   });
 });
