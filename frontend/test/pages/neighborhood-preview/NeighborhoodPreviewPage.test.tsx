@@ -936,6 +936,29 @@ it('My를 켜면 내 매물 마커에 통근 시간을 붙이고 한 화면에 �
   expect(center.longitude).toBeGreaterThan(126.91);
   expect(center.longitude).toBeLessThan(126.929);
 });
+it('My는 매물이 20개보다 많아도 기록한 매물을 모두 지도에 올린다', async () => {
+  server.use(
+    http.get('*/api/properties', () =>
+      HttpResponse.json(
+        successEnvelope(
+          propertyPageFixture(
+            Array.from({ length: 25 }, (_, index) => ({
+              ...propertySummaryFixture,
+              propertyId: index + 1,
+              name: `매물 ${index + 1}`,
+              location: { address: '서울 강남구', latitude: 37.49 + index * 0.001, longitude: 127.03 },
+            })),
+          ),
+        ),
+      ),
+    ),
+  );
+  show();
+  const user = await choosePoint();
+  await user.click(screen.getByRole('button', { name: /에서 찾기$/ }));
+  await user.click(await screen.findByRole('button', { name: '내 매물 통근 시간 표시하기' }));
+  await waitFor(() => expect(markerList().filter((marker) => marker.id.startsWith('my-property:'))).toHaveLength(25));
+});
 it('로그인 전(공개 동네 찾기)에 My를 누르면 매물을 부르지 않고 시트에 안내를 보인다', async () => {
   let propertyRequests = 0;
   const track = ({ request }: { request: Request }) => {
