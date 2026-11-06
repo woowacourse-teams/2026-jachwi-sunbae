@@ -11,6 +11,7 @@ import com.jachwisunbae.common.exception.client.InvalidInputException;
 import com.jachwisunbae.common.exception.client.ResourceNotFoundException;
 import com.jachwisunbae.member.service.MemberService;
 import com.jachwisunbae.streetmemo.domain.StreetMemo;
+import com.jachwisunbae.streetmemo.domain.StreetMemoCategory;
 import com.jachwisunbae.streetmemo.domain.StreetMemoPreference;
 import com.jachwisunbae.streetmemo.repository.StreetMemoRepository;
 import com.jachwisunbae.transit.service.AdminDongFinder;
@@ -44,7 +45,7 @@ class StreetMemoServiceTest {
     void rejectsUnappliedDeletion() {
         LocalDateTime now = LocalDateTime.now(clock);
         StreetMemo memo = StreetMemo.reconstruct(10L, 1L, new BigDecimal("37.5"), new BigDecimal("127.0"), null,
-                "동네 메모", StreetMemoPreference.LIKE, now, now, null);
+                StreetMemoCategory.GENERAL, "동네 메모", StreetMemoPreference.LIKE, now, now, null);
         when(repository.findByIdForUpdate(10L)).thenReturn(Optional.of(memo));
         when(repository.delete(memo)).thenReturn(0);
         StreetMemoService service = new StreetMemoService(repository, memberService, adminDongFinder, clock);
@@ -61,7 +62,7 @@ class StreetMemoServiceTest {
         when(repository.save(any())).thenAnswer(call -> saved(call.getArgument(0)));
         StreetMemoService service = new StreetMemoService(repository, memberService, adminDongFinder, clock);
 
-        service.create(1L, latitude, longitude, "동네 메모", StreetMemoPreference.LIKE);
+        service.create(1L, latitude, longitude, "동네 메모", StreetMemoPreference.LIKE, StreetMemoCategory.GENERAL);
 
         ArgumentCaptor<StreetMemo> captor = ArgumentCaptor.forClass(StreetMemo.class);
         verify(repository).save(captor.capture());
@@ -77,7 +78,8 @@ class StreetMemoServiceTest {
         when(repository.save(any())).thenAnswer(call -> saved(call.getArgument(0)));
         StreetMemoService service = new StreetMemoService(repository, memberService, adminDongFinder, clock);
 
-        service.create(1L, latitude, longitude, "동네 메모", StreetMemoPreference.DISLIKE);
+        service.create(1L, latitude, longitude, "동네 메모", StreetMemoPreference.DISLIKE,
+                StreetMemoCategory.GENERAL);
 
         ArgumentCaptor<StreetMemo> captor = ArgumentCaptor.forClass(StreetMemo.class);
         verify(repository).save(captor.capture());
@@ -90,14 +92,15 @@ class StreetMemoServiceTest {
         StreetMemoService service = new StreetMemoService(repository, memberService, adminDongFinder, clock);
 
         assertThatThrownBy(() -> service.create(1L, new BigDecimal("91"), new BigDecimal("127.0"), "동네 메모",
-                StreetMemoPreference.LIKE)).isInstanceOf(InvalidInputException.class);
+                StreetMemoPreference.LIKE, StreetMemoCategory.GENERAL))
+                .isInstanceOf(InvalidInputException.class);
 
         verifyNoInteractions(adminDongFinder, repository);
     }
 
     private StreetMemo saved(final StreetMemo memo) {
         return StreetMemo.reconstruct(10L, memo.getMemberId(), memo.getLatitude(), memo.getLongitude(),
-                memo.getAdminDongCode(), memo.getMemo(), memo.getPreference(), memo.getCreatedAt(),
-                memo.getUpdatedAt(), null);
+                memo.getAdminDongCode(), memo.getCategory(), memo.getMemo(), memo.getPreference(),
+                memo.getCreatedAt(), memo.getUpdatedAt(), null);
     }
 }

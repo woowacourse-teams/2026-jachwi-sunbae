@@ -16,7 +16,7 @@ class StreetMemoTest {
         LocalDateTime createdAt = LocalDateTime.of(2026, 10, 26, 12, 0);
         LocalDateTime updatedAt = createdAt.plusDays(1);
         StreetMemo memo = StreetMemo.reconstruct(10L, 1L, new BigDecimal("37.5"), new BigDecimal("127.0"), null,
-                "동네 메모", StreetMemoPreference.LIKE, createdAt, updatedAt, null);
+                StreetMemoCategory.GENERAL, "동네 메모", StreetMemoPreference.LIKE, createdAt, updatedAt, null);
 
         assertThatThrownBy(() -> memo.delete(1L, createdAt)).isInstanceOf(IllegalArgumentException.class);
 

@@ -5,6 +5,7 @@ import com.jachwisunbae.common.exception.client.ResourceNotFoundException;
 import com.jachwisunbae.common.exception.errorcode.ErrorCode;
 import com.jachwisunbae.member.service.MemberService;
 import com.jachwisunbae.streetmemo.domain.StreetMemo;
+import com.jachwisunbae.streetmemo.domain.StreetMemoCategory;
 import com.jachwisunbae.streetmemo.domain.StreetMemoLocation;
 import com.jachwisunbae.streetmemo.domain.StreetMemoPreference;
 import com.jachwisunbae.streetmemo.repository.StreetMemoRepository;
@@ -36,12 +37,13 @@ public class StreetMemoService {
 
     @Transactional
     public StreetMemoResult create(final Long memberId, final BigDecimal latitude, final BigDecimal longitude,
-                                    final String memo, final StreetMemoPreference preference) {
+                                    final String memo, final StreetMemoPreference preference,
+                                    final StreetMemoCategory category) {
         StreetMemoLocation location = new StreetMemoLocation(latitude, longitude);
         memberService.findById(memberId);
         String adminDongCode = adminDongFinder.findCode(location.latitude(), location.longitude()).orElse(null);
-        StreetMemo streetMemo = StreetMemo.create(memberId, latitude, longitude, adminDongCode, memo, preference,
-                LocalDateTime.now(clock));
+        StreetMemo streetMemo = StreetMemo.create(memberId, latitude, longitude, adminDongCode, category, memo,
+                preference, LocalDateTime.now(clock));
         return StreetMemoResult.from(streetMemoRepository.save(streetMemo), memberId);
     }
 

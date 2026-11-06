@@ -4,6 +4,7 @@ import com.jachwisunbae.auth.web.AuthenticatedMemberId;
 import com.jachwisunbae.common.web.ApiResponse;
 import com.jachwisunbae.streetmemo.controller.dto.request.CreateStreetMemoRequest;
 import com.jachwisunbae.streetmemo.controller.dto.response.StreetMemoResponse;
+import com.jachwisunbae.streetmemo.domain.StreetMemoCategory;
 import com.jachwisunbae.streetmemo.domain.StreetMemoPreference;
 import com.jachwisunbae.streetmemo.service.StreetMemoService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -35,14 +36,15 @@ public class StreetMemoController {
 
     @PostMapping
     @Operation(summary = "거리 메모 작성",
-            description = "인증된 회원이 위치·내용·선호를 함께 저장합니다. "
+            description = "인증된 회원이 위치, 내용, 선호, 카테고리를 함께 저장합니다. 카테고리를 보내지 않으면 GENERAL로 저장합니다. "
             + "작성자는 인증 정보로 결정하며 응답에 작성자 식별 정보를 포함하지 않습니다.")
     public ResponseEntity<ApiResponse<StreetMemoResponse>> create(
             @AuthenticatedMemberId final Long memberId,
             @Valid @RequestBody final CreateStreetMemoRequest request) {
         StreetMemoResponse response = StreetMemoResponse.from(streetMemoService.create(memberId,
                 request.latitude(), request.longitude(), request.memo(),
-                StreetMemoPreference.fromCode(request.preference())));
+                StreetMemoPreference.fromCode(request.preference()),
+                StreetMemoCategory.fromCode(request.category())));
         return ResponseEntity.created(URI.create("/api/street-memos/" + response.streetMemoId()))
                 .body(ApiResponse.of("거리 메모를 등록했습니다.", response));
     }

@@ -17,6 +17,10 @@ public record CreateStreetMemoRequest(
         @NotNull
         String memo,
 
+        @Schema(description = "메모 카테고리. 대문자 코드만 허용하며 보내지 않으면 GENERAL로 저장한다.",
+                allowableValues = {"PLACE", "STREET", "GENERAL"}, example = "STREET")
+        String category,
+
         @Schema(description = "작성자가 선택한 선호. 대문자 코드만 허용한다.",
                 allowableValues = {"LIKE", "DISLIKE"}, example = "LIKE")
         @NotNull

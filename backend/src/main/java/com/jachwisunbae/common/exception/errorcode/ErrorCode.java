@@ -43,6 +43,7 @@ public enum ErrorCode {
     STREET_MEMO_QUERY_INVALID("거리 메모 조회 영역을 확인해 주세요."),
     STREET_MEMO_PREFERENCE_INVALID("거리 메모의 좋아요·싫어요를 선택해 주세요."),
     STREET_MEMO_NOT_FOUND("거리 메모를 찾을 수 없습니다."),
+    STREET_MEMO_CATEGORY_INVALID("거리 메모 카테고리를 확인해 주세요."),
 
     // 사진
     PHOTO_NOT_FOUND("사진을 찾을 수 없습니다."),
