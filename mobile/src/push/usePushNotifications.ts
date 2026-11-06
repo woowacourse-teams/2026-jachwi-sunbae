@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Alert, AppState, Linking } from 'react-native';
+import { Alert, AppState, Linking, Platform } from 'react-native';
 import {
   getInitialNotification,
   onMessage,
@@ -8,6 +8,12 @@ import {
   type RemoteMessage,
 } from '@react-native-firebase/messaging';
 import { WEB_APP_URL } from '../config';
+import {
+  classifyPushError,
+  PUSH_BRIDGE_ERROR,
+  PUSH_FAILURE_NOTICE,
+} from './errors';
+import { createForegroundNotifier, type PushOpen } from './foreground';
 import { createNativePush, getConfiguredMessaging } from './service';
 import {
   createPushReplyScript,
@@ -22,6 +28,9 @@ export const usePushNotifications = (
   inject: (script: string) => void,
 ) => {
   const [push] = useState(createNativePush);
+  const [notifier] = useState(() =>
+    push ? createForegroundNotifier(Platform.OS) : null,
+  );
   const promptShown = useRef(false);
   const enabledNotice = useCallback(async () => {
     if (!push) return;
@@ -32,11 +41,9 @@ export const usePushNotifications = (
           '알림이 꺼져 있어요',
           '기기 설정에서 자취선배 알림을 허용해 주세요.',
         );
-    } catch {
-      Alert.alert(
-        '알림 연결을 완료하지 못했어요',
-        '네트워크를 확인한 뒤 다시 시도해 주세요.',
-      );
+    } catch (error) {
+      const notice = PUSH_FAILURE_NOTICE[classifyPushError(error)];
+      Alert.alert(notice.title, notice.message);
     }
   }, [push]);
 
@@ -69,16 +76,29 @@ export const usePushNotifications = (
     const messaging = getConfiguredMessaging();
     if (!messaging || !push) return undefined;
     let active = true;
-    const open = (message: RemoteMessage | null) => {
-      const url = resolvePushUrl(message?.data?.url, WEB_APP_URL);
+    const openUrl = (value: unknown) => {
+      const url = resolvePushUrl(value, WEB_APP_URL);
       if (active && url) navigate(url);
+    };
+    const open = (message: RemoteMessage | null) => openUrl(message?.data?.url);
+    const openPressed = (pressed: PushOpen | null) => {
+      if (pressed) openUrl(pressed.url);
+    };
+    const takeOpened = () => {
+      notifier
+        ?.takeOpened()
+        .then(openPressed)
+        .catch(() => undefined);
     };
     // 토큰 자체나 알림 본문을 로그/분석에 남기지 않는다.
     push.restore().catch(() => undefined);
+    notifier?.prepare().catch(() => undefined);
     getInitialNotification(messaging)
       .then(open)
       .catch(() => undefined);
     const opened = onNotificationOpenedApp(messaging, open);
+    takeOpened();
+    const pressed = notifier?.onOpen(openPressed);
     const refreshed = onTokenRefresh(messaging, () => {
       push
         .restore()
@@ -91,34 +111,25 @@ export const usePushNotifications = (
         .catch(() => undefined);
     });
     const received = onMessage(messaging, message => {
-      if (
-        !active ||
-        AppState.currentState !== 'active' ||
-        !message.notification
-      )
-        return;
-      Alert.alert(
-        message.notification.title || '자취선배',
-        message.notification.body || '',
-        [
-          { text: '닫기', style: 'cancel' },
-          ...(resolvePushUrl(message.data?.url, WEB_APP_URL)
-            ? [{ text: '확인', onPress: () => open(message) }]
-            : []),
-        ],
-      );
+      // iOS는 firebase.json의 포그라운드 표시 옵션으로 OS가 배너를 띄우고,
+      // 배너를 누르면 onNotificationOpenedApp으로 이동한다.
+      if (!active || !message.notification) return;
+      notifier?.show(message).catch(() => undefined);
     });
     const foreground = AppState.addEventListener('change', state => {
-      if (state === 'active') push.restore().catch(() => undefined);
+      if (state !== 'active') return;
+      push.restore().catch(() => undefined);
+      takeOpened();
     });
     return () => {
       active = false;
       opened();
       refreshed();
       received();
+      pressed?.();
       foreground.remove();
     };
-  }, [push, navigate, inject]);
+  }, [push, notifier, navigate, inject]);
 
   const onMessageFromWeb = useCallback(
     async (raw: string, sourceUrl: string): Promise<boolean> => {
@@ -157,8 +168,11 @@ export const usePushNotifications = (
             return true;
         }
         reply({ ok: true, ...(await push.status()) });
-      } catch {
-        reply({ ok: false, error: 'push-unavailable' });
+      } catch (error) {
+        reply({
+          ok: false,
+          error: PUSH_BRIDGE_ERROR[classifyPushError(error)],
+        });
       }
       return true;
     },
