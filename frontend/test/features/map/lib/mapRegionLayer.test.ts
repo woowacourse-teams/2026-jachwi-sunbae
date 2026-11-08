@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { createMapRegionLayer, regionAtLevel } from '@/features/map/lib/mapRegionLayer';
+import { createMapRegionLayer } from '@/features/map/lib/mapRegionLayer';
+import { regionAtLevel } from '@/features/map/lib/mapRegionMerge';
 import type { MapRegion } from '@/features/map/model/MapCanvas';
 
 it('앱 축척 8 이상은 overview, 5~7은 medium, 4 이하는 원본을 고른다', () => {
@@ -23,7 +24,12 @@ it('앱 축척 8 이상은 overview, 5~7은 medium, 4 이하는 원본을 고른
 });
 
 type Point = { latitude: number; longitude: number };
-type Listener = { target: unknown; event: string; callback: () => void };
+type Listener = { target: unknown; event: string; callback: (event?: unknown) => void };
+type FakeFeature = {
+  id: string;
+  properties: { style: Record<string, unknown> };
+  geometry: { type: string; coordinates: number[][][][] };
+};
 
 /** 실제 SDK 대신 생성자 옵션과 호출만 기록한다. */
 const setup = ({
@@ -37,6 +43,21 @@ const setup = ({
     content: HTMLElement;
     setMap: ReturnType<typeof vi.fn>;
   }[] = [];
+  const dataLayers: FakeData[] = [];
+  class FakeData {
+    features = new Map<string, FakeFeature>();
+    setMap = vi.fn();
+    setStyle = vi.fn();
+    addGeoJson = vi.fn((json: { features: FakeFeature[] }) => {
+      json.features.forEach((feature) => this.features.set(feature.id, feature));
+      return json.features;
+    });
+    getFeatureById = (id: string) => this.features.get(id);
+    removeFeature = vi.fn((feature: FakeFeature) => this.features.delete(feature.id));
+    constructor() {
+      dataLayers.push(this);
+    }
+  }
   class FakePolygon {
     setPaths = vi.fn();
     setOptions = vi.fn();
@@ -57,8 +78,9 @@ const setup = ({
   }
   const sdk = {
     Polygon: FakePolygon,
+    Data: FakeData,
     Event: {
-      addListener: (target: unknown, event: string, callback: () => void) => {
+      addListener: (target: unknown, event: string, callback: (event?: unknown) => void) => {
         const listener = { target, event, callback };
         listeners.push(listener);
         return listener;
@@ -86,11 +108,17 @@ const setup = ({
   };
   const onSelect = vi.fn();
   let level = 4;
-  const layer = createMapRegionLayer({} as never, sdk, engine as never, onSelect, () => level);
-  const fire = (target: unknown, event: string) =>
-    listeners.filter((item) => item.target === target && item.event === event).forEach((item) => item.callback());
+  const map = {};
+  const layer = createMapRegionLayer(map as never, sdk, engine as never, onSelect, () => level);
+  const fire = (target: unknown, event: string, value?: unknown) =>
+    listeners.filter((item) => item.target === target && item.event === event).forEach((item) => item.callback(value));
+  /** SDK 지도 이벤트처럼 좌표를 lat(), lng()로 준다. */
+  const at = (latitude: number, longitude: number) => ({ coord: { lat: () => latitude, lng: () => longitude } });
   return {
     layer,
+    map,
+    at,
+    dataLayers,
     polygons,
     listeners,
     overlays,
@@ -109,16 +137,20 @@ const ring = (latitude: number, longitude = 127): Point[] => [
   { latitude, longitude: longitude + 0.001 },
   { latitude, longitude },
 ];
-const region = (id: string, extra: Partial<MapRegion> = {}): MapRegion => ({
+/** 요약 이름표가 없는 동. 색 구간별로 합쳐 Data 레이어에 그린다. */
+const plain = (id: string, extra: Partial<MapRegion> = {}): MapRegion => ({
   id,
   name: id,
   paths: [ring(37.5)],
   ...extra,
 });
+/** 요약 이름표가 있는 동. 동마다 도형을 만든다. */
+const region = (id: string, extra: Partial<MapRegion> = {}): MapRegion =>
+  plain(id, { summary: { price: '1만원' }, ...extra });
 
 afterEach(() => vi.restoreAllMocks());
 
-describe('경계 레이어', () => {
+describe('요약 이름표가 있는 경계 레이어', () => {
   it('색이 없는 경계는 추천·선택 여부로 기본 스타일을 정하고 클릭할 수 있다', () => {
     const { layer, polygons } = setup();
     layer.sync(
@@ -200,10 +232,10 @@ describe('경계 레이어', () => {
       center: { latitude: 37.55, longitude: 127.05 },
       summary: { price: '50만원' },
     });
-    layer.sync([priced, region('b')], null);
+    layer.sync([priced, plain('b')], null);
     expect(overlays).toHaveLength(1);
     expect(overlays[0].marker).toMatchObject({ id: 'a', latitude: 37.55, longitude: 127.05 });
-    layer.sync([{ ...priced }, region('b')], null);
+    layer.sync([{ ...priced }, plain('b')], null);
     expect(overlays).toHaveLength(1);
     const label = overlays[0].content;
     label.dispatchEvent(new Event('mouseenter'));
@@ -217,12 +249,14 @@ describe('경계 레이어', () => {
     expect(label.dataset.hovered).toBe('false');
     label.click();
     expect(onSelect).toHaveBeenCalledWith('a');
-    layer.sync([{ ...priced, summary: { price: '60만원' } }, region('b')], null);
+    layer.sync([{ ...priced, summary: { price: '60만원' } }, plain('b')], null);
     expect(overlays[0].setMap).toHaveBeenCalledWith(null);
     expect(overlays).toHaveLength(2);
-    layer.sync([{ ...priced, summary: undefined }, region('b')], null);
+    layer.sync([{ ...priced, summary: undefined }, plain('b')], null);
     expect(overlays[1].setMap).toHaveBeenCalledWith(null);
     expect(overlays).toHaveLength(2);
+    // 이름표가 빠진 동은 동마다 그린 도형을 지우고 합친 도형으로 옮긴다.
+    expect(polygons[0].setMap).toHaveBeenCalledWith(null);
   });
 
   it('GL 지도가 준비되기 전에는 경계를 만들지 않고 준비되면 만든다', () => {
@@ -302,5 +336,167 @@ describe('경계 레이어', () => {
     expect(polygons.every((polygon) => polygon.setMap.mock.calls.some(([value]) => value === null))).toBe(true);
     expect(engine.removeListener).toHaveBeenCalledTimes(polygons.length * 3);
     expect(overlays.every((overlay) => overlay.setMap.mock.calls.some(([value]) => value === null))).toBe(true);
+  });
+});
+
+describe('합친 경계 레이어', () => {
+  const near = { fillColor: '#111111', strokeColor: '#222222' };
+  const far = { fillColor: '#333333', strokeColor: '#444444' };
+  const three = () => [
+    plain('a', { appearance: near }),
+    plain('b', { appearance: near, paths: [ring(37.6)] }),
+    plain('c', { appearance: far, paths: [ring(37.7)] }),
+  ];
+  const ids = (layer: { features: Map<string, FakeFeature> }) => [...layer.features.keys()];
+  const focus = (layer: { features: Map<string, FakeFeature> }, id: string) => layer.features.get(`focus:${id}`);
+
+  it('요약이 없는 동은 동마다 도형을 만들지 않고 같은 스타일끼리 MultiPolygon 하나로 그린다', () => {
+    const { layer, polygons, dataLayers } = setup();
+    layer.sync(three(), null);
+    expect(polygons).toHaveLength(0);
+    expect(dataLayers).toHaveLength(1);
+    const [data] = dataLayers;
+    expect(data.addGeoJson).toHaveBeenCalledOnce();
+    const features = [...data.features.values()];
+    expect(features).toHaveLength(2);
+    expect(features[0].geometry.type).toBe('MultiPolygon');
+    expect(features[0].geometry.coordinates).toHaveLength(2);
+    expect(features[0].properties.style).toEqual({
+      fillColor: '#111111',
+      fillOpacity: 0.28,
+      strokeColor: '#222222',
+      strokeWeight: 1.25,
+      zIndex: 1,
+    });
+    // Data 레이어 스타일 함수는 feature에 담은 스타일을 그대로 쓰고 클릭을 받는다.
+    const styleFn = data.setStyle.mock.lastCall?.[0] as (feature: { getProperty: (key: string) => unknown }) => object;
+    expect(styleFn({ getProperty: () => ({ fillColor: '#111111' }) })).toEqual({
+      fillColor: '#111111',
+      clickable: true,
+    });
+  });
+
+  it('고른 동은 그 동 하나만 위에 따로 그리고 큰 묶음은 다시 넣지 않는다', () => {
+    const { layer, dataLayers } = setup();
+    const regions = three();
+    layer.sync(regions, null);
+    const [data] = dataLayers;
+    layer.sync(regions, 'a');
+    expect(data.addGeoJson).toHaveBeenCalledTimes(2);
+    expect(data.removeFeature).not.toHaveBeenCalled();
+    const selected = focus(data, 'a')!;
+    expect(selected.properties.style).toMatchObject({ strokeWeight: 2, zIndex: 2, fillColor: '#111111' });
+    // 아래 묶음(0.28) 위에 겹쳐 합친 투명도가 고른 동 투명도(0.38)가 된다.
+    const overlay = selected.properties.style.fillOpacity as number;
+    expect(0.28 + overlay * (1 - 0.28)).toBeCloseTo(0.38);
+    layer.sync(regions, 'a');
+    expect(data.addGeoJson).toHaveBeenCalledTimes(2);
+    layer.sync(regions, null);
+    expect(focus(data, 'a')).toBeUndefined();
+    expect(ids(data)).toHaveLength(2);
+  });
+
+  it('누른 좌표로 동을 찾아 고르고, 동 밖을 누르면 고르지 않는다', () => {
+    const { layer, dataLayers, fire, at, onSelect } = setup();
+    layer.sync(three(), null);
+    fire(dataLayers[0], 'click', at(37.6002, 127.0002));
+    expect(onSelect).toHaveBeenCalledWith('b', { latitude: 37.6002, longitude: 127.0002 });
+    onSelect.mockClear();
+    fire(dataLayers[0], 'click', at(38, 128));
+    fire(dataLayers[0], 'click', {});
+    expect(onSelect).not.toHaveBeenCalled();
+  });
+
+  it('마우스를 올린 동만 위에 진하게 그리고, 끄는 중이거나 지도를 벗어나면 지운다', () => {
+    const { layer, map, dataLayers, fire, at, flush } = setup();
+    layer.sync(three(), 'a');
+    const [data] = dataLayers;
+    fire(map, 'mousemove', at(37.7002, 127.0002));
+    fire(map, 'mousemove', at(37.7002, 127.0003));
+    flush();
+    const hovered = focus(data, 'c')!;
+    expect(0.28 + (hovered.properties.style.fillOpacity as number) * (1 - 0.28)).toBeCloseTo(0.38);
+    expect(focus(data, 'a')).toBeDefined();
+    // 고른 동 위에 올리면 고른 투명도보다 한 단계 더 진하다.
+    fire(map, 'mousemove', at(37.5002, 127.0002));
+    flush();
+    expect(focus(data, 'c')).toBeUndefined();
+    expect(0.28 + (focus(data, 'a')!.properties.style.fillOpacity as number) * (1 - 0.28)).toBeCloseTo(0.48);
+    fire(map, 'mouseout');
+    flush();
+    expect(0.28 + (focus(data, 'a')!.properties.style.fillOpacity as number) * (1 - 0.28)).toBeCloseTo(0.38);
+    fire(map, 'dragstart');
+    fire(map, 'mousemove', at(37.7002, 127.0002));
+    flush();
+    expect(focus(data, 'c')).toBeUndefined();
+    fire(map, 'dragend');
+    fire(map, 'mousemove', at(37.7002, 127.0002));
+    flush();
+    expect(focus(data, 'c')).toBeDefined();
+  });
+
+  it('색이 바뀌면 바뀐 묶음만 다시 넣고, 고른 동도 그 위로 다시 넣는다', () => {
+    const { layer, dataLayers } = setup();
+    const regions = three();
+    layer.sync(regions, 'c');
+    const [data] = dataLayers;
+    const nearKey = ids(data)[0];
+    // 월세 필터로 b가 far 색으로 바뀌었다. near 묶음은 a만 남아 좌표가 바뀐다.
+    layer.sync([regions[0], { ...regions[1], appearance: far }, regions[2]], 'c');
+    const [groupsAdded, focusAdded] = data.addGeoJson.mock.calls.slice(-2).map(([json]) => json.features);
+    expect(groupsAdded.map((feature) => feature.id)).toEqual([nearKey, expect.any(String)]);
+    expect(focusAdded.map((feature) => feature.id)).toEqual(['focus:c']);
+    expect(focus(data, 'c')).toBeDefined();
+    expect(ids(data)).toHaveLength(3);
+    // 묶음이 그대로면 아무것도 다시 넣지 않는다.
+    const calls = data.addGeoJson.mock.calls.length;
+    layer.sync([regions[0], { ...regions[1], appearance: far }, regions[2]], 'c');
+    expect(data.addGeoJson).toHaveBeenCalledTimes(calls);
+    // 결과가 사라지면 묶음도 지운다.
+    layer.sync([], null);
+    expect(ids(data)).toHaveLength(0);
+  });
+
+  it('확대 단계의 상세 좌표가 바뀌면 다시 넣는다', () => {
+    const { layer, dataLayers, setLevel } = setup();
+    const detailed = plain('a', {
+      polygons: [[ring(37.5)]],
+      simplifiedPolygons: { overview: [[ring(37.8)]], medium: [[ring(37.9)]] },
+    });
+    layer.sync([detailed], null);
+    setLevel(9);
+    layer.sync([detailed], null);
+    const [feature] = dataLayers[0].features.values();
+    expect(feature.geometry.coordinates[0][0][0]).toEqual([127, 37.8]);
+    expect(dataLayers[0].addGeoJson).toHaveBeenCalledTimes(2);
+  });
+
+  it('GL 지도가 준비되기 전에는 Data 레이어를 만들지 않고, 결과가 없으면 만들지 않는다', () => {
+    let ready = false;
+    const { layer, dataLayers, flush } = setup({ ready: () => ready });
+    layer.sync([], null);
+    layer.sync(three(), null);
+    flush();
+    expect(dataLayers).toHaveLength(0);
+    ready = true;
+    flush();
+    expect(dataLayers).toHaveLength(1);
+    expect(dataLayers[0].setMap).toHaveBeenCalledWith({});
+  });
+
+  it('종료하면 Data 레이어와 이벤트를 정리하고, SDK가 사라졌으면 SDK를 부르지 않는다', () => {
+    const first = setup();
+    first.layer.sync(three(), null);
+    first.fire(first.map, 'mousemove', first.at(37.5002, 127.0002));
+    first.layer.dispose();
+    expect(first.dataLayers[0].setMap).toHaveBeenLastCalledWith(null);
+    expect(first.engine.removeListener).toHaveBeenCalledTimes(5);
+    expect(first.cancel).toHaveBeenCalled();
+    vi.restoreAllMocks();
+    const second = setup();
+    second.layer.sync(three(), null);
+    second.layer.dispose(true);
+    expect(second.dataLayers[0].setMap).not.toHaveBeenCalledWith(null);
+    expect(second.engine.removeListener).not.toHaveBeenCalled();
   });
 });

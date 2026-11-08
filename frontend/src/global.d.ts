@@ -43,7 +43,17 @@ type NaverOverlay = {
   draw?: () => void;
   onRemove?: () => void;
 };
+type NaverDataFeature = { getProperty: (key: string) => unknown };
+/** GeoJSON 도형을 그리는 Data 레이어. 진짜 MultiPolygon을 받아 GL 모드에서도 면과 구멍을 가른다. */
+type NaverData = {
+  setMap: (map: NaverMap | null) => void;
+  setStyle: (style: (feature: NaverDataFeature) => object) => void;
+  addGeoJson: (geojson: object) => NaverDataFeature[];
+  getFeatureById: (id: string) => NaverDataFeature | undefined;
+  removeFeature: (feature: NaverDataFeature) => void;
+};
 type NaverMapsNamespace = {
+  Data: new () => NaverData;
   LatLng: new (latitude: number, longitude: number) => NaverLatLng;
   LatLngBounds: new (sw: NaverLatLng, ne: NaverLatLng) => NaverLatLngBounds;
   Point?: new (x: number, y: number) => NaverPoint;

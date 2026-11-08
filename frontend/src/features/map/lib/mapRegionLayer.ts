@@ -1,4 +1,6 @@
 import type { MapRegion } from '../model/MapCanvas';
+import { createRegionDataLayer, eventPoint, HOVER_FILL_OPACITY } from './mapRegionDataLayer';
+import { regionAtLevel } from './mapRegionMerge';
 import { createRegionSummaryElement, regionLabelPosition } from './mapRegionSummary';
 import type { LiveMap, LiveOverlay, naverEngine } from './naverMapEngine';
 
@@ -20,11 +22,6 @@ const distanceSquared = (
   const dLongitude = (to.longitude - from.longitude) * Math.cos((from.latitude * Math.PI) / 180);
   return dLatitude * dLatitude + dLongitude * dLongitude;
 };
-export const regionAtLevel = (region: MapRegion, level: number): MapRegion => {
-  const detail =
-    level >= 8 ? region.simplifiedPolygons?.overview : level >= 5 ? region.simplifiedPolygons?.medium : undefined;
-  return detail ? { ...region, polygons: detail } : region;
-};
 const regionStyle = (region: MapRegion, selected: boolean) => ({
   strokeColor: region.appearance?.strokeColor ?? (selected ? '#787b80' : '#a4a7ab'),
   strokeWeight: region.appearance ? (selected ? 2 : 1.25) : selected ? 2 : 1,
@@ -44,16 +41,10 @@ type Entry = {
   hovered: boolean;
 };
 
-/** 도형 클릭 이벤트에서 찍은 좌표를 읽는다. SDK가 좌표를 주지 않으면 undefined다. */
-const clickedPoint = (event?: { coord?: { lat?: () => number; lng?: () => number } }) => {
-  const latitude = event?.coord?.lat?.();
-  const longitude = event?.coord?.lng?.();
-  return latitude !== undefined && longitude !== undefined && Number.isFinite(latitude) && Number.isFinite(longitude)
-    ? { latitude, longitude }
-    : undefined;
-};
-
-/** 지도 하나가 소유한다. 좌표가 같은 동은 유지하고 스타일·라벨 변경만 반영한다. */
+/**
+ * 지도 하나가 소유한다. 요약 이름표가 없는 동은 색 구간별로 합쳐 Data 레이어에 그린다.
+ * 요약 이름표가 있는 동은 이름표 hover와 경계를 함께 다뤄야 해서 동마다 도형을 만든다. 좌표가 같은 동은 유지하고 스타일·라벨 변경만 반영한다.
+ */
 export const createMapRegionLayer = (
   map: LiveMap,
   sdk: NaverMapsNamespace,
@@ -63,7 +54,12 @@ export const createMapRegionLayer = (
 ) => {
   const entries = new Map<string, Entry>();
   // 처음 그릴 때 GL 등록이 한 프레임에 몰리지 않도록 drawStage 순서로 나눠 만든다.
-  let latest: { regions: MapRegion[]; selectedId: string | null } = { regions: [], selectedId: null };
+  let latest: { regions: MapRegion[]; merged: MapRegion[]; selectedId: string | null } = {
+    regions: [],
+    merged: [],
+    selectedId: null,
+  };
+  const dataLayer = createRegionDataLayer(map, sdk, regionStyle, onSelect, getLevel, engine.removeListener);
   let allowedStage = Infinity;
   let staging = false;
   const createdAt = performance.now();
@@ -82,7 +78,9 @@ export const createMapRegionLayer = (
   const hover = (entry: Entry, hovered: boolean) => {
     if (entry.hovered === hovered) return;
     entry.hovered = hovered;
-    entry.polygons.forEach((polygon) => polygon.setOptions({ fillOpacity: entry.opacity + (hovered ? 0.1 : 0) }));
+    entry.polygons.forEach((polygon) =>
+      polygon.setOptions({ fillOpacity: entry.opacity + (hovered ? HOVER_FILL_OPACITY : 0) }),
+    );
     if (entry.summary) entry.summary.dataset.hovered = String(hovered);
   };
   const create = (region: MapRegion, selected: boolean): Entry => {
@@ -111,7 +109,7 @@ export const createMapRegionLayer = (
     };
     entry.listeners = polygons.flatMap((polygon) => [
       sdk.Event.addListener(polygon, 'click', (event?: { coord?: { lat?: () => number; lng?: () => number } }) =>
-        onSelect(region.id, clickedPoint(event)),
+        onSelect(region.id, eventPoint(event)),
       ),
       sdk.Event.addListener(polygon, 'mouseover', () => hover(entry, true)),
       sdk.Event.addListener(polygon, 'mouseout', () => hover(entry, false)),
@@ -119,8 +117,11 @@ export const createMapRegionLayer = (
     return entry;
   };
   const apply = () => {
-    const { regions, selectedId } = latest;
+    const { regions, merged, selectedId } = latest;
     const level = getLevel();
+    // 합친 도형도 GL 준비 전에는 넣지 않는다. 준비되면 아래 예약으로 다시 들어온다.
+    const mergedReady = renderReady();
+    if (mergedReady) dataLayer.sync(merged, selectedId);
     // 나눠 그리는 중이면 이번 묶음에 넣을 동을 고른다. 같은 단계 안에서는 지금 화면 중심에 가까운 동부터 넣는다.
     let toCreate: Set<string> | null = null;
     if (staging) {
@@ -170,7 +171,7 @@ export const createMapRegionLayer = (
         entry.styleKey = styleKey;
         entry.opacity = style.fillOpacity;
         entry.polygons.forEach((polygon) =>
-          polygon.setOptions({ ...style, fillOpacity: style.fillOpacity + (entry.hovered ? 0.1 : 0) }),
+          polygon.setOptions({ ...style, fillOpacity: style.fillOpacity + (entry.hovered ? HOVER_FILL_OPACITY : 0) }),
         );
       }
       // 요약이 없는 통근 경계에는 불필요한 DOM을 만들지 않는다.
@@ -200,13 +201,13 @@ export const createMapRegionLayer = (
       }
     }
     const waiting = regions.filter((region) => !entries.has(region.id)).map((region) => region.drawStage ?? 0);
-    if (waiting.length === 0) {
+    if (waiting.length === 0 && mergedReady) {
       allowedStage = Infinity;
       staging = false;
       return;
     }
     // 다음 묶음은 SDK가 이번 묶음을 GL에 등록한 프레임 다음에 만든다. 같은 단계가 남아 있으면 그 단계를 이어 간다.
-    const nextStage = Math.min(...waiting);
+    const nextStage = waiting.length > 0 ? Math.min(...waiting) : allowedStage;
     pendingFrame = requestAnimationFrame(() => {
       pendingFrame = requestAnimationFrame(() => {
         pendingFrame = null;
@@ -218,19 +219,21 @@ export const createMapRegionLayer = (
   return {
     sync: (regions: MapRegion[], selectedId: string | null) => {
       cancelPending();
+      const labeled = regions.filter((region) => region.summary);
       // 이미 그려진 동이 하나도 없는 새 결과만 단계를 나눈다. 선택·확대 같은 갱신은 바로 반영한다.
-      if (!regions.some((region) => entries.has(region.id))) {
-        const stages = regions.map((region) => region.drawStage ?? 0);
+      if (!labeled.some((region) => entries.has(region.id))) {
+        const stages = labeled.map((region) => region.drawStage ?? 0);
         allowedStage = stages.length ? Math.min(...stages) : Infinity;
         staging = stages.length > 0;
       }
-      latest = { regions, selectedId };
+      latest = { regions: labeled, merged: regions.filter((region) => !region.summary), selectedId };
       apply();
     },
     dispose: (sdkUnavailable = false) => {
       cancelPending();
       if (!sdkUnavailable) entries.forEach(remove);
       entries.clear();
+      dataLayer.dispose(sdkUnavailable);
     },
   };
 };
