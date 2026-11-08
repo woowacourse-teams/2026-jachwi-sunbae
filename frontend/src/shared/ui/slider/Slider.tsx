@@ -1,5 +1,5 @@
 import { css } from '@emotion/css';
-import { type ReactNode, useId } from 'react';
+import { type ReactNode, useId, useRef } from 'react';
 
 type SliderMarker = number | { value: number; label?: ReactNode };
 
@@ -14,6 +14,8 @@ type SliderProps = {
   step?: number;
   values: number[];
   onValuesChange: (values: number[]) => void;
+  /** 값을 정했을 때 부른다. 끄는 중에는 손을 뗄 때 한 번, 키보드는 값이 바뀔 때마다 부른다. */
+  onValuesCommit?: (values: number[]) => void;
   /** 위 왼쪽 제목 */
   label?: ReactNode;
   /** 위 오른쪽 현재 값 표시 */
@@ -34,6 +36,7 @@ const Slider = ({
   step = 1,
   values,
   onValuesChange,
+  onValuesCommit,
   label,
   indicator,
   description,
@@ -45,6 +48,22 @@ const Slider = ({
 }: SliderProps) => {
   const id = useId();
   const value = values[0] ?? min;
+  const dragging = useRef(false);
+  const dragValue = useRef(value);
+  // 손잡이를 끌다 막대 밖에서 손을 떼도 알 수 있게 창에서 받는다.
+  const startDrag = () => {
+    if (!onValuesCommit || dragging.current) return;
+    dragging.current = true;
+    dragValue.current = value;
+    const end = () => {
+      dragging.current = false;
+      window.removeEventListener('pointerup', end);
+      window.removeEventListener('pointercancel', end);
+      onValuesCommit([dragValue.current]);
+    };
+    window.addEventListener('pointerup', end);
+    window.addEventListener('pointercancel', end);
+  };
   return (
     <div className={className ? `${styles.root} ${className}` : styles.root}>
       {(label || indicator) && (
@@ -64,7 +83,13 @@ const Slider = ({
         step={step}
         value={value}
         disabled={disabled}
-        onChange={(event) => onValuesChange([Number(event.target.value)])}
+        onPointerDown={startDrag}
+        onChange={(event) => {
+          const next = [Number(event.target.value)];
+          dragValue.current = next[0];
+          onValuesChange(next);
+          if (!dragging.current) onValuesCommit?.(next);
+        }}
       />
       {markers.length > 0 && (
         <div className={styles.markers} aria-hidden="true">
