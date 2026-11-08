@@ -119,7 +119,7 @@ class JdbcPropertyRepositoryTest {
         // given
         long propertyId = insertProperty(OTHER_MEMBER_ID, "남의 집");
 
-        // when // then
+        // when & then
         assertThat(repository.findByIdAndMemberId(propertyId, MEMBER_ID)).isEmpty();
         assertThat(repository.findByIdAndMemberIdForUpdate(propertyId, MEMBER_ID)).isEmpty();
         assertThat(repository.existsByIdAndMemberId(propertyId, MEMBER_ID)).isFalse();
@@ -173,6 +173,18 @@ class JdbcPropertyRepositoryTest {
                 .containsExactly(
                         tuple(empty, 0, 0, 0, 0, 0),
                         tuple(checked, 4, 3, 2, 1, 1));
+    }
+
+    @Test
+    @DisplayName("삭제한 매물은 목록에도 진행률 집계에도 나오지 않는다")
+    void excludesDeletedProperties() {
+        // given
+        long deleted = insertProperty(MEMBER_ID, "삭제한 집");
+        insertItem(insertChecklist(deleted, "ON_SITE"), 101, "GOOD");
+        jdbcTemplate.update("UPDATE properties SET deleted_at = NOW(6) WHERE id = ?", deleted);
+
+        // when & then
+        assertThat(repository.findListByMemberId(MEMBER_ID)).isEmpty();
     }
 
     @Test

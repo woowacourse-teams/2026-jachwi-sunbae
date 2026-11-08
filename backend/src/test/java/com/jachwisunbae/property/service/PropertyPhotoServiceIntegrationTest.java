@@ -96,7 +96,7 @@ class PropertyPhotoServiceIntegrationTest {
             insertPhoto(PROPERTY_ID, MEMBER_ID, "photos/" + count + ".png");
         }
 
-        // when // then
+        // when & then
         assertError(() -> service.upload(MEMBER_ID, PROPERTY_ID, png()), ErrorCode.PHOTO_LIMIT_EXCEEDED);
         assertThat(repository.countByPropertyId(PROPERTY_ID)).isEqualTo(30);
         verifyNoInteractions(photoStorage);
@@ -154,7 +154,7 @@ class PropertyPhotoServiceIntegrationTest {
         // given
         long photoId = insertPhoto(OTHER_PROPERTY_ID, OTHER_MEMBER_ID, "photos/other.png");
 
-        // when // then
+        // when & then
         assertError(() -> service.upload(MEMBER_ID, OTHER_PROPERTY_ID, png()), ErrorCode.PROPERTY_NOT_FOUND);
         assertError(() -> service.find(MEMBER_ID, OTHER_PROPERTY_ID), ErrorCode.PROPERTY_NOT_FOUND);
         assertError(() -> service.delete(MEMBER_ID, OTHER_PROPERTY_ID, photoId), ErrorCode.PROPERTY_NOT_FOUND);
@@ -168,7 +168,7 @@ class PropertyPhotoServiceIntegrationTest {
         // given
         long photoId = insertPhoto(OTHER_PROPERTY_ID, OTHER_MEMBER_ID, "photos/other.png");
 
-        // when // then
+        // when & then
         assertError(() -> service.designateRepresentative(MEMBER_ID, PROPERTY_ID, photoId), ErrorCode.PHOTO_NOT_FOUND);
         assertError(() -> service.delete(MEMBER_ID, PROPERTY_ID, photoId), ErrorCode.PHOTO_NOT_FOUND);
         verify(photoStorage, never()).delete(anyString());

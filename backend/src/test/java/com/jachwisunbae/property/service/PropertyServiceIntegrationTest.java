@@ -96,7 +96,7 @@ class PropertyServiceIntegrationTest {
     @Test
     @DisplayName("없는 회원은 매물을 만들 수 없다")
     void rejectsMissingMember() {
-        // when // then
+        // when & then
         assertError(() -> service.create(MISSING_MEMBER_ID, createRequest("판교 원룸")), ErrorCode.MEMBER_NOT_FOUND);
     }
 
@@ -161,7 +161,7 @@ class PropertyServiceIntegrationTest {
         Property own = service.create(MEMBER_ID, createRequest("판교 원룸"));
         service.create(OTHER_MEMBER_ID, createRequest("남의 집"));
 
-        // when // then
+        // when & then
         assertThat(service.findList(MEMBER_ID).items()).extracting(PropertyListItemResponse::id)
                 .containsExactly(own.getId());
     }
@@ -172,7 +172,7 @@ class PropertyServiceIntegrationTest {
         // given
         Property property = service.create(OTHER_MEMBER_ID, createRequest("남의 집"));
 
-        // when // then
+        // when & then
         assertError(() -> service.findDetail(MEMBER_ID, property.getId()), ErrorCode.PROPERTY_NOT_FOUND);
         assertError(() -> service.update(MEMBER_ID, property.getId(), new UpdatePropertyRequest("바꾼 이름", 1L, 1L,
                 null, null, null, null, null, null, null, List.of(), List.of())), ErrorCode.PROPERTY_NOT_FOUND);

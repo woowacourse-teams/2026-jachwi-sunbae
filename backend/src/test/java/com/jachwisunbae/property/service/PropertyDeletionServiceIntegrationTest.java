@@ -82,7 +82,7 @@ class PropertyDeletionServiceIntegrationTest {
         // given
         insertPhoto("photos/first.png");
 
-        // when // then
+        // when & then
         assertThatThrownBy(() -> service.delete(OTHER_MEMBER_ID, PROPERTY_ID))
                 .isInstanceOfSatisfying(JachwiException.class,
                         exception -> assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.PROPERTY_NOT_FOUND));
@@ -96,7 +96,7 @@ class PropertyDeletionServiceIntegrationTest {
         // given
         service.delete(MEMBER_ID, PROPERTY_ID);
 
-        // when // then
+        // when & then
         assertThatThrownBy(() -> service.delete(MEMBER_ID, PROPERTY_ID))
                 .isInstanceOfSatisfying(JachwiException.class,
                         exception -> assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.PROPERTY_NOT_FOUND));

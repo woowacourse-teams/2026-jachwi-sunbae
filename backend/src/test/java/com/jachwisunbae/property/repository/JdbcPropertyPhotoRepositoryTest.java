@@ -64,7 +64,7 @@ class JdbcPropertyPhotoRepositoryTest {
         PropertyPhoto earlier = save(PROPERTY_ID, "photos/earlier.png", NOW);
         save(OTHER_PROPERTY_ID, "photos/other.png", NOW);
 
-        // when // then
+        // when & then
         assertThat(repository.findByPropertyId(PROPERTY_ID)).extracting(PropertyPhoto::getId)
                 .containsExactly(earlier.getId(), later.getId());
         assertThat(repository.countByPropertyId(PROPERTY_ID)).isEqualTo(2);
@@ -76,7 +76,7 @@ class JdbcPropertyPhotoRepositoryTest {
         // given
         PropertyPhoto photo = save(OTHER_PROPERTY_ID, "photos/other.png", NOW);
 
-        // when // then
+        // when & then
         assertThat(repository.findByIdAndPropertyId(photo.getId(), PROPERTY_ID)).isEmpty();
     }
 
