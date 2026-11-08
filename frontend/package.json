@@ -48,6 +48,7 @@
     "@testing-library/jest-dom": "^7.0.1",
     "@testing-library/react": "^16.3.2",
     "@testing-library/user-event": "^14.6.3",
+    "@types/geojson": "^7946.0.16",
     "@types/node": "^22.20.1",
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.4",
@@ -74,6 +75,8 @@
   "dependencies": {
     "@emotion/css": "^11.13.5",
     "@tanstack/react-query": "^5.101.4",
+    "@turf/boolean-point-in-polygon": "^7.4.0",
+    "@turf/rewind": "^7.4.0",
     "posthog-js": "^1.421.0",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
