@@ -6,6 +6,25 @@
 
 아직 릴리스하지 않은 변경을 기록한다.
 
+## [4.1.0]
+
+기존 API와 화면 흐름을 그대로 쓰면서 기능을 더하므로 `MINOR`를 올린다. 거리 메모 카테고리와 OAuth 계정 연결은 새 필드와 새 API로만 추가되고, 기존 클라이언트 요청은 카테고리 없이도 동작한다. Flyway 마이그레이션도 테이블과 컬럼 추가만 한다.
+
+### Added
+
+- 웹 브라우저에서 카카오, Apple 계정을 연결해 익명으로 쓰던 매물, 체크리스트, 거리 메모를 계정에 보관하고 다른 기기에서도 이어 쓴다. 이미 쓰던 계정이면 기록을 합치고, 연결한 뒤에는 다른 계정으로 바꾸거나 이 기기에서만 로그아웃할 수 있다. 앱에서는 아직 계정 연결을 보여 주지 않는다.
+- OAuth 시작, 콜백과 현재 기기 로그아웃 API를 추가하고, Flyway에서 계정 연결, 인증 시도, 회원 통합 구조를 만든다.
+- 거리 메모를 쓸 때 장소, 거리, 일반 중 카테고리를 고른다. 카테고리를 고르지 않은 메모와 기존 메모는 일반으로 보인다.
+- 네이버 검색 등록을 위해 소유 확인 태그와 `robots.txt`, `sitemap.xml`을 배포한다. 로그인 없이 볼 수 있는 화면만 사이트맵에 넣고, dev 사이트는 검색 수집을 막는다.
+
+### Changed
+
+- 동네 찾기와 본 방 기록 지도가 서비스 테마색 지도 대신 네이버 기본 지도로 보인다. 도로, 지명, 아이콘이 이전보다 진하게 보인다.
+
+### Performance
+
+- 지도 사용자 지정 스타일을 빼서 GL 모드를 끄고, 휴대폰에서 지도 끌기, 확대 축소, 매물 마커가 많은 화면의 끊김을 줄인다.
+
 ## [4.0.0] - 2026-11-06
 
 ### Breaking Changes
@@ -241,7 +260,8 @@
 - WebView 지도 마커 위치 갱신을 `transform` 기반으로 최적화한다.
 - 매물 사진 Object URL을 재사용해 지도 확대·이동 중 불필요한 재생성을 줄인다.
 
-[Unreleased]: https://github.com/woowacourse-teams/2026-jachwi-sunbae/compare/v4.0.0...HEAD
+[Unreleased]: https://github.com/woowacourse-teams/2026-jachwi-sunbae/compare/v4.1.0...HEAD
+[4.1.0]: https://github.com/woowacourse-teams/2026-jachwi-sunbae/releases/tag/v4.1.0
 [4.0.0]: https://github.com/woowacourse-teams/2026-jachwi-sunbae/releases/tag/v4.0.0
 [3.1.0]: https://github.com/woowacourse-teams/2026-jachwi-sunbae/releases/tag/v3.1.0
 [3.0.0]: https://github.com/woowacourse-teams/2026-jachwi-sunbae/releases/tag/v3.0.0
