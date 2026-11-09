@@ -1,7 +1,6 @@
 import { useMemo, useState } from 'react';
 
 import { reverseGeocode } from '@/features/map/api/mapApi';
-import { SERVICE_MAP_STYLE_ID } from '@/features/map/lib/mapStyle';
 import type { MapAddress, MapBounds, MapMarker } from '@/features/map/model/Map';
 import type { MapCanvasProps, MapCoordinateMenu, MapTapAction } from '@/features/map/model/MapCanvas';
 import useStreetMemoLayer from '@/features/street-memo/hooks/useStreetMemoLayer';
@@ -280,7 +279,6 @@ const useRecordsMapLayers = (
     // 동네 뱃지, 현재 위치, 매물 넘기기로 지도를 옮길 때 부드럽게 이동한다.
     animateView: true,
     interactive: process.env.NODE_ENV !== 'production',
-    customStyleId: SERVICE_MAP_STYLE_ID,
     center: records.center,
     level: records.level,
     markers: allMarkers,
