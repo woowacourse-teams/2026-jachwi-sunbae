@@ -38,6 +38,24 @@
 
 순위는 Trends에서 이벤트를 고르고 Breakdown을 `memo`(또는 `memo_id`)로 둔 뒤 표로 보면 많이 나온 순으로 정렬된다. 노출 대비 열람 비율은 두 이벤트를 같은 Breakdown으로 놓고 Formula `B / A`로 본다.
 
+## 푸시 퍼널
+
+앱은 푸시로 화면을 열 때 `notification_id`, `notification_type` 쿼리를 붙인다([알림 명세](../../docs/product/specs/notifications.md) `POL-NOTIFICATION-017`). 웹은 `main.tsx`에서 이 쿼리가 있을 때만 `shared/lib/analytics/pushOpen.ts`를 따로 받아, 라우터가 주소를 읽기 전에 쿼리를 지우고 `push_opened`를 한 번 보낸다. 지운 주소로 바꿔 두므로 페이지뷰 경로에 남지 않고, 새로고침이나 뒤로 가기로 다시 기록되지 않는다. 이 모듈은 수집 초기화보다 먼저 실행되므로 초기화될 때까지 0.5초 간격으로 최대 20번 다시 시도한다.
+
+| 이벤트                | 발생 시점                                                     | 추가 속성                                                |
+| --------------------- | ------------------------------------------------------------- | -------------------------------------------------------- |
+| `push_opened`         | 푸시로 연 첫 화면. 열 때마다 한 번                            | `notification_id`, `notification_type`(형식이 맞을 때만) |
+| `weather_card_viewed` | 마이의 생활 날씨 카드가 오늘 예보를 그릴 때. 마운트마다 한 번 | 없음                                                     |
+
+목표 행동은 알림 종류(`notification_type`)마다 다르다. 퍼널은 같은 사용자 기준으로 `push_opened`(종류로 거름) → 목표 행동을 본다. 발송 수는 DB 발송 기록에서 따로 센다.
+
+| `notification_type` | 연 화면              | 목표 행동                                                            |
+| ------------------- | -------------------- | -------------------------------------------------------------------- |
+| `weather`           | 마이(`/me`)          | `weather_card_viewed`                                                |
+| `delivery_coupon`   | 저렴한 한 끼 배달 탭 | `cheap_meal_detail_viewed`에서 `category = delivery`(배달 할인 상세) |
+
+배달 할인에는 외부 링크가 없어 `cheap_meal_outbound_clicked`는 목표 행동으로 쓰지 않는다.
+
 ## 실패와 식별 처리
 
 SDK 로딩 중 액션은 순서대로 큐에 넣는다. 일시적인 import/초기화 실패 후에는 큐를 보존하고 다음 수집 요청에서 재시도한다. 큐는 메모리 증가를 막기 위해 100개로 제한한다. SDK 액션 하나가 예외를 던져도 다른 액션과 제품 동작을 중단시키지 않는다. SDK 호출 자체가 실패한 이벤트는 무한 재전송하지 않는다.
@@ -48,7 +66,7 @@ SDK 로딩 중 액션은 순서대로 큐에 넣는다. 일시적인 import/초�
 
 수동 기능 이벤트에 공통 속성을 직접 보강하고 `before_send`에서도 자동 수집·오류 이벤트를 보강한다. 속성 등록 실패나 reset으로 환경/버전이 빠지는 경우를 줄이고 호출부가 공통 값을 임의로 덮어쓰지 못하게 한다.
 
-Access Token은 메모리에만 있어 새로고침 직후에는 늘 세션이 없다. 그래서 세션이 없다는 이유만으로 `reset()`하지 않고, 서버가 Refresh 쿠키로도 회원 복원을 거절해 인증이 끝났을 때만 reset한다. reset 뒤 환경·버전·플랫폼을 다시 등록한다. 같은 회원의 반복 identify는 생략한다. 자동 로그인은 페이지를 열고 처음 회원을 정할 때만 `login_succeeded`(`login_method: anonymous`, `new_member`)로, 실패는 `login_failed`로 남기고 토큰 갱신은 기록하지 않는다. 마이의 초기화는 성공하면 이전 회원 식별로 `account_reset_succeeded`를 남긴 뒤 reset하고, 이어지는 새 회원 로그인은 `login_succeeded`(`new_member: true`)로 남고, 새 회원은 회원 조회가 끝나면 다시 식별한다. 탈퇴 요청의 실패는 `account_reset_failed`(`error_kind`, `error_code`)로 남기며 식별은 그대로 둔다.
+Access Token은 메모리에만 있어 새로고침 직후에는 늘 세션이 없다. 그래서 세션이 없다는 이유만으로 `reset()`하지 않고, 서버가 Refresh 쿠키로도 회원 복원을 거절해 인증이 끝났을 때만 reset한다. reset 뒤 환경·버전·플랫폼을 다시 등록한다. 같은 회원의 반복 identify는 생략한다. 자동 로그인은 페이지를 열고 처음 회원을 정할 때만 `login_succeeded`(`login_method: anonymous`, `new_member`)로, 실패는 `login_failed`로 남기고 토큰 갱신은 기록하지 않는다. 마이의 초기화는 성공하면 이전 회원 식별로 `account_reset_succeeded`를 남긴 뒤 reset하고, 이어지는 새 회원 로그인은 `login_succeeded`(`new_member: true`)로 남고, 새 회원은 회원 조회가 끝나면 다시 식별한다. 탈퇴 요청의 실패는 `account_reset_failed`(`error_kind`, `error_code`)로 남기며 식별은 그대로 둔다. 로그아웃도 초기화와 같은 순서로 `logout_succeeded` 뒤 reset하고, 실패는 `logout_failed`(`error_kind`, `error_code`)로 남긴다. OAuth 계정 연결은 `oauth_link_started`, `oauth_link_completed`(`outcome`), `oauth_link_cancelled`, `oauth_link_failed`(`reason`)로 남기고, 모두 `provider`와 그 시점 매물 수 `property_count`(알 때만)를 싣는다. 앱 네이티브 로그인 흐름은 같은 이벤트에 `flow: 'native'`를, 실패에는 `native_reason`을 더한다. 이벤트 이름과 속성 타입은 `features/auth/lib/oauthAnalytics.ts`에 둔다. 연결 뒤 바뀐 회원은 복귀 화면의 로그인이 `login_succeeded`로 남기고 회원 조회가 끝나면 다시 식별한다([OAuth 계정 연결](oauth-account-linking.md)).
 
 오류 등급은 [에러 트래킹 문서](error-tracking.md)를 따른다. 이전 청크 삭제 정책은 그대로 유지한다.
 

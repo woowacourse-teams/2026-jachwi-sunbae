@@ -1,11 +1,13 @@
 import { css } from '@emotion/css';
 
+import { useMember } from '@/features/auth/api/useCurrentMember';
 import WeatherSummaryCard from '@/features/weather/ui/weather-summary-card/WeatherSummaryCard';
 import { usePublicConfig } from '@/shared/config/PublicConfigContext';
 import TopNavigation from '@/shared/ui/top-navigation/TopNavigation';
 
 import { formatAppVersionLabel } from '../lib/appVersionLabel';
-import AccountResetCard from '../ui/account-reset-card/AccountResetCard';
+import AccountLinkCard from '../ui/account-link-card/AccountLinkCard';
+import AccountWithdrawCard from '../ui/account-withdraw-card/AccountWithdrawCard';
 import PrivacyLinkCard from '../ui/privacy-link-card/PrivacyLinkCard';
 
 import * as shared from '../MyPage.styles';
@@ -13,6 +15,7 @@ import * as shared from '../MyPage.styles';
 /** 데스크탑 마이. 공용 헤더로 이동하므로 뒤로 가기 없이 제목만 두고, 좁은 한 열에 카드를 위에서 아래로 쌓는다. */
 const MyDesktopPage = () => {
   const config = usePublicConfig();
+  const member = useMember();
 
   return (
     <main className={shared.page}>
@@ -22,8 +25,9 @@ const MyDesktopPage = () => {
         </div>
         <WeatherSummaryCard />
         <div className={styles.links}>
+          <AccountLinkCard memberId={member.memberId} />
           <PrivacyLinkCard />
-          <AccountResetCard />
+          <AccountWithdrawCard />
         </div>
       </div>
       <footer className={`${shared.footer} ${styles.footer}`}>
@@ -75,7 +79,7 @@ const styles = {
     margin-bottom: 0.5rem;
   `,
 
-  /* 개인정보 처리방침과 초기화는 한 묶음으로 쌓는다. */
+  /* 개인정보 처리방침과 회원 탈퇴는 한 묶음으로 쌓는다. */
   links: css`
     label: MyDesktopPage-links;
     display: grid;

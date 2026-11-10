@@ -1,10 +1,12 @@
 import { css } from '@emotion/css';
 
+import { useMember } from '@/features/auth/api/useCurrentMember';
 import WeatherSummaryCard from '@/features/weather/ui/weather-summary-card/WeatherSummaryCard';
 import { usePublicConfig } from '@/shared/config/PublicConfigContext';
 
 import { formatAppVersionLabel } from '../lib/appVersionLabel';
-import AccountResetCard from '../ui/account-reset-card/AccountResetCard';
+import AccountLinkCard from '../ui/account-link-card/AccountLinkCard';
+import AccountWithdrawCard from '../ui/account-withdraw-card/AccountWithdrawCard';
 import PrivacyLinkCard from '../ui/privacy-link-card/PrivacyLinkCard';
 
 import * as shared from '../MyPage.styles';
@@ -12,14 +14,16 @@ import * as shared from '../MyPage.styles';
 /** 휴대폰·태블릿 마이. 뒤로 가기·제목은 앱 상단 바가 그리고, 홈과 같은 본문(최대 45rem)에 카드를 늘이지 않고 쌓는다. */
 const MyMobilePage = () => {
   const config = usePublicConfig();
+  const member = useMember();
 
   return (
     <main className={shared.page}>
       <div className={styles.container}>
         <WeatherSummaryCard />
         <div className={styles.links}>
+          <AccountLinkCard memberId={member.memberId} />
           <PrivacyLinkCard />
-          <AccountResetCard />
+          <AccountWithdrawCard />
         </div>
       </div>
       <footer className={`${shared.footer} ${styles.footer}`}>
@@ -83,7 +87,7 @@ const styles = {
     }
   `,
 
-  /* 개인정보 처리방침과 초기화는 한 묶음으로 쌓는다(넓은 화면에서는 날씨 옆 열). */
+  /* 개인정보 처리방침과 회원 탈퇴는 한 묶음으로 쌓는다(넓은 화면에서는 날씨 옆 열). */
   links: css`
     label: MyMobilePage-links;
     display: grid;
