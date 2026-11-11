@@ -13,6 +13,15 @@ public enum ErrorCode {
 
     // 관리자 인증
     ADMIN_ACCESS_DENIED("관리자 인증이 필요합니다."),
+    ADMIN_LOG_INPUT_INVALID("로그 조회 조건을 확인해 주세요."),
+    ADMIN_LOG_QUERY_NOT_FOUND("조회가 만료되었거나 존재하지 않습니다. 다시 조회해 주세요."),
+    ADMIN_LOG_QUERY_LIMIT("로그 조회가 많습니다. 잠시 후 다시 시도해 주세요."),
+    ADMIN_LOG_ACCESS_DENIED("CloudWatch 로그 조회 권한을 확인해 주세요."),
+    ADMIN_LOG_GROUP_NOT_FOUND("CloudWatch 로그 그룹을 찾을 수 없습니다."),
+    ADMIN_LOG_UNAVAILABLE("CloudWatch 로그 조회 서비스를 이용할 수 없습니다."),
+    ADMIN_LOG_QUERY_FAILED("CloudWatch 로그 조회에 실패했습니다."),
+    ADMIN_LOG_QUERY_CANCELLED("CloudWatch 로그 조회가 취소되었습니다."),
+    ADMIN_LOG_QUERY_TIMEOUT("로그 조회 제한 시간을 초과했습니다. 기간을 줄여 다시 조회해 주세요."),
 
     // 회원 및 인증
     ACCESS_TOKEN_INVALID("ACCESS 인증 정보를 확인할 수 없습니다."),

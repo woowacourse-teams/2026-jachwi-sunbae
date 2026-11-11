@@ -6,6 +6,7 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.options;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -15,10 +16,13 @@ import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.read.ListAppender;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jachwisunbae.admin.auth.AdminAccessCodes;
+import com.jachwisunbae.admin.controller.AdminLogController;
 import com.jachwisunbae.admin.controller.AdminQueryController;
 import com.jachwisunbae.admin.repository.query.AdminMember;
 import com.jachwisunbae.admin.repository.query.AdminSummary;
+import com.jachwisunbae.admin.service.AdminLogService;
 import com.jachwisunbae.admin.service.AdminQueryService;
+import com.jachwisunbae.admin.service.result.AdminLogQuery;
 import com.jachwisunbae.admin.support.AdminTestCodes;
 import com.jachwisunbae.admin.web.AdminAuthenticationFilter;
 import com.jachwisunbae.auth.token.JwtTokenProvider;
@@ -46,6 +50,7 @@ class AdminAccessAcceptanceTest {
     private final JwtTokenProvider jwt = mock(JwtTokenProvider.class);
     private final MemberRepository members = mock(MemberRepository.class);
     private final AdminQueryService queries = mock(AdminQueryService.class);
+    private final AdminLogService logs = mock(AdminLogService.class);
     private MockMvc mvc;
 
     @BeforeEach
@@ -57,7 +62,7 @@ class AdminAccessAcceptanceTest {
     }
 
     private MockMvc build(String codes) {
-        return MockMvcBuilders.standaloneSetup(new AdminQueryController(queries))
+        return MockMvcBuilders.standaloneSetup(new AdminQueryController(queries), new AdminLogController(logs))
                 .setControllerAdvice(new GlobalExceptionHandler())
                 .addFilters(new RequestLoggingFilter(), new CorsConfig(List.of(ORIGIN)).corsFilter().getFilter(),
                         new AdminAuthenticationFilter(new AdminAccessCodes(codes), mapper),
@@ -143,5 +148,35 @@ class AdminAccessAcceptanceTest {
                         .header("Authorization", "Admin " + AdminTestCodes.code(0)))
                 .andExpect(status().isOk()).andExpect(header().exists("X-Request-Id"))
                 .andExpect(header().string("Access-Control-Expose-Headers", "X-Request-Id"));
+    }
+
+    @Test
+    @DisplayName("새 로그 조회 시작·폴링 API도 기존 관리자 코드만 허용한다")
+    void protectsLogQueries() throws Exception {
+        mvc.perform(post("/api/admin/log-queries?environment=dev&period=1h"))
+                .andExpect(status().isUnauthorized());
+        mvc.perform(get("/api/admin/log-queries/unknown").header("Authorization", "Bearer member-jwt"))
+                .andExpect(status().isUnauthorized());
+        mvc.perform(get("/api/admin/log-queries/unknown").header("Authorization", "Admin incorrect"))
+                .andExpect(status().isUnauthorized());
+        verifyNoInteractions(logs, jwt, members);
+
+        var pending = new AdminLogQuery("server-query", "Scheduled", Instant.EPOCH, Instant.EPOCH, null);
+        when(logs.start("dev", "1h", "all", null)).thenReturn(pending);
+        when(logs.results("server-query")).thenReturn(pending);
+        mvc.perform(post("/api/admin/log-queries?environment=dev&period=1h")
+                        .accept(MediaType.APPLICATION_JSON)
+                        .header("Authorization", "Admin " + AdminTestCodes.code(0)))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.code").value("SUCCESS"))
+                .andExpect(jsonPath("$.data.status").value("Scheduled"))
+                .andExpect(header().string("Cache-Control", "no-store"))
+                .andExpect(header().doesNotExist("Set-Cookie"));
+        mvc.perform(get("/api/admin/log-queries/server-query")
+                        .accept(MediaType.APPLICATION_JSON)
+                        .header("Authorization", "Admin " + AdminTestCodes.code(0)))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.data.queryId").value("server-query"));
+        mvc.perform(post("/api/admin/log-queries?environment=dev")
+                        .header("Authorization", "Admin " + AdminTestCodes.code(0)))
+                .andExpect(status().isBadRequest());
     }
 }

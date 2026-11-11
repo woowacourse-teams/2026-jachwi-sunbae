@@ -66,7 +66,7 @@ describe('운영 관리자', () => {
     await login(user);
     expect(await screen.findByText('1,234')).toBeInTheDocument();
     expect(await screen.findByRole('rowheader', { name: '321' })).toBeInTheDocument();
-    expect(screen.getByText('2026. 11. 11. 오전 1:10:00')).toBeInTheDocument();
+    expect(screen.getByText(/2026\. 11\. 11\. (오전|AM) 1:10:00/)).toBeInTheDocument();
     expect(screen.getByText(/실제 사람 수와 다릅니다/)).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /CloudWatch/ })).toHaveAttribute('rel', 'noopener noreferrer');
     expect(requests).toHaveLength(2);
@@ -136,5 +136,22 @@ describe('운영 관리자', () => {
     renderPage();
     expect(await screen.findByRole('heading', { name: '관리자 접속' })).toBeInTheDocument();
     await waitFor(() => expect(screen.queryByRole('rowheader', { name: '321' })).not.toBeInTheDocument());
+  });
+
+  it('오류 조회 메뉴를 다녀와도 기존 통계·회원 목록과 모니터링 링크를 유지한다', async () => {
+    const user = userEvent.setup();
+    handlers();
+    renderPage();
+    await login(user);
+    await screen.findByRole('rowheader', { name: '321' });
+    await user.click(screen.getByRole('button', { name: '오류 조회' }));
+    expect(screen.getByRole('heading', { name: '오류 조회' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /CloudWatch/ })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /PostHog/ })).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: '대시보드·회원' }));
+    expect(screen.getByRole('rowheader', { name: '321' })).toBeVisible();
+    expect(screen.getByText('1,234')).toBeVisible();
+    await user.click(screen.getByRole('button', { name: '관리자 로그아웃' }));
+    expect(screen.getByRole('heading', { name: '관리자 접속' })).toBeInTheDocument();
   });
 });

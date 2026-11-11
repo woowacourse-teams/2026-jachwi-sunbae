@@ -1,4 +1,5 @@
 import { css } from '@emotion/css';
+import { useState } from 'react';
 
 import { useAdminAccess } from '@/features/admin/api/useAdminAccess';
 import useDocumentTitle from '@/shared/lib/hooks/useDocumentTitle';
@@ -6,10 +7,12 @@ import { Button } from '@/shared/ui/button/Button';
 
 import AdminDashboard from './ui/AdminDashboard';
 import AdminLogin from './ui/AdminLogin';
+import AdminLogs from './ui/AdminLogs';
 
 const AdminPage = () => {
   useDocumentTitle('운영 관리자');
   const auth = useAdminAccess();
+  const [menu, setMenu] = useState<'dashboard' | 'logs'>('dashboard');
   return (
     <main className={styles.page + ' ph-no-capture ph-sensitive'}>
       <header className={styles.header}>
@@ -18,7 +21,13 @@ const AdminPage = () => {
           <h1>운영 관리자</h1>
         </div>
         {auth.access !== null && (
-          <Button variant="neutral" onClick={auth.logout}>
+          <Button
+            variant="neutral"
+            onClick={() => {
+              setMenu('dashboard');
+              auth.logout();
+            }}
+          >
             관리자 로그아웃
           </Button>
         )}
@@ -27,7 +36,18 @@ const AdminPage = () => {
         <AdminLogin login={auth.login} isChanging={auth.isChanging} error={auth.error} />
       ) : (
         <>
-          <AdminDashboard accessCode={auth.access.code} summary={auth.access.summary} onUnauthorized={auth.logout} />
+          <nav className={styles.menu} aria-label="관리자 메뉴">
+            <Button variant="neutral" aria-pressed={menu === 'dashboard'} onClick={() => setMenu('dashboard')}>
+              대시보드·회원
+            </Button>
+            <Button variant="neutral" aria-pressed={menu === 'logs'} onClick={() => setMenu('logs')}>
+              오류 조회
+            </Button>
+          </nav>
+          <div hidden={menu !== 'dashboard'}>
+            <AdminDashboard accessCode={auth.access.code} summary={auth.access.summary} onUnauthorized={auth.logout} />
+          </div>
+          {menu === 'logs' && <AdminLogs accessCode={auth.access.code} onUnauthorized={auth.logout} />}
           <section aria-labelledby="admin-monitoring-title">
             <h2 id="admin-monitoring-title">운영 모니터링</h2>
             <p>각 서비스의 별도 운영 권한이 필요합니다. PostHog 오류의 request_id로 CloudWatch 로그를 검색하세요.</p>
@@ -54,6 +74,12 @@ const AdminPage = () => {
   );
 };
 const styles = {
+  menu: css`
+    label: AdminPage-menu;
+    display: flex;
+    gap: 0.75rem;
+    margin-top: 1.5rem;
+  `,
   page: css`
     label: AdminPage-page;
     max-width: 72rem;
