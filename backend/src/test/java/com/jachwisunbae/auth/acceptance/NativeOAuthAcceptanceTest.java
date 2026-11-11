@@ -39,6 +39,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -62,6 +63,7 @@ import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.web.util.UriComponentsBuilder;
 import org.testcontainers.containers.MySQLContainer;
@@ -336,6 +338,98 @@ class NativeOAuthAcceptanceTest {
         assertThat(count("SELECT COUNT(*) FROM refresh_tokens WHERE member_id = ?", login.memberId())).isOne();
     }
 
+    @ParameterizedTest
+    @EnumSource(OAuthProvider.class)
+    @DisplayName("같은 세션에서 다른 nonce로 동시에 통합을 요청해도 기록은 한 번만 이전하고 한 요청만 완료한다")
+    void mergesOnceUnderConcurrentRequestsFromSameSession(OAuthProvider provider) throws Exception {
+        Login source = startAnonymous();
+        Login target = startAnonymous();
+        attachIdentity(target, provider, "target");
+        jdbcTemplate.update("INSERT INTO properties (id, member_id, name, created_at) VALUES (999, ?, '집', NOW(6))",
+                source.memberId());
+        int requests = 6;
+        List<Callable<Integer>> submissions = new ArrayList<>();
+        for (int i = 0; i < requests; i++) {
+            // nonce는 요청마다 달라 일회 소비로는 막히지 않는다. 현재 세션의 Refresh Token 폐기가 중복 통합을 막아야 한다.
+            String nonce = issueNonce(provider, source);
+            String idToken = idToken(provider, "target", nonce);
+            submissions.add(() -> submit(provider, source, idToken, nonce).andReturn().getResponse().getStatus());
+        }
+
+        List<Integer> statuses = runConcurrently(submissions);
+
+        assertThat(statuses).filteredOn(status -> status == 204).hasSize(1);
+        assertThat(statuses).filteredOn(status -> status != 204).allMatch(status -> status == 401);
+        assertThat(jdbcTemplate.queryForObject("SELECT member_id FROM properties WHERE id = 999", Long.class))
+                .isEqualTo(target.memberId());
+        assertThat(jdbcTemplate.queryForObject("SELECT merged_into_member_id FROM members WHERE id = ?", Long.class,
+                source.memberId())).isEqualTo(target.memberId());
+        assertThat(count("SELECT COUNT(*) FROM refresh_tokens WHERE member_id = ?", source.memberId())).isZero();
+        // 기준 회원의 기존 기기 1개와 통합을 마친 기기 1개만 인증을 갖는다.
+        assertThat(count("SELECT COUNT(*) FROM refresh_tokens WHERE member_id = ?", target.memberId())).isEqualTo(2);
+        assertThat(count("SELECT COUNT(*) FROM member_identities")).isOne();
+    }
+
+    @ParameterizedTest
+    @EnumSource(OAuthProvider.class)
+    @DisplayName("여러 기기의 익명 회원이 같은 계정으로 동시에 통합해도 모든 기록을 기준 회원으로 이전한다")
+    void mergesAllSourcesUnderConcurrentRequestsToSameTarget(OAuthProvider provider) throws Exception {
+        Login target = startAnonymous();
+        attachIdentity(target, provider, "target");
+        int devices = 5;
+        List<Login> sources = new ArrayList<>();
+        List<Callable<Integer>> submissions = new ArrayList<>();
+        for (int i = 0; i < devices; i++) {
+            Login source = startAnonymous();
+            sources.add(source);
+            jdbcTemplate.update("INSERT INTO properties (member_id, name, created_at) VALUES (?, '집', NOW(6))",
+                    source.memberId());
+            String nonce = issueNonce(provider, source);
+            String idToken = idToken(provider, "target", nonce);
+            submissions.add(() -> submit(provider, source, idToken, nonce).andReturn().getResponse().getStatus());
+        }
+
+        List<Integer> statuses = runConcurrently(submissions);
+
+        assertThat(statuses).containsOnly(204);
+        assertThat(count("SELECT COUNT(*) FROM properties WHERE member_id = ?", target.memberId())).isEqualTo(devices);
+        for (Login source : sources) {
+            assertThat(jdbcTemplate.queryForObject("SELECT merged_into_member_id FROM members WHERE id = ?",
+                    Long.class, source.memberId())).isEqualTo(target.memberId());
+        }
+        assertThat(count("SELECT COUNT(*) FROM refresh_tokens WHERE member_id = ?", target.memberId()))
+                .isEqualTo(devices + 1);
+        assertThat(count("SELECT COUNT(*) FROM member_identities")).isOne();
+    }
+
+    @ParameterizedTest
+    @EnumSource(OAuthProvider.class)
+    @DisplayName("두 OAuth 회원이 서로의 계정으로 동시에 전환해도 교착 없이 각자 전환한다")
+    void switchesCrossingAccountsWithoutDeadlock(OAuthProvider provider) throws Exception {
+        Login first = startAnonymous();
+        Login second = startAnonymous();
+        attachIdentity(first, provider, "first");
+        attachIdentity(second, provider, "second");
+        String firstNonce = issueNonce(provider, first);
+        String secondNonce = issueNonce(provider, second);
+        String firstToken = idToken(provider, "second", firstNonce);
+        String secondToken = idToken(provider, "first", secondNonce);
+        // 두 요청은 같은 회원 쌍을 반대 방향에서 잠근다. 회원 ID 순서로 잠그지 않으면 교착이 생긴다.
+        List<Callable<MvcResult>> switches = List.of(
+                () -> submit(provider, first, firstToken, firstNonce).andReturn(),
+                () -> submit(provider, second, secondToken, secondNonce).andReturn());
+
+        List<MvcResult> results = runConcurrently(switches);
+
+        assertThat(results).allMatch(result -> result.getResponse().getStatus() == 204);
+        mvc.perform(post("/api/auth/refresh").cookie(results.get(0).getResponse().getCookie("refresh_token")))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.data.member.memberId").value(second.memberId()));
+        mvc.perform(post("/api/auth/refresh").cookie(results.get(1).getResponse().getCookie("refresh_token")))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.data.member.memberId").value(first.memberId()));
+        assertThat(linkedMember(provider, "first")).isEqualTo(first.memberId());
+        assertThat(linkedMember(provider, "second")).isEqualTo(second.memberId());
+    }
+
     static Stream<Arguments> invalidIdTokens() {
         return Stream.of(OAuthProvider.values()).flatMap(provider -> Stream.of(
                 Arguments.of(provider, "forged"), Arguments.of(provider, "expired"), Arguments.of(provider, "issuer"),
@@ -580,6 +674,32 @@ class NativeOAuthAcceptanceTest {
         return mvc.perform(post("/api/auth/oauth/" + provider + "/id-token")
                 .header(HttpHeaders.AUTHORIZATION, login.bearer()).cookie(login.cookie())
                 .contentType(MediaType.APPLICATION_JSON).content(objectMapper.writeValueAsString(body)));
+    }
+
+    // 모든 요청이 준비된 뒤 한꺼번에 출발시켜 실제로 겹치게 하고, 제출 순서대로 결과를 돌려준다.
+    private static <T> List<T> runConcurrently(List<Callable<T>> tasks) throws Exception {
+        CountDownLatch ready = new CountDownLatch(tasks.size());
+        CountDownLatch go = new CountDownLatch(1);
+        ExecutorService executor = Executors.newFixedThreadPool(tasks.size());
+        try {
+            List<Future<T>> futures = new ArrayList<>();
+            for (Callable<T> task : tasks) {
+                futures.add(executor.submit(() -> {
+                    ready.countDown();
+                    go.await();
+                    return task.call();
+                }));
+            }
+            ready.await();
+            go.countDown();
+            List<T> results = new ArrayList<>();
+            for (Future<T> future : futures) {
+                results.add(future.get(30, TimeUnit.SECONDS));
+            }
+            return results;
+        } finally {
+            executor.shutdownNow();
+        }
     }
 
     // 실패 뒤에도 지금 기기의 쿠키로 같은 회원을 복원하고, 외부 계정 연결과 회원 수가 그대로인지 확인한다.
