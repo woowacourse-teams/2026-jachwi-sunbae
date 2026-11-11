@@ -44,6 +44,27 @@ class RequestLoggingFilterTest {
     }
 
     @Test
+    @DisplayName("관리자 요청은 예외 원문에 비밀이 있어도 요청·응답 상세와 예외 원문을 남기지 않는다")
+    void omitsAllSensitiveAdminFailureDetails() throws Exception {
+        String secret = "test-only-admin-secret";
+        MockHttpServletRequest request = jsonRequest("POST", "/api/admin/session", "{\"accessCode\":\"" + secret + "\"}");
+        request.setQueryString("code=" + secret);
+        request.addHeader(HttpHeaders.USER_AGENT, secret);
+        MockHttpServletResponse response = new MockHttpServletResponse();
+
+        assertThatThrownBy(() -> filter.doFilter(request, response, (req, res) -> {
+            req.getInputStream().readAllBytes();
+            throw new IllegalStateException(secret);
+        })).isInstanceOf(IllegalStateException.class);
+
+        ILoggingEvent event = onlyEvent();
+        assertThat(fields(event)).doesNotContainKeys("query_string", "request_headers", "request_body", "response_body");
+        assertThat(event.getFormattedMessage()).doesNotContain(secret);
+        assertThat(event.getThrowableProxy()).isNull();
+        assertThat(fields(event)).containsEntry("status", 500);
+    }
+
+    @Test
     @DisplayName("성공한 요청은 쿼리 문자열, 헤더, 본문을 남기지 않고 응답 본문을 그대로 전달한다")
     void doesNotLogDetailsForSuccessfulRequest() throws Exception {
         MockHttpServletRequest request = jsonRequest("POST", "/api/properties", "{\"name\":\"신림역 원룸\"}");

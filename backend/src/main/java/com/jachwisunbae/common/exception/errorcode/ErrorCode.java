@@ -11,6 +11,9 @@ public enum ErrorCode {
     RESOURCE_NOT_FOUND("요청한 리소스를 찾을 수 없습니다."),
     INTERNAL_SERVER_ERROR("서버 내부 오류가 발생했습니다."),
 
+    // 관리자 인증
+    ADMIN_ACCESS_DENIED("관리자 인증이 필요합니다."),
+
     // 회원 및 인증
     ACCESS_TOKEN_INVALID("ACCESS 인증 정보를 확인할 수 없습니다."),
     REFRESH_TOKEN_INVALID("REFRESH 인증 정보를 확인할 수 없습니다."),

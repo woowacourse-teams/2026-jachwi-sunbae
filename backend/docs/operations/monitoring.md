@@ -305,3 +305,7 @@ curl -fsS https://dev-api.jachwi-sunbae.kr/actuator/health
 ## 자동 복구 범위
 
 systemd는 EC2 자체가 중지되거나 AWS 호스트에 장애가 발생한 경우 복구할 수 없다. `t4g`는 CloudWatch action based recovery 지원 대상이다. 로그 수집을 확인한 뒤 EC2 콘솔에서 각 인스턴스의 `StatusCheckFailed_System`이 1분 간격으로 2회 실패하면 `Recover this instance`를 실행하는 Alarm을 설정한다. 이 복구는 시스템 status check 장애만 대상으로 하며 애플리케이션 오류나 `StatusCheckFailed_Instance`를 복구하지 않는다.
+
+## 읽기 전용 운영 관리자
+
+`/admin`에서 활성 계정·오늘(KST) 신규 계정·활성 매물과 회원별 개수를 확인하고 기존 CloudWatch·PostHog로 이동한다. 서버 전용 접속 코드를 요청의 Authorization 헤더로 확인한다. 관리자 요청은 본문·쿼리·헤더·예외 원문을 로그에 남기지 않는다. 일반 회원 API 오류의 PostHog `request_id`는 서버 `X-Request-Id`와 동일하다. [설정과 검증 절차](admin.md)를 참고한다.

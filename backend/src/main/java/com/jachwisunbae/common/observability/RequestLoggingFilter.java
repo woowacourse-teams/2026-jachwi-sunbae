@@ -1,5 +1,7 @@
 package com.jachwisunbae.common.observability;
 
+import com.jachwisunbae.common.web.ApiRequestPath;
+
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -75,7 +77,7 @@ public class RequestLoggingFilter extends OncePerRequestFilter {
         response.setHeader(REQUEST_ID_HEADER, requestId);
         MDC.put(REQUEST_ID, requestId);
         MDC.put(HTTP_METHOD, request.getMethod());
-        MDC.put(PATH, request.getRequestURI());
+        MDC.put(PATH, isAdminRequest(request) ? "/api/admin" : request.getRequestURI());
 
         try {
             chain.doFilter(cachingRequest, cachingResponse);
@@ -112,6 +114,11 @@ public class RequestLoggingFilter extends OncePerRequestFilter {
 
         if (status < HttpServletResponse.SC_BAD_REQUEST) {
             logSuccessfulRequest(event);
+            return;
+        }
+        if (isAdminRequest(request)) {
+            // 접속 코드·요청·응답·예외 원문은 어떤 실패 경로에서도 남기지 않는다.
+            event.log("Admin HTTP request failed");
             return;
         }
         addRequestDetails(event, request, response);
@@ -157,6 +164,10 @@ public class RequestLoggingFilter extends OncePerRequestFilter {
         } catch (IllegalArgumentException exception) {
             return queryString;
         }
+    }
+
+    private boolean isAdminRequest(HttpServletRequest request) {
+        return ApiRequestPath.isWithin(request, "/api/admin");
     }
 
     private void logSuccessfulRequest(final LoggingEventBuilder event) {
