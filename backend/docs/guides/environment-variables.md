@@ -141,3 +141,9 @@ Apple은 웹·네이티브 모두 연결할 때 인가 코드를 교환해 받�
 ## 운영 관리자 접속 코드
 
 `ADMIN_ACCESS_CODES`는 서버 전용 접속 코드 목록이다. 코드 10개를 쉼표로 구분해 기존 Vault `app_env`와 systemd 환경변수 파일로 주입한다. 서버는 목록에 입력 코드가 있는지만 확인하며 빈 설정은 접속을 허용하지 않는다. 프론트는 탭 메모리의 코드를 Authorization 헤더로 전송한다. 자세한 동작은 [운영 관리자](../operations/admin.md)를 따른다.
+
+## 운영 관리자 PostHog 오류 조회
+
+`POSTHOG_PERSONAL_API_KEY`는 관리자 페이지에서 PostHog 오류 이벤트를 조회하기 위한 서버 전용 개인 API 키다. PostHog 프로젝트 `579863`의 Query 읽기 권한이 필요하며, 이벤트 수집용 프로젝트 토큰과 구분한다.
+
+Dev·Prod에서는 기존 Vault `app_env`를 통해 주입한다. 프론트엔드 환경변수나 공개 설정에는 포함하지 않는다. 값이 비어 있으면 조회 API는 `503 ADMIN_POSTHOG_NOT_CONFIGURED`를 반환한다. 자세한 설정은 [운영 관리자의 조회용 API 키 설정](../operations/admin.md#조회용-api-키-설정)을 따른다.
