@@ -14,6 +14,13 @@ public enum ErrorCode {
     // 관리자 인증
     ADMIN_ACCESS_DENIED("관리자 인증이 필요합니다."),
     ADMIN_LOG_INPUT_INVALID("로그 조회 조건을 확인해 주세요."),
+    ADMIN_POSTHOG_NOT_CONFIGURED("PostHog 조회용 API 키가 설정되지 않았습니다."),
+    ADMIN_POSTHOG_INPUT_INVALID("PostHog 조회 조건을 확인해 주세요."),
+    ADMIN_POSTHOG_AUTH_FAILED("PostHog 조회용 API 키를 확인해 주세요."),
+    ADMIN_POSTHOG_ACCESS_DENIED("PostHog 프로젝트의 Query 읽기 권한을 확인해 주세요."),
+    ADMIN_POSTHOG_RATE_LIMITED("PostHog 조회 한도에 도달했습니다. 잠시 후 다시 조회해 주세요."),
+    ADMIN_POSTHOG_TIMEOUT("PostHog 조회 시간이 초과되었습니다. 기간을 줄여 다시 조회해 주세요."),
+    ADMIN_POSTHOG_UNAVAILABLE("PostHog 오류를 조회하지 못했습니다. 잠시 후 다시 조회해 주세요."),
     ADMIN_LOG_QUERY_NOT_FOUND("조회가 만료되었거나 존재하지 않습니다. 다시 조회해 주세요."),
     ADMIN_LOG_QUERY_LIMIT("로그 조회가 많습니다. 잠시 후 다시 시도해 주세요."),
     ADMIN_LOG_ACCESS_DENIED("CloudWatch 로그 조회 권한을 확인해 주세요."),

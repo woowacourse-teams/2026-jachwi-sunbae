@@ -23,6 +23,7 @@ const entry: AdminLogEntry = {
   requestId: 'request-123',
   httpMethod: 'GET',
   path: '/api/properties',
+  memberId: 123,
   status: 500,
   durationMs: 12,
   message: 'HTTP request failed',
@@ -69,6 +70,8 @@ describe('관리자 CloudWatch 로그 조회', () => {
     expect(await screen.findByText('/api/properties', {}, { timeout: 3000 })).toBeInTheDocument();
     expect(screen.getByText(/2026\. 11\. 11\. (오전|AM) 9:10:00/)).toBeInTheDocument();
     expect(screen.getByText('12 ms')).toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: 'memberId' })).toBeInTheDocument();
+    expect(screen.getByRole('cell', { name: '123' })).toBeInTheDocument();
     expect(start).toHaveBeenCalledTimes(1);
     expect(new URL(requests[0].url).searchParams.toString()).toBe('environment=prod&period=7d&status=5xx');
     for (const request of requests) expect(request.headers.get('Authorization')).toBe('Admin test-only-code');
@@ -111,6 +114,7 @@ describe('관리자 CloudWatch 로그 조회', () => {
     expect(searches[1].get('environment')).toBe('prod');
     expect(searches[1].get('requestId')).toBe('request-123');
     expect(screen.getByText('예외 메시지: failure')).toBeInTheDocument();
+    expect(within(screen.getByRole('region', { name: '요청 상세' })).getByText('123')).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: '요청 ID 복사' }));
     expect(await navigator.clipboard.readText()).toBe('request-123');
     expect(await screen.findByText('요청 ID를 복사했습니다.')).toBeInTheDocument();
@@ -146,6 +150,16 @@ describe('관리자 CloudWatch 로그 조회', () => {
     await user.click(screen.getByRole('button', { name: '요청 ID 조회' }));
     expect(await screen.findByText(/해당 기간에 기록된 요청 로그가 없습니다/)).toBeInTheDocument();
     expect(start).toHaveBeenCalledTimes(3);
+  });
+
+  it('회원 ID가 없는 과거 로그는 목록과 상세에서 대시로 표시한다', async () => {
+    const user = userEvent.setup();
+    server.use(http.post(`${baseUrl}/api/admin/log-queries`, () => done([{ ...entry, memberId: null }])));
+    renderLogs();
+    await user.click(screen.getByRole('button', { name: '오류 조회' }));
+    expect(await screen.findByRole('cell', { name: '-' })).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'request-123' }));
+    expect(await within(screen.getByRole('region', { name: '요청 상세' })).findByText('-')).toBeInTheDocument();
   });
 
   it.each([

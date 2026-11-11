@@ -43,6 +43,10 @@ const AdminRequestDetail = ({ requestId, logs }: AdminRequestDetailProps) => {
                 </dd>
               </div>
               <div>
+                <dt>memberId</dt>
+                <dd>{completed.memberId ?? '-'}</dd>
+              </div>
+              <div>
                 <dt>HTTP 상태</dt>
                 <dd>{completed.status}</dd>
               </div>

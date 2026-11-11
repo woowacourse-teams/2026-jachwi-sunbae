@@ -13,6 +13,7 @@ export type AdminLogEntry = {
   requestId: string | null;
   httpMethod: string | null;
   path: string | null;
+  memberId: number | null;
   status: number | null;
   durationMs: number | null;
   message: string | null;

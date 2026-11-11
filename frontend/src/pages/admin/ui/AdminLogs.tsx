@@ -1,20 +1,47 @@
-import { css } from '@emotion/css';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
-import { type AdminLogFilters, describeAdminLogError, formatAdminLogTime } from '@/features/admin/api/adminLogsApi';
+import {
+  type AdminLogEntry,
+  type AdminLogFilters,
+  type AdminLogSearch,
+  describeAdminLogError,
+  formatAdminLogTime,
+} from '@/features/admin/api/adminLogsApi';
 import { useAdminLogs } from '@/features/admin/api/useAdminLogs';
 import { Button } from '@/shared/ui/button/Button';
 import ProgressCircle from '@/shared/ui/progress-circle/ProgressCircle';
 
 import AdminRequestDetail from './AdminRequestDetail';
 
-type AdminLogsProps = { accessCode: string; onUnauthorized: () => void };
+import * as styles from './AdminLogViewer.styles';
 
-const AdminLogs = ({ accessCode, onUnauthorized }: AdminLogsProps) => {
-  const [filters, setFilters] = useState<AdminLogFilters>({ environment: 'dev', period: '1h', status: 'all' });
-  const [requestId, setRequestId] = useState('');
+type AdminLogsProps = { accessCode: string; onUnauthorized: () => void; initialSearch?: AdminLogSearch | null };
+
+const AdminLogs = ({ accessCode, onUnauthorized, initialSearch }: AdminLogsProps) => {
+  const [filters, setFilters] = useState<AdminLogFilters>({
+    environment: initialSearch?.environment ?? 'dev',
+    period: initialSearch?.period ?? '1h',
+    status: 'all',
+  });
+  const [requestId, setRequestId] = useState(initialSearch?.requestId ?? '');
   const list = useAdminLogs(accessCode, onUnauthorized);
   const detail = useAdminLogs(accessCode, onUnauthorized);
+  const searchDetail = detail.search;
+  useEffect(() => {
+    // StrictMode의 첫 effect가 정리된 뒤 실행해 조회 시작 요청이 중복되지 않게 한다.
+    let cancelled = false;
+    queueMicrotask(() => {
+      if (initialSearch && !cancelled) void searchDetail(initialSearch);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [initialSearch, searchDetail]);
+  const selectLog = (log: AdminLogEntry) => {
+    if (list.state.status !== 'complete' || !log.requestId) return;
+    setRequestId(log.requestId);
+    void detail.search({ ...list.state.search, requestId: log.requestId });
+  };
   return (
     <section className={styles.panel} aria-labelledby="admin-logs-title">
       <h2 id="admin-logs-title">오류 조회</h2>
@@ -81,38 +108,56 @@ const AdminLogs = ({ accessCode, onUnauthorized }: AdminLogsProps) => {
                 <caption className="sr-only">API 오류 목록</caption>
                 <thead>
                   <tr>
-                    {['발생 시각 (KST)', '메서드', 'API 경로', '상태 코드', '소요 시간', '오류 메시지', '요청 ID'].map(
-                      (title) => (
-                        <th key={title} scope="col">
-                          {title}
-                        </th>
-                      ),
-                    )}
+                    {[
+                      '발생 시각 (KST)',
+                      '메서드',
+                      'API 경로',
+                      '상태 코드',
+                      '소요 시간',
+                      'memberId',
+                      '예외 타입',
+                      '오류 메시지',
+                      '요청 ID',
+                    ].map((title) => (
+                      <th key={title} scope="col">
+                        {title}
+                      </th>
+                    ))}
                   </tr>
                 </thead>
                 <tbody>
                   {list.state.query.logs?.map((log, index) => (
-                    <tr key={index}>
+                    <tr key={index} onClick={() => selectLog(log)}>
                       <td>{formatAdminLogTime(log.timestamp)}</td>
                       <td>{log.httpMethod ?? '기록 없음'}</td>
-                      <td>{log.path ?? '기록 없음'}</td>
-                      <td>{log.status ?? '기록 없음'}</td>
-                      <td>{log.durationMs === null ? '기록 없음' : `${log.durationMs} ms`}</td>
                       <td>
-                        {log.message ?? '기록 없음'}
-                        {log.errorType && <small>{log.errorType}</small>}
+                        <span className={styles.truncated} title={log.path ?? undefined}>
+                          {log.path ?? '기록 없음'}
+                        </span>
+                      </td>
+                      <td>
+                        <span
+                          className={styles.badge}
+                          data-level={log.status !== null && log.status >= 500 ? '5xx' : '4xx'}
+                        >
+                          {log.status ?? '기록 없음'}
+                        </span>
+                      </td>
+                      <td>{log.durationMs === null ? '기록 없음' : `${log.durationMs} ms`}</td>
+                      <td>{log.memberId ?? '-'}</td>
+                      <td>
+                        <span className={styles.truncated} title={log.errorType ?? undefined}>
+                          {log.errorType ?? '-'}
+                        </span>
+                      </td>
+                      <td>
+                        <span className={styles.truncated} title={log.message ?? undefined}>
+                          {log.message ?? '기록 없음'}
+                        </span>
                       </td>
                       <td>
                         {log.requestId ? (
-                          <button
-                            type="button"
-                            className={styles.requestLink}
-                            onClick={() => {
-                              if (list.state.status !== 'complete' || !log.requestId) return;
-                              setRequestId(log.requestId);
-                              void detail.search({ ...list.state.search, requestId: log.requestId });
-                            }}
-                          >
+                          <button type="button" className={styles.link}>
                             {log.requestId}
                           </button>
                         ) : (
@@ -172,76 +217,5 @@ const AdminLogs = ({ accessCode, onUnauthorized }: AdminLogsProps) => {
       </section>
     </section>
   );
-};
-const styles = {
-  panel: css`
-    label: AdminLogs-panel;
-    & h3 {
-      font-size: 1.125rem;
-      font-weight: 700;
-      margin-bottom: 0.75rem;
-    }
-    & p {
-      margin: 0.75rem 0;
-    }
-  `,
-  filters: css`
-    label: AdminLogs-filters;
-    display: flex;
-    align-items: end;
-    flex-wrap: wrap;
-    gap: 1rem;
-    margin: 1rem 0;
-    & label {
-      display: grid;
-      gap: 0.5rem;
-    }
-    & input,
-    & select {
-      padding: 0.75rem;
-      border: 1px solid #738091;
-      border-radius: 8px;
-      background: #fff;
-    }
-    & input {
-      width: min(26rem, 70vw);
-    }
-  `,
-  tableScroll: css`
-    label: AdminLogs-tableScroll;
-    max-width: 100%;
-    overflow-x: auto;
-    & table {
-      width: 100%;
-      border-collapse: collapse;
-      text-align: left;
-    }
-    & th,
-    & td {
-      padding: 0.75rem;
-      border-bottom: 1px solid #dfe3e8;
-      min-width: 7rem;
-      vertical-align: top;
-    }
-    & td {
-      max-width: 24rem;
-      overflow-wrap: anywhere;
-    }
-    & thead {
-      background: #f2f5f8;
-      white-space: nowrap;
-    }
-    & small {
-      display: block;
-      margin-top: 0.5rem;
-    }
-  `,
-  requestLink: css`
-    label: AdminLogs-requestLink;
-    color: #164b86;
-    text-decoration: underline;
-    text-align: left;
-    overflow-wrap: anywhere;
-  `,
 };
 export default AdminLogs;

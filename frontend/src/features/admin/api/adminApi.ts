@@ -47,7 +47,7 @@ export const requestAdmin = async <T>(
         body !== null &&
         'code' in body &&
         typeof body.code === 'string' &&
-        /^ADMIN_LOG_[A-Z_]{1,40}$/.test(body.code)
+        /^ADMIN_(?:LOG|POSTHOG)_[A-Z_]{1,40}$/.test(body.code)
       )
         code = body.code;
     } catch {

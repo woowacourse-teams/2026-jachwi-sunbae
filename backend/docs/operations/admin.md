@@ -1,6 +1,6 @@
 # 읽기 전용 운영 관리자
 
-`/admin`에서 접속 코드를 입력하면 운영 통계, 최근 가입 회원과 CloudWatch의 API 오류·요청 상세 로그를 조회한다. 일반 회원 로그인과 별개이며, 관리자 화면 진입으로 익명 회원을 만들지 않는다.
+`/admin`에서 접속 코드를 입력하면 운영 통계, 최근 가입 회원, CloudWatch API 오류·요청 상세와 PostHog 프론트엔드 오류를 조회한다. 일반 회원 로그인과 별개이며, 관리자 화면 진입으로 익명 회원을 만들지 않는다.
 
 ## 접속 방식
 
@@ -42,7 +42,7 @@
 
 ## CloudWatch Logs Insights 조회 구조
 
-관리자 메뉴의 **오류 조회**에서 Dev/Prod, 최근 1시간/24시간/7일, 전체(4xx·5xx)/4xx/5xx를 선택하고 조회한다. 조건을 바꾼 뒤 다시 조회 버튼을 눌러야 반영된다. 결과에 실제 조회 환경과 KST 시작·종료 시각을 표시한다. 최신 오류 최대 100건이며 자동 새로고침은 하지 않는다.
+관리자 메뉴의 **오류 조회 → CloudWatch — 서버 로그**에서 Dev/Prod, 최근 1시간/24시간/7일, 전체(4xx·5xx)/4xx/5xx를 선택하고 조회한다. 조건을 바꾼 뒤 다시 조회 버튼을 눌러야 반영된다. 결과에 실제 조회 환경과 KST 시작·종료 시각을 표시한다. 최신 오류 최대 100건이며 자동 새로고침은 하지 않는다. 두 로그 탭은 어두운 배경, 구분선과 고정 헤더, 상태·등급 배지, 메시지 축약, 가로·세로 스크롤을 사용한다. 행을 선택하면 상세 내용을 확인한다.
 
 1. 프론트가 `POST /api/admin/log-queries`로 조회를 시작한다. 환경·기간·상태와 선택적인 `requestId`만 전달한다.
 2. 서버가 허용된 로그 그룹과 고정 Logs Insights 쿼리를 결정해 AWS `StartQuery`를 한 번 호출한다.
@@ -104,7 +104,13 @@ IAM 관리자가 기존 EC2 Role에 다음 권한이 있는지 확인한다. 아
 - 현재 ECS 로그에서 `GlobalExceptionHandler`가 기록한 예외와 `RequestLoggingFilter`의 HTTP 완료 기록은 같은 요청 ID로 연결된다. 처리된 예외의 스택은 별도 예외 로그에만 존재할 수 있으므로 완료 로그 한 줄로 추정하지 않는다.
 - 없는 필드는 `null`이며 화면에 기록 없음으로 표시한다. 스택이 하나도 없으면 명시적으로 안내한다. 줄바꿈·들여쓰기를 보존하며 긴 스택은 스크롤해서 읽는다.
 
-서버는 `@timestamp`, `request_id`, `http_method`, `path`, `status`, `duration_ms`, `message`, `error_type`과 상세용 예외 필드만 반환한다. AWS의 `@ptr`, `@message` 원문, 인증 헤더, 요청·응답 본문, `query_string`, 실행 쿼리 원문은 반환하지 않는다. 예외 메시지·스택 자체에는 기존 로그의 내부 정보가 포함될 수 있으므로 관리자 화면에서만 확인한다. 프론트는 일반 회원용 `apiClient` 대신 기존 관리자 전용 요청 경로를 사용하며 결과·오류 원문을 PostHog로 전달하지 않는다.
+서버는 `@timestamp`, `request_id`, `http_method`, `path`, `member_id`, `status`, `duration_ms`, `message`, `error_type`과 상세용 예외 필드만 반환한다. AWS의 `@ptr`, `@message` 원문, 인증 헤더, 요청·응답 본문, `query_string`, 실행 쿼리 원문은 반환하지 않는다. 예외 메시지·스택 자체에는 기존 로그의 내부 정보가 포함될 수 있으므로 관리자 화면에서만 확인한다. 프론트는 일반 회원용 `apiClient` 대신 기존 관리자 전용 요청 경로를 사용하며 결과·오류 원문을 PostHog로 전달하지 않는다.
+
+### CloudWatch 회원 ID
+
+`JwtAuthenticationFilter`가 JWT와 회원 존재를 검증한 뒤 저장하는 `MEMBER_ID_ATTRIBUTE`를 `RequestLoggingFilter`가 읽는다. 2xx·4xx·5xx HTTP 요청 완료 로그에 양의 회원 ID를 `member_id`로 추가한다. 기존 MDC의 `request_id`를 그대로 사용하며 헤더·쿼리·본문에서 회원을 추정하지 않는다. 인증 실패, 공개 요청, 관리자 요청에는 회원 ID를 추가하지 않는다. 기존 인증정보·본문 로깅 정책과 JSON 로그 저장·경보 설정은 유지한다.
+
+Logs Insights 결과의 `member_id`는 API의 nullable `memberId`로 매핑한다. 목록과 요청 상세 상단에 표시하며, 값이 없으면 `-`다. 예외 로그에 회원 ID가 없어도 같은 요청의 HTTP 완료 로그에서 확인할 수 있다. 배포 이전 로그는 소급 수정하지 않는다.
 
 ### 조회 실패 점검 순서
 
@@ -129,4 +135,48 @@ IAM 관리자가 기존 EC2 Role에 다음 권한이 있는지 확인한다. 아
 
 2026-11-11 로컬 검증에서는 `aws sts get-caller-identity`가 `NoCredentials: Unable to locate credentials`로 실패했다. 실제 IAM 권한 부족 여부와 dev/prod 로그 결과는 확인하지 못했다. 위 절차는 EC2 Role이 연결된 dev에서 추가 수행해야 하며 AWS 리소스·IAM·로그 수집·경보 정책은 변경하지 않았다.
 
-이번 범위에는 다중 인스턴스 조회 상태 공유, 로그 페이지네이션·내보내기, PostHog 관리 API, 관리자 인증 개선, 장애 분석·자동 복구를 포함하지 않는다.
+## PostHog 프론트엔드 오류 조회
+
+**오류 조회 → PostHog — 프론트엔드 오류**에서 환경, 기간(1시간/24시간/7일), 등급(전체/P0/P1/P2), 선택적인 요청 ID를 입력하고 조회한다. 최신 100건을 반환하고 자동 폴링·새로고침·재시도는 하지 않는다.
+
+1. 프론트가 기존 관리자 접속 코드로 `GET /api/admin/posthog-errors?environment=dev&period=1h&severity=all`을 요청한다. 요청 ID가 있으면 `requestId`를 추가한다.
+2. `AdminPostHogService`가 Spring `RestClient`로 `POST https://us.posthog.com/api/projects/579863/query/`를 호출한다. 서버의 개인 API 키를 Bearer 인증에 사용한다.
+3. 본문은 `query.kind: HogQLQuery`, 서버가 생성한 `query.query`, `refresh: force_blocking`이다. `$exception`만 조회하고 서버 시계 기준 시작·종료 시각, 환경·등급·요청 ID를 적용한다. 환경·기간·등급은 허용 목록, 요청 ID는 영문·숫자·밑줄·하이픈 1~128자로 검증한다. 임의 SQL/HogQL 입력은 받지 않는다.
+4. Query API의 `columns`와 `results`를 컬럼 이름으로 연결한다. 이벤트 ID·시각·사용자 식별자, 지정한 환경·화면·요청 속성과 예외 정보만 추출한다. 이벤트 전체, 쿼리 원문, API 키는 응답하지 않는다.
+5. 완료된 빈 배열만 정상적인 결과 없음으로 안내한다. 미완료·잘못된 응답은 조회 실패다. 연결 제한은 3초, 응답 제한은 15초, 브라우저 전체 요청 제한은 20초이며 탭을 떠나면 요청을 취소한다.
+
+| 화면 환경     | 실제 `properties.environment` | 근거                          |
+| ------------- | ----------------------------- | ----------------------------- |
+| Dev (`dev`)   | `development`                 | 기존 PostHog 개발 환경 수집값 |
+| Prod (`prod`) | `production`                  | 기존 PostHog 운영 환경 수집값 |
+
+예외는 공식 `$exception_list` 배열의 각 항목에서 `type`, `value`, `stacktrace.frames`를 읽는다. HogQL이 배열을 JSON 문자열로 반환하는 경우도 처리한다. 스택은 실제 저장된 `filename`, `function`, `lineno`, `colno`만 표시하며 파일 URL의 쿼리·해시, 코드 변수·문맥·mechanism은 전달하지 않는다. 예외나 스택이 없으면 `null`/기록 없음으로 안내하고 생성하지 않는다. 소스맵 복원이나 별도 이벤트 수집은 수행하지 않는다.
+
+API 계약은 `AdminPostHogController`의 Swagger와 [PostHog SQL](https://posthog.com/docs/sql), [Query API](https://posthog.com/docs/api/queries), [예외 이벤트 구조](https://posthog.com/docs/error-tracking/issues-and-exceptions)를 참고한다.
+
+### 조회용 API 키 설정
+
+- 기존 Vault `app_env` 등 서버 환경 주입 경로로 `POSTHOG_PERSONAL_API_KEY`를 설정한다. 기존 `ADMIN_ACCESS_CODES`도 계속 필요하다. 배포 파이프라인을 수정하지 않는다.
+- 담당자가 PostHog의 개인 API 키 설정에서 프로젝트 `579863`에 대한 **Query 읽기** 권한을 가진 키를 발급한다. 권한 UI와 계정 접근 범위는 [개인 API 키 문서](https://posthog.com/docs/api/personal-api-keys)를 따른다.
+- 기존 브라우저 수집용 프로젝트 토큰은 이벤트 전송용이며 이 조회 키를 대체하지 않는다. 조회용 키는 프론트 환경변수·공개 설정·Git·응답·로그에 넣지 않는다. API 호스트는 수집 호스트 `us.i.posthog.com`과 다른 `us.posthog.com`이다.
+- 키가 비어 있으면 `503 ADMIN_POSTHOG_NOT_CONFIGURED`를 반환한다. 외부 호출 없이 빈 성공 응답으로 숨기지 않는다.
+- PostHog의 401·403·429·시간 초과·기타 장애는 각각 `502 ADMIN_POSTHOG_AUTH_FAILED`, `ADMIN_POSTHOG_ACCESS_DENIED`, `ADMIN_POSTHOG_RATE_LIMITED`, `ADMIN_POSTHOG_TIMEOUT`, `ADMIN_POSTHOG_UNAVAILABLE`로 구분한다. 관리자 접속 코드가 틀린 401과 PostHog 키 오류는 별개다. 원본 오류 응답·키·실행 쿼리를 로그나 응답에 연결하지 않는다.
+
+### 사용자 식별과 서버 로그 연결
+
+기존 `identifyPostHogMember`의 `distinct_id = member-{memberId}` 규칙을 그대로 사용한다. 정확한 접두사와 양의 정수로 확인할 수 있는 회원만 `memberId`로 반환한다. 숫자만 있는 임의 ID, 익명 ID, 누락·잘못된 ID는 `null`이다. 이 기준은 기존·새 이벤트에 동일하게 적용하며 과거의 없는 ID를 복원하지 않는다. 회원 식별·로그아웃·세션 복원·사용자 행동 수집 코드는 변경하지 않는다.
+
+오류 행을 선택하고 **서버 로그 확인**을 누르면 이벤트의 `request_id`와 해당 목록을 실제 조회했던 환경·기간으로 CloudWatch 탭의 기존 `useAdminLogs` 및 요청 상세를 실행한다. 조회 이후 필터 입력을 수정했더라도 원래 조회 조건을 사용한다. 요청 ID 검색에는 HTTP 오류 상태 필터를 적용하지 않으므로 HTTP 200 이후 프론트 파싱 오류도 추적할 수 있다. 요청 ID가 없으면 연결 버튼을 표시하지 않으며, 보존 기간 경과·수집 지연 등으로 서버 로그가 없으면 빈 결과를 안내한다. 이벤트·로그를 별도 DB에 복제하거나 동기화하지 않는다.
+
+### PostHog 실제 dev 검증 절차
+
+1. 담당자가 서버에 Query 읽기 권한의 개인 API 키를 주입하고 dev를 배포한다. 서버 설정·로그·브라우저 공개 설정에 키 원문이 노출되지 않는지 확인한다.
+2. 기존 코드로 `/admin`에 접속해 PostHog 탭에서 Dev/1시간/전체를 수동 조회한다. PostHog 콘솔의 `$exception` 시각·환경·등급·예외 목록과 비교한다. 결과가 없으면 콘솔에 실제 이벤트가 있는 기간을 선택한다.
+3. 기존 인증 회원 이벤트에서 `member-123` 같은 식별자와 회원 ID를 대조하고 익명·과거 이벤트는 `-`인지 확인한다. 새로운 일반 회원 API 요청의 CloudWatch 완료 로그에도 `member_id`가 동일한 `request_id`로 남는지 확인한다.
+4. 요청 ID가 있는 기존 오류에서 **서버 로그 확인**을 눌러 환경·기간과 HTTP 200/4xx/5xx 상세를 대조한다. HTTP 200 이후 프론트 파싱 오류가 기록된 사례도 확인한다. 검증용 운영 장애를 만들지 않는다.
+5. 누락된 요청 ID·예외·스택과 빈 결과 안내, P0/P1/P2 필터, 긴 메시지 상세, 좁은 화면의 가로 스크롤을 확인한다. 외부 키 권한 변경 없이 실패 응답은 테스트 대역으로 검증한다.
+6. 관리자 호출·조회한 이벤트·로그가 PostHog 이벤트나 녹화로 다시 전송되지 않는지 확인하고 기존 통계·회원 조회·로그아웃도 확인한다.
+
+2026-11-11 로컬 환경에는 `POSTHOG_PERSONAL_API_KEY`가 없어 실제 프로젝트 Query API 결과를 확인하지 못했다. 공식 API·예외 문서와 설치된 PostHog SDK 타입을 기준으로 구현하고 HTTP 테스트 대역으로 검증했다. 실제 프로젝트의 권한, 저장 속성 및 스택 유무는 위 절차로 추가 확인해야 한다. AWS IAM·PostHog 프로젝트 설정은 변경하지 않았다.
+
+이번 범위에는 다중 인스턴스 조회 상태 공유, 로그 페이지네이션·내보내기, 관리자 인증 개선, 장애 분석·자동 복구를 포함하지 않는다.

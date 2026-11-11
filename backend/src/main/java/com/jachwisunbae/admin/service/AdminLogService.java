@@ -43,7 +43,7 @@ public class AdminLogService {
     private static final int MAX_QUERIES = 100;
     private static final int MAX_RESULTS = 100;
     private static final String FIELDS = "fields @timestamp, request_id, http_method, path, status, "
-            + "duration_ms, message, error_type";
+            + "duration_ms, message, error_type, member_id";
     private final CloudWatchLogsClient client;
     private final Clock clock;
     private final TaskScheduler scheduler;
@@ -175,6 +175,7 @@ public class AdminLogService {
             String timestamp = fields.get("@timestamp");
             Instant instant = timestamp == null ? null : parseTimestamp(timestamp);
             return new AdminLogEntry(instant, fields.get("request_id"), fields.get("http_method"), fields.get("path"),
+                    fields.containsKey("member_id") ? Long.valueOf(fields.get("member_id")) : null,
                     fields.containsKey("status") ? Integer.valueOf(fields.get("status")) : null,
                     fields.containsKey("duration_ms") ? Long.valueOf(fields.get("duration_ms")) : null,
                     fields.get("message"), fields.get("error_type"),

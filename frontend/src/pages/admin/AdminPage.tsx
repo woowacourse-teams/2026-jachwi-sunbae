@@ -6,8 +6,8 @@ import useDocumentTitle from '@/shared/lib/hooks/useDocumentTitle';
 import { Button } from '@/shared/ui/button/Button';
 
 import AdminDashboard from './ui/AdminDashboard';
+import AdminErrorExplorer from './ui/AdminErrorExplorer';
 import AdminLogin from './ui/AdminLogin';
-import AdminLogs from './ui/AdminLogs';
 
 const AdminPage = () => {
   useDocumentTitle('운영 관리자');
@@ -47,7 +47,7 @@ const AdminPage = () => {
           <div hidden={menu !== 'dashboard'}>
             <AdminDashboard accessCode={auth.access.code} summary={auth.access.summary} onUnauthorized={auth.logout} />
           </div>
-          {menu === 'logs' && <AdminLogs accessCode={auth.access.code} onUnauthorized={auth.logout} />}
+          {menu === 'logs' && <AdminErrorExplorer accessCode={auth.access.code} onUnauthorized={auth.logout} />}
           <section aria-labelledby="admin-monitoring-title">
             <h2 id="admin-monitoring-title">운영 모니터링</h2>
             <p>각 서비스의 별도 운영 권한이 필요합니다. PostHog 오류의 request_id로 CloudWatch 로그를 검색하세요.</p>

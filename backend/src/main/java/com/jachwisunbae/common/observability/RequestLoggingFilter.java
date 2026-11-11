@@ -1,5 +1,7 @@
 package com.jachwisunbae.common.observability;
 
+import static com.jachwisunbae.auth.web.JwtAuthenticationFilter.MEMBER_ID_ATTRIBUTE;
+
 import com.jachwisunbae.common.web.ApiRequestPath;
 
 import jakarta.servlet.FilterChain;
@@ -111,6 +113,11 @@ public class RequestLoggingFilter extends OncePerRequestFilter {
 
         event.addKeyValue(STATUS, status)
                 .addKeyValue(DURATION_MILLIS, durationMillis);
+        // 인증 필터가 검증한 요청 속성만 사용한다. 헤더나 입력값으로 회원을 추정하지 않는다.
+        if (!isAdminRequest(request) && request.getAttribute(MEMBER_ID_ATTRIBUTE) instanceof Long memberId
+                && memberId > 0) {
+            event.addKeyValue("member_id", memberId);
+        }
 
         if (status < HttpServletResponse.SC_BAD_REQUEST) {
             logSuccessfulRequest(event);

@@ -17,17 +17,22 @@ import ch.qos.logback.core.read.ListAppender;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jachwisunbae.admin.auth.AdminAccessCodes;
 import com.jachwisunbae.admin.controller.AdminLogController;
+import com.jachwisunbae.admin.controller.AdminPostHogController;
 import com.jachwisunbae.admin.controller.AdminQueryController;
 import com.jachwisunbae.admin.repository.query.AdminMember;
 import com.jachwisunbae.admin.repository.query.AdminSummary;
 import com.jachwisunbae.admin.service.AdminLogService;
+import com.jachwisunbae.admin.service.AdminPostHogService;
 import com.jachwisunbae.admin.service.AdminQueryService;
 import com.jachwisunbae.admin.service.result.AdminLogQuery;
+import com.jachwisunbae.admin.service.result.AdminPostHogResult;
 import com.jachwisunbae.admin.support.AdminTestCodes;
 import com.jachwisunbae.admin.web.AdminAuthenticationFilter;
 import com.jachwisunbae.auth.token.JwtTokenProvider;
 import com.jachwisunbae.auth.web.JwtAuthenticationFilter;
 import com.jachwisunbae.common.config.CorsConfig;
+import com.jachwisunbae.common.exception.errorcode.ErrorCode;
+import com.jachwisunbae.common.exception.server.ServiceUnavailableException;
 import com.jachwisunbae.common.observability.RequestLoggingFilter;
 import com.jachwisunbae.common.web.error.GlobalExceptionHandler;
 import com.jachwisunbae.member.repository.MemberRepository;
@@ -51,6 +56,7 @@ class AdminAccessAcceptanceTest {
     private final MemberRepository members = mock(MemberRepository.class);
     private final AdminQueryService queries = mock(AdminQueryService.class);
     private final AdminLogService logs = mock(AdminLogService.class);
+    private final AdminPostHogService posthog = mock(AdminPostHogService.class);
     private MockMvc mvc;
 
     @BeforeEach
@@ -62,7 +68,8 @@ class AdminAccessAcceptanceTest {
     }
 
     private MockMvc build(String codes) {
-        return MockMvcBuilders.standaloneSetup(new AdminQueryController(queries), new AdminLogController(logs))
+        return MockMvcBuilders.standaloneSetup(new AdminQueryController(queries), new AdminLogController(logs),
+                        new AdminPostHogController(posthog))
                 .setControllerAdvice(new GlobalExceptionHandler())
                 .addFilters(new RequestLoggingFilter(), new CorsConfig(List.of(ORIGIN)).corsFilter().getFilter(),
                         new AdminAuthenticationFilter(new AdminAccessCodes(codes), mapper),
@@ -178,5 +185,51 @@ class AdminAccessAcceptanceTest {
         mvc.perform(post("/api/admin/log-queries?environment=dev")
                         .header("Authorization", "Admin " + AdminTestCodes.code(0)))
                 .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @DisplayName("PostHog 조회는 기존 관리자 코드로만 접근하고 쿠키 없이 필요한 조건을 전달한다")
+    void protectsPostHogQueries() throws Exception {
+        String path = "/api/admin/posthog-errors?environment=prod&period=24h&severity=P1&requestId=request-123";
+        mvc.perform(get(path)).andExpect(status().isUnauthorized());
+        mvc.perform(get(path).header("Authorization", "Bearer member-jwt")).andExpect(status().isUnauthorized());
+        mvc.perform(get(path).header("Authorization", "Admin incorrect")).andExpect(status().isUnauthorized());
+        verifyNoInteractions(posthog, jwt, members);
+        when(posthog.search("prod", "24h", "P1", "request-123"))
+                .thenReturn(new AdminPostHogResult(Instant.EPOCH, Instant.EPOCH, List.of()));
+
+        mvc.perform(get(path).accept(MediaType.APPLICATION_JSON)
+                        .header("Authorization", "Admin " + AdminTestCodes.code(0)))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.data.events").isEmpty())
+                .andExpect(header().string("Cache-Control", "no-store"))
+                .andExpect(header().doesNotExist("Set-Cookie"));
+        mvc.perform(get("/api/admin/posthog-errors?environment=dev")
+                        .header("Authorization", "Admin " + AdminTestCodes.code(0)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @DisplayName("PostHog 키 미설정은 설정 오류와 503을 반환하며 관리자 입력은 응답·로그에 노출하지 않는다")
+    void reportsPostHogMissingConfiguration() throws Exception {
+        when(posthog.search("dev", "1h", "all", null)).thenThrow(
+                new ServiceUnavailableException(ErrorCode.ADMIN_POSTHOG_NOT_CONFIGURED, "PostHog 조회 키 미설정"));
+        Logger root = (Logger) LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
+        var appender = new ListAppender<ILoggingEvent>();
+        appender.start();
+        root.addAppender(appender);
+        try {
+            var result = mvc.perform(get("/api/admin/posthog-errors?environment=dev&period=1h&extra=private-test-key")
+                            .accept(MediaType.APPLICATION_JSON)
+                            .header("Authorization", "Admin " + AdminTestCodes.code(0)))
+                    .andExpect(status().isServiceUnavailable())
+                    .andExpect(jsonPath("$.code").value("ADMIN_POSTHOG_NOT_CONFIGURED"))
+                    .andReturn();
+            assertThat(result.getResponse().getContentAsString()).doesNotContain("private-test-key");
+            assertThat(appender.list.stream().map(event -> event.getFormattedMessage() + event.getKeyValuePairs()
+                    + event.getThrowableProxy()).toList()).allSatisfy(message -> assertThat(message).doesNotContain("private-test-key"));
+        } finally {
+            root.detachAppender(appender);
+            appender.stop();
+        }
     }
 }

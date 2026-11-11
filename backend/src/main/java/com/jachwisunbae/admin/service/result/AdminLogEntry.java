@@ -8,6 +8,7 @@ public record AdminLogEntry(
         String requestId,
         String httpMethod,
         String path,
+        Long memberId,
         Integer status,
         Long durationMs,
         String message,

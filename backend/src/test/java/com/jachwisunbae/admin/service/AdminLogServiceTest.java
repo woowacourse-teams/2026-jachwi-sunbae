@@ -72,7 +72,7 @@ class AdminLogServiceTest {
         assertThat(request.getValue().startTime()).isEqualTo(NOW.minusSeconds(seconds).getEpochSecond());
         assertThat(request.getValue().endTime()).isEqualTo(NOW.getEpochSecond());
         assertThat(request.getValue().limit()).isEqualTo(100);
-        assertThat(request.getValue().queryString()).contains(filter, "sort @timestamp desc", "limit 100")
+        assertThat(request.getValue().queryString()).contains(filter, "member_id", "sort @timestamp desc", "limit 100")
                 .doesNotContain("request_body", "@message", "query_string", "stack_trace");
         assertThat(result.queryId()).isNotEqualTo("aws-private-id");
         assertThat(result.status()).isEqualTo("Scheduled");
@@ -109,7 +109,7 @@ class AdminLogServiceTest {
         String stack = "java.lang.IllegalStateException: failure\n\tat example.Service.run(Service.java:1)\nCaused by: cause";
         when(client.getQueryResults(any(GetQueryResultsRequest.class))).thenReturn(complete(List.of(
                 row(Map.of("@timestamp", "2026-11-11 03:00:02.000", "request_id", "request-200", "status", "200",
-                        "duration_ms", "12", "http_method", "GET", "path", "/api/properties", "message", "HTTP request completed")),
+                        "duration_ms", "12", "http_method", "GET", "path", "/api/properties", "member_id", "123", "message", "HTTP request completed")),
                 row(Map.of("@timestamp", "2026-11-11T03:00:01.000Z", "request_id", "request-200", "error.type", "java.lang.IllegalStateException",
                         "error.message", "failure", "error.stack_trace", stack, "@ptr", "private-pointer",
                         "request_body", "secret-body", "query_string", "secret-query", "request_headers", "secret-token")))));
@@ -123,6 +123,8 @@ class AdminLogServiceTest {
         assertThat(result.logs().getFirst().status()).isNull();
         assertThat(result.logs().getLast().status()).isEqualTo(200);
         assertThat(result.logs().getLast().durationMs()).isEqualTo(12);
+        assertThat(result.logs().getLast().memberId()).isEqualTo(123L);
+        assertThat(result.logs().getFirst().memberId()).isNull();
         assertThat(new ObjectMapper().findAndRegisterModules().writeValueAsString(result))
                 .doesNotContain("secret-body", "secret-query", "secret-token", "private-pointer", "aws-private-id");
         var request = ArgumentCaptor.forClass(StartQueryRequest.class);
@@ -145,6 +147,7 @@ class AdminLogServiceTest {
         assertThat(logs.getLast().stackTrace()).isNull();
         assertThat(logs.getLast().errorMessage()).isNull();
         assertThat(logs.getLast().durationMs()).isNull();
+        assertThat(logs.getLast().memberId()).isNull();
     }
 
     @Test
