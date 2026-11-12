@@ -1,3 +1,4 @@
+import { isAdminScreen } from '../adminPrivacy';
 import { getAnalyticsTrafficContext } from '../trafficContext';
 import { getPostHogOptions, isValidPostHogConfiguration } from './configuration';
 import type { PostHogAction, PostHogAuthStatus, PostHogClient, PostHogSessionContext } from './types';
@@ -129,7 +130,7 @@ export const initPostHog = (projectToken: string, host: string): boolean => {
   }
 };
 export const runPostHogAction = (action: PostHogAction): boolean => {
-  if (requestedConfiguration === null) return false;
+  if (requestedConfiguration === null || isAdminScreen()) return false;
   if (client !== null && initializedConfiguration === requestedConfiguration.key) return executeAction(action, client);
   if (pendingActions.length >= MAX_PENDING_ACTIONS) {
     droppedActions += 1;

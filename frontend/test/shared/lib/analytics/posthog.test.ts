@@ -50,7 +50,7 @@ describe('PostHog 제품 분석', () => {
         before_send: expect.any(Function),
         capture_pageview: false,
         disable_session_recording: false,
-        session_recording: { maskCapturedNetworkRequestFn: expect.any(Function) },
+        session_recording: { blockSelector: '.ph-no-capture', maskCapturedNetworkRequestFn: expect.any(Function) },
         mask_all_text: true,
         mask_all_element_attributes: true,
       });

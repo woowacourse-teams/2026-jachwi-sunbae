@@ -10,6 +10,7 @@ import NeighborhoodPageSkeleton from '@/pages/neighborhood-preview/NeighborhoodP
 import useIsDesktop from '@/shared/lib/hooks/useIsDesktop';
 import {
   ABOUT_PATH,
+  ADMIN_PATH,
   CHECKLIST_CREATE_PATH,
   CHECKLISTS_PATH,
   COMPARE_PATH,
@@ -38,6 +39,7 @@ import {
 import LazyRouteBoundary from './LazyRouteBoundary';
 import ProtectedRoute from './ProtectedRoute';
 
+const AdminPage = lazy(() => import('@/pages/admin/AdminPage'));
 const CheapMealsPage = lazy(() => import('@/pages/cheap-meals/CheapMealsPage'));
 const DesignHomePage = lazy(() => import('@/pages/design-home/DesignHomePage'));
 const DesignRecordsPage = lazy(() => import('@/pages/design-records/DesignRecordsPage'));
@@ -104,6 +106,7 @@ const LegacyNeighborhoodRoute = ({ base }: { base: NeighborhoodBasePath }) => {
 };
 const AppRoutes = () => (
   <Routes>
+    <Route path={`${ADMIN_PATH}/*`} element={lazyPage(<AdminPage />)} />
     <Route element={<PublicExploreLayout />}>
       <Route path={EXPLORE_PATH} element={lazyPage(<NeighborhoodPreviewPage />, <NeighborhoodPageSkeleton />)}>
         <Route path={ROUTE_PATTERNS.area} element={lazyPage(<NeighborhoodRoutePage />)} />

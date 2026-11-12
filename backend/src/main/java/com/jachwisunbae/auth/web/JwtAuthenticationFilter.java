@@ -5,6 +5,7 @@ import com.jachwisunbae.auth.token.JwtTokenProvider;
 import com.jachwisunbae.common.exception.client.AuthenticationFailedException;
 import com.jachwisunbae.common.exception.errorcode.ErrorCode;
 import com.jachwisunbae.common.observability.RequestLoggingFilter;
+import com.jachwisunbae.common.web.ApiRequestPath;
 import com.jachwisunbae.common.web.error.ErrorResponse;
 import com.jachwisunbae.member.repository.MemberRepository;
 import jakarta.servlet.FilterChain;
@@ -69,6 +70,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private boolean isPublicRequest(HttpServletRequest request) {
         String path = request.getRequestURI();
+        // 관리자 API는 앞선 AdminAuthenticationFilter가 전용 세션으로 검증한다.
+        if (ApiRequestPath.isWithin(request, "/api/admin")) {
+            return true;
+        }
         if (!path.startsWith("/api/")) {
             return true;
         }

@@ -1,22 +1,35 @@
 package com.jachwisunbae.common.observability;
 
+import static com.jachwisunbae.auth.web.JwtAuthenticationFilter.MEMBER_ID_ATTRIBUTE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.read.ListAppender;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.jachwisunbae.auth.token.JwtTokenProvider;
+import com.jachwisunbae.auth.web.JwtAuthenticationFilter;
+import com.jachwisunbae.member.entity.Member;
+import com.jachwisunbae.member.repository.MemberRepository;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.http.HttpServletResponse;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockHttpServletRequest;
@@ -29,7 +42,13 @@ class RequestLoggingFilterTest {
 
     private final RequestLoggingFilter filter = new RequestLoggingFilter();
     private final Logger logger = (Logger) LoggerFactory.getLogger(RequestLoggingFilter.class);
-    private final ListAppender<ILoggingEvent> appender = new ListAppender<>();
+    private final ListAppender<ILoggingEvent> appender = new ListAppender<>() {
+        @Override
+        protected void append(ILoggingEvent event) {
+            event.prepareForDeferredProcessing();
+            super.append(event);
+        }
+    };
 
     @BeforeEach
     void attachAppender() {
@@ -41,6 +60,84 @@ class RequestLoggingFilterTest {
     void detachAppender() {
         logger.detachAppender(appender);
         appender.stop();
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = {200, 400, 500})
+    @DisplayName("JWT로 확인한 회원은 응답 상태와 관계없이 기존 요청 ID와 함께 완료 로그에 남는다")
+    void logsAuthenticatedMember(int status) throws Exception {
+        var provider = mock(JwtTokenProvider.class);
+        var members = mock(MemberRepository.class);
+        when(provider.parseMemberId("valid-token")).thenReturn(123L);
+        when(members.findById(123L)).thenReturn(Optional.of(mock(Member.class)));
+        var jwt = new JwtAuthenticationFilter(provider, members, new ObjectMapper());
+        var request = jsonRequest("GET", "/api/properties", "");
+        request.addHeader(HttpHeaders.AUTHORIZATION, "Bearer valid-token");
+        var response = new MockHttpServletResponse();
+
+        filter.doFilter(request, response, (req, res) -> jwt.doFilter(req, res, (authenticated, result) -> {
+            assertThat(MDC.get("request_id")).isEqualTo(response.getHeader("X-Request-Id"));
+            respond(status, "{}").doFilter(authenticated, result);
+        }));
+
+        assertThat(fields(onlyEvent())).containsEntry("member_id", 123L).containsEntry("status", status);
+        assertThat(onlyEvent().getMDCPropertyMap()).containsEntry("request_id", response.getHeader("X-Request-Id"));
+        assertThat(response.getHeader("X-Request-Id")).isNotBlank();
+        assertThat(MDC.get("request_id")).isNull();
+        appender.list.clear();
+        filter.doFilter(jsonRequest("GET", "/api/auth/anonymous", ""), new MockHttpServletResponse(), respond(200, "{}"));
+        assertThat(fields(onlyEvent())).doesNotContainKey("member_id");
+    }
+
+    @ParameterizedTest
+    @CsvSource({"/api/properties,401", "/api/auth/anonymous,200", "/actuator/health,200", "/api/admin/summary,200"})
+    @DisplayName("인증되지 않거나 인증을 거치지 않는 공개·관리자 요청에는 회원 ID를 추정하지 않는다")
+    void omitsUnidentifiedMember(String path, int expectedStatus) throws Exception {
+        var jwt = new JwtAuthenticationFilter(mock(JwtTokenProvider.class), mock(MemberRepository.class), new ObjectMapper());
+        var request = jsonRequest("GET", path, "");
+        request.addHeader("member_id", "123");
+        var response = new MockHttpServletResponse();
+
+        filter.doFilter(request, response, (req, res) -> jwt.doFilter(req, res, respond(200, "{}")));
+
+        assertThat(fields(onlyEvent())).containsEntry("status", expectedStatus).doesNotContainKey("member_id");
+    }
+
+    @Test
+    @DisplayName("인증 후 예외가 전파되어도 회원 ID를 남기고 관리자 요청에서는 속성을 무시한다")
+    void preservesMemberOnUnhandledFailureAndExcludesAdmin() throws Exception {
+        var request = jsonRequest("GET", "/api/properties", "");
+        assertThatThrownBy(() -> filter.doFilter(request, new MockHttpServletResponse(), (req, res) -> {
+            req.setAttribute(MEMBER_ID_ATTRIBUTE, 123L);
+            throw new IllegalStateException("failure");
+        })).isInstanceOf(IllegalStateException.class);
+        assertThat(fields(onlyEvent())).containsEntry("member_id", 123L).containsEntry("status", 500);
+        appender.list.clear();
+        var admin = jsonRequest("GET", "/api/admin/summary", "");
+        admin.setAttribute(MEMBER_ID_ATTRIBUTE, 123L);
+        filter.doFilter(admin, new MockHttpServletResponse(), respond(200, "{}"));
+        assertThat(fields(onlyEvent())).doesNotContainKey("member_id");
+    }
+
+    @Test
+    @DisplayName("관리자 요청은 예외 원문에 비밀이 있어도 요청·응답 상세와 예외 원문을 남기지 않는다")
+    void omitsAllSensitiveAdminFailureDetails() throws Exception {
+        String secret = "test-only-admin-secret";
+        MockHttpServletRequest request = jsonRequest("POST", "/api/admin/session", "{\"accessCode\":\"" + secret + "\"}");
+        request.setQueryString("code=" + secret);
+        request.addHeader(HttpHeaders.USER_AGENT, secret);
+        MockHttpServletResponse response = new MockHttpServletResponse();
+
+        assertThatThrownBy(() -> filter.doFilter(request, response, (req, res) -> {
+            req.getInputStream().readAllBytes();
+            throw new IllegalStateException(secret);
+        })).isInstanceOf(IllegalStateException.class);
+
+        ILoggingEvent event = onlyEvent();
+        assertThat(fields(event)).doesNotContainKeys("query_string", "request_headers", "request_body", "response_body");
+        assertThat(event.getFormattedMessage()).doesNotContain(secret);
+        assertThat(event.getThrowableProxy()).isNull();
+        assertThat(fields(event)).containsEntry("status", 500);
     }
 
     @Test

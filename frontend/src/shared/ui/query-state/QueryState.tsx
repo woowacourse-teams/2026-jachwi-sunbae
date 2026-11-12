@@ -25,6 +25,8 @@ type QueryStateProps<TData> = {
   query: QueryLike<TData>;
   /** 기다리는 동안 읽기 프로그램에만 알리는 안내. 화면에는 글자를 띄우지 않는다. */
   loadingTitle: string;
+  /** 페이지 안의 독립 영역이면 오류 화면에 main을 중첩하지 않는다. */
+  page?: boolean;
   /** 페이지 레이아웃 뼈대. 주면 기다리는 동안 뼈대를 그리고, 없으면 가운데에 Progress Circle(40)을 둔다. */
   skeleton?: ReactNode;
   describeError: (error: unknown) => QueryErrorView;
@@ -49,6 +51,7 @@ const QueryState = <TData,>({
   describeError,
   errorAction,
   delayLoading = false,
+  page = true,
   children,
 }: QueryStateProps<TData>) => {
   const isLoadingVisible = useDelayedLoading(query.isPending && delayLoading);
@@ -66,6 +69,7 @@ const QueryState = <TData,>({
     const { title, description, canRetry } = describeError(query.error);
     return (
       <ContentState
+        page={page}
         tone="error"
         title={title}
         description={description}

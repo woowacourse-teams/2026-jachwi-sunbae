@@ -22,6 +22,25 @@ describe('PostHogTracker', () => {
     delete window.__JACHWI_NATIVE_APP__;
   });
 
+  it('관리자 경로에서는 SDK 초기화·회원 추적·페이지 이벤트를 시작하지 않는다', () => {
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const initSpy = vi.spyOn(posthogModule, 'initPostHog');
+    const trackSpy = vi.spyOn(posthogModule, 'trackPostHogPageView');
+
+    render(
+      <QueryClientProvider client={queryClient}>
+        <MemoryRouter initialEntries={['/admin']}>
+          <PublicConfigProvider config={testConfig}>
+            <PostHogTracker />
+          </PublicConfigProvider>
+        </MemoryRouter>
+      </QueryClientProvider>,
+    );
+
+    expect(initSpy).not.toHaveBeenCalled();
+    expect(trackSpy).not.toHaveBeenCalled();
+  });
+
   it('토큰과 호스트가 주어지면 초기화하고 현재 경로를 추적한다', () => {
     const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
     const initSpy = vi.spyOn(posthogModule, 'initPostHog');
