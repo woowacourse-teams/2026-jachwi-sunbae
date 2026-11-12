@@ -31,7 +31,7 @@ const parseDetail = (value: unknown, polygons: AdminBoundary['polygons']) => {
         return ring[index];
       });
       const first = points[0];
-      const last = points.at(-1)!;
+      const last = points[points.length - 1];
       if (
         first.latitude !== last.latitude ||
         first.longitude !== last.longitude ||
