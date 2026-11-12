@@ -20,15 +20,18 @@ const out = path.resolve(dir, option('out', 'out/flyover.mp4'));
 const fps = Number(option('fps', 60));
 const scale = Number(option('scale', 1));
 const shots = option('shots');
+// 녹화 클립(H.264 MP4)을 쓰는 intro.html은 코덱이 있는 Chrome으로 `--channel chrome`을 붙여 렌더링한다.
+const channel = option('channel');
+const [width, height] = option('size', '1440x1152').split('x').map(Number);
 
 fs.mkdirSync(path.dirname(out), { recursive: true });
 fs.mkdirSync(path.join(dir, 'out'), { recursive: true });
 
-const browser = await chromium.launch();
-const page = await browser.newPage({ viewport: { width: 1440, height: 1152 }, deviceScaleFactor: scale });
+const browser = await chromium.launch(channel ? { channel } : {});
+const page = await browser.newPage({ viewport: { width, height }, deviceScaleFactor: scale });
 page.on('pageerror', (error) => console.error('pageerror:', error.message));
 await page.goto(pathToFileURL(path.join(dir, pageFile)).href);
-await page.evaluate(() => document.fonts.ready);
+await page.evaluate(() => window.__ready ?? document.fonts.ready);
 await page.waitForTimeout(800);
 const total = await page.evaluate(() => window.__total);
 const stage = await page.$('#vp');
@@ -36,7 +39,7 @@ const stage = await page.$('#vp');
 if (shots) {
   for (const t of shots.split(',')) {
     await page.evaluate((time) => window.__seek(time), Number(t));
-    const file = path.join(dir, 'out', `shot-${t}.png`);
+    const file = path.join(dir, 'out', `${path.basename(pageFile, '.html')}-shot-${t}.png`);
     await stage.screenshot({ path: file });
     console.log(file);
   }

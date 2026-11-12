@@ -3,7 +3,7 @@ import type { CSSProperties } from 'react';
 
 import { LOGO_DUCK } from '@/shared/assets/imageAssets';
 
-import flyoverVideo from '../assets/landing-flyover.mp4';
+import introVideo from '../assets/landing-intro.mp4';
 import {
   HERO_LEAD,
   HERO_TITLE,
@@ -11,6 +11,7 @@ import {
   STORY_TONE_COLOR,
   TECH_LEAD,
   VIDEO_LABEL,
+  VIDEO_SIZE,
   WHY_LEAD,
 } from '../model/landingContent';
 import LandingGetStarted from '../ui/LandingGetStarted';
@@ -44,7 +45,17 @@ const LandingDesktopPage = ({ search, returnTo }: LandingDesktopPageProps) => (
           <LandingGetStarted search={search} returnTo={returnTo} position="top" layout="row" />
         </div>
         <figure className={styles.heroVideo}>
-          <video src={flyoverVideo} autoPlay muted loop playsInline preload="metadata" aria-label={VIDEO_LABEL} />
+          <video
+            src={introVideo}
+            width={VIDEO_SIZE.width}
+            height={VIDEO_SIZE.height}
+            autoPlay
+            muted
+            loop
+            playsInline
+            preload="metadata"
+            aria-label={VIDEO_LABEL}
+          />
         </figure>
       </div>
     </section>
@@ -169,13 +180,17 @@ const styles = {
     background: var(--color-surface-muted);
   `,
 
+  /*
+   * 16:9 영상은 같은 폭이면 5:4보다 낮아 글자가 작게 보이므로 영상 칸을 넓힌다.
+   * 글 칸은 1440px 화면에서 버튼 세 개가 한 줄에 들어가는 폭(약 34rem)을 남긴다.
+   */
   heroInner: css`
     label: LandingDesktopPage-heroInner;
     display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr);
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr);
     align-items: center;
-    gap: 4rem;
-    width: min(100%, 80rem);
+    gap: 3.5rem;
+    width: min(100%, 88rem);
     margin: 0 auto;
   `,
 
@@ -221,7 +236,8 @@ const styles = {
     & video {
       display: block;
       width: 100%;
-      aspect-ratio: 1440 / 1152;
+      height: auto;
+      aspect-ratio: ${VIDEO_SIZE.width} / ${VIDEO_SIZE.height};
       object-fit: cover;
     }
   `,
