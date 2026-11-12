@@ -3,6 +3,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 
 import { ApiError } from '@/features/auth/api/apiClient';
+import { recordEventMission } from '@/features/event-mission/model/eventMissionRecord';
 import { type CommuteArea, commuteAreaToRegion } from '@/features/map/api/commuteApi';
 import { fetchCommuteRoute } from '@/features/map/api/commuteRouteApi';
 import { reverseGeocode, searchAddressWithNaver } from '@/features/map/api/mapApi';
@@ -170,6 +171,12 @@ const useNeighborhoodPreview = () => {
       completeExploration(areas?.length ?? 0);
     }
   }, [isPublicExplore, phase, commute.isSuccess, commute.isFetching, areas?.length]);
+  // 이벤트 미션: 출퇴근 장소를 검색해 추천 동네를 하나라도 받았을 때 남긴다.
+  useEffect(() => {
+    if (phase === 'analyzing' && commute.isSuccess && !commute.isFetching && (areas?.length ?? 0) > 0) {
+      recordEventMission('neighborhood-search');
+    }
+  }, [phase, commute.isSuccess, commute.isFetching, areas?.length]);
   const selected = allAreas?.find((area) => area.adminDongCode === (routeAreaId ?? selectedId));
   const selectedStation = selected?.stations.find((station) => station.stopId === selectedStopId);
   useEffect(() => {

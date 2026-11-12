@@ -1,5 +1,6 @@
 import { useMutation } from '@tanstack/react-query';
 
+import { recordEventMission } from '@/features/event-mission/model/eventMissionRecord';
 import { fetchProperties } from '@/features/property/api/propertyApi';
 import { propertyQueryKeys } from '@/features/property/api/propertyQueryKeys';
 import { rememberRecentEdit } from '@/features/property/lib/recentEdit';
@@ -28,6 +29,7 @@ export const useCreateChecklist = () => {
       createChecklistV11(config, { name, stage, items: toProvidedChecklistItemInputs(items) }),
     retry: false,
     onSuccess: async (detail) => {
+      recordEventMission('checklist-created');
       queryClient.setQueryData(checklistQueryKeys.detail(detail.checklistId), detail);
       await queryClient.invalidateQueries({ queryKey: checklistQueryKeys.lists() });
     },

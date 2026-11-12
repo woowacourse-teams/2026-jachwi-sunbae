@@ -19,6 +19,8 @@ export const propertyChecklistCreatePath = (propertyId: number) =>
   `${CHECKLIST_CREATE_PATH}?${CHECKLIST_PROPERTY_ID_PARAM}=${propertyId}`;
 export const checklistDetailPath = (checklistId: number) => `${CHECKLISTS_PATH}/${checklistId}`;
 export const MY_PATH = '/me';
+/** 오프라인 이벤트의 미션 현황판. 참가자가 미션을 마치면 운영진이 이 화면을 보고 상품을 준다. */
+export const EVENT_PATH = '/event';
 export const COMPARE_PATH = '/compare';
 /** 저렴한 한 끼. 탭마다 주소가 따로 있고(`/cheap-meals/restaurant` 등), 탭 없이 들어오면 마지막으로 연 탭(처음이면 식당 탭) 주소로 바꾼다. */
 export const CHEAP_MEALS_PATH = '/cheap-meals';

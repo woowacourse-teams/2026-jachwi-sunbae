@@ -1,3 +1,4 @@
+import { recordEventMission } from '@/features/event-mission/model/eventMissionRecord';
 import { queryClient } from '@/shared/api/queryClient';
 import type { PublicConfig } from '@/shared/config/publicConfigTypes';
 
@@ -115,6 +116,7 @@ const finishOAuthLink = async (
   // 회원과 무관해 보이는 캐시도 이전 회원 기준일 수 있어 모두 버린다.
   resetCache();
   if (pending !== null) saveLinkedProvider(memberId, pending.provider);
+  recordEventMission('oauth-linked');
   const outcome = resolveOAuthOutcome(pending, memberId);
   trackOAuthLinkEvent('oauth_link_completed', {
     provider: toAnalyticsProvider(pending?.provider),
