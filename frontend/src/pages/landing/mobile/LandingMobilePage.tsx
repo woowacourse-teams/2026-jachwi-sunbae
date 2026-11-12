@@ -3,7 +3,7 @@ import type { CSSProperties } from 'react';
 
 import { LOGO_DUCK } from '@/shared/assets/imageAssets';
 
-import flyoverVideo from '../assets/landing-flyover.mp4';
+import introVideo from '../assets/landing-intro.mp4';
 import {
   HERO_LEAD,
   HERO_TITLE,
@@ -11,6 +11,7 @@ import {
   STORY_TONE_COLOR,
   TECH_LEAD,
   VIDEO_LABEL,
+  VIDEO_SIZE,
   WHY_LEAD,
 } from '../model/landingContent';
 import LandingGetStarted from '../ui/LandingGetStarted';
@@ -41,7 +42,17 @@ const LandingMobilePage = ({ search, returnTo }: LandingMobilePageProps) => (
       <p className={styles.lead}>{HERO_LEAD}</p>
       <LandingGetStarted search={search} returnTo={returnTo} position="top" layout="stack" />
       <figure className={styles.video}>
-        <video src={flyoverVideo} autoPlay muted loop playsInline preload="metadata" aria-label={VIDEO_LABEL} />
+        <video
+          src={introVideo}
+          width={VIDEO_SIZE.width}
+          height={VIDEO_SIZE.height}
+          autoPlay
+          muted
+          loop
+          playsInline
+          preload="metadata"
+          aria-label={VIDEO_LABEL}
+        />
       </figure>
     </section>
 
@@ -183,7 +194,8 @@ const styles = {
     & video {
       display: block;
       width: 100%;
-      aspect-ratio: 1440 / 1152;
+      height: auto;
+      aspect-ratio: ${VIDEO_SIZE.width} / ${VIDEO_SIZE.height};
       object-fit: cover;
     }
   `,
