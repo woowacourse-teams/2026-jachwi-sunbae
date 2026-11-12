@@ -14,3 +14,11 @@ Spring Boot 백엔드, 프론트엔드, React Native 앱 셸을 함께 관리하
 - 변경 범위에 필요한 테스트와 검사를 실행한다.
 - 기능이나 사용법이 바뀌면 관련 문서도 같은 PR에서 수정한다.
 - `AGENTS.md`와 `CLAUDE.md`는 같은 내용으로 유지한다.
+
+## 프론트엔드 TypeScript
+
+- 기준과 근거, 런타임 검증 위치는 [TypeScript 사용 기준](frontend/docs/typescript.md)을 따른다.
+- 객체 타입은 `type`으로 선언하고, `enum` 대신 문자열 리터럴 유니온과 `as const`를 쓰며, 타입만 가져올 때는 `import type`을 쓴다.
+- `any`, non-null 단언(`!`), `@ts-ignore`를 쓰지 않는다. 모르는 값은 `unknown`으로 받아 좁힌다.
+- API 응답, 브라우저 저장소, URL, 네이티브 브리지처럼 밖에서 들어온 값에 `as`로 타입을 붙이지 않는다. `unknown`으로 받아 파서나 타입 가드로 검증한다.
+- 프론트엔드 코드를 고친 뒤 `frontend`에서 `npm run lint`와 `npm run typecheck`를 실행한다. 규칙을 끄는 주석으로 통과시키지 않는다.

@@ -114,9 +114,11 @@ export default PostCard;
 
 ## 5. TypeScript
 
-- `any`는 사용하지 않고, 외부에서 알 수 없는 값은 `unknown`으로 받습니다.
-- API 응답은 DTO 타입으로 받고, 화면에서 사용하는 타입과 필요하면 변환합니다.
-- 타입 단언(`as`)과 non-null assertion(`!`)은 근거가 있을 때만 사용합니다.
+기준과 항목별 근거, 런타임 검증 위치, 타입 검사가 일어나는 지점은 [TypeScript 사용 기준](typescript.md)에 정리했습니다. 아래는 요약입니다.
+
+- 객체 타입은 `type`으로 선언하고, `enum` 대신 문자열 리터럴 유니온과 `as const`를, 타입만 가져올 때는 `import type`을 씁니다.
+- `any`, non-null assertion(`!`), `@ts-ignore`는 쓰지 않습니다. ESLint가 막습니다.
+- 외부에서 들어온 값(API 응답, 브라우저 저장소, URL, 네이티브 브리지)은 `unknown`으로 받아 파서나 타입 가드로 검증하고, 타입 단언(`as`)으로 타입을 붙이지 않습니다.
 - 타입은 사용하는 범위와 같은 슬라이스의 `model`에 둡니다. 도메인과 무관한 설정 타입만 `shared`에 둡니다.
 - 타입 검사와 Babel 변환을 구분합니다. Babel은 타입을 검사하지 않으므로 `npm run build`가 번들 생성 전에 `npm run typecheck`를 실행합니다. 개발 중 타입 오류만 빠르게 확인할 때는 `npm run typecheck`를 직접 실행합니다.
 
