@@ -77,8 +77,14 @@ const styles = {
     gap: 0.5rem 1rem;
     padding: 0.9rem 1rem;
     border-radius: var(--radius-card);
-    background: var(--color-brand-blue-ink);
-    color: var(--color-on-card-accent);
+    /* 홈의 이벤트 배너와 같은 옅은 파랑에서 노랑으로 넘어가는 바탕에 진한 파랑 글자를 쓴다. */
+    background: linear-gradient(
+      100deg,
+      color-mix(in srgb, var(--color-brand-blue) 22%, #fff) 0%,
+      color-mix(in srgb, var(--color-brand-blue) 10%, #fff) 55%,
+      color-mix(in srgb, var(--color-brand-yellow) 40%, #fff) 100%
+    );
+    color: var(--color-brand-blue-ink);
   `,
 
   cardCompleted: css`
