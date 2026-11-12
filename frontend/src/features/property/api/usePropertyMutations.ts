@@ -1,6 +1,7 @@
 import type { InfiniteData } from '@tanstack/react-query';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 
+import { recordEventMission } from '@/features/event-mission/model/eventMissionRecord';
 import { queryClient } from '@/shared/api/queryClient';
 import { usePublicConfig } from '@/shared/config/PublicConfigContext';
 
@@ -41,6 +42,7 @@ export const useCreateProperty = (entrypoint: PropertyCreationEntrypoint = 'form
         property_id: created.propertyId,
         ...(context?.firstProperty === undefined ? {} : { first_property: context.firstProperty }),
       });
+      recordEventMission('property-created');
       await client.invalidateQueries({ queryKey: propertyQueryKeys.lists() });
     },
     onError: () => trackPropertyEvent('property_creation_failed', { entrypoint, error_kind: 'request' }),
