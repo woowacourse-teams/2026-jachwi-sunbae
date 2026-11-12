@@ -1,6 +1,7 @@
 import { css, cx } from '@emotion/css';
 import { Link } from 'react-router-dom';
 
+import { EVENT_MISSIONS } from '@/features/event-mission/model/eventMissions';
 import { EVENT_PATH } from '@/shared/lib/navigation/appPaths';
 import Icon from '@/shared/ui/icon/Icon';
 
@@ -14,7 +15,9 @@ const EventBanner = ({ className }: EventBannerProps) => (
   <aside className={cx(styles.banner, className)} aria-label="이벤트 안내">
     <Link className={styles.link} to={EVENT_PATH}>
       <span className={styles.text}>
-        <span className={styles.description}>미션 6개를 끝내면 추첨을 통해 오리 인형을 드려요</span>
+        <span
+          className={styles.description}
+        >{`미션 ${EVENT_MISSIONS.length}개를 끝내면 추첨을 통해 오리 인형을 드려요`}</span>
         <strong className={styles.title}>이벤트 미션 참여하기</strong>
       </span>
       <Icon name="chevron-right" size={18} />

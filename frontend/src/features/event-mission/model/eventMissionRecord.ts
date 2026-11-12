@@ -7,7 +7,6 @@ export const EVENT_MISSION_STEPS = [
   'street-memo',
   'property-created',
   'checklist-item-checked',
-  'checklist-created',
   'cheap-meals',
   'oauth-linked',
 ] as const;

@@ -1,10 +1,4 @@
-import {
-  CHEAP_MEALS_PATH,
-  CHECKLIST_CREATE_PATH,
-  MY_PATH,
-  NEIGHBORHOODS_PATH,
-  RECORDS_MAP_PATH,
-} from '@/shared/lib/navigation/appPaths';
+import { CHEAP_MEALS_PATH, MY_PATH, NEIGHBORHOODS_PATH, RECORDS_MAP_PATH } from '@/shared/lib/navigation/appPaths';
 
 import type { EventMissionRecord, EventMissionStep } from './eventMissionRecord';
 
@@ -48,20 +42,13 @@ export const EVENT_MISSIONS: readonly EventMission[] = [
   },
   {
     number: 4,
-    title: '커스텀 체크리스트를 만들어 보세요',
-    steps: [{ step: 'checklist-created', label: '체크리스트 만들기' }],
-    to: CHECKLIST_CREATE_PATH,
-    actionLabel: '체크리스트 만들러 가기',
-  },
-  {
-    number: 5,
     title: '저렴한 한 끼를 둘러보세요',
     steps: [{ step: 'cheap-meals', label: '저렴한 한 끼' }],
     to: CHEAP_MEALS_PATH,
     actionLabel: '저렴한 한 끼로 가기',
   },
   {
-    number: 6,
+    number: 5,
     title: '계정을 연동하고 선물 받아 보세요',
     steps: [{ step: 'oauth-linked', label: '계정 연결' }],
     to: MY_PATH,
