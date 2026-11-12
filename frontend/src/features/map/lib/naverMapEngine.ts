@@ -10,6 +10,12 @@ let naverSdkPromise: Promise<void> | null = null;
 let hasAuthFailed = false;
 export const NAVER_AUTH_FAILURE_EVENT = 'jachwi:naver-auth-failure';
 export const isNaverSdkAvailable = () => !hasAuthFailed && window.naver?.maps != null;
+/** `load()`가 끝난 뒤에 부른다. SDK가 없으면(불러오기 전이거나 인증 실패로 폐기됨) 그 자리에서 오류로 알린다. */
+const naverMaps = (): NaverMapsNamespace => {
+  const maps = window.naver?.maps;
+  if (maps == null) throw new Error('Naver Maps SDK를 불러오지 않았습니다.');
+  return maps;
+};
 const naverSdkUrl = (clientId: string) =>
   `https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=${encodeURIComponent(clientId)}&submodules=gl&callback=jachwiNaverSdkReady`;
 const NAVER_GL_SCRIPT_URL = 'https://oapi.map.naver.com/openapi/v3/maps-gl.js';
@@ -125,19 +131,23 @@ export const naverEngine = (clientId: string, customStyleId?: string): LiveEngin
   load: () => loadNaverSdk(clientId),
   createMap: (container, center, level) => {
     const start = clampToSouthKorea(center);
-    return new window.naver!.maps.Map(container, {
+    const maps = naverMaps();
+    return new maps.Map(container, {
       ...(customStyleId ? { gl: true, customStyleId } : {}),
-      center: new window.naver!.maps.LatLng(start.latitude, start.longitude),
+      center: new maps.LatLng(start.latitude, start.longitude),
       zoom: toNaverZoom(level),
       // 남한 밖으로는 옮기지도 줄이지도 못하게 막는다.
       minZoom: MIN_NAVER_ZOOM,
-      maxBounds: new window.naver!.maps.LatLngBounds(
-        new window.naver!.maps.LatLng(SOUTH_KOREA_BOUNDS.south, SOUTH_KOREA_BOUNDS.west),
-        new window.naver!.maps.LatLng(SOUTH_KOREA_BOUNDS.north, SOUTH_KOREA_BOUNDS.east),
+      maxBounds: new maps.LatLngBounds(
+        new maps.LatLng(SOUTH_KOREA_BOUNDS.south, SOUTH_KOREA_BOUNDS.west),
+        new maps.LatLng(SOUTH_KOREA_BOUNDS.north, SOUTH_KOREA_BOUNDS.east),
       ),
     });
   },
-  latLng: (latitude, longitude) => new window.naver!.maps.LatLng(latitude, longitude),
+  latLng: (latitude, longitude) => {
+    const { LatLng } = naverMaps();
+    return new LatLng(latitude, longitude);
+  },
   getCenter: (map) => {
     const center = (map as NaverMap).getCenter();
     return { latitude: center.lat(), longitude: center.lng() };
@@ -172,13 +182,14 @@ export const naverEngine = (clientId: string, customStyleId?: string): LiveEngin
   isRenderReady: (map) => !customStyleId || map._glReady === true,
   destroy: (map) => map.destroy(),
   addListener: (map, event, callback) =>
-    window.naver!.maps.Event.addListener(map, event, (value) => callback(value?.coord?.lat(), value?.coord?.lng())),
+    naverMaps().Event.addListener(map, event, (value) => callback(value?.coord?.lat(), value?.coord?.lng())),
   removeListener: (listener) => {
-    if (listener !== undefined && isNaverSdkAvailable()) window.naver!.maps.Event.removeListener(listener);
+    if (listener !== undefined && isNaverSdkAvailable()) naverMaps().Event.removeListener(listener);
   },
   createOverlay: (map, marker, content, zIndex) => {
-    const overlay = new window.naver!.maps.OverlayView();
-    const position = new window.naver!.maps.LatLng(marker.latitude, marker.longitude);
+    const maps = naverMaps();
+    const overlay = new maps.OverlayView();
+    const position = new maps.LatLng(marker.latitude, marker.longitude);
     // SDK 좌표 이동과 버튼의 중심 정렬을 분리한다. SDK/버튼 스타일이 서로 간섭하지 않게 한다.
     const element = document.createElement('div');
     element.append(content);
@@ -208,8 +219,9 @@ export const naverEngine = (clientId: string, customStyleId?: string): LiveEngin
     overlay.setMap(map as NaverMap);
     return overlay;
   },
-  createCircle: (map, center, radius) =>
-    new window.naver!.maps.Circle({
+  createCircle: (map, center, radius) => {
+    const { Circle } = naverMaps();
+    return new Circle({
       map: map as NaverMap,
       center: center as NaverLatLng,
       radius,
@@ -218,5 +230,6 @@ export const naverEngine = (clientId: string, customStyleId?: string): LiveEngin
       strokeOpacity: 0.58,
       fillColor: '#999999',
       fillOpacity: 0.08,
-    }),
+    });
+  },
 });

@@ -1,4 +1,4 @@
-import { UNSAFE_createBrowserHistory } from 'react-router-dom';
+import type { UNSAFE_createBrowserHistory } from 'react-router-dom';
 
 type History = ReturnType<typeof UNSAFE_createBrowserHistory>;
 type Update = Parameters<Parameters<History['listen']>[0]>[0];

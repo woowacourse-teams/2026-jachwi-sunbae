@@ -1,4 +1,6 @@
-export type PostHogClient = (typeof import('posthog-js'))['default'];
+import type posthog from 'posthog-js';
+
+export type PostHogClient = typeof posthog;
 export type PostHogAction = (client: PostHogClient) => void;
 export type PostHogAuthStatus = 'anonymous' | 'authenticated';
 export type PostHogErrorSeverity = 'P0' | 'P1' | 'P2';

@@ -1,17 +1,24 @@
 const STORAGE_KEY = 'jachwi-weather-installation-v1';
 type WeatherInstallation = { installationId: string; installationSecret: string };
+const INSTALLATION_ID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const INSTALLATION_SECRET_PATTERN = /^[A-Za-z0-9_-]{43,128}$/;
 
 /** origin별 설치 소유 증명만 저장한다. FCM 토큰은 저장하지 않는다. 회원 탈퇴 때도 유지한다. */
 export const getWeatherInstallation = (): WeatherInstallation => {
   try {
     const stored = localStorage.getItem(STORAGE_KEY);
     if (stored !== null) {
-      const value = JSON.parse(stored) as Partial<WeatherInstallation>;
+      // 저장소 값은 타입을 믿을 수 없으므로 unknown으로 받아 필드마다 확인한다.
+      const value: unknown = JSON.parse(stored);
       if (
+        typeof value !== 'object' ||
+        value === null ||
+        !('installationId' in value) ||
         typeof value.installationId !== 'string' ||
-        !/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value.installationId) ||
+        !INSTALLATION_ID_PATTERN.test(value.installationId) ||
+        !('installationSecret' in value) ||
         typeof value.installationSecret !== 'string' ||
-        !/^[A-Za-z0-9_-]{43,128}$/.test(value.installationSecret)
+        !INSTALLATION_SECRET_PATTERN.test(value.installationSecret)
       )
         throw new Error();
       return { installationId: value.installationId, installationSecret: value.installationSecret };

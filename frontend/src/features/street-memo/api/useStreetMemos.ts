@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { skipToken, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useMemo } from 'react';
 
 import type { MapBounds } from '@/features/map/model/Map';
@@ -27,8 +27,7 @@ export const useStreetMemos = (bounds: MapBounds | null) => {
   );
   const memos = useQuery({
     queryKey: [STREET_MEMOS_KEY, config.apiBaseUrl, query?.south, query?.west, query?.north, query?.east],
-    queryFn: ({ signal }) => fetchStreetMemos(config, query!, signal),
-    enabled: query !== null,
+    queryFn: query === null ? skipToken : ({ signal }) => fetchStreetMemos(config, query, signal),
     staleTime: 60 * 1000,
     retry: false,
     // 지도를 옮기는 동안 이전 화면의 메모를 남겨 마커가 깜빡이지 않게 한다.

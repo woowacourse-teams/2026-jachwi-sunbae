@@ -136,7 +136,7 @@ export const createMapRegionLayer = (
         : [];
       if (center) {
         const distance = new Map(candidates.map((region) => [region.id, distanceSquared(center, anchorOf(region))]));
-        candidates.sort((a, b) => distance.get(a.id)! - distance.get(b.id)!);
+        candidates.sort((a, b) => (distance.get(a.id) ?? 0) - (distance.get(b.id) ?? 0));
       }
       toCreate = new Set(candidates.slice(0, STAGE_CHUNK).map((region) => region.id));
     }
