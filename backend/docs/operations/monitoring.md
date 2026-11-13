@@ -105,6 +105,8 @@ Dev와 Prod는 각각 Spring의 `dev`·`prod` 프로필을 사용하며 두 프�
 
 요청 로그에는 `request_id`, `http_method`, `path`, `status`, `duration_ms`를 기본 필드로 넣는다. 애플리케이션 내부 예외 로그도 같은 `request_id`를 가지므로 요청 완료 로그와 연결할 수 있다.
 
+JWT 인증으로 회원이 확인된 요청은 HTTP 완료 로그에 `member_id`를 추가한다. 응답이 2xx·4xx·5xx인지와 무관하며 인증 실패·공개·관리자 요청에는 추가하지 않는다. 과거 로그의 누락 값은 복원하지 않는다. `/admin`의 CloudWatch 목록·상세에서 회원 ID를 확인하고, PostHog 프론트엔드 오류의 요청 ID로 같은 서버 로그를 조회할 수 있다. [관리자 조회·검증 절차](admin.md)를 참고한다.
+
 서버 예외로 실패한 요청 로그에는 `error_type`과 `message`의 `HTTP request failed: <오류 메시지>`를 기록한다. 따라서 5xx 요청 목록에서 오류 메시지를 바로 확인할 수 있다. 자세한 호출 위치와 원인은 같은 `request_id`의 예외 로그에 있는 `error.stack_trace`를 확인한다. 예외 객체 없이 5xx 상태만 반환된 경우에는 원인 메시지가 없으므로 `HTTP request failed`만 남는다. HTTP 응답에는 내부 오류 메시지 대신 공개 오류 메시지를 사용한다.
 
 4xx 요청 로그의 `message`에는 응답의 공개 오류 메시지를 기록한다. 예를 들어 사진 등록 한도 초과는 `등록할 수 있는 사진 개수를 초과했습니다.`, 인증 실패는 `인증 정보를 확인할 수 없습니다.`로 표시된다. 필드별 검증 사유는 HTTP 오류 응답의 `errors`에서 확인한다. 4xx는 `INFO`, 5xx는 `ERROR` 수준으로 남긴다.
@@ -305,3 +307,7 @@ curl -fsS https://dev-api.jachwi-sunbae.kr/actuator/health
 ## 자동 복구 범위
 
 systemd는 EC2 자체가 중지되거나 AWS 호스트에 장애가 발생한 경우 복구할 수 없다. `t4g`는 CloudWatch action based recovery 지원 대상이다. 로그 수집을 확인한 뒤 EC2 콘솔에서 각 인스턴스의 `StatusCheckFailed_System`이 1분 간격으로 2회 실패하면 `Recover this instance`를 실행하는 Alarm을 설정한다. 이 복구는 시스템 status check 장애만 대상으로 하며 애플리케이션 오류나 `StatusCheckFailed_Instance`를 복구하지 않는다.
+
+## 읽기 전용 운영 관리자
+
+`/admin`에서 활성 계정·오늘(KST) 신규 계정·활성 매물과 회원별 개수를 확인하고 기존 CloudWatch·PostHog로 이동한다. 서버 전용 접속 코드를 요청의 Authorization 헤더로 확인한다. 관리자 요청은 본문·쿼리·헤더·예외 원문을 로그에 남기지 않는다. 일반 회원 API 오류의 PostHog `request_id`는 서버 `X-Request-Id`와 동일하다. [설정과 검증 절차](admin.md)를 참고한다.

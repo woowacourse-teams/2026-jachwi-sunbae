@@ -8,6 +8,7 @@
 
 /** 로그인하면 보이는 홈. 로그인하지 않았으면 같은 주소에서 랜딩으로 보낸다. */
 export const HOME_PATH = '/';
+export const ADMIN_PATH = '/admin';
 /** 본 방 기록(지도·리스트) 화면. */
 export const RECORDS_PATH = '/properties';
 export const CHECKLISTS_PATH = '/checklists';
@@ -18,6 +19,8 @@ export const propertyChecklistCreatePath = (propertyId: number) =>
   `${CHECKLIST_CREATE_PATH}?${CHECKLIST_PROPERTY_ID_PARAM}=${propertyId}`;
 export const checklistDetailPath = (checklistId: number) => `${CHECKLISTS_PATH}/${checklistId}`;
 export const MY_PATH = '/me';
+/** 오프라인 이벤트의 미션 현황판. 참가자가 미션을 마치면 운영진이 이 화면을 보고 상품을 준다. */
+export const EVENT_PATH = '/event';
 export const COMPARE_PATH = '/compare';
 /** 저렴한 한 끼. 탭마다 주소가 따로 있고(`/cheap-meals/restaurant` 등), 탭 없이 들어오면 마지막으로 연 탭(처음이면 식당 탭) 주소로 바꾼다. */
 export const CHEAP_MEALS_PATH = '/cheap-meals';

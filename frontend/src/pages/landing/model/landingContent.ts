@@ -8,6 +8,7 @@ import cheapMealsScreen from '../assets/landing-cheap-meals.webp';
 import checklistScreen from '../assets/landing-checklist.webp';
 import compareScreen from '../assets/landing-compare.webp';
 import exploreScreen from '../assets/landing-explore.webp';
+import memoScreen from '../assets/landing-memo.webp';
 import recordsScreen from '../assets/landing-records.webp';
 
 /** 서비스의 두 축. 자취할 동네를 찾는 것과, 직접 본 방을 기록하고 비교하는 것. */
@@ -19,7 +20,11 @@ export const HERO_LEAD =
 export const TECH_LEAD =
   '동네를 한 번에 칠하려면 검색할 때마다 전국 버스, 지하철 117만 구간을 다 따라가야 해요. 그래도 기다리지 않게 만드는 게 제일 어려웠어요.';
 
-export const VIDEO_LABEL = '동네를 고르고 본 방을 기록해 비교하는 흐름을 보여주는 영상';
+export const VIDEO_LABEL =
+  '통근 시간으로 동네를 찾고, 거리 메모를 보고, 본 방을 기록하고 체크리스트로 살핀 뒤 비교해 PDF로 받는 흐름을 보여주는 영상';
+
+/** 소개 영상(`landing-intro.mp4`)의 원본 크기. 영상을 받기 전에도 칸이 이 비율로 잡혀 아래 내용이 밀리지 않는다. */
+export const VIDEO_SIZE = { width: 1920, height: 1080 } as const;
 
 export const APP_STORES = [
   {
@@ -52,8 +57,6 @@ export type StoryPoint = { lead: string; strong: string; tail?: string };
 export type Story = {
   id: string;
   tone: StoryTone;
-  /** 서비스에서 이 기능이 있는 메뉴 이름. 데스크탑 헤더와 홈 카드에 쓰는 이름과 같다. */
-  menu: string;
   title: string;
   description: string;
   points: StoryPoint[];
@@ -67,7 +70,6 @@ export type Story = {
 export const STORIES: Story[] = [
   {
     id: 'explore',
-    menu: '동네 찾기',
     tone: 'neighborhood',
     title: '회사에서 60분, 어느 동네까지 될까요?',
     description: '회사나 학교를 넣으면 대중교통으로 갈 수 있는 동네가 걸리는 시간별로 칠해져요.',
@@ -82,7 +84,6 @@ export const STORIES: Story[] = [
   },
   {
     id: 'cheap-meals',
-    menu: '저렴한 한 끼',
     tone: 'neighborhood',
     title: '그 동네 한 끼 값도 미리 봐요',
     description: '위치만 정하면 식비 아낄 방법을 세 가지로 모아 보여줘요.',
@@ -97,13 +98,11 @@ export const STORIES: Story[] = [
   },
   {
     id: 'records',
-    menu: '본 방 기록',
     tone: 'record',
     title: '본 방은 지도 위에 편하게 남겨요',
     description: '본 방과 동네에서 느낀 점을 지도 한곳에 모아 둬요.',
     points: [
       { lead: '보증금, 월세, 사진까지 ', strong: '지도에서 바로 매물 등록' },
-      { lead: '밤길, 정류장 느낌을 ', strong: '거리 메모', tail: '로 남기기' },
       { lead: '병원, 교통, 편의점을 ', strong: '반경별 주변 시설 분석' },
       { lead: '다시 와도 그대로 이어지는 ', strong: '로그인 없이 시작' },
     ],
@@ -112,8 +111,22 @@ export const STORIES: Story[] = [
     screenAlt: '본 방 목록과 지도 위 매물 핀이 함께 보이는 기록 화면',
   },
   {
+    id: 'memo',
+    tone: 'record',
+    title: '동네에서 느낀 점은 거리 메모로 나눠요',
+    description: '지도에서 그 자리를 누르고 좋아요, 싫어요와 한 줄 메모를 남기면 자취선배를 쓰는 모두에게 보여요.',
+    points: [
+      { lead: '밤길, 정류장, 시장처럼 ', strong: '그 자리에 바로 메모' },
+      { lead: '좋아요는 파랑, 싫어요는 빨강 ', strong: '말풍선으로 한눈에' },
+      { lead: '다른 사람이 남긴 메모로 ', strong: '가 보기 전에 동네 미리 보기' },
+    ],
+    screen: memoScreen,
+    // 휴대폰 메모 캡처가 아직 없어 같은 지도 화면인 본 방 기록 휴대폰 캡처를 쓴다.
+    mobileScreen: recordsMobileScreen,
+    screenAlt: '망원동 지도 위 좋아요, 싫어요 메모 말풍선과 새 메모를 쓰는 평가 칸이 열린 화면',
+  },
+  {
     id: 'checklist',
-    menu: '체크리스트',
     tone: 'record',
     title: '놓친 게 없는지 하나씩 확인해요',
     description: '항목마다 괜찮음, 주의를 고르면 고르지 않은 건 미확인으로 남아요.',
@@ -127,7 +140,6 @@ export const STORIES: Story[] = [
   },
   {
     id: 'compare',
-    menu: '방 비교',
     tone: 'record',
     title: '고민되는 방은 나란히 놓고 골라요',
     description: '후보를 최대 5개까지 한 표에 놓고 봐요.',

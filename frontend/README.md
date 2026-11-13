@@ -18,6 +18,7 @@ React 19·TypeScript 6·Webpack 5 기반 모바일 우선 SPA입니다.
 - [백엔드 환경변수](../backend/docs/guides/environment-variables.md)
 - [프론트엔드 배포](docs/deployment.md)
 - [프론트엔드 테스트 전략](docs/testing-strategy.md)
+- [TypeScript 사용 기준](docs/typescript.md)
 - [프론트엔드 로딩 성능 리포트](docs/performance-report.md)
 - [뮤테이션 테스트](docs/mutation-testing.md)
 - [생활 날씨 카드](docs/weather-ui-prototype.md)
@@ -118,6 +119,7 @@ JWT secret, 지도 Client Secret, S3 자격증명은 프론트에 넣지 않습�
 | 체크리스트 상세·수정 | `/checklists/:checklistId`                                | 체크리스트 상세·수정                             |
 | 체크리스트 생성      | `/checklists/new`                                         | 기본·선택 항목 조합 생성                         |
 | 마이페이지           | `/me`                                                     | 계정·모드·주요 기능 이동·로그아웃                |
+| 이벤트 미션          | `/event`                                                  | 오프라인 이벤트 미션 5개 진행 현황(이 기기 기록) |
 | 지도에서 위치 선택   | `/map/select-location`                                    | 매물 수정에서 위치 고치기, 주소 검색, 역지오코딩 |
 | 매물 주변 분석       | `/properties/:propertyId/nearby`                          | 반경별 시설 개수·선택 시설 핀 상세·스크롤 목록   |
 

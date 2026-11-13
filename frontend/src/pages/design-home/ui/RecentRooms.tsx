@@ -1,11 +1,12 @@
 import { css, cx } from '@emotion/css';
+import { Link } from 'react-router-dom';
 
 import { usePropertyList } from '@/features/property/api/useProperties';
 import AuthenticatedPhoto from '@/features/property/ui/authenticated-photo/AuthenticatedPhoto';
 import PropertyAddress from '@/features/property/ui/property-address/PropertyAddress';
 import PropertyPlaceholderPhoto from '@/features/property/ui/property-placeholder-photo/PropertyPlaceholderPhoto';
 import PropertyPrice from '@/features/property/ui/property-price/PropertyPrice';
-import { HOME_PATH, propertyDetailPath } from '@/shared/lib/navigation/appPaths';
+import { HOME_PATH, propertyDetailPath, RECORDS_PATH } from '@/shared/lib/navigation/appPaths';
 import { Button } from '@/shared/ui/button/Button';
 import DelayedFallback from '@/shared/ui/delayed-fallback/DelayedFallback';
 import HorizontalRail from '@/shared/ui/horizontal-rail/HorizontalRail';
@@ -47,7 +48,10 @@ const RecentRooms = ({ inSideColumn = false }: RecentRoomsProps) => {
                 </Button>
               </div>
             ) : rooms.length === 0 ? (
-              <p>아직 기록한 방이 없어요.</p>
+              <Link className={styles.empty} to={RECORDS_PATH}>
+                <span>아직 기록한 방이 없어요.</span>
+                <strong>+ 매물 추가하기</strong>
+              </Link>
             ) : (
               <HorizontalRail className={styles.rooms} aria-label="최근 기록한 방 목록">
                 {rooms.map((property) => (
@@ -141,6 +145,39 @@ const styles = {
       margin: 0;
       color: var(--color-muted);
       font-size: 0.85rem;
+    }
+  `,
+
+  /* 기록한 방이 없으면 카드 한 장 높이의 점선 칸 가운데에 안내와 추가 문구를 두고, 칸 전체가 방 기록 화면으로 가는 링크다. */
+  empty: css`
+    label: RecentRooms-empty;
+    display: grid;
+    place-content: center;
+    justify-items: center;
+    gap: 0.35rem;
+    min-height: 9rem;
+    padding: 1rem;
+    border: 1.5px dashed var(--color-border-strong);
+    border-radius: var(--radius-tile);
+    color: var(--color-muted);
+    font-size: 0.85rem;
+    text-align: center;
+    text-decoration: none;
+
+    & strong {
+      color: var(--color-brand-blue-ink);
+      font-size: 0.9rem;
+    }
+
+    @media (hover: hover) {
+      &:hover {
+        background: var(--color-card-surface);
+      }
+    }
+
+    &:focus-visible {
+      outline: 2px solid var(--color-focus);
+      outline-offset: 2px;
     }
   `,
 

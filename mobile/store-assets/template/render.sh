@@ -1,11 +1,13 @@
 #!/bin/zsh
 # 스토어 스크린샷 6장을 index.html로 다시 찍는다. macOS와 Google Chrome이 필요하다.
 #   iOS:     1290x2796 그대로 저장 (App Store 6.9/6.7인치 칸 공용)
+#   iOS 6.3: 1290x2805로 찍어 sips로 1206x2622로 줄인다 (App Store Connect의 Dynamic Island 지원 iPhone 중형 칸)
 #   Android: 1290x2580으로 찍어 sips로 1080x2160으로 줄인다 (Play 2:1 상한)
 set -euo pipefail
 
 DIR=${0:A:h}
 IOS_OUT=$DIR/../ios/6.7-inch
+IOS_MID_OUT=$DIR/../ios/6.3-inch
 ANDROID_OUT=$DIR/../android/phone
 CHROME=${CHROME:-"/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"}
 SCENES=(hero explore records checklist compare cheap-meals) # index.html의 SCENES 순서와 같게 둔다.
@@ -22,14 +24,16 @@ shoot() { # <장면> <세로> <출력 파일>
   [[ -s $3 ]] || { echo "캡처 실패: $1 ($2)" >&2; exit 1; }
 }
 
-mkdir -p $IOS_OUT $ANDROID_OUT
-rm -f $IOS_OUT/*.png(N) $ANDROID_OUT/*.png(N)
+mkdir -p $IOS_OUT $IOS_MID_OUT $ANDROID_OUT
+rm -f $IOS_OUT/*.png(N) $IOS_MID_OUT/*.png(N) $ANDROID_OUT/*.png(N)
 n=1
 for s in $SCENES; do
   name=0$n-$s.png
   shoot $s 2796 $IOS_OUT/$name
   shoot $s 2580 $TMP/$name
   sips -z 2160 1080 $TMP/$name --out $ANDROID_OUT/$name >/dev/null
+  shoot $s 2805 $TMP/mid-$name
+  sips -z 2622 1206 $TMP/mid-$name --out $IOS_MID_OUT/$name >/dev/null
   echo "$name"
   n=$((n + 1))
 done

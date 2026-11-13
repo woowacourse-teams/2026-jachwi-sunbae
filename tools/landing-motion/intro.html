@@ -1,0 +1,1027 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>자취선배 소개 영상</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gothic+A1:wght@700;800&display=swap">
+<script src="assets/dongs-pangyo.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<style>
+/* 소개 영상(1920×1080). 랜딩 영상(flyover.html)의 장면을 바탕으로 동네 찾기, 거리 메모, 방 기록, 체크리스트, 비교, 한 끼와 날씨 몽타주, 로고 순서로 늘렸다. */
+:root {
+  --floor: #f9fbfb; --floor-edge: #f2f3f6;
+  --ink: #212124; --soft: #5f6368; --muted: #868b94;
+  --card: #ffffff; --chip: #f1f2f4; --line: #eaebed;
+  --yellow: #f5b91e; --yellow-soft: #fdf1cf; --yellow-mid: #fbe1a0;
+  --blue: #6b9ae6; --blue-soft: #e4edfb; --good: #3f6fc4;
+  --caution-soft: #fde6e6; --caution: #d14d4d;
+  --ground: #f3f4f0; --block: #e7eae3; --block-2: #e0e4dc; --road: #ffffff; --road-edge: #e3e6e0;
+  --park: #cfe8c2; --artery: #fde4a8; --water: #d2e3f1; --label: #a2a8a1; --shadow: #1a2133;
+  --dong: #eceee9; --dong-line: #ffffff;
+  --font: Pretendard, 'Apple SD Gothic Neo', sans-serif;
+  --font-display: Pretendard, 'Apple SD Gothic Neo', sans-serif;
+  /* 앱 토큰(tokens.styles.ts)과 같은 값 */
+  --check-good-ink: #3f6fc4; --check-caution-ink: #d14d4d; --chip-idle: #eeeeef; --border-strong: #d4d4d4;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; background: var(--floor); }
+#vp { position: relative; width: 1920px; height: 1080px; overflow: hidden; font-family: var(--font); color: var(--ink);
+  background: radial-gradient(ellipse 75% 75% at 50% 50%, var(--floor) 55%, var(--floor-edge) 100%);
+  perspective: 1880px; perspective-origin: 50% 50%; }
+#cam { position: absolute; left: 960px; top: 540px; width: 0; height: 0; transform-style: preserve-3d; }
+#region { position: absolute; left: -3000px; top: -3400px; width: 8400px; height: 9800px; }
+#map { position: absolute; left: 0; top: -1600px; width: 2400px; height: 5600px; border-radius: 24px; overflow: hidden; }
+#world { position: absolute; left: 0; top: 0; transform-style: preserve-3d; }
+.piece { position: absolute; left: 0; top: 0; transform-origin: 50% 100%; }
+.shadow { position: absolute; left: 0; top: 0; background: var(--shadow); transform-origin: 50% 100%; }
+
+.pin { display: flex; flex-direction: column; align-items: center; gap: 14px; }
+/* 앱 MapMarkerView의 markerSummaryCard를 영상 배율(2배)로 옮겼다. */
+.pin .bub { position: relative; display: grid; width: 208px; padding: 10px 8px; border: 2px solid #d8dbe0; border-radius: 34px; background: var(--card); box-shadow: 0 10px 27px rgb(25 30 40 / 24%); text-align: center; white-space: nowrap; }
+.pin .bub::after { content: ''; position: absolute; left: calc(50% - 9px); bottom: -10px; width: 18px; height: 18px; border-right: 2px solid #d8dbe0; border-bottom: 2px solid #d8dbe0; background: var(--card); transform: rotate(45deg); }
+.pin .bub b { font-size: 25px; font-weight: 600; line-height: 1.3; }
+.pin .bub span { font-size: 21px; color: #626975; line-height: 1.3; font-variant-numeric: tabular-nums; }
+.pin .mk { width: 76px; height: 76px; display: block; }
+.pin.sel .bub { outline: 2px solid var(--ink); outline-offset: 4px; }
+.pin.sel .mk { width: 84px; height: 84px; }
+.memo { position: relative; width: max-content; max-width: 330px; padding: 11px 20px; border-radius: 18px; background: #cfe2fa; color: #24497f; font-size: 19px; font-weight: 600; line-height: 1.45; letter-spacing: -0.01em; text-align: center; word-break: keep-all; }
+.memo::after { content: ''; position: absolute; left: calc(50% - 10px); bottom: -11px; border-top: 12px solid #cfe2fa; border-left: 10px solid transparent; border-right: 10px solid transparent; }
+.memo.bad { background: #f7cfcf; color: #8a2c2c; }
+.memo.bad::after { border-top-color: #f7cfcf; }
+/* 매물: 앱의 사진 카드 마커(사진 왼쪽, 이름과 월세 두 줄, 아래 파란 꼬리) */
+.pmk { position: relative; width: max-content; padding-bottom: 15px; }
+.pmk::after { content: ''; position: absolute; left: calc(50% - 9px); bottom: 0; border-top: 12px solid #3f82f7; border-left: 9px solid transparent; border-right: 9px solid transparent; filter: drop-shadow(0 1px 1px rgb(0 0 0 / 18%)); }
+.pmk .pc { display: flex; align-items: center; gap: 14px; padding-right: 20px; border-radius: 22px; background: #fff; box-shadow: 0 2px 10px rgb(0 0 0 / 18%); white-space: nowrap; }
+.pmk .ph { flex: none; width: 68px; height: 68px; border-radius: 22px 0 0 22px; background: linear-gradient(90deg, transparent 0 30%, #a9cdf2 30% 70%, transparent 70%) 0 12px / 100% 24px no-repeat, linear-gradient(180deg, #e9e3d8 0 66%, #b99a76 66%); }
+.pmk .ph.b { background: linear-gradient(90deg, transparent 0 30%, #b9d6f2 30% 70%, transparent 70%) 0 12px / 100% 24px no-repeat, linear-gradient(180deg, #dfe3e6 0 66%, #c7ad8c 66%); }
+.pmk .ph.img { background: url(assets/placeholder-house.webp) center / cover; }
+.pmk .tx { display: grid; gap: 2px; text-align: left; }
+.pmk .tx strong { color: #1f2328; font-size: 20px; font-weight: 750; line-height: 1.2; }
+.pmk .tx small { color: #7a828c; font-size: 17px; font-weight: 600; line-height: 1.2; }
+.listing { width: 220px; border-radius: 16px; overflow: hidden; background: var(--card); }
+.listing .ph { height: 120px; }
+.listing .body { padding: 11px 14px 13px; display: flex; flex-direction: column; gap: 3px; }
+.listing b { font-size: 16px; }
+.listing span { font-size: 14px; color: var(--soft); font-variant-numeric: tabular-nums; }
+.ph1 { background: linear-gradient(180deg, #bcd6f2 0 42%, #d9d2c5 42% 72%, #b99a76 72%); }
+.ph2 { background: linear-gradient(160deg, #d9d2c5 0 55%, #b99a76 55%); }
+.chip { padding: 12px 20px; border-radius: 999px; font-size: 20px; font-weight: 700; white-space: nowrap; }
+.chip.good { background: var(--blue-soft); color: var(--good); }
+.chip.warn { background: var(--caution-soft); color: var(--caution); }
+.chip.plain { background: var(--card); color: var(--ink); }
+.tile { width: 56px; height: 56px; border-radius: 16px; background: var(--yellow); color: var(--ink); display: grid; place-items: center; font-family: var(--font-display); font-weight: 800; font-size: 28px; }
+
+/* 매물 카드: 기본 크기 1920 폭. 사진 영역(1920×1080)이 화면을 꽉 채우도록 설계했다. */
+.hcard { width: 1920px; height: 1410px; border-radius: 60px; background: var(--card); overflow: hidden; box-shadow: 0 50px 120px rgba(26,33,51,.16); }
+.hcard .photo { position: relative; width: 1920px; height: 1080px; overflow: hidden; }
+.hcard .body { height: 330px; padding: 52px 72px; display: flex; flex-direction: column; gap: 18px; }
+.hcard .body b { font-size: 92px; letter-spacing: -0.02em; line-height: 1.1; }
+.hcard .body span { font-size: 72px; color: var(--soft); font-variant-numeric: tabular-nums; }
+#target { position: absolute; left: 0; top: 0; transform-origin: 50% 100%; }
+
+/* 방 */
+.rv { position: absolute; inset: 0; perspective: 900px; perspective-origin: 50% 46%; overflow: hidden; background: #e2dbcf; }
+.rcam { position: absolute; left: 960px; top: 540px; width: 0; height: 0; transform-style: preserve-3d; }
+.face { position: absolute; left: 0; top: 0; transform-origin: 0 0; }
+.back { width: 1200px; height: 800px; background: var(--wall-back); }
+.floorf { width: 1200px; height: 1400px; background: repeating-linear-gradient(90deg, var(--wood-1) 0 118px, var(--wood-2) 118px 120px), var(--wood-1); }
+.ceil { width: 1200px; height: 1400px; background: #f6f3ee; }
+.lwall, .rwall { width: 1400px; height: 800px; background: var(--wall-side); }
+.win { position: absolute; left: 330px; top: 150px; width: 540px; height: 360px; border-radius: 6px; background: linear-gradient(180deg, #a9cdf2, #d8e9f8); box-shadow: inset 0 0 0 16px #fff; }
+.win::before { content: ""; position: absolute; left: 50%; top: 0; bottom: 0; width: 14px; background: #fff; transform: translateX(-50%); }
+.win::after { content: ""; position: absolute; left: 16px; right: 16px; bottom: 16px; height: 70px; background: linear-gradient(180deg, transparent, rgba(255,255,255,.4)); }
+.sill { position: absolute; left: 310px; top: 510px; width: 580px; height: 22px; background: #fbfaf7; border-radius: 4px; }
+.door { position: absolute; left: 520px; top: 130px; width: 330px; height: 670px; background: #cdbfa9; border-radius: 6px 6px 0 0; box-shadow: inset 0 0 0 10px #bfae95; }
+.door i { position: absolute; right: 36px; top: 340px; width: 30px; height: 14px; border-radius: 6px; background: #8f7f68; }
+.counter { position: absolute; left: 380px; top: 470px; width: 760px; height: 330px; background: #fbfaf8; box-shadow: inset 0 22px 0 #d9d9d6; }
+.counter i { position: absolute; left: 240px; top: -70px; width: 18px; height: 80px; border-radius: 9px 9px 0 0; background: #b7bcc2; }
+.cabinet { position: absolute; left: 380px; top: 90px; width: 760px; height: 200px; background: #fbfaf8; box-shadow: inset 0 -6px 0 #e4e2dd; }
+.stain { position: absolute; left: 70px; top: 60px; width: 260px; height: 200px; border-radius: 50%; background: radial-gradient(closest-side, rgba(90,96,84,.45), rgba(90,96,84,.18) 60%, transparent); }
+.rchip { position: absolute; left: 0; top: 0; display: flex; flex-direction: column; align-items: center; gap: 10px; }
+.rchip .chip { font-size: 40px; padding: 18px 30px; box-shadow: 0 10px 30px rgba(26,33,51,.12); }
+.rchip .dot { width: 22px; height: 22px; border-radius: 50%; background: var(--card); box-shadow: 0 0 0 6px rgba(255,255,255,.5); }
+.flash { position: absolute; inset: 0; background: #fff; opacity: 0; }
+.finder { position: absolute; inset: 70px; opacity: 0; }
+.finder i { position: absolute; width: 70px; height: 70px; border: 0 solid #fff; }
+.finder i:nth-child(1) { left: 0; top: 0; border-width: 7px 0 0 7px; }
+.finder i:nth-child(2) { right: 0; top: 0; border-width: 7px 7px 0 0; }
+.finder i:nth-child(3) { left: 0; bottom: 0; border-width: 0 0 7px 7px; }
+.finder i:nth-child(4) { right: 0; bottom: 0; border-width: 0 7px 7px 0; }
+
+.panel { position: absolute; right: 44px; top: 70px; width: 420px; padding: 26px; border-radius: 30px; background: var(--card); box-shadow: 0 20px 60px rgba(26,33,51,.18); display: grid; }
+.panel > .stage { grid-area: 1 / 1; display: flex; flex-direction: column; gap: 16px; }
+.ph-head { display: flex; justify-content: space-between; align-items: baseline; }
+.ph-head b { font-size: 28px; letter-spacing: -0.02em; }
+.ph-head span { font-size: 16px; color: var(--muted); font-weight: 600; }
+.thumbs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.thumb { height: 86px; border-radius: 12px; background: var(--chip); position: relative; overflow: hidden; }
+.thumb .img { position: absolute; inset: 0; opacity: 0; }
+.th1 { background: linear-gradient(180deg, #e2dbcf 0 18%, #a9cdf2 18% 66%, #e2dbcf 66%); }
+.th2 { background: linear-gradient(90deg, #e9e3d8 0 30%, #cdbfa9 30% 70%, #e9e3d8 70%); }
+.th3 { background: linear-gradient(180deg, #fbfaf8 0 35%, #e9e3d8 35% 55%, #d9d9d6 55% 60%, #fbfaf8 60%); }
+.field { display: flex; justify-content: space-between; align-items: baseline; padding: 14px 18px; border-radius: 14px; background: var(--chip); }
+.field span { font-size: 17px; color: var(--muted); font-weight: 600; }
+.field b { font-size: 28px; font-variant-numeric: tabular-nums; }
+.field b small { font-size: 16px; color: var(--soft); margin-left: 2px; }
+.ck { display: flex; justify-content: space-between; align-items: center; padding: 13px 16px; border-radius: 14px; background: var(--chip); font-size: 20px; font-weight: 700; }
+.pill { font-size: 15px; font-weight: 700; padding: 5px 12px; border-radius: 999px; }
+.pill.good { background: var(--blue-soft); color: var(--good); }
+.pill.warn { background: var(--caution-soft); color: var(--caution); }
+.ring { position: relative; width: 52px; height: 52px; }
+.ring svg { width: 100%; height: 100%; rotate: -90deg; }
+.ring circle { fill: none; stroke-width: 6; }
+.ring .tr { stroke: var(--chip); }
+.ring .pr { stroke: var(--blue); stroke-linecap: round; stroke-dasharray: 125.7; }
+.ring b { position: absolute; inset: 0; display: grid; place-items: center; font-size: 14px; font-variant-numeric: tabular-nums; }
+/* 앱 공통 Button primary, large 크기를 영상 배율로 옮겼다. */
+.save { height: 72px; border-radius: 20px; background: var(--blue); color: #fff; display: grid; place-items: center; font-size: 24px; font-weight: 700; }
+.save.done { background: color-mix(in srgb, var(--blue) 88%, black); }
+
+/* 화면 공간 */
+.dof { position: absolute; inset: 0; pointer-events: none; opacity: 0; }
+.dof.far { backdrop-filter: blur(2.5px); mask-image: linear-gradient(to bottom, #000 0%, transparent 30%); -webkit-mask-image: linear-gradient(to bottom, #000 0%, transparent 30%); }
+.dof.n1 { backdrop-filter: blur(3px); mask-image: linear-gradient(to bottom, transparent 62%, #000 74%); -webkit-mask-image: linear-gradient(to bottom, transparent 62%, #000 74%); }
+.dof.n2 { backdrop-filter: blur(9px); mask-image: linear-gradient(to bottom, transparent 74%, #000 88%); -webkit-mask-image: linear-gradient(to bottom, transparent 74%, #000 88%); }
+.dof.n3 { backdrop-filter: blur(20px); mask-image: linear-gradient(to bottom, transparent 86%, #000 100%); -webkit-mask-image: linear-gradient(to bottom, transparent 86%, #000 100%); }
+.haze { position: absolute; inset: 0; pointer-events: none; opacity: 0; background: linear-gradient(to bottom, var(--floor) 0%, rgba(249,251,251,.55) 9%, rgba(249,251,251,0) 26%); }
+
+#ui { position: absolute; inset: 0; pointer-events: none; }
+.c2 { position: absolute; left: 0; top: 0; transform-origin: 0 0; opacity: 0; }
+.rowlbl { position: absolute; left: 40px; font-size: 22px; font-weight: 700; color: var(--soft); opacity: 0; }
+.cell { position: absolute; width: 360px; height: 60px; display: grid; place-items: center; border-radius: 14px; font-size: 30px; font-weight: 700; font-variant-numeric: tabular-nums; opacity: 0; }
+.cell.warn { color: var(--caution); }
+.btn2 { position: absolute; left: 50%; top: 950px; height: 76px; padding: 0 40px; border-radius: 20px; background: var(--ink); color: #fff; font-size: 26px; font-weight: 700; display: grid; place-items: center; opacity: 0; white-space: nowrap; }
+.report { position: absolute; left: 50%; top: 0; width: 640px; height: 880px; margin-left: -320px; border-radius: 22px; background: var(--card); box-shadow: 0 40px 120px rgba(26,33,51,.22); padding: 52px 56px; display: flex; flex-direction: column; gap: 24px; opacity: 0; }
+.report .kick { font-size: 17px; font-weight: 700; color: var(--muted); letter-spacing: .04em; }
+.report h2 { margin: 0; font-family: var(--font-display); font-weight: 800; font-size: 44px; letter-spacing: -0.02em; }
+.report .sub { font-size: 18px; color: var(--soft); }
+.best { padding: 22px 26px; border-radius: 18px; background: var(--yellow-soft); display: flex; flex-direction: column; gap: 8px; }
+.best span { font-size: 16px; font-weight: 700; color: var(--soft); }
+.best b { font-size: 34px; }
+.best em { font-style: normal; font-size: 18px; color: var(--soft); }
+.bars { display: flex; flex-direction: column; gap: 14px; }
+.bar { display: grid; grid-template-columns: 120px 1fr 70px; align-items: center; gap: 14px; font-size: 18px; font-weight: 600; }
+.bar .tr { height: 14px; border-radius: 7px; background: var(--chip); overflow: hidden; }
+.bar .tr i { display: block; height: 100%; border-radius: 7px; background: var(--blue); transform-origin: 0 50%; }
+.bar .tr i.y { background: var(--yellow); }
+.bar b { text-align: right; font-variant-numeric: tabular-nums; }
+.rline { height: 14px; border-radius: 7px; background: var(--chip); }
+.stamp { position: absolute; right: 50px; bottom: 60px; width: 150px; height: 150px; border-radius: 50%; border: 6px solid var(--yellow); color: var(--ink); display: grid; place-items: center; text-align: center; font-family: var(--font-display); font-weight: 800; font-size: 24px; line-height: 1.2; opacity: 0; background: rgba(253,241,207,.6); }
+.logo { position: absolute; left: 0; right: 0; top: 330px; display: flex; flex-direction: column; align-items: center; gap: 22px; }
+.logo .lt { width: 160px; height: 160px; opacity: 0; }
+.logo .lt img { width: 100%; height: 100%; display: block; border-radius: 40px; }
+.logo .ln { font-family: var(--font-display); font-weight: 800; font-size: 80px; letter-spacing: -0.03em; opacity: 0; }
+.logo .tl { font-size: 28px; color: var(--muted); opacity: 0; }
+.white { position: absolute; inset: 0; background: var(--floor); opacity: 0; }
+</style>
+<style>
+/* v3 추가: 행정동 격자, 등록 시트, 비교표 */
+#region { left: -12000px; top: -9000px; width: 30000px; height: 24000px; }
+#map { left: -3000px; top: -5000px; width: 12000px; height: 12000px; border-radius: 0; }
+.piece, .shadow { transform-origin: 50% 100%; }
+.sheet { position: absolute; left: 330px; top: 80px; width: 780px; padding: 34px; border-radius: 36px; background: var(--card); box-shadow: 0 30px 90px rgba(26,33,51,.22); display: flex; flex-direction: column; gap: 18px; }
+.sh-head { display: flex; justify-content: space-between; align-items: center; }
+.sh-head b { font-size: 34px; letter-spacing: -0.02em; }
+.sh-head span { font-size: 18px; color: var(--muted); font-weight: 600; }
+.fields { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+.f { padding: 14px 18px; border-radius: 16px; background: var(--chip); display: flex; flex-direction: column; gap: 4px; min-height: 92px; }
+.f span { font-size: 16px; color: var(--muted); font-weight: 600; }
+.f b { font-size: 30px; font-variant-numeric: tabular-nums; letter-spacing: -0.01em; white-space: nowrap; }
+.f.on { background: var(--yellow-soft); }
+.sec { display: flex; justify-content: space-between; align-items: center; }
+.sec b { font-size: 24px; }
+.cks { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+.cki { display: flex; flex-direction: column; gap: 6px; padding: 12px 14px; border-radius: 14px; background: var(--chip); }
+.cki span { font-size: 17px; font-weight: 700; }
+.cki .pill { align-self: flex-start; }
+.pill.none { background: var(--card); color: var(--muted); box-shadow: inset 0 0 0 1.5px #c6c6c6; }
+.thumbs3 { display: flex; gap: 10px; }
+.thumbs3 span { width: 96px; height: 64px; border-radius: 12px; }
+.tbl-title { position: absolute; left: 620px; top: 52px; font-family: var(--font-display); font-weight: 800; font-size: 40px; letter-spacing: -0.02em; opacity: 0; }
+.tbl-sub { position: absolute; left: 120px; top: 104px; font-size: 20px; color: var(--soft); opacity: 0; display: none; }
+.rowline { position: absolute; left: 600px; width: 1000px; height: 1.5px; background: var(--line); transform-origin: 0 50%; }
+
+.page { position: absolute; top: 96px; width: 580px; padding: 30px; border-radius: 40px; background: var(--card); box-shadow: 0 30px 90px rgba(26,33,51,.22); display: flex; flex-direction: column; gap: 16px; opacity: 0; }
+#pg1 { left: 590px; } #pg2 { left: 1230px; }
+.pg-top { display: flex; justify-content: space-between; align-items: center; min-height: 52px; }
+.pg-top > span { font-size: 30px; font-weight: 700; letter-spacing: -0.02em; }
+.pg-top > b { font-size: 18px; color: var(--muted); font-weight: 600; }
+.rows { display: flex; flex-direction: column; gap: 10px; }
+.row { display: flex; justify-content: space-between; align-items: center; height: 76px; padding: 0 22px; border-radius: 16px; background: var(--chip); }
+.row span { font-size: 19px; color: var(--soft); font-weight: 600; }
+.row b { font-size: 30px; font-variant-numeric: tabular-nums; }
+.row.on { background: var(--card); box-shadow: inset 0 0 0 2.5px var(--yellow); }
+.cl { display: flex; flex-direction: column; }
+.cr { display: flex; justify-content: space-between; align-items: center; height: 70px; padding: 0 4px; }
+.cr + .cr { border-top: 2px solid color-mix(in srgb, var(--border-strong) 70%, transparent); }
+.cr > span { font-size: 22px; font-weight: 700; }
+.opts { display: flex; gap: 8px; }
+.o { font-style: normal; display: grid; place-items: center; min-width: 82px; height: 52px; padding: 0 16px; border-radius: 15px; background: var(--chip-idle); color: var(--ink); font-size: 19px; font-weight: 650; }
+.o.good.on { background: color-mix(in srgb, var(--check-good-ink) 14%, #fff); color: var(--check-good-ink); font-weight: 750; }
+.o.warn.on { background: color-mix(in srgb, var(--check-caution-ink) 14%, #fff); color: var(--check-caution-ink); font-weight: 750; }
+.tap { position: absolute; left: 0; top: 0; width: 56px; height: 56px; margin: -28px 0 0 -28px; border-radius: 50%; background: rgba(33,33,36,.2); box-shadow: 0 0 0 3px rgba(255,255,255,.9); opacity: 0; }
+</style>
+<style>
+/* 소개 영상 추가: 장면 제목, 화면 위 카드(검색, 동 정보, 메모 시트), 한 끼와 날씨 몽타주 */
+#ov { position: absolute; inset: 0; pointer-events: none; font-family: var(--font); color: var(--ink); }
+#chap { position: absolute; left: 96px; top: 76px; display: flex; flex-direction: column; gap: 10px; }
+#chap .no { font-size: 26px; font-weight: 800; color: #b8860b; font-variant-numeric: tabular-nums; letter-spacing: .04em; }
+#chap .tt { font-family: var(--font); font-weight: 800; font-size: 92px; line-height: 1.05; letter-spacing: -0.035em; white-space: nowrap; }
+#chap .sb { font-size: 28px; line-height: 1.45; color: var(--soft); font-weight: 500; }
+#chap .bg { position: absolute; left: -40px; top: -36px; width: 640px; height: 330px; background: radial-gradient(closest-side, rgba(249,251,251,.92), rgba(249,251,251,.7) 55%, rgba(249,251,251,0)); z-index: -1; }
+.card { position: absolute; background: var(--card); border-radius: 32px; box-shadow: 0 30px 90px rgba(26,33,51,.2); padding: 30px; display: flex; flex-direction: column; gap: 16px; opacity: 0; }
+.card h4 { margin: 0; font-size: 28px; letter-spacing: -0.02em; }
+#search { left: 1240px; top: 110px; width: 560px; gap: 14px; }
+.place { display: grid; gap: 4px; padding: 14px 20px; border-radius: 18px; background: var(--chip); }
+.place small { font-size: 16px; font-weight: 600; color: var(--muted); }
+.place b { font-size: 24px; min-height: 34px; }
+.place .ph { color: var(--muted); font-weight: 500; }
+.lb { font-size: 20px; font-weight: 700; margin-top: 4px; }
+.segc { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; padding: 6px; border-radius: 16px; background: var(--chip); }
+.segc span { display: grid; place-items: center; height: 50px; border-radius: 12px; font-size: 20px; font-weight: 600; color: var(--soft); }
+.segc span.on { background: #fff; color: var(--ink); font-weight: 800; box-shadow: 0 1px 4px rgba(0,0,0,.12); }
+.inp { height: 70px; border-radius: 18px; background: var(--chip); display: flex; align-items: center; gap: 12px; padding: 0 22px; font-size: 26px; font-weight: 600; }
+.inp i { width: 22px; height: 22px; border-radius: 50%; border: 3.5px solid var(--muted); flex: none; }
+.inp .ph { color: var(--muted); }
+.caret { display: inline-block; width: 2.5px; height: 30px; background: var(--ink); margin-left: 2px; vertical-align: -5px; }
+.conds { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.cond { padding: 12px 16px; border-radius: 16px; background: var(--chip); display: flex; flex-direction: column; gap: 4px; }
+.cond span { font-size: 16px; color: var(--muted); font-weight: 600; }
+.cond b { font-size: 24px; }
+.cond.on { background: var(--yellow-soft); box-shadow: inset 0 0 0 2.5px var(--yellow); }
+.go { height: 70px; border-radius: 18px; background: var(--blue); color: #fff; display: grid; place-items: center; font-size: 24px; font-weight: 700; }
+#dong { left: 1240px; top: 540px; width: 560px; }
+.dl { display: grid; gap: 4px; }
+.dl p { margin: 0; display: grid; grid-template-columns: auto 1fr auto; gap: 14px; align-items: center; height: 60px; padding: 0 16px; border-radius: 14px; }
+.dl p.on { background: var(--chip); }
+.dl b { font-size: 25px; }
+.dl span { font-size: 20px; color: var(--muted); font-weight: 600; }
+.dl em { font-style: normal; font-size: 22px; font-weight: 700; color: var(--good); font-variant-numeric: tabular-nums; }
+#dong .kv { display: grid; grid-template-columns: 96px 1fr; gap: 10px 14px; font-size: 22px; line-height: 1.4; }
+#dong .kv span { color: var(--muted); font-weight: 600; }
+#dong .kv b { font-weight: 650; }
+#dong .sub { font-size: 18px; color: var(--muted); margin-top: -8px; }
+#msheet { left: 1240px; top: 290px; width: 560px; }
+.mf { display: grid; grid-template-columns: auto 1fr; gap: 20px; align-items: center; }
+.mf > span { padding: 0 10px; font-size: 22px; font-weight: 700; }
+#msheet .sub { font-size: 18px; color: var(--muted); margin-top: -6px; }
+.thumbs2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.thumbs2 em { font-style: normal; height: 64px; border-radius: 999px; background: var(--chip); display: grid; place-items: center; font-size: 24px; font-weight: 700; }
+.thumbs2 em.on { background: var(--blue-soft); color: var(--good); box-shadow: inset 0 0 0 2.5px var(--good); }
+.ta { min-height: 110px; border-radius: 18px; background: var(--chip); padding: 18px 20px; font-size: 24px; font-weight: 600; line-height: 1.45; }
+.ta .ph { color: var(--muted); font-weight: 500; }
+#newmemo { position: absolute; left: 0; top: 0; transform-origin: 50% 100%; opacity: 0; }
+#cnote { position: absolute; left: 30px; width: 520px; padding: 14px 18px; border-radius: 16px; background: var(--yellow-soft); box-shadow: 0 14px 36px rgba(26,33,51,.16); font-size: 21px; font-weight: 650; line-height: 1.4; opacity: 0; }
+#cnote span { display: block; font-size: 15px; font-weight: 700; color: var(--soft); margin-bottom: 4px; }
+#tap2 { position: absolute; left: 0; top: 0; width: 60px; height: 60px; margin: -30px 0 0 -30px; border-radius: 50%; background: rgba(33,33,36,.2); box-shadow: 0 0 0 3px rgba(255,255,255,.95); opacity: 0; }
+
+#mont { position: absolute; inset: 0; background: var(--floor); opacity: 0; overflow: hidden; }
+.rc { position: absolute; left: 0; width: 760px; height: 196px; border-radius: 30px; background: var(--card); box-shadow: 0 20px 60px rgba(26,33,51,.12); padding: 26px 32px; display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 6px 20px; }
+.rc .k { grid-column: 1 / -1; display: flex; gap: 10px; align-items: center; font-size: 18px; font-weight: 700; color: var(--soft); }
+.rc .k em { font-style: normal; padding: 5px 12px; border-radius: 999px; background: var(--chip); color: var(--ink); }
+.rc .k em.y { background: var(--yellow-soft); }
+.rc .k em.b { background: var(--blue-soft); color: var(--good); }
+.rc b { font-size: 36px; letter-spacing: -0.02em; }
+.rc .v { font-size: 40px; font-weight: 800; font-variant-numeric: tabular-nums; }
+.rc .d { font-size: 20px; color: var(--muted); font-weight: 600; }
+.rc .wx { display: flex; align-items: center; gap: 16px; }
+.rc .sun { width: 56px; height: 56px; border-radius: 50%; background: radial-gradient(circle, #ffcf3d 0 44%, transparent 46%), conic-gradient(from 0deg, #ffcf3d 0 4%, transparent 4% 12.5%, #ffcf3d 12.5% 16.5%, transparent 16.5% 25%, #ffcf3d 25% 29%, transparent 29% 37.5%, #ffcf3d 37.5% 41.5%, transparent 41.5% 50%, #ffcf3d 50% 54%, transparent 54% 62.5%, #ffcf3d 62.5% 66.5%, transparent 66.5% 75%, #ffcf3d 75% 79%, transparent 79% 87.5%, #ffcf3d 87.5% 91.5%, transparent 91.5%); }
+.rc .push { grid-column: 1 / -1; display: flex; gap: 18px; align-items: center; }
+.rc .push img { width: 64px; height: 64px; border-radius: 16px; }
+.rc .push div { display: flex; flex-direction: column; gap: 4px; }
+.rc .push strong { font-size: 22px; }
+.rc .push span { font-size: 26px; font-weight: 600; line-height: 1.35; }
+
+/* 매물 상세 화면(앱 PropertyDetail 정보, 체크리스트 탭)을 1.5배로 옮겼다. */
+.page.app { top: 70px; width: 580px; padding: 0 0 26px; gap: 0; border-radius: 48px; overflow: hidden; }
+.app .ah { display: flex; align-items: center; gap: 18px; height: 84px; padding: 0 28px; }
+.app .ah b { flex: 1; font-size: 28px; font-weight: 800; letter-spacing: -0.02em; }
+.app .chev { width: 16px; height: 16px; border-left: 3.5px solid var(--ink); border-bottom: 3.5px solid var(--ink); transform: rotate(45deg); margin-left: 6px; }
+.app .dots { width: 5px; height: 5px; border-radius: 50%; background: var(--soft); box-shadow: 0 -10px 0 var(--soft), 0 10px 0 var(--soft); }
+.app .tabs { display: grid; grid-template-columns: 1fr 1fr; height: 62px; align-items: center; text-align: center; font-size: 24px; font-weight: 700; color: #9ea3ab; border-bottom: 10px solid #f2f3f5; }
+.app .tabs .on { color: #3f6fc4; }
+.app .hero { position: relative; height: 170px; background: linear-gradient(90deg, transparent 0 34%, #a9cdf2 34% 66%, transparent 66%) 0 26px / 100% 70px no-repeat, linear-gradient(180deg, #e9e3d8 0 72%, #b99a76 72%); }
+.app .hero span { position: absolute; right: 20px; bottom: 18px; padding: 9px 16px; border-radius: 999px; background: rgba(33,33,36,.82); color: #fff; font-size: 17px; font-weight: 700; }
+.app .rows { padding: 6px 26px 0; gap: 0; }
+.app .sect { font-size: 24px; font-weight: 800; padding: 24px 0 10px; }
+.app .row { height: 58px; padding: 0; background: none; border-radius: 0; display: grid; grid-template-columns: 170px 1fr; }
+.app .row span { font-size: 20px; color: #868b94; font-weight: 500; }
+.app .row b { font-size: 22px; font-weight: 600; text-align: center; padding: 8px 0; border-radius: 12px; }
+.app .row.on { background: none; box-shadow: none; }
+.app .row.on b { background: var(--chip); }
+.app .csh { display: flex; align-items: center; gap: 14px; padding: 26px 28px 8px; }
+.app .csh b { font-size: 26px; font-weight: 800; }
+.app .csh span { font-size: 17px; color: var(--soft); font-weight: 600; }
+.app .sum { display: flex; align-items: center; gap: 28px; padding: 8px 28px 20px; border-bottom: 10px solid #f2f3f5; }
+.app .sum svg { width: 110px; height: 110px; rotate: -90deg; }
+.app .sum circle { fill: none; stroke-width: 9; }
+.app .sum .r0 { stroke: #c9cbcf; }
+.app .sum .rg { stroke: #6b9ae6; stroke-dasharray: 0 188.5; }
+.app .sum .rw { stroke: #ef7d7d; stroke-dasharray: 0 188.5; }
+.app .lg p { margin: 4px 0; display: grid; grid-template-columns: 12px 78px 30px; gap: 10px; align-items: center; font-size: 19px; color: var(--soft); font-weight: 600; }
+.app .lg i { width: 5px; height: 22px; border-radius: 2px; background: #c9cbcf; }
+.app .lg i.b { background: #6b9ae6; } .app .lg i.w { background: #ef7d7d; }
+.app .lg b { color: var(--ink); font-size: 21px; font-variant-numeric: tabular-nums; }
+.app .cl { padding: 0 28px; }
+.app .csec { display: flex; gap: 10px; align-items: center; font-size: 23px; font-weight: 800; padding: 22px 0 8px; }
+.app .csec em { font-style: normal; font-size: 20px; color: #3f6fc4; }
+.app .cr { height: 66px; padding: 0; }
+.app .cr + .cr, .app .madd + .cr { border-top: 0; }
+.app .cr > span { font-size: 21px; font-weight: 600; }
+.app .o { min-width: 92px; height: 50px; font-size: 18px; border-radius: 14px; }
+.app .madd { font-size: 20px; color: #9ea3ab; padding: 0 0 12px; min-height: 40px; }
+.app .madd.typing { color: var(--ink); font-weight: 600; }
+#popm { position: absolute; left: 0; top: 0; width: 330px; padding: 10px; border-radius: 26px; background: var(--card); box-shadow: 0 24px 70px rgba(26,33,51,.24); opacity: 0; }
+#popm p { margin: 0; height: 66px; display: flex; align-items: center; gap: 14px; padding: 0 18px; border-radius: 18px; font-size: 24px; font-weight: 700; }
+#popm p.hl { background: var(--chip); }
+#popm p img { width: 42px; height: 42px; flex: none; }
+#popm::after { content: ''; position: absolute; left: calc(50% - 12px); bottom: -10px; width: 24px; height: 24px; background: var(--card); transform: rotate(45deg); border-radius: 4px; }
+#legend { left: 1500px; top: 120px; width: 300px; padding: 20px 24px; gap: 10px; border-radius: 22px; }
+#legend p { margin: 0; display: flex; gap: 12px; align-items: center; font-size: 22px; font-weight: 700; }
+#legend i { width: 8px; height: 26px; border-radius: 3px; }
+.mc { position: absolute; width: 400px; padding: 24px 28px; border-radius: 28px; background: var(--card); box-shadow: 0 24px 70px rgba(26,33,51,.14); display: flex; flex-direction: column; gap: 8px; }
+.mc .k { font-size: 17px; font-weight: 700; color: var(--soft); display: flex; gap: 8px; align-items: center; }
+.mc .k em { font-style: normal; padding: 4px 11px; border-radius: 999px; background: var(--yellow-soft); color: var(--ink); }
+.mc .k em.b { background: var(--blue-soft); color: var(--good); }
+.mc b { font-size: 30px; letter-spacing: -0.02em; }
+.mc .v { font-size: 34px; font-weight: 800; }
+.mc .wx { display: flex; gap: 14px; align-items: center; }
+.mc .sun { width: 46px; height: 46px; border-radius: 50%; background: radial-gradient(circle, #ffcf3d 0 40%, #ffe9a6 41% 60%, transparent 62%); }
+.mc .push { display: flex; gap: 14px; align-items: center; }
+.mc .push img { width: 54px; height: 54px; border-radius: 14px; }
+.mc .push span { font-size: 22px; font-weight: 600; line-height: 1.35; word-break: keep-all; }
+.mc { transform-origin: 0 0; }
+
+/* 비교표를 PDF로 받기 */
+#pdfbtn { position: absolute; left: 1250px; top: 952px; width: 380px; height: 76px; border-radius: 20px; background: var(--blue); color: #fff; display: grid; place-items: center; font-size: 26px; font-weight: 700; box-shadow: 0 18px 44px rgba(26,33,51,.22); opacity: 0; }
+#pdfbtn.done { background: var(--card); color: var(--good); box-shadow: inset 0 0 0 2.5px var(--good), 0 18px 44px rgba(26,33,51,.16); }
+#pdfdoc { position: absolute; left: 1560px; top: 230px; width: 320px; height: 450px; border-radius: 14px; background: #fff; box-shadow: 0 34px 90px rgba(26,33,51,.28); padding: 30px 28px; display: flex; flex-direction: column; gap: 16px; transform-origin: 30% 100%; opacity: 0; }
+#pdfdoc .dh { display: flex; align-items: center; gap: 12px; font-size: 24px; font-weight: 800; letter-spacing: -0.02em; }
+#pdfdoc .dh img { width: 40px; height: 40px; border-radius: 10px; }
+#pdfdoc .dh em { margin-left: auto; font-style: normal; font-size: 15px; font-weight: 800; color: #fff; background: #e5484d; padding: 4px 9px; border-radius: 7px; }
+#pdfdoc .dc { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+#pdfdoc .dc i { height: 70px; border-radius: 10px; background: linear-gradient(180deg, #e9e3d8 0 68%, #b99a76 68%); }
+#pdfdoc .dr { display: grid; grid-template-columns: 56px repeat(3, 1fr); gap: 8px; align-items: center; height: 26px; font-size: 15px; color: var(--muted); font-weight: 700; }
+#pdfdoc .dr b { height: 14px; border-radius: 7px; background: var(--chip); }
+#pdfdoc .dr b.y { background: var(--yellow-soft); }
+#pdfdoc .df { margin-top: auto; font-size: 13px; color: var(--muted); font-weight: 600; }
+
+/* 계정 연결 */
+#acct { left: 1090px; top: 300px; width: 640px; gap: 18px; }
+#acct .sub { font-size: 22px; line-height: 1.5; color: var(--soft); font-weight: 500; margin-top: -6px; min-height: 66px; }
+#acct .ob { height: 78px; border-radius: 18px; display: grid; place-items: center; font-size: 26px; font-weight: 700; }
+#acct .kk { background: #fee500; color: #191919; }
+#acct .ap { background: #000; color: #fff; }
+#acct .kk.on { background: var(--blue-soft); color: var(--good); box-shadow: inset 0 0 0 2.5px var(--good); }
+#devs { position: absolute; left: 1090px; top: 700px; width: 640px; display: flex; justify-content: center; align-items: center; gap: 22px; font-size: 24px; font-weight: 700; color: var(--soft); opacity: 0; }
+#devs span { padding: 14px 24px; border-radius: 999px; background: var(--card); box-shadow: 0 14px 36px rgba(26,33,51,.12); color: var(--ink); }
+#devs i { width: 54px; height: 3px; border-radius: 2px; background: var(--good); }
+
+/* 마지막 화면: 어디서 쓸 수 있는지 */
+#endc { position: absolute; left: 0; right: 0; top: 742px; display: flex; justify-content: center; gap: 14px; opacity: 0; }
+#endc span { padding: 13px 26px; border-radius: 999px; background: var(--card); box-shadow: 0 12px 32px rgba(26,33,51,.12); font-size: 24px; font-weight: 700; color: var(--ink); }
+#endc span.u { background: var(--ink); color: #fff; }
+</style>
+</head>
+
+<body>
+<div id="vp">
+  <div id="cam">
+    <div id="region"></div>
+    <div id="map"></div>
+    <div id="world"></div>
+    <div id="target"></div>
+  </div>
+  <div class="dof far"></div><div class="dof n1"></div><div class="dof n2"></div><div class="dof n3"></div>
+  <div class="haze"></div>
+  <div id="ui"></div>
+  <div id="ov">
+    <div id="mont"></div>
+    <div id="newmemo"></div>
+    <div id="popm"><p id="popMemo"><img src="assets/menu-memo.webp" alt="">메모 남기기</p><p id="popAdd"><img src="assets/menu-add-property.webp" alt="">여기에 매물 등록</p></div>
+    <div class="card" id="search">
+      <h4>어디로 출퇴근·통학하세요?</h4>
+      <div class="place"><small>출퇴근 장소</small><b id="sq"></b></div>
+      <div class="lb">통근 시간</div>
+      <div class="segc"><span>10분</span><span>20분</span><span id="c30">30분</span><span id="c40">40분</span><span>50분</span><span>60분</span></div>
+      <div class="lb">환승 횟수</div>
+      <div class="segc"><span>환승 없음</span><span class="on">1회 이하</span><span>2회 이하</span></div>
+      <div class="go" id="sgo">이 조건으로 동네 찾기</div>
+    </div>
+    <div class="card" id="legend"><p><i style="background:#168BFF"></i>15분 이하</p><p><i style="background:#12BC67"></i>16~30분</p></div>
+    <div class="card" id="dong">
+      <h4>찾은 동네</h4><div class="sub">분당구 판교역로 160 · 통근 30분, 환승 1회</div>
+      <div class="dl"><p><b>백현동</b><span>월세 105만원</span><em>1분</em></p><p id="dSam"><b>삼평동</b><span>월세 95만원</span><em>2분</em></p><p><b>정자동</b><span>월세 65만원</span><em>8분</em></p></div>
+    </div>
+    <div class="card" id="msheet">
+      <h4>이곳을 평가해 주세요</h4><div class="sub">여러분이 남긴 평가는 자취선배를 쓰는 모두에게 보여요.</div>
+      <div class="thumbs2"><em id="mlike">👍 좋아요</em><em>👎 싫어요</em></div>
+      <div class="lb">메모</div>
+      <div class="ta" id="mta"></div>
+      <div class="mf"><span>취소</span><div class="go" id="mgo">평가 남기기</div></div>
+    </div>
+    <div id="pdfbtn">선택한 3개 PDF 받기</div>
+    <div id="pdfdoc">
+      <div class="dh"><img src="assets/goose.webp" alt="">방 비교<em>PDF</em></div>
+      <div class="dc"><i></i><i></i><i></i></div>
+      <div class="dr"><span>월세</span><b></b><b></b><b class="y"></b></div>
+      <div class="dr"><span>관리비</span><b></b><b></b><b class="y"></b></div>
+      <div class="dr"><span>통근</span><b class="y"></b><b></b><b></b></div>
+      <div class="dr"><span>면적</span><b></b><b class="y"></b><b></b></div>
+      <div class="dr"><span>체크</span><b></b><b class="y"></b><b></b></div>
+      <div class="df">자취선배에서 만든 방 비교 · 2026.11.12</div>
+    </div>
+    <div class="card" id="acct">
+      <h4 id="acTitle">계정 연결</h4>
+      <div class="sub" id="acSub"></div>
+      <div class="ob kk" id="acKakao">카카오 로그인</div>
+      <div class="ob ap">Apple로 로그인</div>
+    </div>
+    <div id="devs"><span>휴대폰</span><i></i><span>노트북</span><i></i><span>앱</span></div>
+    <div id="endc"><span>App Store</span><span>Google Play</span><span class="u">jachwi-sunbae.kr</span></div>
+    <div id="chap"><div class="bg"></div><div class="tt" id="ctt"></div><div class="sb" id="csb"></div></div>
+    <span id="tap2"></span>
+  </div>
+</div>
+
+<script>
+(() => {
+  const P = 1880;
+  const clamp = (x, a = 0, b = 1) => Math.min(Math.max(x, a), b);
+  const ss = (a, b, x) => { const t = clamp((x - a) / (b - a)); return t * t * (3 - 2 * t); };
+  const lerp = (a, b, t) => a + (b - a) * t;
+  const easeIO = (t) => { t = clamp(t); return t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2; };
+  const eo = (t) => 1 - Math.pow(1 - clamp(t), 3);
+  const expo = (t) => { t = clamp(t); return t === 1 ? 1 : 1 - Math.pow(2, -10 * t); };
+  const back = (t) => { t = clamp(t); const c = 1.7; return 1 + (c + 1) * Math.pow(t - 1, 3) + c * Math.pow(t - 1, 2); };
+  const $ = (s, r = document) => r.querySelector(s);
+  const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+  const pop = (el, t0, t, dur = 0.25, dy = 12) => { const e = eo((t - t0) / dur); el.style.opacity = e; el.style.transform = `translateY(${dy * (1 - e)}px) scale(${lerp(0.9, 1, e)})`; return e; };
+  const fmt = (n) => n.toLocaleString('ko-KR');
+
+  /* ---------- 행정동: 앱과 같은 실제 경계(assets/dongs-pangyo.js)와 통근 색 ---------- */
+  // 색은 frontend의 COMMUTE_COLORS, 굵기와 투명도는 mapRegionLayer의 regionStyle을 영상 배율로 옮겼다.
+  const COMMUTE = { fast: { fill: '#168BFF', stroke: '#0875E1' }, medium: { fill: '#12BC67', stroke: '#07964D' } };
+  const [BX, BY, BW, BH] = window.DONGS.bounds;
+  const RX = -BX, RY = -BY;
+  const cells = window.DONGS.dongs.map((d) => ({ name: d.n, polys: d.p, poly: d.p.reduce((a, q) => (q.length > a.length ? q : a)), cx: d.c[0], cy: d.c[1], keep: d.b }));
+  const PANGYO = window.DONGS.pangyo;
+  const hash = (a, b) => { const s = Math.sin(a * 12.9898 + b * 78.233) * 43758.5453; return s - Math.floor(s); };
+  const path = (c) => c.polys.map((q) => `M${q.map(([x, y]) => `${x + RX},${y + RY}`).join('L')}Z`).join('');
+  const svg = [`<svg width="${BW}" height="${BH}" viewBox="0 0 ${BW} ${BH}" xmlns="http://www.w3.org/2000/svg" font-family="Pretendard, sans-serif">
+    <defs><pattern id="blk" width="460" height="460" patternUnits="userSpaceOnUse"><rect x="50" y="50" width="360" height="360" rx="26" fill="var(--block)"/></pattern></defs>
+    <rect width="${BW}" height="${BH}" fill="var(--ground)"/><rect width="${BW}" height="${BH}" fill="url(#blk)"/>`];
+  cells.forEach((c, i) => svg.push(`<path id="cf${i}" d="${path(c)}" fill="${c.keep ? COMMUTE[c.keep].fill : 'transparent'}" opacity="0"/>`));
+  cells.forEach((c, i) => svg.push(`<path id="ce${i}" d="${path(c)}" fill="none" stroke="var(--ink)" stroke-width="44" stroke-linejoin="round" pathLength="1000" stroke-dasharray="1000" stroke-dashoffset="1000"/>`));
+  cells.forEach((c, i) => svg.push(`<text id="cl${i}" x="${c.cx + RX}" y="${c.cy + RY + 180}" font-size="${c.keep ? 520 : 420}" font-weight="700" fill="var(--ink)" text-anchor="middle" opacity="0">${c.name}</text>`));
+  // 출퇴근 장소: 앱 지도처럼 파란 점과 검은 말풍선
+  svg.push(`<g id="origin" opacity="0"><polygon points="${PANGYO[0] + RX - 260},${PANGYO[1] + RY - 640} ${PANGYO[0] + RX + 260},${PANGYO[1] + RY - 640} ${PANGYO[0] + RX},${PANGYO[1] + RY - 260}" fill="#212124"/>
+    <rect x="${PANGYO[0] + RX - 1750}" y="${PANGYO[1] + RY - 1500}" width="3500" height="900" rx="450" fill="#212124"/><text x="${PANGYO[0] + RX}" y="${PANGYO[1] + RY - 890}" font-size="450" font-weight="800" fill="#fff" text-anchor="middle">선택한 지역</text></g>`);
+  svg.push('</svg>');
+  $('#region').style.cssText = `left:${BX}px;top:${BY}px;width:${BW}px;height:${BH}px`;
+  $('#region').innerHTML = svg.join('');
+  const cf = cells.map((_, i) => $(`#cf${i}`)), ce = cells.map((_, i) => $(`#ce${i}`)), cl = cells.map((_, i) => $(`#cl${i}`));
+  const originEl = $('#origin');
+  // 통근 조건 밖 동은 판교역에서 먼 순서대로 지운다.
+  const far = (c) => Math.hypot(c.cx - PANGYO[0], c.cy - PANGYO[1]);
+  const ERASE = cells.map((c, i) => i).filter((i) => !cells[i].keep).sort((a, b) => far(cells[b]) - far(cells[a]));
+  const SAMPYEONG = cells.find((c) => c.name === '삼평동');
+
+  /* ---------- 판교 거리 지도 (지도 원점 -3000, -5000) ---------- */
+  const MX = -3000, MY = -5000, W = 12000;
+  let seed = 11;
+  const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
+  const parts = [`<svg width="${W}" height="${W}" viewBox="0 0 ${W} ${W}" xmlns="http://www.w3.org/2000/svg" font-family="Pretendard, sans-serif">`, `<rect width="${W}" height="${W}" fill="var(--ground)"/>`];
+  const step = 440, road = 44;
+  const PAD = 2640;
+  parts.push(`<g transform="rotate(-32 ${W / 2} ${W / 2})">`);
+  for (let gx = -PAD; gx < W + PAD; gx += step) for (let gy = -PAD; gy < W + PAD; gy += step) {
+    const x0 = gx + road / 2 + 16, y0 = gy + road / 2 + 16, s = step - road - 32;
+    if (rnd() < 0.08) { parts.push(`<rect x="${x0}" y="${y0}" width="${s}" height="${s}" rx="26" fill="var(--park)"/>`); continue; }
+    const cols = 1 + Math.floor(rnd() * 3), rows = 1 + Math.floor(rnd() * 2);
+    const cw = (s - (cols - 1) * 16) / cols, rh = (s - (rows - 1) * 16) / rows;
+    for (let c = 0; c < cols; c++) for (let r = 0; r < rows; r++) parts.push(`<rect x="${(x0 + c * (cw + 16)).toFixed(0)}" y="${(y0 + r * (rh + 16)).toFixed(0)}" width="${cw.toFixed(0)}" height="${rh.toFixed(0)}" rx="12" fill="${rnd() < 0.5 ? 'var(--block)' : 'var(--block-2)'}"/>`);
+  }
+  let gi = 0;
+  for (let g = -2640; g <= W + 2640; g += step, gi++) {
+    // 네 줄에 한 줄은 큰길이다. 앱이 쓰는 네이버 기본 지도처럼 노랗고 조금 넓게 그린다.
+    const big = gi % 4 === 1, rw = big ? road * 1.5 : road, fill = big ? 'var(--artery)' : 'var(--road)';
+    parts.push(`<rect x="${g - rw / 2}" y="-2640" width="${rw}" height="${W + 5280}" fill="${fill}"/><rect x="-2640" y="${g - rw / 2}" width="${W + 5280}" height="${rw}" fill="${fill}"/>`);
+  }
+  parts.push('</g>');
+  const label = (x, y, text, size) => parts.push(`<text x="${x - MX}" y="${y - MY}" font-size="${size}" font-weight="700" fill="var(--label)" text-anchor="middle">${text}</text>`);
+  label(PANGYO[0], PANGYO[1] + 260, '판교역', 120); label(3600, -400, '판교테크노밸리', 110); label(2400, 2600, '삼평동', 200); label(4300, 1600, '판교 공원', 90);
+  parts.push('</svg>');
+  const mapEl = $('#map');
+  mapEl.innerHTML = parts.join('');
+  // 거리 지도는 자르지 않고 넓게 깐다. 행정동 경계를 그리는 동안에는 숨긴다.
+
+  /* ---------- 비행 경로: 빨라지고, 돌고 ---------- */
+  const F0 = 4.0, FEND = 7.95;
+  const H0 = 0;
+  const TURNS = [];
+  const BURSTS = [[4.0, 4.75], [5.02, 5.75], [6.02, 6.75], [7.02, 7.6]];
+  const heading = (t) => { let h = H0; TURNS.forEach((r) => (h = lerp(h, r.h, easeIO((t - r.a) / (r.b - r.a))))); return h; };
+  const burst = (t) => Math.max(...BURSTS.map(([a, b]) => ss(a, a + 0.16, t) * (1 - ss(b - 0.24, b, t))));
+  const vel = (t) => (0.16 * (1 - ss(7.6, FEND, t)) + 0.84 * burst(t));
+  const CRUISE = 1250;
+  const DT = 0.002, NS = Math.ceil((FEND - F0) / DT);
+  const PX = new Float64Array(NS + 1), PY = new Float64Array(NS + 1);
+  PX[0] = 2500; PY[0] = 1400;
+  for (let i = 1; i <= NS; i++) {
+    const t = F0 + (i - 0.5) * DT, h = (heading(t) * Math.PI) / 180, v = vel(t) * CRUISE;
+    PX[i] = PX[i - 1] + Math.sin(h) * v * DT;
+    PY[i] = PY[i - 1] - Math.cos(h) * v * DT;
+  }
+  const at = (t) => { const i = Math.round(clamp((t - F0) / DT, 0, NS)); return [PX[i], PY[i]]; };
+  const side = (t, off) => { const [x, y] = at(t); const h = (heading(t) * Math.PI) / 180; return [x + Math.cos(h) * off, y + Math.sin(h) * off]; };
+  const ahead = (t, d) => { const [x, y] = at(t); const h = (heading(t) * Math.PI) / 180; return [x + Math.sin(h) * d, y - Math.cos(h) * d]; };
+
+  /* ---------- 지도 위 조각: 메모 위주, 매물은 적게 ---------- */
+  const world = $('#world');
+  const pin = (name, price, ph = '') => `<div class="pmk"><div class="pc"><i class="ph ${ph}"></i><span class="tx"><strong>${name}</strong><small>${price}</small></span></div></div>`;
+  // who는 예전 카드 모양에서 쓰던 값이라 그리지 않는다. cls가 'bad'면 싫어요(빨강) 말풍선이다.
+  const memo = (text, who, cls = '') => `<div class="memo ${cls === 'bad' ? 'bad' : ''}">${text}</div>`;
+  const SPEC = [
+    { p: side(4.9, -250), html: memo('밤에도 골목 가로등이 밝아서 늦게 와도 괜찮아요', '2년 살았어요 · 밤 10시'), z: 120, spot: 4.9 },
+    { p: side(5.9, 270), html: memo('버스정류장이 바로 앞이라 판교역까지 한 번에 가요', '지금 살고 있어요', 'y'), z: 120, spot: 5.9 },
+    { p: side(6.9, -300), html: memo('편의점이 건물 바로 앞이라 편해요', '1년 살았어요'), z: 120, spot: 6.9 },
+    { p: side(4.45, -520), html: memo('주말 점심엔 카페 거리 쪽이 붐벼요', '1년 살았어요', 'bad'), z: 110 },
+    { p: side(5.45, 560), html: memo('언덕이 없어서 자전거 타기 좋아요', '3년 살았어요', 'y'), z: 110 },
+    { p: side(6.45, -560), html: memo('언덕길이라 겨울엔 미끄러워요', '2년 살았어요', 'bad'), z: 110 },
+    { p: side(4.3, 480), html: pin('삼평동 투룸', '58만'), z: 60 },
+    { p: side(6.3, 520), html: pin('판교역 오피스텔', '72만', 'img'), z: 60 },
+  ];
+  const END = at(FEND);
+  SPEC.push({ p: [END[0], END[1]], html: '<div class="pmk"><div class="pc"><i class="ph img"></i><span class="tx"><strong>새 매물</strong><small>0만</small></span></div></div>', z: 30, target: true });
+  const pieces = SPEC.map((s) => {
+    const sh = document.createElement('div'); sh.className = 'shadow';
+    const el = document.createElement('div'); el.className = 'piece'; el.innerHTML = s.html;
+    world.append(sh, el);
+    return { base: /class="(pin|pmk)"/.test(s.html) ? 1.4 : 1.55, ...s, x: s.p[0], y: s.p[1], el, sh, inner: el.firstElementChild };
+  });
+  pieces.forEach((p) => {
+    p.w = p.el.offsetWidth; p.h = p.el.offsetHeight;
+    p.sh.style.width = `${p.w}px`; p.sh.style.height = `${p.h}px`;
+    p.sh.style.borderRadius = p.inner.classList.contains('pin') ? '34px' : p.inner.classList.contains('pmk') ? '22px' : '18px';
+  });
+
+  /* ---------- 방과 매물 카드 ---------- */
+  const buildRoom = (pal) => `
+    <div class="rv" style="--wall-back:${pal.back};--wall-side:${pal.side};--wood-1:${pal.w1};--wood-2:${pal.w2};background:${pal.back}">
+      <div class="rcam">
+        <div class="face back" style="transform:translate3d(-600px,-400px,-1400px)"><span class="win"></span><span class="sill"></span></div>
+        <div class="face floorf" style="transform:translate3d(-600px,400px,-1400px) rotateX(90deg)"></div>
+        <div class="face ceil" style="transform:translate3d(-600px,-400px,-1400px) rotateX(90deg)"></div>
+        <div class="face lwall" style="transform:translate3d(-600px,-400px,-1400px) rotateY(-90deg)"><span class="door"><i></i></span></div>
+        <div class="face rwall" style="transform:translate3d(600px,-400px,-1400px) rotateY(-90deg)"><span class="cabinet"></span><span class="counter"><i></i></span></div>
+      </div>
+    </div>`;
+  const ROOMS = [
+    { back: '#e2dbcf', side: '#ebe5da', w1: '#b99a76', w2: '#a88a68' },
+    { back: '#dfe3e6', side: '#e8ecee', w1: '#c7ad8c', w2: '#b59b7b' },
+    { back: '#e6ddd3', side: '#eee6dd', w1: '#9f8467', w2: '#8e755a' },
+  ];
+  const hcard = (pal, name, price, extra = '') => `<div class="hcard"><div class="photo">${buildRoom(pal)}${extra}</div><div class="body"><b>${name}</b><span>${price}</span></div></div>`;
+  // 매물 상세(정보, 체크리스트 탭)를 앱 화면 그대로 옮겼다. 값은 한 칸씩 채워지고, 체크 항목은 하나씩 누른다.
+  const FIELDS = [['기본 정보'], ['매물 이름', '삼평동 원룸'], ['보증금 / 월세', '1,000만원 / 65만원'], ['주소', '분당구 판교역로 152'], ['부가 정보'], ['관리비', '8만원'], ['입주 가능일', '2026.12.01'], ['방 옵션', '에어컨, 냉장고, 세탁기']];
+  const CHECKS = [['보안', '🔒'], ['현관문 잠금장치 잘 작동하는지', 'good'], ['공동 현관 출입 통제되는지', 'good'], ['창문·채광', '▦'], ['햇빛 잘 들어오는지', 'warn'], ['창문·방충망 상태 괜찮은지', 'good']];
+  const head = (on) => `<div class="ah"><i class="chev"></i><b>삼평동 원룸</b><i class="dots"></i></div><div class="tabs"><span class="${on === 0 ? 'on' : ''}">정보</span><span class="${on === 1 ? 'on' : ''}">체크리스트</span></div>`;
+  const PAGES = `
+    <div class="white" id="roomdim"></div>
+    <div class="flash"></div>
+    <div class="page app" id="pg1">
+      ${head(0)}
+      <div class="hero"><span>+ 사진 추가</span></div>
+      <div class="rows">${FIELDS.map(([k, v]) => (v === undefined ? `<div class="sect">${k}</div>` : `<div class="row"><span>${k}</span><b data-v="${v}"></b></div>`)).join('')}</div>
+    </div>
+    <div class="page app" id="pg2">
+      ${head(1)}
+      <div class="csh"><b>사용자 체크리스트</b><span>⟳ 교체</span></div>
+      <div class="sum"><svg viewBox="0 0 80 80"><circle cx="40" cy="40" r="30" class="r0"/><circle cx="40" cy="40" r="30" class="rg" id="rg"/><circle cx="40" cy="40" r="30" class="rw" id="rw"/></svg>
+        <div class="lg"><p><i class="b"></i>괜찮음<b id="ng">0</b></p><p><i class="w"></i>주의<b id="nw">0</b></p><p><i></i>미확인<b id="nu">12</b></p></div></div>
+      <div class="cl">${CHECKS.map(([k, c]) => (c === 'good' || c === 'warn' ? `<div class="cr"><span>${k}</span><div class="opts"><i class="o good">괜찮음</i><i class="o warn">주의</i></div></div><div class="madd">메모 추가</div>` : `<div class="csec"><em>${c}</em>${k}</div>`)).join('')}</div>
+      <div id="save" hidden></div>
+      <span class="tap" id="tap"></span>
+    </div>`;
+  const target = $('#target');
+  target.innerHTML = hcard(ROOMS[0], '삼평동 원룸', '1,000 / 65', PAGES);
+  const rcam = $('.rcam', target), rv = $('.rv', target), roomdim = $('#roomdim'), flash = $('.flash', target);
+  const pg1 = $('#pg1'), pg2 = $('#pg2'), tap = $('#tap');
+  const thumbs = [], rowEls = $$('.row', target), crEls = $$('.cr', target), maddEls = $$('.madd', target);
+  const save = $('#save'), rg = $('#rg'), rw = $('#rw'), ng = $('#ng'), nw = $('#nw'), nu = $('#nu');
+  const PICK = { good: 0, warn: 1 };
+  // 각 줄에서 누를 버튼의 위치(페이지 기준)
+  const optPos = (el) => { let x = 0, y = 0, n = el; while (n && n !== pg2) { x += n.offsetLeft; y += n.offsetTop; n = n.offsetParent; } return [x + el.offsetWidth / 2, y + el.offsetHeight / 2]; };
+  // 미확인 항목은 누르지 않고 지나간다.
+  const taps = CHECKS.filter(([, c]) => c in PICK).map(([, c], i) => { const el = crEls[i].querySelectorAll('.o')[PICK[c]]; const [x, y] = optPos(el); return { el, x, y, t: 11.05 + i * 0.17, c }; });
+  const SAVE_T = 99;
+  const TX = END[0], B = END[1] - 40, PHOTO_CY = B - 1410 + 540;
+
+  /* ---------- 2D 비교표 ---------- */
+  const CMP = { scale: 0.15, top: 200 };
+  const COLX = [640, 980, 1320];
+  const CMP_LX = (TX - 960) + (960 - COLX[0]) / CMP.scale, CMP_LY = (B - 1410) + (540 - CMP.top) / CMP.scale;
+  const ROWS_T = [['월세', ['65만', '58만', '52만'], 2], ['관리비', ['8만', '10만', '5만'], 2], ['통근', ['18분', '22분', '27분'], 0], ['면적', ['23㎡', '26㎡', '19㎡'], 1], ['괜찮음', ['6', '8', '4'], 1], ['주의', ['2', '0', '4'], 1]];
+  const ui = $('#ui');
+  ui.innerHTML = `
+    <div class="tbl-title" id="ttl">원룸 3곳 비교표</div>
+    <div class="c2" id="c2a">${hcard(ROOMS[1], '백현동 원룸', '500 / 58')}</div>
+    <div class="c2" id="c2b">${hcard(ROOMS[2], '서현1동 원룸', '300 / 52')}</div>
+    <div id="tbl"></div>
+    <div class="white" id="fin"></div>
+    <div class="logo"><div class="lt" id="lt"><img src="assets/goose.webp" alt=""></div><div class="ln" id="ln">자취선배</div><div class="tl" id="tl">동네 고르기부터 계약 전 비교까지, 첫 자취방을 선배처럼.</div></div>`;
+  const c2 = [$('#c2a'), $('#c2b')], ttl = $('#ttl'), tbl = $('#tbl');
+  const tcells = [], tlabels = [], tlines = [];
+  ROWS_T.forEach(([label, vals, best], r) => {
+    const y = 470 + r * 80;
+    const line = document.createElement('div'); line.className = 'rowline'; line.style.top = `${y + 70}px`; tbl.append(line); tlines.push(line);
+    const l = document.createElement('div'); l.className = 'rowlbl'; l.style.left = '600px'; l.style.top = `${y + 18}px`; l.textContent = label; tbl.append(l); tlabels.push(l);
+    vals.forEach((v, c) => {
+      const el = document.createElement('div');
+      el.className = `cell${label === '주의' && v !== '0' ? ' warn' : ''}`;
+      el.style.left = `${COLX[c]}px`; el.style.width = '288px'; el.style.top = `${y + 5}px`;
+      el.textContent = v; tbl.append(el);
+      tcells.push({ el, r, c, best: c === best });
+    });
+  });
+  const fin = $('#fin'), lt = $('#lt'), ln = $('#ln'), tl = $('#tl');
+  const dofs = $$('.dof'), haze = $('.haze'), regionEl = $('#region');
+
+  /* ---------- 카메라 ---------- */
+  const OPEN = [PANGYO[0], PANGYO[1]], OVER = [3600, 2600];
+  const scaleAt = (t) => {
+    // 판교에서 시작해 "퉁, 퉁" 두 박자로 줌아웃하고, 경계가 그려지는 동안 더 멀어진다.
+    if (t < 0.4) return lerp(0.36, 0.34, t / 0.4);
+    if (t < 0.9) return Math.exp(lerp(Math.log(0.34), Math.log(0.155), expo((t - 0.4) / 0.3)) + lerp(0, Math.log(0.15 / 0.155), clamp((t - 0.7) / 0.2)));
+    if (t < 1.4) return Math.exp(lerp(Math.log(0.15), Math.log(0.072), expo((t - 0.9) / 0.3)));
+    return Math.exp(lerp(Math.log(0.072), Math.log(0.04), eo((t - 1.4) / 1.5)));
+  };
+  const camera = (t) => {
+    if (t < 2.95) {
+      const m = easeIO((t - 1.3) / 1.4);
+      return { tilt: 0, yaw: 0, D: P / scaleAt(t), lx: lerp(OPEN[0], OVER[0], m), ly: lerp(OPEN[1], OVER[1], m) };
+    }
+    if (t < F0) {
+      const u = (t - 2.95) / (F0 - 2.95);
+      const z = easeIO(u);
+      return { tilt: 55 * easeIO(ss(0.35, 1, u)), yaw: 0, D: Math.exp(lerp(Math.log(P / 0.04), Math.log(1550), z)), lx: lerp(OVER[0], PX[0], z), ly: lerp(OVER[1], PY[0], z) };
+    }
+    if (t < FEND + 0.35) {
+      const [x, y] = at(t);
+      return { tilt: 55, yaw: 0, D: 1550, lx: x, ly: y };
+    }
+    if (t < 9.0) {
+      const u = easeIO((t - (FEND + 0.35)) / (9.0 - FEND - 0.35));
+      return { tilt: lerp(55, 0, u), yaw: 0, D: Math.exp(lerp(Math.log(1550), Math.log(P), u)), lx: TX, ly: lerp(END[1], PHOTO_CY, u) };
+    }
+    if (t < 13.1) return { tilt: 0, yaw: 0, D: P, lx: TX, ly: PHOTO_CY };
+    const u = easeIO((t - 13.1) / 0.55);
+    return { tilt: 0, yaw: 0, D: Math.exp(lerp(Math.log(P), Math.log(P / CMP.scale), u)), lx: lerp(TX, CMP_LX, u), ly: lerp(PHOTO_CY, CMP_LY, u) };
+  };
+
+  const baseSeek = (t) => {
+    const c = camera(t);
+    $('#cam').style.transform = `translateZ(${P - c.D}px) rotateX(${c.tilt}deg) rotateZ(${c.yaw}deg) translate(${-c.lx}px, ${-c.ly}px)`;
+
+    /* 행정동: 경계 그리기 → 조건 밖 동 지우기 → 통근 색 칠하기 */
+    cells.forEach((cell, i) => {
+      const draw = eo((t - 1.2 - hash(i, 1) * 0.35) / 0.45);
+      const ei = ERASE.indexOf(i);
+      const gone = ei >= 0 ? ss(1.95 + (ei / ERASE.length) * 0.45, 2.1 + (ei / ERASE.length) * 0.45, t) : 0;
+      const tint = cell.keep ? ss(2.35 + hash(i, 2) * 0.2, 2.55 + hash(i, 2) * 0.2, t) : 0;
+      const end = 1 - ss(3.2, 3.6, t);
+      ce[i].setAttribute('stroke-dashoffset', 1000 * (1 - draw));
+      ce[i].setAttribute('opacity', (1 - gone) * end);
+      ce[i].setAttribute('stroke', cell.keep && tint > 0.5 ? COMMUTE[cell.keep].stroke : 'var(--ink)');
+      ce[i].setAttribute('stroke-width', 44);
+      cf[i].setAttribute('opacity', 0.28 * tint * end);
+      cl[i].setAttribute('opacity', eo((t - 1.4 - hash(i, 3) * 0.3) / 0.3) * (1 - gone) * (cell.keep ? 1 : 0.55) * (1 - ss(3.1, 3.4, t)));
+    });
+    originEl.setAttribute('opacity', eo((t - 0.9) / 0.3) * (1 - ss(3.1, 3.4, t)));
+    regionEl.style.opacity = 1 - ss(8.4, 8.9, t);
+    mapEl.style.opacity = (1 - ss(0.9, 1.3, t) * (1 - ss(3.0, 3.5, t))) * (1 - ss(8.4, 8.9, t));
+
+    /* 비행 조각: 카메라를 정면으로 보며 서 있다 */
+    const gate = ss(3.6, 4.1, t);
+    const fade = 1 - ss(8.1, 8.5, t);
+    const hdeg = -c.yaw;
+    const hr = (hdeg * Math.PI) / 180;
+    pieces.forEach((p) => {
+      const d = (p.x - c.lx) * Math.sin(hr) - (p.y - c.ly) * Math.cos(hr);
+      const k = (1 - ss(350, 1100, d)) * gate;
+      const z = lerp(3, p.z, k);
+      const a = c.tilt * k;
+      let s = p.base;
+      if (p.spot) s *= 1 + 0.12 * Math.max(0, Math.sin(clamp((t - p.spot + 0.2) / 0.5) * Math.PI));
+      let op = fade * gate;
+      if (p.target) {
+        s *= 1 + (t > 7.95 && t < 8.3 ? Math.sin(Math.PI * (t - 7.95) / 0.35) * 0.3 : 0);
+        p.inner.classList.toggle('sel', t >= 8.0);
+        op = gate * (1 - ss(8.4, 8.6, t));
+      }
+      const x = p.x - p.w / 2, y = p.y - p.h;
+      p.el.style.transform = `translate3d(${x}px, ${y}px, ${z}px) rotateZ(${hdeg}deg) rotateX(${-a}deg) scale(${s})`;
+      p.el.style.opacity = op;
+      const cos = Math.max(Math.cos((a * Math.PI) / 180), 0.2);
+      p.sh.style.transform = `translate3d(${x}px, ${y + 4 + 0.36 * z}px, 1px) rotateZ(${hdeg}deg) scale(${s}, ${s * cos})`;
+      p.sh.style.filter = `blur(${7 + 0.5 * z}px)`;
+      p.sh.style.opacity = 0.26 * op * clamp(z / 30);
+    });
+
+    /* 매물 카드 → 사진 속 방 */
+    const dT = (TX - c.lx) * Math.sin(hr) - (B - c.ly) * Math.cos(hr);
+    const kT = (1 - ss(350, 1100, dT)) * gate;
+    const u = easeIO((t - (FEND + 0.35)) / (9.0 - FEND - 0.35));
+    const bump = t > 7.95 && t < 8.3 ? Math.sin(Math.PI * (t - 7.95) / 0.35) * 0.1 : 0;
+    const ts = lerp(0.2, 1, u) * (1 + bump);
+    const ta = lerp(c.tilt * kT, 0, u);
+    const tz = lerp(lerp(3, 130, kT), 4, u);
+    target.style.transform = `translate3d(${TX - 960}px, ${B - 1410}px, ${tz}px) rotateZ(${hdeg * (1 - u)}deg) rotateX(${-ta}deg) scale(${ts})`;
+    target.style.opacity = gate;
+
+    // 방 하나에서 두 페이지: 왼쪽은 매물 정보 입력, 오른쪽은 체크리스트를 하나씩 누른다.
+    const dz = lerp(0, 760, easeIO((t - 8.4) / 3.2));
+    rcam.style.transform = `translateZ(${dz}px)`;
+    const roomOn = ss(9.25, 9.55, t) * (1 - ss(12.95, 13.2, t));
+    rv.style.filter = `blur(${4 * roomOn}px)`;
+    roomdim.style.opacity = 0.22 * roomOn;
+    flash.style.opacity = t >= 9.05 ? Math.max(0, 0.9 - (t - 9.05) / 0.22) : 0;
+    [[pg1, 9.25, -1], [pg2, 9.4, 1]].forEach(([pg, t0, dir]) => {
+      const e = eo((t - t0) / 0.35), out = ss(12.95, 13.15, t);
+      pg.style.opacity = e * (1 - out);
+      pg.style.transform = `translate(${dir * 90 * (1 - e)}px, ${50 * out}px)`;
+    });
+    thumbs.forEach((th, i) => { const e = back((t - 9.5 - i * 0.08) / 0.25); th.style.opacity = clamp(e); th.style.transform = `scale(${lerp(0.4, 1, e)})`; });
+    rowEls.forEach((row, i) => {
+      const t0 = 9.6 + i * 0.2;
+      const b = row.querySelector('b'), v = b.dataset.v;
+      const n = Math.round(clamp((t - t0) / 0.16) * v.length);
+      b.textContent = n > 0 ? v.slice(0, n) : '';
+      row.classList.toggle('on', t >= t0 - 0.02 && t < t0 + 0.24);
+    });
+    let tx = taps[0].x, ty = taps[0].y, press = 0;
+    for (let i = 0; i < taps.length; i++) {
+      const tp = taps[i], prev = taps[i - 1] || tp;
+      const m = easeIO((t - (tp.t - 0.14)) / 0.12);
+      if (t >= tp.t - 0.14) { tx = lerp(prev.x, tp.x, m); ty = lerp(prev.y, tp.y, m); }
+      if (t >= tp.t && t < tp.t + 0.12) press = Math.sin(Math.PI * (t - tp.t) / 0.12);
+    }
+    tap.style.opacity = ss(10.85, 10.95, t) * (1 - ss(11.75, 11.85, t));
+    tap.style.transform = `translate(${tx}px, ${ty}px) scale(${1 - 0.25 * press})`;
+    const checkTaps = taps;
+    checkTaps.forEach((tp) => { tp.el.classList.toggle('on', t >= tp.t); tp.el.textContent = `${t >= tp.t ? '✓ ' : ''}${tp.c === 'good' ? '괜찮음' : '주의'}`; });
+    const done = checkTaps.filter((tp) => t >= tp.t), good = done.filter((tp) => tp.c === 'good').length, warn = done.length - good;
+    ng.textContent = good; nw.textContent = warn; nu.textContent = 12 - good - warn;
+    const C = 188.5;
+    rg.style.strokeDasharray = `${(C * good) / 12} ${C}`;
+    rw.style.strokeDasharray = `${(C * warn) / 12} ${C}`;
+    rw.style.strokeDashoffset = `${(-C * good) / 12}`;
+    save.style.transform = `scale(${1 - 0.05 * (t > SAVE_T && t < SAVE_T + 0.15 ? Math.sin(Math.PI * (t - SAVE_T) / 0.15) : 0)})`;
+    save.classList.toggle('done', t >= SAVE_T + 0.05);
+    save.textContent = t >= SAVE_T + 0.05 ? '저장했어요' : '저장하기';
+
+    const dofOn = ss(3.6, 4.0, t) * (1 - ss(8.1, 8.5, t));
+    dofs.forEach((d) => (d.style.opacity = dofOn));
+    haze.style.opacity = dofOn;
+
+    /* 2D 비교표 */
+    pop(ttl, 13.4, t, 0.3, 14);
+    c2.forEach((el, i) => {
+      const e = eo((t - 13.4 - i * 0.08) / 0.32);
+      el.style.opacity = e;
+      el.style.transform = `translate(${COLX[i + 1] + 140 * (1 - e)}px, ${CMP.top}px) scale(${CMP.scale})`;
+    });
+    tlines.forEach((l, r) => { l.style.transform = `scaleX(${eo((t - 13.7 - r * 0.08) / 0.3)})`; });
+    tlabels.forEach((l, r) => pop(l, 13.7 + r * 0.08, t, 0.2, 10));
+    tcells.forEach(({ el, r, c: col, best }) => {
+      pop(el, 13.75 + r * 0.08 + col * 0.03, t, 0.2, 10);
+      el.style.background = best && t >= 14.4 + r * 0.06 ? 'var(--yellow-soft)' : 'transparent';
+    });
+
+    /* 로고 */
+    fin.style.opacity = ss(15.6, 15.9, t);
+    const le = back((t - 15.85) / 0.4);
+    lt.style.opacity = clamp(le * 2); lt.style.transform = `scale(${lerp(0.4, 1, le)}) rotate(${lerp(-12, 0, clamp(le))}deg)`;
+    pop(ln, 15.98, t, 0.35, 20);
+    pop(tl, 16.15, t, 0.35, 14);
+  };
+  /* ---------- 소개 영상: 랜딩 영상 시간을 다시 나눠 쓰고 장면을 더한다 ---------- */
+  // [이름, 길이(초), 랜딩 영상 시작 시각, 끝 시각]. 시작과 끝이 같으면 그 화면에 멈춰 둔 채 위 카드만 움직인다.
+  const SEGS = [
+    ['search', 1.3, 0, 0.3],      // 판교역 검색
+    ['zoom', 2.0, 0.3, 2.75],     // 행정동 경계 → 통근 색
+    ['pick', 1.0, 2.75, 2.75],    // 삼평동 고르기
+    ['dive', 1.0, 2.75, 4.0],     // 삼평동으로 내려가 눕기
+    ['fly', 2.8, 4.0, 7.55],      // 거리 메모 사이를 비행
+    ['memo', 2.2, 7.55, 7.55],    // 지도를 눌러 메모 남기기
+    ['add', 1.0, 7.55, 7.55],     // 지도를 눌러 매물 등록
+    ['enter', 1.3, 7.55, 9.25],   // 매물 사진 속 방으로
+    ['info', 1.6, 9.25, 10.9],    // 매물 정보 채우기
+    ['check', 1.0, 10.9, 11.8],   // 괜찮음, 주의
+    ['note', 0.9, 11.8, 11.8],    // 항목 메모
+    ['compare', 3.0, 11.8, 15.5], // 비교표
+    ['pdf', 2.3, 15.5, 15.5],     // 비교표를 PDF로 받기
+    ['montage', 2.9, 15.5, 15.5], // 한 끼, 날씨
+    ['account', 2.5, 15.5, 15.5], // 계정 연결
+    ['logo', 2.0, 15.55, 17.2],
+    ['hold', 0.9, 17.2, 17.2],    // 마지막 화면에 머문다
+  ];
+  const SEG = {};
+  let acc = 0;
+  SEGS.forEach(([name, len, a, b]) => { SEG[name] = { s: acc, e: acc + len, a, b }; acc += len; });
+  const TOTAL = acc;
+  const toOld = (T) => {
+    for (const [name] of SEGS) { const g = SEG[name]; if (T < g.e) return lerp(g.a, g.b, clamp((T - g.s) / (g.e - g.s))); }
+    return 17.2;
+  };
+  const CH = [
+    { at: 'search', title: '동네 찾기', sub: '출퇴근 시간으로 동네를 찾고<br>지도에서 동을 골라요' },
+    { at: 'fly', title: '거리 메모', sub: '먼저 살아 본 사람들의 골목 이야기를<br>보고, 나도 남겨요' },
+    { at: 'add', title: '방 기록', sub: '본 방을 지도에 남기고<br>가격과 정보를 채워요' },
+    { at: 'check', title: '체크리스트', sub: '집에서 본 것을 괜찮음, 주의로<br>고르고 메모해요' },
+    { at: 'compare', title: '비교', sub: '본 방들을 한 장의 비교표로<br>나란히 놓고 골라요' },
+    { at: 'pdf', title: 'PDF 받기', sub: '고른 방의 모든 기록을<br>PDF 한 부로 받아요' },
+    { at: 'montage', title: '한 끼와 날씨까지', sub: '동네 착한가격 식당, 편의점 행사,<br>오늘 날씨도 함께 봐요' },
+    { at: 'account', title: '기록 보관', sub: '계정을 연결하면 다른 기기에서도<br>이어서 쓸 수 있어요' },
+  ].map((c) => ({ ...c, t: SEG[c.at].s }));
+  const CH_END = SEG.logo.s;
+  window.__chapters = CH.map((c) => ({ title: c.title, start: Math.round(c.t * 10) / 10 }));
+
+  const chap = $('#chap'), ctt = $('#ctt'), csb = $('#csb');
+  const tap2 = $('#tap2');
+  const search = $('#search'), sq = $('#sq'), c30 = $('#c30'), c40 = $('#c40'), dSam = $('#dSam'), sgo = $('#sgo'), legend = $('#legend');
+  const dong = $('#dong'), msheet = $('#msheet'), mlike = $('#mlike'), mta = $('#mta'), mgo = $('#mgo');
+  const popm = $('#popm'), popMemo = $('#popMemo'), popAdd = $('#popAdd');
+  const newmemo = $('#newmemo');
+  newmemo.innerHTML = memo('편의점이 가까워서 밤에도 든든해요', '방금 남긴 메모', 'y');
+  const SAMI = cells.indexOf(SAMPYEONG);
+  const targetPin = pieces.find((p) => p.target);
+  const NOTE = '오후엔 해가 잘 안 들어요';
+
+  // 한 끼와 날씨: 카드 네 장이 오른쪽에서 슈슉 들어와 잠깐 머물고 왼쪽으로 빠진다.
+  const MCARDS = [
+    [`<div class="k"><em>착한가격 식당</em>직선 925m</div><b>상기육개장</b><span class="v">9,000원</span>`, 740, 230],
+    [`<div class="k"><em>편의점 행사</em>이마트24</div><b>바나나우유</b><span class="v">1+1</span>`, 1320, 310],
+    [`<div class="k"><em class="b">지금 날씨</em>성남시 분당구</div><div class="wx"><span class="sun"></span><b>12° 맑음</b></div><span class="k">오늘 강수 10%</span>`, 700, 580],
+    [`<div class="push"><img src="assets/goose.webp" alt=""><span>내일 아침 비 소식이 있어요. 우산 챙겨 나가요</span></div>`, 1280, 660],
+  ];
+  const pdfbtn = $('#pdfbtn'), pdfdoc = $('#pdfdoc'), acct = $('#acct'), acTitle = $('#acTitle'), acSub = $('#acSub'), acKakao = $('#acKakao'), devs = $('#devs'), endc = $('#endc');
+  const mont = $('#mont');
+  mont.innerHTML = MCARDS.map(([h]) => `<div class="mc">${h}</div>`).join('');
+  const mcs = $$('.mc', mont);
+
+  const tapAt = (T, list) => {
+    let op = 0, x = 0, y = 0, press = 0;
+    list.forEach(([at, px, py]) => {
+      if (T >= at - 0.2 && T < at + 0.3) { op = ss(at - 0.2, at - 0.08, T) * (1 - ss(at + 0.16, at + 0.3, T)); x = px; y = py; }
+      if (T >= at && T < at + 0.12) press = Math.sin(Math.PI * (T - at) / 0.12);
+    });
+    tap2.style.opacity = op;
+    tap2.style.transform = `translate(${x}px, ${y}px) scale(${1 - 0.25 * press})`;
+  };
+  const typed = (text, T, t0, cps = 14) => text.slice(0, Math.max(0, Math.round((T - t0) * cps)));
+  const showCard = (el, T, t0, t1, dx = 0, dy = 40) => {
+    const e = eo((T - t0) / 0.28), out = ss(t1, t1 + 0.2, T);
+    el.style.opacity = e * (1 - out);
+    el.style.transform = `translate(${dx * (1 - e)}px, ${dy * (1 - e) + 20 * out}px)`;
+  };
+
+  window.__seek = (T) => {
+    const t = toOld(T);
+    baseSeek(t);
+    const taps = [];
+
+    /* 동네 찾기: 검색 → 경계와 통근 색 → 삼평동 고르기 */
+    const S = SEG.search, K = SEG.pick, D = SEG.dive;
+    showCard(search, T, S.s + 0.05, SEG.zoom.s + 0.05, 0, 40);
+    sq.innerHTML = T < S.s + 0.3 ? '<span class="ph">학교·회사를 검색해 주세요</span>' : T < S.s + 0.62 ? `${typed('판교역', T, S.s + 0.3, 12)}<span class="caret"></span>` : '분당구 판교역로 160';
+    c30.classList.toggle('on', T >= S.s + 0.8);
+    c40.classList.toggle('on', T < S.s + 0.8);
+    sgo.style.transform = `scale(${T > S.s + 1.1 && T < S.s + 1.22 ? 0.96 : 1})`;
+    if (T < SEG.zoom.s + 0.3) {
+      const r1 = c30.getBoundingClientRect(), r2 = sgo.getBoundingClientRect();
+      taps.push([S.s + 0.8, r1.left + r1.width / 2, r1.top + r1.height / 2], [S.s + 1.1, r2.left + r2.width / 2, r2.top + r2.height / 2]);
+    }
+    showCard(legend, T, SEG.zoom.s + 1.2, D.s + 0.1, 40, 0);
+    const sel = T >= K.s + 0.2;
+    if (sel) {
+      ce[SAMI].setAttribute('stroke', '#25282d');
+      ce[SAMI].setAttribute('stroke-width', 120);
+      cf[SAMI].setAttribute('opacity', 0.55 * (1 - ss(3.2, 3.6, t)));
+    }
+    showCard(dong, T, K.s + 0.3, D.s + 0.25, 60, 0);
+    dSam.classList.toggle('on', sel);
+    if (T > K.s - 0.3 && T < K.e) { const lab = cl[SAMI].getBoundingClientRect(); taps.push([K.s + 0.2, lab.left + lab.width / 2, lab.top - 10]); }
+
+    /* 거리 메모, 매물 등록: 지도를 누르면 뜨는 메뉴(메모 남기기, 여기에 매물 등록) */
+    const M = SEG.memo, A = SEG.add;
+    const popOn = (t0, t1) => eo((T - t0) / 0.18) * (1 - ss(t1, t1 + 0.12, T));
+    const p1 = popOn(M.s + 0.2, M.s + 0.55), p2 = popOn(A.s + 0.15, A.s + 0.45);
+    const pop = Math.max(p1, p2);
+    popm.style.opacity = pop;
+    popm.style.transform = `translate(${T < A.s ? 700 : 795}px, ${T < A.s ? 300 : 270}px) scale(${lerp(0.9, 1, pop)})`;
+    popMemo.classList.toggle('hl', T >= M.s + 0.45 && T < A.s);
+    popAdd.classList.toggle('hl', T >= A.s + 0.38);
+    taps.push([M.s + 0.12, 865, 520], [M.s + 0.45, 830, 335], [A.s + 0.08, 960, 500], [A.s + 0.38, 960, 391]);
+    showCard(msheet, T, M.s + 0.55, M.e - 0.4, 0, 120);
+    mlike.classList.toggle('on', T >= M.s + 0.85);
+    mta.innerHTML = T < M.s + 1.0 ? '<span class="ph">예: 늦게까지 여는 세탁소가 있어요</span>' : `${typed('편의점이 가까워서 밤에도 든든해요', T, M.s + 1.0, 28)}<span class="caret"></span>`;
+    mgo.style.transform = `scale(${T > M.e - 0.55 && T < M.e - 0.45 ? 0.96 : 1})`;
+    if (T > M.s + 0.5 && T < M.e) {
+      const r1 = mlike.getBoundingClientRect(), r2 = mgo.getBoundingClientRect();
+      taps.push([M.s + 0.85, r1.left + r1.width / 2, r1.top + r1.height / 2], [M.e - 0.55, r2.left + r2.width / 2, r2.top + r2.height / 2]);
+    }
+    const nm = back((T - (M.e - 0.3)) / 0.35);
+    newmemo.style.opacity = clamp(nm * 2) * (1 - ss(SEG.enter.s + 0.3, SEG.enter.s + 0.6, T));
+    newmemo.style.transform = `translate(${1180}px, ${330}px) scale(${1.55 * lerp(0.4, 1, nm)})`;
+    // 등록하기 전에는 매물 핀이 없다.
+    const reg = T < A.s + 0.45 ? 0 : clamp(back((T - (A.s + 0.45)) / 0.3));
+    if (T < SEG.enter.s + 0.2) {
+      targetPin.el.style.opacity = reg * targetPin.el.style.opacity;
+      targetPin.sh.style.opacity = reg * targetPin.sh.style.opacity;
+      target.style.opacity = reg;
+    }
+
+    /* 체크리스트: 주의 항목 아래에 메모 */
+    const N = SEG.note;
+    const madd = maddEls[2];
+    const typing = T >= N.s + 0.1;
+    madd.classList.toggle('typing', typing);
+    madd.innerHTML = typing ? `${typed(NOTE, T, N.s + 0.15, 22)}${T < N.e + 0.1 ? '<span class="caret"></span>' : ''}` : '메모 추가';
+    if (T > SEG.check.e - 0.3 && T < N.e) { const r = madd.getBoundingClientRect(); taps.push([N.s + 0.05, r.left + 70, r.top + 18]); }
+
+    /* 한 끼와 날씨 */
+    const MO = SEG.montage;
+    const AC = SEG.account;
+    const mo = ss(MO.s - 0.15, MO.s + 0.1, T) * (1 - ss(AC.e - 0.15, AC.e + 0.1, T));
+    mont.style.opacity = mo;
+    mcs.forEach((el, i) => {
+      const [, x, y] = MCARDS[i];
+      const tin = eo((T - (MO.s + 0.05 + i * 0.1)) / 0.35);
+      const tout = Math.pow(clamp((T - (MO.e - 0.6 + i * 0.07)) / 0.4), 2);
+      const vin = 1 - tin, dx = 1300 * vin - 2400 * tout;
+      el.style.transform = `translate(${x + dx}px, ${y}px) skewX(${-10 * vin + 8 * tout}deg) scale(1.35)`;
+      el.style.filter = vin > 0.08 || tout > 0.08 ? `blur(${(8 * Math.max(vin, tout)).toFixed(1)}px)` : 'none';
+    });
+
+    /* 장면 제목 */
+    const ci = Math.max(0, CH.findLastIndex((c) => T >= c.t));
+    const cur = CH[ci];
+    if (ctt.dataset.k !== cur.title) { ctt.dataset.k = cur.title; ctt.textContent = cur.title; csb.innerHTML = cur.sub; }
+
+    /* PDF 내보내기: 비교표 아래 버튼을 누르면 PDF 한 부가 나온다 */
+    const P = SEG.pdf;
+    const pin = eo((T - (P.s + 0.1)) / 0.28), pout = ss(P.e - 0.2, P.e, T);
+    const pressed = T >= P.s + 0.6, made = T >= P.s + 1.05;
+    pdfbtn.style.opacity = pin * (1 - pout);
+    pdfbtn.style.transform = `translateY(${30 * (1 - pin)}px) scale(${T > P.s + 0.6 && T < P.s + 0.72 ? 0.96 : 1})`;
+    pdfbtn.textContent = made ? '✓ PDF를 받았어요' : pressed ? 'PDF 만드는 중…' : '선택한 3개 PDF 받기';
+    pdfbtn.classList.toggle('done', made);
+    const dn = back((T - (P.s + 1.0)) / 0.45);
+    pdfdoc.style.opacity = clamp(dn * 2.2) * (1 - pout);
+    pdfdoc.style.transform = `translate(${lerp(-160, 0, clamp(dn))}px, ${lerp(520, 0, clamp(dn)) - 30 * pout}px) rotate(${lerp(-10, 3, clamp(dn))}deg) scale(${lerp(0.25, 1, dn)})`;
+    if (T > P.s && T < P.e) taps.push([P.s + 0.6, 1440, 990]);
+
+    /* 계정 연결: 카카오로 연결하면 다른 기기에서도 이어 쓴다 */
+    showCard(acct, T, AC.s + 0.15, AC.e - 0.3, 0, 60);
+    const linked = T >= AC.s + 1.0;
+    acTitle.textContent = linked ? '카카오 계정 연결됨' : '계정 연결';
+    acSub.textContent = linked ? '다른 기기에서도 같은 계정으로 인증하면 이 기록을 이어서 써요.' : '계정을 연결하면 기록을 보관하고 다른 기기에서도 이어서 쓸 수 있어요.';
+    acKakao.textContent = linked ? '✓ 연결됨' : '카카오 로그인';
+    acKakao.classList.toggle('on', linked);
+    acKakao.style.transform = `scale(${T > AC.s + 0.9 && T < AC.s + 1.02 ? 0.97 : 1})`;
+    if (T > AC.s + 0.4 && T < AC.e) { const r = acKakao.getBoundingClientRect(); taps.push([AC.s + 0.9, r.left + r.width / 2, r.top + r.height / 2]); }
+    const dv = eo((T - (AC.s + 1.25)) / 0.3) * (1 - ss(AC.e - 0.3, AC.e - 0.1, T));
+    devs.style.opacity = dv;
+    devs.style.transform = `translateY(${24 * (1 - dv)}px)`;
+
+    /* 마지막 화면 */
+    const L = SEG.logo;
+    const ec = eo((T - (L.s + 1.15)) / 0.35);
+    endc.style.opacity = ec;
+    endc.style.transform = `translateY(${18 * (1 - ec)}px)`;
+    const next = CH[ci + 1];
+    const cin = eo((T - cur.t) / 0.3);
+    const cout = next ? ss(next.t - 0.15, next.t, T) : ss(CH_END - 0.2, CH_END, T);
+    chap.style.opacity = cin * (1 - cout);
+    chap.style.transform = `translateY(${24 * (1 - cin) - 12 * cout}px)`;
+
+    tapAt(T, taps);
+  };
+  window.__total = Math.round(TOTAL * 100) / 100;
+  window.__ready = document.fonts.ready;
+  window.__seek(0);
+
+  const view = location.hash;
+  if (view === '#play') {
+    const start = performance.now();
+    const loop = () => { window.__seek(((performance.now() - start) / 1000) % window.__total); requestAnimationFrame(loop); };
+    requestAnimationFrame(loop);
+  } else if (view.startsWith('#t=')) {
+    window.__seek(Number(view.slice(3)) || 0);
+  }
+})();
+</script>
+</body>
+</html>

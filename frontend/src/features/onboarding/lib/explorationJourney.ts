@@ -12,18 +12,48 @@ type Journey = {
 };
 const KEY = 'jachwi.exploration-journey';
 let memoryJourney: Journey | null = null;
+const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null;
+const isNullableString = (value: unknown): value is string | null => value === null || typeof value === 'string';
+const parseSelectedLocation = (value: unknown): MapAddress | undefined => {
+  if (!isRecord(value)) return undefined;
+  const { address, roadAddress, jibunAddress, latitude, longitude } = value;
+  return isNullableString(address) &&
+    isNullableString(roadAddress) &&
+    isNullableString(jibunAddress) &&
+    typeof latitude === 'number' &&
+    typeof longitude === 'number'
+    ? { address, roadAddress, jibunAddress, latitude, longitude }
+    : undefined;
+};
+/** 저장소 값은 타입을 믿을 수 없으므로 unknown으로 받아 필드마다 확인한다. 필수 값의 형식이 다르면 여정이 없는 것으로 본다. */
+const parseJourney = (value: unknown): Journey | null => {
+  if (!isRecord(value)) return null;
+  const { id, mode, createdAt, mock, completed } = value;
+  if (
+    typeof id !== 'string' ||
+    (mode !== 'commute' && mode !== 'price') ||
+    typeof createdAt !== 'number' ||
+    typeof mock !== 'boolean' ||
+    typeof completed !== 'boolean'
+  )
+    return null;
+  // 선택 위치의 형식이 다르면 위치만 버리고 여정은 이어간다.
+  const selectedLocation = parseSelectedLocation(value.selectedLocation);
+  return {
+    id,
+    mode,
+    createdAt,
+    mock,
+    completed,
+    ...(value.converted === true ? { converted: true } : {}),
+    ...(selectedLocation ? { selectedLocation } : {}),
+  };
+};
 const read = (): Journey | null => {
   try {
-    const value = JSON.parse(sessionStorage.getItem(KEY) ?? 'null') as Journey | null;
-    return value &&
-      typeof value.id === 'string' &&
-      ['commute', 'price'].includes(value.mode) &&
-      typeof value.mock === 'boolean' &&
-      typeof value.completed === 'boolean' &&
-      typeof value.createdAt === 'number' &&
-      Date.now() - value.createdAt >= 0 &&
-      Date.now() - value.createdAt < 30 * 60 * 1000
-      ? value
+    const journey = parseJourney(JSON.parse(sessionStorage.getItem(KEY) ?? 'null'));
+    return journey && Date.now() - journey.createdAt >= 0 && Date.now() - journey.createdAt < 30 * 60 * 1000
+      ? journey
       : null;
   } catch {
     return memoryJourney && Date.now() - memoryJourney.createdAt < 30 * 60 * 1000 ? memoryJourney : null;

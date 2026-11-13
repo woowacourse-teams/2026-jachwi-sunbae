@@ -5,6 +5,7 @@ import { useCurrentMember } from '@/features/auth/api/useCurrentMember';
 import { getAuthenticationSnapshot } from '@/features/auth/model/authStore';
 import { useAuthentication } from '@/features/auth/model/useAuthentication';
 import { usePublicConfig } from '@/shared/config/PublicConfigContext';
+import { isAdminPath } from '@/shared/lib/analytics/adminPrivacy';
 import { getAnalyticsDeviceContext } from '@/shared/lib/analytics/deviceContext';
 import {
   identifyPostHogMember,
@@ -16,7 +17,7 @@ import {
   trackPostHogPageView,
 } from '@/shared/lib/analytics/posthog';
 
-const PostHogTracker = () => {
+const MemberPostHogTracker = () => {
   const config = usePublicConfig();
   const location = useLocation();
   const { session, terminationReason } = useAuthentication();
@@ -58,6 +59,11 @@ const PostHogTracker = () => {
   }, [session, terminationReason, currentMember.data, config.posthogProjectToken, config.posthogHost]);
 
   return null;
+};
+
+const PostHogTracker = () => {
+  const { pathname } = useLocation();
+  return isAdminPath(pathname) ? null : <MemberPostHogTracker />;
 };
 
 export default PostHogTracker;

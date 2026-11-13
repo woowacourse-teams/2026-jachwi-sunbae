@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { skipToken, useQuery } from '@tanstack/react-query';
 
 import { fetchCommuteRoute } from '@/features/map/api/commuteRouteApi';
 import { usePublicConfig } from '@/shared/config/PublicConfigContext';
@@ -24,9 +24,11 @@ const usePlaceRoute = (
       preview.maxMinutes,
       preview.maxTransfers,
     ],
-    queryFn: ({ signal }) =>
-      fetchCommuteRoute(config, preview.destination, stopId!, preview.maxMinutes, preview.maxTransfers, signal),
-    enabled: stopId !== null,
+    queryFn:
+      stopId === null
+        ? skipToken
+        : ({ signal }) =>
+            fetchCommuteRoute(config, preview.destination, stopId, preview.maxMinutes, preview.maxTransfers, signal),
     // 시트 요약과 전체 화면 경로가 같은 경로를 쓰므로, 화면을 오갈 때마다 다시 부르지 않는다.
     staleTime: 5 * 60 * 1000,
     retry: false,

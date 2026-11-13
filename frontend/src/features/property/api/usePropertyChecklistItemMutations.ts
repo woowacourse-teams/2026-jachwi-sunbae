@@ -1,5 +1,6 @@
 import { useMutation } from '@tanstack/react-query';
 
+import { recordEventMission } from '@/features/event-mission/model/eventMissionRecord';
 import { queryClient } from '@/shared/api/queryClient';
 import { usePublicConfig } from '@/shared/config/PublicConfigContext';
 import { trackPostHogEvent } from '@/shared/lib/analytics/posthog';
@@ -43,6 +44,7 @@ export const usePropertyChecklistItemStatusMutation = (propertyId: number, prope
           item_id: itemId,
           status,
         });
+        recordEventMission('checklist-item-checked');
       }
       return refresh;
     },

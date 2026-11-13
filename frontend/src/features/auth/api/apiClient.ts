@@ -25,17 +25,20 @@ export class ApiError extends Error {
   readonly status: number | null;
   readonly code: string | null;
   readonly invalidFields: string[];
+  readonly requestId: string | null;
 
   constructor({
     kind,
     status = null,
     code = null,
     invalidFields = [],
+    requestId = null,
   }: {
     kind: ApiErrorKind;
     status?: number | null;
     code?: string | null;
     invalidFields?: string[];
+    requestId?: string | null;
   }) {
     super('API 요청을 처리하지 못했습니다.');
     this.name = 'ApiError';
@@ -43,6 +46,7 @@ export class ApiError extends Error {
     this.status = status;
     this.code = code;
     this.invalidFields = invalidFields;
+    this.requestId = requestId;
   }
 }
 
@@ -97,6 +101,7 @@ const captureUnexpectedApiError = ({
     request_method: method,
     ...(responseStatus === null ? {} : { response_status: responseStatus }),
     ...(errorCode === null ? {} : { error_code: errorCode }),
+    ...(error instanceof ApiError && error.requestId !== null ? { request_id: error.requestId } : {}),
   });
 };
 
@@ -148,13 +153,22 @@ const getInvalidFields = (value: unknown): string[] => {
   ];
 };
 
+const getResponseRequestId = (response: Response): string | null => {
+  const value = response.headers.get('X-Request-Id');
+  return value !== null && /^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/.test(value) ? value : null;
+};
+
 const readJson = async (response: Response): Promise<unknown | undefined> => {
   try {
     const text = await response.text();
     return text.length === 0 ? undefined : JSON.parse(text);
   } catch (error) {
     if (isAbortError(error)) throw error;
-    throw new ApiError({ kind: 'invalid-response', status: response.status });
+    throw new ApiError({
+      kind: 'invalid-response',
+      status: response.status,
+      requestId: getResponseRequestId(response),
+    });
   }
 };
 
@@ -250,13 +264,22 @@ const acceptTokenResponse = async (response: Response, path: TokenPath): Promise
   if (!response.ok) return throwResponseError(response);
 
   const payload = await readJson(response);
-  if (!isSuccessEnvelope(payload)) throw new ApiError({ kind: 'invalid-response', status: response.status });
+  if (!isSuccessEnvelope(payload))
+    throw new ApiError({
+      kind: 'invalid-response',
+      status: response.status,
+      requestId: getResponseRequestId(response),
+    });
 
   let login: ReturnType<typeof parseLoginResponseDto>;
   try {
     login = parseLoginResponseDto(payload.data);
   } catch {
-    throw new ApiError({ kind: 'invalid-response', status: response.status });
+    throw new ApiError({
+      kind: 'invalid-response',
+      status: response.status,
+      requestId: getResponseRequestId(response),
+    });
   }
 
   // 같은 화면에서 이어지는 토큰 갱신은 빼고, 세션 없이 회원을 정할 때만 기록한다.
@@ -500,14 +523,24 @@ const throwResponseError = async (response: Response): Promise<never> => {
     payload = await response.json();
   } catch (error) {
     if (isAbortError(error)) throw error;
-    throw new ApiError({ kind: 'invalid-response', status: response.status });
+    throw new ApiError({
+      kind: 'invalid-response',
+      status: response.status,
+      requestId: getResponseRequestId(response),
+    });
   }
 
-  if (!isErrorDto(payload)) throw new ApiError({ kind: 'invalid-response', status: response.status });
+  if (!isErrorDto(payload))
+    throw new ApiError({
+      kind: 'invalid-response',
+      status: response.status,
+      requestId: getResponseRequestId(response),
+    });
 
   throw new ApiError({
     kind: 'server',
     status: response.status,
+    requestId: getResponseRequestId(response),
     code: payload.code,
     invalidFields: getInvalidFields(payload),
   });
@@ -553,7 +586,11 @@ const apiRequestInternal = async <T>({
     try {
       return parseData(undefined);
     } catch {
-      throw new ApiError({ kind: 'invalid-response', status: response.status });
+      throw new ApiError({
+        kind: 'invalid-response',
+        status: response.status,
+        requestId: getResponseRequestId(response),
+      });
     }
   }
 
@@ -567,18 +604,30 @@ const apiRequestInternal = async <T>({
     try {
       return parseData(undefined);
     } catch {
-      throw new ApiError({ kind: 'invalid-response', status: response.status });
+      throw new ApiError({
+        kind: 'invalid-response',
+        status: response.status,
+        requestId: getResponseRequestId(response),
+      });
     }
   }
 
   if (!isSuccessEnvelope(payload)) {
-    throw new ApiError({ kind: 'invalid-response', status: response.status });
+    throw new ApiError({
+      kind: 'invalid-response',
+      status: response.status,
+      requestId: getResponseRequestId(response),
+    });
   }
 
   try {
     return parseData(payload.data);
   } catch {
-    throw new ApiError({ kind: 'invalid-response', status: response.status });
+    throw new ApiError({
+      kind: 'invalid-response',
+      status: response.status,
+      requestId: getResponseRequestId(response),
+    });
   }
 };
 
@@ -625,7 +674,11 @@ const apiBlobRequestInternal = async ({
   const contentType = response.headers.get('Content-Type')?.split(';')[0]?.trim();
 
   if (contentType === undefined || !acceptedContentTypes.includes(contentType)) {
-    throw new ApiError({ kind: 'invalid-response', status: response.status });
+    throw new ApiError({
+      kind: 'invalid-response',
+      status: response.status,
+      requestId: getResponseRequestId(response),
+    });
   }
 
   let blob: Blob;
@@ -633,7 +686,11 @@ const apiBlobRequestInternal = async ({
     blob = await response.blob();
   } catch (error) {
     if (isAbortError(error)) throw error;
-    throw new ApiError({ kind: 'invalid-response', status: response.status });
+    throw new ApiError({
+      kind: 'invalid-response',
+      status: response.status,
+      requestId: getResponseRequestId(response),
+    });
   }
   return blob.type === contentType ? blob : blob.slice(0, blob.size, contentType);
 };

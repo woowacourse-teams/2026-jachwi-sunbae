@@ -77,15 +77,16 @@ export const createStreetMemoHandlers = (initial: MockStreetMemo[] = SEED_MEMOS)
   return [
     http.get('*/api/street-memos', ({ request }) => {
       const params = new URL(request.url).searchParams;
-      const [south, north, west, east] = ['minLatitude', 'maxLatitude', 'minLongitude', 'maxLongitude'].map((key) =>
+      const bounds = ['minLatitude', 'maxLatitude', 'minLongitude', 'maxLongitude'].map((key) =>
         readBound(params, key),
       );
-      if ([south, north, west, east].some((value) => value === null || !Number.isFinite(value)))
+      if (!bounds.every((value): value is number => value !== null && Number.isFinite(value)))
         return failure('STREET_MEMO_QUERY_INVALID', 400);
+      const [south, north, west, east] = bounds;
       return success(
         memos.filter(
           (memo) =>
-            memo.latitude >= south! && memo.latitude <= north! && memo.longitude >= west! && memo.longitude <= east!,
+            memo.latitude >= south && memo.latitude <= north && memo.longitude >= west && memo.longitude <= east,
         ),
       );
     }),

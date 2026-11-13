@@ -3,7 +3,7 @@ import type { CSSProperties } from 'react';
 
 import { LOGO_DUCK } from '@/shared/assets/imageAssets';
 
-import flyoverVideo from '../assets/landing-flyover.mp4';
+import introVideo from '../assets/landing-intro.mp4';
 import {
   HERO_LEAD,
   HERO_TITLE,
@@ -11,6 +11,7 @@ import {
   STORY_TONE_COLOR,
   TECH_LEAD,
   VIDEO_LABEL,
+  VIDEO_SIZE,
   WHY_LEAD,
 } from '../model/landingContent';
 import LandingGetStarted from '../ui/LandingGetStarted';
@@ -41,7 +42,17 @@ const LandingMobilePage = ({ search, returnTo }: LandingMobilePageProps) => (
       <p className={styles.lead}>{HERO_LEAD}</p>
       <LandingGetStarted search={search} returnTo={returnTo} position="top" layout="stack" />
       <figure className={styles.video}>
-        <video src={flyoverVideo} autoPlay muted loop playsInline preload="metadata" aria-label={VIDEO_LABEL} />
+        <video
+          src={introVideo}
+          width={VIDEO_SIZE.width}
+          height={VIDEO_SIZE.height}
+          autoPlay
+          muted
+          loop
+          playsInline
+          preload="metadata"
+          aria-label={VIDEO_LABEL}
+        />
       </figure>
     </section>
 
@@ -51,9 +62,6 @@ const LandingMobilePage = ({ search, returnTo }: LandingMobilePageProps) => (
         className={`${styles.section} ${index % 2 === 0 ? styles.tinted : ''}`}
         aria-labelledby={`landing-${story.id}-title`}
       >
-        <p className={styles.menu} style={{ '--landing-tone': STORY_TONE_COLOR[story.tone] } as CSSProperties}>
-          {story.menu}
-        </p>
         <h2
           id={`landing-${story.id}-title`}
           style={{ '--landing-tone': STORY_TONE_COLOR[story.tone] } as CSSProperties}
@@ -114,19 +122,6 @@ const LandingMobilePage = ({ search, returnTo }: LandingMobilePageProps) => (
 );
 
 const styles = {
-  /* 기능 섹션 제목 위에 서비스 메뉴 이름을 둬, 랜딩에서 본 기능을 서비스 어디에서 찾는지 알린다. */
-  menu: css`
-    label: LandingMobilePage-menu;
-    display: inline-block;
-    margin: 0 0 0.75rem;
-    padding: 0.25rem 0.625rem;
-    border-radius: 999px;
-    background: color-mix(in srgb, var(--landing-tone) 18%, transparent);
-    color: var(--color-ink);
-    font-size: 0.8rem;
-    font-weight: 700;
-  `,
-
   /* 제목 왼쪽 색 막대로 동네 찾기(파랑), 본 방 기록(노랑), 만든 이야기를 구분한다. */
   toned: css`
     label: LandingMobilePage-toned;
@@ -183,7 +178,8 @@ const styles = {
     & video {
       display: block;
       width: 100%;
-      aspect-ratio: 1440 / 1152;
+      height: auto;
+      aspect-ratio: ${VIDEO_SIZE.width} / ${VIDEO_SIZE.height};
       object-fit: cover;
     }
   `,

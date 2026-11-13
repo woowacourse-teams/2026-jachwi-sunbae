@@ -11,6 +11,25 @@ public enum ErrorCode {
     RESOURCE_NOT_FOUND("요청한 리소스를 찾을 수 없습니다."),
     INTERNAL_SERVER_ERROR("서버 내부 오류가 발생했습니다."),
 
+    // 관리자 인증
+    ADMIN_ACCESS_DENIED("관리자 인증이 필요합니다."),
+    ADMIN_LOG_INPUT_INVALID("로그 조회 조건을 확인해 주세요."),
+    ADMIN_POSTHOG_NOT_CONFIGURED("PostHog 조회용 API 키가 설정되지 않았습니다."),
+    ADMIN_POSTHOG_INPUT_INVALID("PostHog 조회 조건을 확인해 주세요."),
+    ADMIN_POSTHOG_AUTH_FAILED("PostHog 조회용 API 키를 확인해 주세요."),
+    ADMIN_POSTHOG_ACCESS_DENIED("PostHog 프로젝트의 Query 읽기 권한을 확인해 주세요."),
+    ADMIN_POSTHOG_RATE_LIMITED("PostHog 조회 한도에 도달했습니다. 잠시 후 다시 조회해 주세요."),
+    ADMIN_POSTHOG_TIMEOUT("PostHog 조회 시간이 초과되었습니다. 기간을 줄여 다시 조회해 주세요."),
+    ADMIN_POSTHOG_UNAVAILABLE("PostHog 오류를 조회하지 못했습니다. 잠시 후 다시 조회해 주세요."),
+    ADMIN_LOG_QUERY_NOT_FOUND("조회가 만료되었거나 존재하지 않습니다. 다시 조회해 주세요."),
+    ADMIN_LOG_QUERY_LIMIT("로그 조회가 많습니다. 잠시 후 다시 시도해 주세요."),
+    ADMIN_LOG_ACCESS_DENIED("CloudWatch 로그 조회 권한을 확인해 주세요."),
+    ADMIN_LOG_GROUP_NOT_FOUND("CloudWatch 로그 그룹을 찾을 수 없습니다."),
+    ADMIN_LOG_UNAVAILABLE("CloudWatch 로그 조회 서비스를 이용할 수 없습니다."),
+    ADMIN_LOG_QUERY_FAILED("CloudWatch 로그 조회에 실패했습니다."),
+    ADMIN_LOG_QUERY_CANCELLED("CloudWatch 로그 조회가 취소되었습니다."),
+    ADMIN_LOG_QUERY_TIMEOUT("로그 조회 제한 시간을 초과했습니다. 기간을 줄여 다시 조회해 주세요."),
+
     // 회원 및 인증
     ACCESS_TOKEN_INVALID("ACCESS 인증 정보를 확인할 수 없습니다."),
     REFRESH_TOKEN_INVALID("REFRESH 인증 정보를 확인할 수 없습니다."),

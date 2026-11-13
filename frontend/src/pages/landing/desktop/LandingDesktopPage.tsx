@@ -3,7 +3,7 @@ import type { CSSProperties } from 'react';
 
 import { LOGO_DUCK } from '@/shared/assets/imageAssets';
 
-import flyoverVideo from '../assets/landing-flyover.mp4';
+import introVideo from '../assets/landing-intro.mp4';
 import {
   HERO_LEAD,
   HERO_TITLE,
@@ -11,6 +11,7 @@ import {
   STORY_TONE_COLOR,
   TECH_LEAD,
   VIDEO_LABEL,
+  VIDEO_SIZE,
   WHY_LEAD,
 } from '../model/landingContent';
 import LandingGetStarted from '../ui/LandingGetStarted';
@@ -44,7 +45,17 @@ const LandingDesktopPage = ({ search, returnTo }: LandingDesktopPageProps) => (
           <LandingGetStarted search={search} returnTo={returnTo} position="top" layout="row" />
         </div>
         <figure className={styles.heroVideo}>
-          <video src={flyoverVideo} autoPlay muted loop playsInline preload="metadata" aria-label={VIDEO_LABEL} />
+          <video
+            src={introVideo}
+            width={VIDEO_SIZE.width}
+            height={VIDEO_SIZE.height}
+            autoPlay
+            muted
+            loop
+            playsInline
+            preload="metadata"
+            aria-label={VIDEO_LABEL}
+          />
         </figure>
       </div>
     </section>
@@ -57,9 +68,6 @@ const LandingDesktopPage = ({ search, returnTo }: LandingDesktopPageProps) => (
       >
         <div className={`${styles.story} ${index % 2 === 1 ? styles.reversed : ''}`}>
           <div className={styles.storyCopy}>
-            <p className={styles.menu} style={{ '--landing-tone': STORY_TONE_COLOR[story.tone] } as CSSProperties}>
-              {story.menu}
-            </p>
             <h2
               id={`landing-${story.id}-title`}
               style={{ '--landing-tone': STORY_TONE_COLOR[story.tone] } as CSSProperties}
@@ -127,19 +135,6 @@ const LandingDesktopPage = ({ search, returnTo }: LandingDesktopPageProps) => (
 );
 
 const styles = {
-  /* 기능 섹션 제목 위에 서비스 메뉴 이름을 둬, 랜딩에서 본 기능을 서비스 어디에서 찾는지 알린다. */
-  menu: css`
-    label: LandingDesktopPage-menu;
-    display: inline-block;
-    margin: 0 0 0.75rem;
-    padding: 0.25rem 0.625rem;
-    border-radius: 999px;
-    background: color-mix(in srgb, var(--landing-tone) 18%, transparent);
-    color: var(--color-ink);
-    font-size: 0.8rem;
-    font-weight: 700;
-  `,
-
   /* 제목 왼쪽 색 막대로 동네 찾기(파랑), 본 방 기록(노랑), 만든 이야기를 구분한다. */
   toned: css`
     label: LandingDesktopPage-toned;
@@ -169,13 +164,17 @@ const styles = {
     background: var(--color-surface-muted);
   `,
 
+  /*
+   * 16:9 영상은 같은 폭이면 5:4보다 낮아 글자가 작게 보이므로 영상 칸을 넓힌다.
+   * 글 칸은 1440px 화면에서 버튼 세 개가 한 줄에 들어가는 폭(약 34rem)을 남긴다.
+   */
   heroInner: css`
     label: LandingDesktopPage-heroInner;
     display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr);
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr);
     align-items: center;
-    gap: 4rem;
-    width: min(100%, 80rem);
+    gap: 3.5rem;
+    width: min(100%, 88rem);
     margin: 0 auto;
   `,
 
@@ -221,7 +220,8 @@ const styles = {
     & video {
       display: block;
       width: 100%;
-      aspect-ratio: 1440 / 1152;
+      height: auto;
+      aspect-ratio: ${VIDEO_SIZE.width} / ${VIDEO_SIZE.height};
       object-fit: cover;
     }
   `,

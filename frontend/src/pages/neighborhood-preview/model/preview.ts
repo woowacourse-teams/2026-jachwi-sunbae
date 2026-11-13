@@ -250,19 +250,14 @@ export const DISTRICT_EVIDENCE_FIXTURE: DistrictEvidence[] = [
 // 점수 가중치/컷오프는 제품 정책이 아니라 시안 확인용이다.
 export const recommendDistricts = (evidence: DistrictEvidence[], priority: RecommendationPriority) =>
   evidence
-    .filter(
-      (item) =>
-        item.transit !== null &&
-        item.transit.minutes <= 60 &&
-        item.rental !== null &&
-        item.rental.transactionCount >= 5,
-    )
-    .map((item) => {
-      const transportCost = item.transit!.minutes + item.transit!.transfers * 10;
-      const rentCost = item.rental!.medianMonthlyRentManwon;
+    .flatMap((item) => {
+      const { transit, rental } = item;
+      if (transit === null || transit.minutes > 60 || rental === null || rental.transactionCount < 5) return [];
+      const transportCost = transit.minutes + transit.transfers * 10;
+      const rentCost = rental.medianMonthlyRentManwon;
       const score =
         priority === 'transport' ? transportCost : priority === 'rent' ? rentCost : transportCost + rentCost * 0.5;
-      return { ...item, score };
+      return [{ ...item, score }];
     })
     .sort((a, b) => a.score - b.score || a.id.localeCompare(b.id))
     .slice(0, 3);

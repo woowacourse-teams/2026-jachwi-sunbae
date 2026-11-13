@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { lazy } from 'react';
+import { lazy, Suspense } from 'react';
 import { Navigate, Route, Routes, useLocation, useParams } from 'react-router-dom';
 
 import PropertyAppLayout from '@/app/layouts/property-app-layout/PropertyAppLayout';
@@ -10,9 +10,11 @@ import NeighborhoodPageSkeleton from '@/pages/neighborhood-preview/NeighborhoodP
 import useIsDesktop from '@/shared/lib/hooks/useIsDesktop';
 import {
   ABOUT_PATH,
+  ADMIN_PATH,
   CHECKLIST_CREATE_PATH,
   CHECKLISTS_PATH,
   COMPARE_PATH,
+  EVENT_PATH,
   EXPLORE_NEARBY_PATH,
   EXPLORE_PATH,
   EXPORT_PATH,
@@ -38,6 +40,7 @@ import {
 import LazyRouteBoundary from './LazyRouteBoundary';
 import ProtectedRoute from './ProtectedRoute';
 
+const AdminPage = lazy(() => import('@/pages/admin/AdminPage'));
 const CheapMealsPage = lazy(() => import('@/pages/cheap-meals/CheapMealsPage'));
 const DesignHomePage = lazy(() => import('@/pages/design-home/DesignHomePage'));
 const DesignRecordsPage = lazy(() => import('@/pages/design-records/DesignRecordsPage'));
@@ -58,6 +61,8 @@ const ChecklistListPage = lazy(() => import('@/pages/checklist-list/ChecklistLis
 const PropertyActiveChecklistPage = lazy(() => import('@/pages/property-active-checklist/PropertyActiveChecklistPage'));
 const PropertyChecklistPage = lazy(() => import('@/pages/property-checklist/PropertyChecklistPage'));
 const MyPage = lazy(() => import('@/pages/my/MyPage'));
+const EventMissionPage = lazy(() => import('@/pages/event-mission/EventMissionPage'));
+const EventMissionToast = lazy(() => import('@/features/event-mission/ui/mission-toast/EventMissionToast'));
 const MapLocationSelectPage = lazy(() => import('@/pages/map-location-select/MapLocationSelectPage'));
 const NearbyAnalysisPage = lazy(() => import('@/pages/nearby-analysis/NearbyAnalysisPage'));
 const PropertyComparePage = lazy(() => import('@/pages/property-compare/PropertyComparePage'));
@@ -103,69 +108,80 @@ const LegacyNeighborhoodRoute = ({ base }: { base: NeighborhoodBasePath }) => {
   );
 };
 const AppRoutes = () => (
-  <Routes>
-    <Route element={<PublicExploreLayout />}>
-      <Route path={EXPLORE_PATH} element={lazyPage(<NeighborhoodPreviewPage />, <NeighborhoodPageSkeleton />)}>
-        <Route path={ROUTE_PATTERNS.area} element={lazyPage(<NeighborhoodRoutePage />)} />
-        <Route path={ROUTE_PATTERNS.areaDetails} element={lazyPage(<NeighborhoodRoutePage />)} />
-      </Route>
-      <Route path={ROUTE_PATTERNS.legacyExploreCommute} element={<LegacyNeighborhoodRoute base={EXPLORE_PATH} />} />
-      <Route path={ROUTE_PATTERNS.legacyExplorePrice} element={<LegacyNeighborhoodRoute base={EXPLORE_PATH} />} />
-      <Route path={EXPLORE_NEARBY_PATH} element={lazyPage(<NearbyAnalysisPage />)} />
-    </Route>
-    <Route element={<PropertyAppLayout />}>
-      <Route path={GUIDE_PATH} element={lazyPage(<UsageGuidePage />)} />
-      <Route path={NEIGHBORHOODS_PATH} element={lazyPage(<NeighborhoodPreviewPage />, <NeighborhoodPageSkeleton />)}>
-        <Route path={ROUTE_PATTERNS.area} element={lazyPage(<NeighborhoodRoutePage />)} />
-        <Route path={ROUTE_PATTERNS.areaDetails} element={lazyPage(<NeighborhoodRoutePage />)} />
-      </Route>
-      <Route
-        path={ROUTE_PATTERNS.legacyNeighborhoodsMap}
-        element={<LegacyNeighborhoodRoute base={NEIGHBORHOODS_PATH} />}
-      />
-      <Route path={NEIGHBORHOODS_NEARBY_PATH} element={lazyPage(<NearbyAnalysisPage />)} />
-    </Route>
-    {/* 생활권 탐색 광고 랜딩. 회원이 아니어도 보고, 웹으로 시작하면 홈으로 잇는다. */}
-    <Route path={LANDING_PATH} element={lazyPage(<LandingPage />)} />
-    <Route path={ABOUT_PATH} element={<Navigate to={GUIDE_PATH} replace />} />
-    <Route path={PRIVACY_PATH} element={lazyPage(<PrivacyPage />)} />
-    {/* OAuth 콜백 뒤 돌아오는 곳. 새 쿠키로 다시 로그인해 결과를 정하고 마이로 보낸다. */}
-    <Route path={OAUTH_COMPLETE_PATH} element={lazyPage(<OAuthCompletePage />)} />
-    {/* 로그인 화면은 없다. 예전 주소로 들어오면 홈에서 자동 로그인한다. */}
-    <Route path={LOGIN_PATH} element={<Navigate to={HOME_PATH} replace />} />
-    {/* 매물은 본 방 기록 지도에서 바로 등록한다. 예전 매물 등록 주소로 들어오면 기록 지도로 보낸다. */}
-    <Route path={PROPERTY_NEW_PATH} element={<Navigate to={RECORDS_MAP_PATH} replace />} />
-    {/* 첫 주소(`/`)를 포함한 회원 화면. 자동 로그인(복원 또는 익명 회원 생성)을 기다리는 동안에도 화면 뼈대를 바로 그린다. */}
-    <Route element={<ProtectedRoute />}>
-      {/* 탭마다 주소가 따로 있다. 탭 없는 주소와 예전 `?tab=` 주소는 화면이 탭 주소로 바꾼다. */}
-      <Route path={ROUTE_PATTERNS.cheapMeals} element={lazyPage(<CheapMealsPage />)} />
-      <Route path={HOME_PATH} element={lazyPage(<DesignHomePage />, <HomePageSkeleton />)} />
-      <Route path={ROUTE_PATTERNS.propertyRecords} element={<RecordsRoute />}>
-        <Route index element={lazyPage(<PropertyDetailPage />)} />
-        <Route path={ROUTE_PATTERNS.propertyActiveChecklistChild} element={lazyPage(<PropertyActiveChecklistPage />)} />
+  <>
+    {/* 이벤트 기간에만 둔다. 미션을 마치면 어느 화면에서든 위에서 알림을 내린다. */}
+    <Suspense fallback={null}>
+      <EventMissionToast />
+    </Suspense>
+    <Routes>
+      <Route path={`${ADMIN_PATH}/*`} element={lazyPage(<AdminPage />)} />
+      <Route element={<PublicExploreLayout />}>
+        <Route path={EXPLORE_PATH} element={lazyPage(<NeighborhoodPreviewPage />, <NeighborhoodPageSkeleton />)}>
+          <Route path={ROUTE_PATTERNS.area} element={lazyPage(<NeighborhoodRoutePage />)} />
+          <Route path={ROUTE_PATTERNS.areaDetails} element={lazyPage(<NeighborhoodRoutePage />)} />
+        </Route>
+        <Route path={ROUTE_PATTERNS.legacyExploreCommute} element={<LegacyNeighborhoodRoute base={EXPLORE_PATH} />} />
+        <Route path={ROUTE_PATTERNS.legacyExplorePrice} element={<LegacyNeighborhoodRoute base={EXPLORE_PATH} />} />
+        <Route path={EXPLORE_NEARBY_PATH} element={lazyPage(<NearbyAnalysisPage />)} />
       </Route>
       <Route element={<PropertyAppLayout />}>
-        <Route path={ROUTE_PATTERNS.propertyEdit} element={lazyPage(<EditPropertyPage />)} />
-        <Route path={ROUTE_PATTERNS.propertyPhotos} element={lazyPage(<PropertyPhotosPage />)} />
-        <Route path={ROUTE_PATTERNS.propertyMemo} element={lazyPage(<PropertyMemoPage />)} />
-        <Route path={ROUTE_PATTERNS.propertyNearby} element={lazyPage(<NearbyAnalysisPage />)} />
-        <Route path={ROUTE_PATTERNS.propertyChecklist} element={lazyPage(<PropertyChecklistPage />)} />
-        <Route path={CHECKLISTS_PATH} element={lazyPage(<ChecklistListPage />)}>
-          <Route path={CHECKLIST_CREATE_PATH} element={lazyPage(<CreateChecklistPage />)} />
-          <Route path={ROUTE_PATTERNS.checklistDetail} element={lazyPage(<ChecklistDetailPage />)} />
+        <Route path={GUIDE_PATH} element={lazyPage(<UsageGuidePage />)} />
+        <Route path={NEIGHBORHOODS_PATH} element={lazyPage(<NeighborhoodPreviewPage />, <NeighborhoodPageSkeleton />)}>
+          <Route path={ROUTE_PATTERNS.area} element={lazyPage(<NeighborhoodRoutePage />)} />
+          <Route path={ROUTE_PATTERNS.areaDetails} element={lazyPage(<NeighborhoodRoutePage />)} />
         </Route>
-        {/* 이전 단계별 주소는 관리 화면으로 보낸다. */}
-        <Route path={ROUTE_PATTERNS.legacyChecklists} element={<Navigate to={CHECKLISTS_PATH} replace />} />
-        <Route path={MY_PATH} element={lazyPage(<MyPage />)} />
-        <Route path={ROUTE_PATTERNS.legacyMap} element={<LegacyMapRoute />} />
-        <Route path={MAP_SELECT_LOCATION_PATH} element={lazyPage(<MapLocationSelectPage />)} />
-        <Route path={COMPARE_PATH} element={lazyPage(<PropertyComparePage />)} />
-        <Route path={EXPORT_PATH} element={lazyPage(<UpcomingFeaturePage feature="export" />)} />
-        <Route path={TIPS_PATH} element={lazyPage(<UpcomingFeaturePage feature="tips" />)} />
+        <Route
+          path={ROUTE_PATTERNS.legacyNeighborhoodsMap}
+          element={<LegacyNeighborhoodRoute base={NEIGHBORHOODS_PATH} />}
+        />
+        <Route path={NEIGHBORHOODS_NEARBY_PATH} element={lazyPage(<NearbyAnalysisPage />)} />
       </Route>
-    </Route>
-    <Route path={ROUTE_PATTERNS.notFound} element={lazyPage(<NotFoundPage />)} />
-  </Routes>
+      {/* 생활권 탐색 광고 랜딩. 회원이 아니어도 보고, 웹으로 시작하면 홈으로 잇는다. */}
+      <Route path={LANDING_PATH} element={lazyPage(<LandingPage />)} />
+      <Route path={ABOUT_PATH} element={<Navigate to={GUIDE_PATH} replace />} />
+      <Route path={PRIVACY_PATH} element={lazyPage(<PrivacyPage />)} />
+      {/* OAuth 콜백 뒤 돌아오는 곳. 새 쿠키로 다시 로그인해 결과를 정하고 마이로 보낸다. */}
+      <Route path={OAUTH_COMPLETE_PATH} element={lazyPage(<OAuthCompletePage />)} />
+      {/* 로그인 화면은 없다. 예전 주소로 들어오면 홈에서 자동 로그인한다. */}
+      <Route path={LOGIN_PATH} element={<Navigate to={HOME_PATH} replace />} />
+      {/* 매물은 본 방 기록 지도에서 바로 등록한다. 예전 매물 등록 주소로 들어오면 기록 지도로 보낸다. */}
+      <Route path={PROPERTY_NEW_PATH} element={<Navigate to={RECORDS_MAP_PATH} replace />} />
+      {/* 첫 주소(`/`)를 포함한 회원 화면. 자동 로그인(복원 또는 익명 회원 생성)을 기다리는 동안에도 화면 뼈대를 바로 그린다. */}
+      <Route element={<ProtectedRoute />}>
+        {/* 탭마다 주소가 따로 있다. 탭 없는 주소와 예전 `?tab=` 주소는 화면이 탭 주소로 바꾼다. */}
+        <Route path={ROUTE_PATTERNS.cheapMeals} element={lazyPage(<CheapMealsPage />)} />
+        <Route path={HOME_PATH} element={lazyPage(<DesignHomePage />, <HomePageSkeleton />)} />
+        <Route path={ROUTE_PATTERNS.propertyRecords} element={<RecordsRoute />}>
+          <Route index element={lazyPage(<PropertyDetailPage />)} />
+          <Route
+            path={ROUTE_PATTERNS.propertyActiveChecklistChild}
+            element={lazyPage(<PropertyActiveChecklistPage />)}
+          />
+        </Route>
+        <Route element={<PropertyAppLayout />}>
+          <Route path={ROUTE_PATTERNS.propertyEdit} element={lazyPage(<EditPropertyPage />)} />
+          <Route path={ROUTE_PATTERNS.propertyPhotos} element={lazyPage(<PropertyPhotosPage />)} />
+          <Route path={ROUTE_PATTERNS.propertyMemo} element={lazyPage(<PropertyMemoPage />)} />
+          <Route path={ROUTE_PATTERNS.propertyNearby} element={lazyPage(<NearbyAnalysisPage />)} />
+          <Route path={ROUTE_PATTERNS.propertyChecklist} element={lazyPage(<PropertyChecklistPage />)} />
+          <Route path={CHECKLISTS_PATH} element={lazyPage(<ChecklistListPage />)}>
+            <Route path={CHECKLIST_CREATE_PATH} element={lazyPage(<CreateChecklistPage />)} />
+            <Route path={ROUTE_PATTERNS.checklistDetail} element={lazyPage(<ChecklistDetailPage />)} />
+          </Route>
+          {/* 이전 단계별 주소는 관리 화면으로 보낸다. */}
+          <Route path={ROUTE_PATTERNS.legacyChecklists} element={<Navigate to={CHECKLISTS_PATH} replace />} />
+          <Route path={MY_PATH} element={lazyPage(<MyPage />)} />
+          <Route path={EVENT_PATH} element={lazyPage(<EventMissionPage />)} />
+          <Route path={ROUTE_PATTERNS.legacyMap} element={<LegacyMapRoute />} />
+          <Route path={MAP_SELECT_LOCATION_PATH} element={lazyPage(<MapLocationSelectPage />)} />
+          <Route path={COMPARE_PATH} element={lazyPage(<PropertyComparePage />)} />
+          <Route path={EXPORT_PATH} element={lazyPage(<UpcomingFeaturePage feature="export" />)} />
+          <Route path={TIPS_PATH} element={lazyPage(<UpcomingFeaturePage feature="tips" />)} />
+        </Route>
+      </Route>
+      <Route path={ROUTE_PATTERNS.notFound} element={lazyPage(<NotFoundPage />)} />
+    </Routes>
+  </>
 );
 
 export default AppRoutes;

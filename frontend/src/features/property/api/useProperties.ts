@@ -1,4 +1,4 @@
-import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
+import { skipToken, useInfiniteQuery, useQuery } from '@tanstack/react-query';
 
 import { usePublicConfig } from '@/shared/config/PublicConfigContext';
 import type { PublicConfig } from '@/shared/config/publicConfigTypes';
@@ -31,8 +31,7 @@ export const usePropertyCommuteTimes = (destination: { latitude: number; longitu
   const config = usePublicConfig();
   return useQuery({
     queryKey: propertyQueryKeys.commuteTimes(destination?.latitude ?? 0, destination?.longitude ?? 0),
-    queryFn: ({ signal }) => fetchPropertyCommuteTimes(config, destination!, signal),
-    enabled: destination !== null,
+    queryFn: destination === null ? skipToken : ({ signal }) => fetchPropertyCommuteTimes(config, destination, signal),
     staleTime: 5 * 60 * 1000,
   });
 };

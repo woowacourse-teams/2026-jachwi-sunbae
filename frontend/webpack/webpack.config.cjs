@@ -55,8 +55,9 @@ module.exports = (_env, argv) => {
       hints: isProduction ? 'error' : false,
       assetFilter: (assetFilename) => /\.js$/.test(assetFilename),
       // 첫 화면 묶음(main)이 350KiB 한도에 붙어 있어, 화면 다듬기(오류 화면 버튼, 헤더 높이)로 351KiB가 되어 355KiB로 올린다.
-      maxAssetSize: 355 * 1024,
-      maxEntrypointSize: 355 * 1024,
+      // 이벤트 미션(#664)의 `/event` 화면과 완료 알림을 lazy로 등록하는 몫(약 0.5KiB)으로 356KiB로 올린다.
+      maxAssetSize: 356 * 1024,
+      maxEntrypointSize: 356 * 1024,
     },
     devServer: {
       proxy: proxyTarget

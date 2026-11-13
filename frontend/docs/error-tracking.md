@@ -57,3 +57,11 @@ JSON 요청과 Blob 요청 모두 공통 API 경계에서 실패당 한 번 수�
 배포 시 이전 청크는 기존 정책대로 삭제한다. 등급 하향은 오류 복구나 청크 보존을 의미하지 않는다. 이번 API 수집 보강에서는 배포 삭제 정책을 변경하지 않는다. 보존 기간을 바꾸려면 별도로 기간과 정리 방법을 확정한다.
 
 이벤트의 사용자 정의 `severity` 속성과 PostHog Error Tracking 이슈의 Low/Medium/High 등급은 별개다. 기존 이슈 등급과 알림 조건은 PostHog에서 별도로 관리한다. 이벤트 등급만 바꾸어도 기존 Discord 알림이 자동으로 꺼지는 것은 아니다.
+
+## 서버 요청 ID로 연결
+
+`apiClient.ts`는 응답의 `X-Request-Id`를 `ApiError.requestId`에 보존하고 오류 이벤트의 `request_id`로 보낸다. HTTP 4xx·5xx 외에 200 이후 JSON 파싱·응답 계약 검증, 204 계약, Blob Content-Type·본문 읽기 오류에도 같은 ID를 사용한다. 서버 응답이나 헤더가 없으면 ID를 생성하지 않는다. P0/P1/P2와 민감정보 마스킹, 인증 종료·취소 제외 정책은 유지한다.
+
+PostHog 오류 속성의 `request_id`로 CloudWatch 서버 로그를 검색한다. 백엔드 CORS는 기존 `X-Request-Id` 노출을 유지한다.
+
+관리자 `/admin`은 회원 추적기를 마운트하지 않고 수동·자동 이벤트와 오류·세션 녹화 전송에서 제외한다. 관리자 DOM과 `/api/admin` 네트워크 녹화도 제외하며 접속 코드를 URL·이벤트·오류 원문으로 보내지 않는다. 자세한 운영 설정은 [읽기 전용 운영 관리자](../../backend/docs/operations/admin.md)를 따른다.

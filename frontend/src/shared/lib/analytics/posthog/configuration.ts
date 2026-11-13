@@ -1,5 +1,6 @@
 import type { PostHogConfig } from 'posthog-js';
 
+import { isAdminScreen } from '../adminPrivacy';
 import { getAnalyticsDeviceContext } from '../deviceContext';
 import { getCurrentAnalyticsScreenRoute } from '../screenRoute';
 import { getAnalyticsTrafficContext } from '../trafficContext';
@@ -24,7 +25,7 @@ export const getPostHogOptions = (
   autocapture: true,
   capture_exceptions: { capture_unhandled_errors: true, capture_unhandled_rejections: true },
   before_send: (event) => {
-    if (event === null || !isEnabled()) return null;
+    if (event === null || !isEnabled() || isAdminScreen()) return null;
     const context = getContext();
     // 수동 이벤트는 발생 당시 값을 보존한다. 자동 이벤트만 현재 상태로 보강한다.
     const authStatus =
@@ -54,9 +55,12 @@ export const getPostHogOptions = (
   capture_pageview: false,
   disable_session_recording: false,
   session_recording: {
+    blockSelector: '.ph-no-capture',
     // 콘솔에서 네트워크 녹화를 켜더라도 기기 토큰·설치 비밀키 요청은 수집하지 않는다.
     maskCapturedNetworkRequestFn: (request) =>
-      request.name.includes('/api/members/me/notification-devices/') ? null : request,
+      request.name.includes('/api/members/me/notification-devices/') || request.name.includes('/api/admin')
+        ? null
+        : request,
   },
   mask_all_text: true,
   mask_all_element_attributes: true,

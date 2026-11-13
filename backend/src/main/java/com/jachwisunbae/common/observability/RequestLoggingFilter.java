@@ -1,5 +1,9 @@
 package com.jachwisunbae.common.observability;
 
+import static com.jachwisunbae.auth.web.JwtAuthenticationFilter.MEMBER_ID_ATTRIBUTE;
+
+import com.jachwisunbae.common.web.ApiRequestPath;
+
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -75,7 +79,7 @@ public class RequestLoggingFilter extends OncePerRequestFilter {
         response.setHeader(REQUEST_ID_HEADER, requestId);
         MDC.put(REQUEST_ID, requestId);
         MDC.put(HTTP_METHOD, request.getMethod());
-        MDC.put(PATH, request.getRequestURI());
+        MDC.put(PATH, isAdminRequest(request) ? "/api/admin" : request.getRequestURI());
 
         try {
             chain.doFilter(cachingRequest, cachingResponse);
@@ -109,9 +113,19 @@ public class RequestLoggingFilter extends OncePerRequestFilter {
 
         event.addKeyValue(STATUS, status)
                 .addKeyValue(DURATION_MILLIS, durationMillis);
+        // 인증 필터가 검증한 요청 속성만 사용한다. 헤더나 입력값으로 회원을 추정하지 않는다.
+        if (!isAdminRequest(request) && request.getAttribute(MEMBER_ID_ATTRIBUTE) instanceof Long memberId
+                && memberId > 0) {
+            event.addKeyValue("member_id", memberId);
+        }
 
         if (status < HttpServletResponse.SC_BAD_REQUEST) {
             logSuccessfulRequest(event);
+            return;
+        }
+        if (isAdminRequest(request)) {
+            // 접속 코드·요청·응답·예외 원문은 어떤 실패 경로에서도 남기지 않는다.
+            event.log("Admin HTTP request failed");
             return;
         }
         addRequestDetails(event, request, response);
@@ -157,6 +171,10 @@ public class RequestLoggingFilter extends OncePerRequestFilter {
         } catch (IllegalArgumentException exception) {
             return queryString;
         }
+    }
+
+    private boolean isAdminRequest(HttpServletRequest request) {
+        return ApiRequestPath.isWithin(request, "/api/admin");
     }
 
     private void logSuccessfulRequest(final LoggingEventBuilder event) {
