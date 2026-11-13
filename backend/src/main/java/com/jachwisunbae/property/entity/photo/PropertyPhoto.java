@@ -7,7 +7,7 @@ import java.time.LocalDateTime;
 @Getter
 public class PropertyPhoto {
 
-    private static final long MAX_SIZE_BYTES = 5L * 1024 * 1024;
+    private static final long MAX_SIZE_BYTES = 10L * 1024 * 1024;
     private final Long id;
     private final Long propertyId;
     private final String storageKey;
@@ -61,7 +61,7 @@ public class PropertyPhoto {
 
     private static Long validateSize(final Long sizeBytes) {
         if (sizeBytes == null || sizeBytes < 0 || sizeBytes > MAX_SIZE_BYTES) {
-            throw new IllegalArgumentException("사진 크기는 0 이상 5MiB 이하여야 합니다: " + sizeBytes);
+            throw new IllegalArgumentException("사진 크기는 0 이상 10MiB 이하여야 합니다: " + sizeBytes);
         }
         return sizeBytes;
     }
