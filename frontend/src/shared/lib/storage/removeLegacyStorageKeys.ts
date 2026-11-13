@@ -1,5 +1,8 @@
-/** 지금은 쓰지 않는 기능이 예전 브라우저에 남긴 키의 접두사. 없앤 예시 매물의 닫은 기록이 여기에 든다. */
-const LEGACY_KEY_PREFIXES = ['jachwi-sunbae:example-property:'] as const;
+/**
+ * 지금은 쓰지 않는 기능이 예전 브라우저에 남긴 키의 접두사.
+ * 없앤 예시 매물의 닫은 기록과 끝난 오프라인 이벤트의 미션 완료 기록이 여기에 든다.
+ */
+const LEGACY_KEY_PREFIXES = ['jachwi-sunbae:example-property:', 'jachwi:event-mission'] as const;
 
 /** 앱을 시작할 때 한 번 불러, 더는 읽지 않는 키를 브라우저에서 지운다. */
 export const removeLegacyStorageKeys = (storage?: Storage): void => {

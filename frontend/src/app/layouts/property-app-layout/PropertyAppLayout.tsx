@@ -4,7 +4,6 @@ import useIsDesktop from '@/shared/lib/hooks/useIsDesktop';
 import {
   CHECKLISTS_PATH,
   COMPARE_PATH,
-  EVENT_PATH,
   MAP_SELECT_LOCATION_PATH,
   MY_PATH,
   NEIGHBORHOODS_NEARBY_PATH,
@@ -39,7 +38,7 @@ const PropertyAppLayout = () => {
       /^\/properties\/\d+\/checklists\/\d+$/.test(location.pathname),
     isMapPage,
     isPropertyDetailPath,
-    isHomeWidthPage: location.pathname === MY_PATH || location.pathname === EVENT_PATH || isChecklistPage,
+    isHomeWidthPage: location.pathname === MY_PATH || isChecklistPage,
     isWidePage: isChecklistPage,
   };
 

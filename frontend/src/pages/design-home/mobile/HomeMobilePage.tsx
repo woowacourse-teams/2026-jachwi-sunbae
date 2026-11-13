@@ -1,7 +1,6 @@
 import { css } from '@emotion/css';
 
 import CheapMealCard from '../ui/CheapMealCard';
-import EventBanner from '../ui/EventBanner';
 import GuideCard from '../ui/GuideCard';
 import HomeFeatures from '../ui/HomeFeatures';
 import HomeFooter from '../ui/HomeFooter';
@@ -16,7 +15,6 @@ const HomeMobilePage = () => (
   <main className={shared.page}>
     <HomeHeader className={styles.topBar} />
     <div className={styles.container}>
-      <EventBanner className={styles.event} />
       <GuideCard className={styles.guide} />
       <HomeFeatures />
       <CheapMealCard />
@@ -101,11 +99,6 @@ const styles = {
       padding-right: 1rem;
       padding-left: 1rem;
     }
-  `,
-
-  event: css`
-    label: HomeMobilePage-event;
-    margin-top: 0.75rem;
   `,
 
   guide: css`
