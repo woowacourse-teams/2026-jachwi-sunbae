@@ -4,7 +4,6 @@ import HeaderWeather from '@/features/weather/ui/header-weather/HeaderWeather';
 import DesktopHeader from '@/shared/ui/desktop-header/DesktopHeader';
 
 import CheapMealCard from '../ui/CheapMealCard';
-import EventBanner from '../ui/EventBanner';
 import GuideCard from '../ui/GuideCard';
 import HomeFeatures from '../ui/HomeFeatures';
 import HomeFooter from '../ui/HomeFooter';
@@ -17,7 +16,6 @@ import * as shared from '../HomePage.styles';
 const HomeDesktopPage = () => (
   <main className={shared.page}>
     <DesktopHeader center={<HeaderWeather />} />
-    <EventBanner className={styles.event} />
     <div className={styles.layout}>
       <GuideCard className={styles.guide} />
       <CheapMealCard className={styles.meals} />
@@ -33,12 +31,6 @@ const HomeDesktopPage = () => (
 );
 
 const styles = {
-  event: css`
-    label: HomeDesktopPage-event;
-    width: min(100%, 64rem);
-    margin: 1rem auto 0;
-  `,
-
   /* 저렴한 한 끼 카드는 사용방법 카드와 같은 줄의 오른쪽 열에 둔다. */
   meals: css`
     label: HomeDesktopPage-meals;
