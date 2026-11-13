@@ -6,6 +6,29 @@
 
 아직 릴리스하지 않은 변경을 기록한다.
 
+## [4.3.0] - 2026-11-13
+
+### Added
+
+- 읽기 전용 운영 관리자 페이지 `/admin`을 추가한다. 서버에 설정한 접속 코드로 들어가 활성 계정, 오늘 신규 계정, 활성 매물 수와 최근 가입 회원 20명을 보고, CloudWatch 서버 오류(4xx, 5xx)와 PostHog 프론트엔드 오류를 환경, 기간, 등급별로 조회한다. 관리자 접속으로 익명 회원을 만들지 않고, 관리자 화면은 PostHog 수집에서 뺀다.
+- 프론트엔드 오류 이벤트에 서버 `X-Request-Id`를 `request_id`로 남기고, 서버 HTTP 요청 로그에 인증 회원의 `member_id`를 더한다. 관리자 페이지에서 사용자가 겪은 오류의 서버 로그와 예외 스택을 같은 요청으로 찾아 볼 수 있다.
+- 오프라인 이벤트용 미션 현황판 `/event`를 추가한다. 동네 찾기, 거리 메모, 방 기록, 저렴한 한 끼, 계정 연동 미션 5개를 세로 단계로 보여 주고, 미션을 마칠 때마다 위에서 완료 알림을 띄우며, 다 마치면 운영진에게 보여 줄 완료 화면을 연다. 기록은 서버 없이 그 기기에만 남는다. 홈에는 이벤트 안내 배너를 둔다.
+- 랜딩에 거리 메모 섹션을 더한다.
+
+### Changed
+
+- 랜딩 첫 화면 소개 영상을 지금 앱 화면에 맞춘 16:9 영상(약 3.0MB)으로 바꾸고, 데스크탑 영상 칸을 넓힌다. 랜딩 화면 캡처 5장도 지금 화면으로 바꾼다.
+- 홈 `최근 기록한 방`에 기록이 없으면 `+ 매물 추가하기` 카드를 보이고, 카드를 누르면 방 기록 화면으로 간다.
+- 앱 스토어 스크린샷을 앱 2.2.0 화면으로 다시 만들고, App Store Connect iPhone 6.3인치 크기도 함께 만든다.
+- 프론트엔드 TypeScript 사용 기준을 문서로 정하고 ESLint 규칙으로 강제한다. 화면 동작은 바뀌지 않는다.
+- 매물과 사진 저장소 및 서비스, 생활권 탐색, 월세 적재 테스트를 실제 MySQL로 보강한다.
+- 운영 관리자 페이지에 서버 환경변수 `ADMIN_ACCESS_CODES`, `POSTHOG_PERSONAL_API_KEY`와 EC2 Role의 CloudWatch Logs Insights 조회 권한이 필요하다. Flyway 마이그레이션은 추가하지 않는다.
+- 백엔드, 프론트엔드 제품 버전을 `4.3.0`으로 맞춘다.
+
+### Fixed
+
+- 브라우저 저장소의 날씨 설치 안내와 탐색 여정 값을 형식 확인 없이 읽던 문제를 수정한다. 형식이 다른 값은 버리고, 탐색 여정은 선택 위치만 버려 이어지는 기록을 유지한다.
+
 ## [4.2.0] - 2026-11-10
 
 ### Added
@@ -293,7 +316,8 @@
 - WebView 지도 마커 위치 갱신을 `transform` 기반으로 최적화한다.
 - 매물 사진 Object URL을 재사용해 지도 확대·이동 중 불필요한 재생성을 줄인다.
 
-[Unreleased]: https://github.com/woowacourse-teams/2026-jachwi-sunbae/compare/v4.2.0...HEAD
+[Unreleased]: https://github.com/woowacourse-teams/2026-jachwi-sunbae/compare/v4.3.0...HEAD
+[4.3.0]: https://github.com/woowacourse-teams/2026-jachwi-sunbae/releases/tag/v4.3.0
 [4.2.0]: https://github.com/woowacourse-teams/2026-jachwi-sunbae/releases/tag/v4.2.0
 [4.1.0]: https://github.com/woowacourse-teams/2026-jachwi-sunbae/releases/tag/v4.1.0
 [4.0.0]: https://github.com/woowacourse-teams/2026-jachwi-sunbae/releases/tag/v4.0.0
