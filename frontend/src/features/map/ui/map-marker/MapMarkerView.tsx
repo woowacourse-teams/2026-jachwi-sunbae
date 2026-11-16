@@ -37,6 +37,7 @@ const markerClassName = (marker: MapMarker, selectedMarkerId: string | null | un
       ? styles.photoMarker
       : '',
     marker.appear ? styles.appearMarker : '',
+    marker.pending ? styles.pendingMarker : '',
     marker.pop ? styles.popMarker : '',
     marker.tone === 'property' || marker.tone === 'propertyCluster' ? styles.propertyMarker : '',
     marker.tone === 'current' ? styles.currentMarker : '',
@@ -231,6 +232,16 @@ const markerFlashFadeKeyframes = keyframes`
   }
   100% {
     opacity: 0;
+  }
+`;
+
+const pendingKeyframes = keyframes`
+  0%,
+  100% {
+    opacity: 0.45;
+  }
+  50% {
+    opacity: 0.8;
   }
 `;
 
@@ -591,6 +602,17 @@ const styles = {
     `,
     'MapMarkerView-activeMarker',
   ),
+
+  /* 저장 중인 마커. 반투명하게 천천히 깜빡인다. */
+  pendingMarker: css`
+    label: MapMarkerView-pendingMarker;
+    animation: ${pendingKeyframes} 1.1s ease-in-out infinite;
+
+    @media (prefers-reduced-motion: reduce) {
+      animation: none;
+      opacity: 0.55;
+    }
+  `,
 
   /* 현재 위치는 지도 앱 관례대로 파란 점으로 그린다. */
   currentMarker: css`

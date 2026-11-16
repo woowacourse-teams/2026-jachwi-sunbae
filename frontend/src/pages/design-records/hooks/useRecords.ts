@@ -112,15 +112,13 @@ const useRecords = (selection?: RecordsSelection) => {
   );
 
   /**
-   * 지도에서 방금 만든 매물을 알린다. 동네 필터를 풀고 그 자리로 다가가 매물을 고르며, 핀은 떠오르며 나타난다.
-   * 등록 화면이나 상세로 넘어가지 않고 지도에 머물러, 어디에 생겼는지 바로 보게 한다.
+   * 지도에서 방금 만든 매물을 알린다. 동네 필터를 풀고 매물을 고르며, 핀은 떠오르며 나타난다.
+   * 사용자가 직접 찍은 자리라 이미 화면 안에 있으므로 지도를 옮기거나 확대하지 않는다.
    */
-  const revealCreated = (propertyId: string, location: MapCoordinate) => {
+  const revealCreated = (propertyId: string) => {
     setDistrict('전체');
     setCreatedId(propertyId);
     setSelectedId(propertyId);
-    setCenter({ latitude: location.latitude, longitude: location.longitude });
-    setLevel((current) => Math.min(current, 4));
   };
 
   /**

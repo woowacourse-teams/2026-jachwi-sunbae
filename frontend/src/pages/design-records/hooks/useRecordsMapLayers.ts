@@ -137,6 +137,8 @@ const useRecordsMapLayers = (
               summary: { amount: '0만' },
               tone: 'property' as const,
               photo: PROPERTY_PLACEHOLDER.src2x,
+              // 서버에 저장하는 동안에는 반투명하게 깜빡여 아직 기록 중임을 알린다.
+              pending: true,
             },
           ]),
     ],

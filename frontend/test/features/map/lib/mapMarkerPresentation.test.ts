@@ -5,6 +5,7 @@ import {
   COORDINATE_ACTION_Z_INDEX,
   COORDINATE_MENU_Z_INDEX,
   markerScale,
+  markerSignature,
   markerZIndex,
 } from '@/features/map/lib/mapMarkerPresentation';
 import type { MapMarker } from '@/features/map/model/Map';
@@ -76,4 +77,8 @@ describe('markerZIndex', () => {
     expect(COORDINATE_MENU_Z_INDEX).toBeGreaterThan(COORDINATE_ACTION_Z_INDEX);
     expect(Number.isSafeInteger(COORDINATE_MENU_Z_INDEX) && COORDINATE_MENU_Z_INDEX < 2 ** 31).toBe(true);
   });
+});
+
+it('저장 중 표시가 풀리면 마커를 다시 그리도록 서명이 바뀐다', () => {
+  expect(markerSignature(marker({ pending: true }), null)).not.toBe(markerSignature(marker({}), null));
 });

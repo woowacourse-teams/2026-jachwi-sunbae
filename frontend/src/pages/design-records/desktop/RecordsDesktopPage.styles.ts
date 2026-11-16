@@ -49,11 +49,3 @@ export const map = css`
   label: RecordsDesktopPage-map;
   height: 100%;
 `;
-
-export const notice = css`
-  label: RecordsDesktopPage-notice;
-  right: 1.5rem;
-  bottom: 1.5rem;
-  left: auto;
-  width: 22rem;
-`;

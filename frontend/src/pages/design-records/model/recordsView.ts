@@ -5,10 +5,10 @@ const LAST_VIEW_KEY = 'jachwi:records-view';
 export const parseRecordsView = (value: string | null): RecordsView | null =>
   value === 'map' || value === 'list' ? value : null;
 
-/** 주소에 보기 방식이 없을 때(홈·삭제 뒤 이동 등) 같은 탭에서 마지막으로 고른 보기를 쓴다. */
+/** 주소에 보기 방식이 없을 때(홈의 전체 보기, 삭제 뒤 이동 등) 마지막으로 고른 보기를 쓴다. 앱을 다시 열어도 기억한다. */
 export const readLastRecordsView = (): RecordsView => {
   try {
-    return parseRecordsView(sessionStorage.getItem(LAST_VIEW_KEY)) ?? 'map';
+    return parseRecordsView(localStorage.getItem(LAST_VIEW_KEY)) ?? 'map';
   } catch {
     return 'map';
   }
@@ -16,7 +16,7 @@ export const readLastRecordsView = (): RecordsView => {
 
 export const writeLastRecordsView = (view: RecordsView) => {
   try {
-    sessionStorage.setItem(LAST_VIEW_KEY, view);
+    localStorage.setItem(LAST_VIEW_KEY, view);
   } catch {
     // 저장소를 쓸 수 없으면 주소만으로 기억한다.
   }

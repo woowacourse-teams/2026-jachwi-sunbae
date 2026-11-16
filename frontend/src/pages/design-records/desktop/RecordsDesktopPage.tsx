@@ -27,6 +27,7 @@ import RecordStepper from '../ui/record-stepper/RecordStepper';
 import RecordsDesktopMap from './RecordsDesktopMap';
 
 import * as detailStyles from './RecordsDesktopDetail.styles';
+import * as noticeStyles from './RecordsDesktopNotice.styles';
 import * as styles from './RecordsDesktopPage.styles';
 
 /**
@@ -52,10 +53,10 @@ const RecordsDesktopPage = () => {
   // 지도에서 찍어 매물을 만드는 중인 위치. 만드는 동안 그 자리에 등록 핀을 둔다.
   const [creatingAt, setCreatingAt] = useState<MapAddress | null>(null);
   const quickCreate = useQuickCreateProperty({
-    onCreated: (propertyId, location) => {
+    onCreated: (propertyId) => {
       setCreatingAt(null);
-      // 지도도 새 매물 자리로 다가가 핀을 띄운다. 상세는 리스트 옆 칸에 연다.
-      records.revealCreated(String(propertyId), location);
+      // 새 매물을 골라 상세를 리스트 옆 칸에 연다. 지도는 그대로 둔다.
+      records.revealCreated(String(propertyId));
       setNotice('매물을 기록했어요. 항목을 눌러 정보를 채워 주세요.');
     },
     onError: () => {
@@ -188,7 +189,7 @@ const RecordsDesktopPage = () => {
               />
             )}
           </ListDetailLayout>
-          <RecordNotice message={records.notice} onClose={() => setNotice('')} className={styles.notice} />
+          <RecordNotice message={records.notice} onClose={() => setNotice('')} className={noticeStyles.notice} />
         </div>
       </main>
     </DesktopHeaderSlotProvider>

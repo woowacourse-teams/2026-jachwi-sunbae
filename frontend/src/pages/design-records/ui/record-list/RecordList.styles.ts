@@ -8,7 +8,49 @@ export const items = css`
   display: grid;
   /* 목록 칸이 화면 폭에 따라 좁아져도 카드가 칸을 넘지 않게, 긴 주소는 줄여 보이고 오른쪽 메뉴는 칸 안에 남긴다. */
   grid-template-columns: minmax(0, 1fr);
-  gap: 1.5rem;
+  gap: 0.75rem;
+  /* 카드 바탕이 칸 가장자리에 붙지 않게, 호버 바탕이 들어갈 만큼 양옆으로 넓힌다. */
+  margin-inline: -0.4rem;
+
+  /* 홈 목록과 같은 호버: 바탕이 옅은 파랑으로 바뀌며 살짝 떠오른다. */
+  & > li {
+    padding: 0.4rem;
+    border-radius: 1rem;
+    transition:
+      background-color 160ms ease,
+      transform 160ms ease;
+  }
+  & > li:hover {
+    background: color-mix(in srgb, var(--color-brand-blue) 7%, #fff);
+    transform: translateY(-2px);
+  }
+  /* 카드 빈 곳(여백, 오른쪽 공간)을 눌러도 상세로 가게 본문 링크를 카드 전체로 넓힌다. 사진과 메뉴는 그 위에 둔다. */
+  & > li {
+    position: relative;
+    cursor: pointer;
+  }
+  & > li article > a::after {
+    position: absolute;
+    inset: 0;
+    content: '';
+  }
+  & > li article > :not(a) {
+    position: relative;
+    z-index: 1;
+  }
+  /* 공용 매물 카드의 흰 바탕을 투명하게 두어 호버 바탕이 비치게 한다. */
+  & > li > * {
+    background: transparent;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    & > li {
+      transition: none;
+    }
+    & > li:hover {
+      transform: none;
+    }
+  }
 `;
 
 export const actions = css`
