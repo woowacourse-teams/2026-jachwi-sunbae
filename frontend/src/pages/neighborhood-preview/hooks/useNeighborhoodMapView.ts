@@ -238,7 +238,7 @@ const useNeighborhoodMapView = (
         onCenterChange: preview.rememberSelectionCenter,
         onLevelChange: preview.rememberSelectionLevel,
         markers: candidateMarkers,
-        regions: NO_REGIONS,
+        regions: preview.hasSubmittedSearch ? preview.regions : NO_REGIONS,
         // 분석 중이거나 실패 화면이 지도를 덮고 있을 때는 위치 찍기를 끈다.
         onSelectLocation: preview.isSelectingOnMap ? preview.chooseMapPoint : undefined,
       };

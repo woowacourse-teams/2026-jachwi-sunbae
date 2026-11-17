@@ -186,6 +186,7 @@ const NeighborhoodPreviewMobilePage = ({ preview }: Props) => {
         aria-label={isResultMap ? '행정동 프리셋 지도' : '지도에서 목적지 선택'}
       >
         <MapCanvas
+          shared
           animateView
           hideLoading={preview.isAnalyzing || Boolean(preview.error)}
           interactive
@@ -204,7 +205,7 @@ const NeighborhoodPreviewMobilePage = ({ preview }: Props) => {
               zoom={{ level: preview.selectionLevel, onZoom: preview.zoomSelectionBy }}
               isFilterOpen={pickerField !== null}
             />
-            {showsTapHint && <MapTapHint />}
+            {showsTapHint && preview.isMapSelectionEnabled && <MapTapHint />}
             {/* 조건 칸과 찾기 버튼은 위치를 고르기 전부터 아래 시트에 두어, 위치를 골라도 자리가 바뀌지 않게 한다.
                 위치를 고르기 전에는 찾기 버튼을 막아 두고 장소를 고르라고 적는다. 지도 위 버튼은 말풍선 핀과 겹쳐 두지 않는다. */}
             <section
@@ -212,6 +213,18 @@ const NeighborhoodPreviewMobilePage = ({ preview }: Props) => {
               aria-label={preview.hasChosenMapPoint ? '고른 출퇴근 장소' : '출퇴근 조건'}
             >
               <p className={shared.searchCardTitle}>이 조건으로 추천받아요</p>
+              <Button
+                variant="secondary"
+                aria-pressed={preview.isMapSelectionEnabled}
+                onClick={preview.isMapSelectionEnabled ? preview.cancelMapSelection : preview.openMapSelection}
+              >
+                {preview.isMapSelectionEnabled ? '목적지 선택 취소' : '지도에서 목적지 선택'}
+              </Button>
+              {preview.hasSubmittedSearch && (
+                <Button variant="secondary" onClick={preview.cancelEditing}>
+                  이전 결과 보기
+                </Button>
+              )}
               {filterChips}
               {pickerField !== null && (
                 <NeighborhoodFilterPicker key={pickerField} preview={preview} field={pickerField} />
@@ -278,10 +291,10 @@ const NeighborhoodPreviewMobilePage = ({ preview }: Props) => {
                 <button
                   type="button"
                   className={styles.resetButton}
-                  aria-label="다시 선택하기"
+                  aria-label="검색 조건 바꾸기"
                   onClick={() => {
                     closeLayers();
-                    preview.reset();
+                    preview.editSearch();
                   }}
                 >
                   <Icon name="refresh" size={22} />

@@ -1,12 +1,10 @@
 import { useState } from 'react';
 
 import usePreloadMapSdk from '@/features/map/hooks/usePreloadMapSdk';
-import type { MapAddress } from '@/features/map/model/Map';
 import AreaSkeleton from '@/shared/ui/area-skeleton/AreaSkeleton';
 
-import useQuickCreateProperty from '../hooks/useQuickCreateProperty';
-import useRecords from '../hooks/useRecords';
-import useRecordsMapLayers from '../hooks/useRecordsMapLayers';
+import type { RecordsState } from '../hooks/useRecords';
+import type { RecordsMapLayers } from '../hooks/useRecordsMapLayers';
 import useRecordsView from '../hooks/useRecordsView';
 import { RECORDS_LOADING_LABEL } from '../RecordsPageSkeleton';
 import RecordAddressSearch from '../ui/record-address-search/RecordAddressSearch';
@@ -24,32 +22,9 @@ import * as styles from './RecordsMobilePage.styles';
  * 지도에서 고른 방은 지도 아래 바텀시트로, 리스트에서 고른 방은 상세 화면으로 연다.
  * 지도는 예전 인프라 지도의 시설·거리 메모 카테고리와 찍은 위치의 메모·매물 등록을 함께 맡는다.
  */
-const RecordsMobilePage = () => {
-  const records = useRecords();
+type Props = { records: RecordsState; layers: RecordsMapLayers };
+const RecordsMobilePage = ({ records, layers }: Props) => {
   const { setNotice } = records;
-  // 지도에서 찍어 매물을 만드는 중인 위치. 만드는 동안 그 자리에 등록 핀을 둔다.
-  const [creatingAt, setCreatingAt] = useState<MapAddress | null>(null);
-  // 데스크탑처럼 찍은 위치로 등록 화면 없이 바로 매물을 만든다. 상세로 넘어가지 않고 그 자리로 다가가
-  // 새 핀을 띄우고 아래 시트에 열어, 어디에 생겼는지 보여 준다. 정보는 시트의 카드를 눌러 채운다.
-  const quickCreate = useQuickCreateProperty({
-    onCreated: (propertyId, location) => {
-      setCreatingAt(null);
-      records.revealCreated(String(propertyId), location);
-      setNotice('매물을 기록했어요. 아래 카드를 눌러 정보를 채워 주세요.');
-    },
-    onError: () => {
-      setCreatingAt(null);
-      setNotice('매물을 만들지 못했어요. 다시 시도해 주세요.');
-    },
-  });
-  const layers = useRecordsMapLayers(records, {
-    registeringAt: creatingAt,
-    onRegister: (location) => {
-      if (quickCreate.isCreating) return;
-      setCreatingAt(location);
-      quickCreate.create(location);
-    },
-  });
   const [view, setView] = useRecordsView();
   const showsMap = view === 'map';
   // 지도는 매물 목록이 온 뒤에 붙으므로, 목록을 기다리는 동안 지도 SDK를 먼저 받기 시작한다.

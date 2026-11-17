@@ -16,10 +16,12 @@ import { PROPERTY_PLACEHOLDER } from '@/shared/assets/propertyImageAssets';
 
 import { recordPresentation } from '../model/recordPresentation';
 
-type RecordsLocationState = { focusHeading?: boolean } | null;
-
 /** 화면 밖(주소 등)에서 정하는 선택 매물. 넘기지 않으면 화면 안 상태로 고른다. */
-type RecordsSelection = { selectedId: string | null; setSelectedId: (id: string | null) => void };
+type RecordsSelection = {
+  selectedId: string | null;
+  setSelectedId: (id: string | null) => void;
+  focusCenter?: (point: MapCoordinate, level: number, opensDetail: boolean) => MapCoordinate;
+};
 
 /**
  * 본 방 기록 화면의 데이터·동네 필터·선택·지도 위치. 데스크탑·휴대폰 화면이 함께 쓴다.
@@ -27,10 +29,14 @@ type RecordsSelection = { selectedId: string | null; setSelectedId: (id: string 
  */
 const useRecords = (selection?: RecordsSelection) => {
   const location = useLocation();
-  const locationState = location.state as RecordsLocationState;
+  const locationState: unknown = location.state;
   const headingRef = useRef<HTMLHeadingElement>(null);
   // 상세에서 매물을 삭제하고 돌아오면 화면 제목으로 포커스를 옮긴다.
-  const shouldFocusHeading = locationState?.focusHeading === true;
+  const shouldFocusHeading =
+    typeof locationState === 'object' &&
+    locationState !== null &&
+    'focusHeading' in locationState &&
+    locationState.focusHeading === true;
   useEffect(() => {
     if (shouldFocusHeading) headingRef.current?.focus();
   }, [shouldFocusHeading]);
@@ -59,6 +65,8 @@ const useRecords = (selection?: RecordsSelection) => {
   const [center, setCenter] = useState(DEFAULT_MAP_CENTER);
   const [level, setLevel] = useState(8);
   const [notice, setNotice] = useState('');
+  const focus = (point: MapCoordinate, nextLevel = level, opensDetail = false) =>
+    setCenter(selection?.focusCenter?.(point, nextLevel, opensDetail) ?? point);
   // 지도에서 방금 만든 매물. 그 핀은 아래에서 떠오르며 나타나 새로 생긴 자리를 알린다.
   const [createdId, setCreatedId] = useState<string | null>(null);
   const records = useMemo(
@@ -77,7 +85,7 @@ const useRecords = (selection?: RecordsSelection) => {
     hasCentered.current = true;
     setDistrict('전체');
     if (selectedId !== movedId) setSelectedId(movedId);
-    setCenter({ latitude: moved.latitude, longitude: moved.longitude });
+    focus({ latitude: moved.latitude, longitude: moved.longitude }, Math.min(level, 4), true);
     setLevel((current) => Math.min(current, 4));
   }, [allRecords, selectedId, setSelectedId]);
 
@@ -88,7 +96,7 @@ const useRecords = (selection?: RecordsSelection) => {
     const first = allRecords.find((record) => record.latitude !== null && record.longitude !== null);
     if (first && first.latitude !== null && first.longitude !== null) {
       hasCentered.current = true;
-      setCenter({ latitude: first.latitude, longitude: first.longitude });
+      focus({ latitude: first.latitude, longitude: first.longitude });
     }
   }, [allRecords]);
 
@@ -124,7 +132,7 @@ const useRecords = (selection?: RecordsSelection) => {
     setDistrict('전체');
     setCreatedId(propertyId);
     setSelectedId(propertyId);
-    setCenter({ latitude: location.latitude, longitude: location.longitude });
+    focus(location, Math.min(level, 4), true);
     setLevel((current) => Math.min(current, 4));
   };
 
@@ -145,7 +153,8 @@ const useRecords = (selection?: RecordsSelection) => {
       const current = inDistrict.findIndex((record) => record.id === selectedId);
       const target = inDistrict[(current + 1) % inDistrict.length];
       setSelectedId(target.id);
-      setCenter({ latitude: target.latitude as number, longitude: target.longitude as number });
+      if (target.latitude !== null && target.longitude !== null)
+        focus({ latitude: target.latitude, longitude: target.longitude }, Math.min(level, 5), true);
       setLevel((currentLevel) => Math.min(currentLevel, 5));
       return;
     }
@@ -157,7 +166,7 @@ const useRecords = (selection?: RecordsSelection) => {
     const opened = options?.open === true && first !== undefined;
     setSelectedId(opened ? first.id : null);
     if (first && first.latitude !== null && first.longitude !== null)
-      setCenter({ latitude: first.latitude, longitude: first.longitude });
+      focus({ latitude: first.latitude, longitude: first.longitude }, next === '전체' ? 8 : 5, opened);
     setLevel(next === '전체' ? 8 : 5);
   };
 
@@ -169,12 +178,12 @@ const useRecords = (selection?: RecordsSelection) => {
     setSelectedId(recordId);
     const record = records.find((item) => item.id === recordId);
     if (record !== undefined && record.latitude !== null && record.longitude !== null)
-      setCenter({ latitude: record.latitude, longitude: record.longitude });
+      focus({ latitude: record.latitude, longitude: record.longitude }, level, true);
   };
 
   /** 주소 검색 결과처럼 고른 자리로 지도를 옮기고 동네 수준으로 확대한다. */
   const moveTo = (coordinate: MapCoordinate) => {
-    setCenter({ latitude: coordinate.latitude, longitude: coordinate.longitude });
+    focus(coordinate, 4);
     setLevel(4);
   };
 

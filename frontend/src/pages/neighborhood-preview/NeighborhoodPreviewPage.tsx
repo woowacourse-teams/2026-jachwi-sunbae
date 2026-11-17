@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { Navigate, useMatch } from 'react-router-dom';
 
 import useIsDesktop from '@/shared/lib/hooks/useIsDesktop';
@@ -14,6 +15,13 @@ import NeighborhoodPreviewMobilePage from './mobile/NeighborhoodPreviewMobilePag
 const NeighborhoodPreviewPage = () => {
   const preview = useNeighborhoodPreview();
   const isDesktop = useIsDesktop();
+  useEffect(() => {
+    const cancel = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') preview.cancelMapSelection();
+    };
+    window.addEventListener('keydown', cancel);
+    return () => window.removeEventListener('keydown', cancel);
+  }, [preview]);
   const isRoutePage = useMatch(`${preview.mapPath}/${ROUTE_PATTERNS.area}/*`);
   if (isRoutePage && !preview.selected && !preview.isAnalyzing && !preview.error) {
     return <Navigate to={preview.mapPath} replace />;

@@ -79,6 +79,11 @@ const noopRefetch = () => Promise.resolve({} as never);
 
 /** 동네 상세 화면이 상위에서 받는 상태. 이 본문이 읽는 값만 의미 있게 채우고 나머지는 기본값이다. */
 const preview: NeighborhoodPreviewContext = {
+  isMapSelectionEnabled: false,
+  cancelMapSelection: () => undefined,
+  hasSubmittedSearch: true,
+  cancelEditing: () => undefined,
+  editSearch: () => undefined,
   isPublicExplore: false,
   mapPath: '/neighborhoods',
   prefetchBoundaries: noop,

@@ -21,6 +21,7 @@ const MEMO_MAX_LEVEL = 11;
 type MapPoint = { latitude: number; longitude: number };
 
 type Options = {
+  canSelectLocation?: boolean;
   /**
    * 찍은 위치에서 매물 등록을 고르면 주소 응답을 기다린 뒤에 넘긴다. 등록 화면을 여는 방식은 화면이 정한다.
    * 주소를 찾지 못했거나 조회가 실패하면 주소 없이 좌표만 넘긴다. 넘기지 않으면 찍은 위치에서는 메모만 남긴다.
@@ -89,6 +90,7 @@ const useRecordsMapLayers = (
   records: RecordsState,
   {
     onRegister,
+    canSelectLocation = true,
     registeringAt = null,
     groupAction = 'list',
     keepSelectionOnMapTap = false,
@@ -255,6 +257,14 @@ const useRecordsMapLayers = (
   const tapLocation = (latitude: number, longitude: number) => {
     // 매물을 등록하는 동안은 새 동작을 띄우지 않는다.
     if (isRegistering) return;
+    if (!canSelectLocation) {
+      if (!keepSelectionOnMapTap) {
+        closeSelection();
+        memo.close();
+      }
+      setTapPoint(null);
+      return;
+    }
     if (keepSelectionOnMapTap) {
       setTapPoint(tapPoint === null ? { latitude, longitude } : null);
       return;
@@ -289,9 +299,7 @@ const useRecordsMapLayers = (
       memo.close();
       setTapPoint(null);
       setGroupIds([]);
-      records.setSelectedId(marker.id);
-      // 고른 매물 자리로 지도를 옮긴다(부드럽게 이동한다).
-      records.setCenter({ latitude: marker.latitude, longitude: marker.longitude });
+      records.showRecord(marker.id);
     },
     onSelectLocation: tapLocation,
     onCenterChange: (latitude: number, longitude: number) => records.setCenter({ latitude, longitude }),
@@ -301,11 +309,13 @@ const useRecordsMapLayers = (
 
   return {
     canvasProps,
+    isSelectingLocation: canSelectLocation,
     memo,
     /** 겹친 매물 묶음을 눌러 함께 보는 매물. 묶음을 고르지 않았으면 빈 목록이다. */
     groupRecords: records.records.filter((record) => groupIds.includes(record.id)),
     closeGroup: () => setGroupIds([]),
     tapPoint,
+    cancelPlacement: () => setTapPoint(null),
     tapActions,
     /** 매물 등록을 눌러 주소를 찾거나 매물을 만드는 중인지. */
     isRegistering,

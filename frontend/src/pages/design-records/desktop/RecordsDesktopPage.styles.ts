@@ -57,3 +57,11 @@ export const notice = css`
   left: auto;
   width: 22rem;
 `;
+
+export const search = css`
+  label: RecordsDesktopPage-search;
+  padding-top: 4.25rem !important;
+  flex: none !important;
+  padding: 1rem;
+  border-bottom: 1px solid var(--color-border);
+`;

@@ -89,6 +89,7 @@ const useNeighborhoodPreview = () => {
   // 결과 지도 시점은 ref에 두므로, 목록에서 정류장을 고를 때처럼 시점만 바꾸면 다시 그리도록 이 값을 올린다.
   const [, setResultViewVersion] = useState(0);
   const [hasChosenMapPoint, setHasChosenMapPoint] = useState(false);
+  const [isMapSelectionEnabled, setIsMapSelectionEnabled] = useState(false);
   const [shouldFocusMapSearch, setShouldFocusMapSearch] = useState(false);
   const locationIntent = useRef(0);
   const [isLocating, setIsLocating] = useState(false);
@@ -96,16 +97,22 @@ const useNeighborhoodPreview = () => {
   const [maxMinutes, setMaxMinutes] = useState(restoredSearch?.maxMinutes ?? 40);
   const [maxRent, setMaxRent] = useState(restoredSearch?.maxRent ?? 0);
   const [maxTransfers, setMaxTransfers] = useState(restoredSearch?.maxTransfers ?? 1);
+  const [submitted, setSubmitted] = useState(
+    restoredSearch
+      ? {
+          destination: restoredSearch.destination,
+          maxMinutes: restoredSearch.maxMinutes,
+          maxTransfers: restoredSearch.maxTransfers,
+        }
+      : null,
+  );
   const isValidCommuteTime =
     Number.isInteger(maxMinutes) && maxMinutes >= 10 && maxMinutes <= 60 && maxMinutes % 10 === 0;
   const [selectedId, setSelectedId] = useState<string | null>(routeAreaId ?? restoredSearch?.selectedId ?? null);
   const [selectedStopId, setSelectedStopId] = useState<string | null>(restoredSearch?.selectedStopId ?? null);
   useEffect(() => {
-    writeNeighborhoodSearch(
-      searchSessionKey,
-      phase === 'analyzing' ? { destination, maxMinutes, maxTransfers, maxRent, selectedId, selectedStopId } : null,
-    );
-  }, [searchSessionKey, phase, destination, maxMinutes, maxTransfers, maxRent, selectedId, selectedStopId]);
+    writeNeighborhoodSearch(searchSessionKey, submitted ? { ...submitted, maxRent, selectedId, selectedStopId } : null);
+  }, [searchSessionKey, submitted, maxRent, selectedId, selectedStopId]);
   useEffect(() => {
     if (routeAreaId) setSelectedId(routeAreaId);
   }, [routeAreaId]);
@@ -134,10 +141,10 @@ const useNeighborhoodPreview = () => {
   // 지도가 처음 그려지면(onReady) 시작하고, 느린 연결에서 지도보다 장소를 먼저 고르면 그때 시작한다.
   const prefetchBoundaries = usePrefetchMetroBoundaries({ isSearching: phase === 'analyzing' });
   const commute = useCommuteAreas({
-    destination,
-    maxMinutes,
-    maxTransfers,
-    enabled: phase === 'analyzing',
+    destination: submitted?.destination ?? destination,
+    maxMinutes: submitted?.maxMinutes ?? maxMinutes,
+    maxTransfers: submitted?.maxTransfers ?? maxTransfers,
+    enabled: submitted !== null,
   });
   // 서버가 통근 시간·환승 조건으로 고른 동네 가운데 월세 시세가 있는 동네만 온다(`useCommuteAreas`가 거른다).
   // 서버는 월세로 거르지 않으므로 월세 조건은 받은 시세(월세 중앙값)의 상한으로 화면에서 거른다. 바꿔도 다시 조회하지 않는다.
@@ -182,12 +189,19 @@ const useNeighborhoodPreview = () => {
       destination.latitude,
       destination.longitude,
       selectedStopId,
-      maxMinutes,
-      maxTransfers,
+      submitted?.maxMinutes,
+      submitted?.maxTransfers,
     ],
     queryFn: ({ signal }) => {
       if (!selectedStopId) throw new Error('출발 정류장을 선택해 주세요.');
-      return fetchCommuteRoute(config, destination, selectedStopId, maxMinutes, maxTransfers, signal);
+      return fetchCommuteRoute(
+        config,
+        destination,
+        selectedStopId,
+        submitted?.maxMinutes ?? maxMinutes,
+        submitted?.maxTransfers ?? maxTransfers,
+        signal,
+      );
     },
     enabled: !!selectedStation && phase === 'analyzing',
     retry: false,
@@ -254,9 +268,9 @@ const useNeighborhoodPreview = () => {
           resultView.current = { ...coordinate, level: 6 };
         } else {
           const current = { ...coordinate, name: '현재 위치', address: '현재 위치 기준' };
+          selectionView.current = null;
           setSelectionCenter(current);
           setSelectionLevel(4);
-          setDestination(current);
           setMapCandidate(current);
           setHasChosenMapPoint(true);
           setShouldFocusMapSearch(false);
@@ -292,6 +306,21 @@ const useNeighborhoodPreview = () => {
       void client.cancelQueries({ queryKey: ['commute-areas'] });
       leave();
     },
+    hasSubmittedSearch: submitted !== null,
+    cancelEditing: () => {
+      if (!submitted) return;
+      locationIntent.current += 1;
+      setMapCandidate(submitted.destination);
+      setMaxMinutes(submitted.maxMinutes);
+      setMaxTransfers(submitted.maxTransfers);
+      setPhase('analyzing');
+    },
+    editSearch: () => {
+      locationIntent.current += 1;
+      setMapCandidate(destination);
+      setHasChosenMapPoint(true);
+      setPhase('conditions');
+    },
     isChoosingConditions: phase === 'conditions',
     editLocation: () => {
       locationIntent.current += 1;
@@ -300,18 +329,30 @@ const useNeighborhoodPreview = () => {
       setPhase('map');
     },
     startAnalysis: () => {
-      if (phase !== 'conditions' || !isValidCommuteTime) return;
+      if (phase !== 'conditions' || !hasChosenMapPoint || !isValidCommuteTime) return;
       analytics.startSearch({ maxMinutes, maxTransfers, maxRent });
       // 본 방 기록에서 매물마다 이 장소까지 통근 시간을 보여 주려고 기억한다.
-      writeCommuteDestination(destination);
+      locationIntent.current += 1;
+      setDestination(mapCandidate);
+      if (
+        submitted &&
+        submitted.destination.latitude === mapCandidate.latitude &&
+        submitted.destination.longitude === mapCandidate.longitude &&
+        submitted.maxMinutes === maxMinutes &&
+        submitted.maxTransfers === maxTransfers
+      )
+        void commute.refetch();
+      setSubmitted({ destination: mapCandidate, maxMinutes, maxTransfers });
+      writeCommuteDestination(mapCandidate);
+      if (routeAreaId) navigate(mapPath, { replace: true });
       resultView.current = null;
       setSelectedId(null);
       setSelectedStopId(null);
       if (isPublicExplore) startExploration('commute', isMockData);
       setPhase('analyzing');
     },
-    selectionCenter,
-    selectionLevel,
+    selectionCenter: selectionView.current ?? selectionCenter,
+    selectionLevel: selectionView.current?.level ?? selectionLevel,
     rememberSelectionCenter: (latitude: number, longitude: number) => {
       selectionView.current = { latitude, longitude, level: selectionView.current?.level ?? selectionLevel };
     },
@@ -352,7 +393,7 @@ const useNeighborhoodPreview = () => {
       };
       setAddressResults([]);
       setMapCandidate(point);
-      setDestination(point);
+      selectionView.current = null;
       setSelectionCenter(point);
       setSelectionLevel(4);
       setHasChosenMapPoint(true);
@@ -367,7 +408,6 @@ const useNeighborhoodPreview = () => {
       setSearchError(null);
       setIsSearching(false);
       setHasChosenMapPoint(false);
-      setPhase('map');
     },
     searchDestination: async () => {
       if (!query.trim()) return;
@@ -390,6 +430,7 @@ const useNeighborhoodPreview = () => {
     openMapSearch: () => {
       setShouldFocusMapSearch(true);
       setMapCandidate(destination);
+      selectionView.current = null;
       setSelectionCenter(destination);
       setHasChosenMapPoint(false);
       setPhase('map');
@@ -398,19 +439,21 @@ const useNeighborhoodPreview = () => {
     mapCandidate,
     hasChosenMapPoint,
     isSelectingOnMap: phase === 'map' || phase === 'conditions',
+    isMapSelectionEnabled,
+    cancelMapSelection: () => setIsMapSelectionEnabled(false),
     openMapSelection: () => {
+      setIsMapSelectionEnabled(true);
       setShouldFocusMapSearch(false);
       setMapCandidate(destination);
+      selectionView.current = null;
       setSelectionCenter(destination);
       setHasChosenMapPoint(false);
       setPhase('map');
     },
     chooseMapPoint: (latitude: number, longitude: number) => {
-      if (phase === 'analyzing') return;
+      if (phase === 'analyzing' || !isMapSelectionEnabled) return;
+      setIsMapSelectionEnabled(false);
       locationIntent.current += 1;
-      void client.cancelQueries({ queryKey: ['commute-areas'] });
-      setSelectedId(null);
-      setSelectedStopId(null);
       setShouldFocusMapSearch(false);
       const point = {
         name: '선택한 위치',
@@ -419,7 +462,6 @@ const useNeighborhoodPreview = () => {
         longitude,
       };
       setMapCandidate(point);
-      setDestination(point);
       // 지도를 직접 누르면 시점을 옮기지 않는다. 가운데로 옮기거나 확대하면 핀이 누른 자리에서 벗어나 다른 곳에 찍힌 것처럼 보인다.
       setHasChosenMapPoint(true);
       setPhase('conditions');
@@ -432,7 +474,6 @@ const useNeighborhoodPreview = () => {
             isMockData && address.address.startsWith('MSW 테스트 위치') ? '선택한 위치' : address.address;
           const namedPoint = { ...point, name: locationName, address: locationName };
           setMapCandidate(namedPoint);
-          setDestination(namedPoint);
         })
         .catch(() => {
           /* 주소 조회 실패 시 좌표 대신 일반 위치 이름을 유지한다. */
@@ -440,7 +481,6 @@ const useNeighborhoodPreview = () => {
     },
     confirmMapPoint: () => {
       if (!hasChosenMapPoint || phase !== 'map') return;
-      setDestination(mapCandidate);
       setSelectedId(null);
       setSelectedStopId(null);
       setPhase('conditions');

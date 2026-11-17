@@ -34,7 +34,7 @@ const RecordsMobileMap = ({ records, layers }: Props) => {
   const hasBottomLayer = sheetRecords.length > 0 || layers.memo.mode !== null;
   return (
     <section className={styles.map} aria-label="본 방 기록 지도">
-      <MapCanvas {...layers.canvasProps} coordinateMenu={layers.coordinateMenu} />
+      <MapCanvas shared {...layers.canvasProps} coordinateMenu={layers.coordinateMenu} />
       <StreetMemoImpressionLog memos={layers.memo.visibleMemos} />
       <button
         className={styles.recenter}
@@ -45,7 +45,13 @@ const RecordsMobileMap = ({ records, layers }: Props) => {
         <Icon name="target" size={22} />
       </button>
       <MapZoomControl className={styles.zoom} level={records.level} onChange={records.setLevel} />
-      {!hasBottomLayer && <span className={styles.hint}>{recordsMapHint(records.records, layers)}</span>}
+      {!hasBottomLayer && (
+        <span className={styles.hint}>
+          {layers.isSelectingLocation
+            ? recordsMapHint(records.records, layers)
+            : '기록 위치 선택을 눌러 메모와 매물을 추가해요'}
+        </span>
+      )}
       <RecordsSelectedSheet
         records={sheetRecords}
         onClose={layers.closeAll}
@@ -58,7 +64,9 @@ const RecordsMobileMap = ({ records, layers }: Props) => {
         onAccept={layers.acceptRegisterSuggestion}
         onClose={layers.closeRegisterSuggestion}
       />
-      <RecordMapTapIntro setLevel={records.setLevel} hasTapped={layers.tapPoint !== null} />
+      {layers.isSelectingLocation && (
+        <RecordMapTapIntro setLevel={records.setLevel} hasTapped={layers.tapPoint !== null} />
+      )}
     </section>
   );
 };

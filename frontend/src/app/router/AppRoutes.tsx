@@ -42,7 +42,7 @@ import ProtectedRoute from './ProtectedRoute';
 const AdminPage = lazy(() => import('@/pages/admin/AdminPage'));
 const CheapMealsPage = lazy(() => import('@/pages/cheap-meals/CheapMealsPage'));
 const DesignHomePage = lazy(() => import('@/pages/design-home/DesignHomePage'));
-const DesignRecordsPage = lazy(() => import('@/pages/design-records/DesignRecordsPage'));
+const UnifiedMapPage = lazy(() => import('@/pages/unified-map/UnifiedMapPage'));
 const NeighborhoodPreviewPage = lazy(() => import('@/pages/neighborhood-preview/NeighborhoodPreviewPage'));
 const NeighborhoodRoutePage = lazy(() => import('@/pages/neighborhood-preview/NeighborhoodRoutePage'));
 const UsageGuidePage = lazy(() => import('@/pages/usage-guide/UsageGuidePage'));
@@ -69,17 +69,9 @@ const lazyPage = (page: ReactNode, fallback?: ReactNode) => (
   <LazyRouteBoundary fallback={fallback}>{page}</LazyRouteBoundary>
 );
 
-/**
- * 본 방 기록(`/properties`)과 매물 상세(`/properties/:propertyId`).
- * 데스크탑은 두 주소 모두 기록 화면이 그리고 상세를 왼쪽 칸에 연다. 휴대폰 상세는 앱 레이아웃 안 상세 화면이다.
- */
-const RecordsRoute = () => {
-  const isDesktop = useIsDesktop();
-  const propertyId = useParams().propertyId;
-  // 처음 여는 기록 화면은 진행 표시 대신 화면 뼈대를 바로 보여, 화면 코드와 기록을 받는 동안 같은 뼈대가 이어지게 한다.
-  if (isDesktop || propertyId === undefined) return lazyPage(<DesignRecordsPage />, <RecordsPageSkeleton />);
-  return <PropertyAppLayout />;
-};
+/** 데스크톱 홈은 통합 지도, 휴대폰과 앱은 기존 홈을 연다. */
+const HomeRoute = () =>
+  useIsDesktop() ? <Navigate to={RECORDS_PATH} replace /> : lazyPage(<DesignHomePage />, <HomePageSkeleton />);
 
 /** 인프라 지도는 본 방 기록 지도로 합쳤다. 예전 주소(`/map`, `/map/:propertyId`)로 들어오면 기록 화면으로 보낸다. */
 const LegacyMapRoute = () => {
@@ -118,10 +110,6 @@ const AppRoutes = () => (
     </Route>
     <Route element={<PropertyAppLayout />}>
       <Route path={GUIDE_PATH} element={lazyPage(<UsageGuidePage />)} />
-      <Route path={NEIGHBORHOODS_PATH} element={lazyPage(<NeighborhoodPreviewPage />, <NeighborhoodPageSkeleton />)}>
-        <Route path={ROUTE_PATTERNS.area} element={lazyPage(<NeighborhoodRoutePage />)} />
-        <Route path={ROUTE_PATTERNS.areaDetails} element={lazyPage(<NeighborhoodRoutePage />)} />
-      </Route>
       <Route
         path={ROUTE_PATTERNS.legacyNeighborhoodsMap}
         element={<LegacyNeighborhoodRoute base={NEIGHBORHOODS_PATH} />}
@@ -142,10 +130,19 @@ const AppRoutes = () => (
     <Route element={<ProtectedRoute />}>
       {/* 탭마다 주소가 따로 있다. 탭 없는 주소와 예전 `?tab=` 주소는 화면이 탭 주소로 바꾼다. */}
       <Route path={ROUTE_PATTERNS.cheapMeals} element={lazyPage(<CheapMealsPage />)} />
-      <Route path={HOME_PATH} element={lazyPage(<DesignHomePage />, <HomePageSkeleton />)} />
-      <Route path={ROUTE_PATTERNS.propertyRecords} element={<RecordsRoute />}>
-        <Route index element={lazyPage(<PropertyDetailPage />)} />
-        <Route path={ROUTE_PATTERNS.propertyActiveChecklistChild} element={lazyPage(<PropertyActiveChecklistPage />)} />
+      <Route path={HOME_PATH} element={<HomeRoute />} />
+      <Route element={lazyPage(<UnifiedMapPage />, <RecordsPageSkeleton />)}>
+        <Route path={ROUTE_PATTERNS.propertyRecords}>
+          <Route index element={lazyPage(<PropertyDetailPage />)} />
+          <Route
+            path={ROUTE_PATTERNS.propertyActiveChecklistChild}
+            element={lazyPage(<PropertyActiveChecklistPage />)}
+          />
+        </Route>
+        <Route path={NEIGHBORHOODS_PATH}>
+          <Route path={ROUTE_PATTERNS.area} element={lazyPage(<NeighborhoodRoutePage />)} />
+          <Route path={ROUTE_PATTERNS.areaDetails} element={lazyPage(<NeighborhoodRoutePage />)} />
+        </Route>
       </Route>
       <Route element={<PropertyAppLayout />}>
         <Route path={ROUTE_PATTERNS.propertyEdit} element={lazyPage(<EditPropertyPage />)} />

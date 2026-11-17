@@ -220,7 +220,7 @@ it('데스크탑에서는 보기 전환 없이 지도와 리스트를 함께 보
   // 리스트에 통근 시간 버튼이 없다. 통근은 동네 찾기에서 다룬다.
   expect(screen.queryByRole('button', { name: '통근 시간' })).not.toBeInTheDocument();
   // 주소 검색창은 공용 레이아웃 밖에서도 헤더 가운데 자리에 들어간다.
-  await waitFor(() => expect(within(screen.getByRole('banner')).getByLabelText('주소 검색')).toBeInTheDocument());
+  await waitFor(() => expect(screen.getByLabelText('주소 검색')).toBeInTheDocument());
   matchMedia.mockRestore();
 });
 
@@ -249,6 +249,8 @@ it('데스크탑은 기록하기 버튼 없이 지도를 찍으면 등록 화면
     renderRecords();
     await screen.findByRole('heading', { name: '모든 기록' });
     expect(screen.queryByRole('button', { name: /기록하기/ })).not.toBeInTheDocument();
+    if (screen.queryByRole('button', { name: '기록 위치 선택' }))
+      await user.click(screen.getByRole('button', { name: '기록 위치 선택' }));
     await user.click(screen.getByRole('button', { name: '빈 곳 찍기' }));
     await user.click(screen.getByRole('button', { name: '말풍선 여기에 매물 등록' }));
     // 이름은 새 매물로, 보증금과 월세는 0으로 만든다.
@@ -269,6 +271,8 @@ it('체크리스트 탭을 보다가 지도에서 매물을 새로 만들어도 
   try {
     renderRecords();
     await screen.findByRole('heading', { name: '모든 기록' });
+    if (screen.queryByRole('button', { name: '기록 위치 선택' }))
+      await user.click(screen.getByRole('button', { name: '기록 위치 선택' }));
     await user.click(screen.getByRole('button', { name: '빈 곳 찍기' }));
     await user.click(screen.getByRole('button', { name: '말풍선 여기에 매물 등록' }));
     const detail = within(await screen.findByRole('complementary', { name: '선택한 매물 상세' }));
@@ -371,6 +375,8 @@ it('휴대폰은 버튼 없이 늘 화면 안 거리 메모를 지도에 올리�
   expect(memo.getByText('👍 좋아요')).toBeInTheDocument();
   expect(memo.queryByRole('button', { name: '메모 지우기' })).not.toBeInTheDocument();
   // 열린 메모가 있으면 지도를 찍어도 닫기만 한다.
+  if (screen.queryByRole('button', { name: '기록 위치 선택' }))
+    await user.click(screen.getByRole('button', { name: '기록 위치 선택' }));
   await user.click(screen.getByRole('button', { name: '빈 곳 찍기' }));
   expect(screen.queryByRole('region', { name: '거리 메모' })).not.toBeInTheDocument();
   expect(screen.queryByRole('group', { name: '이 위치에서' })).not.toBeInTheDocument();
@@ -382,6 +388,8 @@ it('휴대폰도 데스크탑처럼 빈 곳을 찍은 말풍선에서 매물을 
   await screen.findByText('신림역 원룸');
   // 아래쪽 추가 버튼 없이, 빈 곳을 찍으면 그 자리 말풍선에서 메모와 매물 중에 고른다.
   expect(screen.queryByRole('button', { name: '추가하기' })).not.toBeInTheDocument();
+  if (screen.queryByRole('button', { name: '기록 위치 선택' }))
+    await user.click(screen.getByRole('button', { name: '기록 위치 선택' }));
   await user.click(screen.getByRole('button', { name: '빈 곳 찍기' }));
   expect(screen.getByRole('button', { name: '말풍선 메모 남기기' })).toBeInTheDocument();
   const created = captureCreatedProperties();
@@ -428,12 +436,16 @@ it('주소 응답이 늦으면 등록 핀과 확인 중 안내를 먼저 띄우�
   await screen.findByText('신림역 원룸');
   const created = captureCreatedProperties();
   try {
+    if (screen.queryByRole('button', { name: '기록 위치 선택' }))
+      await user.click(screen.getByRole('button', { name: '기록 위치 선택' }));
     await user.click(screen.getByRole('button', { name: '빈 곳 찍기' }));
     await user.click(screen.getByRole('button', { name: '말풍선 여기에 매물 등록' }));
     // 주소를 확인하는 동안 따로 안내 문구는 띄우지 않고, 등록 위치 핀만 둔다.
     expect(await screen.findByRole('button', { name: '새 매물' })).toBeInTheDocument();
     expect(screen.queryByText('주소를 확인하는 중이에요.')).not.toBeInTheDocument();
     // 주소를 기다리는 동안 다시 찍어도 말풍선을 띄우지 않아 두 번 등록하지 못한다.
+    if (screen.queryByRole('button', { name: '기록 위치 선택' }))
+      await user.click(screen.getByRole('button', { name: '기록 위치 선택' }));
     await user.click(screen.getByRole('button', { name: '빈 곳 찍기' }));
     expect(screen.queryByRole('button', { name: '말풍선 여기에 매물 등록' })).not.toBeInTheDocument();
     respond();
@@ -454,6 +466,8 @@ it.each([
   await screen.findByText('신림역 원룸');
   const created = captureCreatedProperties();
   try {
+    if (screen.queryByRole('button', { name: '기록 위치 선택' }))
+      await user.click(screen.getByRole('button', { name: '기록 위치 선택' }));
     await user.click(screen.getByRole('button', { name: '빈 곳 찍기' }));
     await user.click(screen.getByRole('button', { name: '말풍선 여기에 매물 등록' }));
     await waitFor(() =>
@@ -521,6 +535,8 @@ it('휴대폰에서 지도의 방을 누르면 아래 바텀시트로 보고, �
   expect(group.getByRole('link', { name: '같은 건물 3층' })).toHaveAttribute('href', '/properties/9001');
   expect(group.getByRole('link', { name: '같은 건물 5층' })).toHaveAttribute('href', '/properties/9002');
   // 열린 시트가 있으면 빈 곳을 찍어도 닫기만 한다.
+  if (screen.queryByRole('button', { name: '기록 위치 선택' }))
+    await user.click(screen.getByRole('button', { name: '기록 위치 선택' }));
   await user.click(map.getByRole('button', { name: '빈 곳 찍기' }));
   expect(screen.queryByRole('region', { name: '이 자리 매물 2개' })).not.toBeInTheDocument();
   expect(screen.queryByRole('button', { name: '말풍선 여기에 매물 등록' })).not.toBeInTheDocument();
@@ -539,7 +555,11 @@ it('휴대폰은 빈 곳을 찍은 말풍선에서 메모를 고르면 그 위�
   await user.click(screen.getByRole('button', { name: /^마포구/ }));
   await user.click(screen.getByRole('button', { name: '화면 범위 알림' }));
   // 동네를 고르면 휴대폰은 그 동네 첫 매물 시트를 열므로, 첫 탭은 시트를 닫기만 한다.
+  if (screen.queryByRole('button', { name: '기록 위치 선택' }))
+    await user.click(screen.getByRole('button', { name: '기록 위치 선택' }));
   await user.click(screen.getByRole('button', { name: '빈 곳 찍기' }));
+  if (screen.queryByRole('button', { name: '기록 위치 선택' }))
+    await user.click(screen.getByRole('button', { name: '기록 위치 선택' }));
   await user.click(screen.getByRole('button', { name: '빈 곳 찍기' }));
   await user.click(screen.getByRole('button', { name: '말풍선 메모 남기기' }));
   const form = within(await screen.findByRole('region', { name: '이곳을 평가해 주세요' }));
@@ -565,6 +585,8 @@ it('데스크탑은 찍은 자리 말풍선에서 매물 등록을 고르면 찍
   try {
     renderRecords();
     await screen.findByRole('heading', { name: '모든 기록' });
+    if (screen.queryByRole('button', { name: '기록 위치 선택' }))
+      await user.click(screen.getByRole('button', { name: '기록 위치 선택' }));
     await user.click(screen.getByRole('button', { name: '빈 곳 찍기' }));
     // 데스크탑은 아래쪽 버튼 대신 찍은 자리 말풍선으로 고른다.
     expect(screen.queryByRole('group', { name: '이 위치에서' })).not.toBeInTheDocument();
@@ -676,6 +698,7 @@ it('처음 들어오면 지도를 확대해 누르는 법을 안내하고, 안�
   try {
     const { unmount } = renderRecords();
     await screen.findByText('신림역 원룸');
+    await user.click(screen.getByRole('button', { name: '기록 위치 선택' }));
     const intro = within(await screen.findByRole('note', { name: '지도 사용 안내' }));
     expect(intro.getByText('지도를 눌러 보세요')).toBeInTheDocument();
     // 처음 배율(8)보다 가까이 다가가 누를 자리가 보이게 한다.
@@ -704,6 +727,7 @@ it('첫 진입 안내는 건너뛸 수 있다', async () => {
   try {
     renderRecords();
     await screen.findByText('신림역 원룸');
+    await user.click(screen.getByRole('button', { name: '기록 위치 선택' }));
     await user.click(screen.getByRole('button', { name: '건너뛰기' }));
     expect(screen.queryByRole('note', { name: '지도 사용 안내' })).not.toBeInTheDocument();
   } finally {
@@ -825,4 +849,18 @@ it('주소가 없는 매물은 목록에 유지하고 주소 미등록 동네 �
   const districts = within(screen.getByRole('navigation', { name: '기록한 동네' }));
   expect(districts.queryByRole('button', { name: '주소 미등록' })).not.toBeInTheDocument();
   expect(districts.getByRole('button', { name: /^전체/ })).toBeInTheDocument();
+});
+
+it('일반 지도 탭은 위치 등록을 열지 않고 위치 선택 모드에서만 열며 Escape로 취소한다', async () => {
+  const user = userEvent.setup();
+  renderRecords();
+  await screen.findByText('신림역 원룸');
+  await user.click(screen.getByRole('button', { name: '빈 곳 찍기' }));
+  expect(screen.queryByRole('button', { name: '말풍선 여기에 매물 등록' })).not.toBeInTheDocument();
+  await user.click(screen.getByRole('button', { name: '기록 위치 선택' }));
+  await user.click(screen.getByRole('button', { name: '빈 곳 찍기' }));
+  expect(screen.getByRole('button', { name: '말풍선 여기에 매물 등록' })).toBeInTheDocument();
+  await user.keyboard('{Escape}');
+  expect(screen.queryByRole('button', { name: '말풍선 여기에 매물 등록' })).not.toBeInTheDocument();
+  expect(screen.getByRole('button', { name: '기록 위치 선택' })).toHaveAttribute('aria-pressed', 'false');
 });

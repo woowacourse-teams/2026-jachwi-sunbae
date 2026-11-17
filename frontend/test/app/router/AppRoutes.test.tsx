@@ -4,7 +4,7 @@ import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import { StrictMode } from 'react';
 import { MemoryRouter, useLocation } from 'react-router-dom';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { checklistHandlers } from '@/app/mocks/handlers/checklistHandlers';
 import { propertyHandlers } from '@/app/mocks/handlers/propertyHandlers';
@@ -55,12 +55,8 @@ const renderRoutes = (path: string) => {
     http.get(`${config.apiBaseUrl}/api/properties`, () =>
       HttpResponse.json(
         successEnvelope({
-          content: [],
-          page: 0,
-          size: 20,
-          totalElements: 0,
-          totalPages: 0,
-          hasNext: false,
+          totalCount: 0,
+          items: [],
         }),
       ),
     ),
@@ -418,4 +414,34 @@ describe('익명 자동 인증 흐름', () => {
     renderRoutes('/does-not-exist');
     expect(await screen.findByText('페이지를 찾을 수 없어요')).toBeInTheDocument();
   });
+});
+
+it('데스크톱의 홈은 통합 지도로 이어지고 모드 URL을 바꿔도 같은 지도 DOM을 쓴다', async () => {
+  const viewport = vi.spyOn(window, 'matchMedia').mockImplementation((query) => ({
+    matches: query === '(min-width: 1024px)',
+    media: query,
+    onchange: null,
+    addListener: () => undefined,
+    removeListener: () => undefined,
+    addEventListener: () => undefined,
+    removeEventListener: () => undefined,
+    dispatchEvent: () => true,
+  }));
+  try {
+    setAuthentication({ accessToken: 'valid-token', tokenType: 'Bearer', expiresIn: 60 });
+    renderRoutes('/');
+    await screen.findByRole('heading', { name: '모든 기록' });
+    expect(screen.getByTestId('route-path')).toHaveTextContent('/properties');
+    const map = document.querySelector('[data-shared-map]');
+    expect(map).not.toBeNull();
+    await userEvent.click(screen.getByRole('button', { name: '동네 찾기' }));
+    expect(screen.getByTestId('route-path')).toHaveTextContent('/neighborhoods');
+    expect(screen.getByRole('complementary', { name: '탐색 조건' })).toBeInTheDocument();
+    expect(document.querySelector('[data-shared-map]')).toBe(map);
+    await userEvent.click(screen.getByRole('button', { name: '기록으로 전환' }));
+    expect(await screen.findByRole('heading', { name: '모든 기록' })).toBeInTheDocument();
+    expect(document.querySelector('[data-shared-map]')).toBe(map);
+  } finally {
+    viewport.mockRestore();
+  }
 });
