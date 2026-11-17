@@ -32,9 +32,9 @@ const RecordsMobilePage = () => {
   // 데스크탑처럼 찍은 위치로 등록 화면 없이 바로 매물을 만든다. 상세로 넘어가지 않고 그 자리로 다가가
   // 새 핀을 띄우고 아래 시트에 열어, 어디에 생겼는지 보여 준다. 정보는 시트의 카드를 눌러 채운다.
   const quickCreate = useQuickCreateProperty({
-    onCreated: (propertyId, location) => {
+    onCreated: (propertyId) => {
       setCreatingAt(null);
-      records.revealCreated(String(propertyId), location);
+      records.revealCreated(String(propertyId));
       setNotice('매물을 기록했어요. 아래 카드를 눌러 정보를 채워 주세요.');
     },
     onError: () => {

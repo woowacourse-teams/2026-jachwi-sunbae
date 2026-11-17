@@ -31,6 +31,7 @@ const useDesktopViewport = () =>
 afterEach(() => {
   vi.restoreAllMocks();
   sessionStorage.clear();
+  localStorage.clear();
 });
 
 it('기록 화면 코드를 받는 동안 진행 표시 대신 헤더와 목록 영역 뼈대를 바로 보여 준다', () => {
@@ -52,8 +53,8 @@ it('휴대폰 지도 보기로 열면 지도 영역 하나만 뼈대로 채운�
   expect(screen.queryByTestId('list-area-skeleton')).not.toBeInTheDocument();
 });
 
-it('주소에 보기 방식이 없으면 마지막으로 고른 보기의 영역을 뼈대로 채운다', () => {
-  sessionStorage.setItem('jachwi:records-view', 'list');
+it('주소에 보기 방식이 없으면 앱을 다시 열어도 마지막으로 고른 보기의 영역을 뼈대로 채운다', () => {
+  localStorage.setItem('jachwi:records-view', 'list');
   renderPending('/properties');
   expect(screen.getByTestId('list-area-skeleton')).toBeInTheDocument();
   expect(screen.queryByTestId('map-area-skeleton')).not.toBeInTheDocument();

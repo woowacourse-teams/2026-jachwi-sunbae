@@ -374,10 +374,12 @@ it('휴대폰은 버튼 없이 늘 화면 안 거리 메모를 지도에 올리�
   expect(screen.queryByRole('group', { name: '이 위치에서' })).not.toBeInTheDocument();
 });
 
-it('휴대폰도 데스크탑처럼 빈 곳을 찍은 말풍선에서 매물을 바로 만들고, 상세로 넘어가지 않고 그 자리로 다가가 알린다', async () => {
+it('휴대폰도 데스크탑처럼 빈 곳을 찍은 말풍선에서 매물을 바로 만들고, 상세로 넘어가지 않고 지도를 그대로 둔 채 알린다', async () => {
   const user = userEvent.setup();
   renderRecords();
   await screen.findByText('신림역 원룸');
+  const centerBefore = screen.getByLabelText('지도 중심').textContent;
+  const levelBefore = screen.getByLabelText('지도 배율').textContent;
   // 아래쪽 추가 버튼 없이, 빈 곳을 찍으면 그 자리 말풍선에서 메모와 매물 중에 고른다.
   expect(screen.queryByRole('button', { name: '추가하기' })).not.toBeInTheDocument();
   await user.click(screen.getByRole('button', { name: '빈 곳 찍기' }));
@@ -387,10 +389,10 @@ it('휴대폰도 데스크탑처럼 빈 곳을 찍은 말풍선에서 매물을 
     await user.click(screen.getByRole('button', { name: '말풍선 여기에 매물 등록' }));
     // 등록 화면을 거치지 않고 찍은 위치의 주소로 바로 만든다.
     await waitFor(() => expect(created.bodies).toEqual([expect.objectContaining(quickCreatedBody)]));
-    // 지도에 머물러 만든 자리로 다가가고, 새 매물을 아래 시트에 열어 둔다.
+    // 사용자가 직접 찍은 자리라 이미 화면 안에 있다. 지도를 옮기거나 확대하지 않고 새 매물을 아래 시트에 열어 둔다.
     expect(await screen.findByText(/매물을 기록했어요/)).toBeInTheDocument();
-    expect(screen.getByLabelText('지도 중심')).toHaveTextContent('37.5662,126.9785');
-    expect(Number(screen.getByLabelText('지도 배율').textContent)).toBeLessThanOrEqual(4);
+    expect(screen.getByLabelText('지도 중심')).toHaveTextContent(centerBefore ?? '');
+    expect(screen.getByLabelText('지도 배율')).toHaveTextContent(levelBefore ?? '');
     const sheet = within(await screen.findByRole('region', { name: '선택한 매물' }));
     expect(sheet.getByRole('link', { name: '새 매물' })).toBeInTheDocument();
     // 보증금과 월세가 둘 다 0인 새 매물은 금액 대신 가격 입력 전으로 보인다. 월세만 다루므로 전세로 쓰지 않는다.
