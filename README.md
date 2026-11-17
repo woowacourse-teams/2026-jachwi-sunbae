@@ -10,7 +10,7 @@
 
 [![Web](https://img.shields.io/badge/Web-자취선배-4169E1?style=for-the-badge)](https://www.jachwi-sunbae.kr) [![App Store](https://img.shields.io/badge/App_Store-0D96F6?style=for-the-badge&logo=apple&logoColor=white)](https://apps.apple.com/kr/app/id6816321229) [![Google Play](https://img.shields.io/badge/Google_Play-414141?style=for-the-badge&logo=googleplay&logoColor=white)](https://play.google.com/store/apps/details?id=com.jachwisunbae)
 
-[서비스 소개](#자취선배가-필요한-순간) | [주요 화면](#이렇게-사용해요) | [아키텍처](#아키텍처) | [기술 스택](#기술-스택) | [개발 문서](#개발-문서)
+[서비스 소개](#자취선배가-필요한-순간) | [핵심 기능](#핵심-기능) | [사용 방법](#이렇게-사용해요) | [아키텍처](#아키텍처) | [기술 스택](#기술-스택) | [개발 문서](#개발-문서)
 
 </div>
 
@@ -32,30 +32,67 @@
 
 <br />
 
+## 핵심 기능
+
+| 기능                          | 무엇을 할 수 있나요?                                                             |
+| ----------------------------- | -------------------------------------------------------------------------------- |
+| **통근 조건으로 동네 찾기**   | 회사나 학교를 기준으로 통근 시간, 환승 횟수와 월세 조건에 맞는 동네를 찾아요.    |
+| **본 방 기록**                | 지도에 매물을 등록하고 보증금, 월세, 사진과 메모를 한곳에 모아요.                |
+| **나만의 거리 메모**          | 지도에서 선택한 위치에 좋아요, 싫어요와 메모를 남겨요. 기록은 본인에게만 보여요. |
+| **현장과 계약 전 체크리스트** | 채광과 소음부터 계약 확인 사항까지 평가하고, 나에게 필요한 질문을 편집해요.      |
+| **방 비교와 PDF**             | 후보의 가격과 체크 진행을 비교하고, 고른 방의 기록을 PDF로 받아요.               |
+| **저렴한 한 끼 찾기**         | 주변 착한가격업소와 메뉴 가격, 편의점 행사상품과 배달 할인을 확인해요.           |
+
+<br />
+
 ## 이렇게 사용해요
 
 <table>
   <tr>
-    <th align="center">동네 찾기</th>
-    <th align="center">본 방 기록</th>
-    <th align="center">현장 체크리스트</th>
-    <th align="center">방 비교</th>
+    <td align="center" width="240"><img src="frontend/src/shared/assets/app-screens/explore-mobile.webp" width="200" alt="회사나 학교까지, 다닐 수 있는 동네부터 찾아요 화면 예시" /></td>
+    <td valign="top">
+      <h3>회사나 학교까지, 다닐 수 있는 동네부터 찾아요</h3>
+      <p>회사나 학교를 목적지로 정하고 원하는 통근 시간과 환승 조건을 선택해 보세요.</p>
+      <p>지도에 걸리는 시간별로 표시된 동네를 보고, 월세 조건까지 더해 후보를 좁힐 수 있어요.</p>
+      <p>마음에 드는 동네의 경로와 주변 중개사도 확인해 보세요.</p>
+    </td>
   </tr>
   <tr>
-    <td align="center"><img src="frontend/src/shared/assets/app-screens/explore-mobile.webp" width="180" alt="통근 조건으로 동네를 찾는 지도 화면 예시" /></td>
-    <td align="center"><img src="frontend/src/shared/assets/app-screens/records-mobile.webp" width="180" alt="지도에 직접 본 방을 모아 둔 화면 예시" /></td>
-    <td align="center"><img src="frontend/src/shared/assets/app-screens/checklist-mobile.webp" width="180" alt="항목을 평가하고 메모를 남기는 체크리스트 화면 예시" /></td>
-    <td align="center"><img src="frontend/src/shared/assets/app-screens/compare-mobile.webp" width="180" alt="후보 매물의 기록을 나란히 비교하는 화면 예시" /></td>
+    <td align="center" width="240"><img src="frontend/src/shared/assets/app-screens/records-mobile.webp" width="200" alt="집을 보고 나왔다면, 기억이 흐려지기 전에 기록해요 화면 예시" /></td>
+    <td valign="top">
+      <h3>집을 보고 나왔다면, 기억이 흐려지기 전에 기록해요</h3>
+      <p>본 방의 위치를 지도에 찍고 이름, 보증금과 월세를 남겨 보세요.</p>
+      <p>사진과 자유 메모를 더하면 여러 매물 앱에서 찾은 후보도 한곳에 모아 볼 수 있어요.</p>
+      <p>지도와 목록을 오가며 기록한 방을 다시 찾아보세요.</p>
+    </td>
   </tr>
   <tr>
-    <td>통근 시간과 환승 조건으로 살고 싶은 동네를 좁혀요.</td>
-    <td>직접 본 방의 위치, 가격, 사진과 메모를 한곳에 남겨요.</td>
-    <td>괜찮음, 주의, 미확인으로 평가하고 현장의 느낌을 기록해요.</td>
-    <td>방마다 다른 조건과 확인 내용을 비교하고 PDF로 받아요.</td>
+    <td align="center" width="240"><img src="frontend/src/shared/assets/app-screens/checklist-mobile.webp" width="200" alt="방을 볼 때는 체크리스트로 하나씩 확인해요 화면 예시" /></td>
+    <td valign="top">
+      <h3>방을 볼 때는 체크리스트로 하나씩 확인해요</h3>
+      <p>현장에서 채광, 소음, 보안과 시설 상태를 괜찮음 또는 주의로 평가해 보세요. 확인하지 않은 항목은 미확인으로 남아요.</p>
+      <p>항목 바로 아래 메모를 남겨 숫자만으로 기억하기 어려운 느낌도 기록할 수 있어요.</p>
+      <p>나에게 필요한 질문을 편집하고, 계약 전 확인 사항까지 이어서 살펴보세요.</p>
+    </td>
+  </tr>
+  <tr>
+    <td align="center" width="240"><img src="frontend/src/shared/assets/app-screens/compare-mobile.webp" width="200" alt="고민되는 방은 함께 살펴보고 PDF로 남겨요 화면 예시" /></td>
+    <td valign="top">
+      <h3>고민되는 방은 함께 살펴보고 PDF로 남겨요</h3>
+      <p>이름과 월세, 체크 여부로 후보를 찾고 비교할 방을 골라 보세요.</p>
+      <p>가격과 체크 진행을 살펴보고, 선택한 방의 사진과 메모를 포함한 기록을 PDF로 받아 보세요.</p>
+      <p>파일로 보관하거나 함께 집을 고르는 사람과 확인할 수 있어요.</p>
+    </td>
+  </tr>
+  <tr>
+    <td align="center" width="240"><img src="frontend/src/shared/assets/app-screens/cheap-meals-mobile.webp" width="200" alt="살고 싶은 동네의 한 끼 가격도 미리 알아봐요 화면 예시" /></td>
+    <td valign="top">
+      <h3>살고 싶은 동네의 한 끼 가격도 미리 알아봐요</h3>
+      <p>위치를 정하면 주변 착한가격업소와 메뉴 가격을 지도와 목록에서 볼 수 있어요.</p>
+      <p>편의점 행사상품과 배달 할인도 함께 확인하고, 동네를 고를 때 생활비까지 생각해 보세요.</p>
+    </td>
   </tr>
 </table>
-
-화면 이미지는 저장소의 서비스 소개용 예시입니다. 자세한 기능과 정책은 [제품 문서](docs/product/README.md)에서 확인할 수 있습니다.
 
 <br />
 
@@ -64,12 +101,6 @@
 ### Frontend
 
 ![자취선배 프론트엔드 아키텍처](docs/images/architecture/frontend.png)
-
-- **웹 배포**: CodePipeline Source가 GitHub 변경을 가져오고 Commands가 빌드, S3 업로드, CloudFront 캐시 무효화와 배포 검증을 실행합니다. `develop`은 dev, `main`은 prod로 배포합니다.
-- **앱**: React Native WebView에서 같은 웹을 제공합니다. 네이티브 변경은 Xcode와 Gradle로 별도 빌드하고 배포합니다.
-- **관측**: 웹의 행동과 오류를 PostHog로 수집하고 새 오류 이슈를 Discord로 알립니다. 환경은 이벤트 속성으로 구분합니다.
-
-구성도는 저장소 코드와 배포 문서 기준입니다. [확대용 SVG](docs/images/architecture/frontend.svg), [편집용 draw.io 원본](docs/images/architecture/frontend.drawio), [출처와 표현 범위](docs/images/architecture/README.md)를 함께 제공합니다.
 
 ### Backend
 
@@ -102,6 +133,9 @@
 <br />
 
 ## 개발 문서
+
+<details>
+<summary>개발과 운영 안내 보기</summary>
 
 | 구분   | 문서                                                                                                                        |
 | ------ | --------------------------------------------------------------------------------------------------------------------------- |
@@ -162,5 +196,7 @@ npm run dev
 - MinIO 콘솔: `http://localhost:9001`
 
 같은 브라우저나 앱에서는 HttpOnly Refresh 쿠키로 같은 회원의 기록을 이어 사용합니다.
+
+</details>
 
 </details>
