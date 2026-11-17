@@ -116,7 +116,7 @@
 
 ### Frontend
 
-![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=for-the-badge&logo=typescript&logoColor=white) ![React](https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB) ![Webpack](https://img.shields.io/badge/Webpack-8DD6F9?style=for-the-badge&logo=webpack&logoColor=black) ![TanStack Query](https://img.shields.io/badge/TanStack_Query-FF4154?style=for-the-badge&logo=reactquery&logoColor=white) ![Emotion](https://img.shields.io/badge/Emotion-C76494?style=for-the-badge) ![Vitest](https://img.shields.io/badge/Vitest-6E9F18?style=for-the-badge&logo=vitest&logoColor=white)
+![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=for-the-badge&logo=typescript&logoColor=white) ![React](https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB) ![Webpack](https://img.shields.io/badge/Webpack-8DD6F9?style=for-the-badge&logo=webpack&logoColor=black) ![TanStack Query](https://img.shields.io/badge/TanStack_Query-FF4154?style=for-the-badge&logo=reactquery&logoColor=white) ![Emotion](https://img.shields.io/badge/Emotion-C76494?style=for-the-badge)
 
 ### App
 
@@ -125,6 +125,21 @@
 ### Backend
 
 ![Java](https://img.shields.io/badge/Java_21-ED8B00?style=for-the-badge) ![Spring Boot](https://img.shields.io/badge/Spring_Boot-6DB33F?style=for-the-badge&logo=springboot&logoColor=white) ![MySQL](https://img.shields.io/badge/MySQL-4479A1?style=for-the-badge&logo=mysql&logoColor=white) ![Flyway](https://img.shields.io/badge/Flyway-CC0200?style=for-the-badge&logo=flyway&logoColor=white)
+
+### 개발과 테스트
+
+![Storybook](https://img.shields.io/badge/Storybook-FF4785?style=for-the-badge&logo=storybook&logoColor=white) ![Vitest](https://img.shields.io/badge/Vitest-6E9F18?style=for-the-badge&logo=vitest&logoColor=white) ![Testing Library](https://img.shields.io/badge/Testing_Library-E33332?style=for-the-badge&logo=testinglibrary&logoColor=white) ![MSW](https://img.shields.io/badge/MSW-FF6A33?style=for-the-badge&logo=mockserviceworker&logoColor=white) ![Playwright](https://img.shields.io/badge/Playwright-2EAD33?style=for-the-badge) ![Jest](https://img.shields.io/badge/Jest-C21325?style=for-the-badge&logo=jest&logoColor=white)
+
+| 역할             | 도구                    | 사용 목적                                         |
+| ---------------- | ----------------------- | ------------------------------------------------- |
+| 화면 스타일      | Emotion                 | 컴포넌트 스타일 작성                              |
+| UI 개발과 문서화 | Storybook               | 컴포넌트 상태별 화면과 접근성 확인                |
+| API 모킹         | MSW                     | 개발 화면과 테스트에서 API 응답 재현              |
+| 웹 테스트        | Vitest, Testing Library | 컴포넌트와 사용자 상호작용 검증                   |
+| E2E QA           | Playwright              | 브라우저에서 사용자 흐름 검증                     |
+| 앱 테스트        | Jest                    | React Native 앱 코드 검증                         |
+| 테스트 검증력    | Stryker                 | 코드 변이를 통한 테스트 검증, 라벨 또는 수동 실행 |
+| 코드 품질        | ESLint, Prettier        | 코드 규칙과 포맷 검사                             |
 
 ### Infrastructure and Observability
 
