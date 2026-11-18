@@ -54,9 +54,10 @@ module.exports = (_env, argv) => {
     performance: {
       hints: isProduction ? 'error' : false,
       assetFilter: (assetFilename) => /\.js$/.test(assetFilename),
-      // 첫 화면 묶음(main)이 350KiB 한도에 붙어 있어, 화면 다듬기(오류 화면 버튼, 헤더 높이)로 351KiB가 되어 355KiB로 올린다.
-      maxAssetSize: 355 * 1024,
-      maxEntrypointSize: 355 * 1024,
+      // 쌓인 PR(#714~#717)의 최대 main은 349.943 KiB(gzip 112.672 KiB)다.
+      // 여기에 5%를 더하고 5 KiB 단위로 올려 370 KiB로 정한다.
+      maxAssetSize: 370 * 1024,
+      maxEntrypointSize: 370 * 1024,
     },
     devServer: {
       proxy: proxyTarget
