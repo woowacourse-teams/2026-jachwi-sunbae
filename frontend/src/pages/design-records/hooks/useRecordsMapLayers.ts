@@ -25,7 +25,8 @@ import { nearestMarkerAt } from '../model/nearestMarker';
 import { SEARCHED_PIN_IMAGE } from '../model/searchedPin';
 import type { RecordsState } from './useRecords';
 
-const REGISTER_MARKER_ID = 'register-point';
+/** 매물을 만드는 동안 찍은 자리에 두는 핀. 동네 찾기 지도도 이 핀을 함께 올린다. */
+export const REGISTER_MARKER_ID = 'register-point';
 const SEARCHED_MARKER_ID = 'searched-point';
 /** 이 단계보다 멀리 축소하면 거리 메모를 숨긴다. 도시 전체를 볼 때는 골목 메모가 쓸모없다. */
 const MEMO_MAX_LEVEL = 11;
@@ -509,6 +510,14 @@ const useRecordsMapLayers = (
     coordinateMenu: (tapPoint === null ? undefined : { ...tapPoint, actions: tapActions }) satisfies
       MapCoordinateMenu | undefined,
     closeTap: () => setTapPoint(null),
+    /**
+     * 다른 화면(동네 찾기 결과 지도)이 찍은 자리에 내 기록 지도와 같은 동작 말풍선(메모 남기기, 본 방 기록하기)을 연다.
+     * 그 화면은 열린 정보를 먼저 닫는 규칙을 스스로 지키고, 여기서는 말풍선만 연다. 매물을 만드는 중이면 열지 않는다.
+     */
+    openTapActions: (point: MapPoint) => {
+      if (isRegistering) return;
+      setTapPoint(point);
+    },
     /** 열어 둔 매물·메모·찍은 위치를 모두 닫는다. */
     closeAll: () => {
       closeSelection();

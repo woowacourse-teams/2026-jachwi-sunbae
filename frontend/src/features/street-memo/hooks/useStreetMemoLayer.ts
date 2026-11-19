@@ -15,7 +15,8 @@ import {
 import type { StreetMemo, StreetMemoPreference } from '../model/StreetMemo';
 
 export const STREET_MEMO_MARKER_PREFIX = 'street-memo:';
-const DRAFT_MARKER_ID = 'street-memo-draft';
+/** 메모를 남기는 동안 고른 자리에 두는 말풍선 핀. */
+export const DRAFT_MARKER_ID = 'street-memo-draft';
 /** 방금 남긴 메모를 떠오르는 말풍선으로 표시해 두는 시간. 목록을 다시 받아 오기 전에도 그 자리에 보이게 한다. */
 const FLASH_DURATION_MS = 2400;
 const LABEL_MAX_LENGTH = 80;

@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 
+import { REGISTER_MARKER_ID } from '@/pages/design-records/hooks/useRecordsMapLayers';
 import { useRecordsMapController } from '@/pages/design-records/RecordsMapProvider';
 import { useAdminDongBookmarks } from '@/features/map/api/useAdminDongBookmarks';
 import { BOOKMARK_LABEL_HALF_HEIGHT, useBookmarkedRegions } from '@/features/map/api/useBookmarkedRegions';
@@ -16,6 +17,7 @@ import type { MapCategory, MapMarker } from '@/features/map/model/Map';
 import type { MapCanvasProps, MapRegion } from '@/features/map/model/MapCanvas';
 import { usePropertyCommuteTimes } from '@/features/property/api/useProperties';
 import { isPreviewProperty } from '@/features/property/model/sampleProperties';
+import { DRAFT_MARKER_ID } from '@/features/street-memo/hooks/useStreetMemoLayer';
 import {
   MEMO_INDIVIDUAL_MAX_LEVEL,
   STREET_MEMO_DONG_MARKER_PREFIX,
@@ -193,17 +195,46 @@ const useNeighborhoodMapView = (
     else if (hasOpenLayer) closeLayers();
     else setDismissedCode(preview.selected?.adminDongCode ?? null);
   };
-  const tapMap = (latitude: number, longitude: number) => {
-    // 결과 지도에서는 열린 정보만 닫고 출퇴근 장소는 건드리지 않는다.
-    if (!preview.canPickDestination) {
+  const isMemoOpen = (registration?.memo.mode ?? null) !== null;
+  // 고른 동네의 정보(데스크탑 카드, 휴대폰 시트)가 떠 있는지. 휴대폰은 시트를 닫아 두어도 동네 선택이 남아 빈 곳을 찍으면 먼저 선택을 푼다.
+  const selectedCode = preview.selected?.adminDongCode ?? null;
+  const isAreaInfoOpen = selectedCode !== null && (onEmptyTap !== undefined || selectedCode !== dismissedCode);
+  /**
+   * 결과 지도에서 찍은 자리에 내 기록 지도와 같은 동작 말풍선(메모 남기기, 본 방 기록하기)을 연다. 출퇴근 장소는 바꾸지 않는다.
+   * 내 기록 지도처럼 열린 것(동작 말풍선, 거리 메모, 장소 정보, 동네 정보)이 있으면 먼저 닫기만 한다.
+   */
+  const tapResultMap = (latitude: number, longitude: number) => {
+    if (registration?.tapPoint) {
+      registration.closeTap();
+      return;
+    }
+    if (registration && isMemoOpen) {
+      registration.memo.close();
+      return;
+    }
+    if (!registration || !isResultMap || hasOpenLayer || isAreaInfoOpen) {
       tapEmpty();
+      return;
+    }
+    registration.openTapActions({ latitude, longitude });
+  };
+  const tapMap = (latitude: number, longitude: number) => {
+    // 결과 지도에서는 출퇴근 장소를 건드리지 않는다. 열린 정보를 닫거나 그 자리의 동작 말풍선을 연다.
+    if (!preview.canPickDestination) {
+      tapResultMap(latitude, longitude);
       return;
     }
     preview.chooseMapPoint(latitude, longitude);
   };
   /** 같은 동네를 다시 누르면 열어 둔 정보를 닫거나 다시 연다. 다른 동네는 한 번에 선택한다. */
-  const selectRegion = (id: string) => {
+  const selectRegion = (id: string, point?: { latitude: number; longitude: number }) => {
     if (id === preview.selected?.adminDongCode) {
+      // 정보를 닫아 둔 고른 동네 안을 찍으면 그 자리의 동작 말풍선(본 방 기록하기 등)을 연다. 동네 정보는 결과 목록에서 다시 연다.
+      const isClosed = onSelectedRegionTap !== undefined || (onEmptyTap === undefined && dismissedCode === id);
+      if (point && registration && isClosed && !hasOpenLayer) {
+        tapResultMap(point.latitude, point.longitude);
+        return;
+      }
       if (onSelectedRegionTap) onSelectedRegionTap();
       // 같은 동네를 다시 누르면 띄워 둔 카드를 닫고, 닫혀 있으면 다시 띄운다.
       else if (!hasOpenLayer) setDismissedCode((current) => (current === id ? null : id));
@@ -216,8 +247,9 @@ const useNeighborhoodMapView = (
   };
   /** 마커를 누르면 그 마커 하나의 정보를 열고 지도를 그 자리로 옮긴다. */
   const selectMarker = (marker: MapMarker) => {
-    // 동네 찾기 마커를 누르면 열어 둔 거리 메모는 닫는다. 정보는 한 번에 하나만 띄운다.
+    // 동네 찾기 마커를 누르면 열어 둔 거리 메모와 동작 말풍선은 닫는다. 정보는 한 번에 하나만 띄운다.
     registration?.memo.close();
+    registration?.closeTap();
     // 겹쳐 묶인 내 매물은 갈라져 보일 때까지 묶인 매물이 한 화면에 들어오게 다가간다. 내 기록 지도와 같은 묶음이다.
     const memberIds = groupMemberIds(marker.id);
     if (memberIds !== null) {
@@ -329,7 +361,6 @@ const useNeighborhoodMapView = (
   };
   // 누른 동네의 카드는 마우스를 치워도 띄워 둬, 다시 올려 정보를 보거나 별을 누를 수 있게 한다.
   // 다른 동네에 마우스를 올리면 그 동네 카드를 잠깐 보여 준다.
-  const selectedCode = preview.selected?.adminDongCode ?? null;
   const pinnedCode = showAreaAction && selectedCode !== dismissedCode ? selectedCode : null;
   const cardCode = hoveredCode ?? pinnedCode;
   const hoveredArea =
@@ -429,7 +460,11 @@ const useNeighborhoodMapView = (
   const baseBoundsChange = mapProps.onBoundsChange;
   const baseLevelChange = mapProps.onLevelChange;
   const memoMarkers = useMemo(
-    () => (registration?.canvasProps.markers ?? NO_MARKERS).filter((marker) => marker.category === 'MEMO'),
+    () =>
+      (registration?.canvasProps.markers ?? NO_MARKERS).filter(
+        // 거리 메모와, 동작 말풍선으로 메모를 남기거나 매물을 만드는 동안 그 자리에 두는 핀.
+        (marker) => marker.category === 'MEMO' || marker.id === DRAFT_MARKER_ID || marker.id === REGISTER_MARKER_ID,
+      ),
     [registration?.canvasProps.markers],
   );
   const composedProps: MapCanvasProps = registration
@@ -463,7 +498,8 @@ const useNeighborhoodMapView = (
             ]
           : (mapProps.regions ?? []),
         // 동네 찾기에서는 지도를 눌러도 메모 남기기, 본 방 기록하기 메뉴를 띄우지 않는다.
-        coordinateMenu: undefined,
+        // 결과 지도에서 찍은 자리의 동작 말풍선은 내 기록 지도와 같은 것을 쓴다. 출퇴근 장소를 고르는 동안에는 띄우지 않는다.
+        coordinateMenu: isResultMap ? registration.coordinateMenu : undefined,
         onSelectLocation: mapProps.onSelectLocation
           ? (latitude, longitude) => {
               setOpenBookmarkCode(null);
@@ -542,7 +578,7 @@ const useNeighborhoodMapView = (
           },
     places: selectedPlace === places.selectedPlace ? places : { ...places, selectedPlace },
     /** 거리 메모 말풍선(보기, 남기기)이 열려 있는지. 휴대폰은 그동안 조건 시트와 정보 시트를 숨긴다. */
-    isMemoOpen: (registration?.memo.mode ?? null) !== null,
+    isMemoOpen,
     /** 고른 내 매물에서 출퇴근 장소까지의 동선. 매물을 고르지 않았거나 통근 시간이 없으면 `route`가 없다. */
     propertyRoute,
     /** 결과 지도 오른쪽에 처음부터 두는 분류 레일(중개사, 병원, 교통, 편의, My)의 값. */

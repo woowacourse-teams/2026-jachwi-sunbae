@@ -960,7 +960,7 @@ it('위치 선택·분석·결과·다시 선택하기 내내 지도를 새로 �
   expect(await screen.findByRole('region', { name: '지도에서 목적지 선택' })).toBeInTheDocument();
   expect(mapMounts.count).toBe(1);
 });
-it('데스크탑도 결과 지도를 찍었을 때 메모 말풍선을 띄우지 않는다', async () => {
+it('내 기록 겹이 없는 동네 찾기는 데스크탑 결과 지도를 찍어도 메모 말풍선을 띄우지 않는다', async () => {
   server.use(...mapHandlers, ...createStreetMemoHandlers([]));
   const matchMedia = useDesktopViewport();
   try {
@@ -1468,4 +1468,48 @@ it('동네 찾기 지도에도 내 매물과 함께 거리 메모를 올리고, 
   } finally {
     writeBookmarkedAdminDongs([]);
   }
+});
+
+it('결과 지도 빈 곳을 찍으면 출퇴근 장소는 그대로 두고 내 기록과 같은 말풍선에서 그 자리에 본 방을 기록한다', async () => {
+  const created: unknown[] = [];
+  server.use(
+    http.post('*/api/properties', async ({ request }) => {
+      created.push(await request.json());
+      return HttpResponse.json(successEnvelope({ propertyId: 99 }), { status: 201 });
+    }),
+  );
+  show(false, undefined, true);
+  const user = await choosePoint();
+  await submitCurrentSearch(user);
+  await screen.findByRole('region', { name: '행정동 프리셋 지도' });
+  const destination = () => markerList().find((marker) => marker.id === 'destination');
+  const before = destination();
+  await user.click(screen.getByRole('button', { name: '다른 위치 찍기' }));
+  // 결과 단계라 출퇴근 장소를 바꾸는 항목은 없고, 메모 남기기와 본 방 기록하기만 뜬다.
+  expect(screen.getByRole('button', { name: '말풍선 메모 남기기' })).toBeInTheDocument();
+  expect(destination()).toEqual(before);
+  // 말풍선이 열려 있으면 빈 곳을 다시 찍어 닫기만 한다.
+  await user.click(screen.getByRole('button', { name: '다른 위치 찍기' }));
+  expect(screen.queryByRole('button', { name: '말풍선 본 방 기록하기' })).not.toBeInTheDocument();
+  await user.click(screen.getByRole('button', { name: '다른 위치 찍기' }));
+  await user.click(screen.getByRole('button', { name: '말풍선 본 방 기록하기' }));
+  await waitFor(() => expect(created).toHaveLength(1));
+  // 내 기록 지도와 같이 찍은 좌표와 그 자리 주소로 매물을 만든다.
+  expect(created[0]).toMatchObject({ latitude: 37.45, longitude: 127.15, address: '경기 성남시 분당구 판교역로' });
+});
+
+it('출퇴근 장소를 다시 고르는 동안에는 지도를 찍어도 본 방 기록 말풍선을 띄우지 않는다', async () => {
+  show(false, undefined, true);
+  const user = await choosePoint();
+  await submitCurrentSearch(user);
+  await screen.findByRole('region', { name: '행정동 프리셋 지도' });
+  await user.click(screen.getByRole('button', { name: '출퇴근 장소 다시 선택' }));
+  if (screen.queryByRole('button', { name: '지도에서 목적지 선택' }))
+    await user.click(screen.getByRole('button', { name: '지도에서 목적지 선택' }));
+  await user.click(screen.getByRole('button', { name: '다른 위치 찍기' }));
+  expect(screen.queryByRole('button', { name: '말풍선 본 방 기록하기' })).not.toBeInTheDocument();
+  expect(markerList().find((marker) => marker.id === 'destination')).toMatchObject({
+    latitude: 37.45,
+    longitude: 127.15,
+  });
 });
