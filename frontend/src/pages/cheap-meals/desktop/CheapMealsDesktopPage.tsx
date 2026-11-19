@@ -1,7 +1,8 @@
 import { css } from '@emotion/css';
 
 import { LogScreen } from '@/shared/lib/analytics/logging';
-import PageHeading from '@/shared/ui/page-heading/PageHeading';
+import { HOME_PATH } from '@/shared/lib/navigation/appPaths';
+import TopNavigation from '@/shared/ui/top-navigation/TopNavigation';
 
 import useMealTabs from '../hooks/useMealTabs';
 import { CHEAP_MEAL_EVENTS } from '../lib/cheapMealAnalytics';
@@ -10,7 +11,7 @@ import MealTabPanels from '../ui/meal-tab-panels/MealTabPanels';
 import MealDetails from '../ui/MealDetails';
 
 /**
- * 데스크탑 화면. 왼쪽 네비 레일 옆에서 세 탭(식당, 편의점, 배달)이 같은 구조를 쓴다.
+ * 데스크탑 화면. 세 탭(식당, 편의점, 배달)이 같은 구조를 쓴다.
  * 왼쪽에 폭이 고정된 리스트 칸(제목, 가로 탭, 목록), 오른쪽에 공용 지도가 있다.
  * 탭을 바꿔도 칸 폭과 제목, 탭 위치와 지도 중심, 줌은 그대로이고 목록 내용만 바뀐다. 세 탭의 지도는 같은 기준 위치와 주변 착한가격업소를 보여 준다.
  */
@@ -19,7 +20,7 @@ const CheapMealsDesktopPage = () => {
   // 제목과 탭은 세 탭 모두 지도 왼쪽 리스트 칸 맨 위에 둬서, 탭을 바꿔도 제자리에 있다.
   const header = (
     <div className={styles.top}>
-      <PageHeading title="저렴한 한 끼" />
+      <TopNavigation title="저렴한 한 끼" backTo={HOME_PATH} backLabel="홈으로 돌아가기" className={styles.heading} />
       <MealTabList tabs={tabs} />
     </div>
   );
@@ -65,6 +66,11 @@ const styles = {
     gap: 0.5rem;
     padding: 1.25rem 1rem 0;
     border-bottom: 1px solid var(--color-border);
+  `,
+
+  heading: css`
+    label: CheapMealsDesktopPage-heading;
+    margin-bottom: 0;
   `,
 
   body: css`

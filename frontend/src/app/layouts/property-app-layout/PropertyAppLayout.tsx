@@ -51,7 +51,8 @@ const PropertyAppLayout = () => {
   return (
     <DesktopHeaderSlotProvider>
       {isDesktop ? (
-        <PropertyAppDesktopLayout shell={shell} />
+        // 데스크탑 방 비교는 자체 뒤로가기가 없어 상단 바를 둔다.
+        <PropertyAppDesktopLayout shell={shell} hidesAppBar={shell.fullScreen || isMapPage || hasOwnBackNavigation} />
       ) : (
         // 방 비교는 자체 상단 내비게이션이 홈으로 돌아가므로 상단 바를 겹쳐 두지 않는다.
         // 동네 찾기 지도는 지도·검색을 화면 위까지 쓰므로 상단 바를 두지 않는다.

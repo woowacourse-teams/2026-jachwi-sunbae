@@ -10,54 +10,10 @@ import { FacilityFocusProvider } from '@/features/map/hooks/useFacilityFocus';
 import { MapCanvasMode, SharedMapCanvasProvider } from '@/features/map/ui/map-canvas/SharedMapCanvas';
 import useIsDesktop from '@/shared/lib/hooks/useIsDesktop';
 import { CHEAP_MEALS_PATH, MY_PATH, NEIGHBORHOODS_PATH, RECORDS_PATH } from '@/shared/lib/navigation/appPaths';
-import MobileBottomTabs from '@/shared/ui/bottom-tab-bar/MobileBottomTabs';
 import { MapPanelProvider } from '@/shared/ui/map-list-header/MapPanelContext';
 import { MapModeProvider, type MapModeSwitch } from '@/shared/ui/map-mode-tile/MapModeContext';
-import NavRail from '@/shared/ui/nav-rail/NavRail';
-import { NAV_RAIL_ITEMS } from '@/shared/ui/nav-rail/navRailItems';
 
 import MyMapPanel from './ui/MyMapPanel';
-
-/** 지도 화면 왼쪽 레일. */
-const UnifiedNavRail = ({
-  pathname,
-  isMy,
-  isFinding,
-  isMeals,
-  onRecords,
-  onFinding,
-  onMy,
-  onTool,
-}: {
-  pathname: string;
-  isMy: boolean;
-  isFinding: boolean;
-  isMeals: boolean;
-  onRecords: () => void;
-  onFinding: () => void;
-  onMy: () => void;
-  onTool: (path: string) => void;
-}) => {
-  return (
-    <NavRail
-      label="화면 이동"
-      items={NAV_RAIL_ITEMS.map((item) => ({
-        ...item,
-        isActive:
-          (item.key === 'records' && !isMy && !isFinding && !isMeals) ||
-          (item.key === 'neighborhoods' && !isMy && isFinding) ||
-          (item.key === 'my' && isMy) ||
-          (item.path !== undefined && isMeals && pathname.startsWith(item.path)),
-        onSelect: () => {
-          if (item.key === 'records') onRecords();
-          else if (item.key === 'neighborhoods') onFinding();
-          else if (item.key === 'my') onMy();
-          else if (item.path !== undefined) onTool(item.path);
-        },
-      }))}
-    />
-  );
-};
 
 const UnifiedMapPage = () => {
   const { pathname, search } = useLocation();
@@ -97,18 +53,6 @@ const UnifiedMapPage = () => {
           }}
         >
           <div className={styles.page} data-desktop={isDesktop}>
-            {isDesktop && (
-              <UnifiedNavRail
-                pathname={pathname}
-                isMeals={isMeals}
-                isMy={isMy}
-                isFinding={isFinding}
-                onRecords={toRecords.onSwitch}
-                onFinding={toFinding.onSwitch}
-                onMy={() => navigate(MY_PATH)}
-                onTool={(path) => navigate(path)}
-              />
-            )}
             <div className={styles.content}>
               <div
                 hidden={isFinding || isMobileDetail || isMeals}
@@ -145,7 +89,6 @@ const UnifiedMapPage = () => {
                 </div>
               )}
             </div>
-            {!isDesktop && <MobileBottomTabs recordsTo={recordsUrl} neighborhoodsTo={findingUrl} />}
           </div>
         </SharedMapCanvasProvider>
       </RecordsMapProvider>
@@ -163,24 +106,6 @@ const styles = {
     position: relative;
     height: 100dvh;
     overflow: hidden;
-    /* 휴대폰 하단 탭이 보이는 동안 아래 요소(시트, 스위치, 배너, 버튼)를 탭 높이만큼 올린다. 값은 탭 바가 html에 거는 --mobile-tab-space 하나다. */
-    --map-mode-bottom: var(--mobile-tab-space, 0px);
-    --map-sheet-bottom: var(--mobile-tab-space);
-    --map-profile-space: 0px;
-    /* 네이버 지도가 아래에 직접 붙이는 로고와 저작권, 축척 표시도 하단 탭 위로 올린다. 지도가 인라인 bottom으로 놓으므로 덮어쓴다. */
-    & [class*='MapCanvas-liveLayer'] [style*='bottom: 0px'] {
-      bottom: var(--mobile-tab-space, 0px) !important;
-    }
-    &[data-desktop='true'] {
-      display: grid;
-      grid-template-columns: 76px minmax(0, 1fr);
-      --unified-panel-top: 0px;
-      --map-mode-bottom: 0px;
-      --map-profile-space: 0px;
-      & [class*='MapCanvas-liveLayer'] [style*='bottom: 0px'] {
-        bottom: 0 !important;
-      }
-    }
   `,
   content: css`
     label: UnifiedMapPage-content;

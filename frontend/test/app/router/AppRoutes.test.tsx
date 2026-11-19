@@ -414,8 +414,10 @@ describe('익명 자동 인증 흐름', () => {
     await user.click(await screen.findByRole('link', { name: '마이페이지' }));
 
     expect(await screen.findByRole('heading', { name: '마이페이지' })).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: '목록으로 돌아가기' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: '로그아웃' })).not.toBeInTheDocument();
+    // 하단 탭이 없으니 마이페이지 머리의 뒤로가기로 지도에 돌아간다.
+    await user.click(screen.getByRole('button', { name: '지도로 돌아가기' }));
+    expect(await screen.findByRole('region', { name: '본 방 기록 지도' })).toBeInTheDocument();
   });
 
   it.each([
@@ -455,25 +457,19 @@ it('데스크톱의 홈은 통합 지도로 이어지고 모드 URL을 바꿔도
     expect(screen.getByTestId('route-path')).toHaveTextContent('/');
     const map = document.querySelector('[data-shared-map]');
     expect(map).not.toBeNull();
-    // 데스크탑은 왼쪽 네비 레일로 화면을 옮긴다.
-    expect(
-      within(screen.getByRole('navigation', { name: '화면 이동' })).getByRole('button', { name: '동네 찾기' }),
-    ).toBeInTheDocument();
-    // 레일의 `동네 찾기`는 검색 화면을 거치지 않고 같은 지도 위에서 왼쪽 조건 칸을 연다. 출퇴근 장소는 지도에서 고른다.
-    await userEvent.click(
-      within(screen.getByRole('navigation', { name: '화면 이동' })).getByRole('button', { name: '동네 찾기' }),
-    );
+    // 데스크탑도 왼쪽 레일 없이 목록 머리 왼쪽의 모드 타일로 화면을 옮긴다.
+    expect(screen.queryByRole('navigation', { name: '화면 이동' })).not.toBeInTheDocument();
+    // `동네 찾기` 타일은 검색 화면을 거치지 않고 같은 지도 위에서 왼쪽 조건 칸을 연다. 출퇴근 장소는 지도에서 고른다.
+    await userEvent.click(screen.getByRole('button', { name: '동네 찾기로 전환' }));
     expect(await screen.findByRole('complementary', { name: '탐색 조건' })).toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: '지도에서 선택' }));
     tapMap();
     await userEvent.click(await screen.findByRole('button', { name: '이 조건으로 동네 찾기' }));
     expect(await screen.findByRole('region', { name: '행정동 프리셋 지도' })).toBeInTheDocument();
     expect(document.querySelector('[data-shared-map]')).toBe(map);
-    // 데스크탑은 떠 있는 전환 버튼 없이 왼쪽 레일의 `내 기록`으로 기록 지도에 돌아간다.
+    // 동네 찾기 목록 머리의 `내 기록` 타일로 기록 지도에 돌아간다.
     expect(screen.queryByRole('navigation', { name: '지도 모드' })).not.toBeInTheDocument();
-    await userEvent.click(
-      within(screen.getByRole('navigation', { name: '화면 이동' })).getByRole('button', { name: '내 기록' }),
-    );
+    await userEvent.click(screen.getByRole('button', { name: '기록으로 전환' }));
     expect(await screen.findByRole('region', { name: '본 방 기록 지도' })).toBeInTheDocument();
     // 기록과 동네 찾기 결과는 같은 지도 DOM을 쓴다.
     expect(document.querySelector('[data-shared-map]')).toBe(map);

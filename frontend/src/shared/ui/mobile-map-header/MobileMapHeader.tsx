@@ -13,7 +13,6 @@ type Props = {
   leading?: ReactNode;
   center?: ReactNode;
   hideSearch?: boolean;
-  hideProfile?: boolean;
   searchTo?: string;
   searchLabel?: string;
   centered?: boolean;
@@ -28,7 +27,6 @@ const MobileMapHeader = ({
   trailing,
   center,
   hideSearch = false,
-  hideProfile = false,
   searchTo = ADDRESS_SEARCH_PATH,
   searchLabel = '주소 검색',
   centered = false,
@@ -43,7 +41,7 @@ const MobileMapHeader = ({
         </Link>
       )}
       {trailing}
-      {!hideProfile && <MapProfileLink />}
+      <MapProfileLink />
     </div>
   </header>
 );

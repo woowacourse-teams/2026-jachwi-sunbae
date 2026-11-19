@@ -1,4 +1,4 @@
-import { render, screen, within } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import { MemoryRouter, Outlet, Route, Routes } from 'react-router-dom';
 import { describe, expect, it, vi } from 'vitest';
 
@@ -64,7 +64,7 @@ describe('모바일 앱 셸', () => {
 });
 
 describe('데스크탑 앱 셸', () => {
-  it('데스크톱 공용 헤더 대신 왼쪽 네비 레일에 지도와 마이 진입점을 둔다', () => {
+  it('데스크톱은 왼쪽 네비 레일 없이 지도 밖 화면 위에 홈으로 돌아가는 상단 바를 둔다', () => {
     const matchMedia = vi.spyOn(window, 'matchMedia').mockImplementation(
       (query) =>
         ({
@@ -76,31 +76,19 @@ describe('데스크탑 앱 셸', () => {
     );
     try {
       render(
-        <MemoryRouter initialEntries={['/checklists']}>
+        <MemoryRouter initialEntries={['/compare']}>
           <Routes>
             <Route element={<Outlet context={{ memberId: 1, displayName: '이자취', passwordProtected: false }} />}>
               <Route element={<PropertyAppLayout />}>
-                <Route path="/checklists" element={<h1>체크리스트</h1>} />
+                <Route path="/compare" element={<h1>방 비교</h1>} />
               </Route>
             </Route>
           </Routes>
         </MemoryRouter>,
       );
-      expect(screen.getByRole('navigation', { name: '화면 이동' })).toBeInTheDocument();
-      const rail = within(screen.getByRole('navigation', { name: '화면 이동' }));
-      // 위쪽 다섯 칸에는 마이가 없고, 맨 아래에 사용방법, 마이 순서로 쌓여 있다.
-      expect(rail.getAllByRole('button').map((button) => button.textContent)).toEqual([
-        '내 기록',
-        '동네 찾기',
-        '체크리스트',
-        '방 비교',
-        '저렴한 한 끼',
-        '사용방법',
-        '마이',
-      ]);
-      expect(rail.getByRole('button', { name: '체크리스트' })).toHaveAttribute('aria-current', 'page');
-      expect(screen.queryByRole('link', { name: '홈으로 돌아가기' })).not.toBeInTheDocument();
-      expect(screen.getByRole('heading', { name: '체크리스트' })).toBeInTheDocument();
+      expect(screen.queryByRole('navigation', { name: '화면 이동' })).not.toBeInTheDocument();
+      expect(screen.getByRole('link', { name: '홈으로 돌아가기' })).toHaveAttribute('href', '/');
+      expect(screen.getByRole('heading', { name: '방 비교' })).toBeInTheDocument();
     } finally {
       matchMedia.mockRestore();
     }

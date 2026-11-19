@@ -4,7 +4,6 @@ import { useParams } from 'react-router-dom';
 import { describeChecklistLoadError } from '@/features/checklist/api/checklistErrorMessages';
 import { useChecklistList } from '@/features/checklist/api/useChecklists';
 import { USER_CHECKLIST_STAGE } from '@/features/checklist/model/checklist';
-import useIsDesktop from '@/shared/lib/hooks/useIsDesktop';
 import { CHECKLIST_CREATE_PATH, checklistDetailPath, HOME_PATH } from '@/shared/lib/navigation/appPaths';
 import { Button, ButtonLink } from '@/shared/ui/button/Button';
 import Icon from '@/shared/ui/icon/Icon';
@@ -17,11 +16,9 @@ const describeError = describeChecklistLoadError('체크리스트를 불러오�
 const ChecklistManagement = () => {
   const list = useChecklistList(USER_CHECKLIST_STAGE);
   const params = useParams();
-  const isDesktop = useIsDesktop();
   return (
     <main className={styles.page}>
-      {/* 데스크탑은 공용 헤더가 있어 휴대폰용 뒤로가기 제목줄을 두지 않는다. */}
-      {!isDesktop && <TopNavigation title="체크리스트 관리" backTo={HOME_PATH} backLabel="홈으로 돌아가기" />}
+      <TopNavigation title="체크리스트 관리" backTo={HOME_PATH} backLabel="홈으로 돌아가기" />
       <QueryState
         query={list}
         loadingTitle="체크리스트를 불러오는 중이에요."

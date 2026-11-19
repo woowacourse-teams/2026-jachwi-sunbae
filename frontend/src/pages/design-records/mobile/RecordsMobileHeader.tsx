@@ -27,7 +27,6 @@ const RecordsMobileHeader = ({ view, searchTo, onRecord }: Props) => {
       <MobileMapHeader
         searchTo={searchTo}
         hideSearch={view === 'list'}
-        hideProfile={view === 'list'}
         trailing={
           view === 'list' && (
             <Button className={styles.record} onClick={onRecord}>

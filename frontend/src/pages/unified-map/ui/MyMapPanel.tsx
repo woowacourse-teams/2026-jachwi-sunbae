@@ -16,7 +16,7 @@ const MyMapPanelContent = ({ onClose }: { onClose: () => void }) => {
   const config = usePublicConfig();
   return (
     <section className={`${myStyles.page} ${styles.panel}`} aria-label="목록 안의 마이페이지">
-      <DetailHeader title="마이페이지" backLabel="목록으로 돌아가기" onBack={onClose} hasBackButton={false} />
+      <DetailHeader title="마이페이지" backLabel="지도로 돌아가기" onBack={onClose} />
       <MyPageContent />
       <HomeFooter className={styles.siteFooter} />
       <footer className={`${myStyles.footer} ${styles.version}`}>{formatAppVersionLabel(config)}</footer>
