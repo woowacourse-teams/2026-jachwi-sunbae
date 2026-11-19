@@ -23,10 +23,9 @@ export const checklistDetailPath = (checklistId: number) => `${CHECKLISTS_PATH}/
 export const MY_PATH = '/me';
 export const MY_ALIAS_PATH = '/my';
 export const COMPARE_PATH = '/compare';
-/** 휴대폰 지도에서 주소를 찾는 검색 화면. 고른 주소는 기록 지도로 넘겨 그 자리로 옮긴다. */
+/** 예전 휴대폰 주소 검색 화면. 검색은 지도 머리의 검색창에서 바로 하므로, 들어오면 지도로 보낸다(`target=neighborhoods`면 동네 찾기). */
 export const ADDRESS_SEARCH_PATH = '/search';
 export const ADDRESS_SEARCH_TARGET_PARAM = 'target';
-export const NEIGHBORHOOD_ADDRESS_SEARCH_PATH = `${ADDRESS_SEARCH_PATH}?${ADDRESS_SEARCH_TARGET_PARAM}=neighborhoods`;
 /** 저렴한 한 끼. 탭마다 주소가 따로 있고(`/cheap-meals/restaurant` 등), 탭 없이 들어오면 마지막으로 연 탭(처음이면 식당 탭) 주소로 바꾼다. */
 export const CHEAP_MEALS_PATH = '/cheap-meals';
 export const GUIDE_PATH = '/guide';

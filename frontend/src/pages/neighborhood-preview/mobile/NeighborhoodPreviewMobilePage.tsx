@@ -3,10 +3,11 @@ import { useRef, useState } from 'react';
 import { Outlet, useMatch } from 'react-router-dom';
 
 import { useRecordsMapController } from '@/pages/design-records/RecordsMapProvider';
+import MobileHeaderSearch from '@/pages/design-records/ui/record-address-search/MobileHeaderSearch';
 import MapCanvas from '@/features/map/ui/map-canvas/MapCanvas';
 import ExplorationRecordAction from '@/features/onboarding/ui/exploration-record-action/ExplorationRecordAction';
 import { LogClick } from '@/shared/lib/analytics/logging';
-import { NEIGHBORHOOD_ADDRESS_SEARCH_PATH, ROUTE_PATTERNS } from '@/shared/lib/navigation/appPaths';
+import { ROUTE_PATTERNS } from '@/shared/lib/navigation/appPaths';
 import BottomSheet from '@/shared/ui/bottom-sheet/BottomSheet';
 import { Button } from '@/shared/ui/button/Button';
 import Icon from '@/shared/ui/icon/Icon';
@@ -44,6 +45,8 @@ const NeighborhoodPreviewMobilePage = ({ preview }: Props) => {
   const controller = useRecordsMapController();
   const usesSharedSearch = controller !== null && !preview.isPublicExplore;
   const panel = useMapPanel();
+  // 머리의 길쭉한 검색창. 고른 자리로 지도를 옮기고 검색 핀을 찍는다(출퇴근 장소는 바꾸지 않는다). 데스크탑 목록 머리 검색과 같다.
+  const headerSearch = <MobileHeaderSearch onSelect={preview.searchTo} />;
   // 위치를 고르는 동안 조건 칸 아래에 바로 펼친 피커. 같은 칸을 다시 누르면 접는다.
   // 결과를 지도로 볼지 동네 목록으로 볼지. 기록 화면의 리스트와 지도 전환과 같은 짝이다.
   const [pickerField, setPickerField] = useState<NeighborhoodFilterField | null>(null);
@@ -210,10 +213,10 @@ const NeighborhoodPreviewMobilePage = ({ preview }: Props) => {
               className={usesSharedSearch ? `${shared.searchHeader} ${styles.resultHeader}` : shared.searchHeader}
             >
               {usesSharedSearch ? (
-                <MobileMapHeader searchTo={NEIGHBORHOOD_ADDRESS_SEARCH_PATH} searchLabel="주소 검색" />
+                <MobileMapHeader center={headerSearch} />
               ) : (
                 <>
-                  {!preview.isPublicExplore && <MobileMapHeader searchTo={NEIGHBORHOOD_ADDRESS_SEARCH_PATH} />}
+                  {!preview.isPublicExplore && <MobileMapHeader center={headerSearch} />}
                   <NeighborhoodMapSearch preview={preview} hideHome={!preview.isPublicExplore} />
                 </>
               )}
@@ -275,9 +278,7 @@ const NeighborhoodPreviewMobilePage = ({ preview }: Props) => {
           <>
             {/* 결과 머리에는 로고와 검색, 마이만 둔다. 조건 요약과 색 기준은 아래 스택으로 옮겼다. 공개 탐색은 머리를 비운다. */}
             <header className={`${shared.resultHeader} ${styles.resultHeader}`}>
-              {!preview.isPublicExplore && (
-                <MobileMapHeader searchTo={NEIGHBORHOOD_ADDRESS_SEARCH_PATH} searchLabel="주소 검색" />
-              )}
+              {!preview.isPublicExplore && <MobileMapHeader center={headerSearch} />}
             </header>
             {resultControls}
 

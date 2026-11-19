@@ -1,8 +1,6 @@
-import { useEffect, useMemo } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 
 import usePreloadMapSdk from '@/features/map/hooks/usePreloadMapSdk';
-import { readSearchedAddress } from '@/features/map/lib/searchedAddressState';
 import { RECORDS_PATH, RECORDS_VIEW_PARAM } from '@/shared/lib/navigation/appPaths';
 import AreaSkeleton from '@/shared/ui/area-skeleton/AreaSkeleton';
 import { useMapPanel } from '@/shared/ui/map-list-header/MapPanelContext';
@@ -28,22 +26,12 @@ import * as styles from './RecordsMobilePage.styles';
  * 지도에서 고른 방은 지도 아래 바텀시트로, 리스트에서 고른 방은 상세 화면으로 연다.
  * 지도는 예전 인프라 지도의 시설·거리 메모 카테고리와 찍은 위치의 메모·매물 등록을 함께 맡는다.
  */
-type Props = { records: RecordsState; layers: RecordsMapLayers; searchTo?: string };
-const RecordsMobilePage = ({ records, layers, searchTo }: Props) => {
+type Props = { records: RecordsState; layers: RecordsMapLayers };
+const RecordsMobilePage = ({ records, layers }: Props) => {
   const panel = useMapPanel();
   const navigate = useNavigate();
   const { setNotice, searchTo: moveTo } = records;
   const location = useLocation();
-  // 주소 검색 화면에서 고른 주소가 오면 그 자리로 지도를 옮긴다. 새로고침해도 다시 옮기지 않도록 바로 비운다.
-  const searchedAddress = useMemo(
-    () => (location.pathname === RECORDS_PATH ? readSearchedAddress(location.state) : null),
-    [location.pathname, location.state],
-  );
-  useEffect(() => {
-    if (!searchedAddress) return;
-    moveTo(searchedAddress);
-    navigate(`${RECORDS_PATH}?view=map`, { replace: true, state: null });
-  }, [searchedAddress, moveTo, navigate]);
   const [view, setView] = useRecordsView();
   const showsMap = view === 'map';
   const openMapToRecord = () => {
@@ -66,7 +54,7 @@ const RecordsMobilePage = ({ records, layers, searchTo }: Props) => {
           <h1 ref={records.headingRef} className="sr-only" tabIndex={-1}>
             본 방 기록
           </h1>
-          {!panel && <RecordsMobileHeader view={view} searchTo={searchTo} />}
+          {!panel && <RecordsMobileHeader view={view} onSearch={moveTo} />}
           {/* 기록을 받는 동안과 마이 같은 다른 화면(패널)을 볼 때는 동네 칩 줄을 두지 않는다. */}
           {!panel && showsMap && !records.properties.isPending && (
             <RecordDistricts

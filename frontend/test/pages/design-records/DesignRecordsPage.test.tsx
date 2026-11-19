@@ -675,30 +675,39 @@ it('기록을 불러오지 못하면 지도 위 헤더 없이 오류 안내와 �
   expect(await screen.findByRole('region', { name: '본 방 기록 지도' })).toBeInTheDocument();
 });
 
-it('휴대폰은 헤더의 검색 버튼으로 주소 검색 화면에 가고, 고른 주소가 오면 그 자리로 지도를 옮긴다', async () => {
+it('휴대폰은 지도 머리의 길쭉한 검색창에서 바로 찾고, 고른 주소로 지도를 옮긴다', async () => {
+  const user = userEvent.setup();
   renderRecords();
   await screen.findByText('신림역 원룸');
-  expect(screen.getByRole('link', { name: '주소 검색' })).toHaveAttribute('href', '/search');
-  cleanup();
-
-  // 검색 화면에서 돌아올 때 라우터 상태에 실린 주소로 지도를 옮기고 지도 보기로 바꾼다.
-  renderRecords({
-    pathname: '/',
-    state: {
-      searchedAddress: {
-        address: null,
-        roadAddress: '서울 중구 세종대로 110',
-        jibunAddress: null,
-        latitude: 37.5665,
-        longitude: 126.978,
-      },
-    },
-  });
-  await screen.findByText('신림역 원룸');
+  // 돋보기 버튼과 따로 열리는 검색 화면 대신, 머리의 입력칸에서 그 자리에서 찾는다.
+  expect(screen.queryByRole('link', { name: '주소 검색' })).not.toBeInTheDocument();
+  const header = within(screen.getByLabelText('지도 목록 헤더'));
+  const input = header.getByRole('textbox', { name: '장소나 주소 검색' });
+  expect(input).toHaveAttribute('placeholder', '장소나 주소 검색');
+  await user.type(input, '세종대로');
+  const results = await screen.findByRole('list', { name: '주소 검색 결과' });
+  // 결과는 머리 바로 아래 드롭다운으로 연다.
+  expect(results.closest('header')).not.toBeNull();
+  // 입력이 있으면 오른쪽 칸은 지우기(x)다.
+  expect(header.getByRole('button', { name: /지우기/ })).toBeInTheDocument();
+  await user.click(within(results).getAllByRole('button')[0]);
+  expect(screen.queryByRole('list', { name: '주소 검색 결과' })).not.toBeInTheDocument();
   await waitFor(() => expect(screen.getByRole('status', { name: '지도 중심' })).toHaveTextContent('37.5665,126.978'));
-  expect(
-    within(screen.getByRole('navigation', { name: '기록 보기 방식' })).getByRole('button', { name: /지도/ }),
-  ).toHaveAttribute('aria-pressed', 'true');
+});
+
+it('휴대폰 머리 검색 결과는 한 번에 하나만 열리고, Esc로 닫았다가 다시 입력하면 열린다', async () => {
+  const user = userEvent.setup();
+  renderRecords();
+  await screen.findByText('신림역 원룸');
+  const input = screen.getByRole('textbox', { name: '장소나 주소 검색' });
+  await user.type(input, '세종대로');
+  await screen.findByRole('list', { name: '주소 검색 결과' });
+  expect(screen.getAllByRole('list', { name: '주소 검색 결과' })).toHaveLength(1);
+  await user.keyboard('{Escape}');
+  expect(screen.queryByRole('list', { name: '주소 검색 결과' })).not.toBeInTheDocument();
+  // 다시 입력하면 결과가 다시 열린다.
+  await user.type(input, ' ');
+  expect(await screen.findByRole('list', { name: '주소 검색 결과' })).toBeInTheDocument();
 });
 
 it('현재 위치 버튼은 받은 위치로 지도를 옮기고, 권한이 없으면 알린다', async () => {

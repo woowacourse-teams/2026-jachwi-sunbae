@@ -17,6 +17,8 @@ type Props = {
   label?: string;
   placeholder?: string;
   className?: string;
+  /** 입력칸 모양을 덧붙인다. 휴대폰 지도 머리처럼 높이를 옆 아이콘에 맞출 때 쓴다. */
+  fieldClassName?: string;
 };
 
 /** 입력을 멈추고 이만큼 지나면 검색한다. */
@@ -32,6 +34,7 @@ const RecordAddressSearch = ({
   label = '주소 검색',
   placeholder = '주소로 지도 이동',
   className,
+  fieldClassName,
 }: Props) => {
   const search = useAddressSearch();
   // 결과 목록은 한 화면에서 하나만 열린다. 다른 검색창이 열리면 닫히고, 포커스가 밖으로 나가거나 Esc를 누르면 닫힌다. 다시 눌러 입력하면 다시 열린다.
@@ -61,7 +64,7 @@ const RecordAddressSearch = ({
       }}
     >
       <SearchField
-        className={styles.field}
+        className={fieldClassName ? `${styles.field} ${fieldClassName}` : styles.field}
         shape="pill"
         label={label}
         placeholder={placeholder}

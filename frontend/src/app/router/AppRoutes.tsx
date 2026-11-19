@@ -9,6 +9,7 @@ import useIsDesktop from '@/shared/lib/hooks/useIsDesktop';
 import {
   ABOUT_PATH,
   ADDRESS_SEARCH_PATH,
+  ADDRESS_SEARCH_TARGET_PARAM,
   ADMIN_PATH,
   CHECKLIST_CREATE_PATH,
   CHECKLISTS_PATH,
@@ -43,7 +44,6 @@ import ProtectedRoute from './ProtectedRoute';
 const PropertyAppLayout = lazy(() => import('@/app/layouts/property-app-layout/PropertyAppLayout'));
 const CheapMealsRoute = lazy(() => import('./CheapMealsRoute'));
 const AdminPage = lazy(() => import('@/pages/admin/AdminPage'));
-const AddressSearchPage = lazy(() => import('@/pages/address-search/AddressSearchPage'));
 const UnifiedMapPage = lazy(() => import('@/pages/unified-map/UnifiedMapPage'));
 const NeighborhoodPreviewPage = lazy(() => import('@/pages/neighborhood-preview/NeighborhoodPreviewPage'));
 const NeighborhoodRoutePage = lazy(() => import('@/pages/neighborhood-preview/NeighborhoodRoutePage'));
@@ -88,6 +88,13 @@ const UnifiedMapRoute = () => {
       <UnifiedMapPage />
     </LazyRouteBoundary>
   );
+};
+
+/** 예전 휴대폰 주소 검색 화면(`/search`). 검색은 지도 머리에서 바로 하므로 지도로 보낸다. */
+const LegacyAddressSearchRoute = () => {
+  const isNeighborhoods =
+    new URLSearchParams(useLocation().search).get(ADDRESS_SEARCH_TARGET_PARAM) === 'neighborhoods';
+  return <Navigate to={isNeighborhoods ? NEIGHBORHOODS_PATH : RECORDS_MAP_PATH} replace />;
 };
 
 /** 예전 목록 주소(`/properties`)는 홈으로 보낸다. `?view=` 같은 쿼리는 그대로 잇는다. */
@@ -144,6 +151,8 @@ const AppRoutes = () => (
     <Route path={OAUTH_COMPLETE_PATH} element={lazyPage(<OAuthCompletePage />)} />
     {/* 로그인 화면은 없다. 예전 주소로 들어오면 홈에서 자동 로그인한다. */}
     <Route path={LOGIN_PATH} element={<Navigate to={HOME_PATH} replace />} />
+    {/* 예전 휴대폰 주소 검색 화면. 검색은 지도 머리의 검색창에서 바로 한다. */}
+    <Route path={ADDRESS_SEARCH_PATH} element={<LegacyAddressSearchRoute />} />
     {/* 매물은 본 방 기록 지도에서 바로 등록한다. 예전 매물 등록 주소로 들어오면 기록 지도로 보낸다. */}
     <Route path={PROPERTY_NEW_PATH} element={<Navigate to={RECORDS_MAP_PATH} replace />} />
     {/* 첫 주소(`/`)를 포함한 회원 화면. 자동 로그인(복원 또는 익명 회원 생성)을 기다리는 동안에도 화면 뼈대를 바로 그린다. */}
@@ -184,7 +193,6 @@ const AppRoutes = () => (
         <Route path={ROUTE_PATTERNS.legacyChecklists} element={<Navigate to={CHECKLISTS_PATH} replace />} />
         <Route path={ROUTE_PATTERNS.legacyMap} element={<LegacyMapRoute />} />
         <Route path={MAP_SELECT_LOCATION_PATH} element={lazyPage(<MapLocationSelectPage />)} />
-        <Route path={ADDRESS_SEARCH_PATH} element={lazyPage(<AddressSearchPage />)} />
         <Route path={COMPARE_PATH} element={lazyPage(<PropertyComparePage />)} />
         <Route path={EXPORT_PATH} element={lazyPage(<UpcomingFeaturePage feature="export" />)} />
         <Route path={TIPS_PATH} element={lazyPage(<UpcomingFeaturePage feature="tips" />)} />

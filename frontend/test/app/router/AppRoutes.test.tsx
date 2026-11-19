@@ -1,5 +1,5 @@
 import { QueryClientProvider } from '@tanstack/react-query';
-import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import { StrictMode } from 'react';
@@ -493,11 +493,16 @@ it('모바일은 지도 아래 가운데 버튼으로 동네 찾기를 열고 �
   await screen.findByRole('region', { name: '본 방 기록 지도' });
 });
 
-it('동네 찾기의 원형 검색은 공용 주소 검색으로 연결된다', async () => {
+it('동네 찾기 휴대폰 머리에도 같은 길쭉한 검색창을 두고, 예전 검색 화면 주소는 지도로 보낸다', async () => {
   renderRoutes('/neighborhoods');
-  await userEvent.click(await screen.findByRole('link', { name: '주소 검색' }));
-  expect(screen.getByTestId('route-path')).toHaveTextContent('/search');
-  expect(screen.getByTestId('route-search')).toHaveTextContent('target=neighborhoods');
+  expect(await screen.findByRole('textbox', { name: '장소나 주소 검색' })).toBeInTheDocument();
+  expect(screen.queryByRole('link', { name: '주소 검색' })).not.toBeInTheDocument();
+  cleanup();
+  renderRoutes('/search?target=neighborhoods');
+  await waitFor(() => expect(screen.getByTestId('route-path')).toHaveTextContent(/^\/neighborhoods$/));
+  cleanup();
+  renderRoutes('/search');
+  await waitFor(() => expect(screen.getByTestId('route-path')).toHaveTextContent(/^\/$/));
 });
 
 const commuteSearchResponses = () =>
