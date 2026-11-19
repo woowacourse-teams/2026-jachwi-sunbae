@@ -287,12 +287,13 @@ const NeighborhoodPreviewMobilePage = ({ preview }: Props) => {
               floating={sheetFloating}
               peekSignal={conditionPeekSignal}
               onCollapse={() => setConditionPeekSignal((value) => value + 1)}
-              hidden={infoSubject !== null}
+              hidden={infoSubject !== null || mapView.isMemoOpen}
             />
             {mapView.needsZoomForFacilities && <p className={styles.zoomHint}>확대하면 주변 시설이 보여요</p>}
             {/* 정보는 시트 하나에만 둔다. 마커와 `My`는 한 단계 높이로 두고, 닫으면 그 정보를 닫는다.
                 동네는 지도와 고른 동이 같이 보이게 낮게 열고 끌어 올리면 더 크게 본다. 닫아도 동네 선택은 그대로 둔다. */}
-            {infoSubject && (
+            {/* 거리 메모 시트가 열려 있으면 정보 시트를 숨겨 두 시트가 겹치지 않게 한다. 메모를 닫으면 다시 보인다. */}
+            {infoSubject && !mapView.isMemoOpen && (
               <BottomSheet
                 key={infoSubject.kind === 'area' ? `area:${infoSubject.area.adminDongCode}` : infoSubject.kind}
                 title={mapInfoTitle(infoSubject)}

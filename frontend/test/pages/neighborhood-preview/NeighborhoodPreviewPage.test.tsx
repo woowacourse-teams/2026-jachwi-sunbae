@@ -1431,3 +1431,41 @@ it('출퇴근 장소 다시 선택을 눌러도 보던 지도의 가운데와 �
   await user.click(screen.getByRole('button', { name: '출퇴근 장소 다시 선택' }));
   expect(view()).toEqual(before);
 });
+
+it('동네 찾기 지도에도 내 매물과 함께 거리 메모를 올리고, 메모를 누르면 내 기록과 같은 메모 시트를 열며 조건 시트를 숨긴다', async () => {
+  useOneRecordedProperty();
+  writeBookmarkedAdminDongs(['11210690']);
+  server.use(
+    ...adminDongBookmarkHandlers,
+    ...createStreetMemoHandlers([
+      {
+        streetMemoId: 77,
+        latitude: 37.5,
+        longitude: 127.035,
+        memo: '밤에도 골목이 밝아요.',
+        preference: 'LIKE',
+        isMine: false,
+        adminDongCode: '11230640',
+      },
+    ]),
+  );
+  try {
+    show(false, undefined, true);
+    const user = await choosePoint();
+    await submitCurrentSearch(user);
+    await screen.findByRole('region', { name: '행정동 프리셋 지도' });
+    await user.click(screen.getByRole('button', { name: '가까이 확대' }));
+    const memo = await screen.findByRole('button', { name: '마커 밤에도 골목이 밝아요.' });
+    expect(screen.getByRole('button', { name: '마커 신림역 원룸' })).toBeInTheDocument();
+    // 찜 보기를 켜도 메모와 매물은 남는다.
+    await user.click(await screen.findByRole('button', { name: '찜한 동네 토글' }));
+    expect(screen.getByRole('button', { name: '마커 밤에도 골목이 밝아요.' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '마커 신림역 원룸' })).toBeInTheDocument();
+    expect(screen.getByRole('region', { name: '동네 찾기 조건' })).toBeVisible();
+    await user.click(memo);
+    expect(await screen.findByText('밤에도 골목이 밝아요.', { selector: 'p, span, div' })).toBeInTheDocument();
+    expect(screen.queryByRole('region', { name: '동네 찾기 조건' })).not.toBeInTheDocument();
+  } finally {
+    writeBookmarkedAdminDongs([]);
+  }
+});

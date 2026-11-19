@@ -16,6 +16,10 @@ import type { MapCategory, MapMarker } from '@/features/map/model/Map';
 import type { MapCanvasProps, MapRegion } from '@/features/map/model/MapCanvas';
 import { usePropertyCommuteTimes } from '@/features/property/api/useProperties';
 import { isPreviewProperty } from '@/features/property/model/sampleProperties';
+import {
+  MEMO_INDIVIDUAL_MAX_LEVEL,
+  STREET_MEMO_DONG_MARKER_PREFIX,
+} from '@/features/street-memo/lib/streetMemoDongGroups';
 import useDebouncedValue from '@/shared/lib/hooks/useDebouncedValue';
 import useHoverIntent from '@/shared/lib/hooks/useHoverIntent';
 import useIsDesktop from '@/shared/lib/hooks/useIsDesktop';
@@ -212,6 +216,8 @@ const useNeighborhoodMapView = (
   };
   /** 마커를 누르면 그 마커 하나의 정보를 열고 지도를 그 자리로 옮긴다. */
   const selectMarker = (marker: MapMarker) => {
+    // 동네 찾기 마커를 누르면 열어 둔 거리 메모는 닫는다. 정보는 한 번에 하나만 띄운다.
+    registration?.memo.close();
     // 겹쳐 묶인 내 매물은 갈라져 보일 때까지 묶인 매물이 한 화면에 들어오게 다가간다. 내 기록 지도와 같은 묶음이다.
     const memberIds = groupMemberIds(marker.id);
     if (memberIds !== null) {
@@ -230,7 +236,7 @@ const useNeighborhoodMapView = (
     preview.focusPoint(marker);
   };
   // 시설 마커는 레일 칸을 켰고 가까이 확대했을 때 지금 화면 범위로 받은 것만 올린다. 동네를 골라도 따로 마커를 받지 않는다.
-  // 아무 칸도 켜지 않으면 동네 경계와 출퇴근 장소 핀만 남는다. 거리 메모는 동네 찾기에 띄우지 않는다.
+  // 아무 칸도 켜지 않으면 동네 경계, 출퇴근 장소 핀, 내 매물과 거리 메모가 남는다.
   // 내 기록 지도와 같은 기준으로, 화면에서 포개질 만큼 가까운 내 매물은 묶어 개수만 보인다.
   const groupedMyMarkers = useMemo(
     () => groupOverlappingMarkers(myMarkers, places.bounds).map(propertyGroupMarker),
@@ -422,6 +428,10 @@ const useNeighborhoodMapView = (
   const baseSelectMarker = mapProps.onSelectMarker;
   const baseBoundsChange = mapProps.onBoundsChange;
   const baseLevelChange = mapProps.onLevelChange;
+  const memoMarkers = useMemo(
+    () => (registration?.canvasProps.markers ?? NO_MARKERS).filter((marker) => marker.category === 'MEMO'),
+    [registration?.canvasProps.markers],
+  );
   const composedProps: MapCanvasProps = registration
     ? {
         ...mapProps,
@@ -438,12 +448,13 @@ const useNeighborhoodMapView = (
         },
         // 찜한 동네만 볼 때는 찜한 영역이 또렷하게 보이도록 시설, 메모 같은 주변 마커를 걷는다.
         // 출퇴근 장소 핀과 내 매물은 찜한 동네와 견줘 볼 대상이라 남긴다.
-        markers: showsBookmarkOnly
-          ? (mapProps.markers ?? []).filter((marker) => isCommutePin(marker) || isMyPropertyMarker(marker))
-          : [
-              ...(mapProps.markers ?? []),
-              ...(registration.canvasProps.markers ?? []).filter((marker) => marker.category === 'MEMO'),
-            ],
+        // 거리 메모는 내 기록 지도의 메모 층을 그대로 올린다. 찜 보기, 추천 동네 버튼과 상관없이 늘 둔다.
+        markers: [
+          ...(showsBookmarkOnly
+            ? (mapProps.markers ?? []).filter((marker) => isCommutePin(marker) || isMyPropertyMarker(marker))
+            : (mapProps.markers ?? [])),
+          ...memoMarkers,
+        ],
         // 추천 동네(추천 동네 버튼이 정함) 위에 찜한 동네(찜 버튼이 정함)를 더해 칠한다. 통근 결과 구역과 id가 겹치지 않게 접두어를 붙인다.
         regions: showsBookmarkOnly
           ? [
@@ -496,8 +507,18 @@ const useNeighborhoodMapView = (
                 },
               },
         onSelectMarker: (marker) => {
-          if (marker.category === 'MEMO') registration.canvasProps.onSelectMarker?.(marker);
-          else baseSelectMarker?.(marker);
+          if (marker.category !== 'MEMO') {
+            baseSelectMarker?.(marker);
+            return;
+          }
+          // 메모는 내 기록 지도와 같은 말풍선(데스크탑 패널, 휴대폰 시트)을 연다. 열어 둔 장소 정보는 닫는다.
+          places.closePlace();
+          registration.canvasProps.onSelectMarker?.(marker);
+          // 동 묶음 메모는 내 기록 지도처럼 메모가 하나씩 보이는 단계까지 그 자리로 다가간다. 동네 찾기 지도의 시점으로 옮긴다.
+          if (marker.id.startsWith(STREET_MEMO_DONG_MARKER_PREFIX)) {
+            preview.moveMapTo(marker);
+            preview.zoomToFacilities(MEMO_INDIVIDUAL_MAX_LEVEL + (isDesktop ? 1 : 0));
+          }
         },
         onLevelChange: (level) => {
           baseLevelChange?.(level);
@@ -520,6 +541,8 @@ const useNeighborhoodMapView = (
             onToggle: () => bookmarks.toggle(code),
           },
     places: selectedPlace === places.selectedPlace ? places : { ...places, selectedPlace },
+    /** 거리 메모 말풍선(보기, 남기기)이 열려 있는지. 휴대폰은 그동안 조건 시트와 정보 시트를 숨긴다. */
+    isMemoOpen: (registration?.memo.mode ?? null) !== null,
     /** 고른 내 매물에서 출퇴근 장소까지의 동선. 매물을 고르지 않았거나 통근 시간이 없으면 `route`가 없다. */
     propertyRoute,
     /** 결과 지도 오른쪽에 처음부터 두는 분류 레일(중개사, 병원, 교통, 편의, My)의 값. */
