@@ -13,7 +13,7 @@ import { Button } from '@/shared/ui/button/Button';
 import Icon from '@/shared/ui/icon/Icon';
 import { useMapPanel } from '@/shared/ui/map-list-header/MapPanelContext';
 import { mapFloatingPill } from '@/shared/ui/map-mode-switch/MapModeButton';
-import { MapModeSwitchButton } from '@/shared/ui/map-mode-switch/MapModeContext';
+import { MapModeBackButton, MapModeSwitchButton } from '@/shared/ui/map-mode-switch/MapModeContext';
 import MobileMapHeader from '@/shared/ui/mobile-map-header/MobileMapHeader';
 
 import useMyPropertyPager from '../hooks/useMyPropertyPager';
@@ -213,10 +213,12 @@ const NeighborhoodPreviewMobilePage = ({ preview }: Props) => {
               className={usesSharedSearch ? `${shared.searchHeader} ${styles.resultHeader}` : shared.searchHeader}
             >
               {usesSharedSearch ? (
-                <MobileMapHeader center={headerSearch} />
+                <MobileMapHeader leading={<MapModeBackButton />} center={headerSearch} hideProfile />
               ) : (
                 <>
-                  {!preview.isPublicExplore && <MobileMapHeader center={headerSearch} />}
+                  {!preview.isPublicExplore && (
+                    <MobileMapHeader leading={<MapModeBackButton />} center={headerSearch} hideProfile />
+                  )}
                   <NeighborhoodMapSearch preview={preview} hideHome={!preview.isPublicExplore} />
                 </>
               )}
@@ -278,7 +280,9 @@ const NeighborhoodPreviewMobilePage = ({ preview }: Props) => {
           <>
             {/* 결과 머리에는 로고와 검색, 마이만 둔다. 조건 요약과 색 기준은 아래 스택으로 옮겼다. 공개 탐색은 머리를 비운다. */}
             <header className={`${shared.resultHeader} ${styles.resultHeader}`}>
-              {!preview.isPublicExplore && <MobileMapHeader center={headerSearch} />}
+              {!preview.isPublicExplore && (
+                <MobileMapHeader leading={<MapModeBackButton />} center={headerSearch} hideProfile />
+              )}
             </header>
             {resultControls}
 

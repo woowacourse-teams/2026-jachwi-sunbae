@@ -11,19 +11,23 @@ type Props = {
   leading?: ReactNode;
   /** 가운데 칸. 지도 보기에서는 길쭉한 검색창, 리스트 보기에서는 날씨 안내를 둔다. 왼쪽 칸이 비면 왼쪽 끝부터 채운다. */
   center?: ReactNode;
+  /** 켜면 오른쪽 마이 링크를 두지 않는다. 동네 찾기는 마이 대신 왼쪽 뒤로가기로 내 기록에 돌아간다. */
+  hideProfile?: boolean;
 };
 export const MapHomeLink = () => (
   <Link to={HOME_PATH} aria-label="자취선배 홈" className={styles.logo}>
     <img src={LOGO_DUCK.src} srcSet={`${LOGO_DUCK.src} 1x, ${LOGO_DUCK.src2x} 2x`} alt="" width={44} height={44} />
   </Link>
 );
-const MobileMapHeader = ({ leading, center }: Props) => (
+const MobileMapHeader = ({ leading, center, hideProfile = false }: Props) => (
   <header className={styles.header} aria-label="지도 목록 헤더">
     <div className={styles.leading}>{leading}</div>
     <div className={styles.space}>{center}</div>
-    <div className={styles.actions}>
-      <MapProfileLink />
-    </div>
+    {!hideProfile && (
+      <div className={styles.actions}>
+        <MapProfileLink />
+      </div>
+    )}
   </header>
 );
 const styles = {

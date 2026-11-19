@@ -467,7 +467,10 @@ it('데스크톱의 홈은 통합 지도로 이어지고 모드 URL을 바꿔도
     await userEvent.click(await screen.findByRole('button', { name: '이 조건으로 동네 찾기' }));
     expect(await screen.findByRole('region', { name: '행정동 프리셋 지도' })).toBeInTheDocument();
     expect(document.querySelector('[data-shared-map]')).toBe(map);
-    // 동네 찾기 목록 머리의 `내 기록` 타일로 기록 지도에 돌아간다.
+    // 데스크탑 동네 찾기 왼쪽 칸 머리도 로고와 마이 없이 뒤로가기를 둔다(날씨 안내는 그대로).
+    expect(screen.getByRole('button', { name: '내 기록으로 돌아가기' })).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: '마이페이지' })).not.toBeInTheDocument();
+    // 지도 아래 `내 기록으로` 버튼으로 기록 지도에 돌아간다.
     expect(screen.queryByRole('navigation', { name: '지도 모드' })).not.toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: '내 기록으로' }));
     expect(await screen.findByRole('region', { name: '본 방 기록 지도' })).toBeInTheDocument();
@@ -491,6 +494,25 @@ it('모바일은 지도 아래 가운데 버튼으로 동네 찾기를 열고 �
   expect(screen.queryByRole('navigation', { name: '지도 모드' })).not.toBeInTheDocument();
   await userEvent.click(back);
   await screen.findByRole('region', { name: '본 방 기록 지도' });
+});
+
+it('동네 찾기 머리는 로고와 마이 대신 뒤로가기를 두고, 누르면 내 기록 머리(마이 링크 포함)로 돌아간다', async () => {
+  neighborhoodResponses();
+  renderRoutes('/?view=map');
+  await screen.findByRole('region', { name: '본 방 기록 지도' });
+  expect(screen.getByRole('link', { name: '마이페이지' }).closest('header')).not.toBeNull();
+  await userEvent.click(await screen.findByRole('button', { name: '출퇴근 시간으로 동네 찾기' }));
+  await pickDestination(0);
+  // 결과 단계에서도 같은 머리다.
+  const back = screen.getByRole('button', { name: '내 기록으로 돌아가기' });
+  expect(back.closest('header')).not.toBeNull();
+  expect(screen.queryByRole('link', { name: '마이페이지' })).not.toBeInTheDocument();
+  expect(screen.queryByRole('link', { name: '자취선배 홈' })).not.toBeInTheDocument();
+  await userEvent.click(back);
+  await screen.findByRole('region', { name: '본 방 기록 지도' });
+  expect(screen.getByTestId('route-path')).toHaveTextContent(/^\/$/);
+  expect(screen.getByTestId('route-search')).toHaveTextContent('view=map');
+  expect(screen.getByRole('link', { name: '마이페이지' })).toBeInTheDocument();
 });
 
 it('동네 찾기 휴대폰 머리에도 같은 길쭉한 검색창을 두고, 예전 검색 화면 주소는 지도로 보낸다', async () => {

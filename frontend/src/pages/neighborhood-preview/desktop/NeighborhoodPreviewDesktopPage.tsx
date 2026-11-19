@@ -14,7 +14,7 @@ import ListDetailLayout from '@/shared/ui/list-detail-layout/ListDetailLayout';
 import MapBadgeRail from '@/shared/ui/map-badge-rail/MapBadgeRail';
 import MapListHeader from '@/shared/ui/map-list-header/MapListHeader';
 import { useMapPanel } from '@/shared/ui/map-list-header/MapPanelContext';
-import { MapModeSwitchButton } from '@/shared/ui/map-mode-switch/MapModeContext';
+import { MapModeBackButton, MapModeSwitchButton } from '@/shared/ui/map-mode-switch/MapModeContext';
 import StateIllustration from '@/shared/ui/state-illustration/StateIllustration';
 
 import useNeighborhoodMapView from '../hooks/useNeighborhoodMapView';
@@ -136,7 +136,13 @@ const NeighborhoodPreviewDesktopPage = ({ preview }: Props) => {
   const foundList = (
     <aside className={isDocked ? styles.areaPanelDocked : styles.areaPanel} aria-label="동네 찾기 결과">
       {!preview.isPublicExplore && (
-        <MapListHeader className={isDocked ? undefined : styles.listHeader} center={<MapHeaderWeather />}>
+        <MapListHeader
+          className={isDocked ? undefined : styles.listHeader}
+          center={<MapHeaderWeather />}
+          // 동네 찾기 머리는 로고와 마이 대신 왼쪽 뒤로가기로 내 기록에 돌아간다.
+          leading={<MapModeBackButton />}
+          hideProfile
+        >
           {/* 지도 검색: 고른 장소로 지도를 옮기고 검색 핀을 찍는다. 출퇴근 장소와 통근 분석은 바꾸지 않는다(출퇴근 장소는 아래 조건 칸에서 따로 정한다). */}
           <RecordAddressSearch onSelect={preview.searchTo} />
         </MapListHeader>

@@ -16,9 +16,19 @@ type Props = {
   actions?: ReactNode;
   /** 주면 왼쪽 위 로고 자리에 이것을 둔다. */
   leading?: ReactNode;
+  /** 켜면 오른쪽 마이 링크를 두지 않는다. 동네 찾기는 마이 대신 왼쪽 뒤로가기로 내 기록에 돌아간다. */
+  hideProfile?: boolean;
 };
 
-const MapListHeader = ({ children, center, className, searchInRow = false, actions, leading }: Props) => (
+const MapListHeader = ({
+  children,
+  center,
+  className,
+  searchInRow = false,
+  actions,
+  leading,
+  hideProfile = false,
+}: Props) => (
   <header className={`${styles.header} ${className ?? ''}`.trim()} aria-label="지도 목록 헤더">
     <div className={styles.row}>
       {leading ?? (
@@ -34,7 +44,7 @@ const MapListHeader = ({ children, center, className, searchInRow = false, actio
       )}
       <div className={styles.center}>{center}</div>
       {actions}
-      <MapProfileLink />
+      {!hideProfile && <MapProfileLink />}
     </div>
     {!searchInRow && (
       <div className={styles.search}>
