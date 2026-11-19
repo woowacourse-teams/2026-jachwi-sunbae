@@ -1132,6 +1132,10 @@ it('모바일은 지도 위 핀으로 목적지 선택을 켜고 결과에서도
   await submitCurrentSearch(user);
   await screen.findByRole('region', { name: '행정동 프리셋 지도' });
   expect(screen.getByRole('button', { name: '내 기록으로' }).closest('header')).toBeNull();
+  // 결과 머리에는 로고와 검색, 마이만 두고, 조건 요약은 아래 스택에서 `내 기록으로` 버튼과 함께 둔다.
+  const criteria = screen.getByLabelText(/^선택한 탐색 조건/);
+  expect(criteria.closest('header')).toBeNull();
+  expect(criteria.parentElement).toContainElement(screen.getByRole('button', { name: '내 기록으로' }));
   await user.click(screen.getByRole('button', { name: '출퇴근 장소 다시 선택' }));
   expect(screen.getByRole('button', { name: '이전 결과 보기' }).closest('header')).toBeNull();
   expect(screen.getByRole('button', { name: '지도에서 목적지 선택' }).closest('header')).toBeNull();

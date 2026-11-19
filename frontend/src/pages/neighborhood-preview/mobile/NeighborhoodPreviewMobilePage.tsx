@@ -114,6 +114,17 @@ const NeighborhoodPreviewMobilePage = ({ preview }: Props) => {
       </Button>
     </>
   );
+  // 결과 지도 아래 스택. 위에서부터 색 기준(왼쪽), 월세 슬라이더(열었을 때), 조건 요약, 모드 전환과 다시 선택 줄을 한 곳에 쌓아 서로 겹치지 않게 한다.
+  const resultStack = (
+    <div className={styles.resultStack}>
+      <div className={styles.legendSlot}>
+        <CommuteLegend maxMinutes={preview.maxMinutes} className={styles.legend} showsNoRent={false} />
+      </div>
+      {isRentOpen && <RentSlider preview={preview} bare className={styles.headerSlider} />}
+      {summary}
+      <div className={styles.actionRow}>{bottomActions}</div>
+    </div>
+  );
   // 지도는 화면 전체를 쓰고, 위 결과 머리와 아래 시트가 가리는 만큼 비우고 시점을 맞춘다.
   const mapSectionRef = useResultMapViewport<HTMLElement>(preview, (section) => {
     const rect = section.getBoundingClientRect();
@@ -270,31 +281,22 @@ const NeighborhoodPreviewMobilePage = ({ preview }: Props) => {
         )}
         {isResultMap && (
           <>
+            {/* 결과 머리에는 로고와 검색, 마이만 둔다. 조건 요약과 색 기준은 아래 스택으로 옮겼다. 공개 탐색은 머리를 비운다. */}
             <header className={`${shared.resultHeader} ${styles.resultHeader}`}>
-              {!preview.isPublicExplore ? (
+              {!preview.isPublicExplore && (
                 <MobileMapHeader
                   leading={returnButton}
                   searchTo={NEIGHBORHOOD_ADDRESS_SEARCH_PATH}
                   searchLabel="주소 검색"
-                  center={summary}
-                  centered
                 />
-              ) : (
-                summary
               )}
-              {isRentOpen && <RentSlider preview={preview} bare className={styles.headerSlider} />}
-              <div className={styles.filterRow}>
-                <div className={styles.legendSlot}>
-                  <CommuteLegend maxMinutes={preview.maxMinutes} className={styles.legend} showsNoRent={false} />
-                </div>
-              </div>
             </header>
             {resultControls}
 
-            {/* 시트가 없으면 지도 아래 가운데에 `내 기록으로`와 `출퇴근 장소 다시 선택`을 나란히 두고, 시트가 있으면 같은 줄을 시트 위로 올린다. */}
+            {/* 시트가 없으면 아래 스택을 지도 아래에 두고, 시트가 있으면 같은 스택을 시트 위로 올린다. */}
             {!infoSubject && (
-              <div className={styles.bottomActions} data-public={preview.isPublicExplore || undefined}>
-                {bottomActions}
+              <div className={styles.bottomDock} data-public={preview.isPublicExplore || undefined}>
+                {resultStack}
               </div>
             )}
             {preview.isPublicExplore && recordArea && (
@@ -337,7 +339,7 @@ const NeighborhoodPreviewMobilePage = ({ preview }: Props) => {
                   )
                 }
                 peekSignal={peekSignal}
-                floating={bottomActions}
+                floating={resultStack}
                 floatingAlign="center"
                 onClose={() => {
                   if (infoSubject.kind === 'place') closeLayers();
@@ -376,21 +378,44 @@ const styles = {
     left: 50%;
     transform: translateX(-50%);
   `,
-  /* 시트가 없을 때 지도 아래 가운데 줄. 하단 탭이 없으니 아래 안전 영역만 비운다. */
-  bottomActions: css`
-    label: NeighborhoodPreviewMobilePage-bottomActions;
+  /* 시트가 없을 때 아래 스택을 놓는 자리. 하단 탭이 없으니 아래 안전 영역만 비운다. 빈 곳은 지도를 누를 수 있게 비켜 둔다. */
+  bottomDock: css`
+    label: NeighborhoodPreviewMobilePage-bottomDock;
     position: fixed;
     z-index: 20;
-    left: 50%;
+    right: 0.85rem;
     bottom: calc(var(--map-sheet-bottom, env(safe-area-inset-bottom)) + 0.75rem);
-    display: flex;
-    gap: 0.5rem;
-    transform: translateX(-50%);
+    left: 0.85rem;
+    pointer-events: none;
 
     /* 공개 탐색은 아래 기록 버튼 위에 둔다. */
     &[data-public='true'] {
       bottom: calc(env(safe-area-inset-bottom) + 4.5rem);
     }
+  `,
+  /* 아래 스택. 색 기준은 왼쪽에, 나머지는 가운데에 세로로 쌓는다. 시트 위 가운데 칸에 들어가도 같은 모양이다. */
+  resultStack: css`
+    label: NeighborhoodPreviewMobilePage-resultStack;
+
+    &&& {
+      display: flex;
+      flex: 1;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.5rem;
+      min-width: 0;
+      pointer-events: none;
+    }
+    & > * {
+      pointer-events: auto;
+    }
+  `,
+  actionRow: css`
+    label: NeighborhoodPreviewMobilePage-actionRow;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.5rem;
   `,
   headerSlider: css`
     pointer-events: auto;
@@ -403,7 +428,8 @@ const styles = {
     box-shadow: var(--shadow-floating);
   `,
   legendSlot: css`
-    flex: 0 0 8.1rem;
+    align-self: flex-start;
+    width: 8.1rem;
     & > * {
       width: 100%;
     }
@@ -419,12 +445,12 @@ const styles = {
     font-size: 1.3rem;
     cursor: pointer;
   `,
-  /* 시설 칸을 켰지만 멀리 보고 있을 때 지도 아래 가운데에 띄우는 한 줄 안내. 지도 조작을 막지 않는다. */
+  /* 시설 칸을 켰지만 멀리 보고 있을 때 결과 머리 바로 아래 가운데에 띄우는 한 줄 안내. 아래 스택과 겹치지 않는다. 지도 조작을 막지 않는다. */
   zoomHint: css`
     label: NeighborhoodPreviewMobilePage-zoomHint;
     position: absolute;
     left: 50%;
-    bottom: calc(env(safe-area-inset-bottom) + 1.5rem);
+    top: calc(max(0.75rem, env(safe-area-inset-top)) + 3.5rem);
     z-index: 2;
     margin: 0;
     padding: 0.5rem 0.9rem;
@@ -437,7 +463,7 @@ const styles = {
     pointer-events: none;
   `,
 
-  /* 결과 머리. 첫 줄(집, 조건 요약, 다시 선택)과 둘째 줄(월세 슬라이더와 색 기준 카드)을 위아래로 쌓는다. */
+  /* 결과 머리. 로고와 검색, 마이 한 줄만 둔다. */
   resultHeader: css`
     label: NeighborhoodPreviewMobilePage-resultHeader;
 
@@ -447,15 +473,6 @@ const styles = {
       align-items: stretch;
       gap: 0.45rem;
     }
-  `,
-
-  filterRow: css`
-    label: NeighborhoodPreviewMobilePage-filterRow;
-    pointer-events: none;
-    display: flex;
-    justify-content: flex-start;
-    align-items: flex-start;
-    gap: 0.45rem;
   `,
 
   resetButton: css`
