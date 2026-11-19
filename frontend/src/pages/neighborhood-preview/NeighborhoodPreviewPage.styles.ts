@@ -1,5 +1,7 @@
 import { css, cx, keyframes } from '@emotion/css';
 
+import { MAP_LAYER } from '@/shared/lib/map-layers/mapLayers';
+
 const searchCardRiseKeyframes = keyframes`
   from {
     opacity: 0;
@@ -65,6 +67,8 @@ export const locationControls = css`
 export const mapSearch = cx(
   css`
     label: NeighborhoodPreviewPage-mapSearch;
+    /* 결과 드롭다운이 입력창이 아니라 홈 버튼까지 포함한 이 줄 전체 너비를 쓴다. */
+    position: relative;
     display: flex;
     width: 100%;
     min-width: 0;
@@ -102,6 +106,7 @@ export const mapBack = cx(
 /* 데스크탑 헤더 안의 검색창은 본 방 기록과 같은 흰 칸에 그림자를 쓴다(`activeSearchField`). */
 export const headerMapSearch = css`
   label: NeighborhoodPreviewPage-headerMapSearch;
+  position: relative;
   display: flex;
   flex: 1;
   min-width: 0;
@@ -831,7 +836,7 @@ export const resultHeader = css`
   display: flex;
   gap: 0.45rem;
   align-items: flex-start;
-  z-index: 31;
+  z-index: ${MAP_LAYER.header};
 
   @media (max-width: 370px) {
     left: 0.6rem;
@@ -997,6 +1002,8 @@ export const mapOverlay = css`
   position: absolute;
   inset: 0;
   z-index: 40;
+  /* 데스크탑은 지도가 떠 있는 패널 아래까지 깔리므로, 안내 글은 패널을 뺀 칸의 가운데에 둔다. */
+  padding-left: calc(var(--map-panel-width, 0px) + 1.25rem);
   background: rgb(255 255 255 / 78%);
   backdrop-filter: blur(2px);
 `;

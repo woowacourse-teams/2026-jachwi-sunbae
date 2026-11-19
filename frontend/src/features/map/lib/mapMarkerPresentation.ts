@@ -1,5 +1,9 @@
 import type { MapMarker } from '../model/Map';
 const clamp = (value: number, min: number, max: number): number => Math.min(Math.max(value, min), max);
+/** `selectedMarkerId`로 골랐거나 마커 스스로 `selected`인 마커. */
+export const isMarkerSelected = (marker: MapMarker, selectedMarkerId: string | null | undefined): boolean =>
+  marker.selected === true || selectedMarkerId === marker.id;
+
 /** 이 값이 같으면 마커를 다시 그릴 필요가 없다. */
 export const markerSignature = (marker: MapMarker, selectedMarkerId: string | null): string =>
   [
@@ -16,7 +20,7 @@ export const markerSignature = (marker: MapMarker, selectedMarkerId: string | nu
     marker.summary?.amount ?? '',
     marker.photo ?? '',
     marker.actionable === true ? '1' : '0',
-    selectedMarkerId === marker.id ? '1' : '0',
+    isMarkerSelected(marker, selectedMarkerId) ? '1' : '0',
   ].join('|');
 
 /** 매물과 시설 마커는 아래 꼭짓점이 좌표를 가리키는 핀 이미지로 그린다. */
@@ -41,10 +45,8 @@ const MAX_RANK = 1_000;
 const toneZIndex = (marker: MapMarker, selectedMarkerId: string | null): number => {
   // 검색해서 고른 곳과 지도를 눌러 고른 곳의 라벨은 동 라벨, 지도 글자, 다른 마커보다 위에 둔다.
   if (marker.tone === 'pinLabel') return 12;
-  // 작은 매물 핀은 가게 같은 다른 마커 아래에 둔다.
-  if (marker.compact && selectedMarkerId !== marker.id) return 4;
   if (marker.tone === 'flash') return 11;
-  if (selectedMarkerId === marker.id) return 10;
+  if (isMarkerSelected(marker, selectedMarkerId)) return 10;
   if (marker.tone === 'selected') return 9;
   if (marker.tone === 'property' || marker.tone === 'propertyCluster') return 8;
   if (marker.tone === 'current') return 7;
@@ -65,12 +67,19 @@ const detailZIndex = (marker: MapMarker): number => {
  */
 export const markerZIndex = (marker: MapMarker, selectedMarkerId: string | null): number => {
   const tone = toneZIndex(marker, selectedMarkerId);
-  if (marker.tone === 'flash' || selectedMarkerId === marker.id) return tone * MARKER_Z_INDEX_TONE_SPAN;
+  if (marker.tone === 'flash' || isMarkerSelected(marker, selectedMarkerId)) return tone * MARKER_Z_INDEX_TONE_SPAN;
   return tone * MARKER_Z_INDEX_TONE_SPAN + detailZIndex(marker);
 };
 
-/** 지도 위에서 찍은 좌표의 버튼과 메뉴는 모든 마커보다 앞에 둔다. */
-export const COORDINATE_ACTION_Z_INDEX = 12 * MARKER_Z_INDEX_TONE_SPAN;
+/** 이름만 두는 동 이름표(찜한 동네)는 가장 높은 종류(pinLabel)의 마커 자리 바로 아래에 둔다. 그 마커와 위로는 섞이지 않는다. */
+export const REGION_NAME_LABEL_Z_INDEX = 12 * MARKER_Z_INDEX_TONE_SPAN - 1;
+/**
+ * 좌표에 붙는 버튼과 눌러 고른 동네 정보 카드의 z-index. 지도 위에 올리는 것 가운데 맨 위다.
+ * 층 순서(아래에서 위): 동 이름표 < 종류별 마커(5~12, 내 매물 말풍선과 시설 마커와 출퇴근 장소 라벨 포함) < 이 카드와 버튼 < 좌표 메뉴.
+ * 마우스를 올려 뜨는 동네 카드도 같은 자리를 쓰지만, 눌러 고른 동네가 있으면 호버 카드는 뜨지 않아 둘이 겹치지 않는다.
+ * 마커 종류를 더하면 이 값이 가장 높은 종류의 자리(`종류 번호 * MARKER_Z_INDEX_TONE_SPAN`) 위에 오도록 같이 올린다.
+ */
+export const COORDINATE_ACTION_Z_INDEX = 13 * MARKER_Z_INDEX_TONE_SPAN;
 export const COORDINATE_MENU_Z_INDEX = COORDINATE_ACTION_Z_INDEX + 1;
 
 /**
@@ -88,7 +97,28 @@ export const mapZoomScale = (level: number): number => {
   if (level > 1) return 1.35;
   return 1.6;
 };
+/** 내가 기록한 방 사진 카드 마커의 가장 큰 배율. 이 단계(4)보다 가까이 확대해도 더 커지지 않는다. */
+export const PHOTO_MARKER_MAX_SCALE = 0.85;
+/** 사진 카드 마커의 가장 작은 배율. 동네 여러 개가 보이게 멀리 축소해도 사진이 알아볼 만큼은 남긴다. */
+export const PHOTO_MARKER_MIN_SCALE = 0.55;
+const PHOTO_MARKER_FULL_SIZE_LEVEL = 4;
+const PHOTO_MARKER_SCALE_STEP = 0.06;
+/**
+ * 사진 카드 마커는 축소할수록 한 단계에 6%씩 작아져 넓은 지도를 덮지 않는다.
+ * 확대하면 같이 커지되 골목이 보이는 단계(4)의 크기에서 멈춰, 가까이 볼 때 카드가 지나치게 커지지 않는다.
+ */
+const photoMarkerScale = (level: number): number =>
+  Number(
+    clamp(
+      PHOTO_MARKER_MAX_SCALE - (level - PHOTO_MARKER_FULL_SIZE_LEVEL) * PHOTO_MARKER_SCALE_STEP,
+      PHOTO_MARKER_MIN_SCALE,
+      PHOTO_MARKER_MAX_SCALE,
+    ).toFixed(3),
+  );
+const isPhotoPropertyMarker = (marker: MapMarker): boolean =>
+  marker.photo !== undefined && (marker.tone === 'property' || marker.tone === 'propertyCluster');
 export const markerScale = (marker: MapMarker, level: number): number => {
+  if (isPhotoPropertyMarker(marker)) return photoMarkerScale(level);
   if (marker.category === 'MEMO') return Number(clamp(1 - (level - 4) * 0.1, 0.6, 1).toFixed(2));
   if (marker.tone === 'current' || marker.tone === 'flash') return 1;
   return mapZoomScale(level);

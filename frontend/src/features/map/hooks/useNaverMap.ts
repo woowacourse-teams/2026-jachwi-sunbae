@@ -7,6 +7,7 @@ import { clampToSouthKorea } from '../lib/mapLocation';
 import { createMapMarkerLayer } from '../lib/mapMarkerLayer';
 import { COORDINATE_ACTION_Z_INDEX, COORDINATE_MENU_Z_INDEX } from '../lib/mapMarkerPresentation';
 import { pinchLevelDelta } from '../lib/mapPinchZoom';
+import { cardFlipsBelow } from '../lib/mapRegionCardPlacement';
 import { createMapRegionLayer, READY_TIMEOUT_MS } from '../lib/mapRegionLayer';
 import { createMapTapGuard } from '../lib/mapTapGuard';
 import {
@@ -27,8 +28,6 @@ const EMPTY_MARKERS: NonNullable<MapCanvasProps['markers']> = [];
 const EMPTY_CIRCLES: NonNullable<MapCanvasProps['circles']> = [];
 const EMPTY_REGIONS: NonNullable<MapCanvasProps['regions']> = [];
 /** 시점 옮기기(morph 180ms)가 끝났다고 보는 최대 시간. 이 안에 목표에 못 닿은 idle은 중간 시점으로 본다. */
-/** 정보 카드의 대략 높이(px). 위쪽 가장자리 근처에서 뒤집을지 가늠할 때 쓴다. */
-const CARD_ESTIMATED_HEIGHT = 130;
 const VIEW_SETTLE_MS = 450;
 
 type LiveMapProps = Pick<
@@ -444,25 +443,20 @@ const useNaverMap = ({
     );
   }, [circleRadii, engine, liveMode, mapReady, radiusCenter.latitude, radiusCenter.longitude, settledVersion]);
 
-  useEffect(() => {
-    const map = mapRef.current;
-    if (!liveMode || !overlayReady || map === null || !coordinateAction || !isNaverSdkAvailable()) return;
+  const containerHeight = () => containerRef.current?.clientHeight ?? 0;
+  /** 좌표에 붙는 버튼이나 정보 카드 하나를 올리고, 걷어내는 함수를 돌려준다. */
+  const mountCoordinateAction = (map: LiveMap, action: NonNullable<MapCanvasProps['coordinateAction']>) => {
     const content = document.createElement('div');
-    if (coordinateAction.card) {
-      // 카드가 화면 위쪽을 넘을 만큼 좌표가 위쪽 가장자리에 가까우면 마커 아래로 뒤집는다.
-      const view = engine.getBounds(map);
-      const height = containerRef.current?.clientHeight ?? 0;
-      const fromTop = ((view.north - coordinateAction.latitude) / (view.north - view.south || 1)) * height;
-      const needed = (coordinateAction.card.markerAbove ?? 0) + CARD_ESTIMATED_HEIGHT + 24;
-      const flip = height > 0 && fromTop < needed;
-      content.append(createMapRegionCardElement(coordinateAction.card, coordinateAction.onHoverChange, flip));
+    if (action.card) {
+      const flip = cardFlipsBelow(action, action.card.markerAbove ?? 0, engine.getBounds(map), containerHeight());
+      content.append(createMapRegionCardElement(action.card, action.onHoverChange, flip));
       const cardOverlay = engine.createOverlay(
         map,
         {
           id: 'coordinate-action',
-          label: coordinateAction.card.title,
-          latitude: coordinateAction.latitude,
-          longitude: coordinateAction.longitude,
+          label: action.card.title,
+          latitude: action.latitude,
+          longitude: action.longitude,
           tone: 'destination',
         },
         content,
@@ -474,22 +468,22 @@ const useNaverMap = ({
     }
     const button = document.createElement('button');
     button.type = 'button';
-    button.textContent = coordinateAction.label;
-    button.disabled = coordinateAction.disabled ?? false;
+    button.textContent = action.label;
+    button.disabled = action.disabled ?? false;
     button.className = actionStyles.coordinateAction;
-    if (coordinateAction.placement) button.dataset.placement = coordinateAction.placement;
+    if (action.placement) button.dataset.placement = action.placement;
     button.addEventListener('click', (event) => {
       event.stopPropagation();
-      coordinateAction.onClick();
+      action.onClick();
     });
     content.append(button);
     const overlay = engine.createOverlay(
       map,
       {
         id: 'coordinate-action',
-        label: coordinateAction.label,
-        latitude: coordinateAction.latitude,
-        longitude: coordinateAction.longitude,
+        label: action.label,
+        latitude: action.latitude,
+        longitude: action.longitude,
       },
       content,
       COORDINATE_ACTION_Z_INDEX,
@@ -497,6 +491,12 @@ const useNaverMap = ({
     return () => {
       if (isNaverSdkAvailable()) overlay.setMap(null);
     };
+  };
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!liveMode || !overlayReady || map === null || !coordinateAction || !isNaverSdkAvailable()) return;
+    return mountCoordinateAction(map, coordinateAction);
   }, [coordinateAction, engine, liveMode, overlayReady]);
 
   useEffect(() => {
@@ -562,7 +562,7 @@ const useNaverMap = ({
   }, [engine, liveMode, mapReady]);
 
   useEffect(() => {
-    regionLayerRef.current?.sync(regions, selectedRegionId, !isDesktop);
+    regionLayerRef.current?.sync(regions, selectedRegionId, isDesktop ? 'full' : 'chip');
   }, [engine, isDesktop, liveMode, mapReady, regions, selectedRegionId, settledVersion]);
 
   useEffect(() => {

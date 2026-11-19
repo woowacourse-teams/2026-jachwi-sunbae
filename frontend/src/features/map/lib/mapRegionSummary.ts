@@ -50,6 +50,65 @@ export const regionSummaryRows = (region: MapRegion): [string, string][] => {
   return rows;
 };
 
+/** 월세 라벨과 휴대폰 이름표가 함께 쓰는 상태 표시(찜, 고름)와 읽기 도구 이름. 월세는 글자에 없어도 여기서 읽어 준다. */
+const describeRegionLabel = (button: HTMLButtonElement, region: MapRegion, selected: boolean) => {
+  const rent = region.rentLabel;
+  const isSaved = rent?.isBookmarked === true;
+  if (isSaved) button.dataset.saved = 'true';
+  // 월세 줄 없이 이름만 두는 라벨(찜한 동네)은 크게 그려 찜한 영역이 눈에 띄게 한다.
+  const isBookmark = region.showsName === true && !rent;
+  if (isBookmark) button.dataset.bookmark = 'true';
+  button.setAttribute('aria-pressed', String(selected));
+  const commuteText = rent?.commute ? `통근 ${rent.commute}` : null;
+  const priceText = rent?.price
+    ? `월세 ${rent.price}, 거래 ${rent.count}건${rent.sparse ? ', 자료 적음' : ''}`
+    : rent
+      ? '월세 정보 없음'
+      : null;
+  const caption = isBookmark ? region.nameCaption : undefined;
+  button.setAttribute(
+    'aria-label',
+    [isSaved ? '찜한 동네' : null, region.name, commuteText, priceText, caption].filter(Boolean).join(' '),
+  );
+  return { isSaved, isBookmark, caption };
+};
+
+const regionNameElement = (region: MapRegion, isSaved: boolean) => {
+  const name = document.createElement('strong');
+  name.textContent = region.name;
+  if (isSaved) {
+    const star = document.createElement('span');
+    star.textContent = '★';
+    star.className = styles.savedStar;
+    star.setAttribute('aria-hidden', 'true');
+    name.prepend(star);
+  }
+  return name;
+};
+
+/**
+ * 휴대폰 지도의 동 이름표. 좁은 화면에서 지저분하지 않게 `동 이름 통근 시간` 한 줄만 적는다(예: `삼성2동 4분`).
+ * 월세 시세는 글자로 적지 않고 동네 시트에서 보여 주며, 읽기 도구 이름에는 월세 라벨과 같게 넣는다.
+ */
+export const createRegionChipElement = (region: MapRegion, selected: boolean, onSelect: () => void) => {
+  const button = document.createElement('button');
+  button.className = styles.chip;
+  button.dataset.filteredOut = String(region.rentLabel?.filteredOut ?? false);
+  const { isSaved } = describeRegionLabel(button, region, selected);
+  button.append(regionNameElement(region, isSaved));
+  const commute = region.rentLabel?.commute;
+  if (commute) {
+    const time = document.createElement('b');
+    time.textContent = commute;
+    button.append(time);
+  }
+  button.addEventListener('click', (event) => {
+    event.stopPropagation();
+    onSelect();
+  });
+  return button;
+};
+
 /**
  * 동 이름 아래에 통근 시간과 평균 월세를 붙인 가벼운 라벨. 동네마다 하나씩 둔다.
  * 월세 시세가 없는 동은 `월세 정보 없음`을 적고, 거래가 적은 동은 글자 없이 회색으로만 흐리게 한다.
@@ -60,19 +119,14 @@ export const createRegionRentLabelElement = (region: MapRegion, selected: boolea
   button.className = styles.rentLabel;
   button.dataset.sparse = String(rent?.sparse ?? false);
   button.dataset.filteredOut = String(rent?.filteredOut ?? false);
-  // 월세 줄 없이 이름만 두는 라벨(찜한 동네)은 크게 그려 찜한 영역이 눈에 띄게 한다.
-  if (region.showsName && !rent) button.dataset.bookmark = 'true';
-  button.setAttribute('aria-pressed', String(selected));
-  const commuteText = rent?.commute ? `통근 ${rent.commute}` : null;
-  const priceText = rent?.price
-    ? `월세 ${rent.price}, 거래 ${rent.count}건${rent.sparse ? ', 자료 적음' : ''}`
-    : rent
-      ? '월세 정보 없음'
-      : null;
-  button.setAttribute('aria-label', [region.name, commuteText, priceText].filter(Boolean).join(' '));
-  const name = document.createElement('strong');
-  name.textContent = region.name;
-  button.append(name);
+  const { isSaved, caption } = describeRegionLabel(button, region, selected);
+  button.append(regionNameElement(region, isSaved));
+  // 찜한 동네는 이름 옆에 월세 시세를 붙인다.
+  if (caption) {
+    const note = document.createElement('small');
+    note.textContent = caption;
+    button.append(note);
+  }
   // 통근 시간은 동 색(15분 이하, 16~30분...)으로 이미 알리므로 이름표 글자에는 쓰지 않는다. 화면 낭독기에는 위 aria-label로 읽어 준다.
   if (rent) {
     const line = document.createElement('span');

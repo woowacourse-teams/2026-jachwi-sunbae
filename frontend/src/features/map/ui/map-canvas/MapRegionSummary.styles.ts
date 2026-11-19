@@ -158,7 +158,10 @@ export const rentLabel = css`
 
   /* 찜한 동네 이름표. 동 이름만 두므로 크게 쓰고 찜 색 테두리로 찜한 영역임을 알린다. */
   &[data-bookmark='true'] {
-    max-width: 140px;
+    flex-direction: row;
+    align-items: baseline;
+    gap: 5px;
+    max-width: 220px;
     padding: 5px 11px;
     border: 1.5px solid #2554b8;
     border-radius: 999px;
@@ -172,8 +175,84 @@ export const rentLabel = css`
     font-weight: 800;
   }
 
+  &[data-bookmark='true'] > small {
+    color: #3f6fc4;
+    font-size: 12px;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+
+  /* 찜한 동네의 월세 라벨. 연한 파랑 바탕과 파랑 테두리로 구분하고 이름 앞에 채운 별을 둔다. */
+  &[data-saved='true'] {
+    border: 1.5px solid #2554b8;
+    background: #e3ecfb;
+  }
+
   &[aria-pressed='true'] {
     border-color: #3f6fc4;
     box-shadow: 0 0 0 1px #3f6fc4;
+  }
+`;
+
+export const savedStar = css`
+  label: MapRegionSummary-savedStar;
+  margin-right: 2px;
+  color: #2554b8;
+  font-size: 10px;
+  font-style: normal;
+`;
+
+/** 휴대폰 지도의 동 이름표. `동 이름 통근 시간` 한 줄짜리 작은 알약으로 두고, 월세는 동네 시트에서 본다. */
+export const chip = css`
+  label: MapRegionSummary-chip;
+  scale: var(--map-region-scale, 1);
+  transform-origin: center;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 3px;
+  width: max-content;
+  padding: 2px 7px;
+  border: 1px solid rgb(0 0 0 / 14%);
+  border-radius: 999px;
+  background: rgb(255 255 255 / 94%);
+  box-shadow: 0 1px 3px rgb(0 0 0 / 16%);
+  color: #222;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 11px;
+  line-height: 1.3;
+  white-space: nowrap;
+
+  & > strong {
+    font-weight: 700;
+  }
+
+  & > b {
+    color: #3f6fc4;
+    font-weight: 700;
+  }
+
+  &[data-filtered-out='true'] {
+    opacity: 0.55;
+  }
+
+  /* 찜한 동네. 이름 앞 별과 파랑 테두리로 구분한다. */
+  &[data-saved='true'],
+  &[data-bookmark='true'] {
+    border: 1.5px solid #2554b8;
+    color: #2554b8;
+  }
+
+  /* 고른 동네는 진한 바탕으로 강조하고 다른 이름표보다 앞에 둔다. */
+  &[aria-pressed='true'] {
+    border-color: #25282d;
+    background: #25282d;
+    color: #fff;
+    opacity: 1;
+  }
+
+  &[aria-pressed='true'] > b,
+  &[aria-pressed='true'] > strong > span {
+    color: #ffd76a;
   }
 `;

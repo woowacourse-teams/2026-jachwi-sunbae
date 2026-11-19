@@ -6,6 +6,7 @@ import MapHeaderWeather from '@/features/weather/ui/map-header-weather/MapHeader
 import AreaSkeleton from '@/shared/ui/area-skeleton/AreaSkeleton';
 import { DesktopHeaderSlotProvider } from '@/shared/ui/desktop-header/DesktopHeaderSlot';
 import DetailHeader from '@/shared/ui/detail-header/DetailHeader';
+import { setDetailCollapsed } from '@/shared/ui/list-detail-layout/detailCollapse';
 import ListDetailLayout from '@/shared/ui/list-detail-layout/ListDetailLayout';
 import MapListHeader from '@/shared/ui/map-list-header/MapListHeader';
 import { useMapPanel } from '@/shared/ui/map-list-header/MapPanelContext';
@@ -41,7 +42,12 @@ const RecordsDesktopPage = ({ records, layers }: Props) => {
   const params = useParams();
   const isReplacingChecklist = params.stage !== undefined;
   const { selected, setSelectedId, setNotice } = records;
-  const closeDetail = () => setSelectedId(null);
+
+  // 목록 카드를 누르면 접어 둔 상세 패널을 펼친다. 지도 중심은 펼친 패널 폭 기준으로 맞도록 펼침을 먼저 한다. 이전, 다음 버튼은 접힘을 그대로 둔다.
+  const openFromList = (recordId: string) => {
+    setDetailCollapsed(false);
+    records.showRecordOnMap(recordId);
+  };
 
   // 처음 여는 화면이라 남겨 둘 목록이 없다. 늦추지 않고 바로 뼈대를 보여, 화면 코드를 받는 동안의 뼈대(`RecordsPageSkeleton`)에서 이어지게 한다.
   const list = records.properties.isPending ? (
@@ -60,7 +66,7 @@ const RecordsDesktopPage = ({ records, layers }: Props) => {
         backLabel="전체 리스트로 돌아가기"
         onBack={layers.closeGroup}
       />
-      <RecordGroupList records={layers.groupRecords} onOpen={records.showRecordOnMap} onNotice={setNotice} />
+      <RecordGroupList records={layers.groupRecords} onOpen={openFromList} onNotice={setNotice} />
     </div>
   ) : records.district !== '전체' ? (
     // 동네 뱃지를 고르면 맨 왼쪽 리스트가 그 동네 목록으로 바뀌고, 뒤로가기로 전체 리스트로 돌아간다. 옆으로 나오는 칸은 상세만 쓴다.
@@ -73,7 +79,7 @@ const RecordsDesktopPage = ({ records, layers }: Props) => {
       <RecordList
         records={records.records}
         district={records.district}
-        onOpen={records.showRecordOnMap}
+        onOpen={openFromList}
         selectedId={records.selected?.id}
         onNotice={setNotice}
       />
@@ -83,7 +89,7 @@ const RecordsDesktopPage = ({ records, layers }: Props) => {
       className={styles.list}
       records={records.records}
       district={records.district}
-      onOpen={records.showRecordOnMap}
+      onOpen={openFromList}
       selectedId={records.selected?.id}
       onNotice={setNotice}
       showCompare
@@ -108,7 +114,7 @@ const RecordsDesktopPage = ({ records, layers }: Props) => {
               panel={{
                 propertyId: Number(selected.id),
                 onClose: () => setSelectedId(null),
-                headerEnd: neighbors && <RecordStepper neighbors={neighbors} onStep={records.showRecord} />,
+                headerEnd: neighbors && <RecordStepper neighbors={neighbors} onStep={records.showRecordOnMap} />,
               }}
             />
           )}
@@ -136,9 +142,11 @@ const RecordsDesktopPage = ({ records, layers }: Props) => {
                 {panel?.content ?? list}
               </>
             }
-            detail={panel ? undefined : detail}
-            onCloseDetail={closeDetail}
-            closeLabel="매물 상세 칸 닫기"
+            detail={panel ? panel.detail?.content : detail}
+            // 옆 버튼은 상세를 접기만 한다. 선택 해제는 상세 머리의 뒤로가기가 맡는다. 체크리스트 편집 칸은 접지 않고 닫는다.
+            collapsible={!panel}
+            onCloseDetail={panel?.detail?.close}
+            closeLabel={panel?.detail?.closeLabel}
           >
             {/* 기록을 받는 동안 지도 칸도 화면 코드를 받는 동안의 뼈대와 같은 지도 영역 뼈대로 채운다. 알림은 목록 영역이 맡는다. */}
             {records.properties.isPending && <AreaSkeleton area="map" />}
