@@ -11,7 +11,8 @@ import BottomSheet from '@/shared/ui/bottom-sheet/BottomSheet';
 import { Button } from '@/shared/ui/button/Button';
 import Icon from '@/shared/ui/icon/Icon';
 import { useMapPanel } from '@/shared/ui/map-list-header/MapPanelContext';
-import MobileMapHeader, { MapHomeLink } from '@/shared/ui/mobile-map-header/MobileMapHeader';
+import { MapModeSwitchTile } from '@/shared/ui/map-mode-tile/MapModeContext';
+import MobileMapHeader from '@/shared/ui/mobile-map-header/MobileMapHeader';
 
 import useMyPropertyPager from '../hooks/useMyPropertyPager';
 import useNeighborhoodMapView from '../hooks/useNeighborhoodMapView';
@@ -43,7 +44,8 @@ type Props = {
 const NeighborhoodPreviewMobilePage = ({ preview }: Props) => {
   const controller = useRecordsMapController();
   const usesSharedSearch = controller !== null && !preview.isPublicExplore;
-  const returnButton = !preview.isPublicExplore && <MapHomeLink />;
+  // 헤더 왼쪽은 기록 화면과 같은 모드 전환 타일(`내 기록`)이다. 통합 지도 밖(공개 동네 찾기)에는 두지 않는다.
+  const returnButton = !preview.isPublicExplore && <MapModeSwitchTile />;
   const panel = useMapPanel();
   // 위치를 고르는 동안 조건 칸 아래에 바로 펼친 피커. 같은 칸을 다시 누르면 접는다.
   // 결과를 지도로 볼지 동네 목록으로 볼지. 기록 화면의 리스트와 지도 전환과 같은 짝이다.
