@@ -14,6 +14,7 @@ import ListDetailLayout from '@/shared/ui/list-detail-layout/ListDetailLayout';
 import MapBadgeRail from '@/shared/ui/map-badge-rail/MapBadgeRail';
 import MapListHeader from '@/shared/ui/map-list-header/MapListHeader';
 import { useMapPanel } from '@/shared/ui/map-list-header/MapPanelContext';
+import { DESKTOP_MODE_BUTTON_BOTTOM } from '@/shared/ui/map-mode-switch/MapModeButton';
 import { MapModeBackButton, MapModeSwitchButton } from '@/shared/ui/map-mode-switch/MapModeContext';
 import StateIllustration from '@/shared/ui/state-illustration/StateIllustration';
 
@@ -636,7 +637,7 @@ const styles = {
     label: NeighborhoodPreviewDesktopPage-mode;
     position: absolute;
     z-index: 14;
-    bottom: 1.25rem;
+    bottom: ${DESKTOP_MODE_BUTTON_BOTTOM};
     left: calc(50% + var(--map-panel-width, 0px) / 2);
     transform: translateX(-50%);
   `,

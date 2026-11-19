@@ -6,6 +6,7 @@ import MapZoomControl from '@/features/map/ui/map-zoom-control/MapZoomControl';
 import StreetMemoImpressionLog from '@/features/street-memo/ui/street-memo-impression-log/StreetMemoImpressionLog';
 import StreetMemoPanel from '@/features/street-memo/ui/street-memo-panel/StreetMemoPanel';
 import Icon from '@/shared/ui/icon/Icon';
+import { DESKTOP_MODE_BUTTON_BOTTOM } from '@/shared/ui/map-mode-switch/MapModeButton';
 import { MapModeSwitchButton } from '@/shared/ui/map-mode-switch/MapModeContext';
 
 import type { RecordsState } from '../hooks/useRecords';
@@ -97,7 +98,7 @@ const styles = {
     label: RecordsDesktopMap-mode;
     position: absolute;
     z-index: 14;
-    bottom: 1.25rem;
+    bottom: ${DESKTOP_MODE_BUTTON_BOTTOM};
     left: calc(50% + var(--map-panel-width, 0px) / 2);
     transform: translateX(-50%);
   `,

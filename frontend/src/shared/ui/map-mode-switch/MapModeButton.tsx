@@ -5,6 +5,12 @@ import iconMap from '@/shared/assets/illustrations/icon-map.webp';
 
 import { Button } from '../button/Button';
 
+/**
+ * 데스크탑 지도 아래 가운데 모드 버튼의 아래 간격. 지도 맨 아래 네이버 로고와 축척 줄보다 한 줄 위에 띄운다.
+ * 휴대폰은 보기 방식 스위치나 바텀시트를 기준으로 화면마다 정한다.
+ */
+export const DESKTOP_MODE_BUTTON_BOTTOM = '2.5rem';
+
 type Props = { mode: 'records' | 'neighborhoods'; onClick: () => void; className?: string };
 
 /** 지도 아래 가운데에 띄우는 알약형 모드 전환 버튼. 지금 모드의 반대 모드(`mode`)로 넘어간다. 자리는 화면이 `className`으로 정한다. */
