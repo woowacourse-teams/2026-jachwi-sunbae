@@ -2,7 +2,6 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 
-import { markFinderUsed } from '@/pages/design-records/model/finderUsed';
 import { ApiError } from '@/features/auth/api/apiClient';
 import { commuteAreaToRegion, rentLabelOf } from '@/features/map/api/commuteApi';
 import { fetchCommuteRoute } from '@/features/map/api/commuteRouteApi';
@@ -179,10 +178,6 @@ const useNeighborhoodPreview = () => {
     resultCount: areas?.length ?? 0,
     rentCount: areas?.filter((area) => area.rent !== null).length ?? 0,
   });
-  // 결과 지도가 한 번이라도 나왔으면 내 기록 지도의 동네 찾기 배너를 더는 보이지 않는다.
-  useEffect(() => {
-    if (phase === 'analyzing' && commute.isSuccess && !commute.isFetching) markFinderUsed();
-  }, [phase, commute.isSuccess, commute.isFetching]);
   useEffect(() => {
     if (isPublicExplore && phase === 'analyzing' && commute.isSuccess && !commute.isFetching) {
       completeExploration(areas?.length ?? 0);

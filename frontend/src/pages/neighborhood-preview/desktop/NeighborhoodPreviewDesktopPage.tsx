@@ -14,6 +14,7 @@ import ListDetailLayout from '@/shared/ui/list-detail-layout/ListDetailLayout';
 import MapBadgeRail from '@/shared/ui/map-badge-rail/MapBadgeRail';
 import MapListHeader from '@/shared/ui/map-list-header/MapListHeader';
 import { useMapPanel } from '@/shared/ui/map-list-header/MapPanelContext';
+import { MapModeSwitchButton } from '@/shared/ui/map-mode-switch/MapModeContext';
 import StateIllustration from '@/shared/ui/state-illustration/StateIllustration';
 
 import useNeighborhoodMapView from '../hooks/useNeighborhoodMapView';
@@ -211,6 +212,8 @@ const NeighborhoodPreviewDesktopPage = ({ preview }: Props) => {
             {...mapProps}
           />
           <AnalysisOverlay preview={preview} />
+          {/* `내 기록으로` 버튼. 목록 칸을 뺀 지도 영역 아래 가운데에 두고, 왼쪽 아래 정보 카드가 열려 있으면 겹치지 않게 숨긴다. */}
+          {!infoSubject && <MapModeSwitchButton className={styles.mode} />}
           {isResultMap && showsRecords && (
             <MapBadgeRail
               desktopMap
@@ -623,6 +626,15 @@ const styles = {
     }
   `,
   /* 지도 왼쪽 아래에 색 기준(위)과 월세 슬라이더(아래)를 쌓는다. 오른쪽 정보 카드는 이 줄 옆으로 비킨다. */
+  mode: css`
+    label: NeighborhoodPreviewDesktopPage-mode;
+    position: absolute;
+    z-index: 14;
+    bottom: 1.25rem;
+    left: calc(50% + var(--map-panel-width, 0px) / 2);
+    transform: translateX(-50%);
+  `,
+
   bottomStack: css`
     label: NeighborhoodPreviewDesktopPage-bottomStack;
     position: absolute;

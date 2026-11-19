@@ -6,11 +6,11 @@ import MapZoomControl from '@/features/map/ui/map-zoom-control/MapZoomControl';
 import StreetMemoImpressionLog from '@/features/street-memo/ui/street-memo-impression-log/StreetMemoImpressionLog';
 import StreetMemoPanel from '@/features/street-memo/ui/street-memo-panel/StreetMemoPanel';
 import Icon from '@/shared/ui/icon/Icon';
+import { MapModeSwitchButton } from '@/shared/ui/map-mode-switch/MapModeContext';
 
 import type { RecordsState } from '../hooks/useRecords';
 import type { RecordsMapLayers } from '../hooks/useRecordsMapLayers';
 import RecordLocationPick from '../ui/record-location-pick/RecordLocationPick';
-import RecordNeighborhoodBanner from '../ui/record-neighborhood-banner/RecordNeighborhoodBanner';
 import RecordRegisterSuggestion from '../ui/record-register-suggestion/RecordRegisterSuggestion';
 
 type Props = {
@@ -41,7 +41,8 @@ const RecordsDesktopMap = ({ records, layers, districts, className }: Props) => 
       <Icon name="target" size={22} />
     </button>
     <MapZoomControl className={styles.zoom} level={records.level} onChange={records.setLevel} />
-    {!records.selected && layers.memo.mode === null && <RecordNeighborhoodBanner className={styles.banner} />}
+    {/* 동네 찾기로 가는 버튼. 목록 칸을 뺀 지도 영역 아래 가운데에 둔다. 위치를 고르는 안내와 메모 카드가 열려 있으면 숨긴다. */}
+    {!layers.locationPick && layers.memo.mode === null && <MapModeSwitchButton className={styles.mode} />}
     <StreetMemoPanel layer={layers.memo} className={styles.memoCard} />
     <RecordRegisterSuggestion
       isOpen={layers.isSuggestingRegister}
@@ -92,10 +93,13 @@ const styles = {
   `,
 
   /* 목록 칸이 지도 위에 겹친 만큼 비켜 보이는 지도 가운데 아래에 둔다. */
-  banner: css`
-    label: RecordsDesktopMap-banner;
+  mode: css`
+    label: RecordsDesktopMap-mode;
+    position: absolute;
+    z-index: 14;
     bottom: 1.25rem;
-    left: calc(var(--map-panel-width, 0px) + 1.25rem);
+    left: calc(50% + var(--map-panel-width, 0px) / 2);
+    transform: translateX(-50%);
   `,
 
   /* 메모 카드와 겹친 매물 카드는 오른쪽 버튼을 가리지 않게 왼쪽 위, 동네 뱃지 아래에 띄운다. 둘은 함께 열리지 않는다. */

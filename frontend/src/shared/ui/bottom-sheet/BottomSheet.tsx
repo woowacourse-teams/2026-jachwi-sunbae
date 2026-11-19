@@ -35,6 +35,8 @@ type BottomSheetProps = {
    * 페이지로 열면 숨긴다.
    */
   floating?: ReactNode;
+  /** `floating`을 오른쪽 끝(`end`)에 둘지, 가운데(`center`)에 둘지. 지도 모드 전환 버튼처럼 지도 아래 가운데에 있던 것은 가운데로 올린다. */
+  floatingAlign?: 'end' | 'center';
   /** 시트 상자에 덧붙일 클래스. 내용이 바뀔 때 다시 올라오는 전환처럼 화면마다 다른 움직임만 덧붙인다. */
   className?: string;
 };
@@ -60,6 +62,7 @@ const BottomSheet = ({
   hidesHeaderEndWhenExpanded = false,
   subtitle,
   floating,
+  floatingAlign = 'end',
   className,
 }: BottomSheetProps) => {
   const [mode, setMode] = useState<SheetMode>('default');
@@ -141,7 +144,11 @@ const BottomSheet = ({
         }
       }}
     >
-      {floating && !isFullPage && <div className={styles.floating}>{floating}</div>}
+      {floating && !isFullPage && (
+        <div className={styles.floating} data-align={floatingAlign}>
+          {floating}
+        </div>
+      )}
       {resizable && !isFullPage && (
         <button
           ref={handleRef}
@@ -295,6 +302,18 @@ const styles = {
     position: absolute;
     right: 0.85rem;
     bottom: calc(100% + 0.75rem);
+
+    /* 가운데 줄은 시트 폭 전체에 걸치되, 빈 곳은 지도를 누를 수 있게 비켜 둔다. */
+    &[data-align='center'] {
+      left: 0.85rem;
+      display: flex;
+      justify-content: center;
+      gap: 0.5rem;
+      pointer-events: none;
+    }
+    &[data-align='center'] > * {
+      pointer-events: auto;
+    }
   `,
 
   grabber: css`

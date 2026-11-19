@@ -20,7 +20,7 @@ import { MapLocationError, readGeolocationPermission, requestCurrentMapLocation 
 import type { MapCanvasProps } from '@/features/map/model/MapCanvas';
 import { PublicConfigProvider } from '@/shared/config/PublicConfigContext';
 import { trackPostHogEvent } from '@/shared/lib/analytics/posthog';
-import { MapModeProvider } from '@/shared/ui/map-mode-tile/MapModeContext';
+import { MapModeProvider } from '@/shared/ui/map-mode-switch/MapModeContext';
 
 import { server } from '../../server';
 
@@ -339,7 +339,7 @@ it.each([
   await userEvent.click(
     isPublic
       ? screen.getByRole('button', { name: '홈으로 돌아가기' })
-      : screen.getByRole('button', { name: '기록으로 전환' }),
+      : screen.getByRole('button', { name: '내 기록으로' }),
   );
   expect(await screen.findByRole('heading', { name: '홈' })).toBeInTheDocument();
 });
@@ -1116,26 +1116,28 @@ it('이전에 찍은 위치의 늦은 주소 응답이 새 목적지를 덮지 �
   expect(screen.getByLabelText('목적지 좌표')).not.toHaveTextContent('이전 목적지');
 });
 
-it('모바일은 지도 위 핀으로 목적지 선택을 켜고 결과에서도 헤더의 내 기록 타일로 기록에 돌아간다', async () => {
+it('모바일은 지도 위 핀으로 목적지 선택을 켜고 결과에서도 지도 아래 내 기록으로 버튼으로 기록에 돌아간다', async () => {
   show();
   const user = userEvent.setup();
   const toggle = screen.getByRole('button', { name: '지도에서 목적지 선택' });
   const searchHeader = screen.getByRole('textbox', { name: '출퇴근 장소' }).closest('header');
   expect(toggle.closest('header')).toBeNull();
-  expect(searchHeader).toContainElement(screen.getByRole('button', { name: '기록으로 전환' }));
+  expect(searchHeader).toContainElement(screen.getByRole('link', { name: '자취선배 홈' }));
+  // 위치를 고르는 동안 `내 기록으로`는 머리가 아니라 아래 조건 칸 위에 떠 있다.
+  expect(screen.getByRole('button', { name: '내 기록으로' }).closest('header')).toBeNull();
   expect(toggle).toHaveAttribute('aria-pressed', 'false');
   await user.click(toggle);
   expect(screen.getByRole('button', { name: '목적지 선택 취소' })).toHaveAttribute('aria-pressed', 'true');
   await user.click(screen.getByRole('button', { name: '지도에서 위치 찍기' }));
   await submitCurrentSearch(user);
   await screen.findByRole('region', { name: '행정동 프리셋 지도' });
-  expect(screen.getByRole('button', { name: '기록으로 전환' }).closest('header')).not.toBeNull();
+  expect(screen.getByRole('button', { name: '내 기록으로' }).closest('header')).toBeNull();
   await user.click(screen.getByRole('button', { name: '출퇴근 장소 다시 선택' }));
   expect(screen.getByRole('button', { name: '이전 결과 보기' }).closest('header')).toBeNull();
   expect(screen.getByRole('button', { name: '지도에서 목적지 선택' }).closest('header')).toBeNull();
   await user.click(screen.getByRole('button', { name: '이전 결과 보기' }));
   await screen.findByRole('region', { name: '행정동 프리셋 지도' });
-  await user.click(screen.getByRole('button', { name: '기록으로 전환' }));
+  await user.click(screen.getByRole('button', { name: '내 기록으로' }));
   expect(await screen.findByRole('heading', { name: '홈' })).toBeInTheDocument();
 });
 

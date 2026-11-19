@@ -11,7 +11,7 @@ import { MapCanvasMode, SharedMapCanvasProvider } from '@/features/map/ui/map-ca
 import useIsDesktop from '@/shared/lib/hooks/useIsDesktop';
 import { CHEAP_MEALS_PATH, MY_PATH, NEIGHBORHOODS_PATH, RECORDS_PATH } from '@/shared/lib/navigation/appPaths';
 import { MapPanelProvider } from '@/shared/ui/map-list-header/MapPanelContext';
-import { MapModeProvider, type MapModeSwitch } from '@/shared/ui/map-mode-tile/MapModeContext';
+import { MapModeProvider, type MapModeSwitch } from '@/shared/ui/map-mode-switch/MapModeContext';
 
 import MyMapPanel from './ui/MyMapPanel';
 

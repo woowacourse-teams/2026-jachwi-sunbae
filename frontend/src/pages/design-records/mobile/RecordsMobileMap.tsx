@@ -5,11 +5,11 @@ import MapZoomControl from '@/features/map/ui/map-zoom-control/MapZoomControl';
 import StreetMemoImpressionLog from '@/features/street-memo/ui/street-memo-impression-log/StreetMemoImpressionLog';
 import StreetMemoSheet from '@/features/street-memo/ui/street-memo-sheet/StreetMemoSheet';
 import Icon from '@/shared/ui/icon/Icon';
+import { MapModeSwitchButton } from '@/shared/ui/map-mode-switch/MapModeContext';
 
 import type { RecordsState } from '../hooks/useRecords';
 import type { RecordsMapLayers } from '../hooks/useRecordsMapLayers';
 import { recordNeighbors } from '../model/recordNavigation';
-import RecordNeighborhoodBanner from '../ui/record-neighborhood-banner/RecordNeighborhoodBanner';
 import RecordRegisterSuggestion from '../ui/record-register-suggestion/RecordRegisterSuggestion';
 import RecordStepper from '../ui/record-stepper/RecordStepper';
 import RecordsSelectedSheet from './RecordsSelectedSheet';
@@ -43,9 +43,11 @@ const RecordsMobileMap = ({ records, layers }: Props) => {
         <Icon name="target" size={22} />
       </button>
       <MapZoomControl className={styles.zoom} level={records.level} onChange={records.setLevel} />
-      {sheetRecords.length === 0 && layers.memo.mode === null && <RecordNeighborhoodBanner className={styles.banner} />}
+      {/* 동네 찾기로 가는 버튼은 지도 아래 가운데에 두고, 매물 시트가 열리면 시트 위로 따라 올린다. 메모를 보는 동안은 숨긴다. */}
+      {sheetRecords.length === 0 && layers.memo.mode === null && <MapModeSwitchButton className={styles.mode} />}
       <RecordsSelectedSheet
         records={sheetRecords}
+        floating={<MapModeSwitchButton />}
         onClose={layers.closeAll}
         stepper={neighbors && <RecordStepper neighbors={neighbors} onStep={records.showRecord} />}
         onNotice={records.setNotice}
@@ -69,10 +71,14 @@ const styles = {
     min-height: 0;
   `,
 
-  /* 아래 가운데 보기 방식 스위치(fixed, 약 3rem) 위에 둔다. */
-  banner: css`
-    label: RecordsMobileMap-banner;
-    bottom: calc(var(--map-sheet-bottom, env(safe-area-inset-bottom)) + 4.75rem);
+  /* 아래 가운데 보기 방식 스위치(fixed, 약 3rem) 위 가운데에 둔다. */
+  mode: css`
+    label: RecordsMobileMap-mode;
+    position: absolute;
+    z-index: 14;
+    left: 50%;
+    bottom: calc(var(--map-sheet-bottom, env(safe-area-inset-bottom)) + 4.5rem);
+    transform: translateX(-50%);
   `,
 
   /* 세로 확대 축소 버튼 바로 아래에 둔다. */

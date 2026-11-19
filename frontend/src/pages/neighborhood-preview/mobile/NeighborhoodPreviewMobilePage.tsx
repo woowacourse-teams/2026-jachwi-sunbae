@@ -11,8 +11,9 @@ import BottomSheet from '@/shared/ui/bottom-sheet/BottomSheet';
 import { Button } from '@/shared/ui/button/Button';
 import Icon from '@/shared/ui/icon/Icon';
 import { useMapPanel } from '@/shared/ui/map-list-header/MapPanelContext';
-import { MapModeSwitchTile } from '@/shared/ui/map-mode-tile/MapModeContext';
-import MobileMapHeader from '@/shared/ui/mobile-map-header/MobileMapHeader';
+import { mapFloatingPill } from '@/shared/ui/map-mode-switch/MapModeButton';
+import { MapModeSwitchButton } from '@/shared/ui/map-mode-switch/MapModeContext';
+import MobileMapHeader, { MapHomeLink } from '@/shared/ui/mobile-map-header/MobileMapHeader';
 
 import useMyPropertyPager from '../hooks/useMyPropertyPager';
 import useNeighborhoodMapView from '../hooks/useNeighborhoodMapView';
@@ -44,8 +45,7 @@ type Props = {
 const NeighborhoodPreviewMobilePage = ({ preview }: Props) => {
   const controller = useRecordsMapController();
   const usesSharedSearch = controller !== null && !preview.isPublicExplore;
-  // 헤더 왼쪽은 기록 화면과 같은 모드 전환 타일(`내 기록`)이다. 통합 지도 밖(공개 동네 찾기)에는 두지 않는다.
-  const returnButton = !preview.isPublicExplore && <MapModeSwitchTile />;
+  const returnButton = !preview.isPublicExplore && <MapHomeLink />;
   const panel = useMapPanel();
   // 위치를 고르는 동안 조건 칸 아래에 바로 펼친 피커. 같은 칸을 다시 누르면 접는다.
   // 결과를 지도로 볼지 동네 목록으로 볼지. 기록 화면의 리스트와 지도 전환과 같은 짝이다.
@@ -103,12 +103,16 @@ const NeighborhoodPreviewMobilePage = ({ preview }: Props) => {
   };
   // `My` 목록에서 고른 매물이면 시트에 이전과 다음 이동, 목록으로 돌아가는 뒤로가기를 둔다.
   const myPager = useMyPropertyPager(infoSubject, mapView);
-  // 시트가 없으면 지도 아래 가운데에 두고, 시트가 있으면 시트 바로 위에 띄워(BottomSheet `floating`) 시트 높이와 하단 탭을 그대로 따라가게 한다.
-  const reselectButton = (className: string) => (
-    <Button className={className} onClick={reselectCommute} data-public={preview.isPublicExplore || undefined}>
-      <Icon name="replace" size={18} />
-      {RESELECT_COMMUTE_LABEL}
-    </Button>
+  // 지도 아래 가운데 줄: `내 기록으로`(통합 지도 안에서만)와 `출퇴근 장소 다시 선택`. 시트가 없으면 지도 아래에 두고,
+  // 시트가 있으면 시트 바로 위에 띄워(BottomSheet `floating`) 시트 높이를 그대로 따라가게 한다.
+  const bottomActions = (
+    <>
+      <MapModeSwitchButton />
+      <Button className={mapFloatingPill} onClick={reselectCommute}>
+        <Icon name="replace" size={18} />
+        {RESELECT_COMMUTE_LABEL}
+      </Button>
+    </>
   );
   // 지도는 화면 전체를 쓰고, 위 결과 머리와 아래 시트가 가리는 만큼 비우고 시점을 맞춘다.
   const mapSectionRef = useResultMapViewport<HTMLElement>(preview, (section) => {
@@ -225,6 +229,8 @@ const NeighborhoodPreviewMobilePage = ({ preview }: Props) => {
                 className={`${shared.searchCard} ${styles.conditionCard}`}
                 aria-label={preview.hasChosenMapPoint ? '고른 출퇴근 장소' : '출퇴근 조건'}
               >
+                {/* 조건 칸 바로 위 가운데에 `내 기록으로` 버튼을 띄운다. 통합 지도 밖(공개 동네 찾기)에는 없다. */}
+                <MapModeSwitchButton className={styles.modeOverCard} />
                 <p className={shared.searchCardTitle}>이 조건으로 추천받아요</p>
                 {/* 출퇴근 장소는 위쪽 지도 검색과 따로 이 칸에서 정한다. 아직 없으면 이 칸이 처음부터 열려 있다. */}
                 {usesSharedSearch && <CommuteDestinationField preview={preview} />}
@@ -285,7 +291,12 @@ const NeighborhoodPreviewMobilePage = ({ preview }: Props) => {
             </header>
             {resultControls}
 
-            {!infoSubject && reselectButton(styles.reselect)}
+            {/* 시트가 없으면 지도 아래 가운데에 `내 기록으로`와 `출퇴근 장소 다시 선택`을 나란히 두고, 시트가 있으면 같은 줄을 시트 위로 올린다. */}
+            {!infoSubject && (
+              <div className={styles.bottomActions} data-public={preview.isPublicExplore || undefined}>
+                {bottomActions}
+              </div>
+            )}
             {preview.isPublicExplore && recordArea && (
               <div className={shared.recordAction}>
                 <ExplorationRecordAction
@@ -326,7 +337,8 @@ const NeighborhoodPreviewMobilePage = ({ preview }: Props) => {
                   )
                 }
                 peekSignal={peekSignal}
-                floating={reselectButton(styles.reselectFloating)}
+                floating={bottomActions}
+                floatingAlign="center"
                 onClose={() => {
                   if (infoSubject.kind === 'place') closeLayers();
                   else if (infoSubject.kind === 'area') setDismissedAreaCode(infoSubject.area.adminDongCode);
@@ -352,47 +364,32 @@ const NeighborhoodPreviewMobilePage = ({ preview }: Props) => {
 
 /* 월세 슬라이더가 위에서 부드럽게 내려온다. */
 const styles = {
-  reselect: css`
+  conditionCard: css`
+    && {
+      gap: 0.55rem;
+    }
+  `,
+  modeOverCard: css`
+    label: NeighborhoodPreviewMobilePage-modeOverCard;
+    position: absolute;
+    bottom: calc(100% + 0.75rem);
+    left: 50%;
+    transform: translateX(-50%);
+  `,
+  /* 시트가 없을 때 지도 아래 가운데 줄. 하단 탭이 없으니 아래 안전 영역만 비운다. */
+  bottomActions: css`
+    label: NeighborhoodPreviewMobilePage-bottomActions;
     position: fixed;
     z-index: 20;
     left: 50%;
     bottom: calc(var(--map-sheet-bottom, env(safe-area-inset-bottom)) + 0.75rem);
+    display: flex;
+    gap: 0.5rem;
     transform: translateX(-50%);
-    box-shadow: var(--shadow-floating);
-    white-space: nowrap;
-    /* 흰 지도와 시트 위에서도 눈에 띄게 진한 파랑 바탕에 굵은 테두리를 둔다. */
-    border: 2px solid var(--color-surface);
-    background: var(--color-brand-blue-ink);
-    color: var(--color-on-primary);
-    font-size: 0.875rem;
 
-    &:hover:not(:disabled) {
-      background: var(--color-brand-blue-ink);
-    }
-
+    /* 공개 탐색은 아래 기록 버튼 위에 둔다. */
     &[data-public='true'] {
       bottom: calc(env(safe-area-inset-bottom) + 4.5rem);
-    }
-
-    & > span {
-      display: flex;
-      align-items: center;
-      gap: 0.4rem;
-    }
-  `,
-  /* 시트 위 `floating` 칸 안에서는 위치를 시트가 정하므로 고정 배치만 푼다. */
-  reselectFloating: css`
-    label: NeighborhoodPreviewMobilePage-reselectFloating;
-    position: static;
-    transform: none;
-
-    &[data-public='true'] {
-      bottom: auto;
-    }
-  `,
-  conditionCard: css`
-    && {
-      gap: 0.55rem;
     }
   `,
   headerSlider: css`

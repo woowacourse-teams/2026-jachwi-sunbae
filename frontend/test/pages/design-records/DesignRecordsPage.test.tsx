@@ -863,12 +863,12 @@ it('데스크톱 목록 헤더에 로고와 검색창, 마이를 함께 둔다',
 it('모바일 헤더에는 동네 찾기 타일 대신 로고를 두고 떠 있는 추천 버튼도 두지 않는다', async () => {
   renderRecords();
   const user = userEvent.setup();
-  expect(screen.queryByRole('link', { name: '동네 찾기로 전환' })).not.toBeInTheDocument();
+  expect(screen.queryByRole('link', { name: '출퇴근 시간으로 동네 찾기' })).not.toBeInTheDocument();
   expect(screen.getByRole('link', { name: '자취선배 홈' })).toBeInTheDocument();
   expect(screen.queryByRole('button', { name: '동네 추천받기' })).not.toBeInTheDocument();
   expect(screen.queryByRole('button', { name: '매물 추가' })).not.toBeInTheDocument();
   await user.click(screen.getByRole('button', { name: '리스트' }));
-  expect(screen.queryByRole('link', { name: '동네 찾기로 전환' })).not.toBeInTheDocument();
+  expect(screen.queryByRole('link', { name: '출퇴근 시간으로 동네 찾기' })).not.toBeInTheDocument();
   expect(screen.queryByRole('link', { name: '주소 검색' })).not.toBeInTheDocument();
   expect(screen.getByLabelText('생활 날씨 안내')).toBeInTheDocument();
   expect(screen.getByRole('link', { name: '기록 비교하고 PDF로 받기' })).toHaveAttribute('href', '/compare');

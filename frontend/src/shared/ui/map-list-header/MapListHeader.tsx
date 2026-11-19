@@ -4,7 +4,6 @@ import { Link } from 'react-router-dom';
 
 import { LOGO_DUCK } from '@/shared/assets/imageAssets';
 import { HOME_PATH } from '@/shared/lib/navigation/appPaths';
-import { MapModeSwitchTile, useHasMapModeSwitch } from '@/shared/ui/map-mode-tile/MapModeContext';
 import MapProfileLink from '@/shared/ui/map-profile-link/MapProfileLink';
 
 type Props = {
@@ -15,43 +14,37 @@ type Props = {
   searchInRow?: boolean;
   /** 프로필 버튼 왼쪽에 둘 버튼들. */
   actions?: ReactNode;
-  /** 주면 왼쪽 위 로고 자리에 이것을 둔다. 주지 않으면 통합 지도 안에서는 모드 전환 타일, 밖에서는 로고를 둔다. */
+  /** 주면 왼쪽 위 로고 자리에 이것을 둔다. */
   leading?: ReactNode;
 };
 
-const MapListHeader = ({ children, center, className, searchInRow = false, actions, leading }: Props) => {
-  const hasModeSwitch = useHasMapModeSwitch();
-  return (
-    <header className={`${styles.header} ${className ?? ''}`.trim()} aria-label="지도 목록 헤더">
-      <div className={styles.row}>
-        {leading ??
-          (hasModeSwitch ? (
-            <MapModeSwitchTile />
-          ) : (
-            <Link to={HOME_PATH} className={styles.logo} aria-label="자취선배 홈">
-              <img
-                src={LOGO_DUCK.src}
-                srcSet={`${LOGO_DUCK.src} 1x, ${LOGO_DUCK.src2x} 2x`}
-                alt=""
-                width={44}
-                height={44}
-              />
-            </Link>
-          ))}
-        <div className={styles.center}>{center}</div>
-        {actions}
-        <MapProfileLink />
-      </div>
-      {!searchInRow && (
-        <div className={styles.search}>
-          {children ?? (
-            <input className={styles.placeholder} aria-label="주소 검색" placeholder="주소로 지도 이동" disabled />
-          )}
-        </div>
+const MapListHeader = ({ children, center, className, searchInRow = false, actions, leading }: Props) => (
+  <header className={`${styles.header} ${className ?? ''}`.trim()} aria-label="지도 목록 헤더">
+    <div className={styles.row}>
+      {leading ?? (
+        <Link to={HOME_PATH} className={styles.logo} aria-label="자취선배 홈">
+          <img
+            src={LOGO_DUCK.src}
+            srcSet={`${LOGO_DUCK.src} 1x, ${LOGO_DUCK.src2x} 2x`}
+            alt=""
+            width={44}
+            height={44}
+          />
+        </Link>
       )}
-    </header>
-  );
-};
+      <div className={styles.center}>{center}</div>
+      {actions}
+      <MapProfileLink />
+    </div>
+    {!searchInRow && (
+      <div className={styles.search}>
+        {children ?? (
+          <input className={styles.placeholder} aria-label="주소 검색" placeholder="주소로 지도 이동" disabled />
+        )}
+      </div>
+    )}
+  </header>
+);
 const styles = {
   placeholder: css`
     label: MapListHeader-placeholder;
