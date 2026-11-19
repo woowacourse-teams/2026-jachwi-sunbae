@@ -1133,10 +1133,10 @@ it('모바일은 지도 위 핀으로 목적지 선택을 켜고 결과에서도
   await submitCurrentSearch(user);
   await screen.findByRole('region', { name: '행정동 프리셋 지도' });
   expect(screen.getByRole('button', { name: '내 기록으로' }).closest('header')).toBeNull();
-  // 결과 머리에는 로고와 검색, 마이만 두고, 조건 요약은 아래 스택에서 `내 기록으로` 버튼과 함께 둔다.
-  const criteria = screen.getByLabelText(/^선택한 탐색 조건/);
-  expect(criteria.closest('header')).toBeNull();
-  expect(criteria.parentElement).toContainElement(screen.getByRole('button', { name: '내 기록으로' }));
+  // 결과 머리에는 검색과 마이만 두고, 조건은 아래 조건 시트에 둔다. `내 기록으로`는 그 시트 위에 떠 있다.
+  const sheet = screen.getByRole('region', { name: '동네 찾기 조건' });
+  expect(sheet.closest('header')).toBeNull();
+  expect(sheet).toContainElement(screen.getByRole('button', { name: '내 기록으로' }));
   await user.click(screen.getByRole('button', { name: '출퇴근 장소 다시 선택' }));
   expect(screen.getByRole('button', { name: '이전 결과 보기' }).closest('header')).toBeNull();
   expect(screen.getByRole('button', { name: '지도에서 목적지 선택' }).closest('header')).toBeNull();
@@ -1189,25 +1189,33 @@ it('모바일 지역 상세에서 찜한 동네 토글을 켜면 찜한 행정�
   }
 });
 
-it('모바일 결과에서 월세는 상단 슬라이더로, 통근은 조건을 다시 선택해 바꾼다', async () => {
+it('모바일 결과는 닫기 없는 조건 시트에서 통근 시간과 월세를 바로 바꾸고 색 기준을 함께 보여 준다', async () => {
   show();
   const user = await choosePoint();
   await submitCurrentSearch(user);
   await screen.findByRole('region', { name: '행정동 프리셋 지도' });
-  const rent = screen.getByRole('button', { name: /월세 전체, 눌러서 바꾸기/ });
-  await user.click(rent);
-  expect(screen.getByRole('slider', { name: '최대 월세 시세' })).toBeInTheDocument();
+  const sheet = screen.getByRole('region', { name: '동네 찾기 조건' });
+  const inSheet = within(sheet);
+  // 지도 위 범례 카드와 조건 알약 대신 시트 하나에 통근 시간, 환승, 월세, 색 기준을 모은다. 닫기(X)는 없다.
+  expect(inSheet.getByText('통근 40분, 환승 1회, 월세 전체')).toBeInTheDocument();
+  expect(inSheet.getByLabelText('통근 시간 색상 기준')).toHaveTextContent('31~40분');
+  expect(inSheet.getByRole('radiogroup', { name: '최대 환승 횟수' })).toBeInTheDocument();
+  expect(inSheet.queryByRole('button', { name: '조건 접기' })).not.toBeInTheDocument();
+  expect(screen.getAllByLabelText('통근 시간 색상 기준')).toHaveLength(1);
+  // 슬라이더를 움직이면 다시 찾기 버튼 없이 바로 적용되고, 색 기준도 고른 시간에 맞춘다.
+  fireEvent.change(inSheet.getByRole('slider', { name: '최대 통근 시간' }), { target: { value: '1' } });
+  expect(inSheet.getByText('통근 20분, 환승 1회, 월세 전체')).toBeInTheDocument();
+  expect(inSheet.getByLabelText('통근 시간 색상 기준')).not.toHaveTextContent('31~40분');
+  fireEvent.change(inSheet.getByRole('slider', { name: '최대 월세 시세' }), { target: { value: '1' } });
+  expect(inSheet.getByText(/^통근 20분, 환승 1회, 월세 \d+만원$/)).toBeInTheDocument();
   expect(screen.getByRole('region', { name: '행정동 프리셋 지도' })).toBeInTheDocument();
-  await user.click(rent);
-  expect(screen.queryByRole('slider', { name: '최대 월세 시세' })).not.toBeInTheDocument();
-  await user.click(screen.getByRole('button', { name: '출퇴근 장소 다시 선택' }));
-  await user.click(screen.getByRole('button', { name: '지도에서 위치 찍기' }));
-  const form = within(screen.getByRole('region', { name: '고른 출퇴근 장소' }));
-  await user.click(form.getByRole('button', { name: '통근 40분 이내' }));
-  await user.click(form.getByRole('option', { name: '50분 이내' }));
-  await submitCurrentSearch(user);
-  await screen.findByRole('region', { name: '행정동 프리셋 지도' });
-  expect(screen.getByLabelText(/선택한 탐색 조건 통근 50분/)).toBeInTheDocument();
+  // 아래로 내리면(키보드는 아래 화살표) 닫지 않고 제목과 조건 한 줄만 남게 접고, 올리면 다시 연다.
+  const handle = inSheet.getByRole('button', { name: '상세 패널 높이 조절' });
+  handle.focus();
+  await user.keyboard('{ArrowDown}');
+  expect(sheet).toHaveAttribute('data-mode', 'peek');
+  await user.keyboard('{ArrowUp}');
+  expect(sheet).toHaveAttribute('data-mode', 'default');
 });
 
 it('데스크탑 통합 지도는 왼쪽 조건 칸과 지도 위 찾은 동네 배지를 함께 보여 준다', async () => {

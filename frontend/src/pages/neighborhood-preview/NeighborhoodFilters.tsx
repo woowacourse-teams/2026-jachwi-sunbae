@@ -21,7 +21,7 @@ export const MINUTE_OPTIONS = Array.from({ length: 6 }, (_, index) => ({
   value: (index + 1) * 10,
   label: `${(index + 1) * 10}분 이내`,
 }));
-const TRANSFER_OPTIONS = [
+export const TRANSFER_OPTIONS = [
   { value: 0, label: '환승 없음' },
   { value: 1, label: '1회 이하' },
   { value: 2, label: '2회 이하' },

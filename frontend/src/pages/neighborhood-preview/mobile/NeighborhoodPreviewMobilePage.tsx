@@ -25,12 +25,10 @@ import type { NeighborhoodFilterField } from '../NeighborhoodFilters';
 import { NeighborhoodFilterPicker } from '../NeighborhoodFilters';
 import AnalysisOverlay from '../ui/analysis-overlay/AnalysisOverlay';
 import CommuteDestinationField from '../ui/commute-destination-field/CommuteDestinationField';
-import CommuteLegend from '../ui/commute-legend/CommuteLegend';
-import CriteriaSummary from '../ui/criteria-summary/CriteriaSummary';
+import NeighborhoodConditionSheet from '../ui/condition-sheet/NeighborhoodConditionSheet';
 import LocationControls from '../ui/location-controls/LocationControls';
 import MapInfo, { type MapInfoSubject, mapInfoTitle } from '../ui/map-info/MapInfo';
 import NeighborhoodMapSearch from '../ui/map-search/NeighborhoodMapSearch';
-import RentSlider from '../ui/rent-slider/RentSlider';
 
 import * as shared from '../NeighborhoodPreviewPage.styles';
 
@@ -54,12 +52,12 @@ const NeighborhoodPreviewMobilePage = ({ preview }: Props) => {
   const submitSearch = preview.startAnalysis;
   // 지도 빈 곳을 찍으면 시트를 닫지 않고 제목만 보이게 내린다.
   const [peekSignal, setPeekSignal] = useState(0);
-  const [isRentOpen, setIsRentOpen] = useState(false);
+  // 조건 시트를 접는 신호. 아래로 끝까지 내리거나, 정보 시트 없이 지도 빈 곳을 찍으면 올린다.
+  const [conditionPeekSignal, setConditionPeekSignal] = useState(0);
   const reselectCommute = () => {
     closeLayers();
     preview.selectRegion(null);
     setPickerField(null);
-    setIsRentOpen(false);
     preview.editLocation();
   };
   // 동네 시트를 닫아도 동네 선택(지도 강조, 주소)은 남긴다. 닫은 동네의 행정동 코드를 두어 그 동네의 시트만 숨긴다.
@@ -83,9 +81,6 @@ const NeighborhoodPreviewMobilePage = ({ preview }: Props) => {
   });
   const { isResultMap, mapProps, places, closeLayers } = mapView;
   const recordArea = preview.selected ?? preview.topAreas[0];
-  const summary = (
-    <CriteriaSummary preview={preview} isRentOpen={isRentOpen} onToggleRent={() => setIsRentOpen((open) => !open)} />
-  );
   const selectedArea = isRoutePage && !isAreaSheetDismissed ? preview.selected : undefined;
   const infoSubject: MapInfoSubject | null = places.selectedPlace
     ? { kind: 'place', place: places.selectedPlace }
@@ -98,30 +93,34 @@ const NeighborhoodPreviewMobilePage = ({ preview }: Props) => {
     if (preview.selected && (infoSubject === null || infoSubject.kind === 'area')) {
       setDismissedAreaCode(null);
       preview.selectRegion(null);
-    } else setPeekSignal((value) => value + 1);
+    } else if (infoSubject === null) setConditionPeekSignal((value) => value + 1);
+    else setPeekSignal((value) => value + 1);
   };
   // `My` 목록에서 고른 매물이면 시트에 이전과 다음 이동, 목록으로 돌아가는 뒤로가기를 둔다.
   const myPager = useMyPropertyPager(infoSubject, mapView);
-  // 지도 아래 가운데 줄: `내 기록으로`(통합 지도 안에서만)와 `출퇴근 장소 다시 선택`. 시트가 없으면 지도 아래에 두고,
-  // 시트가 있으면 시트 바로 위에 띄워(BottomSheet `floating`) 시트 높이를 그대로 따라가게 한다.
-  const bottomActions = (
-    <>
-      <MapModeSwitchButton />
-      <Button className={mapFloatingPill} onClick={reselectCommute}>
-        <Icon name="replace" size={18} />
-        {RESELECT_COMMUTE_LABEL}
-      </Button>
-    </>
-  );
-  // 결과 지도 아래 스택. 위에서부터 색 기준(왼쪽), 월세 슬라이더(열었을 때), 조건 요약, 모드 전환과 다시 선택 줄을 한 곳에 쌓아 서로 겹치지 않게 한다.
-  const resultStack = (
-    <div className={styles.resultStack}>
-      <div className={styles.legendSlot}>
-        <CommuteLegend maxMinutes={preview.maxMinutes} className={styles.legend} showsNoRent={false} />
+  // 시트 바로 위에 띄우는 줄(BottomSheet `floating`): `내 기록으로`(통합 지도 안에서만)와 `출퇴근 장소 다시 선택`,
+  // 공개 탐색이면 그 아래 이 동네 기록 버튼. 결과에는 늘 조건 시트나 정보 시트가 있어 어느 시트든 그 높이를 따라 올라간다.
+  const sheetFloating = (
+    <div className={styles.floatingStack}>
+      <div className={styles.actionRow}>
+        <MapModeSwitchButton />
+        <Button className={mapFloatingPill} onClick={reselectCommute}>
+          <Icon name="replace" size={18} />
+          {RESELECT_COMMUTE_LABEL}
+        </Button>
       </div>
-      {isRentOpen && <RentSlider preview={preview} bare className={styles.headerSlider} />}
-      {summary}
-      <div className={styles.actionRow}>{bottomActions}</div>
+      {preview.isPublicExplore && recordArea && (
+        <div className={styles.recordAction}>
+          <ExplorationRecordAction
+            location={{
+              ...recordArea.center,
+              address: recordArea.fullName,
+              roadAddress: null,
+              jibunAddress: recordArea.fullName,
+            }}
+          />
+        </div>
+      )}
     </div>
   );
   // 지도는 화면 전체를 쓰고, 위 결과 머리와 아래 시트가 가리는 만큼 비우고 시점을 맞춘다.
@@ -292,24 +291,14 @@ const NeighborhoodPreviewMobilePage = ({ preview }: Props) => {
             </header>
             {resultControls}
 
-            {/* 시트가 없으면 아래 스택을 지도 아래에 두고, 시트가 있으면 같은 스택을 시트 위로 올린다. */}
-            {!infoSubject && (
-              <div className={styles.bottomDock} data-public={preview.isPublicExplore || undefined}>
-                {resultStack}
-              </div>
-            )}
-            {preview.isPublicExplore && recordArea && (
-              <div className={shared.recordAction}>
-                <ExplorationRecordAction
-                  location={{
-                    ...recordArea.center,
-                    address: recordArea.fullName,
-                    roadAddress: null,
-                    jibunAddress: recordArea.fullName,
-                  }}
-                />
-              </div>
-            )}
+            {/* 조건 시트는 결과에 늘 둔다. 동네나 마커 정보 시트가 열리면 높이 단계를 그대로 둔 채 숨겼다가, 정보 시트를 닫으면 같은 높이로 돌아온다. */}
+            <NeighborhoodConditionSheet
+              preview={preview}
+              floating={sheetFloating}
+              peekSignal={conditionPeekSignal}
+              onCollapse={() => setConditionPeekSignal((value) => value + 1)}
+              hidden={infoSubject !== null}
+            />
             {mapView.needsZoomForFacilities && <p className={styles.zoomHint}>확대하면 주변 시설이 보여요</p>}
             {/* 정보는 시트 하나에만 둔다. 마커와 `My`는 한 단계 높이로 두고, 닫으면 그 정보를 닫는다.
                 동네는 지도와 고른 동이 같이 보이게 낮게 열고 끌어 올리면 더 크게 본다. 닫아도 동네 선택은 그대로 둔다. */}
@@ -338,7 +327,7 @@ const NeighborhoodPreviewMobilePage = ({ preview }: Props) => {
                   )
                 }
                 peekSignal={peekSignal}
-                floating={resultStack}
+                floating={sheetFloating}
                 floatingAlign="center"
                 onClose={() => {
                   if (infoSubject.kind === 'place') closeLayers();
@@ -377,30 +366,14 @@ const styles = {
     left: 50%;
     transform: translateX(-50%);
   `,
-  /* 시트가 없을 때 아래 스택을 놓는 자리. 하단 탭이 없으니 아래 안전 영역만 비운다. 빈 곳은 지도를 누를 수 있게 비켜 둔다. */
-  bottomDock: css`
-    label: NeighborhoodPreviewMobilePage-bottomDock;
-    position: fixed;
-    z-index: 20;
-    right: 0.85rem;
-    bottom: calc(var(--map-sheet-bottom, env(safe-area-inset-bottom)) + 0.75rem);
-    left: 0.85rem;
-    pointer-events: none;
-
-    /* 공개 탐색은 아래 기록 버튼 위에 둔다. */
-    &[data-public='true'] {
-      bottom: calc(env(safe-area-inset-bottom) + 4.5rem);
-    }
-  `,
-  /* 아래 스택. 색 기준은 왼쪽에, 나머지는 가운데에 세로로 쌓는다. 시트 위 가운데 칸에 들어가도 같은 모양이다. */
-  resultStack: css`
-    label: NeighborhoodPreviewMobilePage-resultStack;
+  /* 시트 위 줄 묶음. 빈 곳은 지도를 누를 수 있게 비켜 둔다. */
+  floatingStack: css`
+    label: NeighborhoodPreviewMobilePage-floatingStack;
 
     &&& {
-      display: flex;
+      display: grid;
       flex: 1;
-      flex-direction: column;
-      align-items: center;
+      justify-items: center;
       gap: 0.5rem;
       min-width: 0;
       pointer-events: none;
@@ -409,32 +382,16 @@ const styles = {
       pointer-events: auto;
     }
   `,
+  recordAction: css`
+    label: NeighborhoodPreviewMobilePage-recordAction;
+    justify-self: stretch;
+  `,
   actionRow: css`
     label: NeighborhoodPreviewMobilePage-actionRow;
     display: flex;
     flex-wrap: wrap;
     justify-content: center;
     gap: 0.5rem;
-  `,
-  headerSlider: css`
-    pointer-events: auto;
-    justify-self: center;
-    align-self: center;
-    width: min(100%, 15rem);
-    padding: 0.4rem 0.75rem;
-    border-radius: var(--radius-md);
-    background: var(--color-surface);
-    box-shadow: var(--shadow-floating);
-  `,
-  legendSlot: css`
-    align-self: flex-start;
-    width: 8.1rem;
-    & > * {
-      width: 100%;
-    }
-  `,
-  legend: css`
-    box-sizing: border-box;
   `,
   bookmark: css`
     padding: 0;
@@ -471,57 +428,6 @@ const styles = {
       flex-direction: column;
       align-items: stretch;
       gap: 0.45rem;
-    }
-  `,
-
-  resetButton: css`
-    label: NeighborhoodPreviewMobilePage-resetButton;
-    flex: none;
-    display: grid;
-    place-items: center;
-    width: 2.75rem;
-    height: 2.75rem;
-    padding: 0;
-    border: 1px solid var(--color-border);
-    border-radius: 50%;
-    background: var(--color-surface);
-    box-shadow: 0 1px 6px rgb(0 0 0 / 8%);
-    color: var(--color-ink);
-    cursor: pointer;
-
-    &:focus-visible {
-      outline: 2px solid var(--color-focus);
-      outline-offset: 2px;
-    }
-  `,
-
-  /* 막대만 있는 월세 슬라이더 카드. 지도 위에서도 읽히게 흰 바탕과 그림자를 둔다. */
-  /* 월세 값은 눌러서 슬라이더를 여는 버튼이다. 파란 값으로 눌러 볼 수 있다는 걸 알린다. */
-  /* 눌러서 슬라이더를 여는 버튼이라는 게 보이게 옅은 파랑 알약에 아래 화살표를 붙인다. 열리면 화살표가 뒤집힌다. */
-  rentStat: css`
-    label: NeighborhoodPreviewMobilePage-rentStat;
-    display: inline-flex;
-    align-items: center;
-    gap: 0.15rem;
-    padding: 0.15rem 0.45rem 0.15rem 0.6rem;
-    border: 0;
-    border-radius: 999px;
-    background: #eef3fd;
-    color: var(--color-brand-blue-ink);
-    font: inherit;
-    cursor: pointer;
-
-    & svg {
-      transition: transform 0.2s ease;
-    }
-
-    &[aria-expanded='true'] svg {
-      transform: rotate(180deg);
-    }
-
-    &:focus-visible {
-      outline: 2px solid var(--color-focus);
-      outline-offset: 3px;
     }
   `,
 

@@ -37,6 +37,8 @@ type BottomSheetProps = {
   floating?: ReactNode;
   /** `floating`을 오른쪽 끝(`end`)에 둘지, 가운데(`center`)에 둘지. 지도 모드 전환 버튼처럼 지도 아래 가운데에 있던 것은 가운데로 올린다. */
   floatingAlign?: 'end' | 'center';
+  /** 참이면 시트를 화면에서 숨기되 높이 단계 같은 상태는 그대로 둔다. 다른 시트가 잠깐 위에 열리는 동안 쓴다. */
+  hidden?: boolean;
   /** 시트 상자에 덧붙일 클래스. 내용이 바뀔 때 다시 올라오는 전환처럼 화면마다 다른 움직임만 덧붙인다. */
   className?: string;
 };
@@ -63,6 +65,7 @@ const BottomSheet = ({
   subtitle,
   floating,
   floatingAlign = 'end',
+  hidden = false,
   className,
 }: BottomSheetProps) => {
   const [mode, setMode] = useState<SheetMode>('default');
@@ -128,6 +131,7 @@ const BottomSheet = ({
       ref={sheetRef}
       className={className ? cx(styles.sheet, className) : styles.sheet}
       aria-label={title}
+      hidden={hidden}
       tabIndex={-1}
       data-resizable={resizable}
       data-expanded={mode === 'expanded' || mode === 'full' || undefined}
@@ -251,6 +255,10 @@ const styles = {
       flex-direction: column;
       z-index: 35;
       border-radius: 1.25rem 1.25rem 0 0;
+
+      &[hidden] {
+        display: none;
+      }
       background: var(--color-surface);
       color: var(--color-ink);
       box-shadow: 0 -0.35rem 1.4rem rgb(0 0 0 / 12%);

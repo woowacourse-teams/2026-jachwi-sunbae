@@ -548,6 +548,35 @@ it('기록 지도에 다녀와 동네 찾기 타일을 눌러도 지난 결과�
   }
 });
 
+it('휴대폰 조건 시트에서 통근 시간을 줄이면 다시 요청하지 않고, 환승을 바꾸면 잠깐 뒤 한 번만 다시 요청한다', async () => {
+  commuteSearchResponses();
+  const requests = trackCommuteRequests();
+  try {
+    renderRoutes('/neighborhoods');
+    await pickDestination(0);
+    await waitFor(() => expect(requests.urls).toHaveLength(1));
+    const sheet = within(screen.getByRole('region', { name: '동네 찾기 조건' }));
+    // 40분에서 20분으로 줄이면 받아 둔 결과를 거르기만 한다.
+    fireEvent.change(sheet.getByRole('slider', { name: '최대 통근 시간' }), { target: { value: '1' } });
+    expect(sheet.getByText('통근 20분, 환승 1회, 월세 전체')).toBeInTheDocument();
+    await new Promise((resolve) => setTimeout(resolve, 400));
+    expect(requests.urls).toHaveLength(1);
+    // 동네마다 환승 정보가 없어 환승을 바꾸면 다시 받는다. 연달아 바꿔도 마지막 값으로 한 번만 받는다.
+    await userEvent.click(sheet.getByRole('radio', { name: '2회 이하' }));
+    await userEvent.click(sheet.getByRole('radio', { name: '환승 없음' }));
+    await waitFor(() => expect(requests.urls).toHaveLength(2));
+    expect(requests.urls[1]?.searchParams.get('maxTransfers')).toBe('0');
+    expect(requests.urls[1]?.searchParams.get('maxMinutes')).toBe('20');
+    // 다시 받는 동안에도 결과 지도와 조건 시트를 그대로 둔다.
+    expect(screen.getByRole('region', { name: '행정동 프리셋 지도' })).toBeInTheDocument();
+    expect(screen.getByRole('region', { name: '동네 찾기 조건' })).toBeInTheDocument();
+    await new Promise((resolve) => setTimeout(resolve, 400));
+    expect(requests.urls).toHaveLength(2);
+  } finally {
+    requests.stop();
+  }
+});
+
 it('결과를 본 뒤 출퇴근 장소를 다른 곳으로 고르면 새 좌표로 통근 결과를 다시 요청한다', async () => {
   commuteSearchResponses();
   const places = [
