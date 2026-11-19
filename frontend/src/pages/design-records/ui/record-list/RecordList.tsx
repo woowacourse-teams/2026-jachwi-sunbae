@@ -20,6 +20,8 @@ type RecordListProps = {
   onNotice: (message: string) => void;
   className?: string;
   showCompare?: boolean;
+  /** 데스크탑 목록 칸처럼 칸이 이미 안쪽 여백을 가질 때, 비교 링크 줄의 위쪽과 좌우 여백을 줄인다. */
+  compactCompare?: boolean;
 };
 
 const RecordList = ({

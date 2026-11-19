@@ -87,6 +87,7 @@ const RecordsDesktopPage = ({ records, layers }: Props) => {
       selectedId={records.selected?.id}
       onNotice={setNotice}
       showCompare
+      compactCompare
     />
   );
 
