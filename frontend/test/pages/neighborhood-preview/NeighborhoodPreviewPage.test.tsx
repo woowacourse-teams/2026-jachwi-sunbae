@@ -1405,3 +1405,22 @@ it('추천 동네 버튼과 찜 버튼은 서로의 켜짐 상태를 바꾸지 �
     localStorage.removeItem('jachwi:recommended-area-layer');
   }
 });
+
+it('출퇴근 장소 다시 선택을 눌러도 보던 지도의 가운데와 확대 단계를 그대로 둔다', async () => {
+  show();
+  const user = await choosePoint();
+  await submitCurrentSearch(user);
+  const view = () =>
+    JSON.parse(screen.getByLabelText('지도 시점').textContent ?? '{}') as {
+      center: { latitude: number; longitude: number };
+      level: number;
+    };
+  await waitFor(() => expect(view().level).toBe(7));
+  // 결과 지도에서 두 단계 확대한 뒤 다시 고르러 간다.
+  await user.click(await screen.findByRole('button', { name: '지도 확대' }));
+  await user.click(screen.getByRole('button', { name: '지도 확대' }));
+  const before = view();
+  expect(before.level).toBe(5);
+  await user.click(screen.getByRole('button', { name: '출퇴근 장소 다시 선택' }));
+  expect(view()).toEqual(before);
+});

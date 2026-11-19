@@ -313,6 +313,18 @@ const useNeighborhoodPreview = () => {
     if (options?.analyze && isValidCommuteTime) analyzePoint(point);
   };
 
+  /**
+   * 출퇴근 장소를 다시 고르러 갈 때 보던 지도를 그대로 둔다. 결과 지도에서 넘어가면 결과 지도의 가운데와 확대 단계를
+   * 장소 고르는 지도에 옮겨 적어, 다시 선택을 눌러도 지도가 움직이거나 확대 단계가 바뀌지 않는다. 이미 고르는 중이면 할 일이 없다.
+   */
+  const keepViewForSelection = () => {
+    if (phase === 'map' || phase === 'conditions') return;
+    const view = resultView.current ?? { ...resultCenter, level: resultLevel };
+    selectionView.current = { latitude: view.latitude, longitude: view.longitude, level: view.level };
+    setSelectionCenter((previous) => ({ ...previous, latitude: view.latitude, longitude: view.longitude }));
+    setSelectionLevel(view.level);
+  };
+
   const moveMapToPoint = (point: { latitude: number; longitude: number }) => {
     selectionView.current = {
       latitude: point.latitude,
@@ -417,6 +429,7 @@ const useNeighborhoodPreview = () => {
     },
     isChoosingConditions: phase === 'conditions',
     editLocation: () => {
+      keepViewForSelection();
       locationIntent.current += 1;
       setHasChosenMapPoint(false);
       setShouldFocusMapSearch(true);
@@ -498,10 +511,9 @@ const useNeighborhoodPreview = () => {
     },
     shouldFocusMapSearch,
     openMapSearch: () => {
+      keepViewForSelection();
       setShouldFocusMapSearch(true);
       setMapCandidate(destination);
-      selectionView.current = null;
-      setSelectionCenter(destination);
       setHasChosenMapPoint(false);
       setPhase('map');
     },
@@ -515,12 +527,9 @@ const useNeighborhoodPreview = () => {
     openMapSelection: () => {
       setIsMapSelectionEnabled(true);
       setShouldFocusMapSearch(false);
-      // 지난 검색이 있으면 그 출퇴근 장소에서 다시 고른다. 처음이면 보고 있던 지도를 그대로 두고 고른다(기본 목적지로 옮기지 않는다).
-      if (submitted) {
-        setMapCandidate(destination);
-        selectionView.current = null;
-        setSelectionCenter(destination);
-      }
+      // 지난 검색이 있어도 출퇴근 장소로 옮기지 않고, 보던 지도의 가운데와 확대 단계를 그대로 둔 채 고르기만 켠다.
+      keepViewForSelection();
+      if (submitted) setMapCandidate(destination);
       setHasChosenMapPoint(false);
       setPhase('map');
     },
