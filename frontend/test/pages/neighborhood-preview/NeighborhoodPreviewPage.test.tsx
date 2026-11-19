@@ -1175,7 +1175,7 @@ it('동네 찾기 지도에서는 행정동 안을 눌러도 메모 남기기나
   expect(screen.queryByRole('button', { name: '말풍선 여기에 본 방 기록하기' })).not.toBeInTheDocument();
 });
 
-it('모바일 지역 상세에서 찜 버튼을 켜면 추천 동네를 숨기고 찜한 행정동 영역만 뒤 지도에 칠하며, 끄면 되돌린다', async () => {
+it('모바일 지역 상세에서 찜 버튼을 켜면 추천 동네는 그대로 둔 채 찜한 행정동 영역을 더해 칠하고, 끄면 찜한 영역만 걷는다', async () => {
   writeBookmarkedAdminDongs(['11210690']);
   localStorage.setItem('jachwi:records-bookmark-layer-rail', 'off');
   server.use(...adminDongBookmarkHandlers);
@@ -1187,15 +1187,17 @@ it('모바일 지역 상세에서 찜 버튼을 켜면 추천 동네를 숨기�
     await user.click(screen.getByRole('button', { name: '역삼1동' }));
     await screen.findByRole('region', { name: /역삼1동/ });
     const yeoksamBefore = screen.getAllByRole('button', { name: '역삼1동' }).length;
+    const sillimBefore = screen.queryAllByRole('button', { name: '신림동' }).length;
     const toggle = await screen.findByRole('button', { name: '찜한 동네 토글' });
     expect(toggle).toHaveAttribute('aria-pressed', 'false');
     await user.click(toggle);
-    // 추천 동네(역삼1동) 구역은 걷히고, 찜한 신림동 구역은 남는다.
-    await waitFor(() => expect(screen.queryAllByRole('button', { name: '역삼1동' })).toHaveLength(yeoksamBefore - 1));
-    expect(screen.getByRole('button', { name: '신림동' })).toBeInTheDocument();
+    // 찜과 추천 동네는 따로라, 추천 동네(역삼1동) 구역은 그대로 두고 찜한 신림동 구역을 더한다.
+    await waitFor(() => expect(screen.getAllByRole('button', { name: '신림동' })).toHaveLength(sillimBefore + 1));
+    expect(screen.getAllByRole('button', { name: '역삼1동' })).toHaveLength(yeoksamBefore);
     expect(toggle).toHaveAttribute('aria-pressed', 'true');
     await user.click(toggle);
-    await waitFor(() => expect(screen.getAllByRole('button', { name: '역삼1동' })).toHaveLength(yeoksamBefore));
+    await waitFor(() => expect(screen.queryAllByRole('button', { name: '신림동' })).toHaveLength(sillimBefore));
+    expect(screen.getAllByRole('button', { name: '역삼1동' })).toHaveLength(yeoksamBefore);
   } finally {
     writeBookmarkedAdminDongs([]);
     localStorage.removeItem('jachwi:records-bookmark-layer-rail');
@@ -1384,18 +1386,23 @@ it('추천 동네 버튼과 찜 버튼은 서로의 켜짐 상태를 바꾸지 �
     const bookmark = await screen.findByRole('button', { name: '찜한 동네 토글' });
     expect(recommended).toHaveAttribute('aria-pressed', 'true');
     expect(bookmark).toHaveAttribute('aria-pressed', 'false');
-    // 찜을 켜고 꺼도 추천 동네 버튼은 켜진 채다.
+    // 찜을 켜고 꺼도 추천 동네 버튼은 켜진 채고, 둘 다 켜면 두 영역이 함께 보인다.
+    const yeoksam = regionButtons('역삼1동');
+    const sillim = regionButtons('신림동');
     await user.click(bookmark);
     expect(bookmark).toHaveAttribute('aria-pressed', 'true');
     expect(recommended).toHaveAttribute('aria-pressed', 'true');
+    await waitFor(() => expect(regionButtons('신림동')).toBe(sillim + 1));
+    expect(regionButtons('역삼1동')).toBe(yeoksam);
     await user.click(bookmark);
     expect(recommended).toHaveAttribute('aria-pressed', 'true');
     // 추천 동네를 꺼도 찜 버튼은 그대로고, 찜을 켜면 찜한 동네가 칠해진다.
     await user.click(recommended);
     expect(bookmark).toHaveAttribute('aria-pressed', 'false');
+    const sillimHidden = regionButtons('신림동');
     await user.click(bookmark);
     expect(recommended).toHaveAttribute('aria-pressed', 'false');
-    await waitFor(() => expect(screen.getByRole('button', { name: '신림동' })).toBeInTheDocument());
+    await waitFor(() => expect(regionButtons('신림동')).toBe(sillimHidden + 1));
     // 찜을 끄면 추천 동네는 꺼 둔 대로 숨긴 채다.
     const hidden = regionButtons('역삼1동');
     await user.click(bookmark);

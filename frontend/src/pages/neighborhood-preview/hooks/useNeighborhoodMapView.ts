@@ -77,17 +77,11 @@ const useNeighborhoodMapView = (
   const isDesktop = useIsDesktop();
   // 로그인한 회원은 동네를 북마크해 내 기록 지도에서 다시 볼 수 있다.
   const bookmarks = useAdminDongBookmarks(!preview.isPublicExplore);
-  // 찜 버튼은 동네 찾기에서 켜고 끄는 보기 전환이다. 켜면 찜한 동네만 칠하고 추천 동네와 주변 마커는 잠깐 숨긴다.
-  // 내 기록 지도의 찜 층과 따로 두고, 기본은 꺼 둬 찾은 추천 동네가 먼저 보이게 한다.
+  // 찜 버튼은 동네 찾기에서 찜한 동네 영역을 칠하고 걷는다. 추천 동네 영역(따로 둔 추천 동네 버튼)과는 서로 영향을 주지 않는다.
+  // 켜 두면 찜한 영역이 또렷하게 보이도록 주변 마커를 걷는다. 내 기록 지도의 찜 층과 따로 두고, 기본은 꺼 둔다.
   const [isBookmarkOnly, setIsBookmarkOnly] = useState(false);
   const hasBookmarks = bookmarks.codes.length > 0;
   const showsBookmarkOnly = isBookmarkOnly && hasBookmarks && registration != null;
-  // 새로 찾기 시작하면 다시 추천 동네를 보여 준다.
-  const [wasAnalyzing, setWasAnalyzing] = useState(preview.isAnalyzing);
-  if (wasAnalyzing !== preview.isAnalyzing) {
-    setWasAnalyzing(preview.isAnalyzing);
-    if (preview.isAnalyzing) setIsBookmarkOnly(false);
-  }
   const bookmarkRegions = useBookmarkedRegions(bookmarks.codes, showsBookmarkOnly);
   // 찜한 동네의 이름표를 눌러 연 `찜 해제하기` 카드의 동 코드.
   const [openBookmarkCode, setOpenBookmarkCode] = useState<string | null>(null);
@@ -450,12 +444,13 @@ const useNeighborhoodMapView = (
               ...(mapProps.markers ?? []),
               ...(registration.canvasProps.markers ?? []).filter((marker) => marker.category === 'MEMO'),
             ],
-        // 찜한 동네만 볼 때는 추천 동네 대신 찜한 동네를 칠한다. 통근 결과 구역과 id가 겹치지 않게 접두어를 붙인다.
+        // 추천 동네(추천 동네 버튼이 정함) 위에 찜한 동네(찜 버튼이 정함)를 더해 칠한다. 통근 결과 구역과 id가 겹치지 않게 접두어를 붙인다.
         regions: showsBookmarkOnly
-          ? bookmarkRegions.map((region) => ({ ...region, id: `${BOOKMARK_REGION_PREFIX}${region.id}` }))
+          ? [
+              ...(mapProps.regions ?? []),
+              ...bookmarkRegions.map((region) => ({ ...region, id: `${BOOKMARK_REGION_PREFIX}${region.id}` })),
+            ]
           : (mapProps.regions ?? []),
-        selectedRegionId: showsBookmarkOnly ? null : mapProps.selectedRegionId,
-        onHoverRegion: showsBookmarkOnly ? undefined : mapProps.onHoverRegion,
         // 동네 찾기에서는 지도를 눌러도 메모 남기기, 본 방 기록하기 메뉴를 띄우지 않는다.
         coordinateMenu: undefined,
         onSelectLocation: mapProps.onSelectLocation
@@ -480,9 +475,7 @@ const useNeighborhoodMapView = (
         },
         coordinateAction:
           openBookmarkRegion?.center === undefined
-            ? showsBookmarkOnly
-              ? undefined
-              : mapProps.coordinateAction
+            ? mapProps.coordinateAction
             : {
                 ...openBookmarkRegion.center,
                 placement: 'above' as const,
