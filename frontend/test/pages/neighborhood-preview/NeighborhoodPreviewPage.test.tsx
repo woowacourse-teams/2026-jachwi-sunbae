@@ -1296,3 +1296,32 @@ it('동네 찾기 지도에도 내 기록과 같은 매물 마커를 올리고, 
     localStorage.removeItem('jachwi:records-bookmark-layer-rail');
   }
 });
+
+it('동네 찾기에서 내 매물을 누르면 출퇴근 장소까지 동선을 한 번만 받아 시트에 보인다', async () => {
+  useOneRecordedProperty();
+  const routeRequests: URL[] = [];
+  const track = ({ request }: { request: Request }) => {
+    const url = new URL(request.url);
+    if (url.pathname === '/api/properties/10/commute-route') routeRequests.push(url);
+  };
+  server.events.on('request:start', track);
+  try {
+    show(false, undefined, true);
+    const user = await choosePoint();
+    await submitCurrentSearch(user);
+    await screen.findByRole('region', { name: '행정동 프리셋 지도' });
+    await user.click(await screen.findByRole('button', { name: '마커 신림역 원룸' }));
+    const sheet = within(await screen.findByRole('region', { name: '신림역 원룸 정보' }));
+    expect(await sheet.findByText('25분')).toBeInTheDocument();
+    expect(await sheet.findByRole('region', { name: '대중교통 경로' })).toHaveTextContent('예상 20분');
+    // 시트와 지도가 같은 쿼리를 써서 동선은 한 번만 받고, 목적지는 동네 찾기의 출퇴근 장소다.
+    const destination = JSON.parse(screen.getByLabelText('목적지 좌표').textContent ?? '[]').find(
+      (marker: { id: string }) => marker.id === 'destination',
+    );
+    expect(routeRequests).toHaveLength(1);
+    expect(Number(routeRequests[0]?.searchParams.get('latitude'))).toBe(destination.latitude);
+    expect(Number(routeRequests[0]?.searchParams.get('longitude'))).toBe(destination.longitude);
+  } finally {
+    server.events.removeListener('request:start', track);
+  }
+});

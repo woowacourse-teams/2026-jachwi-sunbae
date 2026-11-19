@@ -23,8 +23,9 @@ import useIsDesktop from '@/shared/lib/hooks/useIsDesktop';
 import { formatRentPair } from '../model/criteriaLabels';
 import { NEIGHBORHOOD_TAP_TIP_KEY } from '../model/mapTapTipKey';
 import type { MyPropertyRow } from '../model/myProperty';
-import useNeighborhoodPlaces, { MY_PROPERTY_PREFIX } from './useNeighborhoodPlaces';
+import useNeighborhoodPlaces, { MY_PROPERTY_PREFIX, type NeighborhoodPlace } from './useNeighborhoodPlaces';
 import type { NeighborhoodPreviewContext } from './useNeighborhoodPreview';
+import usePropertyRoute from './usePropertyRoute';
 
 const NO_REGIONS: MapRegion[] = [];
 const NO_MARKERS: MapMarker[] = [];
@@ -146,6 +147,19 @@ const useNeighborhoodMapView = (
       NO_MARKERS,
     [recordMarkers],
   );
+  // 고른 매물은 고른 순간의 한 줄이라, 통근 시간이 뒤늦게 오면 지금 줄로 바꿔 보인다.
+  const pickedPlace = places.selectedPlace;
+  const selectedPlace = useMemo<NeighborhoodPlace | null>(() => {
+    if (pickedPlace?.kind !== 'property') return pickedPlace;
+    const fresh = myRows.find((row) => row.propertyId === pickedPlace.property.propertyId);
+    return fresh === undefined || fresh === pickedPlace.property ? pickedPlace : { kind: 'property', property: fresh };
+  }, [pickedPlace, myRows]);
+  // 고른 내 매물에서 출퇴근 장소까지의 동선. 통근 시간이 나온 매물만 부른다. 시트의 경로 안내와 같은 쿼리라 한 번만 받는다.
+  const routePropertyId =
+    selectedPlace?.kind === 'property' && selectedPlace.property.commute?.status === 'REACHABLE'
+      ? selectedPlace.property.propertyId
+      : null;
+  const propertyRoute = usePropertyRoute(preview, routePropertyId);
   /** 레일 칸을 켜고 끈다. 같은 칸을 다시 누르면 끈다. 열어 둔 장소 정보는 닫는다. */
   const selectRail = (next: RailSelection) => {
     const value = railSelection === next ? null : next;
@@ -496,7 +510,9 @@ const useNeighborhoodMapView = (
             isOn: bookmarks.isBookmarked(code),
             onToggle: () => bookmarks.toggle(code),
           },
-    places,
+    places: selectedPlace === places.selectedPlace ? places : { ...places, selectedPlace },
+    /** 고른 내 매물에서 출퇴근 장소까지의 동선. 매물을 고르지 않았거나 통근 시간이 없으면 `route`가 없다. */
+    propertyRoute,
     /** 결과 지도 오른쪽에 처음부터 두는 분류 레일(중개사, 병원, 교통, 편의, My)의 값. */
     rail: {
       selectedCategories: (facilityCategory ? [facilityCategory] : []) as MapCategory[],
