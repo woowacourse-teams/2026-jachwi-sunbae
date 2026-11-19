@@ -7,6 +7,7 @@ import { RECORDS_PATH, RECORDS_VIEW_PARAM } from '@/shared/lib/navigation/appPat
 import AreaSkeleton from '@/shared/ui/area-skeleton/AreaSkeleton';
 import { useMapPanel } from '@/shared/ui/map-list-header/MapPanelContext';
 import MapViewSwitch from '@/shared/ui/map-view-switch/MapViewSwitch';
+import PageAction from '@/shared/ui/page-action/PageAction';
 
 import type { RecordsState } from '../hooks/useRecords';
 import type { RecordsMapLayers } from '../hooks/useRecordsMapLayers';
@@ -65,7 +66,7 @@ const RecordsMobilePage = ({ records, layers, searchTo }: Props) => {
           <h1 ref={records.headingRef} className="sr-only" tabIndex={-1}>
             본 방 기록
           </h1>
-          {!panel && <RecordsMobileHeader view={view} searchTo={searchTo} onRecord={openMapToRecord} />}
+          {!panel && <RecordsMobileHeader view={view} searchTo={searchTo} />}
           {/* 기록을 받는 동안과 마이 같은 다른 화면(패널)을 볼 때는 동네 칩 줄을 두지 않는다. */}
           {!panel && showsMap && !records.properties.isPending && (
             <RecordDistricts
@@ -103,6 +104,13 @@ const RecordsMobilePage = ({ records, layers, searchTo }: Props) => {
           )}
         </div>
         {!panel && <MapViewSwitch value={view} onChange={setView} label="기록 보기 방식" />}
+        {/* 리스트 보기의 매물 기록하기는 아래 오른쪽 원형 버튼이다. 누르면 지도 보기로 바꿔 지도를 찍어 등록하게 한다.
+            지도 보기에서는 지도를 찍어 바로 등록하므로 두지 않는다. 아래 가운데 보기 방식 스위치와 같은 높이 줄의 오른쪽 끝이라 겹치지 않는다. */}
+        {!panel && view === 'list' && (
+          <PageAction iconOnly onClick={openMapToRecord} className={styles.recordFab}>
+            매물 기록하기
+          </PageAction>
+        )}
         <RecordNotice message={records.notice} onClose={() => setNotice('')} />
       </div>
     </main>

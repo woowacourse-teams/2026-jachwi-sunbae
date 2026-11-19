@@ -10,6 +10,8 @@ type PageActionProps = {
   children: ReactNode;
   icon?: 'plus' | 'map' | 'close';
   placement?: 'floating' | 'inline';
+  /** 켜면 글자를 읽기 도구에만 남기고 원형 아이콘 버튼(FAB)으로 그린다. */
+  iconOnly?: boolean;
   className?: string;
   'aria-label'?: string;
 } & ({ to: LinkProps['to']; onClick?: never } | { to?: never; onClick: () => void });
@@ -25,17 +27,20 @@ const PageAction = ({
   children,
   icon = 'plus',
   placement = 'floating',
+  iconOnly = false,
   className,
   to,
   onClick,
   ...rest
 }: PageActionProps) => {
-  const classes = [styles.action, styles[placement], className ?? ''].filter(Boolean).join(' ');
+  const classes = [styles.action, styles[placement], iconOnly ? styles.iconOnly : '', className ?? '']
+    .filter(Boolean)
+    .join(' ');
   const ActionIcon = actionIcons[icon];
   const content = (
     <>
-      <ActionIcon size={17} />
-      <span>{children}</span>
+      <ActionIcon size={iconOnly ? 26 : 17} />
+      <span className={iconOnly ? 'sr-only' : undefined}>{children}</span>
     </>
   );
 
@@ -89,6 +94,14 @@ const styles = {
     z-index: 35;
     right: max(1rem, calc((100vw - var(--app-max-width)) / 2 + 1rem));
     bottom: calc(var(--bottom-navigation-height) + 2.1rem + env(safe-area-inset-bottom));
+  `,
+
+  iconOnly: css`
+    label: PageAction-iconOnly;
+    width: 3.5rem;
+    height: 3.5rem;
+    padding: 0;
+    border-radius: 50%;
   `,
 
   inline: css`

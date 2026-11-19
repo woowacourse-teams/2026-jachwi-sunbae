@@ -78,3 +78,13 @@ export const listTools = css`
     text-decoration: none;
   }
 `;
+
+/* 리스트 보기의 매물 기록하기 원형 버튼. 아래 가운데 보기 방식 스위치와 같은 줄의 오른쪽 끝에 두고 아래 안전 영역만 비운다. */
+export const recordFab = css`
+  label: RecordsMobilePage-recordFab;
+
+  && {
+    right: 1rem;
+    bottom: calc(var(--map-sheet-bottom, env(safe-area-inset-bottom)) + 0.75rem);
+  }
+`;

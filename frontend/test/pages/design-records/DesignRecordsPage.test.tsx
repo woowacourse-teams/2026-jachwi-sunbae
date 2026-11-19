@@ -123,12 +123,16 @@ it('내 매물로 지도·리스트와 주소 필터를 구성하고 홈으로 �
   expect(screen.queryByRole('link', { name: /망원동 투룸/ })).not.toBeInTheDocument();
 });
 
-it('휴대폰은 처음 목록에서 매물 기록하기를 누르면 지도로 이동한다', async () => {
+it('휴대폰은 목록 아래 오른쪽 원형 매물 기록하기 버튼을 누르면 지도로 이동한다', async () => {
   const user = userEvent.setup();
   renderRecords('/?view=list');
   await screen.findByText('신림역 원룸');
+  // 매물 기록하기는 머리에서 빠지고 아래 오른쪽 원형 버튼으로 떠 있다.
   const header = within(screen.getByLabelText('지도 목록 헤더'));
-  await user.click(header.getByRole('button', { name: '매물 기록하기' }));
+  expect(header.queryByRole('button', { name: '매물 기록하기' })).not.toBeInTheDocument();
+  const fab = screen.getByRole('button', { name: '매물 기록하기' });
+  expect(fab.closest('header')).toBeNull();
+  await user.click(fab);
   expect(await screen.findByRole('region', { name: '본 방 기록 지도' })).toBeInTheDocument();
   expect(screen.queryByRole('button', { name: '매물 기록하기' })).not.toBeInTheDocument();
 });
