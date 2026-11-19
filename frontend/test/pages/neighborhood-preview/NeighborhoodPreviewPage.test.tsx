@@ -128,6 +128,11 @@ vi.mock('@/features/map/ui/map-canvas/MapCanvas', async () => {
             찜한 동네 토글
           </button>
         )}
+        {props.recommendedAreaControl && (
+          <button onClick={props.recommendedAreaControl.onToggle} aria-pressed={props.recommendedAreaControl.isOn}>
+            지도 추천 동네 토글
+          </button>
+        )}
         {props.regions?.map((region) => (
           <button key={region.id} onClick={() => props.onSelectRegion?.(region.id)}>
             {region.name}
@@ -1332,5 +1337,71 @@ it('동네 찾기에서 내 매물을 누르면 출퇴근 장소까지 동선을
     await waitFor(() => expect(screen.getByLabelText('지도 선')).toHaveTextContent('[]'));
   } finally {
     server.events.removeListener('request:start', track);
+  }
+});
+
+/** 지도의 구역 버튼 가운데 이 이름인 것의 개수. 결과 목록에도 같은 이름 버튼이 있어 개수로 견준다. */
+const regionButtons = (name: string) => screen.queryAllByRole('button', { name }).length;
+
+it('추천 동네를 끄면 결과 동네 영역만 지도에서 걷고, 다시 켜면 새로 받지 않고 되살린다', async () => {
+  let boundaryRequests = 0;
+  const track = ({ request }: { request: Request }) => {
+    if (new URL(request.url).pathname.startsWith('/boundaries/')) boundaryRequests += 1;
+  };
+  try {
+    show(false, undefined, true);
+    const user = await choosePoint();
+    await submitCurrentSearch(user);
+    await screen.findByRole('region', { name: '행정동 프리셋 지도' });
+    const before = regionButtons('역삼1동');
+    const toggle = screen.getByRole('button', { name: '지도 추천 동네 토글' });
+    expect(toggle).toHaveAttribute('aria-pressed', 'true');
+    server.events.on('request:start', track);
+    await user.click(toggle);
+    expect(toggle).toHaveAttribute('aria-pressed', 'false');
+    expect(regionButtons('역삼1동')).toBe(before - 1);
+    // 결과 시트(조건과 결과)는 그대로 쓴다.
+    expect(screen.getByRole('region', { name: '행정동 프리셋 지도' })).toBeInTheDocument();
+    expect(localStorage.getItem('jachwi:recommended-area-layer')).toBe('off');
+    await user.click(toggle);
+    expect(regionButtons('역삼1동')).toBe(before);
+    expect(boundaryRequests).toBe(0);
+  } finally {
+    server.events.removeListener('request:start', track);
+    localStorage.removeItem('jachwi:recommended-area-layer');
+  }
+});
+
+it('추천 동네 버튼과 찜 버튼은 서로의 켜짐 상태를 바꾸지 않는다', async () => {
+  writeBookmarkedAdminDongs(['11210690']);
+  server.use(...adminDongBookmarkHandlers);
+  try {
+    show(false, undefined, true);
+    const user = await choosePoint();
+    await submitCurrentSearch(user);
+    await screen.findByRole('region', { name: '행정동 프리셋 지도' });
+    const recommended = screen.getByRole('button', { name: '지도 추천 동네 토글' });
+    const bookmark = await screen.findByRole('button', { name: '찜한 동네 토글' });
+    expect(recommended).toHaveAttribute('aria-pressed', 'true');
+    expect(bookmark).toHaveAttribute('aria-pressed', 'false');
+    // 찜을 켜고 꺼도 추천 동네 버튼은 켜진 채다.
+    await user.click(bookmark);
+    expect(bookmark).toHaveAttribute('aria-pressed', 'true');
+    expect(recommended).toHaveAttribute('aria-pressed', 'true');
+    await user.click(bookmark);
+    expect(recommended).toHaveAttribute('aria-pressed', 'true');
+    // 추천 동네를 꺼도 찜 버튼은 그대로고, 찜을 켜면 찜한 동네가 칠해진다.
+    await user.click(recommended);
+    expect(bookmark).toHaveAttribute('aria-pressed', 'false');
+    await user.click(bookmark);
+    expect(recommended).toHaveAttribute('aria-pressed', 'false');
+    await waitFor(() => expect(screen.getByRole('button', { name: '신림동' })).toBeInTheDocument());
+    // 찜을 끄면 추천 동네는 꺼 둔 대로 숨긴 채다.
+    const hidden = regionButtons('역삼1동');
+    await user.click(bookmark);
+    expect(regionButtons('역삼1동')).toBe(hidden);
+  } finally {
+    writeBookmarkedAdminDongs([]);
+    localStorage.removeItem('jachwi:recommended-area-layer');
   }
 });

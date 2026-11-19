@@ -100,6 +100,8 @@ export type MapCanvasProps = {
     onHoverChange?: (hovered: boolean) => void;
   };
   bookmarkControl?: { count: number; isOn: boolean; isDisabled?: boolean; onToggle: () => void };
+  /** 동네 찾기 결과로 칠한 추천 동네를 켜고 끄는 버튼. 끄면 화면이 추천 동네를 `regions`에서 뺀다. */
+  recommendedAreaControl?: { isOn: boolean; onToggle: () => void };
   /** 처음 한 번 보이는 안내 말풍선. 지도 좌표에 붙어 있다. */
   tip?: MapTip;
   /** 찍은 좌표에 고정된 동작 말풍선. 꼬리 끝이 좌표를 가리킨다. */

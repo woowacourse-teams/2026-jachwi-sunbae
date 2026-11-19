@@ -24,6 +24,7 @@ import { commuteRouteLines } from '../model/commuteRouteLines';
 import { formatRentPair } from '../model/criteriaLabels';
 import { NEIGHBORHOOD_TAP_TIP_KEY } from '../model/mapTapTipKey';
 import type { MyPropertyRow } from '../model/myProperty';
+import useRecommendedAreaLayer from '../model/recommendedAreaLayer';
 import useNeighborhoodPlaces, { MY_PROPERTY_PREFIX, type NeighborhoodPlace } from './useNeighborhoodPlaces';
 import type { NeighborhoodPreviewContext } from './useNeighborhoodPreview';
 import usePropertyRoute from './usePropertyRoute';
@@ -93,6 +94,8 @@ const useNeighborhoodMapView = (
   const openBookmarkRegion = showsBookmarkOnly
     ? bookmarkRegions.find((region) => region.id === openBookmarkCode)
     : undefined;
+  // 추천 동네(결과로 칠한 행정동)를 켜고 끄는 버튼. 찜 버튼과 따로 두고, 꺼도 결과 목록과 조건 시트는 그대로 쓴다.
+  const recommendedArea = useRecommendedAreaLayer();
   const markerLevel = isDesktop ? DESKTOP_FACILITY_MARKER_LEVEL : FACILITY_MARKER_LEVEL;
   const isResultMap = !preview.isAnalyzing && !preview.error && !preview.isSelectingOnMap;
   const [railSelection, setRailSelection] = useState<RailSelection | null>(null);
@@ -366,13 +369,15 @@ const useNeighborhoodMapView = (
           else selectMarker(marker);
         },
         onSelectLocation: tapMap,
-        regions: preview.regions,
+        // 추천 동네 버튼을 끄면 결과 동네의 면, 경계선, 동 이름표를 지도에서 걷는다. 받은 결과는 그대로 두어 다시 켜면 곧바로 그린다.
+        regions: recommendedArea.isOn ? preview.regions : NO_REGIONS,
+        recommendedAreaControl: { isOn: recommendedArea.isOn, onToggle: recommendedArea.toggle },
         selectedRegionId: preview.selected?.adminDongCode,
         onSelectRegion: selectRegion,
         // 데스크탑: 동 라벨이나 구역에 마우스를 올리면 동 이름, 소요시간, 월세 시세 카드가 그 자리에 뜬다. 모바일은 아래 시트가 같은 내용을 맡는다.
         onHoverRegion: showAreaAction ? hoverRegion : undefined,
         coordinateAction:
-          showAreaAction && hoveredArea && !hasOpenLayer
+          showAreaAction && recommendedArea.isOn && hoveredArea && !hasOpenLayer
             ? {
                 ...hoveredArea.center,
                 placement: 'above' as const,

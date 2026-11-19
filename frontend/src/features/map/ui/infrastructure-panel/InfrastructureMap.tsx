@@ -16,6 +16,7 @@ import type { MapCanvasProps, MapRadiusCircle } from '../../model/MapCanvas';
 import MapBookmarkToggle from '../map-bookmark-toggle/MapBookmarkToggle';
 import MapCanvasSurface from '../map-canvas/MapCanvasSurface';
 import MapCategoryRail from '../map-category-rail/MapCategoryRail';
+import MapRecommendedAreaToggle from '../map-recommended-area-toggle/MapRecommendedAreaToggle';
 
 type Props = { mapProps: MapCanvasProps; open: boolean; onClose: () => void };
 
@@ -113,6 +114,7 @@ const InfrastructureMap = ({ mapProps, open }: Props) => {
         }}
       />
       {mapProps.bookmarkControl && <MapBookmarkToggle {...mapProps.bookmarkControl} />}
+      {mapProps.recommendedAreaControl && <MapRecommendedAreaToggle {...mapProps.recommendedAreaControl} />}
       {open && anchor !== null && (
         <>
           <MapCategoryRail
