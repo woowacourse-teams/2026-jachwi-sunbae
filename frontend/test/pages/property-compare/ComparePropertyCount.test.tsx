@@ -1,4 +1,5 @@
 import { render, screen, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { describe, expect, it, vi } from 'vitest';
 
@@ -8,7 +9,10 @@ import type { PropertySummary } from '@/features/property/model/Property';
 import { PublicConfigProvider } from '@/shared/config/PublicConfigContext';
 
 const { listQuery } = vi.hoisted(() => ({ listQuery: { current: null as unknown } }));
-vi.mock('@/features/property/api/useProperties', () => ({ usePropertyList: () => listQuery.current }));
+vi.mock('@/features/property/api/useProperties', () => ({
+  usePropertyList: () => listQuery.current,
+  usePropertyDetail: () => ({ data: undefined, isPending: false, isError: false }),
+}));
 vi.mock('@/features/property/api/usePropertyMutations', () => ({
   useRecordPropertyComparisonView: () => ({ mutate: vi.fn() }),
 }));
@@ -89,20 +93,21 @@ describe.each([
     withProperties([]);
     renderPage(Page);
 
-    expect(screen.getByText('비교하려면 매물이 2개 필요해요.')).toBeInTheDocument();
-    expect(screen.queryByText('매물을 하나 더 등록하면 비교할 수 있어요.')).not.toBeInTheDocument();
+    expect(screen.getByText('PDF로 받을 매물이 아직 없어요.')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /PDF 받기/ })).not.toBeInTheDocument();
   });
 
-  it('매물이 1개면 그 매물을 보이고, PDF 버튼 대신 하나 더 등록하라고 안내한다', () => {
+  it('매물이 1개여도 그 매물을 보이고, 골라서 PDF로 받을 수 있다', async () => {
     withProperties([property(1, '성수동 투룸')]);
     renderPage(Page);
+    const user = userEvent.setup();
 
     expect(screen.getByText('성수동 투룸')).toBeInTheDocument();
-    expect(screen.queryByText('비교하려면 매물이 2개 필요해요.')).not.toBeInTheDocument();
-    expect(screen.getByText('매물을 하나 더 등록하면 비교할 수 있어요.')).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: '본 방 기록에서 등록하기' })).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: /PDF 받기/ })).not.toBeInTheDocument();
+    expect(screen.queryByText('PDF로 받을 매물이 아직 없어요.')).not.toBeInTheDocument();
+    const download = within(screen.getByRole('main')).getByRole('button', { name: /PDF 받기/ });
+    expect(download).toBeDisabled();
+    await user.click(screen.getByRole('checkbox', { name: /성수동 투룸/ }));
+    expect(within(screen.getByRole('main')).getByRole('button', { name: '선택한 1개 PDF 받기' })).toBeEnabled();
   });
 
   it('매물이 2개 이상이면 목록과 PDF 받기 버튼을 보인다', () => {
@@ -112,6 +117,22 @@ describe.each([
     expect(screen.getByText('성수동 투룸')).toBeInTheDocument();
     expect(screen.getByText('망원동 원룸')).toBeInTheDocument();
     expect(within(screen.getByRole('main')).getByRole('button', { name: /PDF 받기/ })).toBeDisabled();
-    expect(screen.queryByText('매물을 하나 더 등록하면 비교할 수 있어요.')).not.toBeInTheDocument();
+    expect(screen.getByText('PDF로 받을 매물을 골라 주세요.')).toBeInTheDocument();
   });
+});
+
+it('데스크탑에서는 PDF에 넣기 전에 매물의 주소를 미리 볼 수 있다', async () => {
+  withProperties([
+    property(1, '성수동 투룸'),
+    { ...property(2, '망원동 원룸'), location: { address: '서울 마포구 희우정로 1', latitude: null, longitude: null } },
+  ]);
+  renderPage(CompareDesktopPage);
+  const user = userEvent.setup();
+
+  await user.click(screen.getByRole('button', { name: '망원동 원룸 미리 보기' }));
+
+  const detail = within(screen.getByRole('complementary', { name: '매물 미리 보기' }));
+  expect(detail.getByRole('heading', { name: '망원동 원룸' })).toBeInTheDocument();
+  expect(detail.getByText('서울 마포구 희우정로 1')).toBeInTheDocument();
+  expect(screen.getByRole('checkbox', { name: /망원동 원룸/ })).not.toBeChecked();
 });

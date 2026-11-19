@@ -23,6 +23,9 @@ import {
   updatePropertyResponse,
 } from '../mockStore';
 
+/** jsdom 테스트에서는 request.formData()가 File 파트를 읽지 못해 multipart 본문에서 images 파트 수만 센다. */
+export const countImageParts = (multipartBody: string) => multipartBody.match(/name="images"/g)?.length ?? 0;
+
 type PropertyWriteRequest = {
   name: string;
   depositAmount?: number;
@@ -92,6 +95,60 @@ export const propertyHandlers = [
             ? { propertyId: property.id, propertyName: property.name, status: 'UNREACHABLE', commuteMinutes: null }
             : { propertyId: property.id, propertyName: property.name, status: 'REACHABLE', commuteMinutes: minutes };
         }),
+    });
+  }),
+  // 매물 동선. 서버처럼 매물에서 첫 정류장까지 걷고, 버스 한 번을 탄 뒤 목적지까지 걷는 동선을 통근 시간 어림에 맞춰 만든다.
+  http.get('*/api/properties/:propertyId/commute-route', ({ request, params }) => {
+    const search = new URL(request.url).searchParams;
+    const latitude = Number(search.get('latitude'));
+    const longitude = Number(search.get('longitude'));
+    if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) return failure('INVALID_REQUEST', 400);
+    const property = getMockProperties().find((item) => String(item.id) === params.propertyId);
+    if (!property) return failure('PROPERTY_NOT_FOUND', 404);
+    if (property.latitude === null || property.longitude === null) return failure('PROPERTY_LOCATION_REQUIRED', 400);
+    const origin = { latitude: property.latitude, longitude: property.longitude };
+    const destination = { latitude, longitude };
+    const total = Math.round(distanceMeters(destination, origin) / 400) + 5;
+    if (total > COMMUTE_MAX_MINUTES) return failure('COMMUTE_ROUTE_NOT_FOUND', 404);
+    const boarding = {
+      stopId: 'MOCK-BOARD',
+      name: '매물 앞 정류장',
+      latitude: origin.latitude + (destination.latitude - origin.latitude) * 0.05,
+      longitude: origin.longitude + (destination.longitude - origin.longitude) * 0.05,
+    };
+    const alighting = {
+      stopId: 'MOCK-ALIGHT',
+      name: '목적지 앞 정류장',
+      latitude: origin.latitude + (destination.latitude - origin.latitude) * 0.95,
+      longitude: origin.longitude + (destination.longitude - origin.longitude) * 0.95,
+    };
+    const walk = 2;
+    return success({
+      totalMinutes: total,
+      transferCount: 0,
+      legs: [
+        {
+          type: 'WALK',
+          routeName: null,
+          minutes: walk,
+          waitMinutes: 0,
+          points: [{ stopId: null, name: '출발지', ...origin }, boarding],
+        },
+        {
+          type: 'BUS',
+          routeName: '146',
+          minutes: Math.max(1, total - walk * 2 - 1),
+          waitMinutes: 1,
+          points: [boarding, alighting],
+        },
+        {
+          type: 'WALK',
+          routeName: null,
+          minutes: walk,
+          waitMinutes: 0,
+          points: [alighting, { stopId: null, name: '목적지', ...destination }],
+        },
+      ],
     });
   }),
   http.get('*/api/properties', () =>
@@ -173,6 +230,27 @@ export const propertyHandlers = [
     setMockMemosByProperty(new Map(getMockMemosByProperty()).set(property.id, memo));
     return success(memo);
   }),
+  // 실제 서버는 이미지를 AI로 분석해 저장한다. 목은 이미지 수만 확인하고 정해 둔 추출 결과를 저장한다.
+  http.post('*/api/properties/:propertyId/ai-import', async ({ params, request }) => {
+    const property = getProperty(params.propertyId);
+    if (property === undefined) return failure('PROPERTY_NOT_FOUND', 404);
+    const imageCount = countImageParts(await request.text());
+    if (imageCount === 0 || imageCount > 10) return failure('PROPERTY_AI_IMAGE_INVALID', 400);
+    const updated = {
+      ...property,
+      depositAmount: 20_000_000,
+      monthlyRentAmount: 650_000,
+      maintenanceFeeAmount: 80_000,
+    };
+    setMockProperties(getMockProperties().map((candidate) => (candidate.id === updated.id ? updated : candidate)));
+    const currentMemo = getMockMemosByProperty().get(property.id)?.freeMemo ?? '';
+    const memo = {
+      propertyId: property.id,
+      freeMemo: currentMemo === '' ? '4층, 엘리베이터 있음' : `${currentMemo}\n\n4층, 엘리베이터 있음`,
+    };
+    setMockMemosByProperty(new Map(getMockMemosByProperty()).set(property.id, memo));
+    return success({ property: updatePropertyResponse(updated), freeMemo: memo.freeMemo });
+  }),
   http.get('*/api/properties/:propertyId/photos', ({ params }) => {
     const property = getProperty(params.propertyId);
     if (property === undefined) return failure('PROPERTY_NOT_FOUND', 404);
@@ -204,6 +282,10 @@ export const propertyHandlers = [
     return new HttpResponse(null, { status: 200 });
   }),
   http.get('*/api/properties/:propertyId/photos/:photoId/content', obsoleteEndpoint),
+  http.get('*/api/properties/:propertyId/photos/:photoId/thumbnail', ({ params }) => {
+    const photoId = readPositiveInteger(params.photoId) ?? 81;
+    return new HttpResponse(createMockPhotoBytes(photoId), { headers: { 'Content-Type': 'image/png' } });
+  }),
   http.get('*/api/properties/:propertyId/photos/:photoId', ({ params }) => {
     const photoId = readPositiveInteger(params.photoId) ?? 81;
     return new HttpResponse(createMockPhotoBytes(photoId), { headers: { 'Content-Type': 'image/png' } });

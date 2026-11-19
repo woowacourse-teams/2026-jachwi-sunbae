@@ -24,7 +24,6 @@ import {
 import { readPropertyCount } from '@/features/property/api/propertyCount';
 import { usePublicConfig } from '@/shared/config/PublicConfigContext';
 import { HOME_PATH } from '@/shared/lib/navigation/appPaths';
-import Icon from '@/shared/ui/icon/Icon';
 import Toast from '@/shared/ui/toast/Toast';
 
 type AccountLinkCardProps = {
@@ -81,9 +80,13 @@ const AccountLinkCard = ({ memberId, reloadPage = () => window.location.reload()
   const [linkRevision, setLinkRevision] = useState(0);
   const linkedProvider = useMemo(() => readLinkedProvider(memberId), [memberId, linkRevision]);
   const [status, setStatus] = useState<Status>('idle');
-  const [notice, setNotice] = useState<OAuthNotice | null>(
-    () => readOAuthNoticeFromState(location.state) ?? takeStashedOAuthNotice(),
-  );
+  const [notice, setNotice] = useState<OAuthNotice | null>(() => readOAuthNoticeFromState(location.state));
+  useEffect(() => {
+    if (readOAuthNoticeFromState(location.state) !== null) return;
+    // 렌더가 중단되거나 재시도돼도 안내를 잃지 않도록 화면에 붙은 뒤에만 저장소에서 꺼낸다.
+    const stashed = takeStashedOAuthNotice();
+    if (stashed !== null) setNotice(stashed);
+  }, [location.state]);
 
   /*
    * 제공자 화면에서 취소하거나 콜백이 실패하면 #570은 JSON 오류로 끝나 사용자가 뒤로 가기로 돌아온다.
@@ -188,56 +191,60 @@ const AccountLinkCard = ({ memberId, reloadPage = () => window.location.reload()
     void (usesNativeOAuth() ? linkInApp : linkInBrowser)(provider);
   };
 
-  const linkedLabel = linkedProvider === null ? null : OAUTH_PROVIDER_LABELS[linkedProvider];
-
-  return (
-    <section className={styles.card} aria-labelledby="account-link-title">
-      <div className={styles.header}>
-        <span className={styles.icon}>
-          <Icon name="user" size={16} />
-        </span>
-        <div>
-          <h2 id="account-link-title" className={styles.title}>
-            {linkedLabel === null ? '계정 연결' : `${linkedLabel} 계정 연결됨`}
-          </h2>
-          <p className={styles.description}>
-            {linkedLabel === null
-              ? '계정을 연결하면 기록을 보관하고 다른 기기에서도 이어서 쓸 수 있어요.'
-              : '다른 기기에서도 같은 계정으로 인증하면 이 기록을 이어서 써요. 다른 계정을 쓰려면 로그아웃한 뒤 연결해 주세요.'}
-          </p>
-        </div>
-      </div>
-
-      <div className={styles.actions}>
-        {linkedLabel === null &&
-          providers.map((provider) => (
-            <button
-              key={provider}
-              type="button"
-              className={`${styles.providerButton} ${provider === 'KAKAO' ? styles.kakao : styles.apple}`}
-              disabled={status === 'working'}
-              aria-busy={status === 'working'}
-              onClick={() => link(provider)}
-            >
-              {provider === 'KAKAO' ? (
-                <img className={styles.kakaoSymbol} src={kakaoSymbol} alt="" aria-hidden="true" />
-              ) : (
-                <img className={styles.appleLogo} src={appleLogo} alt="" aria-hidden="true" />
-              )}
-              {PROVIDER_BUTTON_LABELS[provider]}
-            </button>
-          ))}
-        {linkedLabel !== null && (
+  // 연결한 뒤에는 SEED 프로필 줄처럼 계정 색 동그라미, 계정 이름, 작은 로그아웃 버튼을 한 줄에 둔다.
+  if (linkedProvider !== null)
+    return (
+      <section className={styles.card} aria-labelledby="account-link-title">
+        <div className={styles.linkedRow}>
+          <div>
+            <h2 id="account-link-title" className={styles.title}>
+              {OAUTH_PROVIDER_LABELS[linkedProvider]} 계정으로 로그인됨
+            </h2>
+            <p className={styles.description}>다른 기기에서도 기록을 이어서 봐요.</p>
+          </div>
           <button
             type="button"
-            className={styles.logoutButton}
+            className={styles.logoutPill}
             disabled={status === 'working'}
             aria-busy={status === 'working'}
             onClick={() => void logout()}
           >
             로그아웃
           </button>
-        )}
+        </div>
+        {toast}
+      </section>
+    );
+
+  return (
+    <section className={styles.card} aria-labelledby="account-link-title">
+      <div className={styles.header}>
+        <div>
+          {/* 연결 전에는 버튼만으로 충분해 설명을 두지 않는다. */}
+          <h2 id="account-link-title" className={styles.title}>
+            로그인하고 동기화하기
+          </h2>
+        </div>
+      </div>
+
+      <div className={styles.actions}>
+        {providers.map((provider) => (
+          <button
+            key={provider}
+            type="button"
+            className={`${styles.providerButton} ${provider === 'KAKAO' ? styles.kakao : styles.apple}`}
+            disabled={status === 'working'}
+            aria-busy={status === 'working'}
+            onClick={() => link(provider)}
+          >
+            {provider === 'KAKAO' ? (
+              <img className={styles.kakaoSymbol} src={kakaoSymbol} alt="" aria-hidden="true" />
+            ) : (
+              <img className={styles.appleLogo} src={appleLogo} alt="" aria-hidden="true" />
+            )}
+            {PROVIDER_BUTTON_LABELS[provider]}
+          </button>
+        ))}
       </div>
 
       {toast}
@@ -249,9 +256,9 @@ const styles = {
   card: css`
     label: AccountLinkCard-card;
     display: grid;
-    gap: 0.875rem;
+    gap: 0.55rem;
     padding: var(--my-card-padding);
-    border-radius: var(--radius-card);
+    border-radius: var(--radius-md);
     background: var(--my-card-surface, var(--color-card-surface));
     color: var(--color-ink);
   `,
@@ -259,16 +266,14 @@ const styles = {
   header: css`
     label: AccountLinkCard-header;
     display: grid;
-    grid-template-columns: 1.5rem minmax(0, 1fr);
-    gap: 0.75rem;
-    align-items: start;
+    grid-template-columns: minmax(0, 1fr);
+    align-items: center;
   `,
 
   icon: css`
     label: AccountLinkCard-icon;
     display: grid;
     place-items: center;
-    height: 1.4rem;
   `,
 
   title: css`
@@ -280,17 +285,18 @@ const styles = {
 
   description: css`
     label: AccountLinkCard-description;
-    margin: 0.25rem 0 0;
+    margin: 0.15rem 0 0;
     color: var(--color-ink-soft);
     font-size: var(--my-subtext-size, 0.78rem);
-    line-height: 1.5;
+    line-height: 1.35;
     word-break: keep-all;
   `,
 
   actions: css`
     label: AccountLinkCard-actions;
     display: grid;
-    gap: 0.5rem;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 140px), 1fr));
+    gap: 0.4rem;
   `,
 
   /*
@@ -305,9 +311,8 @@ const styles = {
     align-items: center;
     justify-content: center;
     width: 100%;
-    min-width: 140px;
     height: 2.75rem;
-    padding: 0 1rem;
+    padding: 0 0.4rem;
     border: 0;
     border-radius: 12px;
     font: inherit;
@@ -324,15 +329,15 @@ const styles = {
 
   kakao: css`
     label: AccountLinkCard-kakao;
-    background: #fee500;
-    color: rgb(0 0 0 / 85%);
+    background: var(--color-provider-kakao);
+    color: var(--color-on-provider-kakao);
   `,
 
   /* Apple은 밝은 바탕에 검정 버튼을 쓴다. 이 서비스는 다크 모드가 없어 카드가 늘 밝으므로 흰 버튼은 두지 않는다. */
   apple: css`
     label: AccountLinkCard-apple;
-    background: #000000;
-    color: #ffffff;
+    background: var(--color-provider-apple);
+    color: var(--color-on-provider-apple);
   `,
 
   /* 카카오 심볼은 모양, 비율, 색을 바꾸지 않는다. */
@@ -350,23 +355,59 @@ const styles = {
     margin-left: -0.25rem;
   `,
 
-  logoutButton: css`
-    label: AccountLinkCard-logoutButton;
-    justify-self: start;
-    padding: 0.25rem 0.35rem;
+  linkedRow: css`
+    label: AccountLinkCard-linkedRow;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 0.75rem;
+  `,
+
+  /* 계정 색 동그라미. 카카오는 카카오 노랑(#FEE500), Apple은 검정. */
+  providerBadge: css`
+    label: AccountLinkCard-providerBadge;
+    display: grid;
+    width: 2.5rem;
+    height: 2.5rem;
+    place-items: center;
+    border-radius: 50%;
+    background: var(--color-provider-apple);
+
+    &[data-provider='KAKAO'] {
+      background: var(--color-provider-kakao);
+    }
+
+    & img {
+      width: 1.2rem;
+      height: 1.2rem;
+      object-fit: contain;
+    }
+  `,
+
+  /* SEED의 작은 보조 버튼처럼 회색 바탕 알약. */
+  logoutPill: css`
+    label: AccountLinkCard-logoutPill;
+    min-height: 2rem;
+    padding: 0 0.85rem;
     border: 0;
-    background: none;
-    color: var(--color-muted);
+    border-radius: 999px;
+    background: var(--color-surface-muted);
+    color: var(--color-ink-soft);
     font: inherit;
     font-size: var(--my-subtext-size, 0.78rem);
-    text-decoration: underline;
-    text-underline-offset: 0.2em;
+    font-weight: 700;
     cursor: pointer;
 
+    &:hover {
+      background: var(--color-surface-disabled);
+    }
+    &:disabled {
+      cursor: wait;
+      opacity: 0.6;
+    }
     &:focus-visible {
       outline: 2px solid var(--color-focus);
       outline-offset: 2px;
-      border-radius: var(--radius-sm);
     }
   `,
 

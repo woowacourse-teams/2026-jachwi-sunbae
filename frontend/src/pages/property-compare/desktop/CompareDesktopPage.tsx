@@ -1,31 +1,33 @@
-import { css } from '@emotion/css';
+import { css, cx } from '@emotion/css';
 import { useState } from 'react';
 
 import { usePropertyList } from '@/features/property/api/useProperties';
 import InlineNotice from '@/shared/ui/inline-notice/InlineNotice';
 
-import usePropertyComparison, { MAX_SELECTION, MIN_SELECTION } from '../hooks/usePropertyComparison';
+import usePropertyComparison, { MAX_SELECTION } from '../hooks/usePropertyComparison';
 import { DEFAULT_COMPARE_FILTERS, filterCompareProperties } from '../lib/compareFilters';
 import CompareActionBar from '../ui/compare-action-bar/CompareActionBar';
 import CompareEmpty from '../ui/compare-empty/CompareEmpty';
 import CompareFilters from '../ui/compare-filters/CompareFilters';
 import CompareLoadState from '../ui/compare-load-state/CompareLoadState';
+import ComparePropertyPreview from '../ui/compare-property-preview/ComparePropertyPreview';
 import CompareTable from '../ui/compare-table/CompareTable';
 
 import * as shared from '../ComparePage.styles';
 
 /**
  * 데스크탑 비교할 매물 선택. 화면 위 헤더는 공용 데스크탑 헤더가 대신하고,
- * 리스트 위 줄 오른쪽 필터로 좁힌 매물을 관리 화면 같은 표에서 2~5개 골라 PDF로 받는다.
+ * 리스트 위 줄 오른쪽 필터로 좁힌 매물을 관리 화면 같은 표에서 1~5개 골라 PDF로 받는다.
  */
 const CompareDesktopPage = () => {
   const properties = usePropertyList();
   const items = properties.data?.pages.flatMap((page) => page.content) ?? [];
   const { selectedIds, isExporting, hasExportError, toggle, downloadPdf } = usePropertyComparison();
   const hasProperties = items.length > 0;
-  const hasEnoughProperties = items.length >= MIN_SELECTION;
   const [filters, setFilters] = useState(DEFAULT_COMPARE_FILTERS);
   const visibleItems = filterCompareProperties(items, filters);
+  const [previewId, setPreviewId] = useState<number>();
+  const preview = visibleItems.find((item) => item.propertyId === previewId);
 
   return (
     <main className={shared.page}>
@@ -38,17 +40,25 @@ const CompareDesktopPage = () => {
                 <strong>{selectedIds.length}개 선택</strong>
                 <span>최대 {MAX_SELECTION}개</span>
               </div>
-              {hasEnoughProperties && (
+              {hasProperties && (
                 <CompareFilters filters={filters} resultCount={visibleItems.length} onChange={setFilters} />
               )}
             </div>
             {hasProperties ? (
-              <CompareTable
-                properties={visibleItems}
-                selectedIds={selectedIds}
-                maxSelection={MAX_SELECTION}
-                onToggle={toggle}
-              />
+              <div className={cx(styles.body, preview && styles.withPreview)}>
+                <CompareTable
+                  properties={visibleItems}
+                  selectedIds={selectedIds}
+                  maxSelection={MAX_SELECTION}
+                  onToggle={(id) => {
+                    setPreviewId(id);
+                    toggle(id);
+                  }}
+                  previewId={preview?.propertyId}
+                  onPreview={setPreviewId}
+                />
+                {preview && <ComparePropertyPreview property={preview} />}
+              </div>
             ) : (
               <CompareEmpty />
             )}
@@ -57,7 +67,6 @@ const CompareDesktopPage = () => {
             )}
             {hasProperties && (
               <CompareActionBar
-                propertyCount={items.length}
                 selectedCount={selectedIds.length}
                 isExporting={isExporting}
                 onDownload={() => void downloadPdf()}
@@ -71,6 +80,16 @@ const CompareDesktopPage = () => {
 };
 
 const styles = {
+  body: css`
+    display: grid;
+    align-items: start;
+    gap: 1rem;
+  `,
+  withPreview: css`
+    @media (min-width: 67rem) {
+      grid-template-columns: minmax(0, 1fr) minmax(16rem, 28%);
+    }
+  `,
   /* 리스트 바로 위 줄: 왼쪽에 선택 개수, 오른쪽에 필터. */
   listHeader: css`
     label: CompareDesktopPage-listHeader;

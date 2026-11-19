@@ -7,20 +7,25 @@ import com.jachwisunbae.property.controller.dto.request.PropertyCommuteTimeReque
 import com.jachwisunbae.property.controller.dto.request.UpdatePropertyMemoRequest;
 import com.jachwisunbae.property.controller.dto.request.UpdatePropertyRequest;
 import com.jachwisunbae.property.controller.dto.response.CreatePropertyResponse;
+import com.jachwisunbae.property.controller.dto.response.PropertyAiImportResponse;
 import com.jachwisunbae.property.controller.dto.response.PropertyCommuteTimesResponse;
 import com.jachwisunbae.property.controller.dto.response.PropertyDetailResponse;
 import com.jachwisunbae.property.controller.dto.response.PropertyListResponse;
 import com.jachwisunbae.property.controller.dto.response.PropertyMemoResponse;
 import com.jachwisunbae.property.controller.dto.response.UpdatePropertyResponse;
 import com.jachwisunbae.property.entity.Property;
+import com.jachwisunbae.property.service.PropertyAiImportService;
 import com.jachwisunbae.property.service.PropertyCommuteService;
 import com.jachwisunbae.property.service.PropertyDeletionService;
 import com.jachwisunbae.property.service.PropertyService;
+import com.jachwisunbae.transit.controller.dto.response.CommuteRouteResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.net.URI;
+import java.util.List;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -30,7 +35,9 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
 @RestController
 @RequestMapping("/api/properties")
@@ -40,19 +47,22 @@ public class PropertyController {
     private final PropertyService propertyService;
     private final PropertyDeletionService propertyDeletionService;
     private final PropertyCommuteService propertyCommuteService;
+    private final PropertyAiImportService propertyAiImportService;
 
     public PropertyController(final PropertyService propertyService,
                               final PropertyDeletionService propertyDeletionService,
-                              final PropertyCommuteService propertyCommuteService) {
+                              final PropertyCommuteService propertyCommuteService,
+                              final PropertyAiImportService propertyAiImportService) {
         this.propertyService = propertyService;
         this.propertyDeletionService = propertyDeletionService;
         this.propertyCommuteService = propertyCommuteService;
+        this.propertyAiImportService = propertyAiImportService;
     }
 
     @GetMapping
     @Operation(summary = "매물 목록 조회", description = "로그인 회원의 매물과 대표 사진 및 전체 체크 진행 현황을 조회합니다.")
     public ApiResponse<PropertyListResponse> findList(@AuthenticatedMemberId final Long memberId) {
-        return ApiResponse.of("매물 목록을 조회했습니다.", propertyService.findList(memberId));
+        return ApiResponse.of("매물 목록을 조회했습니다.", PropertyListResponse.fromResults(propertyService.findList(memberId)));
     }
 
     @PostMapping("/comparison-views")
@@ -84,6 +94,18 @@ public class PropertyController {
                 propertyCommuteService.findCommuteTimes(memberId, request.destination())));
     }
 
+    @GetMapping("/{propertyId}/commute-route")
+    @Operation(summary = "매물 통근 동선 조회", description = "매물에서 목적지까지 대중교통 동선을 최대 60분, 환승 2회 기준으로 "
+            + "조회합니다. 매물에서 첫 정류장까지 걷는 구간부터 목적지까지 걷는 구간까지 차례로 담고, 시간은 매물별 통근 시간과 같습니다. "
+            + "위치가 없는 매물은 PROPERTY_LOCATION_REQUIRED(400), 60분 안에 닿지 못하면 COMMUTE_ROUTE_NOT_FOUND(404)입니다.")
+    public ApiResponse<CommuteRouteResponse> findCommuteRoute(
+            @AuthenticatedMemberId final Long memberId,
+            @PathVariable final Long propertyId,
+            @Valid @ModelAttribute final PropertyCommuteTimeRequest request) {
+        return ApiResponse.of("매물 통근 동선을 조회했습니다.", CommuteRouteResponse.from(
+                propertyCommuteService.findCommuteRoute(memberId, propertyId, request.destination())));
+    }
+
     @GetMapping("/{propertyId}")
     @Operation(summary = "매물 상세 조회", description = "매물 기본 정보와 사진 및 전체 체크 진행 현황을 조회합니다.")
     public ApiResponse<PropertyDetailResponse> findDetail(
@@ -102,6 +124,21 @@ public class PropertyController {
         UpdatePropertyResponse response = UpdatePropertyResponse.from(
                 propertyService.update(memberId, propertyId, request));
         return ApiResponse.of("매물 정보를 수정했습니다.", response);
+    }
+
+    @PostMapping(value = "/{propertyId}/ai-import", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @Operation(summary = "이미지로 매물 정보 채우기",
+            description = "매물 캡처 이미지(PNG·JPEG 1~10장, 장당 3MB 이하)를 AI로 분석해 보증금·월세·입주 가능일·관리비·"
+                    + "관리비 포함 공과금·방 옵션을 저장하고 추출 메모를 자유 메모 뒤에 덧붙입니다. "
+                    + "읽지 못한 항목과 이름·주소 등 추출 대상이 아닌 항목은 기존 값을 유지합니다. "
+                    + "회원별로 최근 60초 3회, 하루 30회, 한 달 300회(Asia/Seoul 기준)까지 분석하며, 넘으면 429와 "
+                    + "PROPERTY_AI_MINUTE_LIMIT_EXCEEDED/DAILY_LIMIT_EXCEEDED/MONTHLY_LIMIT_EXCEEDED로 응답합니다.")
+    public ApiResponse<PropertyAiImportResponse> importFromImages(
+            @AuthenticatedMemberId final Long memberId,
+            @PathVariable final Long propertyId,
+            @RequestPart("images") final List<MultipartFile> images) {
+        Property property = propertyAiImportService.importFromImages(memberId, propertyId, images);
+        return ApiResponse.of("이미지에서 읽은 매물 정보를 저장했습니다.", PropertyAiImportResponse.from(property));
     }
 
     @DeleteMapping("/{propertyId}")

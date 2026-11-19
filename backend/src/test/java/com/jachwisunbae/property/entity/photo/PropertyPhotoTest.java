@@ -14,7 +14,7 @@ import org.junit.jupiter.api.Test;
 @DisplayName("PropertyPhoto")
 class PropertyPhotoTest {
 
-    private static final long MAX_SIZE_BYTES = 5L * 1024 * 1024;
+    private static final long MAX_SIZE_BYTES = 10L * 1024 * 1024;
     private static final LocalDateTime CREATED_AT = LocalDateTime.of(2026, 9, 25, 12, 0);
 
     @Test
@@ -78,7 +78,7 @@ class PropertyPhotoTest {
     }
 
     @Test
-    @DisplayName("사진 크기가 5MiB를 초과하면 예외가 발생한다")
+    @DisplayName("사진 크기가 10MiB를 초과하면 예외가 발생한다")
     void rejectOversizedPhoto() {
         assertInternalInvariant(
             () -> PropertyPhoto.create(1L, "photo.png", "image/png", MAX_SIZE_BYTES + 1, CREATED_AT));

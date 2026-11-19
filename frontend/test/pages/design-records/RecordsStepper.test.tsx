@@ -72,9 +72,13 @@ const renderRecords = () =>
   render(
     <QueryClientProvider client={queryClient}>
       <PublicConfigProvider config={{ apiBaseUrl: 'http://localhost:8080' }}>
-        <MemoryRouter initialEntries={['/properties']}>
+        <MemoryRouter initialEntries={['/']}>
           <Routes>
-            <Route path="/properties/:propertyId?" element={<DesignRecordsPage />} />
+            {/* 앱처럼 한 화면 셸을 두 주소(홈과 매물 상세)가 함께 쓴다. */}
+            <Route element={<DesignRecordsPage />}>
+              <Route path="/" />
+              <Route path="/properties/:propertyId" />
+            </Route>
           </Routes>
         </MemoryRouter>
       </PublicConfigProvider>
@@ -101,7 +105,7 @@ it('앞뒤 매물은 목록 순서를 따르고 처음과 마지막에서는 그
   expect(recordNeighbors(list, null)).toBeNull();
 });
 
-it('휴대폰에서 매물 뱃지를 고르면 바텀시트로 보고, 이전 다음으로 넘기면 지도와 뱃지 선택이 따라간다', async () => {
+it('휴대폰에서 매물 뱃지를 고르면 바텀시트로 보고, 이전 다음으로 넘기면 뱃지 선택이 따라간다', async () => {
   useThreeRecords();
   const user = userEvent.setup();
   renderRecords();
@@ -116,7 +120,8 @@ it('휴대폰에서 매물 뱃지를 고르면 바텀시트로 보고, 이전 �
 
   await user.click(sheet.getByRole('button', { name: '다음 매물' }));
   expect(sheet.getByRole('link', { name: '둘째 방' })).toBeInTheDocument();
-  expect(screen.getByLabelText('지도 중심')).toHaveTextContent('37.6,127');
+  // 매물을 넘겨 봐도 지도는 옮기지 않는다.
+  expect(screen.getByLabelText('지도 중심')).not.toHaveTextContent('37.6,127');
   expect(map.getByRole('button', { name: '둘째 방' })).toHaveAttribute('aria-pressed', 'true');
   expect(map.getByRole('button', { name: '첫째 방' })).toHaveAttribute('aria-pressed', 'false');
 
@@ -140,6 +145,7 @@ it('데스크탑 상세 칸에서도 이전 다음으로 리스트 순서대로 
     renderRecords();
     // 기본 목록은 망원동 투룸, 신림역 원룸 순서다.
     await screen.findByRole('button', { name: '신림역 원룸' });
+    // 상세 칸에도 주변 지도가 하나 더 생기므로, 상세를 열기 전에 본 방 기록 지도를 잡아 둔다.
     const map = within(screen.getByLabelText('예시 지도'));
     await user.click(map.getByRole('button', { name: '신림역 원룸' }));
     let detail = within(screen.getByRole('complementary', { name: '선택한 매물 상세' }));
@@ -150,7 +156,7 @@ it('데스크탑 상세 칸에서도 이전 다음으로 리스트 순서대로 
     detail = within(screen.getByRole('complementary', { name: '선택한 매물 상세' }));
     expect(await detail.findByRole('heading', { level: 1, name: '망원동 투룸' })).toBeInTheDocument();
     expect(detail.getByRole('button', { name: '이전 매물' })).toBeDisabled();
-    expect(screen.getByLabelText('지도 중심')).toHaveTextContent('37.5551234,126.9101234');
+    expect(map.getByLabelText('지도 중심')).toHaveTextContent('37.5551234,126.9101234');
     expect(map.getByRole('button', { name: '망원동 투룸' })).toHaveAttribute('aria-pressed', 'true');
   } finally {
     matchMedia.mockRestore();

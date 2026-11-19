@@ -10,6 +10,8 @@ import {
   fetchCommuteAreas,
   formatManwon,
   parseAdminBoundary,
+  rentLabelOf,
+  SPARSE_RENT_TRANSACTIONS,
 } from '@/features/map/api/commuteApi';
 
 import { server } from '../../../server';
@@ -155,4 +157,30 @@ it('원 단위 금액을 반올림한 만원 단위 문구로 바꾸고 천 단�
   expect(formatManwon(10_000_000)).toBe('1,000만원');
   expect(formatManwon(123_456_789)).toBe('12,346만원');
   expect(formatManwon(0)).toBe('0만원');
+});
+
+it('지도 월세 라벨은 만원 단위로 줄이고, 거래가 적은 동네와 조건 밖 동네를 표시한다', async () => {
+  const result = await load();
+  const area = result.areas[0];
+  const rent = {
+    monthlyRentKrw: 548_000,
+    depositKrw: 10_000_000,
+    transactionCount: SPARSE_RENT_TRANSACTIONS - 1,
+    legalDongNames: [],
+  };
+  expect(rentLabelOf({ ...area, rent }, true)).toEqual({
+    price: '55만',
+    count: SPARSE_RENT_TRANSACTIONS - 1,
+    sparse: true,
+    filteredOut: true,
+    commute: `${area.commuteMinutes}분`,
+  });
+  // 시세가 없는 동네도 라벨을 두고 통근 시간을 적는다. 월세 자리는 화면이 `월세 정보 없음`으로 채운다.
+  expect(rentLabelOf({ ...area, rent: null }, false)).toEqual({
+    price: null,
+    count: 0,
+    sparse: false,
+    filteredOut: false,
+    commute: `${area.commuteMinutes}분`,
+  });
 });

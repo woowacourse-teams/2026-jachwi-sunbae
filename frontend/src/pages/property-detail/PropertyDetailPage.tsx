@@ -3,10 +3,11 @@ import type { ReactNode } from 'react';
 import { useEffect, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 
+import { useRecordsMapController } from '@/pages/design-records/RecordsMapProvider';
+import type { MapAddress } from '@/features/map/model/Map';
 import { describePropertyLoadError } from '@/features/property/api/propertyErrorMessages';
 import { usePropertyDetail } from '@/features/property/api/useProperties';
-import { useRemoveProperty } from '@/features/property/api/usePropertyMutations';
-import { parsePositiveId } from '@/features/property/lib/propertyFormat';
+import { useRemoveProperty, useUpdateProperty } from '@/features/property/api/usePropertyMutations';
 import {
   getPropertyReturnPath,
   getPropertyReturnState,
@@ -14,10 +15,12 @@ import {
   type PropertyReturnPath,
 } from '@/features/property/lib/propertyNavigation';
 import type { PropertyDetail } from '@/features/property/model/Property';
+import { parsePropertyRouteId } from '@/features/property/model/sampleProperties';
 import PropertyPhotoManager from '@/features/property/ui/property-photo-manager/PropertyPhotoManager';
 import PropertyPhotoViewer from '@/features/property/ui/property-photo-viewer/PropertyPhotoViewer';
 import { LogScreen } from '@/shared/lib/analytics/logging';
 import useDocumentTitle from '@/shared/lib/hooks/useDocumentTitle';
+import useIsDesktop from '@/shared/lib/hooks/useIsDesktop';
 import { MAP_SELECT_LOCATION_PATH, PROPERTY_DETAIL_TAB_PARAM, RECORDS_PATH } from '@/shared/lib/navigation/appPaths';
 import useReturnNavigation from '@/shared/lib/navigation/useReturnNavigation';
 import ContentState from '@/shared/ui/content-state/ContentState';
@@ -28,12 +31,16 @@ import TopNavigationMenu from '@/shared/ui/top-navigation-menu/TopNavigationMenu
 
 import { type DetailTab, parseDetailTab } from './model/detailTab';
 import type { PropertyEditField } from './model/editField';
+import { readLastDetailTab, writeLastDetailTab } from './model/lastDetailTab';
 import PropertyDetailSkeleton from './PropertyDetailSkeleton';
+import PreviewNotSavedToast from './ui/PreviewNotSavedToast';
 import PropertyAdditionalInfoSection from './ui/property-additional-info-section/PropertyAdditionalInfoSection';
+import PropertyAiImportBar from './ui/property-basic-info-section/PropertyAiImportBar';
 import PropertyBasicInfoSection from './ui/property-basic-info-section/PropertyBasicInfoSection';
 import PropertyChecklistSection from './ui/property-checklist-section/PropertyChecklistSection';
 import PropertyHeroPhoto from './ui/property-hero-photo/PropertyHeroPhoto';
 import PropertyMemoSection from './ui/property-memo-section/PropertyMemoSection';
+import PropertyNearbyPreview from './ui/property-nearby-preview/PropertyNearbyPreview';
 import PropertyPhotoSection from './ui/property-photo-section/PropertyPhotoSection';
 
 const describeError = describePropertyLoadError('매물 상세를 불러오지 못했어요.');
@@ -62,7 +69,7 @@ type PropertyDetailPageProps = {
 };
 
 const PropertyDetailPage = ({ panel, returnTo }: PropertyDetailPageProps) => {
-  const routePropertyId = parsePositiveId(useParams().propertyId);
+  const routePropertyId = parsePropertyRouteId(useParams().propertyId);
   const propertyId = panel?.propertyId ?? routePropertyId;
   const backTo = getPropertyReturnPath(useLocation().state, returnTo);
   if (propertyId === null) {
@@ -117,7 +124,13 @@ const PropertyDetailView = ({ propertyId, detail, backTo, panel }: PropertyDetai
   });
   const [selectedPhotoIndex, setSelectedPhotoIndex] = useState<number | null>(null);
   const [searchParams, setSearchParams] = useSearchParams();
-  const activeTab = parseDetailTab(searchParams.get(PROPERTY_DETAIL_TAB_PARAM)) ?? 'details';
+  const tabInUrl = parseDetailTab(searchParams.get(PROPERTY_DETAIL_TAB_PARAM));
+  // 주소에 탭이 없으면 이 매물에서 마지막으로 본 탭을 연다. 처음 보는 매물은 정보부터 연다.
+  const [rememberedTab] = useState(() => readLastDetailTab(propertyId));
+  const activeTab = tabInUrl ?? rememberedTab ?? 'details';
+  useEffect(() => {
+    writeLastDetailTab(propertyId, activeTab);
+  }, [propertyId, activeTab]);
   // 고른 탭을 주소에 남겨 교체 후에는 체크리스트 탭으로 돌아오고, 탭 없는 새 진입은 정보부터 연다.
   // 들어온 화면(state)은 그대로 둔다.
   const setActiveTab = (next: DetailTab) => {
@@ -154,25 +167,30 @@ const PropertyDetailView = ({ propertyId, detail, backTo, panel }: PropertyDetai
     },
     onCancel: () => setEditingField(null),
   };
-  // 주소는 시트나 줄 안이 아니라 지도 화면에서 계속 눌러 가며 바꾼다. 저장하면 지금 화면으로 돌아온다.
+  // 위치가 있으면 아래 주변 환경 지도를 눌러 바로 바꾼다. 위치가 아직 없으면 지도 화면으로 가서 고른다.
   const currentLocation = useLocation();
-  const editLocation = () =>
-    navigate(MAP_SELECT_LOCATION_PATH, {
-      state: {
-        returnTo: `${currentLocation.pathname}${currentLocation.search}`,
-        propertyId,
-        initialLocation:
-          detail.location.latitude === null || detail.location.longitude === null
-            ? undefined
-            : {
-                address: detail.location.address,
-                roadAddress: null,
-                jibunAddress: null,
-                latitude: detail.location.latitude,
-                longitude: detail.location.longitude,
-              },
-      },
+  const [isEditingLocation, setIsEditingLocation] = useState(false);
+  const updateLocation = useUpdateProperty(propertyId);
+  // 데스크탑은 옆에 큰 지도가 이미 보여 상세 안 주변 지도를 두지 않는다. 위치는 그 큰 지도를 눌러 고른다.
+  const isDesktop = useIsDesktop();
+  const hasCoordinates = detail.location.latitude !== null && detail.location.longitude !== null;
+  const saveLocation = async (selected: MapAddress) => {
+    const address = selected.roadAddress ?? selected.jibunAddress ?? selected.address ?? '';
+    await updateLocation.mutateAsync({
+      current: detail,
+      changes: { address, latitude: selected.latitude, longitude: selected.longitude },
     });
+  };
+  // 데스크탑은 옆의 큰 기록 지도를 눌러 새 자리를 고른다. 따로 화면을 열지 않는다.
+  const recordsMap = useRecordsMapController();
+  const editLocation = () =>
+    isDesktop && recordsMap
+      ? recordsMap.layers.startLocationPick(saveLocation)
+      : hasCoordinates && !isDesktop
+        ? setIsEditingLocation(true)
+        : navigate(MAP_SELECT_LOCATION_PATH, {
+            state: { returnTo: `${currentLocation.pathname}${currentLocation.search}`, propertyId },
+          });
   // 삭제는 ⋮ 메뉴 안에 있어 잘못 누를 일이 적으므로 확인을 묻지 않고 바로 지운다.
   const removeProperty = useRemoveProperty(propertyId);
   const photoTriggerRef = useRef<HTMLButtonElement | null>(null);
@@ -277,14 +295,31 @@ const PropertyDetailView = ({ propertyId, detail, backTo, panel }: PropertyDetai
               backTo={backTo}
               backState={returnState}
               showBackButton={false}
-              onManagePhotos={managePhotos}
               onOpen={() => {
                 photoTriggerRef.current = null;
                 setSelectedPhotoIndex(0);
               }}
             />
             <div className={styles.infoPanel}>
-              <PropertyBasicInfoSection property={detail} {...inlineEdit} onEditLocation={editLocation} />
+              <PropertyAiImportBar propertyId={propertyId} />
+              <PropertyBasicInfoSection
+                property={detail}
+                {...inlineEdit}
+                onEditLocation={editLocation}
+                afterAddress={
+                  detail.location.latitude !== null && detail.location.longitude !== null ? (
+                    <PropertyNearbyPreview
+                      propertyId={propertyId}
+                      latitude={detail.location.latitude}
+                      longitude={detail.location.longitude}
+                      showMap={!isDesktop}
+                      isEditingLocation={isEditingLocation}
+                      onSaveLocation={saveLocation}
+                      onEndEditLocation={() => setIsEditingLocation(false)}
+                    />
+                  ) : undefined
+                }
+              />
 
               <PropertyAdditionalInfoSection property={detail} {...inlineEdit} />
 
@@ -325,6 +360,7 @@ const PropertyDetailView = ({ propertyId, detail, backTo, panel }: PropertyDetai
           />
         )}
       </div>
+      <PreviewNotSavedToast />
     </Root>
   );
 };

@@ -46,7 +46,8 @@ const ComparePropertyOption = ({ property, isSelected, isDisabled, onToggle }: C
         <AuthenticatedPhoto
           propertyId={property.propertyId}
           photoId={property.representativePhoto.photoId}
-          contentUrl={property.representativePhoto.contentUrl}
+          kind="thumbnail"
+          contentUrl={property.representativePhoto.thumbnailUrl}
           alt=""
         />
       )}
@@ -75,13 +76,14 @@ const styles = {
       gap: 0.7rem;
       min-height: 6.15rem;
       padding: 0.75rem 1rem;
-      background: transparent;
+      background: var(--color-canvas);
       cursor: pointer;
       transition: background-color 0.18s ease;
 
-      /* 이어진 리스트 안의 한 줄이므로 테두리 대신 옅은 바탕색으로만 선택을 보여 준다. */
+      /* 파란 띠와 바탕색, 체크 표시를 함께 써서 색 차이가 작아도 구분할 수 있게 한다. */
       &[data-selected='true'] {
-        background: color-mix(in srgb, var(--color-brand-blue) 10%, transparent);
+        background: color-mix(in srgb, var(--color-brand-blue) 12%, var(--color-canvas));
+        box-shadow: inset 3px 0 var(--color-brand-blue-ink);
       }
 
       &:has(input:focus-visible) {
@@ -110,9 +112,8 @@ const styles = {
     box-sizing: border-box;
     width: 1.1rem;
     height: 1.1rem;
-    border: 1px solid var(--color-border-strong);
     border-radius: 50%;
-    background: var(--color-surface);
+    background: var(--color-border-strong);
     color: var(--color-on-primary);
     font-size: 0.7rem;
     font-weight: 800;
@@ -120,8 +121,7 @@ const styles = {
     place-items: center;
 
     .ComparePropertyOption-option[data-selected='true'] & {
-      border-color: var(--color-brand-blue);
-      background: var(--color-brand-blue);
+      background: var(--color-brand-blue-ink);
     }
   `,
 

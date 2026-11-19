@@ -461,4 +461,19 @@ describe('FE-2 API 경계', () => {
     expect(getPropertyErrorMessage(error)).toBe('사진을 불러오지 못했어요. 다시 시도해 주세요.');
     expect(getPropertyErrorMessage(error)).not.toContain('서버 내부 상세 메시지');
   });
+
+  it.each([
+    ['PHOTO_FILE_SIZE_INVALID', 400],
+    ['PHOTO_FILE_TOO_LARGE', 413],
+  ])('서버의 사진 용량 오류 %s를 10MB 안내 문구로 매핑한다', async (code, status) => {
+    authenticate();
+    server.use(
+      http.get(`${config.apiBaseUrl}/api/properties/10/photos`, () =>
+        HttpResponse.json(errorEnvelope(code), { status }),
+      ),
+    );
+
+    const error = await fetchPropertyPhotos(config, 10).catch((caught: unknown) => caught);
+    expect(getPropertyErrorMessage(error)).toBe('사진 한 장은 10MB 이하만 올릴 수 있어요.');
+  });
 });

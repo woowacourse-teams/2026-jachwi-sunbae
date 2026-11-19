@@ -54,10 +54,10 @@ module.exports = (_env, argv) => {
     performance: {
       hints: isProduction ? 'error' : false,
       assetFilter: (assetFilename) => /\.js$/.test(assetFilename),
-      // 첫 화면 묶음(main)이 350KiB 한도에 붙어 있어, 화면 다듬기(오류 화면 버튼, 헤더 높이)로 351KiB가 되어 355KiB로 올린다.
-      // 이벤트 미션(#664)의 `/event` 화면과 완료 알림을 lazy로 등록하는 몫(약 0.5KiB)으로 356KiB로 올린다.
-      maxAssetSize: 356 * 1024,
-      maxEntrypointSize: 356 * 1024,
+      // PR(#714~#717)과 Mac UI 작업본 중 최대 main은 360 KiB(gzip 115 KiB, Mac 측정)다.
+      // 여기에 5%를 더하고 5 KiB 단위로 올려 380 KiB로 정한다.
+      maxAssetSize: 380 * 1024,
+      maxEntrypointSize: 380 * 1024,
     },
     devServer: {
       proxy: proxyTarget

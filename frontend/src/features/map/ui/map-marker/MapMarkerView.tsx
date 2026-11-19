@@ -32,16 +32,18 @@ const markerClassName = (marker: MapMarker, selectedMarkerId: string | null | un
   [
     styles.marker,
     isPinMarker(marker) ? styles.pinMarker : '',
-    marker.image ? styles.imageMarker : '',
     marker.photo !== undefined && (marker.tone === 'property' || marker.tone === 'propertyCluster')
       ? styles.photoMarker
       : '',
     marker.appear ? styles.appearMarker : '',
     marker.pop ? styles.popMarker : '',
     marker.tone === 'property' || marker.tone === 'propertyCluster' ? styles.propertyMarker : '',
+    marker.compact ? styles.compactMarker : '',
     marker.tone === 'current' ? styles.currentMarker : '',
+    marker.tone === 'dot' ? styles.dotMarker : '',
     marker.tone === 'selected' ? styles.selectedMarker : '',
     marker.tone === 'destination' || marker.tone === 'flash' ? styles.destinationMarker : '',
+    marker.tone === 'pinLabel' ? styles.pinLabelMarker : '',
     marker.tone === 'rank' ? styles.rankMarker : '',
     marker.tone === 'flash' ? styles.flashMarker : '',
     marker.tone === 'place' ? styles.placeMarker : '',
@@ -63,20 +65,38 @@ const MapMarkerView = ({ marker, selectedMarkerId = null, onSelectMarker }: MapM
           <small title={marker.summary.amount}>{marker.summary.amount}</small>
         </span>
       )}
-      {marker.image ? (
-        <img
-          className={styles.pinImage}
-          src={marker.image.src}
-          srcSet={marker.image.src2x ? `${marker.image.src} 1x, ${marker.image.src2x} 2x` : undefined}
-          alt=""
-          draggable={false}
-          decoding="async"
-        />
-      ) : marker.tone === 'rank' ? (
+      {marker.tone === 'rank' ? (
         <span className={styles.rankLabel}>
           <b>{marker.rank}</b>
           {marker.caption ?? marker.label}
         </span>
+      ) : marker.tone === 'pinLabel' ? (
+        // 검색 핀(흰 바탕, 파란 글씨)과 출퇴근 장소 마커(진한 파란 바탕, 흰 글씨)를 한 컴포넌트로 그린다. 꼬리와 점이 정확한 좌표를 가리킨다.
+        <>
+          <span className={styles.pinLabel} data-kind={marker.pinKind ?? 'search'}>
+            <span className={styles.pinLabelBody}>
+              {marker.caption && <small>{marker.caption}</small>}
+              <span className={styles.pinLabelText} title={marker.label}>
+                {marker.label}
+              </span>
+            </span>
+          </span>
+          <span className={styles.pinLabelTail} data-kind={marker.pinKind ?? 'search'} aria-hidden="true" />
+          <span className={styles.pinLabelDot} data-kind={marker.pinKind ?? 'search'} aria-hidden="true" />
+          {marker.pinKind === 'search' && marker.removable && (
+            // 평소에는 숨겨 둔 동작 카드. 마커를 누르거나(데스크탑은 마우스를 올리면) 펼친다. 클릭은 `createMapMarkerElement`가 DOM에서 붙인다.
+            <span className={styles.pinActions} role="group" aria-label="검색한 장소 동작">
+              {marker.setsCommute && (
+                <button type="button" data-action="set-commute" className={styles.pinActionPrimary}>
+                  출퇴근 장소로 설정
+                </button>
+              )}
+              <button type="button" data-action="clear" className={styles.pinActionText}>
+                지우기
+              </button>
+            </span>
+          )}
+        </>
       ) : marker.tone === 'destination' || marker.tone === 'flash' ? (
         <>
           <span className={styles.destinationLabel}>
@@ -104,7 +124,7 @@ const MapMarkerView = ({ marker, selectedMarkerId = null, onSelectMarker }: MapM
             </span>
           )}
         </span>
-      ) : isCurrentLocationDot(marker) ? null : isPinMarker(marker) ? (
+      ) : isCurrentLocationDot(marker) || marker.tone === 'dot' ? null : isPinMarker(marker) ? (
         <img className={styles.pinImage} src={pinImageSrc(marker)} alt="" draggable={false} decoding="async" />
       ) : (
         <span className={styles.markerIcon} aria-hidden="true">
@@ -122,7 +142,13 @@ const MapMarkerView = ({ marker, selectedMarkerId = null, onSelectMarker }: MapM
     'data-tally': marker.tally ? '' : undefined,
     'data-rank': marker.rank,
     'aria-label': marker.label,
-    style: marker.pop ? { animationDelay: `${marker.pop.delayMs}ms` } : undefined,
+    style:
+      marker.pop || marker.color
+        ? {
+            ...(marker.pop && { animationDelay: `${marker.pop.delayMs}ms` }),
+            ...(marker.tone === 'dot' && marker.color && { background: marker.color }),
+          }
+        : undefined,
   };
 
   if (!canSelect)
@@ -147,6 +173,53 @@ const MapMarkerView = ({ marker, selectedMarkerId = null, onSelectMarker }: MapM
 };
 
 /** Naver overlay가 요구하는 HTMLElement로 동일한 마커 UI를 변환한다. */
+/** 마우스가 마커에서 동작 카드로 옮겨 가는 사이 카드가 닫히지 않게 나갈 때 기다리는 시간. */
+const PIN_ACTIONS_HIDE_DELAY_MS = 150;
+
+/**
+ * 검색 핀: 평소에는 이름만 있는 작은 알약이고, 누르면(데스크탑은 마우스를 올려도) 아래에 `출퇴근 장소로 설정`과 `지우기` 카드가 펼쳐진다.
+ * 정적 마크업이라 클릭을 DOM에서 붙인다. 카드 바깥을 누르면 접힌다.
+ */
+const bindSearchPinActions = (
+  element: HTMLElement,
+  marker: MapMarker,
+  onSelectMarker?: (marker: MapMarker) => void,
+) => {
+  let hideTimer: number | undefined;
+  const setOpen = (isOpen: boolean) => {
+    element.dataset.open = String(isOpen);
+  };
+  const closeOnOutside = (event: Event) => {
+    if (event.target instanceof Node && element.contains(event.target)) return;
+    setOpen(false);
+    document.removeEventListener('pointerdown', closeOnOutside, true);
+  };
+  const open = () => {
+    window.clearTimeout(hideTimer);
+    setOpen(true);
+    document.addEventListener('pointerdown', closeOnOutside, true);
+  };
+  element.addEventListener('click', (event) => {
+    event.stopPropagation();
+    const target = event.target instanceof Element ? event.target.closest('[data-action]') : null;
+    const action = target?.getAttribute('data-action');
+    if (action === 'set-commute') {
+      onSelectMarker?.({ ...marker, id: `${marker.id}:set-commute` });
+      setOpen(false);
+    } else if (action === 'clear') {
+      onSelectMarker?.(marker);
+    } else if (element.dataset.open === 'true') setOpen(false);
+    else open();
+  });
+  element.addEventListener('mouseenter', () => {
+    if (window.matchMedia('(hover: hover)').matches) open();
+  });
+  element.addEventListener('mouseleave', () => {
+    window.clearTimeout(hideTimer);
+    hideTimer = window.setTimeout(() => setOpen(false), PIN_ACTIONS_HIDE_DELAY_MS);
+  });
+};
+
 export const createMapMarkerElement = (
   marker: MapMarker,
   selectedMarkerId: string | null,
@@ -160,7 +233,9 @@ export const createMapMarkerElement = (
   const element = template.content.querySelector('[data-tone]');
   if (!(element instanceof HTMLElement)) throw new Error('지도 마커를 만들지 못했습니다.');
 
-  if (marker.actionable === true && onSelectMarker !== undefined) {
+  if (marker.tone === 'pinLabel' && marker.pinKind === 'search' && marker.removable) {
+    bindSearchPinActions(element, marker, onSelectMarker);
+  } else if (marker.actionable === true && onSelectMarker !== undefined) {
     element.addEventListener('click', (event) => {
       event.stopPropagation();
       onSelectMarker(marker);
@@ -192,35 +267,35 @@ const markerAppearKeyframes = keyframes`
   from {
     opacity: 0;
     translate: 0 0.9rem;
-    scale: 0.85;
+    scale: calc(var(--map-marker-scale, 1) * 0.85);
   }
   60% {
     opacity: 1;
     translate: 0 -0.2rem;
-    scale: 1.03;
+    scale: calc(var(--map-marker-scale, 1) * 1.03);
   }
   to {
     opacity: 1;
     translate: 0 0;
-    scale: 1;
+    scale: calc(var(--map-marker-scale, 1) * 1);
   }
 `;
 
 const markerPopKeyframes = keyframes`
   0% {
     opacity: 0;
-    scale: 0.3;
+    scale: calc(var(--map-marker-scale, 1) * 0.3);
   }
   55% {
     opacity: 1;
-    scale: 1.12;
+    scale: calc(var(--map-marker-scale, 1) * 1.12);
   }
   78% {
-    scale: 0.96;
+    scale: calc(var(--map-marker-scale, 1) * 0.96);
   }
   100% {
     opacity: 1;
-    scale: 1;
+    scale: calc(var(--map-marker-scale, 1) * 1);
   }
 `;
 
@@ -238,6 +313,8 @@ const styles = {
   marker: css`
     label: MapMarkerView-marker;
     position: relative;
+    scale: var(--map-marker-scale, 1);
+    transform-origin: 50% 100%;
     display: grid;
     width: 1.55rem;
     height: 1.55rem;
@@ -302,16 +379,6 @@ const styles = {
 
     @media (prefers-reduced-motion: reduce) {
       animation: none;
-    }
-  `,
-
-  /* 그림 핀은 기호가 작아 보이지 않게 일반 핀보다 조금 크게 그린다. */
-  imageMarker: css`
-    label: MapMarkerView-imageMarker;
-
-    && {
-      width: 2.5rem;
-      height: 2.5rem;
     }
   `,
 
@@ -425,6 +492,11 @@ const styles = {
   /* 사진 오른쪽의 이름(위)과 월세(아래). 숫자가 길어도 카드가 넓어지지 않게 줄인다. */
   photoText: css`
     label: MapMarkerView-photoText;
+
+    /* 멀리 볼 때는 이름과 월세 글자를 숨기고 사진 핀만 둔다. */
+    [data-far='true'] & {
+      display: none;
+    }
     display: grid;
     max-width: 8.5rem;
     gap: 0.1rem;
@@ -498,15 +570,28 @@ const styles = {
 
       & {
         z-index: 8;
-        width: calc(2.35rem * var(--map-marker-scale, 1));
-        height: calc(2.35rem * var(--map-marker-scale, 1));
+        width: 2.35rem;
+        height: 2.35rem;
       }
     `,
     'MapMarkerView-propertyMarker',
   ),
 
+  /* 작은 매물 핀. propertyMarker보다 선택자가 겹쳐 있어 뒤에 둬도 이긴다. */
+  compactMarker: css`
+    label: MapMarkerView-compactMarker;
+    &&&& {
+      width: 2rem;
+      height: 2rem;
+    }
+  `,
+
   markerSummaryCard: css`
     label: MapMarkerView-markerSummaryCard;
+
+    [data-far='true'] & {
+      display: none;
+    }
     position: absolute;
     z-index: 3;
     left: 50%;
@@ -568,8 +653,8 @@ const styles = {
   selectedMarker: css`
     label: MapMarkerView-selectedMarker;
     z-index: 9;
-    width: calc(2.6rem * var(--map-marker-scale, 1));
-    height: calc(2.6rem * var(--map-marker-scale, 1));
+    width: 2.6rem;
+    height: 2.6rem;
   `,
 
   // 다른 요소의 선택자에서 `.MapMarkerView-activeMarker`로 가리킨다.
@@ -580,13 +665,13 @@ const styles = {
       & {
         outline: 1px solid #212124;
         outline-offset: 2px;
-        scale: 1.08;
+        scale: calc(var(--map-marker-scale, 1) * 1.08);
       }
 
       /* 핀은 테두리 대신 아래 꼭짓점을 기준으로 조금 키워 고른 것을 보여준다. */
       &.MapMarkerView-pinMarker {
         outline: 0;
-        scale: 1.15;
+        scale: calc(var(--map-marker-scale, 1) * 1.15);
       }
     `,
     'MapMarkerView-activeMarker',
@@ -602,6 +687,19 @@ const styles = {
     border-radius: 50%;
     background: #1a73e8;
     box-shadow: 0 0 0 0.45rem rgb(26 115 232 / 16%);
+  `,
+
+  /* 시설을 아이콘 없이 작은 색 점으로 그린다. 색은 marker.color로 준다. */
+  dotMarker: css`
+    label: MapMarkerView-dotMarker;
+    /* 기본 마커의 흰 테두리를 확실히 덮도록 선택자를 겹친다. */
+    && {
+      width: 0.4rem;
+      height: 0.4rem;
+      border: 0;
+      border-radius: 50%;
+      box-shadow: none;
+    }
   `,
 
   markerCount: css`
@@ -676,6 +774,154 @@ const styles = {
   `,
 
   /* 고른 장소(동네 찾기 목적지)는 이름이 든 말풍선 핀으로 그린다. 아래 꼬리 끝이 좌표를 가리킨다. */
+  /* 검색해서 고른 곳과 지도를 눌러 고른 곳의 라벨 마커. 요소 아래 가운데가 좌표이고, 점이 그 자리를 덮는다. */
+  pinLabelMarker: css`
+    label: MapMarkerView-pinLabelMarker;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    /* 지도 SDK의 오버레이 칸은 폭이 0이라, auto면 라벨이 가장 좁은 폭으로 줄어 글자가 잘린다. 내용 폭을 그대로 쓴다. */
+    width: max-content;
+    height: auto;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+    filter: none;
+    padding: 0;
+  `,
+  pinLabel: css`
+    label: MapMarkerView-pinLabel;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    box-sizing: border-box;
+    max-width: 180px;
+    padding: 0.25rem 0.55rem;
+    border: 1px solid color-mix(in srgb, var(--color-brand-blue-ink, #3f6fc4) 25%, transparent);
+    border-radius: 8px;
+    background: #fff;
+    color: var(--color-brand-blue-ink, #3f6fc4);
+    box-shadow: 0 2px 8px rgb(0 0 0 / 14%);
+    font-size: 0.8rem;
+    font-weight: 700;
+    line-height: 1.3;
+
+    /* 주소가 길어도 지도 공간을 덮지 않게 줄인다. */
+    &[data-kind='commute'] {
+      max-width: 180px;
+      padding: 0.2rem 0.5rem;
+      font-size: 0.75rem;
+    }
+  `,
+  pinLabelBody: css`
+    label: MapMarkerView-pinLabelBody;
+    display: grid;
+    min-width: 0;
+    text-align: left;
+
+    & small {
+      font-size: 0.65rem;
+      font-weight: 600;
+      opacity: 0.85;
+    }
+
+    [data-kind='commute'] > & small {
+      font-size: 0.6rem;
+    }
+  `,
+  pinActions: css`
+    label: MapMarkerView-pinActions;
+    position: absolute;
+    top: calc(100% + 14px);
+    left: 50%;
+    z-index: 2;
+    display: none;
+    gap: 0.3rem;
+    width: max-content;
+    padding: 0.45rem;
+    border-radius: 10px;
+    background: #fff;
+    box-shadow: 0 2px 10px rgb(0 0 0 / 16%);
+    transform: translateX(-50%);
+
+    [data-open='true'] > & {
+      display: grid;
+    }
+  `,
+  pinActionPrimary: css`
+    label: MapMarkerView-pinActionPrimary;
+    min-height: 2rem;
+    padding: 0 0.8rem;
+    border: 0;
+    border-radius: 8px;
+    background: var(--color-brand-blue-ink, #3f6fc4);
+    color: #fff;
+    font: inherit;
+    font-size: 0.75rem;
+    font-weight: 800;
+    cursor: pointer;
+  `,
+  pinActionText: css`
+    label: MapMarkerView-pinActionText;
+    min-height: 1.75rem;
+    border: 0;
+    background: transparent;
+    color: var(--color-muted, #868b94);
+    font: inherit;
+    font-size: 0.72rem;
+    cursor: pointer;
+  `,
+  pinLabelText: css`
+    label: MapMarkerView-pinLabelText;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  `,
+  /* 라벨 아래 꼬리 화살표. 점 위쪽에 둬서 아래 지도 글자를 가리지 않는다. */
+  pinLabelTail: css`
+    label: MapMarkerView-pinLabelTail;
+    width: 0.6rem;
+    height: 0.6rem;
+    margin-top: -0.32rem;
+    margin-bottom: 0.3rem;
+    border-right: 1px solid color-mix(in srgb, var(--color-brand-blue-ink, #3f6fc4) 25%, transparent);
+    border-bottom: 1px solid color-mix(in srgb, var(--color-brand-blue-ink, #3f6fc4) 25%, transparent);
+    background: #fff;
+    transform: rotate(45deg);
+
+    &[data-kind='commute'] {
+      width: 0.5rem;
+      height: 0.5rem;
+      margin-bottom: 0.35rem;
+      border-color: var(--color-brand-blue-ink, #3f6fc4);
+      background: var(--color-brand-blue-ink, #3f6fc4);
+    }
+  `,
+  pinLabelDot: css`
+    label: MapMarkerView-pinLabelDot;
+    position: absolute;
+    bottom: -7px;
+    left: 50%;
+    width: 14px;
+    height: 14px;
+    box-sizing: border-box;
+    margin-left: -7px;
+    border: 2px solid #fff;
+    border-radius: 50%;
+    background: var(--color-brand-blue-ink, #3f6fc4);
+    box-shadow: 0 1px 4px rgb(0 0 0 / 30%);
+
+    /* 출퇴근 장소는 더 큰 점으로 구분한다. */
+    &[data-kind='commute'] {
+      bottom: -9px;
+      width: 18px;
+      height: 18px;
+      margin-left: -9px;
+    }
+  `,
   destinationMarker: css`
     label: MapMarkerView-destinationMarker;
     display: flex;
@@ -692,7 +938,7 @@ const styles = {
     /* 말풍선(거리 메모 등)은 눌러도 테두리를 두지 않는다. 고른 메모는 옆 칸이나 시트에서 보여 준다. */
     &.MapMarkerView-activeMarker {
       outline: 0;
-      scale: 1;
+      scale: var(--map-marker-scale, 1);
     }
 
     /*
@@ -786,7 +1032,7 @@ const styles = {
 
     &.MapMarkerView-activeMarker {
       outline: 0;
-      scale: 1.08;
+      scale: calc(var(--map-marker-scale, 1) * 1.08);
     }
   `,
 

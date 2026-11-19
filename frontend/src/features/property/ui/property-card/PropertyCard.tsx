@@ -14,15 +14,14 @@ import PropertyPrice from '../property-price/PropertyPrice';
 
 type PropertyPhotoThumbnailProps = {
   property: PropertySummary;
-  thumbnailUrl?: string;
   onActivate?: () => void;
 };
 
 /** 목록 카드에는 대표 사진 한 장만 보여 준다. 나머지 사진은 매물 상세에서 본다. */
-const PropertyPhotoThumbnail = ({ property, thumbnailUrl, onActivate }: PropertyPhotoThumbnailProps) => {
+const PropertyPhotoThumbnail = ({ property, onActivate }: PropertyPhotoThumbnailProps) => {
   const [failed, setFailed] = useState(false);
   const photo = property.representativePhoto ?? property.photos?.[0] ?? null;
-  const contentUrl = thumbnailUrl ?? photo?.contentUrl ?? property.photoUrls?.[0];
+  const contentUrl = photo?.thumbnailUrl ?? property.photoUrls?.[0];
 
   return (
     <button type="button" className={styles.photo} aria-label={`${property.name} 상세 보기`} onClick={onActivate}>
@@ -35,6 +34,7 @@ const PropertyPhotoThumbnail = ({ property, thumbnailUrl, onActivate }: Property
         <AuthenticatedPhoto
           propertyId={property.propertyId}
           photoId={photo.photoId}
+          kind="thumbnail"
           contentUrl={contentUrl}
           alt={`${property.name} 대표 사진`}
         />
@@ -47,7 +47,6 @@ const PropertyPhotoThumbnail = ({ property, thumbnailUrl, onActivate }: Property
 
 type PropertyCardProps = {
   property: PropertySummary;
-  thumbnailUrl?: string;
   onClick?: MouseEventHandler<HTMLAnchorElement>;
   returnTo?: PropertyReturnPath;
   returnState?: unknown;
@@ -65,7 +64,6 @@ type PropertyCardProps = {
 
 const PropertyCard = ({
   property,
-  thumbnailUrl,
   onClick,
   returnTo,
   returnState,
@@ -84,7 +82,6 @@ const PropertyCard = ({
       <div className={styles.visual}>
         <PropertyPhotoThumbnail
           property={property}
-          thumbnailUrl={thumbnailUrl}
           onActivate={() =>
             onOpen !== undefined ? onOpen() : navigate(detailPath, { state: { returnTo, returnState } })
           }
@@ -280,6 +277,8 @@ const styles = {
     label: PropertyCard-stageProgress;
     display: grid;
     gap: 0.3rem;
+    /* 넓은 목록에서 막대가 카드 끝(스크롤 막대)까지 길게 늘어지지 않게 폭을 제한한다. */
+    width: min(100%, 16rem);
     margin-top: 0.2rem;
     padding-top: 0.1rem;
   `,

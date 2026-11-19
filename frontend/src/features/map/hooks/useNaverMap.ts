@@ -1,12 +1,14 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { usePublicConfig } from '@/shared/config/PublicConfigContext';
+import useIsDesktop from '@/shared/lib/hooks/useIsDesktop';
 
 import { clampToSouthKorea } from '../lib/mapLocation';
 import { createMapMarkerLayer } from '../lib/mapMarkerLayer';
 import { COORDINATE_ACTION_Z_INDEX, COORDINATE_MENU_Z_INDEX } from '../lib/mapMarkerPresentation';
 import { pinchLevelDelta } from '../lib/mapPinchZoom';
 import { createMapRegionLayer, READY_TIMEOUT_MS } from '../lib/mapRegionLayer';
+import { createMapTapGuard } from '../lib/mapTapGuard';
 import {
   isNaverSdkAvailable,
   type LiveMap,
@@ -17,13 +19,17 @@ import {
 import type { MapCanvasProps } from '../model/MapCanvas';
 import { createMapCoordinateMenuElement } from '../ui/map-coordinate-menu/MapCoordinateMenu';
 import { createMapMarkerElement } from '../ui/map-marker/MapMarkerView';
+import { createMapRegionCardElement } from '../ui/map-region-card/MapRegionCard';
+import { createMapTipElement } from '../ui/map-tip/MapTip';
 
 import * as actionStyles from '../ui/map-canvas/MapCanvas.styles';
 const EMPTY_MARKERS: NonNullable<MapCanvasProps['markers']> = [];
 const EMPTY_CIRCLES: NonNullable<MapCanvasProps['circles']> = [];
 const EMPTY_REGIONS: NonNullable<MapCanvasProps['regions']> = [];
-/** 시점 옮기기(morph 320ms)가 끝났다고 보는 최대 시간. 이 안에 목표에 못 닿은 idle은 중간 시점으로 본다. */
-const VIEW_SETTLE_MS = 700;
+/** 시점 옮기기(morph 180ms)가 끝났다고 보는 최대 시간. 이 안에 목표에 못 닿은 idle은 중간 시점으로 본다. */
+/** 정보 카드의 대략 높이(px). 위쪽 가장자리 근처에서 뒤집을지 가늠할 때 쓴다. */
+const CARD_ESTIMATED_HEIGHT = 130;
+const VIEW_SETTLE_MS = 450;
 
 type LiveMapProps = Pick<
   MapCanvasProps,
@@ -31,6 +37,7 @@ type LiveMapProps = Pick<
   | 'animateView'
   | 'coordinateAction'
   | 'coordinateMenu'
+  | 'tip'
   | 'level'
   | 'customStyleId'
   | 'markers'
@@ -46,6 +53,7 @@ type LiveMapProps = Pick<
   | 'regions'
   | 'selectedRegionId'
   | 'onSelectRegion'
+  | 'onHoverRegion'
 >;
 
 /** SDK의 수명과 동기화는 이 Hook에만 두고 화면은 지도 표현만 조립한다. */
@@ -54,6 +62,7 @@ const useNaverMap = ({
   animateView = false,
   coordinateAction,
   coordinateMenu,
+  tip,
   level = 5,
   customStyleId,
   markers = EMPTY_MARKERS,
@@ -69,8 +78,11 @@ const useNaverMap = ({
   regions = EMPTY_REGIONS,
   selectedRegionId = null,
   onSelectRegion,
+  onHoverRegion,
 }: LiveMapProps) => {
   const config = usePublicConfig();
+  const isDesktop = useIsDesktop();
+  const [tapGuard] = useState(() => createMapTapGuard());
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<LiveMap | null>(null);
   const markerLayerRef = useRef<ReturnType<typeof createMapMarkerLayer> | null>(null);
@@ -84,6 +96,7 @@ const useNaverMap = ({
     onSelectMarker,
     onBoundsChange,
     onDragStart,
+    tip,
   });
   const [mapReady, setMapReady] = useState(false);
   // SDK 로드와 GL 준비 사이에는 지도를 눌러도 반응이 없으므로 화면에 준비 중임을 알린다.
@@ -113,6 +126,8 @@ const useNaverMap = ({
   const [sdkError, setSdkError] = useState(false);
   const regionCallbackRef = useRef(onSelectRegion);
   regionCallbackRef.current = onSelectRegion;
+  const hoverCallbackRef = useRef(onHoverRegion);
+  hoverCallbackRef.current = onHoverRegion;
   // 남한 밖 좌표를 받아도 지도는 남한 안만 비춘다.
   const boundedCenter = useMemo(() => clampToSouthKorea(center), [center.latitude, center.longitude]);
   const engine = useMemo(
@@ -141,6 +156,7 @@ const useNaverMap = ({
     onSelectMarker,
     onBoundsChange,
     onDragStart,
+    tip,
   };
 
   useEffect(() => {
@@ -209,21 +225,38 @@ const useNaverMap = ({
           const nextCenter = engine.getCenter(map);
           callbackRef.current.onCenterChange?.(nextCenter.latitude, nextCenter.longitude);
           callbackRef.current.onLevelChange?.(engine.getZoom(map));
-          callbackRef.current.onBoundsChange?.(engine.getBounds(map));
+          const view = engine.getBounds(map);
+          callbackRef.current.onBoundsChange?.(view);
+          const currentTip = callbackRef.current.tip;
+          if (
+            currentTip !== undefined &&
+            (currentTip.latitude < view.south ||
+              currentTip.latitude > view.north ||
+              currentTip.longitude < view.west ||
+              currentTip.longitude > view.east)
+          )
+            currentTip.onOutOfView();
         };
         listeners.push(
           engine.addListener(map, 'dragstart', () => {
+            tapGuard.block();
             // 옮기는 도중에 손으로 끌면 그 자리를 따른다.
             viewTargetRef.current = null;
             setGestureActive(true);
             callbackRef.current.onDragStart?.();
+            callbackRef.current.tip?.onInteract();
           }),
-          engine.addListener(map, 'zoomstart', () => setGestureActive(true)),
+          engine.addListener(map, 'zoomstart', () => {
+            tapGuard.block();
+            setGestureActive(true);
+          }),
         );
         listeners.push(
           engine.addListener(map, 'click', (latitude, longitude) => {
-            if (latitude !== undefined && longitude !== undefined)
-              callbackRef.current.onSelectLocation?.(latitude, longitude);
+            if (!tapGuard.allowsTap() || latitude === undefined || longitude === undefined) return;
+            // 안내 말풍선은 지도의 다른 곳을 누르면 닫는다. 누름은 그대로 지도로 전한다.
+            callbackRef.current.tip?.onInteract();
+            callbackRef.current.onSelectLocation?.(latitude, longitude);
           }),
           engine.addListener(map, 'idle', handleIdle),
         );
@@ -392,7 +425,9 @@ const useNaverMap = ({
     // 달라진 마커만 다시 그린다. 전부 지웠다 만들면 지도를 옮길 때마다 깜빡인다.
     // 내린 마커는 레이어가 들고 있다가 같은 모양으로 다시 요청되면(탭을 오갈 때) 새로 만들지 않고 다시 붙인다.
     markerLayerRef.current ??= createMapMarkerLayer(map, engine, (marker, selected) =>
-      createMapMarkerElement(marker, selected, (picked) => callbackRef.current.onSelectMarker?.(picked)),
+      createMapMarkerElement(marker, selected, (picked) => {
+        if (tapGuard.allowsTap()) callbackRef.current.onSelectMarker?.(picked);
+      }),
     );
     markerLayerRef.current.sync(markers, selectedMarkerId, level);
   }, [engine, level, liveMode, overlayReady, markers, selectedMarkerId, settledVersion]);
@@ -413,6 +448,30 @@ const useNaverMap = ({
     const map = mapRef.current;
     if (!liveMode || !overlayReady || map === null || !coordinateAction || !isNaverSdkAvailable()) return;
     const content = document.createElement('div');
+    if (coordinateAction.card) {
+      // 카드가 화면 위쪽을 넘을 만큼 좌표가 위쪽 가장자리에 가까우면 마커 아래로 뒤집는다.
+      const view = engine.getBounds(map);
+      const height = containerRef.current?.clientHeight ?? 0;
+      const fromTop = ((view.north - coordinateAction.latitude) / (view.north - view.south || 1)) * height;
+      const needed = (coordinateAction.card.markerAbove ?? 0) + CARD_ESTIMATED_HEIGHT + 24;
+      const flip = height > 0 && fromTop < needed;
+      content.append(createMapRegionCardElement(coordinateAction.card, coordinateAction.onHoverChange, flip));
+      const cardOverlay = engine.createOverlay(
+        map,
+        {
+          id: 'coordinate-action',
+          label: coordinateAction.card.title,
+          latitude: coordinateAction.latitude,
+          longitude: coordinateAction.longitude,
+          tone: 'destination',
+        },
+        content,
+        COORDINATE_ACTION_Z_INDEX,
+      );
+      return () => {
+        if (isNaverSdkAvailable()) cardOverlay.setMap(null);
+      };
+    }
     const button = document.createElement('button');
     button.type = 'button';
     button.textContent = coordinateAction.label;
@@ -461,6 +520,26 @@ const useNaverMap = ({
     };
   }, [coordinateMenu, engine, liveMode, overlayReady]);
 
+  const tipLatitude = tip?.latitude;
+  const tipLongitude = tip?.longitude;
+  const tipMessage = tip?.message;
+  const tipPlacement = tip?.placement;
+  useEffect(() => {
+    const map = mapRef.current;
+    const current = callbackRef.current.tip;
+    if (!liveMode || !overlayReady || map === null || current === undefined || !isNaverSdkAvailable()) return;
+    const overlay = engine.createOverlay(
+      map,
+      { id: 'map-tip', label: current.message, latitude: current.latitude, longitude: current.longitude },
+      // 확인 버튼은 바뀌지 않는 최신 콜백을 거쳐 부른다.
+      createMapTipElement({ ...current, onConfirm: () => callbackRef.current.tip?.onConfirm() }),
+      COORDINATE_MENU_Z_INDEX + 1,
+    );
+    return () => {
+      if (isNaverSdkAvailable()) overlay.setMap(null);
+    };
+  }, [engine, liveMode, overlayReady, tipLatitude, tipLongitude, tipMessage, tipPlacement]);
+
   useEffect(() => {
     const map = mapRef.current;
     const sdk = window.naver?.maps;
@@ -469,8 +548,11 @@ const useNaverMap = ({
       map,
       sdk,
       engine,
-      (id, point) => regionCallbackRef.current?.(id, point),
+      (id, point) => {
+        if (tapGuard.allowsTap()) regionCallbackRef.current?.(id, point);
+      },
       () => engine.getZoom(map),
+      (id, hovered) => hoverCallbackRef.current?.(id, hovered),
     );
     regionLayerRef.current = layer;
     return () => {
@@ -480,9 +562,32 @@ const useNaverMap = ({
   }, [engine, liveMode, mapReady]);
 
   useEffect(() => {
-    regionLayerRef.current?.sync(regions, selectedRegionId);
-  }, [engine, liveMode, mapReady, regions, selectedRegionId, settledVersion]);
+    regionLayerRef.current?.sync(regions, selectedRegionId, !isDesktop);
+  }, [engine, isDesktop, liveMode, mapReady, regions, selectedRegionId, settledVersion]);
 
-  return { containerRef, canvasRef, liveMode, sdkError, isLoading: liveMode && !renderReady && !sdkError };
+  useEffect(() => {
+    const element = canvasRef.current;
+    if (!element) return;
+    const down = (event: PointerEvent) => tapGuard.start(event.pointerId, event.clientX, event.clientY);
+    const move = (event: PointerEvent) => tapGuard.move(event.pointerId, event.clientX, event.clientY);
+    const up = (event: PointerEvent) => tapGuard.end(event.pointerId);
+    const cancel = (event: PointerEvent) => tapGuard.end(event.pointerId, true);
+    const wheel = () => tapGuard.block();
+    element.addEventListener('pointerdown', down, true);
+    window.addEventListener('pointermove', move, true);
+    window.addEventListener('pointerup', up, true);
+    window.addEventListener('pointercancel', cancel, true);
+    element.addEventListener('wheel', wheel, { capture: true, passive: true });
+    return () => {
+      element.removeEventListener('pointerdown', down, true);
+      window.removeEventListener('pointermove', move, true);
+      window.removeEventListener('pointerup', up, true);
+      window.removeEventListener('pointercancel', cancel, true);
+      element.removeEventListener('wheel', wheel, true);
+      tapGuard.reset();
+    };
+  }, [tapGuard]);
+
+  return { containerRef, canvasRef, tapGuard, liveMode, sdkError, isLoading: liveMode && !renderReady && !sdkError };
 };
 export default useNaverMap;

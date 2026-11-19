@@ -9,8 +9,8 @@ import Icon from '@/shared/ui/icon/Icon';
 
 import type { RecordsState } from '../hooks/useRecords';
 import type { RecordsMapLayers } from '../hooks/useRecordsMapLayers';
-import { recordsMapHint } from '../model/recordPresentation';
-import RecordMapTapIntro from '../ui/record-map-tap-intro/RecordMapTapIntro';
+import RecordLocationPick from '../ui/record-location-pick/RecordLocationPick';
+import RecordNeighborhoodBanner from '../ui/record-neighborhood-banner/RecordNeighborhoodBanner';
 import RecordRegisterSuggestion from '../ui/record-register-suggestion/RecordRegisterSuggestion';
 
 type Props = {
@@ -28,9 +28,10 @@ type Props = {
  */
 const RecordsDesktopMap = ({ records, layers, districts, className }: Props) => (
   <section className={`${styles.map} ${className ?? ''}`.trim()} aria-label="본 방 기록 지도">
-    <MapCanvas {...layers.canvasProps} coordinateMenu={layers.coordinateMenu} />
+    <MapCanvas shared {...layers.canvasProps} coordinateMenu={layers.coordinateMenu} />
+    {layers.locationPick && <RecordLocationPick pick={layers.locationPick} />}
     <StreetMemoImpressionLog memos={layers.memo.visibleMemos} />
-    <div className={styles.districts}>{districts}</div>
+    {districts}
     <button
       className={styles.recenter}
       type="button"
@@ -40,16 +41,13 @@ const RecordsDesktopMap = ({ records, layers, districts, className }: Props) => 
       <Icon name="target" size={22} />
     </button>
     <MapZoomControl className={styles.zoom} level={records.level} onChange={records.setLevel} />
-    {!records.selected && layers.memo.mode === null && (
-      <span className={styles.hint}>{recordsMapHint(records.records, layers)}</span>
-    )}
+    {!records.selected && layers.memo.mode === null && <RecordNeighborhoodBanner className={styles.banner} />}
     <StreetMemoPanel layer={layers.memo} className={styles.memoCard} />
     <RecordRegisterSuggestion
       isOpen={layers.isSuggestingRegister}
       onAccept={layers.acceptRegisterSuggestion}
       onClose={layers.closeRegisterSuggestion}
     />
-    <RecordMapTapIntro setLevel={records.setLevel} hasTapped={layers.tapPoint !== null} />
   </section>
 );
 
@@ -62,23 +60,11 @@ const styles = {
     min-height: 0;
   `,
 
-  districts: css`
-    label: RecordsDesktopMap-districts;
-    position: absolute;
-    z-index: 10;
-    top: 0;
-    right: 0;
-    left: 0;
-    padding-top: 0.75rem;
-    /* 오른쪽 위 확대 축소 버튼 자리를 비워 둔다. */
-    padding-right: 4rem;
-  `,
-
-  /* 오른쪽 위 세로 확대 축소 버튼 바로 아래에 둔다. */
   recenter: css`
     label: RecordsDesktopMap-recenter;
     position: absolute;
-    top: 7.25rem;
+    /* 확대 축소 바로 아래(zoom top 4.75rem + 높이 약 5.3rem + 간격 0.5rem)에 붙인다. */
+    top: 10.55rem;
     right: 1.15rem;
     z-index: 12;
     display: grid;
@@ -101,28 +87,23 @@ const styles = {
   /* 지도 오른쪽 위, 동네 뱃지 줄과 같은 높이에 둔다. */
   zoom: css`
     label: RecordsDesktopMap-zoom;
-    top: 1.35rem;
+    top: 4.75rem;
     right: 1.15rem;
   `,
 
-  hint: css`
-    label: RecordsDesktopMap-hint;
-    position: absolute;
-    bottom: 2.75rem;
-    left: 1rem;
-    padding: 0.5rem 0.7rem;
-    border-radius: 0.5rem;
-    background: #ffffffed;
-    color: #92969d;
-    font-size: 0.8rem;
+  /* 목록 칸이 지도 위에 겹친 만큼 비켜 보이는 지도 가운데 아래에 둔다. */
+  banner: css`
+    label: RecordsDesktopMap-banner;
+    bottom: 1.25rem;
+    left: calc(var(--map-panel-width, 0px) + 1.25rem);
   `,
 
   /* 메모 카드와 겹친 매물 카드는 오른쪽 버튼을 가리지 않게 왼쪽 위, 동네 뱃지 아래에 띄운다. 둘은 함께 열리지 않는다. */
   memoCard: css`
     label: RecordsDesktopMap-memoCard;
     position: absolute;
-    top: 4.5rem;
-    left: 1rem;
+    top: calc(var(--unified-panel-top, 0px) + 4.5rem);
+    left: calc(var(--map-panel-width, 0px) + 2rem);
     z-index: 30;
     width: min(22rem, calc(100% - 6rem));
     max-height: calc(100% - 6rem);

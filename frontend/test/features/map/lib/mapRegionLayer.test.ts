@@ -48,6 +48,7 @@ const setup = ({
         fillOpacity: number;
         strokeColor: string;
         strokeWeight: number;
+        strokeStyle?: string;
         zIndex: number;
         clickable: boolean;
       },
@@ -131,16 +132,16 @@ describe('경계 레이어', () => {
     );
     expect(polygons[0].options).toMatchObject({
       fillColor: '#f5c344',
-      fillOpacity: 0.24,
+      fillOpacity: 0.12,
       strokeColor: '#a4a7ab',
       strokeWeight: 1,
       zIndex: 1,
       clickable: true,
     });
-    expect(polygons[1].options).toMatchObject({ fillColor: '#888888', fillOpacity: 0.08 });
+    expect(polygons[1].options).toMatchObject({ fillColor: '#888888', fillOpacity: 0.05 });
     expect(polygons[2].options).toMatchObject({
       fillColor: '#f5c344',
-      fillOpacity: 0.5,
+      fillOpacity: 0.25,
       strokeColor: '#787b80',
       strokeWeight: 2,
       zIndex: 2,
@@ -153,9 +154,9 @@ describe('경계 레이어', () => {
     fire(polygons[0], 'mouseover');
     fire(polygons[0], 'mouseover');
     expect(polygons[0].setOptions).toHaveBeenCalledOnce();
-    expect(polygons[0].setOptions.mock.lastCall?.[0].fillOpacity).toBeCloseTo(0.38);
+    expect(polygons[0].setOptions.mock.lastCall?.[0].fillOpacity).toBeCloseTo(0.16);
     fire(polygons[0], 'mouseout');
-    expect(polygons[0].setOptions).toHaveBeenLastCalledWith({ fillOpacity: 0.28 });
+    expect(polygons[0].setOptions).toHaveBeenLastCalledWith({ fillOpacity: 0.12 });
   });
 
   it('호버 중 선택 스타일이 바뀌어도 호버만큼 진한 투명도를 유지한다', () => {
@@ -164,7 +165,7 @@ describe('경계 레이어', () => {
     layer.sync(regions, null);
     fire(polygons[0], 'mouseover');
     layer.sync(regions, 'a');
-    expect(polygons[0].setOptions.mock.lastCall?.[0].fillOpacity).toBeCloseTo(0.65);
+    expect(polygons[0].setOptions.mock.lastCall?.[0].fillOpacity).toBeCloseTo(0.29);
   });
 
   it('면 개수가 같으면 좌표만 바꾸고, 다르면 기존 경계와 리스너를 지우고 새로 만든다', () => {
@@ -207,7 +208,7 @@ describe('경계 레이어', () => {
     expect(overlays).toHaveLength(1);
     const label = overlays[0].content;
     label.dispatchEvent(new Event('mouseenter'));
-    expect(polygons[0].setOptions.mock.lastCall?.[0].fillOpacity).toBeCloseTo(0.34);
+    expect(polygons[0].setOptions.mock.lastCall?.[0].fillOpacity).toBeCloseTo(0.16);
     expect(label.dataset.hovered).toBe('true');
     label.dispatchEvent(new Event('mouseleave'));
     expect(label.dataset.hovered).toBe('false');
@@ -302,5 +303,55 @@ describe('경계 레이어', () => {
     expect(polygons.every((polygon) => polygon.setMap.mock.calls.some(([value]) => value === null))).toBe(true);
     expect(engine.removeListener).toHaveBeenCalledTimes(polygons.length * 3);
     expect(overlays.every((overlay) => overlay.setMap.mock.calls.some(([value]) => value === null))).toBe(true);
+  });
+
+  it('통근 결과의 동네마다 동 이름과 월세를 함께 보여 주는 라벨을 하나씩 두고, 7단계보다 멀면 모두 거둔다', () => {
+    const { layer, overlays, setLevel } = setup();
+    const rentLabel = { price: null, count: 0, sparse: false, filteredOut: false, commute: '12분' };
+    const regions = Array.from({ length: 20 }, (_, index) =>
+      region(`dong-${index}`, { center: { latitude: 37.5, longitude: 127 + index * 0.01 }, rentLabel }),
+    );
+    setLevel(6);
+    layer.sync(regions, null);
+    expect(overlays).toHaveLength(20);
+    expect(overlays.every((overlay) => overlay.content.dataset.compact === 'false')).toBe(true);
+    // 이름만 보이는 이름표는 두지 않는다. 가까이서는 늘 월세와 함께 보인다.
+    setLevel(7);
+    layer.sync(regions, null);
+    expect(overlays.every((overlay) => overlay.content.dataset.compact === 'false')).toBe(true);
+    setLevel(8);
+    layer.sync(regions, null);
+    expect(overlays.every((overlay) => overlay.setMap.mock.calls.some(([value]) => value === null))).toBe(true);
+  });
+
+  it('휴대폰에서는 동 이름과 요약, 월세 라벨을 그리지 않고 영역과 누르기는 그대로 둔다', () => {
+    const { layer, polygons, overlays, onSelect, fire } = setup();
+    const rentLabel = { price: null, count: 0, sparse: false, filteredOut: false, commute: '12분' };
+    const regions = [
+      region('summary', { center: { latitude: 37.5, longitude: 127 }, summary: { price: '50만원' } }),
+      region('rent', { center: { latitude: 37.5, longitude: 127.01 }, rentLabel }),
+      region('name', { center: { latitude: 37.5, longitude: 127.02 }, showsName: true }),
+    ];
+    layer.sync(regions, null, true);
+    expect(overlays).toHaveLength(0);
+    expect(polygons).toHaveLength(3);
+    fire(polygons[0], 'click');
+    expect(onSelect).toHaveBeenCalledWith('summary', undefined);
+    // 데스크탑 기준으로 다시 맞추면 라벨이 돌아온다.
+    layer.sync(regions, null, false);
+    expect(overlays).toHaveLength(3);
+    // 다시 휴대폰 기준이 되면 이미 그린 라벨도 거둔다.
+    layer.sync(regions, null, true);
+    expect(overlays.every((overlay) => overlay.setMap.mock.calls.some(([value]) => value === null))).toBe(true);
+  });
+
+  it('점선으로 표시하는 색(월세 정보 없음)은 테두리를 점선으로 그리고, 고르면 실선으로 강조한다', () => {
+    const { layer, polygons } = setup();
+    const appearance = { fillColor: '#868B94', strokeColor: '#868B94', dashed: true };
+    layer.sync([region('a', { appearance }), region('b', { appearance: { ...appearance, dashed: false } })], null);
+    expect(polygons[0].options).toMatchObject({ fillColor: '#868B94', fillOpacity: 0.12, strokeStyle: 'shortdash' });
+    expect(polygons[1].options).toMatchObject({ strokeStyle: 'solid' });
+    layer.sync([region('a', { appearance }), region('b', { appearance: { ...appearance, dashed: false } })], 'a');
+    expect(polygons[0].setOptions.mock.lastCall?.[0]).toMatchObject({ strokeStyle: 'solid', fillOpacity: 0.25 });
   });
 });

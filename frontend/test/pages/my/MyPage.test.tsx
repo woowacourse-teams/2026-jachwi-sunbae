@@ -125,7 +125,7 @@ afterEach(() => {
 });
 
 describe('마이 화면', () => {
-  it('생활 날씨, 개인정보 처리방침, 회원 탈퇴만 두고, 알림을 켜면 현재 위치를 저장하고 그 위치의 날씨를 보인다', async () => {
+  it('생활 날씨, 내 도구, 개인정보 처리방침, 회원 탈퇴를 두고, 알림을 켜면 현재 위치를 저장하고 그 위치의 날씨를 보인다', async () => {
     const user = userEvent.setup();
     const weather = useWeatherServer();
     mockGeolocation('allowed');
@@ -135,9 +135,12 @@ describe('마이 화면', () => {
     expect(screen.queryByRole('navigation', { name: '내 기록' })).not.toBeInTheDocument();
     expect(screen.queryByText(/프로토타입|샘플|시연/)).not.toBeInTheDocument();
     expect(screen.getByRole('link', { name: /개인정보 처리방침/ })).toHaveAttribute('href', '/privacy');
+    // 레일과 하단 탭이 같은 이동을 하므로 바로가기 타일과 기록 PDF 줄은 두지 않는다.
+    expect(screen.queryByRole('navigation', { name: '내 도구' })).not.toBeInTheDocument();
+    expect(screen.queryByText('기록 PDF 받기')).not.toBeInTheDocument();
 
     // 마이에는 회원 탈퇴를 두고, 기록을 바로 지우는 삭제 요청은 개인정보 처리방침의 삭제 요청 안내에서 받는다.
-    expect(screen.getByRole('button', { name: /^회원 탈퇴/ })).toHaveTextContent('계정과 기록을 삭제해요.');
+    expect(screen.getByRole('button', { name: '회원 탈퇴' })).toBeInTheDocument();
     expect(screen.queryByText(/지우려면/)).not.toBeInTheDocument();
     expect(screen.queryByRole('link', { name: /메일/ })).not.toBeInTheDocument();
 

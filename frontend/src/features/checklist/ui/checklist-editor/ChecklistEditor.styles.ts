@@ -13,6 +13,8 @@ export const checklistEditor = cx(
   css`
     label: ChecklistEditor-checklistEditor;
     container: checklist-editor / inline-size;
+    /* 셸이 이 화면에서는 선 색을 투명으로 두므로, 구분선이 보이게 토큰의 진한 선 색을 쓴다. */
+    --color-border: var(--color-border-strong);
 
     & input,
     & textarea {
@@ -67,14 +69,15 @@ export const editorSection = cx(
     & h2 {
       margin: 0;
       color: var(--color-ink);
-      font-size: 0.78rem;
+      font-size: 0.8125rem;
+      font-weight: 800;
     }
 
     .ChecklistEditor-checklistEditor & h2 {
       margin: 0;
       color: var(--color-ink);
       font-size: 0.9rem;
-      font-weight: 800;
+      font-weight: 700;
       letter-spacing: -0.02em;
       line-height: 1.4;
     }
@@ -112,19 +115,7 @@ export const itemPicker = cx(
 
 export const checkItemSearch = css`
   label: ChecklistEditor-checkItemSearch;
-
-  /* 체크 항목 검색은 공용 SearchField의 입력 스타일을 그대로 사용한다. */
-  .ChecklistEditor-checklistEditor & input {
-    min-height: 2.4rem;
-    padding: 0.55rem 0.5rem;
-    border: 0;
-    border-radius: 0;
-    background: transparent;
-  }
-
-  & {
-    margin-top: 0.45rem;
-  }
+  margin-top: 0.5rem;
 `;
 
 export const selectionCount = css`
@@ -150,21 +141,20 @@ export const checkItemSearchResults = cx(
   css`
     label: ChecklistEditor-checkItemSearchResults;
     display: grid;
-    gap: 0.45rem;
+    gap: 0.75rem;
     margin: 0;
     padding: 0;
     list-style: none;
-    margin-top: 0.6rem;
 
     & li {
       position: relative;
       display: grid;
       align-items: center;
-      min-height: 3.65rem;
-      padding: 0.72rem;
-      border: 1px solid var(--color-border);
-      border-radius: var(--radius-md);
-      background: var(--color-surface);
+      min-height: 3.5rem;
+      padding: 0.9rem 1rem;
+      border: 0;
+      border-radius: 1rem;
+      background: var(--color-card-surface);
     }
 
     & strong,
@@ -174,13 +164,13 @@ export const checkItemSearchResults = cx(
 
     & strong {
       color: var(--color-ink);
-      font-size: 0.78rem;
+      font-size: 0.9375rem;
       font-weight: 700;
       line-height: 1.4;
     }
 
     & small {
-      margin-top: 0.25rem;
+      margin-top: 0.1rem;
       color: var(--color-muted);
       font-size: 0.72rem;
       line-height: 1.45;
@@ -230,12 +220,28 @@ export const compactState = css`
 
 export const checkItemResults = css`
   label: ChecklistEditor-checkItemResults;
-  margin-top: 0.9rem;
+  margin-top: 1.5rem;
 
-  & h3 {
+  & > h3 {
     margin: 0;
     color: var(--color-ink);
-    font-size: 0.8rem;
+    font-size: 1.0625rem;
+    font-weight: 800;
+  }
+
+  /* 카테고리 섹션은 구분선 대신 넉넉한 간격으로 나눈다. */
+  & > section {
+    padding: 0;
+    margin-top: 1.75rem;
+  }
+
+  & > section + section {
+    border-top: 0;
+  }
+
+  & > section > h3 {
+    margin-bottom: 0.75rem;
+    font-size: 1rem;
     font-weight: 800;
   }
 `;
@@ -246,7 +252,6 @@ export const alreadyAddedItem = cx(
     label: ChecklistEditor-alreadyAddedItem;
 
     .ChecklistEditor-checkItemSearchResults & {
-      border-color: var(--color-border);
       background: var(--color-surface-muted);
     }
   `,
@@ -262,7 +267,7 @@ export const existingDivider = css`
     align-items: center;
     gap: 0.6rem;
     margin: 0.25rem 0 0;
-    padding: 0.25rem 0.15rem 0.05rem;
+    padding: 0.25rem 0.15rem 0;
     border: 0;
     border-radius: 0;
     background: transparent;
@@ -293,7 +298,7 @@ export const resultSelect = cx(
       display: grid;
       grid-template-columns: auto minmax(0, 1fr);
       align-items: center;
-      gap: 0.65rem;
+      gap: 0.75rem;
       width: 100%;
       padding: 0;
       border: 0;
@@ -323,9 +328,9 @@ export const resultControl = css`
 
   & {
     display: grid;
-    width: 1.7rem;
-    height: 1.7rem;
-    border: 1px solid var(--color-border-strong);
+    width: 1.5rem;
+    height: 1.5rem;
+    border: 1.5px solid var(--color-border-strong);
     border-radius: 50%;
     background: var(--color-surface);
     color: var(--color-on-primary);
@@ -409,11 +414,28 @@ export const pickerActions = css`
   label: ChecklistEditor-pickerActions;
   grid-auto-flow: row;
   grid-template-columns: minmax(5rem, 0.42fr) minmax(0, 1fr);
+  gap: 0.5rem 0.75rem;
+
+  /* 위쪽은 흰색으로 부드럽게 사라지는 그라데이션, 구분선과 그림자는 두지 않는다. */
+  && {
+    padding-top: 1.75rem;
+    border-top: 0;
+    background: linear-gradient(to bottom, rgb(255 255 255 / 0%), var(--color-canvas) 1.5rem);
+    box-shadow: none;
+  }
+
   & > p {
     grid-column: 1 / -1;
     margin: 0;
     color: var(--color-muted);
-    font-size: 0.8rem;
+    font-size: 0.8125rem;
+  }
+
+  & button {
+    min-height: 3rem;
+    border-radius: 0.875rem;
+    font-size: 0.9375rem;
+    font-weight: 800;
   }
 `;
 
@@ -448,20 +470,22 @@ export const categoryFilters = css`
   label: ChecklistEditor-categoryFilters;
   display: flex;
   flex-wrap: wrap;
-  gap: 0.4rem;
-  margin-top: var(--space-md);
+  gap: 0.5rem;
+  margin-top: var(--space-lg);
   padding: 0;
   background: transparent;
   & button {
-    min-height: 2.75rem;
-    padding: 0.4rem 0.7rem;
-    border: 1px solid var(--color-border);
+    min-height: 2.5rem;
+    padding: 0.4rem 0.9rem;
+    border: 0;
     border-radius: var(--radius-full, 999px);
-    background: var(--color-surface);
+    background: var(--color-card-surface);
+    font-weight: 500;
   }
   & button[aria-checked='true'] {
     background: var(--color-surface-muted);
     color: var(--color-ink);
+    font-weight: 800;
     box-shadow: none;
   }
 `;

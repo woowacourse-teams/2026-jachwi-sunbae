@@ -21,6 +21,16 @@ it('예전 브라우저에 남은 키만 지우고 지금 쓰는 키는 둔다',
   ]);
 });
 
+it('끝난 이벤트의 미션 완료 기록을 지운다', () => {
+  window.localStorage.setItem('jachwi:event-mission', '{"street-memo":1700000000000}');
+  window.localStorage.setItem('jachwi-sunbae:last-checklist', '3');
+
+  removeLegacyStorageKeys();
+
+  expect(window.localStorage.getItem('jachwi:event-mission')).toBeNull();
+  expect(window.localStorage.getItem('jachwi-sunbae:last-checklist')).toBe('3');
+});
+
 it('저장소를 읽지 못해도 앱 시작을 막지 않는다', () => {
   const blocked = {
     get length(): number {

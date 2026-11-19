@@ -1,18 +1,29 @@
 import { css } from '@emotion/css';
 
-/*
- * 마이는 홈처럼 흰 바탕 위에 회색 카드를 둔다. 카드 안 글자는 본문(굵게)·보조 두 크기로만 쓰고,
- * 데스크탑 화면이 같은 변수를 키운다.
- */
+/** 계정, 도구, 서비스 설정이 같은 여백과 글자 크기를 사용한다. */
 export const page = css`
   label: MyPage-page;
-  --my-card-padding: 1.15rem;
-  --my-text-size: 0.95rem;
-  --my-subtext-size: 0.78rem;
+  --color-primary: var(--color-brand-blue-ink);
+  /* 제목줄, 섹션 제목, 카드의 왼쪽과 오른쪽 끝이 모두 이 한 값에서 시작한다. 가로 여백은 화면을 감싸는 곳에서만 주고 자식은 따로 주지 않는다. */
+  --my-gutter: 1.25rem;
+  --my-card-padding: var(--space-md);
+  /* 마이와 카드 모두 공용 흰 바탕을 쓴다. */
+  --my-card-surface: var(--color-surface);
+  /*
+   * 아이콘 크기와 색은 SEED 디자인(당근) 목록 규칙을 따른다.
+   * 줄 끝 화살표는 20px, 회색(gray-500 #adb1ba), 줄 앞 아이콘은 24px, 선은 조금 두껍게 둔다.
+   */
+  --my-chevron-size: 1.25rem;
+  --my-chevron-color: var(--color-muted);
+  --my-icon-size: 1.5rem;
+  --my-icon-stroke: 2.2;
+  --my-card-radius: var(--radius-card);
+  --my-text-size: 0.9375rem;
+  --my-subtext-size: 0.75rem;
   display: flex;
   flex-direction: column;
   min-height: 100%;
-  background: var(--color-canvas);
+  background: var(--color-surface);
 `;
 
 export const footer = css`

@@ -1,5 +1,6 @@
 import type { MapRegion } from '../model/MapCanvas';
-import { createRegionSummaryElement, regionLabelPosition } from './mapRegionSummary';
+import { COORDINATE_ACTION_Z_INDEX, mapZoomScale } from './mapMarkerPresentation';
+import { createRegionRentLabelElement, createRegionSummaryElement, regionLabelPosition } from './mapRegionSummary';
 import type { LiveMap, LiveOverlay, naverEngine } from './naverMapEngine';
 
 type Engine = Pick<ReturnType<typeof naverEngine>, 'latLng' | 'createOverlay' | 'removeListener'> &
@@ -8,6 +9,15 @@ type Engine = Pick<ReturnType<typeof naverEngine>, 'latLng' | 'createOverlay' | 
 const STAGE_CHUNK = 40;
 /** GL 준비 신호를 못 받아도 이 시간이 지나면 그린다. */
 export const READY_TIMEOUT_MS = 3000;
+/**
+ * 이 확대 단계(작을수록 가까움) 이하로 다가가면 동 이름과 평균 월세를 함께 보여 주는 라벨을 올린다.
+ * 더 멀리서는 동 수백 개 라벨이 겹쳐 읽히지 않아, 이름만 남기지 않고 라벨을 모두 숨긴다.
+ */
+export const RENT_LABEL_SHOW_LEVEL = 7;
+/** 이름만 두는 동 이름표(찜한 동네)의 z-index. 모든 마커보다 앞, 찍은 좌표의 버튼·메뉴보다는 뒤다. */
+const NAME_LABEL_Z_INDEX = COORDINATE_ACTION_Z_INDEX - 1;
+/** 마우스를 올린 동네를 이만큼 진하게 한다. 옅게 깐 색에 맞춰 조금만 올린다. */
+const HOVER_OPACITY = 0.04;
 type Polygon = InstanceType<NaverMapsNamespace['Polygon']>;
 const anchorOf = (region: MapRegion) => region.center ?? region.polygons?.[0]?.[0]?.[0] ?? region.paths[0]?.[0];
 /** 화면 중심에서 가까운 순서를 정하는 용도라 위도에 따른 경도 축척만 맞춘 근사 거리다. */
@@ -33,12 +43,27 @@ const regionStyle = (region: MapRegion, selected: boolean) => ({
     : selected
       ? '#787b80'
       : '#a4a7ab',
-  strokeWeight: region.appearance ? (selected ? 3.5 : 1.25) : selected ? 2 : 1,
+  strokeWeight: region.appearance ? (selected ? 3.5 : region.showsName ? 3 : 1.25) : selected ? 2 : 1,
+  strokeStyle: region.appearance?.dashed && !selected ? ('shortdash' as const) : ('solid' as const),
   fillColor: region.appearance?.fillColor ?? (region.isRecommended === false && !selected ? '#888888' : '#f5c344'),
-  fillOpacity: region.appearance ? (selected ? 0.55 : 0.28) : selected ? 0.5 : region.isRecommended ? 0.24 : 0.08,
+  // 지도 글자와 길이 비쳐 보이게 옅게 깐다. 고른 동만 두 배로 진하게 한다.
+  fillOpacity:
+    region.appearance?.fillOpacity ??
+    (region.appearance
+      ? selected
+        ? 0.25
+        : region.showsName
+          ? 0.18
+          : 0.12
+      : selected
+        ? 0.25
+        : region.isRecommended
+          ? 0.12
+          : 0.05),
   zIndex: selected ? 2 : 1,
 });
 type Entry = {
+  id: string;
   geometry: MapRegion['polygons'] | MapRegion['paths'];
   polygons: Polygon[];
   listeners: unknown[];
@@ -66,10 +91,15 @@ export const createMapRegionLayer = (
   engine: Engine,
   onSelect: (id: string, point?: { latitude: number; longitude: number }) => void,
   getLevel: () => number = () => 4,
+  onHover?: (id: string, hovered: boolean) => void,
 ) => {
   const entries = new Map<string, Entry>();
   // 처음 그릴 때 GL 등록이 한 프레임에 몰리지 않도록 drawStage 순서로 나눠 만든다.
-  let latest: { regions: MapRegion[]; selectedId: string | null } = { regions: [], selectedId: null };
+  let latest: { regions: MapRegion[]; selectedId: string | null; hidesLabels: boolean } = {
+    regions: [],
+    selectedId: null,
+    hidesLabels: false,
+  };
   let allowedStage = Infinity;
   let staging = false;
   const createdAt = performance.now();
@@ -88,7 +118,10 @@ export const createMapRegionLayer = (
   const hover = (entry: Entry, hovered: boolean) => {
     if (entry.hovered === hovered) return;
     entry.hovered = hovered;
-    entry.polygons.forEach((polygon) => polygon.setOptions({ fillOpacity: entry.opacity + (hovered ? 0.1 : 0) }));
+    onHover?.(entry.id, hovered);
+    entry.polygons.forEach((polygon) =>
+      polygon.setOptions({ fillOpacity: entry.opacity + (hovered ? HOVER_OPACITY : 0) }),
+    );
     if (entry.summary) entry.summary.dataset.hovered = String(hovered);
   };
   const create = (region: MapRegion, selected: boolean): Entry => {
@@ -105,6 +138,7 @@ export const createMapRegionLayer = (
           }),
       );
     const entry: Entry = {
+      id: region.id,
       geometry: region.polygons ?? region.paths,
       polygons,
       listeners: [],
@@ -125,7 +159,7 @@ export const createMapRegionLayer = (
     return entry;
   };
   const apply = () => {
-    const { regions, selectedId } = latest;
+    const { regions, selectedId, hidesLabels } = latest;
     const level = getLevel();
     // 나눠 그리는 중이면 이번 묶음에 넣을 동을 고른다. 같은 단계 안에서는 지금 화면 중심에 가까운 동부터 넣는다.
     let toCreate: Set<string> | null = null;
@@ -176,20 +210,30 @@ export const createMapRegionLayer = (
         entry.styleKey = styleKey;
         entry.opacity = style.fillOpacity;
         entry.polygons.forEach((polygon) =>
-          polygon.setOptions({ ...style, fillOpacity: style.fillOpacity + (entry.hovered ? 0.1 : 0) }),
+          polygon.setOptions({ ...style, fillOpacity: style.fillOpacity + (entry.hovered ? HOVER_OPACITY : 0) }),
         );
       }
       // 요약이 없는 통근 경계에는 불필요한 DOM을 만들지 않는다.
-      const labelKey = region.summary
+      const showsRentLabel =
+        !hidesLabels && region.rentLabel !== undefined && region.name !== '' && level <= RENT_LABEL_SHOW_LEVEL;
+      const showsSummary = !hidesLabels && Boolean(region.summary);
+      const showsNameLabel = !hidesLabels && region.showsName === true && !region.summary && !showsRentLabel;
+      const labelKey = showsSummary
         ? JSON.stringify([region.name, region.summary, region.center, region.appearance, selected])
-        : '';
+        : showsRentLabel
+          ? JSON.stringify(['rent', region.name, region.rentLabel, region.center, selected])
+          : showsNameLabel
+            ? JSON.stringify(['name', region.name, region.center, selected])
+            : '';
       if (entry.labelKey !== labelKey) {
         entry.label?.setMap(null);
         entry.label = null;
         entry.summary = null;
         entry.labelKey = labelKey;
-        if (region.summary) {
-          const summary = createRegionSummaryElement(region, selected, () => onSelect(region.id));
+        if (showsSummary || showsRentLabel || showsNameLabel) {
+          const summary = showsSummary
+            ? createRegionSummaryElement(region, selected, () => onSelect(region.id))
+            : createRegionRentLabelElement(region, selected, () => onSelect(region.id));
           summary.dataset.hovered = String(entry.hovered);
           summary.addEventListener('mouseenter', () => hover(entry, true));
           summary.addEventListener('mouseleave', () => hover(entry, false));
@@ -200,9 +244,15 @@ export const createMapRegionLayer = (
             map,
             { id: region.id, label: region.name, ...regionLabelPosition(region) },
             summary,
-            5,
+            // 찜한 동네 이름표는 그 위의 메모와 매물 마커에 가려 누르지 못하지 않게 마커보다 앞에 둔다.
+            showsNameLabel ? NAME_LABEL_Z_INDEX : 5,
           );
         }
+      }
+      if (entry.summary) {
+        entry.summary.style.setProperty('--map-region-scale', String(mapZoomScale(level)));
+        // 이름만 보이는 이름표는 뜻이 없어, 이름표가 보이는 단계에서는 월세를 늘 함께 보여 준다.
+        entry.summary.dataset.compact = 'false';
       }
     }
     const waiting = regions.filter((region) => !entries.has(region.id)).map((region) => region.drawStage ?? 0);
@@ -222,7 +272,8 @@ export const createMapRegionLayer = (
     });
   };
   return {
-    sync: (regions: MapRegion[], selectedId: string | null) => {
+    /** `hidesLabels`가 참이면 동 이름과 요약 라벨은 그리지 않고 영역(색칠)과 누르기만 남긴다. 휴대폰 지도가 쓴다. */
+    sync: (regions: MapRegion[], selectedId: string | null, hidesLabels = false) => {
       cancelPending();
       // 이미 그려진 동이 하나도 없는 새 결과만 단계를 나눈다. 선택·확대 같은 갱신은 바로 반영한다.
       if (!regions.some((region) => entries.has(region.id))) {
@@ -230,7 +281,7 @@ export const createMapRegionLayer = (
         allowedStage = stages.length ? Math.min(...stages) : Infinity;
         staging = stages.length > 0;
       }
-      latest = { regions, selectedId };
+      latest = { regions, selectedId, hidesLabels };
       apply();
     },
     dispose: (sdkUnavailable = false) => {

@@ -13,6 +13,7 @@ import type {
   CreatedProperty,
   DiscoverySource,
   PropertyAdditionalInfo,
+  PropertyAiImport,
   PropertyBasicInfo,
   PropertyChecklistDetail,
   PropertyChecklistItemStatus,
@@ -163,7 +164,12 @@ const parseDetailPhoto = (value: unknown): PropertyPhotoPreview | null => {
         })()
       : '1970-01-01T00:00:00Z';
 
-  return { photoId, contentUrl, createdAt };
+  return {
+    photoId,
+    contentUrl,
+    thumbnailUrl: typeof record.thumbnailUrl === 'string' ? readString(record, 'thumbnailUrl') : contentUrl,
+    createdAt,
+  };
 };
 
 const parsePropertySummary = (value: unknown): PropertySummary => {
@@ -182,6 +188,8 @@ const parsePropertySummary = (value: unknown): PropertySummary => {
           return {
             photoId: readInteger(photo, 'id', 1),
             contentUrl: readString(photo, 'url'),
+            thumbnailUrl:
+              typeof photo.thumbnailUrl === 'string' ? readString(photo, 'thumbnailUrl') : readString(photo, 'url'),
             contentType,
           };
         })();
@@ -265,6 +273,14 @@ export const parsePropertyBasicInfo = (value: unknown): PropertyBasicInfo => {
 export const parseCreatedProperty = (value: unknown): CreatedProperty => {
   const record = readRecord(value);
   return parsePropertyBasicInfo(record);
+};
+
+export const parsePropertyAiImport = (value: unknown): PropertyAiImport => {
+  const record = readRecord(value);
+  return {
+    basicInfo: parsePropertyBasicInfo(record.property),
+    freeMemo: readString(record, 'freeMemo', { allowEmpty: true, maximumCodePoints: 2_000 }),
+  };
 };
 
 export const parsePropertyMemoDocument = (value: unknown): PropertyMemoDocument => {
@@ -365,6 +381,12 @@ const parsePropertyPhoto = (value: unknown): PropertyPhoto => {
 
   return {
     photoId: typeof record.photoId === 'number' ? readInteger(record, 'photoId', 1) : readInteger(record, 'id', 1),
+    thumbnailUrl:
+      typeof record.thumbnailUrl === 'string'
+        ? readString(record, 'thumbnailUrl')
+        : typeof record.contentUrl === 'string'
+          ? readString(record, 'contentUrl')
+          : readString(record, 'url'),
     contentUrl: typeof record.contentUrl === 'string' ? readString(record, 'contentUrl') : readString(record, 'url'),
     contentType,
     sizeBytes: readInteger(record, 'sizeBytes', 1),

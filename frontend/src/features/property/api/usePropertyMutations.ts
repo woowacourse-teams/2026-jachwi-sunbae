@@ -1,23 +1,25 @@
 import type { InfiniteData } from '@tanstack/react-query';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 
-import { recordEventMission } from '@/features/event-mission/model/eventMissionRecord';
 import { queryClient } from '@/shared/api/queryClient';
 import { usePublicConfig } from '@/shared/config/PublicConfigContext';
 
+import { markJustCreated } from '../lib/justCreatedProperties';
 import type { PropertyCreationEntrypoint } from '../lib/propertyAnalytics';
 import { trackPropertyEvent } from '../lib/propertyAnalytics';
 import { rememberRecentEdit } from '../lib/recentEdit';
 import { rememberMovedProperty } from '../model/movedProperty';
-import type { PropertyBasicInfo, PropertyDetail, PropertyPage } from '../model/Property';
+import type { PropertyBasicInfo, PropertyDetail, PropertyMemoDocument, PropertyPage } from '../model/Property';
 import type {
   PropertyInputDto,
   SavePropertyMemoDocumentRequestDto,
   UpdatePropertyRequestDto,
 } from './dtos/PropertyDto';
 import { removePropertyPhoto, setRepresentativePropertyPhoto, uploadPropertyPhoto } from './photoApi';
+import { blockPreviewSave, previewPropertyMemo, skipPreviewSave } from './previewPropertyApi';
 import {
   createProperty,
+  importPropertyFromImages,
   recordPropertyComparisonView,
   removeProperty,
   savePropertyMemoDocument,
@@ -37,12 +39,13 @@ export const useCreateProperty = (entrypoint: PropertyCreationEntrypoint = 'form
       return { firstProperty: total === undefined ? undefined : total === 0 };
     },
     onSuccess: async (created, _request, context) => {
+      // 방금 만든 매물이라고 기억해, 그 상세만 이름 입력을 바로 연다.
+      markJustCreated(created.propertyId);
       trackPropertyEvent('property_created', {
         entrypoint,
         property_id: created.propertyId,
         ...(context?.firstProperty === undefined ? {} : { first_property: context.firstProperty }),
       });
-      recordEventMission('property-created');
       await client.invalidateQueries({ queryKey: propertyQueryKeys.lists() });
     },
     onError: () => trackPropertyEvent('property_creation_failed', { entrypoint, error_kind: 'request' }),
@@ -78,8 +81,18 @@ const toUpdatePropertyRequest = (current: PropertyDetail, changes: PropertyChang
 export const useUpdateProperty = (propertyId: number) => {
   const config = usePublicConfig();
   return useMutation({
-    mutationFn: ({ current, changes }: { current: PropertyDetail; changes: PropertyChanges }) =>
-      updateProperty(config, propertyId, toUpdatePropertyRequest(current, changes)),
+    mutationFn: ({
+      current,
+      changes,
+    }: {
+      current: PropertyDetail;
+      changes: PropertyChanges;
+    }): Promise<PropertyBasicInfo> =>
+      skipPreviewSave(
+        propertyId,
+        () => current,
+        () => updateProperty(config, propertyId, toUpdatePropertyRequest(current, changes)),
+      ),
     onSuccess: async (updated: PropertyBasicInfo, { current: before }) => {
       const { latitude, longitude } = updated.location;
       // 위치를 옮겼으면 본 방 기록 지도가 새 자리로 가서 핀을 보이게 알린다.
@@ -116,7 +129,12 @@ export const useUpdateProperty = (propertyId: number) => {
 export const useSavePropertyMemoDocument = (propertyId: number) => {
   const config = usePublicConfig();
   return useMutation({
-    mutationFn: (request: SavePropertyMemoDocumentRequestDto) => savePropertyMemoDocument(config, propertyId, request),
+    mutationFn: (request: SavePropertyMemoDocumentRequestDto) =>
+      skipPreviewSave(
+        propertyId,
+        () => previewPropertyMemo(propertyId),
+        () => savePropertyMemoDocument(config, propertyId, request),
+      ),
     onSuccess: (memo) => {
       queryClient.setQueryData(propertyQueryKeys.memo(propertyId), memo);
       rememberRecentEdit(propertyId, 'info');
@@ -126,10 +144,26 @@ export const useSavePropertyMemoDocument = (propertyId: number) => {
   });
 };
 
+/** 분석과 저장을 서버가 한 번에 끝내므로, 응답의 메모를 바로 넣고 상세는 서버 값으로 다시 읽는다. */
+export const useImportPropertyFromImages = (propertyId: number) => {
+  const config = usePublicConfig();
+  return useMutation({
+    mutationFn: (files: File[]) => importPropertyFromImages(config, propertyId, files),
+    onSuccess: async ({ freeMemo }) => {
+      queryClient.setQueryData<PropertyMemoDocument>(propertyQueryKeys.memo(propertyId), { propertyId, freeMemo });
+      rememberRecentEdit(propertyId, 'info');
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: propertyQueryKeys.detail(propertyId), exact: true }),
+        queryClient.invalidateQueries({ queryKey: propertyQueryKeys.lists() }),
+      ]);
+    },
+  });
+};
+
 export const useRemoveProperty = (propertyId: number) => {
   const config = usePublicConfig();
   return useMutation({
-    mutationFn: () => removeProperty(config, propertyId),
+    mutationFn: () => blockPreviewSave(propertyId, () => removeProperty(config, propertyId)),
     onSuccess: async () => {
       queryClient.removeQueries({ queryKey: propertyQueryKeys.detail(propertyId) });
       await queryClient.invalidateQueries({ queryKey: propertyQueryKeys.lists() });
@@ -149,7 +183,7 @@ const invalidatePhotoAggregates = async (propertyId: number) => {
 export const useUploadPropertyPhoto = (propertyId: number) => {
   const config = usePublicConfig();
   return useMutation({
-    mutationFn: (file: File) => uploadPropertyPhoto(config, propertyId, file),
+    mutationFn: (file: File) => blockPreviewSave(propertyId, () => uploadPropertyPhoto(config, propertyId, file)),
     onSuccess: async () => invalidatePhotoAggregates(propertyId),
   });
 };
@@ -157,7 +191,8 @@ export const useUploadPropertyPhoto = (propertyId: number) => {
 export const useSetRepresentativePropertyPhoto = (propertyId: number) => {
   const config = usePublicConfig();
   return useMutation({
-    mutationFn: (photoId: number) => setRepresentativePropertyPhoto(config, propertyId, photoId),
+    mutationFn: (photoId: number) =>
+      blockPreviewSave(propertyId, () => setRepresentativePropertyPhoto(config, propertyId, photoId)),
     onSuccess: async () => invalidatePhotoAggregates(propertyId),
   });
 };
@@ -165,9 +200,12 @@ export const useSetRepresentativePropertyPhoto = (propertyId: number) => {
 export const useRemovePropertyPhoto = (propertyId: number) => {
   const config = usePublicConfig();
   return useMutation({
-    mutationFn: (photoId: number) => removePropertyPhoto(config, propertyId, photoId),
+    mutationFn: (photoId: number) =>
+      blockPreviewSave(propertyId, () => removePropertyPhoto(config, propertyId, photoId)),
     onSuccess: async (_, photoId) => {
-      queryClient.removeQueries({ queryKey: propertyQueryKeys.photoContent(propertyId, photoId), exact: true });
+      for (const kind of ['original', 'thumbnail'] as const) {
+        queryClient.removeQueries({ queryKey: propertyQueryKeys.photoContent(propertyId, photoId, kind), exact: true });
+      }
       await invalidatePhotoAggregates(propertyId);
     },
     onError: async (error) => {

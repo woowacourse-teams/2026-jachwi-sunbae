@@ -109,6 +109,7 @@ export type MockPhoto = {
   id: number;
   propertyId: number;
   url: string;
+  thumbnailUrl: string;
   contentType: 'image/png';
   sizeBytes: number;
   representative: boolean;
@@ -168,6 +169,7 @@ export const createMockPhoto = (propertyId: number, photoId: number, representat
   id: photoId,
   propertyId,
   url: `/api/properties/${propertyId}/photos/${photoId}`,
+  thumbnailUrl: `/api/properties/${propertyId}/photos/${photoId}/thumbnail`,
   contentType: 'image/png',
   sizeBytes: createMockPhotoBytes(photoId).byteLength,
   representative,
@@ -297,6 +299,7 @@ const propertyAdditionalInfo = (property: MockProperty) => ({
 const detailPhotoResponse = (photo: MockPhoto) => ({
   id: photo.id,
   url: photo.url,
+  thumbnailUrl: photo.thumbnailUrl,
   contentType: photo.contentType,
   sizeBytes: photo.sizeBytes,
   representative: photo.representative,
@@ -308,7 +311,12 @@ const representativePhotoResponse = (photos: MockPhoto[]) => {
   const representative = photos.find((photo) => photo.representative);
   return representative === undefined
     ? null
-    : { id: representative.id, url: representative.url, contentType: representative.contentType };
+    : {
+        id: representative.id,
+        url: representative.url,
+        thumbnailUrl: representative.thumbnailUrl,
+        contentType: representative.contentType,
+      };
 };
 
 const propertyStages = (propertyId: number) => {
@@ -431,7 +439,15 @@ const initialPhotosByProperty = structuredClone(photosByProperty);
 const initialMemoByProperty = structuredClone(memoByProperty);
 const initialAppliedByProperty = structuredClone(appliedByProperty);
 
+/** 북마크한 행정동 코드. 최근에 추가한 순서다. */
+let bookmarkedAdminDongs: string[] = [];
+export const readBookmarkedAdminDongs = () => bookmarkedAdminDongs;
+export const writeBookmarkedAdminDongs = (codes: string[]) => {
+  bookmarkedAdminDongs = codes;
+};
+
 export const resetMockStore = () => {
+  bookmarkedAdminDongs = [];
   checklists = structuredClone(initialChecklists);
   properties = structuredClone(initialProperties);
   photosByProperty = structuredClone(initialPhotosByProperty);

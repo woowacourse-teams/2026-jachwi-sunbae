@@ -219,15 +219,15 @@ export const regionBoundary = css`
   label: MapCanvas-regionBoundary;
 
   &:hover {
-    fill-opacity: 0.38;
+    fill-opacity: 0.14;
   }
 
-  &[fill-opacity='0.38']:hover {
-    fill-opacity: 0.48;
+  &[fill-opacity='0.55']:hover {
+    fill-opacity: 0.275;
   }
 
   &[fill-opacity='0.5']:hover {
-    fill-opacity: 0.6;
+    fill-opacity: 0.25;
   }
 `;
 
@@ -253,15 +253,23 @@ export const coordinateAction = css`
     cursor: not-allowed;
   }
 
+  /* 좌표 위에 띄우는 요약 마커. 글 몇 줄만 담아 작게 그리고, 지도를 덜 가리게 폭은 내용만큼만 둔다. */
   &[data-placement='above'] {
     left: 0;
-    width: 13rem;
+    width: max-content;
+    max-width: 14rem;
+    padding: 0.4rem 0.65rem;
+    border-radius: 0.6rem;
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-align: left;
     white-space: pre-line;
-    line-height: 1.6;
+    line-height: 1.45;
     transform: translateX(-50%);
     background: white;
     color: var(--color-ink);
     border: 1px solid var(--color-border);
+    box-shadow: 0 2px 8px rgb(0 0 0 / 14%);
   }
 `;
 

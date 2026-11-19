@@ -52,6 +52,7 @@ public enum ErrorCode {
     PROPERTY_INPUT_INVALID("매물 정보를 확인해 주세요."),
     PROPERTY_LOCATION_INVALID("매물 위치를 확인해 주세요."),
     PROPERTY_NOT_FOUND("매물을 찾을 수 없습니다."),
+    PROPERTY_LOCATION_REQUIRED("매물 위치를 먼저 정해 주세요."),
     PROPERTY_LIMIT_EXCEEDED("등록할 수 있는 매물 개수를 초과했습니다."),
     PROPERTY_MEMO_INVALID("메모를 확인해 주세요."),
     PROPERTY_CHECKLIST_STAGE_MISMATCH("매물 체크리스트의 단계가 맞지 않습니다."),
@@ -59,6 +60,12 @@ public enum ErrorCode {
     PROPERTY_CHECKLIST_ITEM_NOT_FOUND("매물 체크 항목을 찾을 수 없습니다."),
     PROPERTY_CHECK_RESULT_INVALID("체크 결과를 확인해 주세요."),
     PROPERTY_COMPARISON_EXPORT_FAILED("매물 비교 자료를 만들지 못했습니다."),
+    PROPERTY_AI_IMAGE_INVALID("이미지는 1~10장, 장당 3MB 이하로 올려 주세요."),
+    PROPERTY_AI_PROVIDER_UNAVAILABLE("이미지 분석을 잠시 이용할 수 없습니다. 잠시 후 다시 시도해 주세요."),
+    PROPERTY_AI_RESPONSE_INVALID("이미지에서 매물 정보를 읽지 못했습니다."),
+    PROPERTY_AI_MINUTE_LIMIT_EXCEEDED("이미지 분석은 1분에 3번까지 할 수 있습니다. 잠시 후 다시 시도해 주세요."),
+    PROPERTY_AI_DAILY_LIMIT_EXCEEDED("이미지 분석은 하루에 30번까지 할 수 있습니다. 내일 다시 시도해 주세요."),
+    PROPERTY_AI_MONTHLY_LIMIT_EXCEEDED("이미지 분석은 한 달에 300번까지 할 수 있습니다. 다음 달에 다시 시도해 주세요."),
 
     // 거리 메모
     STREET_MEMO_CONTENT_INVALID("거리 메모 내용을 확인해 주세요."),
@@ -66,6 +73,10 @@ public enum ErrorCode {
     STREET_MEMO_QUERY_INVALID("거리 메모 조회 영역을 확인해 주세요."),
     STREET_MEMO_PREFERENCE_INVALID("거리 메모의 좋아요·싫어요를 선택해 주세요."),
     STREET_MEMO_NOT_FOUND("거리 메모를 찾을 수 없습니다."),
+
+    // 동네 북마크
+    ADMIN_DONG_BOOKMARK_INVALID("북마크할 행정동을 확인해 주세요."),
+    ADMIN_DONG_BOOKMARK_NOT_FOUND("북마크한 동네를 찾을 수 없습니다."),
 
     // 사진
     PHOTO_NOT_FOUND("사진을 찾을 수 없습니다."),

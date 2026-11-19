@@ -9,8 +9,7 @@ import Icon from '@/shared/ui/icon/Icon';
 import type { RecordsState } from '../hooks/useRecords';
 import type { RecordsMapLayers } from '../hooks/useRecordsMapLayers';
 import { recordNeighbors } from '../model/recordNavigation';
-import { recordsMapHint } from '../model/recordPresentation';
-import RecordMapTapIntro from '../ui/record-map-tap-intro/RecordMapTapIntro';
+import RecordNeighborhoodBanner from '../ui/record-neighborhood-banner/RecordNeighborhoodBanner';
 import RecordRegisterSuggestion from '../ui/record-register-suggestion/RecordRegisterSuggestion';
 import RecordStepper from '../ui/record-stepper/RecordStepper';
 import RecordsSelectedSheet from './RecordsSelectedSheet';
@@ -31,10 +30,9 @@ const RecordsMobileMap = ({ records, layers }: Props) => {
   const sheetRecords = layers.groupRecords.length > 0 ? layers.groupRecords : selected ? [selected] : [];
   // 겹친 매물 묶음을 볼 때는 넘길 기준이 하나가 아니라 화살표를 두지 않는다.
   const neighbors = layers.groupRecords.length === 0 && selected ? recordNeighbors(records.records, selected.id) : null;
-  const hasBottomLayer = sheetRecords.length > 0 || layers.memo.mode !== null;
   return (
     <section className={styles.map} aria-label="본 방 기록 지도">
-      <MapCanvas {...layers.canvasProps} coordinateMenu={layers.coordinateMenu} />
+      <MapCanvas shared {...layers.canvasProps} coordinateMenu={layers.coordinateMenu} />
       <StreetMemoImpressionLog memos={layers.memo.visibleMemos} />
       <button
         className={styles.recenter}
@@ -45,7 +43,7 @@ const RecordsMobileMap = ({ records, layers }: Props) => {
         <Icon name="target" size={22} />
       </button>
       <MapZoomControl className={styles.zoom} level={records.level} onChange={records.setLevel} />
-      {!hasBottomLayer && <span className={styles.hint}>{recordsMapHint(records.records, layers)}</span>}
+      {sheetRecords.length === 0 && layers.memo.mode === null && <RecordNeighborhoodBanner className={styles.banner} />}
       <RecordsSelectedSheet
         records={sheetRecords}
         onClose={layers.closeAll}
@@ -58,7 +56,6 @@ const RecordsMobileMap = ({ records, layers }: Props) => {
         onAccept={layers.acceptRegisterSuggestion}
         onClose={layers.closeRegisterSuggestion}
       />
-      <RecordMapTapIntro setLevel={records.setLevel} hasTapped={layers.tapPoint !== null} />
     </section>
   );
 };
@@ -72,11 +69,18 @@ const styles = {
     min-height: 0;
   `,
 
+  /* 아래 가운데 보기 방식 스위치(fixed, 약 3rem) 위에 둔다. */
+  banner: css`
+    label: RecordsMobileMap-banner;
+    bottom: calc(var(--map-sheet-bottom, env(safe-area-inset-bottom)) + 4.75rem);
+  `,
+
   /* 세로 확대 축소 버튼 바로 아래에 둔다. */
   recenter: css`
     label: RecordsMobileMap-recenter;
     position: absolute;
-    top: calc(max(0.85rem, env(safe-area-inset-top)) + 14.05rem);
+    /* 확대 축소 바로 아래(zoom 8rem + 높이 약 5.3rem + 간격 0.5rem)에 붙인다. */
+    top: calc(max(0.85rem, env(safe-area-inset-top)) + 13.8rem);
     right: 0.95rem;
     z-index: 12;
     display: grid;
@@ -99,28 +103,8 @@ const styles = {
   /* 헤더와 동네 뱃지 아래 오른쪽 위에 두고, 현재 위치 버튼은 그 아래에 둔다. */
   zoom: css`
     label: RecordsMobileMap-zoom;
-    top: calc(max(0.85rem, env(safe-area-inset-top)) + 8.15rem);
+    top: calc(max(0.85rem, env(safe-area-inset-top)) + 8rem);
     right: 0.95rem;
-  `,
-
-  /* 아무것도 열리지 않았을 때 가운데 아래에 띄우는 지도 안내. 지도 조작을 막지 않는다. */
-  hint: css`
-    label: RecordsMobileMap-hint;
-    position: absolute;
-    bottom: max(1.5rem, env(safe-area-inset-bottom));
-    left: 50%;
-    z-index: 12;
-    width: max-content;
-    max-width: calc(100% - 2rem);
-    padding: 0.55rem 0.85rem;
-    border-radius: 2rem;
-    background: #ffffffed;
-    box-shadow: 0 2px 10px #00000016;
-    color: #6b7079;
-    font-size: 0.8rem;
-    text-align: center;
-    transform: translateX(-50%);
-    pointer-events: none;
   `,
 };
 

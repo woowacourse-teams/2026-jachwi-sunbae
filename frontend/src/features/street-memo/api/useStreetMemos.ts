@@ -1,7 +1,6 @@
 import { skipToken, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useMemo } from 'react';
 
-import { recordEventMission } from '@/features/event-mission/model/eventMissionRecord';
 import type { MapBounds } from '@/features/map/model/Map';
 import { usePublicConfig } from '@/shared/config/PublicConfigContext';
 
@@ -48,10 +47,7 @@ export const useStreetMemoMutations = () => {
   const invalidate = () => queryClient.invalidateQueries({ queryKey: [STREET_MEMOS_KEY] });
   const create = useMutation({
     mutationFn: (draft: StreetMemoDraft) => createStreetMemo(config, draft),
-    onSuccess: () => {
-      recordEventMission('street-memo');
-      return invalidate();
-    },
+    onSuccess: invalidate,
   });
   const remove = useMutation({
     mutationFn: (streetMemoId: number) => removeStreetMemo(config, streetMemoId),

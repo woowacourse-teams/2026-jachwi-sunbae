@@ -1,6 +1,9 @@
-import { isRentLimit } from './criteriaLabels';
+import type { PublicConfig } from '@/shared/config/publicConfigTypes';
 
-type Point = { latitude: number; longitude: number; name: string; address: string };
+import { isRentLimit } from './criteriaLabels';
+import type { DestinationSource } from './preview';
+
+type Point = { latitude: number; longitude: number; name: string; address: string; source?: DestinationSource };
 export type NeighborhoodSearchSession = {
   destination: Point;
   maxMinutes: number;
@@ -10,6 +13,12 @@ export type NeighborhoodSearchSession = {
   selectedId: string | null;
   selectedStopId: string | null;
 };
+export const neighborhoodSearchKey = (
+  config: Pick<PublicConfig, 'apiBaseUrl' | 'boundaryBaseUrl' | 'commuteDataSource'>,
+  isPublic = false,
+) =>
+  `jachwi.neighborhood-search.v2.${JSON.stringify([isPublic, config.apiBaseUrl, config.boundaryBaseUrl, config.commuteDataSource === 'mock'])}`;
+
 const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null;
 const isPoint = (value: unknown): value is Point =>
   isRecord(value) &&

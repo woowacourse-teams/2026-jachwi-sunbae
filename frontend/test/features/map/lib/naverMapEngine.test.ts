@@ -34,6 +34,15 @@ it('스타일을 지정한 지도만 GL과 스타일 ID를 사용한다', () => 
   naverEngine('test', 'dark-style').createMap(document.createElement('div'), { latitude: 37.5, longitude: 127 }, 6);
   expect(Map.mock.calls[0][1]).toMatchObject({ gl: true, customStyleId: 'dark-style', zoom: 14 });
 });
+it('가장 가까운 단계(1)보다 더 확대하지 못하게 최대 확대를 19로 막는다', () => {
+  const Map = mockSdk();
+  const engine = naverEngine('test');
+  engine.createMap(document.createElement('div'), { latitude: 37.5, longitude: 127 }, 1);
+  expect(Map.mock.calls[0][1]).toMatchObject({ maxZoom: 19, zoom: 19 });
+  // 단계 0처럼 더 가까운 값을 줘도 네이버 기본 타일이 없는 20 이상으로 가지 않는다.
+  engine.createMap(document.createElement('div'), { latitude: 37.5, longitude: 127 }, 0);
+  expect(Map.mock.calls[1][1]).toMatchObject({ zoom: 19 });
+});
 it('기존 지도는 GL과 스타일 옵션 없이 생성한다', () => {
   const Map = mockSdk();
   naverEngine('test').createMap(document.createElement('div'), { latitude: 37.5, longitude: 127 }, 6);
@@ -47,7 +56,7 @@ it('애니메이션 이동은 중심과 확대율을 함께 곡선 전환한다'
   map.morph = vi.fn();
   const point = engine.latLng(37.4, 127.1);
   engine.animateView(map, point, 6);
-  expect(map.morph).toHaveBeenCalledWith(point, 14, { duration: 320, easing: 'easeOutCubic' });
+  expect(map.morph).toHaveBeenCalledWith(point, 14, { duration: 180, easing: 'easeOutCubic' });
 });
 it('SDK 로딩 주소에는 GL 서브모듈이 포함된다', async () => {
   delete window.naver;

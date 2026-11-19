@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import { MemoryRouter, Outlet, Route, Routes } from 'react-router-dom';
 import { describe, expect, it, vi } from 'vitest';
 
@@ -64,7 +64,7 @@ describe('모바일 앱 셸', () => {
 });
 
 describe('데스크탑 앱 셸', () => {
-  it('상단 바 대신 홈 로고·주요 화면 메뉴가 있는 공용 헤더를 둔다', () => {
+  it('데스크톱 공용 헤더 대신 왼쪽 네비 레일에 지도와 마이 진입점을 둔다', () => {
     const matchMedia = vi.spyOn(window, 'matchMedia').mockImplementation(
       (query) =>
         ({
@@ -86,10 +86,20 @@ describe('데스크탑 앱 셸', () => {
           </Routes>
         </MemoryRouter>,
       );
-      expect(screen.getByRole('navigation', { name: '주요 화면' })).toBeInTheDocument();
-      expect(screen.getByRole('link', { name: '마이페이지' })).toHaveAttribute('href', '/me');
-      // 홈으로 돌아가는 길은 헤더 로고 하나뿐이고, 휴대폰의 "<" 상단 바는 두지 않는다.
-      expect(screen.getAllByRole('link', { name: '홈으로 돌아가기' })).toHaveLength(1);
+      expect(screen.getByRole('navigation', { name: '화면 이동' })).toBeInTheDocument();
+      const rail = within(screen.getByRole('navigation', { name: '화면 이동' }));
+      // 위쪽 다섯 칸에는 마이가 없고, 맨 아래에 사용방법, 마이 순서로 쌓여 있다.
+      expect(rail.getAllByRole('button').map((button) => button.textContent)).toEqual([
+        '내 기록',
+        '동네 찾기',
+        '체크리스트',
+        '방 비교',
+        '저렴한 한 끼',
+        '사용방법',
+        '마이',
+      ]);
+      expect(rail.getByRole('button', { name: '체크리스트' })).toHaveAttribute('aria-current', 'page');
+      expect(screen.queryByRole('link', { name: '홈으로 돌아가기' })).not.toBeInTheDocument();
       expect(screen.getByRole('heading', { name: '체크리스트' })).toBeInTheDocument();
     } finally {
       matchMedia.mockRestore();

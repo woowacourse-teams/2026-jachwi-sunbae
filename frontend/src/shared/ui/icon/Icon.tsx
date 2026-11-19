@@ -1,5 +1,6 @@
 import type { ComponentType } from 'react';
 
+import IconBase from './IconBase';
 import {
   ArrowLeftIcon,
   ArrowRightIcon,
@@ -27,6 +28,7 @@ import {
   RefreshIcon,
   ReplaceIcon,
   SearchIcon,
+  SparklesIcon,
   TargetIcon,
   TrashIcon,
   UserIcon,
@@ -61,9 +63,11 @@ export type IconName =
   | 'refresh'
   | 'replace'
   | 'search'
+  | 'sparkles'
   | 'target'
   | 'trash'
-  | 'user';
+  | 'user'
+  | 'utensils';
 
 export type IconProps = {
   name: IconName;
@@ -101,9 +105,15 @@ const iconComponents: Record<IconName, ComponentType<IconComponentProps>> = {
   refresh: RefreshIcon,
   replace: ReplaceIcon,
   search: SearchIcon,
+  sparkles: SparklesIcon,
   target: TargetIcon,
   trash: TrashIcon,
   user: UserIcon,
+  utensils: (props) => (
+    <IconBase {...props}>
+      <path d="M4 3v6a3 3 0 0 0 6 0V3M7 3v18M19 3c-3 2-4 5-4 9h4m0-9v18" />
+    </IconBase>
+  ),
 };
 
 /** 기존 name API와 개별 아이콘 컴포넌트를 함께 지원하는 호환용 렌더러. */
