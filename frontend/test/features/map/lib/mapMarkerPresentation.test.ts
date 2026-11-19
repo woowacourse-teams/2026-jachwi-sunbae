@@ -26,9 +26,12 @@ it('거리 메모 말풍선은 골목 배율까지 그대로 두고, 멀리 축�
   expect(markerScale(memo, 10)).toBe(0.6);
 });
 
-it('매물과 목적지 마커는 확대 단계에 맞춰 같은 비율로 커진다', () => {
+it('매물 마커는 확대 단계에 맞춰 커지고, 고른 자리 글자 말풍선은 멀리 축소해도 원래 크기보다 작아지지 않는다', () => {
   expect(markerScale(marker({ tone: 'property' }), 2)).toBe(1.35);
-  expect(markerScale(marker({ tone: 'destination' }), 9)).toBe(0.6);
+  expect(markerScale(marker({ tone: 'destination' }), 9)).toBe(1);
+  expect(markerScale(marker({ tone: 'pinLabel', pinKind: 'commute' }), 12)).toBe(1);
+  // 가까이 보면 다른 마커와 같이 커진다.
+  expect(markerScale(marker({ tone: 'destination' }), 2)).toBe(1.35);
 });
 
 describe('markerZIndex', () => {
@@ -78,7 +81,7 @@ describe('markerZIndex', () => {
   });
 });
 
-it.each(['property', 'propertyCluster', 'destination', 'place', 'rank'] as const)(
+it.each(['property', 'propertyCluster', 'place', 'rank'] as const)(
   '%s 마커는 확대할수록 단계마다 점점 커진다',
   (tone) => {
     const item = marker({ tone });

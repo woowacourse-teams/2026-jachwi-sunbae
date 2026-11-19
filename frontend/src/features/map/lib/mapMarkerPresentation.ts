@@ -91,5 +91,7 @@ export const mapZoomScale = (level: number): number => {
 export const markerScale = (marker: MapMarker, level: number): number => {
   if (marker.category === 'MEMO') return Number(clamp(1 - (level - 4) * 0.1, 0.6, 1).toFixed(2));
   if (marker.tone === 'current' || marker.tone === 'flash') return 1;
+  // 고른 자리를 알리는 글자 말풍선(선택한 지역, 출퇴근 장소, 검색한 곳)은 멀리 축소해도 줄이지 않아 늘 읽을 수 있게 둔다.
+  if (marker.tone === 'destination' || marker.tone === 'pinLabel') return Math.max(1, mapZoomScale(level));
   return mapZoomScale(level);
 };

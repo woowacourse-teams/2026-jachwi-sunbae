@@ -1072,13 +1072,14 @@ const styles = {
   destinationLabel: cx(
     css`
       label: MapMarkerView-destinationLabel;
-      max-width: 11rem;
-      padding: 0.45rem 0.75rem;
+      /* 손가락으로 찍고 읽기 편하게 글자 약 14px, 높이 약 36px로 둔다(선택한 지역, 메모 위치 등). 거리 메모는 아래에서 따로 정한다. */
+      max-width: 14rem;
+      padding: 0.6rem 1rem;
       overflow: hidden;
       border-radius: 999px;
       background: var(--color-ink, #25282d);
       color: white;
-      font-size: 0.78rem;
+      font-size: 0.9rem;
       font-weight: 700;
       line-height: 1.2;
       white-space: nowrap;
@@ -1094,9 +1095,9 @@ const styles = {
       width: 0;
       height: 0;
       margin-top: -1px;
-      border-top: 0.45rem solid var(--color-ink, #25282d);
-      border-right: 0.4rem solid transparent;
-      border-left: 0.4rem solid transparent;
+      border-top: 0.6rem solid var(--color-ink, #25282d);
+      border-right: 0.55rem solid transparent;
+      border-left: 0.55rem solid transparent;
     `,
     'MapMarkerView-destinationTail',
   ),
