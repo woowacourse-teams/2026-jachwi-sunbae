@@ -5,6 +5,7 @@ import { Navigate, Route, Routes, useLocation, useParams } from 'react-router-do
 import PublicExploreLayout from '@/app/layouts/public-explore-layout/PublicExploreLayout';
 import RecordsPageSkeleton from '@/pages/design-records/RecordsPageSkeleton';
 import NeighborhoodPageSkeleton from '@/pages/neighborhood-preview/NeighborhoodPageSkeleton';
+import useIsDesktop from '@/shared/lib/hooks/useIsDesktop';
 import {
   ABOUT_PATH,
   ADDRESS_SEARCH_PATH,
@@ -69,6 +70,26 @@ const lazyPage = (page: ReactNode, fallback?: ReactNode) => (
   <LazyRouteBoundary fallback={fallback}>{page}</LazyRouteBoundary>
 );
 
+/**
+ * 통합 지도 화면 묶음. 데스크탑은 늘 통합 지도 화면이 그려 내 기록, 체크리스트, 저렴한 한 끼를 오가도 지도가 이어진다.
+ * 휴대폰 체크리스트는 지도를 쓰지 않으므로 앱 화면 셸이 같은 자식 라우트를 그린다.
+ */
+const UnifiedMapRoute = () => {
+  const isDesktop = useIsDesktop();
+  const { pathname } = useLocation();
+  if (!isDesktop && (pathname === CHECKLISTS_PATH || pathname.startsWith(`${CHECKLISTS_PATH}/`)))
+    return (
+      <LazyRouteBoundary key="app">
+        <PropertyAppLayout />
+      </LazyRouteBoundary>
+    );
+  return (
+    <LazyRouteBoundary key="map" fallback={<RecordsPageSkeleton />}>
+      <UnifiedMapPage />
+    </LazyRouteBoundary>
+  );
+};
+
 /** 예전 목록 주소(`/properties`)는 홈으로 보낸다. `?view=` 같은 쿼리는 그대로 잇는다. */
 const LegacyRecordsRoute = () => <Navigate to={{ pathname: RECORDS_PATH, search: useLocation().search }} replace />;
 
@@ -130,12 +151,17 @@ const AppRoutes = () => (
       {/* 탭마다 주소가 따로 있다. 탭 없는 주소와 예전 `?tab=` 주소는 화면이 탭 주소로 바꾼다. */}
       <Route path={PROPERTIES_PATH} element={<LegacyRecordsRoute />} />
       <Route path={MY_ALIAS_PATH} element={<Navigate to={MY_PATH} replace />} />
-      <Route element={lazyPage(<UnifiedMapPage />, <RecordsPageSkeleton />)}>
+      <Route element={<UnifiedMapRoute />}>
         {/* 홈이 곧 본 방 기록(지도와 리스트)이다. 화면은 이 셸이 그린다. */}
         <Route path={HOME_PATH} />
         {/* 저렴한 한 끼도 같은 통합 지도 화면 안에서 그려, 지도와 줌, 중심이 다른 지도 화면과 이어진다. 탭마다 주소가 따로 있다. */}
         <Route path={ROUTE_PATTERNS.cheapMeals} element={lazyPage(<CheapMealsRoute />)} />
         <Route path={MY_PATH} />
+        {/* 체크리스트도 데스크탑은 이 지도 화면 안에서 목록과 편집 칸을 지도 위에 띄운다. 휴대폰은 이 셸이 앱 화면 셸로 대신 그린다. */}
+        <Route path={CHECKLISTS_PATH} element={lazyPage(<ChecklistListPage />)}>
+          <Route path={CHECKLIST_CREATE_PATH} element={lazyPage(<CreateChecklistPage />)} />
+          <Route path={ROUTE_PATTERNS.checklistDetail} element={lazyPage(<ChecklistDetailPage />)} />
+        </Route>
         <Route path={ROUTE_PATTERNS.propertyRecords}>
           <Route index element={lazyPage(<PropertyDetailPage />)} />
           <Route
@@ -154,10 +180,6 @@ const AppRoutes = () => (
         <Route path={ROUTE_PATTERNS.propertyMemo} element={lazyPage(<PropertyMemoPage />)} />
         <Route path={ROUTE_PATTERNS.propertyNearby} element={lazyPage(<NearbyAnalysisPage />)} />
         <Route path={ROUTE_PATTERNS.propertyChecklist} element={lazyPage(<PropertyChecklistPage />)} />
-        <Route path={CHECKLISTS_PATH} element={lazyPage(<ChecklistListPage />)}>
-          <Route path={CHECKLIST_CREATE_PATH} element={lazyPage(<CreateChecklistPage />)} />
-          <Route path={ROUTE_PATTERNS.checklistDetail} element={lazyPage(<ChecklistDetailPage />)} />
-        </Route>
         {/* 이전 단계별 주소는 관리 화면으로 보낸다. */}
         <Route path={ROUTE_PATTERNS.legacyChecklists} element={<Navigate to={CHECKLISTS_PATH} replace />} />
         <Route path={ROUTE_PATTERNS.legacyMap} element={<LegacyMapRoute />} />
