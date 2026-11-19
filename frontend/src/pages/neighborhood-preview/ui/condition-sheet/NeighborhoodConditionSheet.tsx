@@ -13,13 +13,7 @@ import RentSlider, { OptionSlider } from '../rent-slider/RentSlider';
 type Props = {
   preview: Pick<
     NeighborhoodPreviewContext,
-    | 'maxMinutes'
-    | 'applyMaxMinutes'
-    | 'maxTransfers'
-    | 'applyMaxTransfers'
-    | 'maxRent'
-    | 'changeMaxRent'
-    | 'isRefining'
+    'maxMinutes' | 'applyMaxMinutes' | 'maxTransfers' | 'applyMaxTransfers' | 'maxRent' | 'changeMaxRent' | 'isRefining'
   >;
   /** 시트 바로 위 가운데에 띄울 버튼 줄(`내 기록으로`, `출퇴근 장소 다시 선택`). */
   floating?: ReactNode;

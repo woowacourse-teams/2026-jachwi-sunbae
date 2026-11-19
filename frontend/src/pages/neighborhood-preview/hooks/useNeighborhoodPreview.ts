@@ -174,8 +174,7 @@ const useNeighborhoodPreview = () => {
   const fetchedAreas = commute.data?.areas;
   const appliedMaxMinutes = submitted?.maxMinutes ?? maxMinutes;
   const filtered = useMemo(
-    () =>
-      fetchedAreas && filterCommuteAreas(fetchedAreas, { maxMinutes: appliedMaxMinutes, maxRent: appliedMaxRent }),
+    () => fetchedAreas && filterCommuteAreas(fetchedAreas, { maxMinutes: appliedMaxMinutes, maxRent: appliedMaxRent }),
     [fetchedAreas, appliedMaxMinutes, appliedMaxRent],
   );
   const allAreas = filtered?.withinCommute;

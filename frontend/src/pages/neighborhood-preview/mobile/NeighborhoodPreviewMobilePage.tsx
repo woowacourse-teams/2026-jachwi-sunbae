@@ -210,16 +210,10 @@ const NeighborhoodPreviewMobilePage = ({ preview }: Props) => {
               className={usesSharedSearch ? `${shared.searchHeader} ${styles.resultHeader}` : shared.searchHeader}
             >
               {usesSharedSearch ? (
-                <MobileMapHeader
-                 
-                  searchTo={NEIGHBORHOOD_ADDRESS_SEARCH_PATH}
-                  searchLabel="주소 검색"
-                />
+                <MobileMapHeader searchTo={NEIGHBORHOOD_ADDRESS_SEARCH_PATH} searchLabel="주소 검색" />
               ) : (
                 <>
-                  {!preview.isPublicExplore && (
-                    <MobileMapHeader searchTo={NEIGHBORHOOD_ADDRESS_SEARCH_PATH} />
-                  )}
+                  {!preview.isPublicExplore && <MobileMapHeader searchTo={NEIGHBORHOOD_ADDRESS_SEARCH_PATH} />}
                   <NeighborhoodMapSearch preview={preview} hideHome={!preview.isPublicExplore} />
                 </>
               )}
@@ -282,11 +276,7 @@ const NeighborhoodPreviewMobilePage = ({ preview }: Props) => {
             {/* 결과 머리에는 로고와 검색, 마이만 둔다. 조건 요약과 색 기준은 아래 스택으로 옮겼다. 공개 탐색은 머리를 비운다. */}
             <header className={`${shared.resultHeader} ${styles.resultHeader}`}>
               {!preview.isPublicExplore && (
-                <MobileMapHeader
-                 
-                  searchTo={NEIGHBORHOOD_ADDRESS_SEARCH_PATH}
-                  searchLabel="주소 검색"
-                />
+                <MobileMapHeader searchTo={NEIGHBORHOOD_ADDRESS_SEARCH_PATH} searchLabel="주소 검색" />
               )}
             </header>
             {resultControls}

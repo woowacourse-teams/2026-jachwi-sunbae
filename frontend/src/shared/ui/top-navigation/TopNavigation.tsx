@@ -37,11 +37,7 @@ const TopNavigation = ({
             <Icon name={navigationIcon} size={21} />
           </button>
         ) : backPath !== undefined ? (
-          <Link
-            className={styles.backLink}
-            to={backPath}
-            aria-label={backLabel}
-          >
+          <Link className={styles.backLink} to={backPath} aria-label={backLabel}>
             <Icon name={navigationIcon} size={21} />
           </Link>
         ) : null}
