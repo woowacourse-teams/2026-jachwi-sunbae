@@ -138,6 +138,19 @@ describe('내 체크리스트 편집', () => {
     expect(screen.getByRole('button', { name: '체크리스트 삭제' })).toBeInTheDocument();
   });
 
+  it('관리 화면은 기본 체크리스트 카드와 내 체크리스트 개수를 함께 보여 준다', async () => {
+    server.use(
+      http.get(`${config.apiBaseUrl}/api/checklists`, () =>
+        HttpResponse.json(successEnvelope(checklistPageFixture([onSiteChecklistSummary]))),
+      ),
+    );
+    renderAuthenticated('/checklists');
+    expect(await screen.findByText('자취선배 기본 체크리스트')).toBeInTheDocument();
+    expect(screen.getByText('이 단계의 필수 항목으로 바로 시작')).toBeInTheDocument();
+    expect(screen.getByText('1개')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: '새 체크리스트' })).toHaveAttribute('href', '/checklists/new');
+  });
+
   it('빈 관리 화면에서 만들기를 눌러 편집하고 닫으면 관리로 돌아온다', async () => {
     server.use(
       http.get(`${config.apiBaseUrl}/api/checklists`, () =>
