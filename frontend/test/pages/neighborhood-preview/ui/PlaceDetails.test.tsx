@@ -81,6 +81,7 @@ it('통근 시간이 나온 내 매물은 매물에서 출발하는 동선을 �
   renderDetails(property({ propertyId: 7, propertyName: '역삼동 원룸', status: 'REACHABLE', commuteMinutes: 20 }));
 
   expect(await screen.findByRole('heading', { name: '예상 20분 · 환승 0회' })).toBeInTheDocument();
+  expect(screen.getByText('출퇴근 장소까지 동선')).toBeInTheDocument();
   expect(screen.getByText(/역삼역 정류장 승차/)).toBeInTheDocument();
   expect(requested).toBe('7?latitude=37.55&longitude=127');
 });
@@ -141,4 +142,21 @@ it.each([
 
   expect(await screen.findByRole('heading', { name: '예상 20분 · 환승 0회' })).toBeInTheDocument();
   expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+});
+
+it('예시 매물은 서버에 없는 매물이라 통근 시간과 동선을 부르지 않고 그 까닭을 적는다', () => {
+  let calls = 0;
+  server.use(
+    http.get('*/api/properties/:propertyId/commute-route', () => {
+      calls += 1;
+      return HttpResponse.json({}, { status: 500 });
+    }),
+  );
+
+  renderDetails({ ...property(null), propertyId: -1, isPreview: true });
+
+  expect(screen.getByText('예시 매물이라 통근 시간을 계산하지 않아요')).toBeInTheDocument();
+  expect(screen.queryByText('통근 시간을 불러오고 있어요')).not.toBeInTheDocument();
+  expect(screen.queryByText('출퇴근 장소까지 동선')).not.toBeInTheDocument();
+  expect(calls).toBe(0);
 });

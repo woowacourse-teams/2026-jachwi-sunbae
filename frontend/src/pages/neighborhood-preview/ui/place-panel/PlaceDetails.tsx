@@ -77,7 +77,9 @@ const PlaceDetails = ({ place, preview, phoneAction, commuteMaxMinutes = 60 }: P
           <dd>{property.address || '주소 정보가 없어요'}</dd>
           <dt>통근</dt>
           <dd>
-            {property.commute ? (
+            {property.isPreview ? (
+              '예시 매물이라 통근 시간을 계산하지 않아요'
+            ) : property.commute ? (
               <>
                 {preview.destination.name}까지 <b>{propertyCommuteLabel(property.commute, commuteMaxMinutes)}</b>
               </>
@@ -86,6 +88,7 @@ const PlaceDetails = ({ place, preview, phoneAction, commuteMaxMinutes = 60 }: P
             )}
           </dd>
         </dl>
+        {reachablePropertyId !== null && <p className={styles.lead}>출퇴근 장소까지 동선</p>}
         {reachablePropertyId !== null && (
           <RouteGuide
             route={propertyRoute.route}
