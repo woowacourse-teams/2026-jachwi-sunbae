@@ -33,6 +33,7 @@ import {
   OUT_OF_RENT_COLOR,
   OUT_OF_RENT_DRAW_STAGE,
 } from '../model/commuteColors';
+import { type CommuteFetchCriteria, filterCommuteAreas, needsCommuteRefetch } from '../model/filterCommuteAreas';
 import {
   neighborhoodSearchKey,
   readNeighborhoodSearch,
@@ -41,6 +42,9 @@ import {
 import { PREVIEW_DESTINATION } from '../model/preview';
 import { type MapViewport, routeFocusView } from '../model/resultMapView';
 import useNeighborhoodAnalytics from './useNeighborhoodAnalytics';
+
+/** 결과를 본 채 환승이나 더 긴 통근 시간으로 바꿨을 때, 끄는 동안 요청이 몰리지 않게 기다렸다가 다시 받는 시간. */
+const REFINE_REFETCH_DELAY_MS = 300;
 
 const describeError = (error: unknown) => {
   if (error instanceof ApiError) {
@@ -124,6 +128,20 @@ const useNeighborhoodPreview = () => {
       : null,
   );
   const appliedMaxRent = submitted?.maxRent ?? maxRent;
+  // 서버에 보낸 통근 조건. 결과를 본 채 조건을 고치면(`applyMax*`) 통근 시간을 줄일 때는 받아 둔 결과를 거르기만 하고,
+  // 환승을 바꾸거나 받아 둔 상한보다 늘릴 때만 잠깐 기다렸다가 다시 받는다. 다시 받는 동안은 이전 결과를 그대로 둔다.
+  const [fetched, setFetched] = useState<CommuteFetchCriteria | null>(
+    restoredSearch ? { maxMinutes: restoredSearch.maxMinutes, maxTransfers: restoredSearch.maxTransfers } : null,
+  );
+  const [isRefining, setIsRefining] = useState(false);
+  useEffect(() => {
+    if (!submitted || !fetched || !needsCommuteRefetch(fetched, submitted)) return undefined;
+    const timer = window.setTimeout(() => {
+      setIsRefining(true);
+      setFetched({ maxMinutes: submitted.maxMinutes, maxTransfers: submitted.maxTransfers });
+    }, REFINE_REFETCH_DELAY_MS);
+    return () => window.clearTimeout(timer);
+  }, [submitted, fetched]);
   const hasSearchChanges =
     submitted === null ||
     submitted.maxMinutes !== maxMinutes ||
@@ -146,20 +164,22 @@ const useNeighborhoodPreview = () => {
   const prefetchBoundaries = usePrefetchMetroBoundaries({ isSearching: phase === 'analyzing' });
   const commute = useCommuteAreas({
     destination: submitted?.destination ?? destination,
-    maxMinutes: submitted?.maxMinutes ?? maxMinutes,
-    maxTransfers: submitted?.maxTransfers ?? maxTransfers,
-    enabled: submitted !== null,
+    maxMinutes: fetched?.maxMinutes ?? maxMinutes,
+    maxTransfers: fetched?.maxTransfers ?? maxTransfers,
+    enabled: submitted !== null && fetched !== null,
+    keepPrevious: isRefining,
   });
-  // 서버가 통근 시간·환승 조건으로 고른 동네 가운데 월세 시세가 있는 동네만 온다(`useCommuteAreas`가 거른다).
-  // 서버는 월세로 거르지 않으므로 월세 조건은 받은 시세(월세 중앙값)의 상한으로 화면에서 거른다. 바꿔도 다시 조회하지 않는다.
-  const allAreas = commute.data?.areas;
-  const areas = useMemo(
+  // 서버는 통근 시간과 환승 조건으로 동네를 고르고 월세로는 거르지 않는다. 월세 조건(받은 시세의 상한)과
+  // 받아 둔 상한보다 줄인 통근 시간은 화면에서 거른다(`filterCommuteAreas`). 바꿔도 다시 조회하지 않는다.
+  const fetchedAreas = commute.data?.areas;
+  const appliedMaxMinutes = submitted?.maxMinutes ?? maxMinutes;
+  const filtered = useMemo(
     () =>
-      allAreas?.filter(
-        (area) => appliedMaxRent === 0 || (area.rent !== null && area.rent.monthlyRentKrw <= appliedMaxRent * 10000),
-      ),
-    [allAreas, appliedMaxRent],
+      fetchedAreas && filterCommuteAreas(fetchedAreas, { maxMinutes: appliedMaxMinutes, maxRent: appliedMaxRent }),
+    [fetchedAreas, appliedMaxMinutes, appliedMaxRent],
   );
+  const allAreas = filtered?.withinCommute;
+  const areas = filtered?.matched;
   const sortedAreas = useMemo(
     () =>
       [...(areas ?? [])].sort(
@@ -262,6 +282,8 @@ const useNeighborhoodPreview = () => {
     setDestination(point);
     // 목적지와 조건이 지난 검색과 같으면 받아 둔 결과를 그대로 보인다. 다시 조회하는 건 둘 중 하나가 바뀌었을 때뿐이다.
     setSubmitted({ destination: point, maxMinutes, maxTransfers, maxRent });
+    setFetched({ maxMinutes, maxTransfers });
+    setIsRefining(false);
     writeCommuteDestination(point);
     if (routeAreaId) navigate(mapPath, { replace: true });
     pendingSearchCamera.current = true;
@@ -540,7 +562,10 @@ const useNeighborhoodPreview = () => {
       setPhase('conditions');
     },
     hasPickedDestination: true,
-    isAnalyzing: phase === 'analyzing' && (commute.isPending || commute.isFetching),
+    // 결과를 본 채 조건을 고쳐 다시 받는 동안은 이전 결과를 그대로 두고 분석 중 화면을 띄우지 않는다.
+    isAnalyzing: phase === 'analyzing' && (commute.isPending || (commute.isFetching && !commute.isPlaceholderData)),
+    /** 결과를 본 채 바꾼 조건으로 다시 받는 중인지. 이전 결과는 그대로 보인다. */
+    isRefining: phase === 'analyzing' && commute.isPlaceholderData,
     error: phase === 'analyzing' && commute.isError ? describeError(commute.error) : null,
     retry: () => {
       analytics.startSearch({ maxMinutes, maxTransfers, maxRent }, 'retry');
@@ -557,6 +582,16 @@ const useNeighborhoodPreview = () => {
     changeMaxMinutes: setMaxMinutes,
     maxTransfers,
     changeMaxTransfers: setMaxTransfers,
+    /** 결과를 본 채 통근 시간 상한을 바로 바꾼다. 줄이면 받아 둔 결과를 거르기만 하고, 늘리면 잠깐 기다렸다가 다시 받는다. */
+    applyMaxMinutes: (value: number) => {
+      setMaxMinutes(value);
+      setSubmitted((current) => (current === null ? current : { ...current, maxMinutes: value }));
+    },
+    /** 결과를 본 채 환승 횟수를 바로 바꾼다. 동네마다 환승 정보가 없어 잠깐 기다렸다가 다시 받는다. */
+    applyMaxTransfers: (value: number) => {
+      setMaxTransfers(value);
+      setSubmitted((current) => (current === null ? current : { ...current, maxTransfers: value }));
+    },
     resultLevel,
     center: resultCenter,
     reset: () => {

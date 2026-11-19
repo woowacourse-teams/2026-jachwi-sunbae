@@ -1,5 +1,5 @@
 import type { QueryClient } from '@tanstack/react-query';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { keepPreviousData, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { usePublicConfig } from '@/shared/config/PublicConfigContext';
 import type { PublicConfig } from '@/shared/config/publicConfigTypes';
@@ -18,6 +18,8 @@ type Options = {
   maxMinutes: number;
   maxTransfers: number;
   enabled: boolean;
+  /** 켜면 조건을 바꿔 다시 받는 동안 이전 결과를 그대로 보여 준다. 결과를 본 채 조건을 고칠 때 깜박이지 않게 한다. */
+  keepPrevious?: boolean;
 };
 
 /**
@@ -57,7 +59,7 @@ const loadResult = async (client: QueryClient, options: Options, signal: AbortSi
 export const useCommuteAreas = (input: Omit<Options, 'config'>) => {
   const options = { ...input, config: usePublicConfig() };
   const client = useQueryClient();
-  const { config, destination, maxMinutes, maxTransfers, enabled } = options;
+  const { config, destination, maxMinutes, maxTransfers, enabled, keepPrevious = false } = options;
   return useQuery({
     queryKey: [
       'commute-areas',
@@ -70,6 +72,7 @@ export const useCommuteAreas = (input: Omit<Options, 'config'>) => {
     ],
     queryFn: ({ signal }) => loadResult(client, options, signal),
     enabled,
+    placeholderData: keepPrevious ? keepPreviousData : undefined,
     refetchOnMount: false,
     // 다른 화면(주소 검색, 비교 등)에 다녀와 동네 찾기를 다시 그려도 받아 둔 결과를 그대로 쓴다.
     gcTime: COMMUTE_RESULT_GC_MS,
