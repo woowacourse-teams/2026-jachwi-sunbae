@@ -18,7 +18,7 @@ const SHORTCUTS = [
   { label: '사용방법', image: guideIcon, path: GUIDE_PATH },
 ] as const;
 
-/** 마이페이지의 바로가기 목록. 하단 탭과 데스크탑 왼쪽 레일에 있던 도구 화면을 개인정보 처리방침 줄과 같은 모양으로 둔다. */
+/** 마이페이지의 바로가기 목록. 예전 하단 탭과 데스크탑 왼쪽 레일에 있던 도구 화면을 개인정보 처리방침 줄과 같은 모양으로 둔다. */
 const MyShortcutLinks = () => (
   <nav className={styles.list} aria-labelledby="my-shortcuts-title">
     <h2 id="my-shortcuts-title" className="sr-only">

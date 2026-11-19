@@ -1009,7 +1009,7 @@ export const searchCard = css`
   label: NeighborhoodPreviewPage-searchCard;
   position: absolute;
   right: 0;
-  bottom: var(--map-mode-bottom, 0px);
+  bottom: 0;
   left: 0;
   z-index: 20;
   display: grid;

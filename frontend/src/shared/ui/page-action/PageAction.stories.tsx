@@ -21,7 +21,7 @@ const meta: Meta<typeof PageAction> = {
     placement: {
       control: 'inline-radio',
       options: ['floating', 'inline'],
-      description: '`floating`은 하단 탭 위 오른쪽에 떠 있고, `inline`은 문서 흐름에 놓인다.',
+      description: '`floating`은 화면 아래 오른쪽에 떠 있고, `inline`은 문서 흐름에 놓인다.',
     },
     to: { control: 'text', description: '이동할 주소. 주면 링크로, 비우고 `onClick`을 주면 버튼으로 그린다.' },
     onClick: { control: false },
