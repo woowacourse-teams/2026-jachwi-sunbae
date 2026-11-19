@@ -51,6 +51,7 @@ vi.mock('@/features/map/ui/map-canvas/MapCanvas', async () => {
         )}
         <output aria-label="지도 시점">{JSON.stringify({ center: props.center, level: props.level })}</output>
         <output aria-label="목적지 좌표">{JSON.stringify(props.markers)}</output>
+        <output aria-label="지도 선">{JSON.stringify(props.routes ?? [])}</output>
         <output aria-label="고른 동네 경계">
           {JSON.stringify(props.regions?.find((region) => region.id === props.selectedRegionId)?.polygons ?? [])}
         </output>
@@ -1318,9 +1319,17 @@ it('동네 찾기에서 내 매물을 누르면 출퇴근 장소까지 동선을
     const destination = JSON.parse(screen.getByLabelText('목적지 좌표').textContent ?? '[]').find(
       (marker: { id: string }) => marker.id === 'destination',
     );
+    // 받은 동선은 결과 지도에 구간마다 선으로 긋는다. 걷는 구간은 회색 점선, 버스 구간은 노란 실선이다.
+    expect(JSON.parse(screen.getByLabelText('지도 선').textContent ?? '[]')).toEqual([
+      expect.objectContaining({ id: 'property-route:10:0', color: '#7b8189', dashed: true }),
+      expect.objectContaining({ id: 'property-route:10:1', color: '#f5b91e' }),
+    ]);
     expect(routeRequests).toHaveLength(1);
     expect(Number(routeRequests[0]?.searchParams.get('latitude'))).toBe(destination.latitude);
     expect(Number(routeRequests[0]?.searchParams.get('longitude'))).toBe(destination.longitude);
+    // 매물 정보를 닫으면 선도 지운다.
+    await user.click(screen.getByRole('button', { name: '정보 닫기' }));
+    await waitFor(() => expect(screen.getByLabelText('지도 선')).toHaveTextContent('[]'));
   } finally {
     server.events.removeListener('request:start', track);
   }
