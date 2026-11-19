@@ -41,6 +41,15 @@ it('하나 지우거나 모두 지운다', () => {
   expect(readRecentAddresses()).toEqual([]);
 });
 
+it('마지막 하나를 지우거나 모두 지우면 빈 값을 남기지 않고 저장 키째 지운다', () => {
+  addRecentAddress(address('A'));
+  removeRecentAddress(address('A'));
+  expect(window.localStorage.getItem('jachwi-sunbae:recent-addresses')).toBeNull();
+  addRecentAddress(address('B'));
+  clearRecentAddresses();
+  expect(window.localStorage.getItem('jachwi-sunbae:recent-addresses')).toBeNull();
+});
+
 it('깨진 저장 값은 기록이 없는 것으로 본다', () => {
   window.localStorage.setItem('jachwi-sunbae:recent-addresses', '{깨짐');
   expect(readRecentAddresses()).toEqual([]);

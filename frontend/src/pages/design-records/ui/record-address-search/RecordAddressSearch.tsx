@@ -1,11 +1,19 @@
 import { css } from '@emotion/css';
-import { useEffect, useId, useRef } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 
+import {
+  addRecentAddress,
+  clearRecentAddresses,
+  readRecentAddresses,
+  removeRecentAddress,
+} from '@/features/map/lib/recentAddressStore';
 import type { MapAddress } from '@/features/map/model/Map';
 import AddressSearchResults, { handleSearchKeys } from '@/features/map/ui/address-search-results/AddressSearchResults';
 import useAddressSearch from '@/features/property/hooks/useAddressSearch';
 import useExclusiveDropdown from '@/shared/lib/hooks/useExclusiveDropdown';
 import SearchField from '@/shared/ui/search-field/SearchField';
+
+import RecentAddressList from './RecentAddressList';
 
 type Props = {
   /** 고른 주소로 지도를 옮긴다. */
@@ -19,6 +27,8 @@ type Props = {
   className?: string;
   /** 입력칸 모양을 덧붙인다. 휴대폰 지도 머리처럼 높이를 옆 아이콘에 맞출 때 쓴다. */
   fieldClassName?: string;
+  /** 켜면 입력이 비어 있을 때 최근 검색을 띄우고, 고른 주소를 최근 검색에 남긴다(기기에만). 휴대폰 지도 머리 검색창이 쓴다. */
+  showsRecents?: boolean;
 };
 
 /** 입력을 멈추고 이만큼 지나면 검색한다. */
@@ -35,7 +45,9 @@ const RecordAddressSearch = ({
   placeholder = '주소로 지도 이동',
   className,
   fieldClassName,
+  showsRecents = false,
 }: Props) => {
+  const [recents, setRecents] = useState(() => (showsRecents ? readRecentAddresses() : []));
   const search = useAddressSearch();
   // 결과 목록은 한 화면에서 하나만 열린다. 다른 검색창이 열리면 닫히고, 포커스가 밖으로 나가거나 Esc를 누르면 닫힌다. 다시 눌러 입력하면 다시 열린다.
   const dropdown = useExclusiveDropdown(useId());
@@ -57,7 +69,11 @@ const RecordAddressSearch = ({
     <div
       className={`${styles.root} ${className ?? ''}`.trim()}
       data-search-root
-      onFocus={dropdown.open}
+      onFocus={() => {
+        // 다른 검색창(내 기록과 동네 찾기 머리)에서 지우거나 남긴 기록을 열 때마다 저장소에서 다시 읽는다.
+        if (showsRecents) setRecents(readRecentAddresses());
+        dropdown.open();
+      }}
       onKeyDown={(event) => handleSearchKeys(event, dropdown.close)}
       onBlur={(event) => {
         if (!event.currentTarget.contains(event.relatedTarget)) dropdown.close();
@@ -79,6 +95,21 @@ const RecordAddressSearch = ({
         onSubmit={() => void search.submit()}
         onClear={search.clear}
       />
+      {dropdown.isOpen && showsRecents && query.trim() === '' && (
+        // 지우기를 누를 때 입력창의 포커스가 빠져 목록이 닫히지 않게 한다.
+        <div onMouseDown={(event) => event.preventDefault()}>
+          <RecentAddressList
+            recents={recents}
+            onSelect={(address) => {
+              setRecents(addRecentAddress(address));
+              dropdown.close();
+              onSelect(address);
+            }}
+            onRemove={(address) => setRecents(removeRecentAddress(address))}
+            onClear={() => setRecents(clearRecentAddresses())}
+          />
+        </div>
+      )}
       {dropdown.isOpen && (
         // 결과를 누를 때 입력창의 포커스가 먼저 빠져 목록이 닫히지 않게 한다.
         <div onMouseDown={(event) => event.preventDefault()}>
@@ -89,6 +120,7 @@ const RecordAddressSearch = ({
             onSelect={(result) => {
               pickedRef.current = formatAddress(result);
               search.pick(result);
+              if (showsRecents) setRecents(addRecentAddress(result));
               dropdown.close();
               onSelect(result);
             }}

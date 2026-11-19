@@ -710,6 +710,56 @@ it('휴대폰 머리 검색 결과는 한 번에 하나만 열리고, Esc로 닫
   expect(await screen.findByRole('list', { name: '주소 검색 결과' })).toBeInTheDocument();
 });
 
+it('휴대폰 머리 검색창은 입력 전에 최근 검색을 띄우고, 하나씩 또는 모두 지울 수 있다', async () => {
+  const user = userEvent.setup();
+  const saved = (road: string) => ({
+    address: null,
+    roadAddress: road,
+    jibunAddress: null,
+    latitude: 37.5,
+    longitude: 127,
+  });
+  window.localStorage.setItem(
+    'jachwi-sunbae:recent-addresses',
+    JSON.stringify([saved('서울 관악구 신림로 1'), saved('서울 강남구 테헤란로 1')]),
+  );
+  try {
+    renderRecords();
+    await screen.findByText('신림역 원룸');
+    await user.click(screen.getByRole('textbox', { name: '장소나 주소 검색' }));
+    const recents = within(await screen.findByRole('region', { name: '최근 검색' }));
+    expect(recents.getAllByRole('listitem')).toHaveLength(2);
+    // 하나 지우면 화면과 저장소가 함께 바로 바뀐다. 입력창 포커스와 목록은 그대로다.
+    await user.click(recents.getByRole('button', { name: '서울 관악구 신림로 1 기록 지우기' }));
+    expect(recents.getAllByRole('listitem')).toHaveLength(1);
+    expect(window.localStorage.getItem('jachwi-sunbae:recent-addresses')).not.toContain('신림로');
+    // 전체 지우기를 누르면 목록 영역이 사라지고 저장 키도 남지 않는다.
+    await user.click(recents.getByRole('button', { name: '전체 지우기' }));
+    expect(screen.queryByRole('region', { name: '최근 검색' })).not.toBeInTheDocument();
+    expect(window.localStorage.getItem('jachwi-sunbae:recent-addresses')).toBeNull();
+  } finally {
+    window.localStorage.removeItem('jachwi-sunbae:recent-addresses');
+  }
+});
+
+it('휴대폰 머리 검색에서 고른 주소는 최근 검색에 남고, 기록이 없으면 입력 전 목록을 띄우지 않는다', async () => {
+  const user = userEvent.setup();
+  try {
+    renderRecords();
+    await screen.findByText('신림역 원룸');
+    const input = screen.getByRole('textbox', { name: '장소나 주소 검색' });
+    // 기록이 없으면 입력 전 목록을 띄우지 않는다.
+    await user.click(input);
+    expect(screen.queryByRole('region', { name: '최근 검색' })).not.toBeInTheDocument();
+    await user.type(input, '세종대로');
+    const results = await screen.findByRole('list', { name: '주소 검색 결과' });
+    await user.click(within(results).getAllByRole('button')[0]);
+    expect(window.localStorage.getItem('jachwi-sunbae:recent-addresses')).toContain('세종대로 110');
+  } finally {
+    window.localStorage.removeItem('jachwi-sunbae:recent-addresses');
+  }
+});
+
 it('현재 위치 버튼은 받은 위치로 지도를 옮기고, 권한이 없으면 알린다', async () => {
   const originalGeolocation = navigator.geolocation;
   const getCurrentPosition = vi.fn((success: PositionCallback) =>

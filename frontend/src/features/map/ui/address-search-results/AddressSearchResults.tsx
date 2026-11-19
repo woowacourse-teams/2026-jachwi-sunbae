@@ -90,6 +90,9 @@ const AddressSearchResults = ({
   return dropdown ? <div className={cx(styles.dropdown, wide && styles.wide)}>{content}</div> : content;
 };
 
+/** 검색창 바로 아래에 띄우는 목록 상자 모양. 최근 검색 목록도 같은 상자를 쓴다. */
+export const addressDropdownClass = () => styles.dropdown;
+
 const styles = {
   dropdown: css`
     position: absolute;

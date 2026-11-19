@@ -1,6 +1,6 @@
 /**
  * 최근에 찾은 주소를 기기에만 기억한다. 서버로 보내지 않는다.
- * 기록 지도의 주소 검색 화면이 입력 전에 보여 주고, 같은 주소는 맨 위로 올린다.
+ * 휴대폰 지도 머리 검색창이 입력 전에 보여 주고, 같은 주소는 맨 위로 올린다.
  */
 import type { MapAddress } from '@/features/map/model/Map';
 
@@ -23,9 +23,11 @@ export const readRecentAddresses = (): MapAddress[] => {
   }
 };
 
+/** 남은 기록이 없으면 빈 목록을 남기지 않고 키째 지운다. */
 const write = (addresses: MapAddress[]): MapAddress[] => {
   try {
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(addresses));
+    if (addresses.length === 0) window.localStorage.removeItem(STORAGE_KEY);
+    else window.localStorage.setItem(STORAGE_KEY, JSON.stringify(addresses));
   } catch {
     /* 기억하지 못해도 검색은 그대로 쓴다. */
   }
