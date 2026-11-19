@@ -30,6 +30,7 @@ const RecordList = ({
   onNotice,
   className,
   showCompare = false,
+  compactCompare = false,
 }: RecordListProps) => {
   const selectedRef = useRef<HTMLLIElement>(null);
   useEffect(() => {
@@ -49,7 +50,7 @@ const RecordList = ({
           description="집을 보러 가면 사진과 체크한 내용을 남겨 두세요. 여기에 모여요."
         />
       )}
-      {showCompare && records.length > 0 && <RecordCompareLink />}
+      {showCompare && records.length > 0 && <RecordCompareLink compact={compactCompare} />}
       <ul className={styles.items}>
         {records.map((record) => (
           <li
