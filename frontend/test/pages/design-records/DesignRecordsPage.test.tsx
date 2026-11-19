@@ -114,7 +114,6 @@ it('내 매물로 지도·리스트와 주소 필터를 구성하고 홈으로 �
     expect.stringMatching(/^\/properties\/\d+$/),
   );
   expect(screen.queryByRole('navigation', { name: '기록한 동네' })).not.toBeInTheDocument();
-  expect(screen.getByRole('link', { name: '자취선배 홈' })).toBeInTheDocument();
   await user.click(screen.getByRole('button', { name: '지도' }));
   const districts = within(screen.getByRole('navigation', { name: '기록한 동네' }));
   await user.click(districts.getByRole('button', { name: /^관악구/ }));
@@ -836,7 +835,6 @@ it('주소가 없는 매물은 목록에 유지하고 주소 미등록 동네 �
   await user.click(await screen.findByRole('button', { name: /리스트/ }));
   await screen.findByText('신림역 원룸');
   expect(screen.queryByRole('navigation', { name: '기록한 동네' })).not.toBeInTheDocument();
-  expect(screen.getByRole('link', { name: '자취선배 홈' })).toBeInTheDocument();
 });
 
 it('지도 탭으로 바로 기록 메뉴를 열고 Escape로 취소한다', async () => {
@@ -864,11 +862,11 @@ it('데스크톱 목록 헤더에 로고와 검색창, 마이를 함께 둔다',
   }
 });
 
-it('모바일 헤더에는 동네 찾기 타일 대신 로고를 두고 떠 있는 추천 버튼도 두지 않는다', async () => {
+it('모바일 헤더 왼쪽 위에는 로고를 두지 않고 떠 있는 추천 버튼도 두지 않는다', async () => {
   renderRecords();
   const user = userEvent.setup();
   expect(screen.queryByRole('link', { name: '출퇴근 시간으로 동네 찾기' })).not.toBeInTheDocument();
-  expect(screen.getByRole('link', { name: '자취선배 홈' })).toBeInTheDocument();
+  expect(screen.queryByRole('link', { name: '자취선배 홈' })).not.toBeInTheDocument();
   expect(screen.queryByRole('button', { name: '동네 추천받기' })).not.toBeInTheDocument();
   expect(screen.queryByRole('button', { name: '매물 추가' })).not.toBeInTheDocument();
   await user.click(screen.getByRole('button', { name: '리스트' }));

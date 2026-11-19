@@ -61,9 +61,13 @@ const styles = {
       gap: 0.25rem;
     }
   `,
+  /* 왼쪽 칸이 비면 가운데 칸(날씨 안내 등)을 왼쪽에 붙인다. */
   leading: css`
     &:empty {
       display: none;
+    }
+    &:empty + * {
+      justify-content: flex-start;
     }
   `,
   actions: css`

@@ -485,9 +485,9 @@ it('모바일은 지도 아래 가운데 버튼으로 동네 찾기를 열고 �
   // 처음에는 출퇴근 장소 검색 화면을 거치지 않고 동네 찾기 지도로 바로 가고, 지도 위 검색 칸에서 장소를 고른다.
   await pickDestination(0);
   const back = screen.getByRole('button', { name: '내 기록으로' });
-  // 모드 버튼은 머리가 아니라 지도 아래에 떠 있다. 머리 왼쪽은 로고다.
+  // 모드 버튼은 머리가 아니라 지도 아래에 떠 있다. 머리 왼쪽 위 로고 자리는 비워 두었다.
   expect(back.closest('header')).toBeNull();
-  expect(screen.getByRole('link', { name: '자취선배 홈' }).closest('header')).not.toBeNull();
+  expect(screen.queryByRole('link', { name: '자취선배 홈' })).not.toBeInTheDocument();
   expect(screen.queryByRole('navigation', { name: '지도 모드' })).not.toBeInTheDocument();
   await userEvent.click(back);
   await screen.findByRole('region', { name: '본 방 기록 지도' });

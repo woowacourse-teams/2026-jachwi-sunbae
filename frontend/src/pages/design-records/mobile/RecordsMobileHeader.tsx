@@ -2,7 +2,7 @@ import { css } from '@emotion/css';
 import { useEffect } from 'react';
 
 import MapHeaderWeather from '@/features/weather/ui/map-header-weather/MapHeaderWeather';
-import MobileMapHeader, { MapHomeLink } from '@/shared/ui/mobile-map-header/MobileMapHeader';
+import MobileMapHeader from '@/shared/ui/mobile-map-header/MobileMapHeader';
 
 import type { RecordsView } from '../model/recordsView';
 
@@ -11,7 +11,8 @@ type Props = {
   searchTo?: string;
 };
 /**
- * 휴대폰 기록 헤더. 왼쪽에 로고, 오른쪽에 검색(지도 보기)과 마이 링크를 둔다.
+ * 휴대폰 기록 헤더. 왼쪽에 날씨 안내(리스트 보기), 오른쪽에 검색(지도 보기)과 마이 링크를 둔다.
+ * 왼쪽 위 로고 자리는 비워 두었다. 다른 요소를 넣을 자리다.
  * 동네 찾기로 가는 버튼은 지도 아래 가운데에, 매물 기록하기는 리스트 아래 오른쪽 원형 버튼에 있다.
  */
 const RecordsMobileHeader = ({ view, searchTo }: Props) => {
@@ -25,7 +26,6 @@ const RecordsMobileHeader = ({ view, searchTo }: Props) => {
         searchTo={searchTo}
         hideSearch={view === 'list'}
         center={view === 'list' ? <MapHeaderWeather /> : undefined}
-        leading={<MapHomeLink />}
       />
     </div>
   );

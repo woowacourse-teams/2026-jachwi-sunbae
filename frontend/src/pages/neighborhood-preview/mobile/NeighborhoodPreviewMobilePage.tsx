@@ -13,7 +13,7 @@ import Icon from '@/shared/ui/icon/Icon';
 import { useMapPanel } from '@/shared/ui/map-list-header/MapPanelContext';
 import { mapFloatingPill } from '@/shared/ui/map-mode-switch/MapModeButton';
 import { MapModeSwitchButton } from '@/shared/ui/map-mode-switch/MapModeContext';
-import MobileMapHeader, { MapHomeLink } from '@/shared/ui/mobile-map-header/MobileMapHeader';
+import MobileMapHeader from '@/shared/ui/mobile-map-header/MobileMapHeader';
 
 import useMyPropertyPager from '../hooks/useMyPropertyPager';
 import useNeighborhoodMapView from '../hooks/useNeighborhoodMapView';
@@ -45,7 +45,6 @@ type Props = {
 const NeighborhoodPreviewMobilePage = ({ preview }: Props) => {
   const controller = useRecordsMapController();
   const usesSharedSearch = controller !== null && !preview.isPublicExplore;
-  const returnButton = !preview.isPublicExplore && <MapHomeLink />;
   const panel = useMapPanel();
   // 위치를 고르는 동안 조건 칸 아래에 바로 펼친 피커. 같은 칸을 다시 누르면 접는다.
   // 결과를 지도로 볼지 동네 목록으로 볼지. 기록 화면의 리스트와 지도 전환과 같은 짝이다.
@@ -213,14 +212,14 @@ const NeighborhoodPreviewMobilePage = ({ preview }: Props) => {
             >
               {usesSharedSearch ? (
                 <MobileMapHeader
-                  leading={returnButton}
+                 
                   searchTo={NEIGHBORHOOD_ADDRESS_SEARCH_PATH}
                   searchLabel="주소 검색"
                 />
               ) : (
                 <>
                   {!preview.isPublicExplore && (
-                    <MobileMapHeader leading={returnButton} searchTo={NEIGHBORHOOD_ADDRESS_SEARCH_PATH} />
+                    <MobileMapHeader searchTo={NEIGHBORHOOD_ADDRESS_SEARCH_PATH} />
                   )}
                   <NeighborhoodMapSearch preview={preview} hideHome={!preview.isPublicExplore} />
                 </>
@@ -285,7 +284,7 @@ const NeighborhoodPreviewMobilePage = ({ preview }: Props) => {
             <header className={`${shared.resultHeader} ${styles.resultHeader}`}>
               {!preview.isPublicExplore && (
                 <MobileMapHeader
-                  leading={returnButton}
+                 
                   searchTo={NEIGHBORHOOD_ADDRESS_SEARCH_PATH}
                   searchLabel="주소 검색"
                 />

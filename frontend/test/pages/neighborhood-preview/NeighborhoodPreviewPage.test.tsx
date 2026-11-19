@@ -1122,7 +1122,8 @@ it('모바일은 지도 위 핀으로 목적지 선택을 켜고 결과에서도
   const toggle = screen.getByRole('button', { name: '지도에서 목적지 선택' });
   const searchHeader = screen.getByRole('textbox', { name: '출퇴근 장소' }).closest('header');
   expect(toggle.closest('header')).toBeNull();
-  expect(searchHeader).toContainElement(screen.getByRole('link', { name: '자취선배 홈' }));
+  expect(searchHeader).toContainElement(screen.getByRole('link', { name: '마이페이지' }));
+  expect(screen.queryByRole('link', { name: '자취선배 홈' })).not.toBeInTheDocument();
   // 위치를 고르는 동안 `내 기록으로`는 머리가 아니라 아래 조건 칸 위에 떠 있다.
   expect(screen.getByRole('button', { name: '내 기록으로' }).closest('header')).toBeNull();
   expect(toggle).toHaveAttribute('aria-pressed', 'false');
