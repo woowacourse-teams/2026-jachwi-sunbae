@@ -83,6 +83,8 @@ it('통근 시간이 나온 내 매물은 매물에서 출발하는 동선을 �
   expect(await screen.findByRole('heading', { name: '예상 20분 · 환승 0회' })).toBeInTheDocument();
   expect(screen.getByText('출퇴근 장소까지 동선')).toBeInTheDocument();
   expect(screen.getByText(/역삼역 정류장 승차/)).toBeInTheDocument();
+  // 구간 요약 막대에는 타는 노선 이름을 함께 적는다. 응답에 거리 값은 없어 거리는 적지 않는다.
+  expect(screen.getByLabelText('이동 구간 요약')).toHaveTextContent('도보 3분버스 146 17분');
   expect(requested).toBe('7?latitude=37.55&longitude=127');
 });
 

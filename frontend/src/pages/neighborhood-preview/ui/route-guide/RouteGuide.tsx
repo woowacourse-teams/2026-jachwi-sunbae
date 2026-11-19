@@ -61,11 +61,15 @@ const RouteGuide = ({ route, isLoading, error, onRetry }: RouteGuideProps) => {
             예상 {route.totalMinutes}분 · 환승 {route.transferCount}회
           </h2>
           <div className={styles.routeSegments} aria-label="이동 구간 요약">
-            {route.legs.map((leg, index) => (
-              <span key={index} data-type={leg.type} style={{ flexGrow: Math.max(leg.minutes, 1) }}>
-                {modeName(leg.type)} {leg.minutes}분
-              </span>
-            ))}
+            {/* 타는 구간은 응답의 노선 이름을 함께 적어 어떤 노선을 차례로 타는지 막대만 보고도 알 수 있게 한다. 칸이 좁으면 툴팁으로 본다. */}
+            {route.legs.map((leg, index) => {
+              const label = `${modeName(leg.type)}${leg.type !== 'WALK' && leg.routeName ? ` ${leg.routeName}` : ''} ${leg.minutes}분`;
+              return (
+                <span key={index} data-type={leg.type} style={{ flexGrow: Math.max(leg.minutes, 1) }} title={label}>
+                  {label}
+                </span>
+              );
+            })}
           </div>
           {/* 구간마다 수단 색의 선과 점으로 잇는다. 요약 막대와 같은 색을 써서 어느 구간인지 바로 맞춰 볼 수 있게 한다. */}
           <ol className={styles.legs}>
@@ -204,6 +208,10 @@ const styles = {
       text-align: center;
       background: var(--color-surface-muted);
       white-space: nowrap;
+      /* 노선 이름이 길어 칸을 넘으면 말줄임으로 자르고 전체는 툴팁으로 본다. */
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
 
     & span[data-type='BUS'] {
