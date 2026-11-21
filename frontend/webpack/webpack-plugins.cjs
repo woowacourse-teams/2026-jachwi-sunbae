@@ -72,6 +72,15 @@ class SeoFilesPlugin {
   }
 }
 
+// 주소가 잘못됐으면 빈 값을 넣어 preconnect가 아무 일도 하지 않게 한다. 잘못된 주소는 앱이 뜰 때 오류 화면으로 알린다.
+const readOrigin = (url) => {
+  try {
+    return new URL(url).origin;
+  } catch {
+    return '';
+  }
+};
+
 const createPlugins = ({ isProduction, buildEnvironment }) => [
   new AdminBoundaryAssetsPlugin(),
   new SeoFilesPlugin(),
@@ -91,6 +100,8 @@ const createPlugins = ({ isProduction, buildEnvironment }) => [
     template: './index.html',
     filename: 'index.html',
     inject: true,
+    // index.html의 preconnect가 쓴다. API 주소는 빌드 때 정해진다.
+    apiOrigin: readOrigin(buildEnvironment.apiBaseUrl),
   }),
   new BundleAnalyzerPlugin({
     analyzerMode: process.env.ANALYZE === 'true' ? 'static' : 'disabled',

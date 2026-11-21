@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 
 import { usePublicConfig } from '@/shared/config/PublicConfigContext';
 
-import { preloadNaverSdk } from '../lib/naverMapEngine';
+import { preloadNaverSdk } from '../lib/naverSdkPreload';
 
 /**
  * 지도를 그릴 화면이면 지도보다 먼저 네이버 SDK 받기를 시작한다.

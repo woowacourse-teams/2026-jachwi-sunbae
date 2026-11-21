@@ -6,6 +6,7 @@ import StatusPanel from '@/shared/ui/status-panel/StatusPanel';
 import PostHogTracker from './analytics/PostHogTracker';
 import AppProviders from './providers/AppProviders';
 import AppRoutes from './router/AppRoutes';
+import EntryMapSdkPreload from './router/EntryMapSdkPreload';
 
 import './styles/tokens.styles';
 import './styles/global.styles';
@@ -37,6 +38,7 @@ const App = ({ config }: AppProps) => {
   return (
     <AppProviders config={resolvedConfig}>
       <PostHogTracker />
+      <EntryMapSdkPreload />
       <AppRoutes />
     </AppProviders>
   );

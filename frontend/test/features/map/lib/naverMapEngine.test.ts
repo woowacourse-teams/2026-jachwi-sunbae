@@ -124,3 +124,11 @@ it('Client ID가 없거나 SDK를 이미 받았으면 미리 받지 않는다', 
   preloadNaverSdk('test');
   expect(preloads()).toHaveLength(0);
 });
+
+it('지도가 SDK 스크립트를 이미 붙였으면 미리 받지 않는다', async () => {
+  const { naverEngine: isolatedEngine, preloadNaverSdk } = await isolatedModule();
+  void isolatedEngine('test').load();
+  preloadNaverSdk('test');
+  expect(preloads()).toHaveLength(0);
+  scripts().forEach((script) => script.remove());
+});
