@@ -1,9 +1,11 @@
 // @vitest-environment node
 import { createRequire } from 'node:module';
-import { gunzipSync } from 'node:zlib';
+import { brotliDecompressSync, gunzipSync } from 'node:zlib';
 import { expect, it } from 'vitest';
 
-const { createBoundaryAssets } = createRequire(import.meta.url)('../../webpack/admin-boundary-assets.cjs');
+const { createBoundaryAssets, compressBrotli } = createRequire(import.meta.url)(
+  '../../webpack/admin-boundary-assets.cjs',
+);
 const features = ['11230640', '31023780', '23010510'].map((code) => ({
   type: 'Feature',
   properties: { code, baseDate: '20250630' },
@@ -89,4 +91,17 @@ it('시도 파일의 좌표는 소수점 6자리로 줄이고 공유 꼭짓점, 
     for (const level of ['overview', 'medium'])
       for (const i of feature.lod[level][0][0]) expect(i).toBeLessThan(generated.length);
   }
+});
+
+it('시도별 파일을 brotli로 압축하면 풀었을 때 원본과 같고 gzip보다 작다', async () => {
+  // 좌표가 되풀이되는 실제 경계처럼 같은 행정동을 여러 번 넣어 압축할 거리를 만든다.
+  const repeated = Array.from({ length: 200 }, (_, index) => ({
+    ...features[0],
+    properties: { ...features[0].properties, code: `11${String(index).padStart(6, '0')}` },
+  }));
+  const assets = createBoundaryAssets(Buffer.from(JSON.stringify({ type: 'FeatureCollection', features: repeated })));
+  const [part] = assets.partitions;
+  const brotli: Buffer = await compressBrotli(part.source);
+  expect(brotliDecompressSync(brotli)).toEqual(part.source);
+  expect(brotli.length).toBeLessThan(part.gzip.length);
 });

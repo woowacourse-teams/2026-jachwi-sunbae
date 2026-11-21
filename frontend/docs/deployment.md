@@ -146,13 +146,35 @@ react-router의 클라이언트 라우팅을 쓴다. `/guide`, `/properties/1`, 
 
 ## 행정동 경계 자산
 
-원본은 `frontend/data/admin-dongs.geojson`입니다. Webpack 빌드가 내용 해시 파일명, gzip 파일, `dist/boundaries/manifest.json`을 자동 생성합니다. 프론트는 고정 manifest URL만 사용합니다. 경계는 초기 JS 번들에 포함되지 않으며 조회 시 다운로드합니다.
+원본은 `frontend/data/admin-dongs.geojson`입니다. Webpack 빌드가 내용 해시 파일명, gzip 파일, 시도별 brotli 파일(운영 빌드), `dist/boundaries/manifest.json`을 자동 생성합니다. 프론트는 고정 manifest URL만 사용합니다. 경계는 초기 JS 번들에 포함되지 않으며 조회 시 다운로드합니다.
 
 빌드에서 시도 코드(행정동 코드 앞 두 자리)마다 파일을 하나씩 생성하고 `manifest.files`에 시도 코드를 키로 기록합니다. 통근 검색 결과에 나온 시도 파일만 병렬로 받으며 파일별 해시를 캐시 키로 사용합니다. 구 앱/manifest 호환용 `manifest.file`과 전국 파일도 유지합니다. 따라서 배포에는 분할 파일과 전국 파일 모두 포함되어야 합니다. `publish.sh`의 `*.geojson.gz` 업로드가 분할 파일도 포함하므로 별도 AWS 설정 변경은 필요하지 않습니다. 법정동 자산은 이 분할의 대상이 아닙니다.
 
 지역별 파일에는 빌드에서 계산한 줌별 단순화 정점 인덱스(`lod`)도 포함됩니다. 원본 좌표와 함께 같은 해시 파일에 배포되므로 별도 LOD URL이나 무효화 경로는 없습니다. 개발 의존성의 `topojson-server`, `topojson-client`, `topojson-simplify`가 빌드 시 필요하며 브라우저에서 단순화하지 않습니다. 표시 등급과 보호 기준은 [통근 지도 행정동 경계](commute-boundaries.md#줌별-경계-정밀도)를 참고합니다.
 
 `publish.sh`는 일반 sync에서 `boundaries/*`를 제외하고 gzip 데이터를 동일한 `.geojson` 키에 `Content-Encoding: gzip`, `Content-Type: application/geo+json`, 1년 immutable 캐시로 먼저 업로드합니다. 원본이 약 28.65MB여서 CloudFront 자동 압축 크기 제한에 의존하지 않습니다. manifest는 경계 업로드 후 `no-cache,max-age=0,must-revalidate`로 교체하고 `/boundaries/manifest.json`을 무효화합니다. 이전 해시 경계 파일은 자동 삭제하지 않으며 사용 여부를 확인한 뒤 별도 정리합니다. 이 스크립트 변경만으로 AWS 배포가 실행되는 것은 아닙니다.
+
+### 시도별 경계 파일 brotli
+
+운영 빌드는 시도별 파일마다 brotli(품질 11) 파일 `.geojson.br`도 만듭니다. 경기 파일은 gzip 545KB가 brotli 325KB입니다. 전국 파일과 법정동 파일은 gzip만 둡니다. 개발 서버는 압축 시간 때문에 만들지 않습니다.
+
+S3 객체는 `Content-Encoding`이 하나로 고정이라 CloudFront가 `Accept-Encoding`에 맞춰 골라 주지 못합니다. 그래서 두 객체를 다른 키로 올리고 CloudFront Function이 요청 주소를 바꿔 고릅니다.
+
+| 키                             | `Content-Encoding` | 받는 요청                                  |
+| ------------------------------ | ------------------ | ------------------------------------------ |
+| `boundaries/<파일>.geojson`    | `gzip`             | `Accept-Encoding`에 `br`이 없는 요청(기존) |
+| `boundaries/<파일>.geojson.br` | `br`               | `Accept-Encoding`에 `br`이 있는 요청       |
+
+`publish.sh`는 두 객체를 모두 올립니다. 함수 [`deploy/cloudfront/boundary-encoding.js`](../deploy/cloudfront/boundary-encoding.js)는 viewer request에서 시도별 경계 주소에만 `.br`을 붙입니다. 캐시 키가 바뀐 주소로 잡히므로 캐시 정책은 그대로 둡니다. 프론트 코드와 manifest는 바뀌지 않습니다.
+
+함수는 스크립트가 연결하지 않습니다. CloudFront 배포(dev, prod)마다 한 번만 아래 순서로 연결합니다.
+
+1. 이 스크립트로 한 번 배포해 `.br` 객체를 먼저 올립니다. 함수를 먼저 연결하면 `.br` 객체가 없어 SPA 폴백의 `index.html`이 대신 나갑니다.
+2. CloudFront Functions에 런타임 `cloudfront-js-2.0`으로 함수를 만들고 게시합니다.
+3. 배포의 기본 동작(또는 `/boundaries/*` 동작)의 viewer request에 함수를 연결합니다. dev(`ETE1HH7V9K0PO`)에서 먼저 확인한 뒤 prod(`E3LI41UZ24V9WD`)에 연결합니다.
+4. `curl -sI -H 'Accept-Encoding: br' https://dev.jachwi-sunbae.kr/boundaries/<경기 파일>`의 `content-encoding`이 `br`이고, `Accept-Encoding: gzip`이면 `gzip`인지 확인합니다.
+
+함수를 떼면 모든 요청이 기존 gzip 객체를 받습니다. 경계 원본이 바뀌어 해시가 바뀌어도 `publish.sh`가 두 객체를 함께 올리므로 함수는 고치지 않습니다.
 
 ## CloudFront origin path
 
