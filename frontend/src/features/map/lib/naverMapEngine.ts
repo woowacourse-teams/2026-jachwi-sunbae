@@ -1,6 +1,7 @@
 import type { MapBounds, MapMarker } from '../model/Map';
 import { clampToSouthKorea, SOUTH_KOREA_BOUNDS } from './mapLocation';
 import { markerAnchorTransform } from './mapMarkerPresentation';
+import { enableNaverTransformZoom } from './naverZoomTransform';
 const clamp = (value: number, min: number, max: number): number => Math.min(Math.max(value, min), max);
 const NAVER_ZOOM_BASE = 20;
 const MIN_NAVER_ZOOM = 6;
@@ -134,6 +135,8 @@ export const naverEngine = (clientId: string, customStyleId?: string): LiveEngin
   createMap: (container, center, level) => {
     const start = clampToSouthKorea(center);
     const maps = naverMaps();
+    // 첫 지도를 만들기 전에 확대 애니메이션을 transform 경로로 바꾼다. 두 번째부터는 아무 일도 하지 않는다.
+    enableNaverTransformZoom(maps);
     return new maps.Map(container, {
       ...(customStyleId ? { gl: true, customStyleId } : {}),
       center: new maps.LatLng(start.latitude, start.longitude),

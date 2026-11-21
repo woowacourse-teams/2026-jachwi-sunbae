@@ -47,6 +47,8 @@ type NaverMapsNamespace = {
   LatLng: new (latitude: number, longitude: number) => NaverLatLng;
   LatLngBounds: new (sw: NaverLatLng, ne: NaverLatLng) => NaverLatLngBounds;
   Point?: new (x: number, y: number) => NaverPoint;
+  /** 공개 문서에 없는 내부 도구 모음. 모양이 바뀔 수 있어 `unknown`으로 받아 확인한 뒤 쓴다. */
+  Util?: unknown;
   Map: new (
     container: HTMLElement,
     options: {
