@@ -10,6 +10,8 @@ import static org.mockito.Mockito.verify;
 
 import com.jachwisunbae.property.service.dto.result.PhotoThumbnailBackfillResult;
 import com.jachwisunbae.property.storage.PhotoStorage;
+import com.jachwisunbae.support.MySqlTestContainer;
+import com.jachwisunbae.support.ResetDatabase;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import org.junit.jupiter.api.BeforeEach;
@@ -23,19 +25,16 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.transaction.annotation.Transactional;
 import org.testcontainers.containers.MySQLContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
 
 // 기존 사진의 썸네일을 나눠 만드는 흐름을 실제 MySQL로 검증한다. 사진 파일은 저장소 대역으로 둔다.
-@Testcontainers
+@ResetDatabase
 @SpringBootTest
 @ActiveProfiles("test")
 @Transactional
 class PropertyPhotoThumbnailBackfillServiceIntegrationTest {
 
-    @Container
     @ServiceConnection
-    private static final MySQLContainer<?> mysqlContainer = new MySQLContainer<>("mysql:8.4.10");
+    private static final MySQLContainer<?> mysqlContainer = MySqlTestContainer.get();
 
     private static final long MEMBER_ID = 1L;
     private static final long PROPERTY_ID = 10L;

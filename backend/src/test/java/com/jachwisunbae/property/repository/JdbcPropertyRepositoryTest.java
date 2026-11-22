@@ -8,6 +8,8 @@ import com.jachwisunbae.property.repository.query.PropertyListItemQuery;
 import com.jachwisunbae.property.repository.query.PropertyLocationQuery;
 import com.jachwisunbae.property.type.RoomOption;
 import com.jachwisunbae.property.type.UtilityOption;
+import com.jachwisunbae.support.MySqlTestContainer;
+import com.jachwisunbae.support.ResetDatabase;
 import java.math.BigDecimal;
 import java.sql.PreparedStatement;
 import java.sql.Statement;
@@ -26,17 +28,14 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.support.GeneratedKeyHolder;
 import org.springframework.jdbc.support.KeyHolder;
 import org.testcontainers.containers.MySQLContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
 
-@Testcontainers
+@ResetDatabase
 @JdbcTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 class JdbcPropertyRepositoryTest {
 
-    @Container
     @ServiceConnection
-    private static final MySQLContainer<?> mysqlContainer = new MySQLContainer<>("mysql:8.4.10");
+    private static final MySQLContainer<?> mysqlContainer = MySqlTestContainer.get();
 
     private static final long MEMBER_ID = 1L;
     private static final long OTHER_MEMBER_ID = 2L;

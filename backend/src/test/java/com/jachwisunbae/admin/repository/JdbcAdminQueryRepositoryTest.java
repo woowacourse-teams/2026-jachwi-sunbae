@@ -3,6 +3,8 @@ package com.jachwisunbae.admin.repository;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.jachwisunbae.admin.repository.query.AdminMember;
+import com.jachwisunbae.support.MySqlTestContainer;
+import com.jachwisunbae.support.ResetDatabase;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import org.junit.jupiter.api.DisplayName;
@@ -13,17 +15,14 @@ import org.springframework.boot.test.autoconfigure.jdbc.JdbcTest;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.testcontainers.containers.MySQLContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
 
-@Testcontainers
+@ResetDatabase
 @JdbcTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 class JdbcAdminQueryRepositoryTest {
 
-    @Container
     @ServiceConnection
-    static final MySQLContainer<?> MYSQL = new MySQLContainer<>("mysql:8.4.10");
+    static final MySQLContainer<?> MYSQL = MySqlTestContainer.get();
 
     @Autowired
     JdbcTemplate jdbc;

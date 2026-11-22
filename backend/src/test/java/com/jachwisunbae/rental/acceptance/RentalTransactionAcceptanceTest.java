@@ -7,6 +7,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.jachwisunbae.support.MySqlTestContainer;
+import com.jachwisunbae.support.ResetDatabase;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
@@ -31,18 +33,15 @@ import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 import org.testcontainers.containers.MySQLContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
 
-@Testcontainers
+@ResetDatabase
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
 @Import(RentalTransactionAcceptanceTest.FixedClockConfig.class)
 @Tag("acceptance")
 class RentalTransactionAcceptanceTest {
-    @Container
-    private static final MySQLContainer<?> MYSQL = new MySQLContainer<>("mysql:8.4.10");
+    private static final MySQLContainer<?> MYSQL = MySqlTestContainer.get();
     private static final Clock CLOCK = Clock.fixed(Instant.parse("2026-10-10T15:30:00Z"), ZoneOffset.UTC);
     @Autowired
     private JdbcTemplate jdbc;

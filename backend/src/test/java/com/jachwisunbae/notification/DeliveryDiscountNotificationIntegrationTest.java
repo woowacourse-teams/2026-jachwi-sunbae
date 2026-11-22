@@ -13,6 +13,8 @@ import com.jachwisunbae.notification.provider.PushSender;
 import com.jachwisunbae.notification.provider.PushSender.Push;
 import com.jachwisunbae.notification.service.DeliveryDiscountNotificationService;
 import com.jachwisunbae.notification.service.NotificationSettingsService;
+import com.jachwisunbae.support.MySqlTestContainer;
+import com.jachwisunbae.support.ResetDatabase;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -39,15 +41,13 @@ import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.testcontainers.containers.MySQLContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
 
-@Testcontainers
+@ResetDatabase
 @SpringBootTest(properties = "weather.notification.enabled=false")
 @ActiveProfiles("test")
 @Import(DeliveryDiscountNotificationIntegrationTest.ClockConfig.class)
 class DeliveryDiscountNotificationIntegrationTest {
-    @Container private static final MySQLContainer<?> MYSQL = new MySQLContainer<>("mysql:8.4.10");
+    private static final MySQLContainer<?> MYSQL = MySqlTestContainer.get();
     // 2026-11-04 18:00 KST
     private static final Instant EVENING = Instant.parse("2026-11-04T09:00:00Z");
     private static final LocalDate TODAY = LocalDate.of(2026, 11, 4);

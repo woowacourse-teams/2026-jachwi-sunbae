@@ -11,6 +11,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.jachwisunbae.auth.token.JwtTokenProvider;
 import com.jachwisunbae.member.entity.Member;
 import com.jachwisunbae.member.repository.MemberRepository;
+import com.jachwisunbae.support.MySqlTestContainer;
+import com.jachwisunbae.support.ResetDatabase;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -33,10 +35,8 @@ import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 import org.testcontainers.containers.MySQLContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
 
-@Testcontainers
+@ResetDatabase
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
@@ -48,8 +48,7 @@ class DeliveryDiscountOfferApiIntegrationTest {
     private static final LocalDate TODAY = LocalDate.of(2026, 10, 30);
     private static final LocalDateTime VERIFIED_AT = LocalDateTime.of(2026, 10, 29, 9, 0);
 
-    @Container
-    private static final MySQLContainer<?> MYSQL = new MySQLContainer<>("mysql:8.4.10");
+    private static final MySQLContainer<?> MYSQL = MySqlTestContainer.get();
 
     @Autowired
     private MockMvc mvc;

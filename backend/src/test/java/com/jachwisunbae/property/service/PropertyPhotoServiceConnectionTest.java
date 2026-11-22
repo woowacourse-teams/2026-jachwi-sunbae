@@ -7,6 +7,8 @@ import static org.mockito.Mockito.when;
 import com.jachwisunbae.property.storage.PhotoContent;
 import com.jachwisunbae.property.storage.PhotoStorage;
 import com.jachwisunbae.property.storage.PhotoStream;
+import com.jachwisunbae.support.MySqlTestContainer;
+import com.jachwisunbae.support.ResetDatabase;
 import com.zaxxer.hikari.HikariDataSource;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -27,19 +29,16 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.testcontainers.containers.MySQLContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
 
 // 사진 조회는 S3에서 바이트를 받는 동안 DB 커넥션을 잡지 않아야 한다.
 // 커넥션을 잡은 채 기다리면 목록 화면의 사진 동시 요청만으로 커넥션 풀이 차서 다른 API가 대기한다.
-@Testcontainers
+@ResetDatabase
 @SpringBootTest
 @ActiveProfiles("test")
 class PropertyPhotoServiceConnectionTest {
 
-    @Container
     @ServiceConnection
-    private static final MySQLContainer<?> MYSQL = new MySQLContainer<>("mysql:8.4.10");
+    private static final MySQLContainer<?> MYSQL = MySqlTestContainer.get();
 
     @Autowired
     private PropertyPhotoService service;

@@ -7,6 +7,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.jachwisunbae.support.MySqlTestContainer;
+import com.jachwisunbae.support.ResetDatabase;
 import com.jachwisunbae.transit.service.AdminDongImportService;
 import com.jachwisunbae.transit.service.GtfsImportService;
 import com.jachwisunbae.transit.support.MutableClock;
@@ -35,12 +37,10 @@ import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 import org.testcontainers.containers.MySQLContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
 
 // 목적지 옆 정류장 S로 버스 101이 N1에서 15분, 버스 202가 길 건너편 N2에서 20분 걸려 들어온다.
 // N1과 N2는 이름이 같은 정류장이다.
-@Testcontainers
+@ResetDatabase
 @SpringBootTest
 @AutoConfigureMockMvc(print = MockMvcPrint.NONE)
 @ActiveProfiles("test")
@@ -48,8 +48,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 @Import(MutableClockConfig.class)
 class CommuteStationDedupeAcceptanceTest {
 
-    @Container
-    private static final MySQLContainer<?> MYSQL = new MySQLContainer<>("mysql:8.4.10");
+    private static final MySQLContainer<?> MYSQL = MySqlTestContainer.get();
     private static final Path FIXTURE = createFixture();
 
     @Autowired

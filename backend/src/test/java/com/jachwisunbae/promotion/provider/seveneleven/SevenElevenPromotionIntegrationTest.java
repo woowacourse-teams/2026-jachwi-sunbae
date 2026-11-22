@@ -18,6 +18,8 @@ import com.jachwisunbae.promotion.domain.ConvenienceBrand;
 import com.jachwisunbae.promotion.domain.PromotionProduct;
 import com.jachwisunbae.promotion.repository.JdbcPromotionProductRepository;
 import com.jachwisunbae.promotion.service.PromotionCollectionService;
+import com.jachwisunbae.support.MySqlTestContainer;
+import com.jachwisunbae.support.ResetDatabase;
 import java.time.LocalDateTime;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
@@ -33,11 +35,9 @@ import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.testcontainers.containers.MySQLContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
 
 // 세븐일레븐 수집을 켠 애플리케이션에서 수집 → MySQL 저장 → 기존 조회 API까지 확인한다.
-@Testcontainers
+@ResetDatabase
 @SpringBootTest(properties = "promotion.collection.seven-eleven.enabled=true")
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
@@ -46,8 +46,7 @@ class SevenElevenPromotionIntegrationTest {
     private static final ConvenienceBrand BRAND = ConvenienceBrand.SEVEN_ELEVEN;
     private static final LocalDateTime PREVIOUS_AT = LocalDateTime.of(2026, 10, 28, 4, 0);
 
-    @Container
-    private static final MySQLContainer<?> MYSQL = new MySQLContainer<>("mysql:8.4.10");
+    private static final MySQLContainer<?> MYSQL = MySqlTestContainer.get();
 
     @Autowired
     private MockMvc mvc;

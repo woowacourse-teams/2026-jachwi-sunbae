@@ -13,6 +13,8 @@ import com.jachwisunbae.property.repository.query.PropertyChecklistApplicationQu
 import com.jachwisunbae.property.repository.query.PropertyChecklistItemQuery;
 import com.jachwisunbae.property.repository.query.PropertyChecklistProgressQuery;
 import com.jachwisunbae.property.type.PropertyChecklistSourceType;
+import com.jachwisunbae.support.MySqlTestContainer;
+import com.jachwisunbae.support.ResetDatabase;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -25,18 +27,15 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 import org.testcontainers.containers.MySQLContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
 
-@Testcontainers
+@ResetDatabase
 @SpringBootTest
 @ActiveProfiles("test")
 @Transactional
 class PropertyChecklistServiceIntegrationTest {
 
-    @Container
     @ServiceConnection
-    private static final MySQLContainer<?> mysqlContainer = new MySQLContainer<>("mysql:8.4.10");
+    private static final MySQLContainer<?> mysqlContainer = MySqlTestContainer.get();
 
     private static final long MEMBER_ID = 1L;
     private static final long OTHER_MEMBER_ID = 2L;

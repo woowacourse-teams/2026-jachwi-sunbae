@@ -3,6 +3,7 @@ package com.jachwisunbae.rental.acceptance;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.jachwisunbae.support.MySqlTestContainer;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -21,15 +22,12 @@ import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.datasource.DriverManagerDataSource;
 import org.testcontainers.containers.MySQLContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
 
-@Testcontainers
 @Tag("acceptance")
 class RentalImportAcceptanceTest {
-    @Container
-    private static final MySQLContainer<?> MYSQL = new MySQLContainer<>("mysql:8.4.10")
-        .withDatabaseName("rental_import").withUsername("rental_app").withPassword("import_test_password");
+    private static final MySQLContainer<?> MYSQL = MySqlTestContainer.get();
+    private static final String APP_USERNAME = "rental_app";
+    private static final String APP_PASSWORD = "import_test_password";
     private static JdbcTemplate databaseAdmin;
     private JdbcTemplate admin;
     private String databaseName;
@@ -40,6 +38,8 @@ class RentalImportAcceptanceTest {
     @BeforeAll
     static void configureDataOnlyAccount() {
         databaseAdmin = new JdbcTemplate(new DriverManagerDataSource(MYSQL.getJdbcUrl(), "root", MYSQL.getPassword()));
+        // 공유 컨테이너에는 적재 전용 계정이 없으므로 권한 없이 만들고, 테스트마다 새 DB에만 데이터 권한을 준다.
+        databaseAdmin.execute("CREATE USER IF NOT EXISTS 'rental_app'@'%' IDENTIFIED BY '" + APP_PASSWORD + "'");
         databaseAdmin.execute("REVOKE ALL PRIVILEGES, GRANT OPTION FROM 'rental_app'@'%'");
     }
 
@@ -61,7 +61,7 @@ class RentalImportAcceptanceTest {
     @Test
     void importsReplacesAndSkipsRepeatedDataWithoutCreatePrivilege() throws Exception {
         var grants = new JdbcTemplate(new DriverManagerDataSource(
-            jdbcUrl, MYSQL.getUsername(), MYSQL.getPassword())).queryForList("SHOW GRANTS", String.class);
+            jdbcUrl, APP_USERNAME, APP_PASSWORD)).queryForList("SHOW GRANTS", String.class);
         assertThat(grants).noneMatch(grant -> grant.contains("CREATE") || grant.contains("ALL PRIVILEGES"));
 
         assertThat(runImport(true)).isZero();
@@ -218,8 +218,8 @@ class RentalImportAcceptanceTest {
         builder.environment().put("DB_HOST", apply ? MYSQL.getHost() : "unreachable.invalid");
         builder.environment().put("DB_PORT", MYSQL.getMappedPort(3306).toString());
         builder.environment().put("DB_NAME", databaseName);
-        builder.environment().put("DB_USERNAME", MYSQL.getUsername());
-        builder.environment().put("DB_PASSWORD", MYSQL.getPassword());
+        builder.environment().put("DB_USERNAME", APP_USERNAME);
+        builder.environment().put("DB_PASSWORD", APP_PASSWORD);
         Process process = builder.start();
         boolean finished = process.waitFor(45, TimeUnit.SECONDS);
         if (!finished) {

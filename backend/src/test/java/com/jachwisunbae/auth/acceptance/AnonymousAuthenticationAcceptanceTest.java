@@ -22,6 +22,8 @@ import com.jachwisunbae.auth.token.JwtTokenProvider;
 import com.jachwisunbae.common.exception.client.InvalidInputException;
 import com.jachwisunbae.common.exception.errorcode.ErrorCode;
 import com.jachwisunbae.common.exception.server.ServiceUnavailableException;
+import com.jachwisunbae.support.MySqlTestContainer;
+import com.jachwisunbae.support.ResetDatabase;
 import com.nimbusds.jwt.SignedJWT;
 import jakarta.servlet.http.Cookie;
 import java.time.LocalDateTime;
@@ -49,18 +51,15 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultMatcher;
 import org.springframework.web.util.UriComponentsBuilder;
 import org.testcontainers.containers.MySQLContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
 
-@Testcontainers
+@ResetDatabase
 @SpringBootTest
 @AutoConfigureMockMvc(print = MockMvcPrint.NONE)
 @ActiveProfiles("test")
 @Tag("acceptance")
 class AnonymousAuthenticationAcceptanceTest {
 
-    @Container
-    private static final MySQLContainer<?> MYSQL = new MySQLContainer<>("mysql:8.4.10");
+    private static final MySQLContainer<?> MYSQL = MySqlTestContainer.get();
 
     @Autowired
     private JdbcTemplate jdbcTemplate;

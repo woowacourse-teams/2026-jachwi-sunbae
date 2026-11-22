@@ -12,6 +12,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jachwisunbae.auth.domain.RefreshToken;
 import com.jachwisunbae.auth.repository.RefreshTokenRepository;
 import com.jachwisunbae.auth.token.JwtTokenProvider;
+import com.jachwisunbae.support.MySqlTestContainer;
+import com.jachwisunbae.support.ResetDatabase;
 import jakarta.servlet.http.Cookie;
 import java.time.LocalDateTime;
 import org.junit.jupiter.api.BeforeEach;
@@ -29,18 +31,15 @@ import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 import org.testcontainers.containers.MySQLContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
 
-@Testcontainers
+@ResetDatabase
 @SpringBootTest
 @AutoConfigureMockMvc(print = MockMvcPrint.NONE)
 @ActiveProfiles("test")
 @Tag("acceptance")
 class MemberDeletionAcceptanceTest {
 
-    @Container
-    private static final MySQLContainer<?> MYSQL = new MySQLContainer<>("mysql:8.4.10");
+    private static final MySQLContainer<?> MYSQL = MySqlTestContainer.get();
 
     @Autowired
     private JdbcTemplate jdbc;

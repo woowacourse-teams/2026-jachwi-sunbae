@@ -3,6 +3,8 @@ package com.jachwisunbae.rental.importer;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import com.jachwisunbae.support.MySqlTestContainer;
+import com.jachwisunbae.support.ResetDatabase;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -14,19 +16,16 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.testcontainers.containers.MySQLContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
 
 // DDL은 MySQL에서 바로 커밋되므로 테스트 트랜잭션 없이 실행하고, 바꾼 스키마는 테스트마다 되돌린다.
-@Testcontainers
+@ResetDatabase
 @JdbcTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @Transactional(propagation = Propagation.NOT_SUPPORTED)
 class RentalSchemaValidatorTest {
 
-    @Container
     @ServiceConnection
-    private static final MySQLContainer<?> mysqlContainer = new MySQLContainer<>("mysql:8.4.10");
+    private static final MySQLContainer<?> mysqlContainer = MySqlTestContainer.get();
 
     @Autowired
     private JdbcTemplate jdbcTemplate;

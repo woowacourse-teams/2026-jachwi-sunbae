@@ -23,6 +23,8 @@ import com.jachwisunbae.auth.support.FakeOAuthProvider;
 import com.jachwisunbae.auth.token.JwtTokenProvider;
 import com.jachwisunbae.common.exception.errorcode.ErrorCode;
 import com.jachwisunbae.common.exception.server.ServiceUnavailableException;
+import com.jachwisunbae.support.MySqlTestContainer;
+import com.jachwisunbae.support.ResetDatabase;
 import com.nimbusds.jwt.SignedJWT;
 import jakarta.servlet.http.Cookie;
 import java.time.Clock;
@@ -65,12 +67,10 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.web.util.UriComponentsBuilder;
 import org.testcontainers.containers.MySQLContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
 
 // 앱 네이티브 로그인(카카오 SDK, Apple)으로 받은 ID Token을 WebView가 제출하는 흐름을 검증한다.
 // 제공자의 공개 키는 테스트용 서버가 내려주므로 실제 자격 증명 없이 서명·발급자·대상·nonce 검증을 그대로 실행한다.
-@Testcontainers
+@ResetDatabase
 @SpringBootTest
 @AutoConfigureMockMvc(print = MockMvcPrint.NONE)
 @ActiveProfiles("test")
@@ -82,8 +82,7 @@ class NativeOAuthAcceptanceTest {
     private static final String APPLE_BUNDLE_ID = "kr.jachwisunbae.app";
     private static final String APPLE_SERVICES_ID = "kr.jachwisunbae.web";
 
-    @Container
-    private static final MySQLContainer<?> MYSQL = new MySQLContainer<>("mysql:8.4.10");
+    private static final MySQLContainer<?> MYSQL = MySqlTestContainer.get();
     private static final FakeOAuthProvider PROVIDER = FakeOAuthProvider.start();
 
     @Autowired

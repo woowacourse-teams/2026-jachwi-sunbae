@@ -14,6 +14,8 @@ import com.jachwisunbae.member.repository.MemberRepository;
 import com.jachwisunbae.promotion.domain.ConvenienceBrand;
 import com.jachwisunbae.promotion.provider.emart24.Emart24PromotionFetcher;
 import com.jachwisunbae.promotion.repository.JdbcPromotionProductRepository;
+import com.jachwisunbae.support.MySqlTestContainer;
+import com.jachwisunbae.support.ResetDatabase;
 import java.time.LocalDateTime;
 import java.util.List;
 import org.junit.jupiter.api.AfterEach;
@@ -32,10 +34,8 @@ import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.testcontainers.containers.MySQLContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
 
-@Testcontainers
+@ResetDatabase
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
@@ -43,8 +43,7 @@ class PromotionApiIntegrationTest {
 
     private static final ConvenienceBrand BRAND = ConvenienceBrand.EMART24;
 
-    @Container
-    private static final MySQLContainer<?> MYSQL = new MySQLContainer<>("mysql:8.4.10");
+    private static final MySQLContainer<?> MYSQL = MySqlTestContainer.get();
 
     @Autowired
     private MockMvc mvc;

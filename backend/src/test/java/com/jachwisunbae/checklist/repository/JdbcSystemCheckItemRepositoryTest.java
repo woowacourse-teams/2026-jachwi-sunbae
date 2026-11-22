@@ -6,6 +6,8 @@ import com.jachwisunbae.checklist.entity.SystemCheckItem;
 import com.jachwisunbae.checklist.type.CheckItemType;
 import com.jachwisunbae.checklist.type.CheckItemCategory;
 import com.jachwisunbae.checklist.type.CheckStage;
+import com.jachwisunbae.support.MySqlTestContainer;
+import com.jachwisunbae.support.ResetDatabase;
 import java.time.LocalDateTime;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
@@ -18,17 +20,14 @@ import org.springframework.boot.testcontainers.service.connection.ServiceConnect
 import org.springframework.context.annotation.Import;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.testcontainers.containers.MySQLContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
 
-@Testcontainers
+@ResetDatabase
 @JdbcTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 class JdbcSystemCheckItemRepositoryTest {
 
-    @Container
     @ServiceConnection
-    private static final MySQLContainer<?> mysqlContainer = new MySQLContainer<>("mysql:8.0.33");
+    private static final MySQLContainer<?> mysqlContainer = MySqlTestContainer.get();
 
     private JdbcSystemCheckItemRepository repository;
 

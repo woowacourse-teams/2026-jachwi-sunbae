@@ -3,6 +3,8 @@ package com.jachwisunbae.bookmark.repository;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.jachwisunbae.member.repository.JdbcMemberRepository;
+import com.jachwisunbae.support.MySqlTestContainer;
+import com.jachwisunbae.support.ResetDatabase;
 import java.time.LocalDateTime;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -13,17 +15,14 @@ import org.springframework.boot.test.autoconfigure.jdbc.JdbcTest;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.testcontainers.containers.MySQLContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
 
-@Testcontainers
+@ResetDatabase
 @JdbcTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 class JdbcAdminDongBookmarkRepositoryTest {
 
-    @Container
     @ServiceConnection
-    private static final MySQLContainer<?> mysqlContainer = new MySQLContainer<>("mysql:8.4.10");
+    private static final MySQLContainer<?> mysqlContainer = MySqlTestContainer.get();
 
     private static final long MEMBER_ID = 1L;
     private static final long OTHER_MEMBER_ID = 2L;

@@ -19,6 +19,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jachwisunbae.notification.domain.LifeWeatherReport.Condition;
 import com.jachwisunbae.notification.domain.LifeWeatherReport.Notice;
 import com.jachwisunbae.common.exception.client.InvalidInputException;
+import com.jachwisunbae.support.MySqlTestContainer;
+import com.jachwisunbae.support.ResetDatabase;
 import com.jachwisunbae.weather.domain.ForecastTimes;
 import com.jachwisunbae.weather.domain.GridPoint;
 import com.jachwisunbae.weather.domain.HourlyForecast;
@@ -74,16 +76,14 @@ import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.testcontainers.containers.MySQLContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
 
-@Testcontainers
+@ResetDatabase
 @SpringBootTest(properties = {"weather.notification.enabled=false", "weather.notification.test-push-key=" + WeatherNotificationIntegrationTest.TEST_PUSH_KEY})
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
 @Import(WeatherNotificationIntegrationTest.ClockConfig.class)
 class WeatherNotificationIntegrationTest {
-    @Container private static final MySQLContainer<?> MYSQL = new MySQLContainer<>("mysql:8.4.10");
+    private static final MySQLContainer<?> MYSQL = MySqlTestContainer.get();
     private static final Instant MORNING = Instant.parse("2026-10-24T22:00:00Z");
     private static final LocalDate DATE = LocalDate.of(2026, 10, 25);
     private static final GridPoint GRID = new GridPoint(60, 127);

@@ -21,6 +21,8 @@ import com.jachwisunbae.property.service.dto.result.PropertyPhotoUploadResult;
 import com.jachwisunbae.property.storage.PhotoContent;
 import com.jachwisunbae.property.storage.PhotoStorage;
 import com.jachwisunbae.property.storage.PhotoStream;
+import com.jachwisunbae.support.MySqlTestContainer;
+import com.jachwisunbae.support.ResetDatabase;
 import java.io.InputStream;
 import java.util.Base64;
 import org.junit.jupiter.api.BeforeEach;
@@ -36,19 +38,16 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.transaction.annotation.Transactional;
 import org.testcontainers.containers.MySQLContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
 
 // 사진 파일은 S3에 올라가므로 저장소만 대역으로 두고, 사진 메타데이터와 대표 사진은 실제 MySQL로 검증한다.
-@Testcontainers
+@ResetDatabase
 @SpringBootTest
 @ActiveProfiles("test")
 @Transactional
 class PropertyPhotoServiceIntegrationTest {
 
-    @Container
     @ServiceConnection
-    private static final MySQLContainer<?> mysqlContainer = new MySQLContainer<>("mysql:8.4.10");
+    private static final MySQLContainer<?> mysqlContainer = MySqlTestContainer.get();
 
     private static final long MEMBER_ID = 1L;
     private static final long OTHER_MEMBER_ID = 2L;

@@ -9,6 +9,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jachwisunbae.rental.service.AdminDongRentService;
+import com.jachwisunbae.support.MySqlTestContainer;
+import com.jachwisunbae.support.ResetDatabase;
 import com.jachwisunbae.transit.service.AdminDongImportService;
 import com.jachwisunbae.transit.service.GtfsImportService;
 import com.jachwisunbae.transit.support.MutableClock;
@@ -37,12 +39,10 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 import org.testcontainers.containers.MySQLContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
 
 // 목적지 옆 정류장 S가 있는 남가동과, 버스 101로 15분 걸리는 정류장 N이 있는 북가동이 있다.
 // 시세는 북가동에만 있다.
-@Testcontainers
+@ResetDatabase
 @SpringBootTest
 @AutoConfigureMockMvc(print = MockMvcPrint.NONE)
 @ActiveProfiles("test")
@@ -50,8 +50,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 @Import(MutableClockConfig.class)
 class CommuteRentAreaAcceptanceTest {
 
-    @Container
-    private static final MySQLContainer<?> MYSQL = new MySQLContainer<>("mysql:8.4.10");
+    private static final MySQLContainer<?> MYSQL = MySqlTestContainer.get();
     private static final Path FIXTURE = createFixture();
     private static final String SOUTH_DONG = "11010510";
     private static final String NORTH_DONG = "11010520";

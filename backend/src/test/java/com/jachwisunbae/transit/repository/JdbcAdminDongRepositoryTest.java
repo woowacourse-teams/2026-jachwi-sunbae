@@ -4,6 +4,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.within;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.jachwisunbae.support.MySqlTestContainer;
+import com.jachwisunbae.support.ResetDatabase;
 import com.jachwisunbae.transit.domain.AdminDong;
 import com.jachwisunbae.transit.domain.vo.Coordinate;
 import com.jachwisunbae.transit.provider.geojson.GeoJsonBoundaries;
@@ -15,17 +17,9 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.jdbc.datasource.DriverManagerDataSource;
-import org.testcontainers.containers.MySQLContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
 
-@Testcontainers
+@ResetDatabase
 class JdbcAdminDongRepositoryTest {
-
-    @Container
-    private static final MySQLContainer<?> MYSQL = new MySQLContainer<>("mysql:8.4.10")
-            .withUrlParam("rewriteBatchedStatements", "true");
 
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
@@ -34,8 +28,7 @@ class JdbcAdminDongRepositoryTest {
 
     @BeforeAll
     static void setUp() {
-        DataSource dataSource = new DriverManagerDataSource(
-                MYSQL.getJdbcUrl(), MYSQL.getUsername(), MYSQL.getPassword());
+        DataSource dataSource = MySqlTestContainer.dataSource("rewriteBatchedStatements=true");
         Flyway.configure().dataSource(dataSource).load().migrate();
         jdbcTemplate = new JdbcTemplate(dataSource);
         repository = new JdbcAdminDongRepository(jdbcTemplate, OBJECT_MAPPER);

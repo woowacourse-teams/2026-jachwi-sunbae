@@ -2,6 +2,8 @@ package com.jachwisunbae.transit.repository;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.jachwisunbae.support.MySqlTestContainer;
+import com.jachwisunbae.support.ResetDatabase;
 import com.jachwisunbae.transit.domain.GtfsEdge;
 import com.jachwisunbae.transit.domain.GtfsFeed;
 import com.jachwisunbae.transit.domain.GtfsRoute;
@@ -17,26 +19,17 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.jdbc.datasource.DriverManagerDataSource;
-import org.testcontainers.containers.MySQLContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
 
-@Testcontainers
+@ResetDatabase
 class JdbcGtfsNetworkRepositoryTest {
 
-    @Container
     // 운영과 같이 배치 저장을 여러 행 INSERT로 묶어 보내는 설정으로 검증한다.
-    private static final MySQLContainer<?> MYSQL = new MySQLContainer<>("mysql:8.4.10")
-            .withUrlParam("rewriteBatchedStatements", "true");
-
     private static JdbcTemplate jdbcTemplate;
     private static JdbcGtfsNetworkRepository repository;
 
     @BeforeAll
     static void setUp() {
-        DataSource dataSource = new DriverManagerDataSource(
-                MYSQL.getJdbcUrl(), MYSQL.getUsername(), MYSQL.getPassword());
+        DataSource dataSource = MySqlTestContainer.dataSource("rewriteBatchedStatements=true");
         Flyway.configure().dataSource(dataSource).load().migrate();
         jdbcTemplate = new JdbcTemplate(dataSource);
         repository = new JdbcGtfsNetworkRepository(jdbcTemplate);
