@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useSyncExternalStore } from 'react';
 
 import { reverseGeocode } from '@/features/map/api/mapApi';
 import { useCurrentLocation } from '@/features/map/lib/currentLocationStore';
@@ -16,34 +16,53 @@ import { weatherQueryKeys } from './weatherQueryKeys';
 
 type PermissionState = 'granted' | 'denied' | 'prompt' | 'unknown';
 
-/** 위치 권한을 읽고 바뀔 때마다 알린다. 권한 API가 없는 브라우저는 알 수 없음(`unknown`)이다. */
-const useLocationPermission = (): PermissionState => {
-  const [state, setState] = useState<PermissionState>('unknown');
-  useEffect(() => {
-    let status: PermissionStatus | null = null;
-    let isActive = true;
-    const update = () => {
-      if (isActive && status !== null) setState(status.state);
-    };
+// 위치 권한 구독. 처음 구독할 때 권한을 묻고, 마지막 구독이 끝나면 처음(`unknown`)으로 돌아가 다음 마운트에 다시 묻는다.
+let permissionState: PermissionState = 'unknown';
+let permissionStatus: PermissionStatus | null = null;
+let permissionRequest = 0;
+const permissionListeners = new Set<() => void>();
+
+const publishPermission = () => {
+  if (permissionStatus === null) return;
+  permissionState = permissionStatus.state;
+  permissionListeners.forEach((listener) => listener());
+};
+
+const subscribePermission = (listener: () => void) => {
+  permissionListeners.add(listener);
+  if (permissionListeners.size === 1) {
+    const request = ++permissionRequest;
     navigator.permissions
       ?.query({ name: 'geolocation' })
       .then((result) => {
-        status = result;
-        update();
-        result.addEventListener('change', update);
+        if (request !== permissionRequest || permissionListeners.size === 0) return;
+        permissionStatus = result;
+        result.addEventListener('change', publishPermission);
+        publishPermission();
       })
       .catch(() => undefined);
-    return () => {
-      isActive = false;
-      status?.removeEventListener('change', update);
-    };
-  }, []);
-  return state;
+  }
+  return () => {
+    permissionListeners.delete(listener);
+    if (permissionListeners.size > 0) return;
+    permissionRequest += 1;
+    permissionStatus?.removeEventListener('change', publishPermission);
+    permissionStatus = null;
+    permissionState = 'unknown';
+  };
 };
+
+/** 위치 권한을 읽고 바뀔 때마다 알린다. 권한 API가 없는 브라우저는 알 수 없음(`unknown`)이다. */
+const useLocationPermission = (): PermissionState =>
+  useSyncExternalStore(
+    subscribePermission,
+    () => permissionState,
+    () => 'unknown',
+  );
 
 /**
  * 헤더에 띄우는 현재 위치와 날씨. 알림 설정과 상관없이 읽기만 하고, 위치 권한은 묻지 않는다.
- * 위치는 앱(웹)에 들어올 때 `useEntryLocation`이 받아 둔다. 이번에 받은 현재 위치가 있거나,
+ * 위치는 앱(웹)에 들어올 때 `main.tsx`가 `requestEntryLocation`으로 받아 둔다. 이번에 받은 현재 위치가 있거나,
  * 권한이 허용돼 있고 전에 받은 위치가 있으면 날씨를 읽는다. 마이에서 위치를 끄면 읽지 않는다.
  */
 export const useHeaderWeather = () => {

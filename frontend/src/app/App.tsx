@@ -1,4 +1,3 @@
-import { useEntryLocation } from '@/features/weather/model/useEntryLocation';
 import { getPublicConfig } from '@/shared/config/publicConfig';
 import type { PublicConfig } from '@/shared/config/publicConfigTypes';
 import StatusPanel from '@/shared/ui/status-panel/StatusPanel';
@@ -16,8 +15,6 @@ type AppProps = {
 };
 
 const App = ({ config }: AppProps) => {
-  // 들어올 때 현재 위치를 한 번 받는다. 헤더 날씨와 지도가 이 위치를 쓴다.
-  useEntryLocation();
   let resolvedConfig: PublicConfig;
 
   try {
