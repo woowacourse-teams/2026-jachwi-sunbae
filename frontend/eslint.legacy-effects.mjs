@@ -78,7 +78,6 @@ export const legacyEffectFiles = [
   'src/shared/ui/bottom-tab-bar/MobileBottomTabs.tsx',
   'src/shared/ui/confirm-dialog/ConfirmDialog.tsx',
   'src/shared/ui/list-detail-layout/ListDetailLayout.tsx',
-  'src/shared/ui/map-badge-rail/MapBadgeRail.tsx',
   'src/shared/ui/tooltip/Tooltip.tsx',
   'src/shared/ui/wheel-picker/WheelPicker.tsx',
 ];
@@ -104,6 +103,5 @@ export const legacyTimerFiles = [
   'src/pages/property-compare/hooks/usePropertyComparison.ts',
   'src/pages/property-detail/PropertyDetailPage.tsx',
   'src/shared/ui/bottom-tab-bar/MobileBottomTabs.tsx',
-  'src/shared/ui/map-badge-rail/MapBadgeRail.tsx',
   'src/shared/ui/wheel-picker/WheelPicker.tsx',
 ];
