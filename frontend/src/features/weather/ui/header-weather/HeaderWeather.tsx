@@ -1,9 +1,11 @@
 import { css, keyframes } from '@emotion/css';
 import type { ReactNode } from 'react';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 
 import { useRecentEdit } from '@/features/property/hooks/useRecentEdit';
+import useMediaQuery from '@/shared/lib/hooks/useMediaQuery';
+import useTimeout from '@/shared/lib/hooks/useTimeout';
 import { openNativeSettings, supportsNativePush } from '@/shared/lib/native-app/nativePush';
 
 import { readLastWeatherCoordinate, writeLastWeatherCoordinate } from '../../lib/lastWeatherCoordinate';
@@ -53,9 +55,11 @@ const HeaderWeather = ({ className }: { className?: string }) => {
   const resumeAt = resumeEdit?.at ?? null;
   const [slide, setSlide] = useState(0);
   // 새로 고친 기록이 생기면 그 안내부터 보여 준다(안내 목록의 첫 칸).
-  useEffect(() => {
+  const [shownResumeAt, setShownResumeAt] = useState(resumeAt);
+  if (shownResumeAt !== resumeAt) {
+    setShownResumeAt(resumeAt);
     if (resumeAt !== null) setSlide(0);
-  }, [resumeAt]);
+  }
   const [isPaused, setIsPaused] = useState(false);
 
   const slides: Slide[] = [];
@@ -163,12 +167,12 @@ const HeaderWeather = ({ className }: { className?: string }) => {
   const activeIndex = slide % Math.max(slides.length, 1);
   const isRotating = slides.length > 1 && !isPaused;
   const activeKey = slides[activeIndex]?.key;
-  useEffect(() => {
-    if (!isRotating || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-    const duration = activeKey === 'weather' ? WEATHER_MS : PROMPT_MS;
-    const timer = window.setTimeout(() => setSlide((current) => current + 1), duration);
-    return () => window.clearTimeout(timer);
-  }, [isRotating, slide, activeKey]);
+  const prefersReducedMotion = useMediaQuery('(prefers-reduced-motion: reduce)');
+  useTimeout(
+    () => setSlide((current) => current + 1),
+    isRotating && !prefersReducedMotion ? (activeKey === 'weather' ? WEATHER_MS : PROMPT_MS) : null,
+    `${slide}:${activeKey}`,
+  );
 
   if (slides.length === 0) return null;
 
