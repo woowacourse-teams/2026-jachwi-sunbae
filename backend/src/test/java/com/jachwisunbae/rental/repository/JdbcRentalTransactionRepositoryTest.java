@@ -12,6 +12,7 @@ import com.jachwisunbae.rental.domain.vo.RentalPrice;
 import com.jachwisunbae.rental.domain.vo.RentalSource;
 import com.jachwisunbae.rental.repository.query.RentalDatasetInfo;
 import com.jachwisunbae.rental.repository.query.RentalTransactionEntry;
+import com.jachwisunbae.support.MySqlJdbcTest;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -20,22 +21,10 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
-import org.springframework.boot.test.autoconfigure.jdbc.JdbcTest;
-import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.testcontainers.containers.MySQLContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
 
-@Testcontainers
-@JdbcTest
-@AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
+@MySqlJdbcTest
 class JdbcRentalTransactionRepositoryTest {
-
-    @Container
-    @ServiceConnection
-    private static final MySQLContainer<?> mysqlContainer = new MySQLContainer<>("mysql:8.4.10");
 
     private static final String DATASET_KEY = RentalSnapshot.DATASET_KEY;
     private static final LegalDong SILLIM = new LegalDong("1162010200", "서울특별시 관악구 신림동");

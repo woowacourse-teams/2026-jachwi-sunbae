@@ -23,6 +23,7 @@ import com.jachwisunbae.auth.support.FakeOAuthProvider;
 import com.jachwisunbae.auth.token.JwtTokenProvider;
 import com.jachwisunbae.common.exception.errorcode.ErrorCode;
 import com.jachwisunbae.common.exception.server.ServiceUnavailableException;
+import com.jachwisunbae.support.IntegrationTest;
 import com.nimbusds.jwt.SignedJWT;
 import jakarta.servlet.http.Cookie;
 import java.time.Clock;
@@ -50,40 +51,26 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.autoconfigure.web.servlet.MockMvcPrint;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.dao.DataAccessResourceFailureException;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
-import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.web.util.UriComponentsBuilder;
-import org.testcontainers.containers.MySQLContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
 
 // 앱 네이티브 로그인(카카오 SDK, Apple)으로 받은 ID Token을 WebView가 제출하는 흐름을 검증한다.
 // 제공자의 공개 키는 테스트용 서버가 내려주므로 실제 자격 증명 없이 서명·발급자·대상·nonce 검증을 그대로 실행한다.
-@Testcontainers
-@SpringBootTest
-@AutoConfigureMockMvc(print = MockMvcPrint.NONE)
-@ActiveProfiles("test")
 @Tag("acceptance")
-class NativeOAuthAcceptanceTest {
+class NativeOAuthAcceptanceTest extends IntegrationTest {
 
     private static final String KAKAO_NATIVE_KEY = "kakao-native-app-key";
     private static final String KAKAO_WEB_KEY = "kakao-rest-api-key";
     private static final String APPLE_BUNDLE_ID = "kr.jachwisunbae.app";
     private static final String APPLE_SERVICES_ID = "kr.jachwisunbae.web";
 
-    @Container
-    private static final MySQLContainer<?> MYSQL = new MySQLContainer<>("mysql:8.4.10");
     private static final FakeOAuthProvider PROVIDER = FakeOAuthProvider.start();
 
     @Autowired
@@ -102,16 +89,13 @@ class NativeOAuthAcceptanceTest {
     @Autowired
     private OAuthUnlinkService unlinkService;
 
-    @MockitoSpyBean
+    @Autowired
     private OAuthProviderClient providerClient;
-    @MockitoSpyBean
+    @Autowired
     private MemberIdentityRepository identityRepository;
 
     @DynamicPropertySource
     static void configure(DynamicPropertyRegistry registry) {
-        registry.add("spring.datasource.url", MYSQL::getJdbcUrl);
-        registry.add("spring.datasource.username", MYSQL::getUsername);
-        registry.add("spring.datasource.password", MYSQL::getPassword);
         registry.add("auth.oauth.kakao.client-id", () -> KAKAO_WEB_KEY);
         registry.add("auth.oauth.kakao.client-secret", () -> "test-secret");
         registry.add("auth.oauth.kakao.redirect-uri", () -> "https://example.com/api/auth/oauth/KAKAO/callback");

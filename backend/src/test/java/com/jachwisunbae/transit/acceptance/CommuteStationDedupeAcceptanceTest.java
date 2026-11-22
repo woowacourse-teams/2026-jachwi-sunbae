@@ -7,10 +7,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.jachwisunbae.support.IntegrationTest;
+import com.jachwisunbae.support.TestClock;
 import com.jachwisunbae.transit.service.AdminDongImportService;
 import com.jachwisunbae.transit.service.GtfsImportService;
-import com.jachwisunbae.transit.support.MutableClock;
-import com.jachwisunbae.transit.support.MutableClockConfig;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
@@ -24,36 +24,21 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.autoconfigure.web.servlet.MockMvcPrint;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpHeaders;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
-import org.testcontainers.containers.MySQLContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
 
 // 목적지 옆 정류장 S로 버스 101이 N1에서 15분, 버스 202가 길 건너편 N2에서 20분 걸려 들어온다.
 // N1과 N2는 이름이 같은 정류장이다.
-@Testcontainers
-@SpringBootTest
-@AutoConfigureMockMvc(print = MockMvcPrint.NONE)
-@ActiveProfiles("test")
 @Tag("acceptance")
-@Import(MutableClockConfig.class)
-class CommuteStationDedupeAcceptanceTest {
+class CommuteStationDedupeAcceptanceTest extends IntegrationTest {
 
-    @Container
-    private static final MySQLContainer<?> MYSQL = new MySQLContainer<>("mysql:8.4.10");
     private static final Path FIXTURE = createFixture();
 
     @Autowired
-    private MutableClock clock;
+    private TestClock clock;
     @Autowired
     private MockMvc mvc;
     @Autowired
@@ -67,9 +52,6 @@ class CommuteStationDedupeAcceptanceTest {
 
     @DynamicPropertySource
     static void configure(final DynamicPropertyRegistry registry) {
-        registry.add("spring.datasource.url", MYSQL::getJdbcUrl);
-        registry.add("spring.datasource.username", MYSQL::getUsername);
-        registry.add("spring.datasource.password", MYSQL::getPassword);
         registry.add("transit.admin-dong.file", () -> FIXTURE.resolve("admin-dongs.geojson").toString());
         registry.add("transit.gtfs.directory", () -> FIXTURE.resolve("gtfs").toString());
     }

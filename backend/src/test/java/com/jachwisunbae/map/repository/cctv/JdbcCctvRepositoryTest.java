@@ -8,6 +8,8 @@ import com.jachwisunbae.common.exception.server.DataInconsistencyException;
 import com.jachwisunbae.map.domain.CoordinateBounds;
 import com.jachwisunbae.map.domain.cctv.Cctv;
 import com.jachwisunbae.map.domain.cctv.CctvPurpose;
+import com.jachwisunbae.support.MySqlTestContainer;
+import com.jachwisunbae.support.ResetDatabase;
 import java.math.BigDecimal;
 import java.util.List;
 import javax.sql.DataSource;
@@ -19,15 +21,12 @@ import org.junit.jupiter.api.Test;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.datasource.DriverManagerDataSource;
 import org.testcontainers.containers.MySQLContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
 
 // DECIMAL 좌표 비교와 NULL 컬럼 복원은 MySQL 동작에 달려 있어 실제 MySQL로 검증한다.
-@Testcontainers
+@ResetDatabase
 class JdbcCctvRepositoryTest {
 
-    @Container
-    private static final MySQLContainer<?> MYSQL = new MySQLContainer<>("mysql:8.4.10");
+    private static final MySQLContainer<?> MYSQL = MySqlTestContainer.get();
 
     // 판교역 주변 약 1km 사각형
     private static final CoordinateBounds PANGYO = CoordinateBounds.of(

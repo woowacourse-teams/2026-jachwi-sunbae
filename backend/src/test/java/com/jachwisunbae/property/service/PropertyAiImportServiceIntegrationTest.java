@@ -20,6 +20,7 @@ import com.jachwisunbae.property.entity.Property;
 import com.jachwisunbae.property.repository.JdbcPropertyRepository;
 import com.jachwisunbae.property.type.RoomOption;
 import com.jachwisunbae.property.type.UtilityOption;
+import com.jachwisunbae.support.IntegrationTest;
 import com.zaxxer.hikari.HikariDataSource;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
@@ -43,29 +44,14 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.function.Executable;
 import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.mock.web.MockMultipartFile;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
-import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.web.multipart.MultipartFile;
-import org.testcontainers.containers.MySQLContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
 
 // Bedrock 호출은 비용과 AWS 인증이 필요하므로 추출기만 대역으로 두고, 검증·병합·저장은 실제 MySQL로 확인한다.
 // 트랜잭션 롤백과 커넥션 점유를 실제 상태로 확인하려고 테스트에는 트랜잭션을 걸지 않고 매번 데이터를 지운다.
-@Testcontainers
-@SpringBootTest
-@ActiveProfiles("test")
-class PropertyAiImportServiceIntegrationTest {
-
-    @Container
-    @ServiceConnection
-    private static final MySQLContainer<?> mysqlContainer = new MySQLContainer<>("mysql:8.4.10");
+class PropertyAiImportServiceIntegrationTest extends IntegrationTest {
 
     private static final long MEMBER_ID = 1L;
     private static final long OTHER_MEMBER_ID = 2L;
@@ -79,7 +65,7 @@ class PropertyAiImportServiceIntegrationTest {
     @Autowired
     private PropertyAiImportService service;
 
-    @MockitoSpyBean
+    @Autowired
     private JdbcPropertyRepository repository;
 
     @Autowired
@@ -88,11 +74,11 @@ class PropertyAiImportServiceIntegrationTest {
     @Autowired
     private DataSource dataSource;
 
-    @MockitoBean
+    @Autowired
     private BedrockPropertyExtractor extractor;
 
     // 횟수 계산은 PropertyAiUsageLimiterTest가 확인하고, 여기서는 언제 차감하고 차단 시 Bedrock을 부르지 않는지만 본다.
-    @MockitoBean
+    @Autowired
     private PropertyAiUsageLimiter usageLimiter;
 
     private long propertyId;

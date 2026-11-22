@@ -6,6 +6,8 @@ import static org.springframework.test.web.client.match.MockRestRequestMatchers.
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withStatus;
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withSuccess;
 
+import com.jachwisunbae.support.MySqlTestContainer;
+import com.jachwisunbae.support.ResetDatabase;
 import com.jachwisunbae.weather.domain.ForecastTimes;
 import com.jachwisunbae.weather.domain.GridPoint;
 import com.jachwisunbae.weather.domain.WeatherElement;
@@ -43,10 +45,8 @@ import org.springframework.test.web.client.MockRestServiceServer;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.web.client.RestClient;
 import org.testcontainers.containers.MySQLContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
 
-@Testcontainers
+@ResetDatabase
 class WeatherCollectionIntegrationTest {
 
     private static final int VALID_POINTS = 1001;
@@ -54,8 +54,7 @@ class WeatherCollectionIntegrationTest {
     // MySQL DATETIME(6)은 나노초 입력을 마이크로초로 반올림한다.
     private static final LocalDateTime COLLECTED_AT = LocalDateTime.ofInstant(COLLECTED_INSTANT, ZoneId.of("Asia/Seoul"))
             .plusNanos(500).truncatedTo(ChronoUnit.MICROS);
-    @Container
-    private static final MySQLContainer<?> MYSQL = new MySQLContainer<>("mysql:8.4.10");
+    private static final MySQLContainer<?> MYSQL = MySqlTestContainer.get();
     private static DriverManagerDataSource dataSource;
     private static JdbcTemplate jdbc;
 

@@ -13,6 +13,7 @@ import com.jachwisunbae.rental.domain.vo.RentalPrice;
 import com.jachwisunbae.rental.domain.vo.RentalSource;
 import com.jachwisunbae.rental.repository.JdbcAdminDongRentRepository;
 import com.jachwisunbae.rental.repository.JdbcRentalTransactionRepository;
+import com.jachwisunbae.support.MySqlJdbcTest;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -23,28 +24,16 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
-import org.springframework.boot.test.autoconfigure.jdbc.JdbcTest;
-import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
-import org.testcontainers.containers.MySQLContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
 
 // 교체가 한 트랜잭션으로 커밋되거나 롤백되는지 보려고 테스트 트랜잭션 없이 실행한다.
-@Testcontainers
-@JdbcTest
-@AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
+@MySqlJdbcTest
 @Transactional(propagation = Propagation.NOT_SUPPORTED)
 class RentalImportServiceTest {
-
-    @Container
-    @ServiceConnection
-    private static final MySQLContainer<?> mysqlContainer = new MySQLContainer<>("mysql:8.4.10");
 
     private static final LegalDong SILLIM = new LegalDong("1162010200", "서울특별시 관악구 신림동");
     private static final LocalDate PERIOD_START = LocalDate.parse("2026-04-10");

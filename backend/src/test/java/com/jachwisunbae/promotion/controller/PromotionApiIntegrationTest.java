@@ -14,6 +14,7 @@ import com.jachwisunbae.member.repository.MemberRepository;
 import com.jachwisunbae.promotion.domain.ConvenienceBrand;
 import com.jachwisunbae.promotion.provider.emart24.Emart24PromotionFetcher;
 import com.jachwisunbae.promotion.repository.JdbcPromotionProductRepository;
+import com.jachwisunbae.support.IntegrationTest;
 import java.time.LocalDateTime;
 import java.util.List;
 import org.junit.jupiter.api.AfterEach;
@@ -23,28 +24,12 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.DynamicPropertyRegistry;
-import org.springframework.test.context.DynamicPropertySource;
-import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.test.web.servlet.MockMvc;
-import org.testcontainers.containers.MySQLContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
 
-@Testcontainers
-@SpringBootTest
-@AutoConfigureMockMvc
-@ActiveProfiles("test")
-class PromotionApiIntegrationTest {
+class PromotionApiIntegrationTest extends IntegrationTest {
 
     private static final ConvenienceBrand BRAND = ConvenienceBrand.EMART24;
-
-    @Container
-    private static final MySQLContainer<?> MYSQL = new MySQLContainer<>("mysql:8.4.10");
 
     @Autowired
     private MockMvc mvc;
@@ -58,15 +43,8 @@ class PromotionApiIntegrationTest {
     @Autowired
     private JdbcPromotionProductRepository repository;
     // 수집 서비스가 생성 시 brand()를 읽으므로 실제 브랜드를 반환하는 Spy로 수집 호출만 감시한다.
-    @MockitoSpyBean
+    @Autowired
     private Emart24PromotionFetcher fetcher;
-
-    @DynamicPropertySource
-    static void database(final DynamicPropertyRegistry registry) {
-        registry.add("spring.datasource.url", MYSQL::getJdbcUrl);
-        registry.add("spring.datasource.username", MYSQL::getUsername);
-        registry.add("spring.datasource.password", MYSQL::getPassword);
-    }
 
     @BeforeEach
     void clearProducts() {

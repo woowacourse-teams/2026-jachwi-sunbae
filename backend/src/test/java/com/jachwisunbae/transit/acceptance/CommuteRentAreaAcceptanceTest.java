@@ -9,10 +9,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jachwisunbae.rental.service.AdminDongRentService;
+import com.jachwisunbae.support.IntegrationTest;
+import com.jachwisunbae.support.TestClock;
 import com.jachwisunbae.transit.service.AdminDongImportService;
 import com.jachwisunbae.transit.service.GtfsImportService;
-import com.jachwisunbae.transit.support.MutableClock;
-import com.jachwisunbae.transit.support.MutableClockConfig;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
@@ -24,40 +24,25 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.autoconfigure.web.servlet.MockMvcPrint;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpHeaders;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
-import org.testcontainers.containers.MySQLContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
 
 // 목적지 옆 정류장 S가 있는 남가동과, 버스 101로 15분 걸리는 정류장 N이 있는 북가동이 있다.
 // 시세는 북가동에만 있다.
-@Testcontainers
-@SpringBootTest
-@AutoConfigureMockMvc(print = MockMvcPrint.NONE)
-@ActiveProfiles("test")
 @Tag("acceptance")
-@Import(MutableClockConfig.class)
-class CommuteRentAreaAcceptanceTest {
+class CommuteRentAreaAcceptanceTest extends IntegrationTest {
 
-    @Container
-    private static final MySQLContainer<?> MYSQL = new MySQLContainer<>("mysql:8.4.10");
     private static final Path FIXTURE = createFixture();
     private static final String SOUTH_DONG = "11010510";
     private static final String NORTH_DONG = "11010520";
 
     @Autowired
-    private MutableClock clock;
+    private TestClock clock;
     @Autowired
     private MockMvc mvc;
     @Autowired
@@ -75,9 +60,6 @@ class CommuteRentAreaAcceptanceTest {
 
     @DynamicPropertySource
     static void configure(final DynamicPropertyRegistry registry) {
-        registry.add("spring.datasource.url", MYSQL::getJdbcUrl);
-        registry.add("spring.datasource.username", MYSQL::getUsername);
-        registry.add("spring.datasource.password", MYSQL::getPassword);
         registry.add("transit.admin-dong.file", () -> FIXTURE.resolve("admin-dongs.geojson").toString());
         registry.add("transit.gtfs.directory", () -> FIXTURE.resolve("gtfs").toString());
     }

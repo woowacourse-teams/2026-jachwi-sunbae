@@ -10,6 +10,7 @@ import com.jachwisunbae.auth.repository.JdbcMemberIdentityRepository;
 import com.jachwisunbae.auth.repository.JdbcRefreshTokenRepository;
 import com.jachwisunbae.auth.token.OAuthTokenCipher;
 import com.jachwisunbae.common.config.LocalDatabaseSampleConfig;
+import com.jachwisunbae.support.MySqlTestContainer;
 import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.LocalDateTime;
@@ -32,14 +33,10 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.datasource.DriverManagerDataSource;
 import org.springframework.jdbc.datasource.init.ResourceDatabasePopulator;
 import org.testcontainers.containers.MySQLContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
 
-@Testcontainers
 class DatabaseBaselineIntegrationTest {
 
-    @Container
-    private static final MySQLContainer<?> MYSQL = new MySQLContainer<>("mysql:8.4.10");
+    private static final MySQLContainer<?> MYSQL = MySqlTestContainer.get();
 
     private DataSource dataSource;
     private JdbcTemplate jdbcTemplate;
