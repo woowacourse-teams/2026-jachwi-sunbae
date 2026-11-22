@@ -1,8 +1,13 @@
+import { render } from '@testing-library/react';
+import { readdirSync, readFileSync } from 'node:fs';
+import { join, resolve } from 'node:path';
 import { describe, expect, it, vi } from 'vitest';
 
 import { mapCategoryMarkerSrc, propertyMarkerSrc, stationVariant } from '@/features/map/lib/mapIconAssets';
 import type { MapMarker } from '@/features/map/model/Map';
-import { createMapMarkerElement } from '@/features/map/ui/map-marker/MapMarkerView';
+import MapMarkerView, { createMapMarkerElement } from '@/features/map/ui/map-marker/MapMarkerView';
+
+import { markerFixtures } from './mapMarkerFixtures';
 
 describe('매물 마커의 지도 SDK 요소 변환', () => {
   it.each(['property', 'propertyCluster'] as const)('%s 마커는 집 핀 이미지를 넣은 마커 버튼을 반환한다', (tone) => {
@@ -125,5 +130,73 @@ describe('주변 시설 점 마커', () => {
     );
     expect(element.querySelector('img')).toBeNull();
     expect(element.style.background).toBe('rgb(255, 136, 0)');
+  });
+});
+
+describe('지도 SDK 마커와 데모 지도 마커', () => {
+  it.each(markerFixtures)('$name: 같은 템플릿에서 같은 DOM을 만든다', ({ marker, selectedMarkerId }) => {
+    const { container } = render(
+      <MapMarkerView marker={marker} selectedMarkerId={selectedMarkerId ?? null} onSelectMarker={vi.fn()} />,
+    );
+    const element = createMapMarkerElement(marker, selectedMarkerId ?? null, vi.fn());
+    expect(container.children).toHaveLength(1);
+    expect(element.isEqualNode(container.firstElementChild)).toBe(true);
+  });
+
+  it('글자는 마크업으로 해석하지 않고 그대로 넣는다', () => {
+    const element = createMapMarkerElement(
+      { id: 'shop', latitude: 37.48, longitude: 126.93, label: '<img src=x onerror=alert(1)>', tone: 'destination' },
+      null,
+    );
+    expect(element.querySelector('img')).toBeNull();
+    expect(element.textContent).toBe('<img src=x onerror=alert(1)>');
+  });
+});
+
+describe('검색 핀 동작 카드', () => {
+  it('출퇴근 장소로 설정과 지우기 버튼을 카드 안에 두고 누르면 각각 알린다', () => {
+    const marker: MapMarker = {
+      id: 'search',
+      latitude: 37.48,
+      longitude: 126.93,
+      label: '강남역',
+      tone: 'pinLabel',
+      pinKind: 'search',
+      removable: true,
+      setsCommute: true,
+      actionable: true,
+    };
+    const onSelect = vi.fn();
+    const element = createMapMarkerElement(marker, null, onSelect);
+    const actions = element.querySelector('[role="group"]');
+    expect([...(actions?.querySelectorAll('button') ?? [])].map((button) => button.textContent)).toEqual([
+      '출퇴근 장소로 설정',
+      '지우기',
+    ]);
+    element.querySelector<HTMLElement>('[data-action="set-commute"]')?.click();
+    expect(onSelect).toHaveBeenLastCalledWith({ ...marker, id: 'search:set-commute' });
+    element.querySelector<HTMLElement>('[data-action="clear"]')?.click();
+    expect(onSelect).toHaveBeenLastCalledWith(marker);
+  });
+});
+
+describe('서버 렌더러', () => {
+  // 지도 마커는 서버 렌더러 없이 만든다. 제품 코드가 다시 가져오면 webpack 별칭(비공개 파일 경로) 없이는
+  // 스트리밍 렌더러까지 지도 화면 청크에 실린다(gzip 약 55KB).
+  it('제품 코드는 react-dom/server를 가져오지 않는다', () => {
+    const sourceRoot = resolve(__dirname, '../../../../../src');
+    const sources = readdirSync(sourceRoot, { recursive: true, encoding: 'utf8' }).filter((file) =>
+      /\.(ts|tsx)$/.test(file),
+    );
+    const importers = sources.filter((file) =>
+      /from ['"]react-dom\/server/.test(readFileSync(join(sourceRoot, file), 'utf8')),
+    );
+    expect(sources.length).toBeGreaterThan(100);
+    expect(importers).toEqual([]);
+  });
+
+  it('webpack 설정은 react-dom 안쪽 파일을 별칭으로 가리키지 않는다', () => {
+    const config = readFileSync(resolve(__dirname, '../../../../../webpack/webpack.config.cjs'), 'utf8');
+    expect(config).not.toMatch(/react-dom\/server|react-dom-server/);
   });
 });

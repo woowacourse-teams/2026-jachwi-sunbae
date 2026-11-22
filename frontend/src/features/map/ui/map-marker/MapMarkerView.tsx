@@ -1,5 +1,5 @@
 import { css, cx, keyframes } from '@emotion/css';
-import { renderToStaticMarkup } from 'react-dom/server';
+import { createElement, type MouseEvent, type ReactElement } from 'react';
 
 import { mapCategoryMarkerSrc, propertyMarkerSrc } from '../../lib/mapIconAssets';
 import { isMarkerSelected, isPinMarker } from '../../lib/mapMarkerPresentation';
@@ -52,132 +52,179 @@ const markerClassName = (marker: MapMarker, selectedMarkerId: string | null | un
     .filter(Boolean)
     .join(' ');
 
-/** 지도 SDK와 데모 지도 양쪽에서 재사용하는 마커의 순수 시각 UI. */
-const MapMarkerView = ({ marker, selectedMarkerId = null, onSelectMarker }: MapMarkerViewProps) => {
-  const canSelect = marker.actionable === true && onSelectMarker !== undefined;
-  const isPhotoMarker = marker.photo !== undefined && (marker.tone === 'property' || marker.tone === 'propertyCluster');
-  const markerContent = (
-    <>
-      {marker.summary && !isPhotoMarker && (
-        <span className={styles.markerSummaryCard}>
-          <strong title={marker.label}>{marker.label}</strong>
-          <small title={marker.summary.amount}>{marker.summary.amount}</small>
-        </span>
-      )}
-      {marker.tone === 'rank' ? (
-        <span className={styles.rankLabel}>
-          <b>{marker.rank}</b>
-          {marker.caption ?? marker.label}
-        </span>
-      ) : marker.tone === 'pinLabel' ? (
-        // 검색 핀(흰 바탕, 파란 글씨)과 출퇴근 장소 마커(진한 파란 바탕, 흰 글씨)를 한 컴포넌트로 그린다. 꼬리와 점이 정확한 좌표를 가리킨다.
-        <>
-          <span className={styles.pinLabel} data-kind={marker.pinKind ?? 'search'}>
-            <span className={styles.pinLabelBody}>
-              {marker.caption && <small>{marker.caption}</small>}
-              <span className={styles.pinLabelText} title={marker.label}>
-                {marker.label}
-              </span>
-            </span>
-          </span>
-          <span className={styles.pinLabelTail} data-kind={marker.pinKind ?? 'search'} aria-hidden="true" />
-          <span className={styles.pinLabelDot} data-kind={marker.pinKind ?? 'search'} aria-hidden="true" />
-          {marker.pinKind === 'search' && marker.removable && (
+type MarkerTag = 'div' | 'button' | 'span' | 'strong' | 'small' | 'b' | 'img';
+/** HTML 속성 이름 그대로 쓴다(`class`, `data-*`, `aria-*`). 값이 `undefined`면 붙이지 않는다. */
+type MarkerAttributes = Record<string, string | undefined>;
+type MarkerStyle = { animationDelay?: string; background?: string };
+type MarkerChild = MarkerNode | string;
+type MarkerNode = { tag: MarkerTag; attributes: MarkerAttributes; style?: MarkerStyle; children: MarkerChild[] };
+
+const h = (
+  tag: MarkerTag,
+  attributes: MarkerAttributes,
+  ...children: Array<MarkerChild | false | null | undefined>
+): MarkerNode => ({
+  tag,
+  attributes,
+  children: children.filter((child): child is MarkerChild => child !== false && child != null && child !== ''),
+});
+
+const pinImage = (className: string, src: string | undefined) =>
+  h('img', { class: className, src, alt: '', draggable: 'false', decoding: 'async' });
+
+const markerContent = (marker: MapMarker, isPhotoMarker: boolean): Array<MarkerChild | false | null | undefined> => {
+  const pinKind = marker.pinKind ?? 'search';
+  return [
+    marker.summary !== undefined &&
+      !isPhotoMarker &&
+      h(
+        'span',
+        { class: styles.markerSummaryCard },
+        h('strong', { title: marker.label }, marker.label),
+        h('small', { title: marker.summary.amount }, marker.summary.amount),
+      ),
+    ...(marker.tone === 'rank'
+      ? [h('span', { class: styles.rankLabel }, h('b', {}, String(marker.rank ?? '')), marker.caption ?? marker.label)]
+      : marker.tone === 'pinLabel'
+        ? // 검색 핀(흰 바탕, 파란 글씨)과 출퇴근 장소 마커(진한 파란 바탕, 흰 글씨)를 한 모양으로 그린다. 꼬리와 점이 정확한 좌표를 가리킨다.
+          [
+            h(
+              'span',
+              { class: styles.pinLabel, 'data-kind': pinKind },
+              h(
+                'span',
+                { class: styles.pinLabelBody },
+                marker.caption && h('small', {}, marker.caption),
+                h('span', { class: styles.pinLabelText, title: marker.label }, marker.label),
+              ),
+            ),
+            h('span', { class: styles.pinLabelTail, 'data-kind': pinKind, 'aria-hidden': 'true' }),
+            h('span', { class: styles.pinLabelDot, 'data-kind': pinKind, 'aria-hidden': 'true' }),
             // 평소에는 숨겨 둔 동작 카드. 마커를 누르거나(데스크탑은 마우스를 올리면) 펼친다. 클릭은 `createMapMarkerElement`가 DOM에서 붙인다.
-            <span className={styles.pinActions} role="group" aria-label="검색한 장소 동작">
-              {marker.setsCommute && (
-                <button type="button" data-action="set-commute" className={styles.pinActionPrimary}>
-                  출퇴근 장소로 설정
-                </button>
-              )}
-              <button type="button" data-action="clear" className={styles.pinActionText}>
-                지우기
-              </button>
-            </span>
-          )}
-        </>
-      ) : marker.tone === 'destination' || marker.tone === 'flash' ? (
-        <>
-          <span className={styles.destinationLabel}>
-            {marker.tally ? (
-              <>
-                {marker.tally.positive > 0 && <span data-variant="positive">👍 {marker.tally.positive}</span>}
-                {marker.tally.negative > 0 && <span data-variant="negative">👎 {marker.tally.negative}</span>}
-              </>
-            ) : (
-              marker.label
-            )}
-          </span>
-          <span className={styles.destinationTail} aria-hidden="true" />
-        </>
-      ) : isPhotoMarker ? (
-        // 사진 오른쪽에 이름과 월세를 두 줄로 붙인 파란 카드. 흰 바탕과 테두리는 두지 않는다.
-        <span className={styles.photoCard} data-has-text={marker.summary ? '' : undefined}>
-          <img className={styles.photoPin} src={marker.photo} alt="" draggable={false} decoding="async" />
-          {/* 겹친 매물은 사진 카드 오른쪽 위 모서리에 걸친 흰 배지에 파란 숫자로 개수를 적는다. */}
-          {marker.count !== undefined && <strong className={styles.photoCount}>{marker.count}</strong>}
-          {marker.summary && (
-            <span className={styles.photoText}>
-              <strong title={marker.label}>{marker.label}</strong>
-              <small title={marker.summary.amount}>{marker.summary.amount}</small>
-            </span>
-          )}
-        </span>
-      ) : isCurrentLocationDot(marker) || marker.tone === 'dot' ? null : isPinMarker(marker) ? (
-        <img className={styles.pinImage} src={pinImageSrc(marker)} alt="" draggable={false} decoding="async" />
-      ) : (
-        <span className={styles.markerIcon} aria-hidden="true">
-          {markerSymbol(marker)}
-        </span>
-      )}
-      {usesCountBadge(marker) && !isPhotoMarker && <strong className={styles.markerCount}>{marker.count}</strong>}
-    </>
+            marker.pinKind === 'search' &&
+              marker.removable === true &&
+              h(
+                'span',
+                { class: styles.pinActions, role: 'group', 'aria-label': '검색한 장소 동작' },
+                marker.setsCommute === true &&
+                  h(
+                    'button',
+                    { type: 'button', 'data-action': 'set-commute', class: styles.pinActionPrimary },
+                    '출퇴근 장소로 설정',
+                  ),
+                h('button', { type: 'button', 'data-action': 'clear', class: styles.pinActionText }, '지우기'),
+              ),
+          ]
+        : marker.tone === 'destination' || marker.tone === 'flash'
+          ? [
+              h(
+                'span',
+                { class: styles.destinationLabel },
+                ...(marker.tally
+                  ? [
+                      marker.tally.positive > 0 &&
+                        h('span', { 'data-variant': 'positive' }, `👍 ${marker.tally.positive}`),
+                      marker.tally.negative > 0 &&
+                        h('span', { 'data-variant': 'negative' }, `👎 ${marker.tally.negative}`),
+                    ]
+                  : [marker.label]),
+              ),
+              h('span', { class: styles.destinationTail, 'aria-hidden': 'true' }),
+            ]
+          : isPhotoMarker
+            ? // 사진 오른쪽에 이름과 월세를 두 줄로 붙인 파란 카드. 흰 바탕과 테두리는 두지 않는다.
+              [
+                h(
+                  'span',
+                  { class: styles.photoCard, 'data-has-text': marker.summary ? '' : undefined },
+                  pinImage(styles.photoPin, marker.photo),
+                  // 겹친 매물은 사진 카드 오른쪽 위 모서리에 걸친 흰 배지에 파란 숫자로 개수를 적는다.
+                  marker.count !== undefined && h('strong', { class: styles.photoCount }, String(marker.count)),
+                  marker.summary &&
+                    h(
+                      'span',
+                      { class: styles.photoText },
+                      h('strong', { title: marker.label }, marker.label),
+                      h('small', { title: marker.summary.amount }, marker.summary.amount),
+                    ),
+                ),
+              ]
+            : isCurrentLocationDot(marker) || marker.tone === 'dot'
+              ? []
+              : isPinMarker(marker)
+                ? [pinImage(styles.pinImage, pinImageSrc(marker))]
+                : [h('span', { class: styles.markerIcon, 'aria-hidden': 'true' }, markerSymbol(marker))]),
+    usesCountBadge(marker) && !isPhotoMarker && h('strong', { class: styles.markerCount }, String(marker.count ?? '')),
+  ];
+};
+
+/**
+ * 마커 한 개의 마크업. 지도 SDK에는 `createMapMarkerElement`가 DOM 요소로, 데모 지도와 스토리에는 `MapMarkerView`가
+ * React 요소로 바꿔 그린다. 마커 수백 개를 서버 렌더러(`react-dom/server`) 없이 바로 만들려고 JSX 대신 이 템플릿을 쓴다.
+ */
+const markerTemplate = (marker: MapMarker, selectedMarkerId: string | null, canSelect: boolean): MarkerNode => {
+  const isPhotoMarker = marker.photo !== undefined && (marker.tone === 'property' || marker.tone === 'propertyCluster');
+  const root = h(
+    canSelect ? 'button' : 'div',
+    {
+      class: markerClassName(marker, selectedMarkerId),
+      'data-tone': marker.tone ?? 'property',
+      'data-category': marker.category,
+      'data-variant': marker.variant,
+      'data-tally': marker.tally ? '' : undefined,
+      'data-rank': marker.rank === undefined ? undefined : String(marker.rank),
+      'aria-label': marker.label,
+      ...(canSelect ? { type: 'button' } : { role: 'img' }),
+    },
+    ...markerContent(marker, isPhotoMarker),
   );
-  const commonProps = {
-    className: markerClassName(marker, selectedMarkerId),
-    'data-tone': marker.tone ?? 'property',
-    'data-category': marker.category,
-    'data-variant': marker.variant,
-    'data-tally': marker.tally ? '' : undefined,
-    'data-rank': marker.rank,
-    'aria-label': marker.label,
-    style:
-      marker.pop || marker.color
-        ? {
-            ...(marker.pop && { animationDelay: `${marker.pop.delayMs}ms` }),
-            ...(marker.tone === 'dot' && marker.color && { background: marker.color }),
-          }
-        : undefined,
-  };
+  if (marker.pop || (marker.tone === 'dot' && marker.color)) {
+    root.style = {
+      ...(marker.pop && { animationDelay: `${marker.pop.delayMs}ms` }),
+      ...(marker.tone === 'dot' && marker.color && { background: marker.color }),
+    };
+  }
+  return root;
+};
 
-  if (!canSelect)
-    return (
-      <div {...commonProps} role="img">
-        {markerContent}
-      </div>
-    );
+const toElement = (node: MarkerNode): HTMLElement => {
+  const element = document.createElement(node.tag);
+  for (const [name, value] of Object.entries(node.attributes)) {
+    if (value !== undefined) element.setAttribute(name, value);
+  }
+  if (node.style) Object.assign(element.style, node.style);
+  element.append(...node.children.map((child) => (typeof child === 'string' ? child : toElement(child))));
+  return element;
+};
 
-  return (
-    <button
-      {...commonProps}
-      type="button"
-      onClick={(event) => {
-        event.stopPropagation();
-        onSelectMarker(marker);
-      }}
-    >
-      {markerContent}
-    </button>
+const toReact = (node: MarkerNode, rootProps?: { onClick: (event: MouseEvent) => void }): ReactElement => {
+  const { class: className, ...attributes } = node.attributes;
+  return createElement(
+    node.tag,
+    { ...attributes, className, style: node.style, ...rootProps },
+    ...node.children.map((child) => (typeof child === 'string' ? child : toReact(child))),
   );
 };
 
-/** Naver overlay가 요구하는 HTMLElement로 동일한 마커 UI를 변환한다. */
+/** 데모 지도와 스토리에서 쓰는 마커. 지도 SDK 마커(`createMapMarkerElement`)와 같은 템플릿을 그린다. */
+const MapMarkerView = ({ marker, selectedMarkerId = null, onSelectMarker }: MapMarkerViewProps) => {
+  const canSelect = marker.actionable === true && onSelectMarker !== undefined;
+  const template = markerTemplate(marker, selectedMarkerId, canSelect);
+  if (!canSelect) return toReact(template);
+  return toReact(template, {
+    onClick: (event) => {
+      event.stopPropagation();
+      onSelectMarker(marker);
+    },
+  });
+};
+
 /** 마우스가 마커에서 동작 카드로 옮겨 가는 사이 카드가 닫히지 않게 나갈 때 기다리는 시간. */
 const PIN_ACTIONS_HIDE_DELAY_MS = 150;
 
 /**
  * 검색 핀: 평소에는 이름만 있는 작은 알약이고, 누르면(데스크탑은 마우스를 올려도) 아래에 `출퇴근 장소로 설정`과 `지우기` 카드가 펼쳐진다.
- * 정적 마크업이라 클릭을 DOM에서 붙인다. 카드 바깥을 누르면 접힌다.
+ * React 밖에서 만든 DOM이라 클릭을 DOM에서 붙인다. 카드 바깥을 누르면 접힌다.
  */
 const bindSearchPinActions = (
   element: HTMLElement,
@@ -224,13 +271,9 @@ export const createMapMarkerElement = (
   selectedMarkerId: string | null,
   onSelectMarker?: (marker: MapMarker) => void,
 ): HTMLElement => {
-  const template = document.createElement('template');
-  template.innerHTML = renderToStaticMarkup(
-    <MapMarkerView marker={marker} selectedMarkerId={selectedMarkerId} onSelectMarker={onSelectMarker} />,
+  const element = toElement(
+    markerTemplate(marker, selectedMarkerId, marker.actionable === true && onSelectMarker !== undefined),
   );
-  // React의 이미지 preload 링크가 마커 앞에 생성될 수 있으므로 첫 요소를 사용하지 않는다.
-  const element = template.content.querySelector('[data-tone]');
-  if (!(element instanceof HTMLElement)) throw new Error('지도 마커를 만들지 못했습니다.');
 
   if (marker.tone === 'pinLabel' && marker.pinKind === 'search' && marker.removable) {
     bindSearchPinActions(element, marker, onSelectMarker);
