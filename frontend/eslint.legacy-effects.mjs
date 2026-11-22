@@ -51,7 +51,6 @@ export const legacyEffectFiles = [
   'src/pages/neighborhood-preview/hooks/useNeighborhoodDetailAnalytics.ts',
   'src/pages/neighborhood-preview/hooks/useNeighborhoodMapView.ts',
   'src/pages/neighborhood-preview/hooks/useNeighborhoodPreview.ts',
-  'src/pages/neighborhood-preview/hooks/useResultMapViewport.ts',
   'src/pages/neighborhood-preview/ui/rent-slider/RentSlider.tsx',
   'src/pages/oauth-complete/OAuthCompletePage.tsx',
   'src/pages/property-active-checklist/hooks/useAutoOpenAppliedChecklist.ts',
