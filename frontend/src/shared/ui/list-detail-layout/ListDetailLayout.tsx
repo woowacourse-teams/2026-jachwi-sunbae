@@ -1,5 +1,5 @@
 import { css } from '@emotion/css';
-import { type ReactNode, useEffect, useId, useRef } from 'react';
+import { type ReactNode, useCallback, useId, useRef } from 'react';
 
 import Icon from '@/shared/ui/icon/Icon';
 
@@ -42,15 +42,13 @@ const ListDetailLayout = ({
   const isCollapsed = collapsible && hasDetail && collapsed;
   const showsDetail = hasDetail && !isCollapsed;
   const detailId = useId();
-  const collapseRef = useRef<HTMLButtonElement>(null);
-  const expandRef = useRef<HTMLButtonElement>(null);
-  // 접거나 편 버튼은 사라지므로, 키보드 초점을 반대쪽 버튼으로 옮긴다.
+  // 접거나 편 버튼은 사라지므로, 키보드 초점을 새로 붙는 반대쪽 버튼으로 옮긴다.
   const hasToggledRef = useRef(false);
-  useEffect(() => {
-    if (!hasToggledRef.current) return;
+  const focusAfterToggle = useCallback((button: HTMLButtonElement | null) => {
+    if (button === null || !hasToggledRef.current) return;
     hasToggledRef.current = false;
-    (isCollapsed ? expandRef : collapseRef).current?.focus();
-  }, [isCollapsed]);
+    button.focus();
+  }, []);
   const toggle = (next: boolean) => {
     hasToggledRef.current = true;
     setDetailCollapsed(next);
@@ -73,7 +71,7 @@ const ListDetailLayout = ({
         )}
         {showsDetail && collapsible && (
           <button
-            ref={collapseRef}
+            ref={focusAfterToggle}
             type="button"
             className={styles.close}
             aria-label="상세 접기"
@@ -86,7 +84,7 @@ const ListDetailLayout = ({
         )}
         {isCollapsed && (
           <button
-            ref={expandRef}
+            ref={focusAfterToggle}
             type="button"
             className={styles.close}
             aria-label="상세 펼치기"

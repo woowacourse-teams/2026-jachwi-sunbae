@@ -1,5 +1,5 @@
 import { css } from '@emotion/css';
-import { type ReactNode, useEffect, useRef, useState } from 'react';
+import { type ReactNode, useCallback, useRef, useState } from 'react';
 
 import Icon from '../icon/Icon';
 
@@ -20,25 +20,30 @@ const MapBadgeRail = ({ items, selectedId, onSelect, label, overMap, desktopMap,
   const drag = useRef<{ x: number; scroll: number; moved: boolean } | null>(null);
   const suppressClick = useRef(false);
   const [edges, setEdges] = useState({ before: false, after: false });
-  useEffect(() => {
-    const element = rail.current;
-    if (!element) return;
-    const update = () =>
-      setEdges({
-        before: element.scrollLeft > 1,
-        after: element.scrollLeft + element.clientWidth < element.scrollWidth - 1,
-      });
-    update();
-    element.addEventListener('scroll', update, { passive: true });
-    const observer = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(update);
-    observer?.observe(element);
-    window.addEventListener('resize', update);
-    return () => {
-      element.removeEventListener('scroll', update);
-      observer?.disconnect();
-      window.removeEventListener('resize', update);
-    };
-  }, [items]);
+  // 칸이 붙을 때 스크롤과 크기를 구독해 양 끝 흐림을 맞춘다. 항목이 바뀌면 다시 붙여 한 번 더 잰다.
+  const observeEdges = useCallback(
+    (element: HTMLElement | null) => {
+      rail.current = element;
+      if (!element) return;
+      const update = () =>
+        setEdges({
+          before: element.scrollLeft > 1,
+          after: element.scrollLeft + element.clientWidth < element.scrollWidth - 1,
+        });
+      update();
+      element.addEventListener('scroll', update, { passive: true });
+      const observer = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(update);
+      observer?.observe(element);
+      window.addEventListener('resize', update);
+      return () => {
+        element.removeEventListener('scroll', update);
+        observer?.disconnect();
+        window.removeEventListener('resize', update);
+        rail.current = null;
+      };
+    },
+    [items],
+  );
   const scroll = (direction: -1 | 1) => {
     const element = rail.current;
     if (element) element.scrollBy({ left: direction * element.clientWidth * 0.75, behavior: 'smooth' });
@@ -46,7 +51,7 @@ const MapBadgeRail = ({ items, selectedId, onSelect, label, overMap, desktopMap,
   return (
     <div className={`${styles.root} ${className ?? ''}`} data-desktop-map={desktopMap || undefined}>
       <nav
-        ref={rail}
+        ref={observeEdges}
         className={styles.rail}
         aria-label={label}
         data-over-map={overMap || undefined}
@@ -74,16 +79,15 @@ const MapBadgeRail = ({ items, selectedId, onSelect, label, overMap, desktopMap,
           // 포인터 캡처를 지원하지 않는 환경(일부 웹뷰, jsdom)에서도 손을 뗄 때 오류 없이 끝낸다.
           if ('hasPointerCapture' in event.currentTarget && event.currentTarget.hasPointerCapture(event.pointerId))
             event.currentTarget.releasePointerCapture(event.pointerId);
-          window.setTimeout(() => {
-            suppressClick.current = false;
-          }, 0);
         }}
         onPointerCancel={() => {
           drag.current = null;
           suppressClick.current = false;
         }}
         onClickCapture={(event) => {
+          // 끌기 뒤에 따라오는 클릭 하나만 막는다. 클릭이 오지 않으면 다음 pointerdown이 푼다.
           if (suppressClick.current) {
+            suppressClick.current = false;
             event.preventDefault();
             event.stopPropagation();
           }

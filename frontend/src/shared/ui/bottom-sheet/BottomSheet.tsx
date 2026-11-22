@@ -1,6 +1,6 @@
 import { css, cx } from '@emotion/css';
 import type { CSSProperties, PointerEvent, ReactNode } from 'react';
-import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 
 import { MAP_LAYER } from '@/shared/lib/map-layers/mapLayers';
 
@@ -92,20 +92,21 @@ const BottomSheet = ({
     onModeChangeRef.current?.(mode);
   }, [mode]);
   // 접어 둔 선호가 밖에서 풀리면 접힌 시트를 펼친다. 시트를 직접 끌어 올린 경우는 이미 peek이 아니라 건드리지 않는다.
-  useEffect(() => {
-    if (initialMode === 'default') setMode((current) => (current === 'peek' ? 'default' : current));
-  }, [initialMode]);
+  const [lastInitialMode, setLastInitialMode] = useState(initialMode);
+  if (lastInitialMode !== initialMode) {
+    setLastInitialMode(initialMode);
+    if (initialMode === 'default' && mode === 'peek') setMode('default');
+  }
   const allModes: SheetMode[] = fullPage ? ['peek', 'default', 'expanded', 'full'] : ['peek', 'default', 'expanded'];
   const maxIndex = maxMode === undefined ? -1 : allModes.indexOf(maxMode);
   const modes = maxIndex < 0 ? allModes : allModes.slice(0, maxIndex + 1);
   const canExpand = modes.includes('expanded');
   const canOpenFull = modes.includes('full');
-  const lastPeekSignal = useRef(peekSignal);
-  useEffect(() => {
-    if (peekSignal === lastPeekSignal.current) return;
-    lastPeekSignal.current = peekSignal;
+  const [lastPeekSignal, setLastPeekSignal] = useState(peekSignal);
+  if (lastPeekSignal !== peekSignal) {
+    setLastPeekSignal(peekSignal);
     setMode('peek');
-  }, [peekSignal]);
+  }
   // frame: 끌기 시작에 한 번 늘려 둔 시트 실제 높이. 끄는 동안은 이 높이를 그대로 두고 transform으로만 움직인다.
   const gesture = useRef<{ startY: number; height: number; limit: number; frame: number | null } | null>(null);
   const dragged = useRef(false);
@@ -131,9 +132,10 @@ const BottomSheet = ({
     return () => observer.disconnect();
   }, [hasFloating, mode]);
   // 휴대폰 키패드가 오르면 시트 아래쪽이 가려진다. 키패드 높이만큼 시트를 위로 올려, 시트를 높게 열지 않아도 입력칸이 보이게 한다.
-  useEffect(() => {
+  // 시트 요소가 붙을 때 화면 크기 구독을 걸고 떨어질 때 푼다.
+  const attachSheet = useCallback((sheet: HTMLElement | null) => {
+    sheetRef.current = sheet;
     const viewport = window.visualViewport;
-    const sheet = sheetRef.current;
     if (viewport === null || viewport === undefined || sheet === null) return;
     const update = () => {
       const inset = Math.max(0, window.innerHeight - viewport.height - viewport.offsetTop);
@@ -146,7 +148,9 @@ const BottomSheet = ({
     return () => {
       viewport.removeEventListener('resize', update);
       viewport.removeEventListener('scroll', update);
+      sheetRef.current = null;
     };
+    // syncFloating은 ref만 읽는다.
   }, []);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
   const handleRef = useRef<HTMLButtonElement>(null);
@@ -189,7 +193,7 @@ const BottomSheet = ({
         </div>
       )}
       <section
-        ref={sheetRef}
+        ref={attachSheet}
         className={className ? cx(styles.sheet, className) : styles.sheet}
         aria-label={title}
         tabIndex={-1}
