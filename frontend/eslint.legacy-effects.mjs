@@ -26,7 +26,6 @@ export const legacyEffectFiles = [
   'src/pages/cheap-meals/ui/RestaurantPanel.tsx',
   'src/pages/create-checklist/CreateChecklistPage.tsx',
   'src/pages/create-checklist/ui/create-checklist-panel/CreateChecklistPanel.tsx',
-  'src/pages/design-records/RecordsMapProvider.tsx',
   'src/pages/design-records/hooks/useFinderPrompt.ts',
   'src/pages/design-records/hooks/useRecords.ts',
   'src/pages/design-records/mobile/RecordsMobileHeader.tsx',

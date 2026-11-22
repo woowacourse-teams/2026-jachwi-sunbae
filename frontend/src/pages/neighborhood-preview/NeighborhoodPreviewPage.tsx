@@ -6,6 +6,7 @@ import { useRecordsMapController } from '@/pages/design-records/RecordsMapProvid
 import { readSearchedAddress } from '@/features/map/lib/searchedAddressState';
 import StreetMemoPanel from '@/features/street-memo/ui/street-memo-panel/StreetMemoPanel';
 import StreetMemoSheet from '@/features/street-memo/ui/street-memo-sheet/StreetMemoSheet';
+import useEscapeKey from '@/shared/lib/hooks/useEscapeKey';
 import useIsDesktop from '@/shared/lib/hooks/useIsDesktop';
 import { ROUTE_PATTERNS } from '@/shared/lib/navigation/appPaths';
 
@@ -60,13 +61,7 @@ const NeighborhoodPreviewPage = () => {
     openSelection.current();
     navigate(location.pathname + location.search, { replace: true, state: null });
   }, [selectOnMap, location.pathname, location.search, preview.mapPath, navigate]);
-  useEffect(() => {
-    const cancel = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') preview.cancelMapSelection();
-    };
-    window.addEventListener('keydown', cancel);
-    return () => window.removeEventListener('keydown', cancel);
-  }, [preview]);
+  useEscapeKey(() => preview.cancelMapSelection());
   const isRoutePage = useMatch(`${preview.mapPath}/${ROUTE_PATTERNS.area}/*`);
   if (isRoutePage && !preview.selected && !preview.isAnalyzing && !preview.error) {
     return <Navigate to={preview.mapPath} replace />;

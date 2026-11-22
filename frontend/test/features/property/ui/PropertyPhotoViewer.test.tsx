@@ -35,11 +35,11 @@ it('열리면 뒤 화면 스크롤을 막고 닫기 버튼에 초점을 주며, 
 
   expect(document.body.style.overflow).toBe('hidden');
   expect(screen.getByRole('button', { name: '사진 크게 보기 닫기' })).toHaveFocus();
-  fireEvent.keyDown(window, { key: 'Escape' });
+  fireEvent.keyDown(document, { key: 'Escape' });
   expect(onClose).toHaveBeenCalledTimes(1);
 
   unmount();
   expect(document.body.style.overflow).toBe('auto');
-  fireEvent.keyDown(window, { key: 'Escape' });
+  fireEvent.keyDown(document, { key: 'Escape' });
   expect(onClose).toHaveBeenCalledTimes(1);
 });
