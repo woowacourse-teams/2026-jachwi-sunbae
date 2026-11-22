@@ -66,7 +66,6 @@ export const legacyEffectFiles = [
   'src/pages/property-detail/ui/property-basic-info-section/PropertyAddressSearchInput.tsx',
   'src/pages/property-detail/ui/property-basic-info-section/PropertyBasicInfoSection.tsx',
   'src/pages/property-detail/ui/property-checklist-section/PropertyChecklistSection.tsx',
-  'src/pages/property-detail/ui/property-memo-section/PropertyMemoSection.tsx',
   'src/pages/property-detail/ui/property-nearby-preview/PropertyNearbyPreview.tsx',
   'src/pages/property-detail/ui/property-nearby-preview/useLocationPick.ts',
   'src/pages/property-memo/ui/property-additional-info-form/PropertyAdditionalInfoForm.tsx',
