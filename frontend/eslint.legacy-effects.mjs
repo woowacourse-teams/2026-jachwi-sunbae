@@ -77,7 +77,6 @@ export const legacyEffectFiles = [
   'src/shared/ui/bottom-sheet/BottomSheet.tsx',
   'src/shared/ui/bottom-tab-bar/MobileBottomTabs.tsx',
   'src/shared/ui/confirm-dialog/ConfirmDialog.tsx',
-  'src/shared/ui/list-detail-layout/ListDetailLayout.tsx',
   'src/shared/ui/tooltip/Tooltip.tsx',
   'src/shared/ui/wheel-picker/WheelPicker.tsx',
 ];
