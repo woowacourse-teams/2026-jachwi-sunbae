@@ -30,6 +30,10 @@ const startApplication = async () => {
       <App />
     </StrictMode>,
   );
+  // 들어올 때 현재 위치를 한 번 받는다. 헤더 날씨와 지도가 이 위치를 쓴다. 첫 번들에 위치 코드가 실리지 않게 따로 불러 실행한다.
+  void import('@/features/weather/model/entryLocation')
+    .then(({ requestEntryLocation }) => requestEntryLocation())
+    .catch(() => undefined);
 };
 
 void startApplication();
