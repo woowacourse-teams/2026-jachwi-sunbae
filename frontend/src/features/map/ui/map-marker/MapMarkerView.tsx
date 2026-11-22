@@ -1,6 +1,9 @@
 import { css, cx, keyframes } from '@emotion/css';
 import { renderToStaticMarkup } from 'react-dom/server';
 
+import { PROPERTY_PLACEHOLDER } from '@/shared/assets/propertyImageAssets';
+import { reportPostHogFirstListingCard } from '@/shared/lib/analytics/posthog';
+
 import { mapCategoryMarkerSrc, propertyMarkerSrc } from '../../lib/mapIconAssets';
 import { isMarkerSelected, isPinMarker } from '../../lib/mapMarkerPresentation';
 import type { MapMarker } from '../../model/Map';
@@ -113,7 +116,14 @@ const MapMarkerView = ({ marker, selectedMarkerId = null, onSelectMarker }: MapM
       ) : isPhotoMarker ? (
         // 사진 오른쪽에 이름과 월세를 두 줄로 붙인 파란 카드. 흰 바탕과 테두리는 두지 않는다.
         <span className={styles.photoCard} data-has-text={marker.summary ? '' : undefined}>
-          <img className={styles.photoPin} src={marker.photo} alt="" draggable={false} decoding="async" />
+          <img
+            className={styles.photoPin}
+            src={marker.photo}
+            alt=""
+            draggable={false}
+            decoding="async"
+            data-listing-thumbnail={marker.photo === PROPERTY_PLACEHOLDER.src2x ? undefined : ''}
+          />
           {/* 겹친 매물은 사진 카드 오른쪽 위 모서리에 걸친 흰 배지에 파란 숫자로 개수를 적는다. */}
           {marker.count !== undefined && <strong className={styles.photoCount}>{marker.count}</strong>}
           {marker.summary && (
@@ -240,6 +250,10 @@ export const createMapMarkerElement = (
       onSelectMarker(marker);
     });
   }
+  // 기본 이미지가 아닌 실제 대표 사진이 그려진 순간이 첫 매물 카드가 보인 때다. 우리가 만든 요소의 `load`만 듣는다.
+  element
+    .querySelector('img[data-listing-thumbnail]')
+    ?.addEventListener('load', () => reportPostHogFirstListingCard(), { once: true });
   return element;
 };
 

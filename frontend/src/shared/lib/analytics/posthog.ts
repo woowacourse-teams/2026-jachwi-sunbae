@@ -14,5 +14,6 @@ export {
   trackPostHogOutboundEvent,
   trackPostHogPageView,
 } from './posthog/runtime';
+export { reportPostHogFirstListingCard, startPostHogFirstListingCardTiming } from './posthog/firstListingCard';
 export { startPostHogWebVitals } from './posthog/webVitals';
 export type { PostHogErrorCategory, PostHogErrorSeverity } from './posthog/types';

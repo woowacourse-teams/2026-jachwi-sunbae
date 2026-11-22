@@ -13,6 +13,7 @@ import {
   resetPostHogIdentity,
   setPostHogAuthenticationReader,
   setPostHogSessionContext,
+  startPostHogFirstListingCardTiming,
   startPostHogWebVitals,
   trackPostHogPageView,
 } from '@/shared/lib/analytics/posthog';
@@ -27,7 +28,10 @@ const MemberPostHogTracker = () => {
     setPostHogAuthenticationReader(() =>
       getAuthenticationSnapshot().session === null ? 'anonymous' : 'authenticated',
     );
-    if (initPostHog(config.posthogProjectToken ?? '', config.posthogHost ?? '')) startPostHogWebVitals();
+    if (initPostHog(config.posthogProjectToken ?? '', config.posthogHost ?? '')) {
+      startPostHogWebVitals();
+      startPostHogFirstListingCardTiming();
+    }
   }, [config.posthogProjectToken, config.posthogHost]);
 
   useLayoutEffect(() => {
