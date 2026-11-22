@@ -37,7 +37,6 @@ export const legacyEffectFiles = [
   'src/pages/design-records/mobile/RecordsMobileHeader.tsx',
   'src/pages/design-records/mobile/RecordsMobilePage.tsx',
   'src/pages/design-records/ui/record-list/RecordCardMenu.tsx',
-  'src/pages/design-records/ui/record-list/RecordList.tsx',
   'src/pages/landing/ui/LandingTech.tsx',
   'src/pages/map-location-select/hooks/useLocationSelection.ts',
   'src/pages/map-location-select/ui/map-address-search-panel/MapAddressSearchPanel.tsx',
