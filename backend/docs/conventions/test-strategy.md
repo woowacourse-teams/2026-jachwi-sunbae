@@ -99,7 +99,7 @@ Service 통합 테스트가 Repository를 사용하더라도 복잡한 SQL의 �
 
 | 테스트                       | 사용하는 설정                                 | 컨텍스트                       |
 | ---------------------------- | --------------------------------------------- | ------------------------------ |
-| 통합·인수 테스트             | `IntegrationTest` 상속                        | 설정이 같으면 하나를 함께 쓴다 |
+| 통합, 인수 테스트            | `IntegrationTest` 상속                        | 설정이 같으면 하나를 함께 쓴다 |
 | Repository 슬라이스 테스트   | `@MySqlJdbcTest`                              | 하나를 함께 쓴다               |
 | Spring 없이 DB만 쓰는 테스트 | `MySqlTestContainer.get()`과 `@ResetDatabase` | 없음                           |
 
@@ -127,7 +127,5 @@ Spring은 테스트 설정이 조금이라도 다르면 컨텍스트를 새로 �
 | --------------------------------------------------------------------- | ------------------------------------------------- |
 | `AnonymousAuthenticationAcceptanceTest`                               | OAuth 제공자 설정 값                              |
 | `NativeOAuthAcceptanceTest`                                           | 테스트용 공개 키 서버 주소                        |
-| `CommuteRentAreaAcceptanceTest`, `CommuteStationDedupeAcceptanceTest` | 테스트마다 만든 행정동·GTFS 파일 경로             |
+| `CommuteRentAreaAcceptanceTest`, `CommuteStationDedupeAcceptanceTest` | 테스트마다 만든 행정동, GTFS 파일 경로            |
 | `SevenElevenPromotionIntegrationTest`                                 | 세븐일레븐 수집 활성화와 세븐일레븐 클라이언트 목 |
-
-테스트 실행 시간과 컨텍스트 수를 확인하는 방법은 [테스트 성능 측정](../guides/test-performance.md)을 따른다.

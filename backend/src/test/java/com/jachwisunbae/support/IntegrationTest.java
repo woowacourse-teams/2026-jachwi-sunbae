@@ -22,8 +22,8 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 
-// 스프링 부트 통합·인수 테스트의 공통 설정. 설정이 같아야 컨텍스트 캐시를 재사용하므로
-// 목·스파이·시계·MockMvc를 여기서 한 번에 정하고, 하위 클래스는 필요한 빈을 @Autowired로 받는다.
+// 스프링 부트 통합 테스트와 인수 테스트의 공통 설정. 설정이 같아야 컨텍스트 캐시를 재사용하므로
+// 목, 스파이, 시계, MockMvc를 여기서 한 번에 정하고, 하위 클래스는 필요한 빈을 @Autowired로 받는다.
 // 외부 시스템 빈은 늘 목으로 두고, 스파이는 실제 동작을 그대로 쓰며 테스트가 끝날 때마다 초기화된다.
 @SpringBootTest
 @ActiveProfiles("test")
