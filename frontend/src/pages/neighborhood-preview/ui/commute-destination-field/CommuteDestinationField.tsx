@@ -1,8 +1,9 @@
 import { css } from '@emotion/css';
-import { useEffect, useId, useRef } from 'react';
+import { useId } from 'react';
 
 import AddressSearchResults, { handleSearchKeys } from '@/features/map/ui/address-search-results/AddressSearchResults';
 import useExclusiveDropdown from '@/shared/lib/hooks/useExclusiveDropdown';
+import useTimeout from '@/shared/lib/hooks/useTimeout';
 import SearchField from '@/shared/ui/search-field/SearchField';
 
 import type { NeighborhoodPreviewContext } from '../../hooks/useNeighborhoodPreview';
@@ -36,17 +37,15 @@ type Props = {
  * 처음 쓰는 사람에게는 이 칸에 붙은 툴팁으로 한 번 알린다.
  */
 const CommuteDestinationField = ({ preview, disabled = false }: Props) => {
-  const searchRef = useRef(preview.searchDestination);
-  searchRef.current = preview.searchDestination;
   const { query, hasChosenMapPoint } = preview;
   // 위쪽 지도 검색창과 결과 목록이 겹치지 않게 한 번에 하나만 연다.
   const dropdown = useExclusiveDropdown(useId());
   // 따로 제출하지 않고 입력이 멈추면 검색한다.
-  useEffect(() => {
-    if (query.trim() === '' || hasChosenMapPoint) return;
-    const timer = window.setTimeout(() => void searchRef.current(), SEARCH_DEBOUNCE_MS);
-    return () => window.clearTimeout(timer);
-  }, [query, hasChosenMapPoint]);
+  useTimeout(
+    () => void preview.searchDestination(),
+    query.trim() === '' || hasChosenMapPoint ? null : SEARCH_DEBOUNCE_MS,
+    query,
+  );
 
   return (
     <section
