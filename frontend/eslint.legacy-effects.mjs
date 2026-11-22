@@ -53,9 +53,7 @@ export const legacyEffectFiles = [
   'src/pages/property-detail/ui/property-basic-info-section/PropertyAddressSearchInput.tsx',
   'src/pages/property-detail/ui/property-basic-info-section/PropertyBasicInfoSection.tsx',
   'src/pages/property-detail/ui/property-checklist-section/PropertyChecklistSection.tsx',
-  'src/pages/property-detail/ui/property-memo-section/PropertyMemoSection.tsx',
   'src/pages/property-detail/ui/property-nearby-preview/PropertyNearbyPreview.tsx',
-  'src/pages/property-detail/ui/property-nearby-preview/useLocationPick.ts',
   'src/pages/property-memo/ui/property-additional-info-form/PropertyAdditionalInfoForm.tsx',
   'src/pages/upcoming-feature/ui/page-heading/PageHeading.tsx',
   'src/pages/usage-guide/ui/usage-demo/UsageDemo.tsx',
@@ -81,7 +79,6 @@ export const legacyTimerFiles = [
   'src/features/weather/model/useWeatherTestPush.ts',
   'src/pages/map-location-select/hooks/useLocationSelection.ts',
   'src/pages/property-compare/hooks/usePropertyComparison.ts',
-  'src/pages/property-detail/PropertyDetailPage.tsx',
   'src/shared/ui/bottom-tab-bar/MobileBottomTabs.tsx',
   'src/shared/ui/wheel-picker/WheelPicker.tsx',
 ];

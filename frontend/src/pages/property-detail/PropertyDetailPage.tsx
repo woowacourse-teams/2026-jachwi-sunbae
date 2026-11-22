@@ -22,6 +22,7 @@ import PropertyPhotoViewer from '@/features/property/ui/property-photo-viewer/Pr
 import { LogScreen } from '@/shared/lib/analytics/logging';
 import useDocumentTitle from '@/shared/lib/hooks/useDocumentTitle';
 import useIsDesktop from '@/shared/lib/hooks/useIsDesktop';
+import useTimeout from '@/shared/lib/hooks/useTimeout';
 import { MAP_SELECT_LOCATION_PATH, PROPERTY_DETAIL_TAB_PARAM } from '@/shared/lib/navigation/appPaths';
 import useReturnNavigation from '@/shared/lib/navigation/useReturnNavigation';
 import ContentState from '@/shared/ui/content-state/ContentState';
@@ -149,11 +150,7 @@ const PropertyDetailView = ({ propertyId, detail, backTo, panel }: PropertyDetai
   const [editingField, setEditingField] = useState<PropertyEditField | null>(null);
   // 방금 저장한 항목. 그 줄 값 아래에 잠깐 `저장했어요`를 보여 응답한다.
   const [savedField, setSavedField] = useState<PropertyEditField | null>(null);
-  useEffect(() => {
-    if (savedField === null) return;
-    const timer = window.setTimeout(() => setSavedField(null), SAVED_FEEDBACK_MS);
-    return () => window.clearTimeout(timer);
-  }, [savedField]);
+  useTimeout(() => setSavedField(null), savedField === null ? null : SAVED_FEEDBACK_MS, savedField);
   const inlineEdit = {
     editingField,
     savedField,

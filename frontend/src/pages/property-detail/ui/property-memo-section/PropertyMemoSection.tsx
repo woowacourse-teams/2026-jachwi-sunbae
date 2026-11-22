@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 
 import { usePropertyMemo } from '@/features/property/api/useProperties';
 import { useSavePropertyMemoDocument } from '@/features/property/api/usePropertyMutations';
@@ -17,13 +17,8 @@ const PropertyMemoSection = ({ propertyId }: PropertyMemoSectionProps) => {
   const memo = usePropertyMemo(propertyId);
   const saveMemo = useSavePropertyMemoDocument(propertyId);
   const [draft, setDraft] = useState<string | null>(null);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const cancelledRef = useRef(false);
   const isEditing = draft !== null;
-
-  useEffect(() => {
-    if (isEditing) textareaRef.current?.focus();
-  }, [isEditing]);
 
   const commit = () => {
     if (cancelledRef.current) {
@@ -47,7 +42,8 @@ const PropertyMemoSection = ({ propertyId }: PropertyMemoSectionProps) => {
       {isEditing ? (
         <>
           <textarea
-            ref={textareaRef}
+            // 고치기 시작하면 메모 칸이 새로 그려지며 바로 초점을 받는다.
+            autoFocus
             className={styles.editor}
             aria-label="메모 내용"
             value={draft}
