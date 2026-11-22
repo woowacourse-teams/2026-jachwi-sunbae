@@ -1,5 +1,6 @@
 import { css, keyframes } from '@emotion/css';
-import { useEffect } from 'react';
+
+import useTimeout from '@/shared/lib/hooks/useTimeout';
 
 /** 안내가 떠 있는 시간. 닫기 버튼이 없어 이 시간이 지나면 스스로 사라진다. */
 const NOTICE_DURATION_MS = 3500;
@@ -15,12 +16,8 @@ type RecordNoticeProps = {
  * 같은 안내가 떠 있는 동안 다시 눌러도 하나만 보이고 시간도 늘어나지 않는다(메시지가 그대로면 다시 그리지 않는다).
  */
 const RecordNotice = ({ message, onClose, className }: RecordNoticeProps) => {
-  useEffect(() => {
-    if (!message) return;
-    const timer = window.setTimeout(onClose, NOTICE_DURATION_MS);
-    return () => window.clearTimeout(timer);
-    // onClose는 렌더마다 새로 만들어지므로 메시지가 바뀔 때만 시간을 다시 잰다.
-  }, [message]);
+  // 메시지가 바뀔 때만 시간을 다시 잰다. onClose는 닫을 때의 최신 함수를 쓴다.
+  useTimeout(onClose, message ? NOTICE_DURATION_MS : null, message);
 
   return message ? (
     <div className={`${styles.notice} ${className ?? ''}`.trim()} role="status">

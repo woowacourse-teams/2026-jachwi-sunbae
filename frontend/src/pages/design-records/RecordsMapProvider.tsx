@@ -37,9 +37,12 @@ export const RecordsMapProvider = ({ children }: { children: ReactNode }) => {
   const params = useParams();
   const { pathname } = useLocation();
   const [interactionLevel, setInteractionLevel] = useState<number | undefined>();
-  useEffect(() => {
+  // 동네 찾기 밖으로 주소가 바뀌면 그곳에서 쓰던 확대 단계를 지운다.
+  const [levelPath, setLevelPath] = useState(pathname);
+  if (levelPath !== pathname) {
+    setLevelPath(pathname);
     if (!pathname.startsWith(NEIGHBORHOODS_PATH)) setInteractionLevel(undefined);
-  }, [pathname]);
+  }
   const [lastPropertyId, setLastPropertyId] = useState<string | null>(params.propertyId ?? null);
   const [lastRecordPath, setLastRecordPath] = useState(pathname);
   if ((pathname === RECORDS_PATH || pathname.startsWith(`${PROPERTIES_PATH}/`)) && pathname !== lastRecordPath) {

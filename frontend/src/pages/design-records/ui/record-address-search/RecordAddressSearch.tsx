@@ -1,10 +1,11 @@
 import { css } from '@emotion/css';
-import { useEffect, useId, useRef } from 'react';
+import { useId, useState } from 'react';
 
 import type { MapAddress } from '@/features/map/model/Map';
 import AddressSearchResults, { handleSearchKeys } from '@/features/map/ui/address-search-results/AddressSearchResults';
 import useAddressSearch from '@/features/property/hooks/useAddressSearch';
 import useExclusiveDropdown from '@/shared/lib/hooks/useExclusiveDropdown';
+import useTimeout from '@/shared/lib/hooks/useTimeout';
 import SearchField from '@/shared/ui/search-field/SearchField';
 
 type Props = {
@@ -41,17 +42,10 @@ const RecordAddressSearch = ({
   const dropdown = useExclusiveDropdown(useId());
   const { query } = search;
   // 결과를 고르면 검색어가 그 주소로 바뀐다. 이때는 다시 검색하지 않는다.
-  const pickedRef = useRef<string | null>(null);
-  // submit은 렌더마다 새로 만들어진다. 검색어가 바뀔 때만 검색하도록 최신 것을 ref로 들고 있는다.
-  const submitRef = useRef(search.submit);
-  submitRef.current = search.submit;
+  const [picked, setPicked] = useState<string | null>(null);
 
-  // 따로 제출하지 않고 입력할 때마다 검색한다. 입력이 멈춘 뒤에만 요청한다.
-  useEffect(() => {
-    if (query.trim() === '' || query === pickedRef.current) return;
-    const timer = window.setTimeout(() => void submitRef.current(), SEARCH_DEBOUNCE_MS);
-    return () => window.clearTimeout(timer);
-  }, [query]);
+  // 따로 제출하지 않고 입력할 때마다 검색한다. 입력이 멈춘 뒤에만 요청하고, 검색어가 바뀔 때마다 다시 잰다.
+  useTimeout(() => void search.submit(), query.trim() === '' || query === picked ? null : SEARCH_DEBOUNCE_MS, query);
 
   return (
     <div
@@ -88,7 +82,7 @@ const RecordAddressSearch = ({
             recent={showRecent && search.query.trim() === ''}
             status={search.status === 'idle' && search.results.length > 0 ? 'success' : search.status}
             onSelect={(result) => {
-              pickedRef.current = formatAddress(result);
+              setPicked(formatAddress(result));
               search.pick(result);
               dropdown.close();
               onSelect(result);
