@@ -14,7 +14,7 @@ export const PARKED_MARKER_LIMIT = 600;
 
 /**
  * 지도 하나가 소유하는 DOM 마커 레이어. 달라진 마커만 다시 그리고, 내린 마커는 모양이 같으면 다시 붙여 쓴다.
- * 탭을 바꿀 때마다 마커 수백 개를 새로 만들면(`renderToStaticMarkup`) 그때마다 메인 스레드를 오래 쓴다.
+ * 탭을 바꿀 때마다 마커 수백 개를 새로 만들면(`createMapMarkerElement`) 그때마다 메인 스레드를 오래 쓴다.
  * 지금 요청에 없는 마커는 반드시 지도에서 내려 이전 탭 마커가 남지 않게 한다.
  */
 export const createMapMarkerLayer = (map: LiveMap, engine: Engine, createElement: CreateElement) => {
