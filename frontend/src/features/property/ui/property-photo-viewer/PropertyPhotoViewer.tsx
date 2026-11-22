@@ -1,5 +1,5 @@
 import { css, cx } from '@emotion/css';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useState } from 'react';
 
 import useDelayedLoading from '@/shared/lib/hooks/useDelayedLoading';
 import Icon from '@/shared/ui/icon/Icon';
@@ -21,23 +21,27 @@ const PropertyPhotoViewer = ({ propertyId, propertyName, initialIndex, onClose }
   // 빠른 응답에는 로딩 문구 없이 바로 사진을 보여 주고, 오래 걸릴 때만 알린다.
   const isLoadingVisible = useDelayedLoading(photos.isPending);
   const [currentIndex, setCurrentIndex] = useState(initialIndex);
-  const closeButtonRef = useRef<HTMLButtonElement>(null);
+  // 닫기 버튼이 붙을 때 뒤 화면 스크롤을 막고 초점을 주고 Esc를 듣는다. 떨어지면 되돌린다.
+  // onClose가 바뀌면 이전처럼 다시 건다.
+  const attachCloseButton = useCallback(
+    (closeButton: HTMLButtonElement | null) => {
+      if (closeButton === null) return;
+      const previousOverflow = document.body.style.overflow;
+      document.body.style.overflow = 'hidden';
+      closeButton.focus();
 
-  useEffect(() => {
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    closeButtonRef.current?.focus();
+      const closeWithEscape = (event: KeyboardEvent) => {
+        if (event.key === 'Escape') onClose();
+      };
+      window.addEventListener('keydown', closeWithEscape);
 
-    const closeWithEscape = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') onClose();
-    };
-    window.addEventListener('keydown', closeWithEscape);
-
-    return () => {
-      document.body.style.overflow = previousOverflow;
-      window.removeEventListener('keydown', closeWithEscape);
-    };
-  }, [onClose]);
+      return () => {
+        document.body.style.overflow = previousOverflow;
+        window.removeEventListener('keydown', closeWithEscape);
+      };
+    },
+    [onClose],
+  );
 
   const photoList = photos.data?.photos ?? [];
   const safeIndex = Math.min(currentIndex, Math.max(photoList.length - 1, 0));
@@ -61,7 +65,7 @@ const PropertyPhotoViewer = ({ propertyId, propertyName, initialIndex, onClose }
               {safeIndex + 1} / {photoList.length}
             </span>
           )}
-          <button ref={closeButtonRef} type="button" aria-label="사진 크게 보기 닫기" onClick={onClose}>
+          <button ref={attachCloseButton} type="button" aria-label="사진 크게 보기 닫기" onClick={onClose}>
             <Icon name="close" size={24} />
           </button>
         </header>

@@ -18,7 +18,6 @@ export const legacyEffectFiles = [
   'src/features/property/hooks/usePropertyMarkerPhotos.ts',
   'src/features/property/hooks/useRecentEdit.ts',
   'src/features/property/ui/property-checklist/PropertyChecklistItemControl.tsx',
-  'src/features/property/ui/property-photo-viewer/PropertyPhotoViewer.tsx',
   'src/features/street-memo/hooks/useStreetMemoLayer.ts',
   'src/features/weather/model/useWeatherPushSync.ts',
   'src/features/weather/model/useWeatherSubscription.ts',
