@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useRef } from 'react';
 
 import { trackPostHogEvent } from '@/shared/lib/analytics/posthog';
 
@@ -14,13 +14,14 @@ export const WEATHER_EVENTS = {
   pushToggleFailed: 'notification_toggle_failed',
 } as const;
 
-export const useWeatherCardViewed = (showsWeather: boolean): void => {
+/** 오늘 예보를 그리는 요소에 붙이는 ref 콜백을 돌려준다. 그 요소가 처음 붙을 때 카드 마운트마다 한 번 남긴다. */
+export const useWeatherCardViewed = (): ((node: HTMLElement | null) => void) => {
   const tracked = useRef(false);
-  useEffect(() => {
-    if (!showsWeather || tracked.current) return;
+  return (node) => {
+    if (node === null || tracked.current) return;
     tracked.current = true;
     trackPostHogEvent(WEATHER_EVENTS.cardViewed);
-  }, [showsWeather]);
+  };
 };
 
 /** 알림을 켜고 끈 곳. 마이의 생활 날씨 카드 토글(`my`), 헤더 가운데 안내의 `알림 받기`(`header`). */
