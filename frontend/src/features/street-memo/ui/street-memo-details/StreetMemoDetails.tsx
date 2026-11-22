@@ -45,8 +45,8 @@ const StreetMemoDetails = ({ memo, isRemoving, removeFailed, onRemove, onClose }
             <Button variant="secondary" onClick={() => setConfirming(false)} disabled={isRemoving}>
               취소
             </Button>
-            <Button variant="danger" onClick={onRemove} disabled={isRemoving}>
-              {isRemoving ? '지우는 중…' : '지우기'}
+            <Button variant="danger" onClick={onRemove} isLoading={isRemoving} loadingLabel="지우는 중…">
+              지우기
             </Button>
           </div>
         ) : (

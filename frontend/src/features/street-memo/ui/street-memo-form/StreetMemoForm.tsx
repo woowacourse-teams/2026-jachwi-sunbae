@@ -19,7 +19,8 @@ const PREFERENCES: StreetMemoPreference[] = ['LIKE', 'DISLIKE'];
 const StreetMemoForm = ({ isSubmitting, submitFailed, onSubmit, onCancel }: Props) => {
   const [preference, setPreference] = useState<StreetMemoPreference | null>(null);
   const [memo, setMemo] = useState('');
-  const canSubmit = preference !== null && memo.trim().length > 0 && !isSubmitting;
+  const isFilled = preference !== null && memo.trim().length > 0;
+  const canSubmit = isFilled && !isSubmitting;
   return (
     <form
       className={styles.form}
@@ -63,8 +64,14 @@ const StreetMemoForm = ({ isSubmitting, submitFailed, onSubmit, onCancel }: Prop
         <Button type="button" variant="text" onClick={onCancel}>
           취소
         </Button>
-        <Button type="submit" disabled={!canSubmit} className={styles.submit}>
-          {isSubmitting ? '남기는 중…' : '평가 남기기'}
+        <Button
+          type="submit"
+          disabled={!isFilled}
+          isLoading={isSubmitting}
+          loadingLabel="남기는 중…"
+          className={styles.submit}
+        >
+          평가 남기기
         </Button>
       </div>
     </form>

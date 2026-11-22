@@ -143,14 +143,11 @@ const ResolvedPropertyActiveChecklist = ({
                   variant="neutral"
                   fullWidth
                   type="button"
-                  disabled={list.isFetchingNextPage}
+                  isLoading={list.isFetchingNextPage}
+                  loadingLabel="불러오는 중…"
                   onClick={() => void list.fetchNextPage()}
                 >
-                  {list.isFetchingNextPage
-                    ? '불러오는 중…'
-                    : list.isFetchNextPageError
-                      ? '다시 불러오기'
-                      : '체크리스트 더 보기'}
+                  {list.isFetchNextPageError ? '다시 불러오기' : '체크리스트 더 보기'}
                 </Button>
               </div>
             )}
@@ -172,7 +169,7 @@ const ResolvedPropertyActiveChecklist = ({
                 isLoading={assign.isPending}
                 loadingLabel="변경 중…"
                 type="button"
-                disabled={assign.isPending || selectedId === null || !isSelectionChanged}
+                disabled={selectedId === null || !isSelectionChanged}
                 onClick={() => void selection.saveSelection()}
               >
                 {current === null ? '체크리스트 적용' : '선택한 체크리스트로 교체'}

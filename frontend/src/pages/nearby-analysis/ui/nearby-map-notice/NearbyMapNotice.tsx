@@ -1,5 +1,7 @@
 import { css } from '@emotion/css';
 
+import useDelayedLoading from '@/shared/lib/hooks/useDelayedLoading';
+
 type NearbyMapNoticeProps = {
   isPropertyPending: boolean;
   isNearbyPending: boolean;
@@ -7,28 +9,33 @@ type NearbyMapNoticeProps = {
   onRetry: () => void;
 };
 
-const NearbyMapNotice = ({ isPropertyPending, isNearbyPending, isNearbyError, onRetry }: NearbyMapNoticeProps) => (
-  <>
-    {isPropertyPending && (
-      <p className={styles.notice} role="status">
-        매물 위치를 확인하는 중이에요.
-      </p>
-    )}
-    {isNearbyPending && (
-      <p className={styles.notice} role="status">
-        주변 시설을 분석하는 중이에요.
-      </p>
-    )}
-    {isNearbyError && (
-      <div className={styles.notice} role="alert">
-        주변 시설을 불러오지 못했어요.{' '}
-        <button type="button" onClick={onRetry}>
-          다시 시도
-        </button>
-      </div>
-    )}
-  </>
-);
+/** 지도 위에 띄우는 안내. 지도는 먼저 보이므로, 빨리 끝난 요청에는 불러오는 중 안내를 띄우지 않는다. */
+const NearbyMapNotice = ({ isPropertyPending, isNearbyPending, isNearbyError, onRetry }: NearbyMapNoticeProps) => {
+  const isPropertyPendingVisible = useDelayedLoading(isPropertyPending);
+  const isNearbyPendingVisible = useDelayedLoading(isNearbyPending);
+  return (
+    <>
+      {isPropertyPendingVisible && (
+        <p className={styles.notice} role="status">
+          매물 위치를 확인하는 중이에요.
+        </p>
+      )}
+      {isNearbyPendingVisible && (
+        <p className={styles.notice} role="status">
+          주변 시설을 분석하는 중이에요.
+        </p>
+      )}
+      {isNearbyError && (
+        <div className={styles.notice} role="alert">
+          주변 시설을 불러오지 못했어요.{' '}
+          <button type="button" onClick={onRetry}>
+            다시 시도
+          </button>
+        </div>
+      )}
+    </>
+  );
+};
 
 const styles = {
   notice: css`

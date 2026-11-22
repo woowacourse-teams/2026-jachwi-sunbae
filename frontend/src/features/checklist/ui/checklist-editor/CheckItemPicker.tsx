@@ -192,10 +192,12 @@ const CheckItemPicker = ({ stage, existingSourceIds, disabled, onCancel, onAdd }
             fullWidth
             className={styles.compactButton}
             type="button"
-            disabled={disabled || result.isFetchingNextPage}
+            disabled={disabled}
+            isLoading={result.isFetchingNextPage}
+            loadingLabel="불러오는 중…"
             onClick={() => void result.fetchNextPage()}
           >
-            {result.isFetchingNextPage ? '불러오는 중…' : '항목 더 보기'}
+            항목 더 보기
           </Button>
         )}
       </section>
