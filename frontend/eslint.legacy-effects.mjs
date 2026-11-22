@@ -7,7 +7,6 @@ export const legacyEffectFiles = [
   'src/features/checklist/model/useChecklistDraft.ts',
   'src/features/map/api/useAddressSearch.ts',
   'src/features/map/api/usePrefetchMetroBoundaries.ts',
-  'src/features/map/hooks/useMapTip.ts',
   'src/features/map/hooks/useNaverMap.ts',
   'src/features/map/hooks/usePreloadMapSdk.ts',
   'src/features/map/ui/map-canvas/MapCanvasSurface.tsx',
