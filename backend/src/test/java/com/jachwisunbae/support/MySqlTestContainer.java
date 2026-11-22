@@ -8,7 +8,9 @@ import org.testcontainers.containers.MySQLContainer;
 // 모든 DB 테스트가 MySQL 컨테이너 하나를 함께 쓴다. 처음 쓰일 때 한 번 띄우고 JVM이 끝나면 Testcontainers가 정리한다.
 public final class MySqlTestContainer {
 
-    private static final MySQLContainer<?> CONTAINER = new MySQLContainer<>("mysql:8.4.10");
+    // 컨텍스트마다 연결 풀(기본 10개)이 컨테이너 하나에 붙으므로 MySQL 기본 최대 연결 수(151)를 늘린다.
+    private static final MySQLContainer<?> CONTAINER = new MySQLContainer<>("mysql:8.4.10")
+            .withCommand("--max_connections=500");
 
     static {
         CONTAINER.start();
