@@ -22,3 +22,8 @@ photo:
 map:
   provider:
     mode: demo
+
+# 운영자 테스트 알림 API를 검증할 때 쓰는 비밀키. 모든 통합 테스트가 같은 설정을 써야 컨텍스트를 재사용한다.
+weather:
+  notification:
+    test-push-key: test-only-push-key
