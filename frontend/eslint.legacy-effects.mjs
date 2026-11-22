@@ -103,7 +103,6 @@ export const legacyTimerFiles = [
   'src/pages/neighborhood-preview/ui/map-search/NeighborhoodMapSearch.tsx',
   'src/pages/neighborhood-preview/ui/place-panel/PlaceDetails.tsx',
   'src/pages/property-compare/hooks/usePropertyComparison.ts',
-  'src/pages/property-detail/PropertyDetailPage.tsx',
   'src/shared/ui/bottom-tab-bar/MobileBottomTabs.tsx',
   'src/shared/ui/map-badge-rail/MapBadgeRail.tsx',
   'src/shared/ui/toast/Toast.tsx',
