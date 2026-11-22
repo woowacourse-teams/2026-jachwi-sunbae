@@ -25,7 +25,6 @@ export const legacyEffectFiles = [
   'src/features/weather/model/useWeatherTestPush.ts',
   'src/pages/admin/ui/AdminLogs.tsx',
   'src/pages/cheap-meals/hooks/useMealNavigation.ts',
-  'src/pages/cheap-meals/hooks/useMealTabs.ts',
   'src/pages/cheap-meals/hooks/useRestaurantMap.ts',
   'src/pages/cheap-meals/ui/MealSheet.tsx',
   'src/pages/cheap-meals/ui/RestaurantPanel.tsx',

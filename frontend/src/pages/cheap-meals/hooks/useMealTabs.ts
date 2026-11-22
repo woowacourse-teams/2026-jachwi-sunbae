@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 
 import { useLogger } from '@/shared/lib/analytics/logging';
 
@@ -14,9 +14,8 @@ const useMealTabs = (layout: MealLayout) => {
   const { tab } = navigation;
   const { log } = useLogger();
   const [visited, setVisited] = useState<MealTab[]>([tab]);
-  useEffect(() => {
-    setVisited((previous) => (previous.includes(tab) ? previous : [...previous, tab]));
-  }, [tab]);
+  // 처음 여는 탭이면 렌더 중에 방문한 탭으로 더한다.
+  if (!visited.includes(tab)) setVisited([...visited, tab]);
   return {
     ...navigation,
     layout,
