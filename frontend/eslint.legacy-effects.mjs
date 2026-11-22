@@ -47,7 +47,6 @@ export const legacyEffectFiles = [
   'src/pages/my/ui/account-link-card/AccountLinkCard.tsx',
   'src/pages/nearby-analysis/hooks/useNearbyAnalysis.ts',
   'src/pages/neighborhood-preview/NeighborhoodPreviewPage.tsx',
-  'src/pages/neighborhood-preview/desktop/NeighborhoodPreviewDesktopPage.tsx',
   'src/pages/neighborhood-preview/hooks/useNeighborhoodAnalytics.ts',
   'src/pages/neighborhood-preview/hooks/useNeighborhoodDetailAnalytics.ts',
   'src/pages/neighborhood-preview/hooks/useNeighborhoodMapView.ts',

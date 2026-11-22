@@ -1,5 +1,5 @@
 import { css } from '@emotion/css';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Outlet, useMatch } from 'react-router-dom';
 
 import { useRecordsMapController } from '@/pages/design-records/RecordsMapProvider';
@@ -87,9 +87,11 @@ const NeighborhoodPreviewDesktopPage = ({ preview }: Props) => {
   // 동네 카드만 닫은 동네. 카드는 숨기되 지도의 선택 테두리는 남긴다. 다른 동네를 고르면 다시 카드를 보인다.
   // 조건 카드를 닫아 둔 상태. 새로 위치를 고르러 들어오면 다시 연다.
   const [isEditorHidden, setIsEditorHidden] = useState(false);
-  useEffect(() => {
+  const [wasSelectingOnMap, setWasSelectingOnMap] = useState(preview.isSelectingOnMap);
+  if (wasSelectingOnMap !== preview.isSelectingOnMap) {
+    setWasSelectingOnMap(preview.isSelectingOnMap);
     if (preview.isSelectingOnMap) setIsEditorHidden(false);
-  }, [preview.isSelectingOnMap]);
+  }
   // 내 매물은 지도 안 카드가 아니라 왼쪽 옆 칸(요약과 노선, 눌러서 상세)에 둔다.
   const infoSubject: MapInfoSubject | null =
     !isResultMap || !places.selectedPlace || places.selectedPlace.kind === 'property'
