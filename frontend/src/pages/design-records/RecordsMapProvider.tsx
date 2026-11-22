@@ -1,10 +1,11 @@
 import type { ReactNode } from 'react';
-import { createContext, useContext, useEffect, useRef, useState } from 'react';
+import { createContext, useContext, useRef, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 
 import { centerWithInsets } from '@/features/map/lib/mapCamera';
 import type { MapCoordinate } from '@/features/map/lib/mapLocation';
 import type { MapAddress } from '@/features/map/model/Map';
+import useEscapeKey from '@/shared/lib/hooks/useEscapeKey';
 import useIsDesktop from '@/shared/lib/hooks/useIsDesktop';
 import {
   NEIGHBORHOODS_PATH,
@@ -114,15 +115,7 @@ export const RecordsMapProvider = ({ children }: { children: ReactNode }) => {
       quickCreate.create(location);
     },
   });
-  useEffect(() => {
-    const cancel = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        layers.cancelPlacement();
-      }
-    };
-    window.addEventListener('keydown', cancel);
-    return () => window.removeEventListener('keydown', cancel);
-  }, [layers]);
+  useEscapeKey(() => layers.cancelPlacement());
   return (
     <Context.Provider value={{ records, layers, setInteractionLevel, centerBesidePanels }}>
       <div ref={pageRef} style={{ height: '100%' }}>
