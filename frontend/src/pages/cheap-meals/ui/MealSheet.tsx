@@ -1,6 +1,6 @@
 import { css, cx } from '@emotion/css';
 import type { ReactNode } from 'react';
-import { useLayoutEffect, useRef } from 'react';
+import { useCallback } from 'react';
 import { createPortal } from 'react-dom';
 
 import BottomSheet from '@/shared/ui/bottom-sheet/BottomSheet';
@@ -12,22 +12,22 @@ type MealSheetProps = { title: string; layout: MealLayout; children: ReactNode; 
 
 /** 상세와 주소 검색을 띄우는 대화상자. 휴대폰은 아래에서 올라오는 시트로, 데스크탑은 화면 가운데 창으로 연다. */
 const MealSheet = ({ title, layout, children, onClose }: MealSheetProps) => {
-  const ref = useRef<HTMLDialogElement>(null);
-  useLayoutEffect(() => {
-    const dialog = ref.current;
+  // 대화상자가 붙을 때 모달로 열고 뒤 화면 스크롤을 막는다. 떨어질 때 닫고 스크롤과 초점을 되돌린다.
+  const openModal = useCallback((dialog: HTMLDialogElement | null) => {
+    if (dialog === null) return;
     const focused = document.activeElement;
     const overflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
-    dialog?.showModal();
+    dialog.showModal();
     return () => {
-      dialog?.close();
+      dialog.close();
       document.body.style.overflow = overflow;
       if (focused instanceof HTMLElement && focused.isConnected) focused.focus({ preventScroll: true });
     };
   }, []);
   return createPortal(
     <dialog
-      ref={ref}
+      ref={openModal}
       className={cx(styles.dialog, layout === 'desktop' && styles.dialogDesktop)}
       aria-label={title}
       onKeyDownCapture={(event) => {
