@@ -1,12 +1,12 @@
 import type { CSSProperties } from 'react';
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useSyncExternalStore } from 'react';
 
 import useDelayedLoading from '@/shared/lib/hooks/useDelayedLoading';
 import { Button } from '@/shared/ui/button/Button';
 import ProgressCircle from '@/shared/ui/progress-circle/ProgressCircle';
 
 import useNaverMap from '../../hooks/useNaverMap';
-import { readCurrentLocation, useCurrentLocation } from '../../lib/currentLocationStore';
+import { readCurrentLocation, subscribeCurrentLocation } from '../../lib/currentLocationStore';
 import { clampToSouthKorea, requestCurrentMapLocation } from '../../lib/mapLocation';
 import { mapZoomScale, markerAnchorTransform, markerScale } from '../../lib/mapMarkerPresentation';
 import { regionLabelPosition, regionSummaryRows } from '../../lib/mapRegionSummary';
@@ -21,6 +21,16 @@ import * as summaryStyles from './MapRegionSummary.styles';
 const EMPTY_MARKERS: MapMarker[] = [];
 const CURRENT_LOCATION_MARKER_ID = 'current-location';
 const EMPTY_CIRCLES: NonNullable<MapCanvasProps['circles']> = [];
+/** 지도가 현재 위치를 구독하기 시작할 때, 위치가 아직 없고 권한이 이미 허용돼 있으면 조용히 한 번 받아 온다. */
+const subscribeCurrentLocationOnMap = (listener: () => void) => {
+  if (readCurrentLocation() === null) {
+    navigator.permissions
+      ?.query({ name: 'geolocation' })
+      .then((status) => (status.state === 'granted' ? requestCurrentMapLocation() : undefined))
+      .catch(() => undefined);
+  }
+  return subscribeCurrentLocation(listener);
+};
 const clamp = (value: number, min: number, max: number): number => Math.min(Math.max(value, min), max);
 
 const demoMarkerStyle = (marker: MapMarker, center: { latitude: number; longitude: number }): CSSProperties => ({
@@ -72,14 +82,7 @@ const MapCanvas = ({
       }
     : undefined;
   // 내 현재 위치는 모든 지도에서 파란 점으로 보인다. 위치 권한이 이미 허용돼 있으면 조용히 한 번 받아 온다.
-  const currentLocation = useCurrentLocation();
-  useEffect(() => {
-    if (readCurrentLocation() !== null) return;
-    navigator.permissions
-      ?.query({ name: 'geolocation' })
-      .then((status) => (status.state === 'granted' ? requestCurrentMapLocation() : undefined))
-      .catch(() => undefined);
-  }, []);
+  const currentLocation = useSyncExternalStore(subscribeCurrentLocationOnMap, readCurrentLocation);
   const allMarkers = useMemo<MapMarker[]>(
     () =>
       currentLocation === null
