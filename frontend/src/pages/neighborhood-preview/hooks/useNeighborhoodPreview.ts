@@ -386,7 +386,8 @@ const useNeighborhoodPreview = () => {
     matchedAreaCount: areas?.length ?? 0,
     selectedStation,
     route: selectedStation ? route.data : undefined,
-    isRouteLoading: !!selectedStation && (route.isPending || route.isFetching),
+    // 이미 받은 경로가 있으면 다시 불러오는 동안에도 그 경로를 그대로 둔다. 받은 경로가 없을 때만 불러오는 중이다.
+    isRouteLoading: !!selectedStation && (route.isPending || route.isFetching) && route.data === undefined,
     routeError: selectedStation && route.isError && !route.isFetching ? describeRouteError(route.error) : null,
     retryRoute: () => route.refetch(),
     isMockData,

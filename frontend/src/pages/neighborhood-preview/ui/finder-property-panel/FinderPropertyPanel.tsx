@@ -3,6 +3,7 @@ import { css } from '@emotion/css';
 import RecordCardMenu from '@/pages/design-records/ui/record-list/RecordCardMenu';
 import PropertyNearbyPreview from '@/pages/property-detail/ui/property-nearby-preview/PropertyNearbyPreview';
 import PropertyCard from '@/features/property/ui/property-card/PropertyCard';
+import useDelayedLoading from '@/shared/lib/hooks/useDelayedLoading';
 import { NEIGHBORHOODS_PATH } from '@/shared/lib/navigation/appPaths';
 import Icon from '@/shared/ui/icon/Icon';
 import { useMapModeSwitch } from '@/shared/ui/map-mode-tile/MapModeContext';
@@ -44,6 +45,8 @@ const FinderPropertyPanel = ({
 }: Props) => {
   const { commute, isPreview, latitude, longitude } = property;
   const mode = useMapModeSwitch();
+  // 매물 카드는 먼저 보이므로, 통근 시간이 빨리 오면 불러오는 중 문구를 띄우지 않는다.
+  const isCommuteLoadingVisible = useDelayedLoading(!isPreview && hasDestination && commute === null);
   return (
     <div className={styles.root} data-layout={layout}>
       <section className={styles.summary} aria-label="매물 요약">
@@ -81,8 +84,8 @@ const FinderPropertyPanel = ({
           <p className={styles.notice}>예시 매물이라 통근 시간을 계산하지 않아요</p>
         ) : !hasDestination ? (
           <p className={styles.notice}>출퇴근 장소를 정하면 이 집에서 가는 노선을 알려 드려요</p>
-        ) : commute === null ? (
-          <p className={styles.notice}>통근 시간을 불러오고 있어요</p>
+        ) : commute === null || isCommuteLoadingVisible ? (
+          isCommuteLoadingVisible && <p className={styles.notice}>통근 시간을 불러오고 있어요</p>
         ) : commute.status === 'REACHABLE' ? (
           <>
             <h3 className={styles.heading}>이 집에서 통근 {propertyCommuteLabel(commute, commuteMaxMinutes)}</h3>
