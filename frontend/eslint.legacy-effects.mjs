@@ -10,7 +10,6 @@ export const legacyEffectFiles = [
   'src/features/map/hooks/useMapTip.ts',
   'src/features/map/hooks/useNaverMap.ts',
   'src/features/map/hooks/usePreloadMapSdk.ts',
-  'src/features/map/ui/infrastructure-panel/InfrastructureMap.tsx',
   'src/features/map/ui/map-canvas/MapCanvasSurface.tsx',
   'src/features/map/ui/map-canvas/SharedMapCanvas.tsx',
   'src/features/property/api/useAuthenticatedPhoto.ts',
