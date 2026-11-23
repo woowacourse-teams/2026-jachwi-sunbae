@@ -142,9 +142,12 @@ const useNeighborhoodPreview = () => {
   useEffect(() => {
     writeNeighborhoodSearch(searchSessionKey, submitted ? { ...submitted, selectedId, selectedStopId } : null);
   }, [searchSessionKey, submitted, selectedId, selectedStopId]);
-  useEffect(() => {
+  // 주소의 동네가 바뀌면(뒤로 가기, 링크) 그 동네를 고른다. 주소에서 동네가 빠질 때는 고른 동네를 그대로 둔다.
+  const [selectedRouteAreaId, setSelectedRouteAreaId] = useState(routeAreaId);
+  if (routeAreaId !== selectedRouteAreaId) {
+    setSelectedRouteAreaId(routeAreaId);
     if (routeAreaId) setSelectedId(routeAreaId);
-  }, [routeAreaId]);
+  }
   // 진입부터 첫 검색까지 중앙값 22초 동안 수도권 경계를 받아 두어, 검색 뒤에는 통근 API만 기다리게 한다.
   // 지도가 처음 그려지면(onReady) 시작하고, 느린 연결에서 지도보다 장소를 먼저 고르면 그때 시작한다.
   const prefetchBoundaries = usePrefetchMetroBoundaries({ isSearching: phase === 'analyzing' });
@@ -193,9 +196,9 @@ const useNeighborhoodPreview = () => {
   }, [isPublicExplore, phase, commute.isSuccess, commute.isFetching, areas?.length]);
   const selected = allAreas?.find((area) => area.adminDongCode === (routeAreaId ?? selectedId));
   const selectedStation = selected?.stations.find((station) => station.stopId === selectedStopId);
-  useEffect(() => {
-    if (selected && !selectedStation) setSelectedStopId(selected.stations[0]?.stopId ?? null);
-  }, [selected, selectedStation]);
+  // 고른 동네에 없는 출발 정류장이면 그 동네의 첫 정류장으로 바꾼다.
+  const fallbackStopId = selected && !selectedStation ? (selected.stations[0]?.stopId ?? null) : selectedStopId;
+  if (fallbackStopId !== selectedStopId) setSelectedStopId(fallbackStopId);
   const route = useQuery({
     queryKey: [
       'commute-route',

@@ -7,11 +7,18 @@ import type { MapAddress } from '../model/Map';
 import { searchPlacesAndAddresses } from './mapApi';
 
 type SearchAddress = typeof searchPlacesAndAddresses;
+type Options = {
+  /** 처음 검색 칸에 채워 둘 검색어. 공백뿐이면 빈 칸으로 연다. */
+  initialQuery?: string;
+  search?: SearchAddress;
+};
+
+const normalizeQuery = (value: string) => (value.trim() === '' ? '' : value);
 
 /** 검색 요청과 화면 표현을 분리한다. 입력 변경·닫기 이후의 오래된 응답은 반영하지 않는다. */
-const useAddressSearch = (search: SearchAddress = searchPlacesAndAddresses) => {
+const useAddressSearch = ({ initialQuery = '', search = searchPlacesAndAddresses }: Options = {}) => {
   const config = usePublicConfig();
-  const [query, setQuery] = useState('');
+  const [query, setQuery] = useState(() => normalizeQuery(initialQuery));
   const [results, setResults] = useState<MapAddress[]>([]);
   const [status, setStatus] = useState<AddressSearchStatus>('idle');
   const controllerRef = useRef<AbortController | null>(null);
@@ -27,7 +34,7 @@ const useAddressSearch = (search: SearchAddress = searchPlacesAndAddresses) => {
   const changeQuery = useCallback(
     (value: string) => {
       cancelRequest();
-      setQuery(value.trim() === '' ? '' : value);
+      setQuery(normalizeQuery(value));
       setResults([]);
       setStatus('idle');
     },

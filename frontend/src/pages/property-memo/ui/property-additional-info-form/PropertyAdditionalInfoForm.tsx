@@ -1,5 +1,5 @@
 import { css } from '@emotion/css';
-import { type KeyboardEvent, useEffect, useRef, useState } from 'react';
+import { type KeyboardEvent, useCallback, useRef, useState } from 'react';
 
 import type { AdditionalEditField } from '@/pages/property-detail/model/editField';
 import { useUpdateProperty } from '@/features/property/api/usePropertyMutations';
@@ -84,9 +84,13 @@ const PropertyAdditionalInfoForm = ({
     onOutside: () => formRef.current?.requestSubmit(),
   });
   // 줄 안에서 열면 첫 입력(선택지면 첫 버튼)으로 포커스를 옮긴다. 그래야 다른 곳을 누를 때 떠난 것으로 보고 저장한다.
-  useEffect(() => {
-    if (isInline) formRef.current?.querySelector<HTMLElement>('input, button:not([hidden]), textarea')?.focus();
-  }, [isInline]);
+  const attachForm = useCallback(
+    (form: HTMLFormElement | null) => {
+      formRef.current = form;
+      if (isInline) form?.querySelector<HTMLElement>('input, button:not([hidden]), textarea')?.focus();
+    },
+    [isInline],
+  );
   const shows = (target: AdditionalEditField) => field === undefined || field === target;
 
   const setValue = <K extends keyof AdditionalInfoValues>(key: K, value: AdditionalInfoValues[K]) =>
@@ -106,7 +110,7 @@ const PropertyAdditionalInfoForm = ({
 
   return (
     <form
-      ref={formRef}
+      ref={attachForm}
       className={styles.form}
       data-layout={layout}
       onKeyDown={cancelOnEscape}

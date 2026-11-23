@@ -1,5 +1,5 @@
 import { css } from '@emotion/css';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 
 import { useNearbyFacilities } from '@/features/map/api/useNearbyFacilities';
 import useFacilityFocus from '@/features/map/hooks/useFacilityFocus';
@@ -44,14 +44,26 @@ const PropertyNearbyPreview = ({
   onSaveLocation,
   onEndEditLocation,
 }: PropertyNearbyPreviewProps) => {
-  const sectionRef = useRef<HTMLDivElement>(null);
+  // 주소 바꾸기를 켜면 이 칸을 화면 가운데로 올린다. 켜고 끌 때마다 ref 콜백이 다시 붙는다.
+  // scrollIntoView가 없는 환경(jsdom 등)에서도 터지지 않게 있을 때만 부른다.
+  const scrollToSectionWhenEditing = useCallback(
+    (section: HTMLDivElement | null) => {
+      if (isEditingLocation) section?.scrollIntoView?.({ behavior: 'smooth', block: 'center' });
+    },
+    [isEditingLocation],
+  );
   const center = useMemo(() => ({ latitude, longitude }), [latitude, longitude]);
   const [level, setLevel] = useState(PREVIEW_LEVEL);
   /** 지도가 보고 있는 가운데. 반경 원은 늘 매물 자리에 두고, 이것만 끌거나 현재 위치로 옮긴다. */
   const [viewCenter, setViewCenter] = useState<MapCoordinate>(center);
   const [myLocation, setMyLocation] = useState<MapCoordinate | null>(null);
   const [isLocating, setIsLocating] = useState(false);
-  useEffect(() => setViewCenter(center), [center]);
+  // 매물 자리가 바뀌면(주소를 바꿔 저장하면) 보던 가운데도 새 자리로 되돌린다.
+  const [viewCenterOrigin, setViewCenterOrigin] = useState<MapCoordinate>(center);
+  if (viewCenterOrigin.latitude !== latitude || viewCenterOrigin.longitude !== longitude) {
+    setViewCenterOrigin(center);
+    setViewCenter(center);
+  }
 
   const moveToMyLocation = async () => {
     setIsLocating(true);
@@ -72,11 +84,6 @@ const PropertyNearbyPreview = ({
   // 지도와 고른 주소는 그대로 보이므로, 빨리 끝난 요청에는 불러오는 중이나 저장 중 표시를 띄우지 않는다.
   const isNearbyLoadingVisible = useDelayedLoading(nearby.isPending);
   const isSavingVisible = useDelayedLoading(location.isSaving);
-
-  useEffect(() => {
-    // scrollIntoView가 없는 환경(jsdom 등)에서도 터지지 않게 있을 때만 부른다.
-    if (isEditingLocation) sectionRef.current?.scrollIntoView?.({ behavior: 'smooth', block: 'center' });
-  }, [isEditingLocation]);
 
   const places = nearby.data?.places;
   const markers = useMemo<MapMarker[]>(() => {
@@ -124,7 +131,7 @@ const PropertyNearbyPreview = ({
   };
 
   return (
-    <div ref={sectionRef} className={styles.content} aria-label="매물 주변 환경">
+    <div ref={scrollToSectionWhenEditing} className={styles.content} aria-label="매물 주변 환경">
       {showMap && (
         <div className={styles.map}>
           <MapCanvas
