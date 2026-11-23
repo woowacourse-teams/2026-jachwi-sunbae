@@ -1,6 +1,9 @@
 import { css, cx, keyframes } from '@emotion/css';
 import { createElement, type MouseEvent, type ReactElement } from 'react';
 
+import { PROPERTY_PLACEHOLDER } from '@/shared/assets/propertyImageAssets';
+import { reportPostHogFirstListingCard } from '@/shared/lib/analytics/posthog';
+
 import { mapCategoryMarkerSrc, propertyMarkerSrc } from '../../lib/mapIconAssets';
 import { isMarkerSelected, isPinMarker } from '../../lib/mapMarkerPresentation';
 import type { MapMarker } from '../../model/Map';
@@ -69,8 +72,8 @@ const h = (
   children: children.filter((child): child is MarkerChild => child !== false && child != null && child !== ''),
 });
 
-const pinImage = (className: string, src: string | undefined) =>
-  h('img', { class: className, src, alt: '', draggable: 'false', decoding: 'async' });
+const pinImage = (className: string, src: string | undefined, attributes: MarkerAttributes = {}) =>
+  h('img', { class: className, src, alt: '', draggable: 'false', decoding: 'async', ...attributes });
 
 const markerContent = (marker: MapMarker, isPhotoMarker: boolean): Array<MarkerChild | false | null | undefined> => {
   const pinKind = marker.pinKind ?? 'search';
@@ -137,7 +140,9 @@ const markerContent = (marker: MapMarker, isPhotoMarker: boolean): Array<MarkerC
                 h(
                   'span',
                   { class: styles.photoCard, 'data-has-text': marker.summary ? '' : undefined },
-                  pinImage(styles.photoPin, marker.photo),
+                  pinImage(styles.photoPin, marker.photo, {
+                    'data-listing-thumbnail': marker.photo === PROPERTY_PLACEHOLDER.src2x ? undefined : '',
+                  }),
                   // 겹친 매물은 사진 카드 오른쪽 위 모서리에 걸친 흰 배지에 파란 숫자로 개수를 적는다.
                   marker.count !== undefined && h('strong', { class: styles.photoCount }, String(marker.count)),
                   marker.summary &&
@@ -283,6 +288,10 @@ export const createMapMarkerElement = (
       onSelectMarker(marker);
     });
   }
+  // 기본 이미지가 아닌 실제 대표 사진이 그려진 순간이 첫 매물 카드가 보인 때다. 우리가 만든 요소의 `load`만 듣는다.
+  element
+    .querySelector('img[data-listing-thumbnail]')
+    ?.addEventListener('load', () => reportPostHogFirstListingCard(), { once: true });
   return element;
 };
 

@@ -4,14 +4,15 @@
 
 `src/shared/lib/analytics/posthog.ts`는 기존 호출부가 사용하는 안정된 진입점이다. SDK는 정적으로 import하지 않는다. 수명주기 상태는 한 런타임이 소유하며 파일별 전역 상태를 함께 초기화하는 조립 로직은 없앤다.
 
-| 모듈 (`shared/lib/analytics/posthog/`)    | 책임                                                                               |
-| ----------------------------------------- | ---------------------------------------------------------------------------------- |
-| `runtime.ts`                              | SDK lazy load·초기화·큐·공통 속성·식별·페이지뷰 캐시의 단일 상태 소유자, 실패 진단 |
-| `configuration.ts`                        | 공개 설정 검증, 마스킹·자동 수집 옵션                                              |
-| `platform.ts`                             | 기기 컨텍스트를 사용해 앱 주입 정보·자취선배 전용 UA로 플랫폼 분류                 |
-| `errorClassification.ts`, `exceptions.ts` | 순수 오류 분류와 오류 전송                                                         |
-| `webVitals.ts`                            | Web Vitals(LCP, INP, CLS, FCP, TTFB)를 따로 받은 청크에서 재서 `web_vital`로 전송  |
-| `types.ts`                                | SDK·공통 속성·오류 등급 타입                                                       |
+| 모듈 (`shared/lib/analytics/posthog/`)    | 책임                                                                                        |
+| ----------------------------------------- | ------------------------------------------------------------------------------------------- |
+| `runtime.ts`                              | SDK lazy load·초기화·큐·공통 속성·식별·페이지뷰 캐시의 단일 상태 소유자, 실패 진단          |
+| `configuration.ts`                        | 공개 설정 검증, 마스킹·자동 수집 옵션                                                       |
+| `platform.ts`                             | 기기 컨텍스트를 사용해 앱 주입 정보·자취선배 전용 UA로 플랫폼 분류                          |
+| `errorClassification.ts`, `exceptions.ts` | 순수 오류 분류와 오류 전송                                                                  |
+| `webVitals.ts`                            | Web Vitals(LCP, INP, CLS, FCP, TTFB)를 따로 받은 청크에서 재서 `web_vital`로 전송           |
+| `firstListingCard.ts`                     | 홈의 첫 매물 카드 썸네일이 보인 시간을 회선 정보와 함께 `first_listing_card_visible`로 전송 |
+| `types.ts`                                | SDK·공통 속성·오류 등급 타입                                                                |
 
 `app/analytics/PostHogTracker.tsx`는 React와 SDK 수명주기를 연결한다. 초기화·공통 속성·식별은 layout effect에서 처리해 페이지의 첫 effect 이벤트가 초기화보다 먼저 실행되어 버려지지 않게 한다. 페이지뷰는 그 이후 전송한다. 로그인은 수집의 전제 조건이 아니며 익명 방문에서도 경로와 기능 이벤트를 수집한다.
 
@@ -79,6 +80,22 @@ auth_status는 발생 당시 로컬 인증 세션 상태를 나타내는 이벤�
 `web-vitals`로 LCP, INP, CLS, FCP, TTFB를 재서 지표마다 `web_vital` 이벤트(`metric_name`, `metric_value`, `metric_rating`, `navigation_type`)로 보낸다. PostHog의 `capture_performance.web_vitals`는 TTFB가 없고 측정 스크립트를 PostHog 서버에서 따로 받으므로 쓰지 않는다. 측정 코드는 초기화 뒤 별도 청크로 받아 초기 번들을 늘리지 않는다. CLS와 INP는 화면을 숨길 때 확정되므로 Beacon으로 바로 보낸다.
 
 모든 이벤트의 `before_send`가 `screen_route`(지금 화면의 라우트 패턴, `shared/lib/analytics/screenRoute.ts`)를 붙인다. 매물 번호, 동 코드, 쿼리는 싣지 않고 라우터에 없는 주소는 `*`로 묶는다. `web_vital`의 `screen_route`는 처음 연 화면이고, 값이 확정된 때의 화면은 `report_screen_route`다. 플랫폼(`platform`)과 트래픽 구분(`traffic_type`)은 다른 이벤트처럼 `before_send`가 붙인다.
+
+### 첫 매물 카드 노출 시간
+
+실험실 Slow 4G만으로는 실제 사용자에게 의미 있는 값인지 알 수 없어, 홈(`/`)의 첫 매물 카드가 보인 시간을 회선과 함께 모은다. 지도 마커의 대표 사진 `img`가 `load`된 첫 순간에 한 번만 `first_listing_card_visible`을 보낸다. 기본 집 이미지만 그려진 카드는 세지 않는다. 처음 연 화면이 홈이 아니거나, 보내는 때 홈을 떠났거나 탭이 가려져 있으면 보내지 않는다. 앱 안에서 화면을 옮겨 온 경우 기준점(navigation start)이 달라 재지 않는다.
+
+| 속성                        | 값                                                                                                     |
+| --------------------------- | ------------------------------------------------------------------------------------------------------ |
+| `time_ms`                   | `performance.now()`를 반올림한 밀리초. 기준점은 navigation start                                       |
+| `screen_route`              | 처음 연 화면의 라우트 패턴(홈은 `/`)                                                                   |
+| `platform`                  | `web`, `ios_webview`, `android_webview`. 다른 이벤트와 같은 방식으로 붙는다                            |
+| `visit_type`                | `first` 또는 `returning`. 이 브라우저에 `jachwi-analytics-visited=1`이 있었는지. 저장소를 못 쓰면 null |
+| `connection_effective_type` | `navigator.connection.effectiveType`(`slow-2g`, `2g`, `3g`, `4g`). 지원하지 않으면 null                |
+| `connection_downlink`       | `navigator.connection.downlink`(Mbps). 지원하지 않으면 null                                            |
+| `connection_rtt`            | `navigator.connection.rtt`(ms). 지원하지 않으면 null                                                   |
+
+사용자 입력, 주소, 매물 번호, 좌표는 싣지 않는다. Safari와 iOS 앱 WebView는 `navigator.connection`이 없어 회선 속성이 null이다.
 
 ## 검증
 

@@ -63,6 +63,16 @@ for BOUNDARY_GZIP in "${DIST_DIR}"/boundaries/*.geojson.gz; do
         --cache-control 'public,max-age=31536000,immutable'
 done
 
+# brotli 파일은 `.geojson.br` 키에 따로 올린다. CloudFront Function(deploy/cloudfront/boundary-encoding.js)이
+# Accept-Encoding에 br이 있는 요청만 이 키로 돌리고, 나머지는 위의 gzip 객체를 그대로 받는다.
+for BOUNDARY_BROTLI in "${DIST_DIR}"/boundaries/*.geojson.br; do
+    [[ -f "${BOUNDARY_BROTLI}" ]] || continue
+    aws s3 cp "${BOUNDARY_BROTLI}" "${S3_URI}boundaries/$(basename "${BOUNDARY_BROTLI}")" \
+        --content-type 'application/geo+json' \
+        --content-encoding 'br' \
+        --cache-control 'public,max-age=31536000,immutable'
+done
+
 for BOUNDARY_MANIFEST in manifest.json legal-manifest.json; do
   if [[ -f "${DIST_DIR}/boundaries/${BOUNDARY_MANIFEST}" ]]; then
     aws s3 cp "${DIST_DIR}/boundaries/${BOUNDARY_MANIFEST}" "${S3_URI}boundaries/${BOUNDARY_MANIFEST}" \

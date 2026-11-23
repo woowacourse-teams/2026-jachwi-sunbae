@@ -56,4 +56,20 @@ const createBoundaryAssets = (source) => {
   };
 };
 
-module.exports = { createBoundaryAssets };
+// 시도별 파일은 조회할 때마다 받으므로 가장 높은 품질로 한 번만 압축한다. 경기 파일은 gzip 545KB가 brotli 325KB가 된다.
+// 품질 11은 1MB에 1초쯤 걸려, 비동기로 돌려 libuv 스레드 풀에서 여러 파일을 함께 압축한다.
+const compressBrotli = (source) =>
+  new Promise((resolve, reject) => {
+    zlib.brotliCompress(
+      source,
+      {
+        params: {
+          [zlib.constants.BROTLI_PARAM_QUALITY]: zlib.constants.BROTLI_MAX_QUALITY,
+          [zlib.constants.BROTLI_PARAM_SIZE_HINT]: source.length,
+        },
+      },
+      (error, compressed) => (error ? reject(error) : resolve(compressed)),
+    );
+  });
+
+module.exports = { createBoundaryAssets, compressBrotli };

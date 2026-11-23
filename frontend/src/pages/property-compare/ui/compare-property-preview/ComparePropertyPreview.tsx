@@ -7,10 +7,13 @@ import { roomOptionLabels, utilityOptionLabels } from '@/features/property/model
 import AuthenticatedPhoto from '@/features/property/ui/authenticated-photo/AuthenticatedPhoto';
 import PropertyPlaceholderPhoto from '@/features/property/ui/property-placeholder-photo/PropertyPlaceholderPhoto';
 import PropertyPrice from '@/features/property/ui/property-price/PropertyPrice';
+import useDelayedLoading from '@/shared/lib/hooks/useDelayedLoading';
 import InlineNotice from '@/shared/ui/inline-notice/InlineNotice';
 
 const ComparePropertyPreview = ({ property }: { property: PropertySummary }) => {
   const { data, isPending, isError } = usePropertyDetail(property.propertyId);
+  // 목록에서 받은 요약은 먼저 보이므로, 상세가 빨리 오면 불러오는 중 문구를 띄우지 않는다.
+  const isPendingVisible = useDelayedLoading(isPending);
   const photo = data?.photoPreview.photos[0] ?? property.representativePhoto;
   const details = data && [
     [
@@ -60,7 +63,7 @@ const ComparePropertyPreview = ({ property }: { property: PropertySummary }) => 
           </div>
         ))}
       </dl>
-      {isPending && <p role="status">상세 정보를 불러오고 있어요.</p>}
+      {isPendingVisible && <p role="status">상세 정보를 불러오고 있어요.</p>}
       {isError && <InlineNotice tone="error">상세 정보를 불러오지 못했어요.</InlineNotice>}
     </aside>
   );

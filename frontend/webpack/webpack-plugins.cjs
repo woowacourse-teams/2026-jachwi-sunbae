@@ -6,20 +6,25 @@ const path = require('node:path');
 const packageVersion = require('../package.json').version;
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const { BundleAnalyzerPlugin } = require('webpack-bundle-analyzer');
-const { createBoundaryAssets } = require('./admin-boundary-assets.cjs');
+const { createBoundaryAssets, compressBrotli } = require('./admin-boundary-assets.cjs');
 
 // 파일만 배포 산출물에 복사한다. HTML이나 초기 JS에서 다운로드하지 않는다.
 class AdminBoundaryAssetsPlugin {
+  /** `brotli`가 true면 시도별 경계 파일의 brotli 파일(`.geojson.br`)도 만든다. 압축에 십여 초가 걸려 운영 빌드에서만 켠다. */
+  constructor({ brotli = false } = {}) {
+    this.brotli = brotli;
+  }
+
   apply(compiler) {
     compiler.hooks.thisCompilation.tap('AdminBoundaryAssets', (compilation) => {
       const sourcePath = path.resolve(__dirname, '../data/admin-dongs.geojson');
       compilation.fileDependencies.add(sourcePath);
-      compilation.hooks.processAssets.tap(
+      compilation.hooks.processAssets.tapPromise(
         {
           name: 'AdminBoundaryAssets',
           stage: webpack.Compilation.PROCESS_ASSETS_STAGE_ADDITIONAL,
         },
-        () => {
+        async () => {
           const assets = createBoundaryAssets(fs.readFileSync(sourcePath));
           const files = {};
           for (const kind of ['emd', 'lio', 'sig']) {
@@ -46,6 +51,11 @@ class AdminBoundaryAssetsPlugin {
             ['manifest.json', assets.manifest],
           ])
             compilation.emitAsset(`boundaries/${filename}`, new webpack.sources.RawSource(content));
+          // 전국 파일과 법정동 파일은 화면이 받지 않거나 드물게 받아 gzip만 둔다.
+          if (!this.brotli) return;
+          const compressed = await Promise.all(assets.partitions.map((part) => compressBrotli(part.source)));
+          for (const [index, part] of assets.partitions.entries())
+            compilation.emitAsset(`boundaries/${part.filename}.br`, new webpack.sources.RawSource(compressed[index]));
         },
       );
     });
@@ -73,7 +83,7 @@ class SeoFilesPlugin {
 }
 
 const createPlugins = ({ isProduction, buildEnvironment }) => [
-  new AdminBoundaryAssetsPlugin(),
+  new AdminBoundaryAssetsPlugin({ brotli: isProduction }),
   new SeoFilesPlugin(),
   new webpack.DefinePlugin({
     __API_BASE_URL__: JSON.stringify(buildEnvironment.apiBaseUrl),

@@ -11,6 +11,7 @@ import type { MapRadiusCircle } from '@/features/map/model/MapCanvas';
 import MapCanvas from '@/features/map/ui/map-canvas/MapCanvas';
 import MapCurrentLocationButton from '@/features/map/ui/map-current-location-button/MapCurrentLocationButton';
 import MapZoomControl from '@/features/map/ui/map-zoom-control/MapZoomControl';
+import useDelayedLoading from '@/shared/lib/hooks/useDelayedLoading';
 
 import { PROPERTY_PIN_IMAGE } from './nearbyColors';
 import NearbyRing from './NearbyRing';
@@ -68,6 +69,9 @@ const PropertyNearbyPreview = ({
   const [focused, setFocused] = useFacilityFocus();
   const location = useLocationPick(isEditingLocation, onSaveLocation, onEndEditLocation);
   const nearby = useNearbyFacilities(center, RADIUS, [], true, { loadAllCategories: true });
+  // 지도와 고른 주소는 그대로 보이므로, 빨리 끝난 요청에는 불러오는 중이나 저장 중 표시를 띄우지 않는다.
+  const isNearbyLoadingVisible = useDelayedLoading(nearby.isPending);
+  const isSavingVisible = useDelayedLoading(location.isSaving);
 
   useEffect(() => {
     // scrollIntoView가 없는 환경(jsdom 등)에서도 터지지 않게 있을 때만 부른다.
@@ -169,7 +173,7 @@ const PropertyNearbyPreview = ({
                     onClick={() => void location.save()}
                     disabled={location.isSaving}
                   >
-                    {location.isSaving ? '변경 중…' : '이 위치로 변경'}
+                    {isSavingVisible ? '변경 중…' : '이 위치로 변경'}
                   </button>
                 )}
               </div>
@@ -188,10 +192,12 @@ const PropertyNearbyPreview = ({
         </div>
       ) : (
         <div className={styles.card}>
-          {nearby.isPending ? (
-            <span className={styles.muted} role="status">
-              주변을 살펴보는 중이에요…
-            </span>
+          {nearby.isPending || isNearbyLoadingVisible ? (
+            isNearbyLoadingVisible && (
+              <span className={styles.muted} role="status">
+                주변을 살펴보는 중이에요…
+              </span>
+            )
           ) : !hasAny ? (
             <span className={styles.muted}>500m 안에서 찾은 시설이 없어요.</span>
           ) : (

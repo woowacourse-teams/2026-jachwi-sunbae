@@ -1,5 +1,7 @@
 import { css } from '@emotion/css';
 
+import useDelayedLoading from '@/shared/lib/hooks/useDelayedLoading';
+
 import type { RecordsMapLayers } from '../../hooks/useRecordsMapLayers';
 
 type Props = { pick: NonNullable<RecordsMapLayers['locationPick']> };
@@ -14,21 +16,25 @@ const addressText = (pick: Props['pick']): string => {
 };
 
 /** 매물 상세에서 주소를 바꾸는 동안 큰 지도 아래 가운데에 띄우는 안내. 지도를 눌러 자리를 고르고 여기서 저장하거나 취소한다. */
-const RecordLocationPick = ({ pick }: Props) => (
-  <div className={styles.toast} role="status">
-    <span>{addressText(pick)}</span>
-    <div className={styles.actions}>
-      <button type="button" onClick={pick.cancel} disabled={pick.isSaving}>
-        취소
-      </button>
-      {pick.status === 'ready' && (
-        <button type="button" data-primary="true" onClick={pick.save} disabled={pick.isSaving}>
-          {pick.isSaving ? '변경 중…' : '이 위치로 변경'}
+const RecordLocationPick = ({ pick }: Props) => {
+  // 고른 주소는 그대로 보이므로, 빨리 끝난 저장에는 버튼 글자를 바꾸지 않는다.
+  const isSavingVisible = useDelayedLoading(pick.isSaving);
+  return (
+    <div className={styles.toast} role="status">
+      <span>{addressText(pick)}</span>
+      <div className={styles.actions}>
+        <button type="button" onClick={pick.cancel} disabled={pick.isSaving}>
+          취소
         </button>
-      )}
+        {pick.status === 'ready' && (
+          <button type="button" data-primary="true" onClick={pick.save} disabled={pick.isSaving}>
+            {isSavingVisible ? '변경 중…' : '이 위치로 변경'}
+          </button>
+        )}
+      </div>
     </div>
-  </div>
-);
+  );
+};
 
 const styles = {
   toast: css`

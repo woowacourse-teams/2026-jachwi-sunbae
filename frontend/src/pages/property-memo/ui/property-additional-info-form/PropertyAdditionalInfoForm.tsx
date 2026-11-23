@@ -12,6 +12,7 @@ import {
 import type { PropertyDetail, RoomOption, UtilityOption } from '@/features/property/model/Property';
 import { MAINTENANCE_OPTIONS, PROPERTY_OPTIONS } from '@/features/property/model/propertyOptions';
 import MoneyField from '@/features/property/ui/money-field/MoneyField';
+import useDelayedLoading from '@/shared/lib/hooks/useDelayedLoading';
 import useOutsideInteraction from '@/shared/lib/hooks/useOutsideInteraction';
 import BottomActionArea from '@/shared/ui/bottom-action-area/BottomActionArea';
 import { Button } from '@/shared/ui/button/Button';
@@ -74,6 +75,8 @@ const PropertyAdditionalInfoForm = ({
   const [initialValues] = useState(() => toValues(property));
   const [values, setValues] = useState(initialValues);
   const isInline = layout === 'inline';
+  // 고치던 값이 그대로 보이므로, 빨리 끝난 저장에는 저장 중 문구를 띄우지 않는다.
+  const isSavingVisible = useDelayedLoading(updateProperty.isPending);
   const formRef = useRef<HTMLFormElement>(null);
   useOutsideInteraction({
     ref: formRef,
@@ -245,7 +248,7 @@ const PropertyAdditionalInfoForm = ({
       ) : (
         // 떠나면 저장하므로 버튼 없이 저장 중임만 알린다. 엔터로 보내는 숨은 제출 버튼을 둔다.
         <>
-          {updateProperty.isPending && (
+          {isSavingVisible && (
             <p className={styles.status} role="status">
               저장 중…
             </p>
