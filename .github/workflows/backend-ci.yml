@@ -109,7 +109,9 @@ jobs:
       - name: Validate deployment scripts
         if: steps.changes.outputs.backend == 'true'
         run: |
-          bash -n deploy/scripts/*.sh deploy/tests/validate-test.sh
+          for script in deploy/scripts/*.sh deploy/tests/validate-test.sh; do
+            bash -n "$script" || exit 1
+          done
           bash deploy/tests/validate-test.sh
 
       - name: Build
