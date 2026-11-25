@@ -100,3 +100,6 @@ sudo systemctl restart jachwi-sunbae.service
 Flyway의 `validate`는 적용 파일과 이력의 체크섬 등을 확인한다. 수동 변경으로 생긴 DB 스키마 차이 전체를 자동 검출하는 기능은 아니다.
 SQL 변경 시 관련 테스트와 `backend`의 `./gradlew testAll --no-daemon`을 실행한다.
 실패한 마이그레이션과 코드 롤백은 [롤백 절차](rollback.md#데이터베이스-변경이-포함된-롤백)를 따른다.
+
+V21~V23의 추가 컬럼·테이블은 기존 데이터를 보존하지만 구버전의 동작까지 호환된다는 뜻은 아니다.
+복원 시 삭제 표시·작업 상태·항목 버전·AUTO_INCREMENT 상한을 확인하는 절차는 [신뢰성 변경 배포·복구](backend-reliability-release.md#4-데이터-복구-절차)를 따른다.

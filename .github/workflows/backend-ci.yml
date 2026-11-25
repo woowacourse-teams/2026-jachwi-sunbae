@@ -106,6 +106,12 @@ jobs:
             backend-gradle-tasks-v1-${{ runner.os }}-${{ runner.arch }}-java21-${{ hashFiles('backend/**/*.gradle*', 'backend/**/gradle-wrapper.properties', 'backend/**/gradle.properties', 'backend/gradle/**/*.toml', '.github/gradle/backend-ci.init.gradle') }}-
             backend-gradle-tasks-v1-${{ runner.os }}-${{ runner.arch }}-java21-
 
+      - name: Validate deployment scripts
+        if: steps.changes.outputs.backend == 'true'
+        run: |
+          bash -n deploy/scripts/*.sh deploy/tests/validate-test.sh
+          bash deploy/tests/validate-test.sh
+
       - name: Build
         if: steps.changes.outputs.backend == 'true'
         env:

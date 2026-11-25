@@ -63,6 +63,8 @@ GitHub 캐시는 저장된 파일 묶음을 복원한다. 복원한 컴파일 �
 
 ## 테스트 실행과 로그
 
+- `Validate deployment scripts` 단계는 배포 스크립트의 Bash 문법과 `deploy/tests/validate-test.sh`를 검사한다. 서비스·HTTP 명령을 테스트 전용 응답으로 대체하며 실제 배포·회원 생성은 실행하지 않는다. 실제 읽기·쓰기 점검은 운영자가 [전용 회원 절차](backend-reliability-release.md#전용-회원-점검-스크립트)로 별도 실행한다.
+
 - `Test` 작업은 결과 캐시와 up-to-date 생략을 비활성화해 매 빌드 실행한다.
 - 테스트 JVM 수의 상한은 `min(2, 사용 가능한 프로세서 수)`다. 같은 JVM 안에서 JUnit 스레드 병렬화는 설정하지 않는다.
 - 기존 테스트 태그 제외 정책을 유지한다.

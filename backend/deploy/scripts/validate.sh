@@ -29,7 +29,8 @@ for attempt in $(seq 1 "${ATTEMPTS}"); do
         exit 1
     fi
 
-    if ! curl -fsS --max-time 5 "${HEALTH_URL}" 2>/dev/null | grep -q '"status":"UP"'; then
+    if ! HEALTH_RESPONSE="$(curl -fsS --max-time 5 "${HEALTH_URL}" 2>/dev/null)" \
+        || ! jq -se 'length == 1 and .[0].status == "UP"' <<< "${HEALTH_RESPONSE}" >/dev/null 2>&1; then
         sleep "${INTERVAL}"
         continue
     fi
@@ -39,18 +40,18 @@ for attempt in $(seq 1 "${ATTEMPTS}"); do
         continue
     fi
 
-    COMPACT_INFO="$(printf '%s' "${INFO_RESPONSE}" | tr -d '[:space:]')"
-    if printf '%s' "${COMPACT_INFO}" | grep -Fq "\"commit\":\"${EXPECTED_REVISION}\""; then
+    ACTUAL_REVISION="$(jq -ers 'select(length == 1) | .[0].build.commit | select(type == "string")' <<< "${INFO_RESPONSE}" 2>/dev/null)" \
+        || ACTUAL_REVISION=unknown
+    if [[ "${ACTUAL_REVISION}" == "${EXPECTED_REVISION}" ]]; then
         echo "health와 배포 리비전 확인됨: ${EXPECTED_REVISION} (${attempt}번째 시도)."
         exit 0
     fi
 
-    ACTUAL_REVISION="$(printf '%s' "${COMPACT_INFO}" | sed -n 's/.*"commit":"\([^"]*\)".*/\1/p')"
     echo "실행 중인 리비전이 이번 배포와 다르다. expected=${EXPECTED_REVISION}, actual=${ACTUAL_REVISION:-unknown}" >&2
     "${JOURNALCTL}" -u "${SERVICE}" -n 200 --no-pager >&2 || true
     exit 1
 done
 
-echo "health와 배포 리비전이 $((ATTEMPTS * INTERVAL))초 안에 확인되지 않았다. expected=${EXPECTED_REVISION}" >&2
+echo "health와 배포 리비전이 ${ATTEMPTS}회 시도 내에 확인되지 않았다. expected=${EXPECTED_REVISION}" >&2
 "${JOURNALCTL}" -u "${SERVICE}" -n 200 --no-pager >&2 || true
 exit 1

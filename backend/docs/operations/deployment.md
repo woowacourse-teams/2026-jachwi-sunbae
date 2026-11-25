@@ -5,6 +5,9 @@
 Flyway 도입 후 최초 배포는 [기존 DB 기준선 등록](database-migrations.md#기존-db의-최초-전환)을 먼저 준비한다.
 이후 배포에서는 앱 기동 시 아직 적용하지 않은 마이그레이션을 실행하며, 실패하면 기동과 배포 검증이 실패한다.
 
+V21~V23의 선점·사진 보존·체크 버전 변경을 배포할 때는 [신뢰성 변경 배포·복구](backend-reliability-release.md)를 함께 따른다.
+백엔드·프론트엔드 전환 순서, 전용 회원의 핵심 읽기·쓰기 점검과 호환 리비전 확인을 마친 뒤 배포 완료로 판정한다.
+
 ## 1. 배포 환경과 요청 경로
 
 ### 전체 배포 흐름
@@ -107,7 +110,7 @@ Thread Dump 스크립트와 logrotate 설정도 `scripts/` 아래에 두어 기�
 | `BeforeInstall`    | 배포 디렉터리를 비운다                                                                                        |
 | `AfterInstall`     | 실행 사용자·그룹을 확인하고 Vault 설정·Firebase 인증 파일을 준비한 뒤 JVM 진단 도구와 systemd 유닛을 설치한다 |
 | `ApplicationStart` | `systemctl restart`로 새 애플리케이션을 실행한다                                                              |
-| `ValidateService`  | 서비스 실행, `health=UP`, 실행 SHA와 배포 SHA 일치를 확인한다                                                 |
+| `ValidateService`  | 서비스 실행, 단일 JSON의 최상위 `health=UP`, 정확한 `build.commit`과 배포 SHA 일치를 확인한다                 |
 
 과거 서비스 중지가 누락되어 `start`가 옛 프로세스를 유지하고, 그 health 응답으로 배포가 성공 처리된 경험이 있다. 이를 방지하려고 **명시적 restart와 SHA 비교**를 함께 사용한다.
 

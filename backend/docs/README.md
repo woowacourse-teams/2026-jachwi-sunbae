@@ -28,6 +28,7 @@
 - [사진 저장소 신뢰성 검증](operations/photo-storage-reliability.md)
 - [월세 수집본 교체 신뢰성 검증](operations/rental-import-reliability.md)
 - [체크리스트 저장 신뢰성 검증](operations/checklist-reliability.md)
+- [백엔드 신뢰성 변경 배포·복구](operations/backend-reliability-release.md)
 - [프론트엔드 배포](../../frontend/docs/deployment.md)
 - [Git·GitHub 협업 컨벤션](../../docs/convention/README.md)
 
