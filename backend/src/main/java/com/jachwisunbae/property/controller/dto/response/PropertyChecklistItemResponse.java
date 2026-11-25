@@ -5,9 +5,9 @@ import com.jachwisunbae.checklist.type.CheckItemCategory;
 
 public record PropertyChecklistItemResponse(Long id, Long systemCheckItemId, String question,
                                             Integer displayOrder, String status, String memo,
-                                            CheckItemCategory category) {
+                                            CheckItemCategory category, long statusVersion, long memoVersion) {
     public static PropertyChecklistItemResponse from(final PropertyChecklistItemQuery item) {
         return new PropertyChecklistItemResponse(item.id(), item.systemCheckItemId(), item.question(),
-                item.displayOrder(), item.status().name(), item.memo(), item.category());
+                item.displayOrder(), item.status().name(), item.memo(), item.category(), item.statusVersion(), item.memoVersion());
     }
 }

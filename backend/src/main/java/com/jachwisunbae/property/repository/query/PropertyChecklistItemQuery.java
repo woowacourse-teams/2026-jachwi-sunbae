@@ -5,5 +5,5 @@ import com.jachwisunbae.checklist.type.CheckItemCategory;
 
 public record PropertyChecklistItemQuery(Long id, Long systemCheckItemId, String question,
                                          Integer displayOrder, CheckStatus status, String memo,
-                                         CheckItemCategory category) {
+                                         CheckItemCategory category, long statusVersion, long memoVersion) {
 }

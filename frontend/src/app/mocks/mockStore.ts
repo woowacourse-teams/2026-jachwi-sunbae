@@ -197,6 +197,8 @@ export type MockAppliedItem = {
   displayOrder: number;
   status: 'UNCONFIRMED' | 'GOOD' | 'CAUTION';
   memo: string;
+  statusVersion: number;
+  memoVersion: number;
 };
 
 export type MockAppliedChecklist = {
@@ -230,6 +232,8 @@ let appliedByProperty = new Map<number, Map<ChecklistStage, MockAppliedChecklist
               displayOrder: 1,
               status: 'GOOD',
               memo: '수도 요금 포함',
+              statusVersion: 0,
+              memoVersion: 0,
             },
             {
               id: 802,
@@ -238,6 +242,8 @@ let appliedByProperty = new Map<number, Map<ChecklistStage, MockAppliedChecklist
               displayOrder: 2,
               status: 'CAUTION',
               memo: '날짜 재확인 필요',
+              statusVersion: 0,
+              memoVersion: 0,
             },
             {
               id: 803,
@@ -246,6 +252,8 @@ let appliedByProperty = new Map<number, Map<ChecklistStage, MockAppliedChecklist
               displayOrder: 3,
               status: 'UNCONFIRMED',
               memo: '',
+              statusVersion: 0,
+              memoVersion: 0,
             },
           ],
         },

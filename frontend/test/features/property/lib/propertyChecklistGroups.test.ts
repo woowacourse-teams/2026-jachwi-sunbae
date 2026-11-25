@@ -10,6 +10,8 @@ const item = (systemCheckItemId: number | null, displayOrder: number): PropertyC
   question: '질문',
   status: 'UNCONFIRMED',
   memo: '',
+  statusVersion: 0,
+  memoVersion: 0,
 });
 
 it('제공 항목을 카테고리 순서로 묶고 각 카테고리 안에서는 표시 순서를 유지한다', () => {

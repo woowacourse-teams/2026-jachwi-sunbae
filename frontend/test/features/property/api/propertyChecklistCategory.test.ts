@@ -17,6 +17,8 @@ const response = (category: unknown) => ({
       displayOrder: 1,
       status: 'UNCONFIRMED',
       memo: '',
+      statusVersion: 0,
+      memoVersion: 0,
       category,
     },
   ],

@@ -156,12 +156,12 @@ describe('최종 API 명세 MSW handlers', () => {
     const statusResponse = await fetch(apiUrl(`/api/properties/10/checklists/${applied.id}/items/${itemId}/status`), {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ status: 'GOOD' }),
+      body: JSON.stringify({ status: 'GOOD', expectedVersion: 0 }),
     });
     const memoResponse = await fetch(apiUrl(`/api/properties/10/checklists/${applied.id}/items/${itemId}/memo`), {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ memo: '수압이 충분함' }),
+      body: JSON.stringify({ memo: '수압이 충분함', expectedVersion: 0 }),
     });
 
     expect(statusResponse.status).toBe(200);

@@ -328,14 +328,14 @@ export const parsePropertyChecklistOverview = (value: unknown): PropertyChecklis
   };
 };
 
-const parsePropertyChecklistItemStatus = (value: unknown): PropertyChecklistItemStatus => {
+export const parsePropertyChecklistItemStatus = (value: unknown): PropertyChecklistItemStatus => {
   if (value !== 'UNCONFIRMED' && value !== 'GOOD' && value !== 'CAUTION') {
     throw new Error('체크리스트 항목 상태가 올바르지 않습니다.');
   }
   return value;
 };
 
-const parsePropertyChecklistCategory = (value: unknown) => {
+export const parsePropertyChecklistCategory = (value: unknown) => {
   if (value === undefined) return undefined;
   const category = PROPERTY_CHECKLIST_CATEGORIES.find((category) => category === value);
   if (category === undefined) throw new Error('체크리스트 카테고리가 올바르지 않습니다.');
@@ -363,6 +363,8 @@ export const parsePropertyChecklistDetail = (value: unknown): PropertyChecklistD
           question: readString(item, 'question', { maximumCodePoints: 200 }),
           displayOrder: readInteger(item, 'displayOrder', 1),
           status: parsePropertyChecklistItemStatus(item.status),
+          statusVersion: readInteger(item, 'statusVersion', 0),
+          memoVersion: readInteger(item, 'memoVersion', 0),
           memo: readString(item, 'memo', { allowEmpty: true, maximumCodePoints: 500 }),
           category: parsePropertyChecklistCategory(item.category),
         };

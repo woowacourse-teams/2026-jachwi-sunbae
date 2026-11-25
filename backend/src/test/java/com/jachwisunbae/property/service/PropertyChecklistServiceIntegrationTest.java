@@ -309,8 +309,8 @@ class PropertyChecklistServiceIntegrationTest {
         long itemId = applied.items().stream()
                 .filter(item -> item.systemCheckItemId() == systemCheckItemId)
                 .findFirst().orElseThrow().id();
-        itemService.updateStatus(memberId, propertyId, applied.id(), itemId, status);
-        itemService.updateMemo(memberId, propertyId, applied.id(), itemId, memo);
+        itemService.updateStatus(memberId, propertyId, applied.id(), itemId, status, 0L);
+        itemService.updateMemo(memberId, propertyId, applied.id(), itemId, memo, 0L);
     }
 
     private List<PropertyChecklistItemQuery> items(long propertyId, CheckStage stage) {

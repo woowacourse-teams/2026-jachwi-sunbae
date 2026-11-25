@@ -80,7 +80,7 @@ public class PropertyChecklistController {
     }
 
     @PatchMapping("/{propertyId}/checklists/{propertyChecklistId}/items/{itemId}/status")
-    @Operation(summary = "매물 체크 항목 상태 저장", description = "상태 컬럼만 갱신합니다.")
+    @Operation(summary = "매물 체크 항목 상태 저장", description = "조회한 statusVersion을 expectedVersion으로 보내 상태만 저장합니다. 동일 값 재시도는 성공하며 오래된 변경은 PROPERTY_CHECKLIST_ITEM_CONFLICT(400)로 거절합니다.")
     public ApiResponse<PropertyChecklistItemStatusResponse> updateChecklistItemStatus(
             @AuthenticatedMemberId final Long memberId,
             @PathVariable final Long propertyId,
@@ -88,14 +88,14 @@ public class PropertyChecklistController {
             @PathVariable final Long itemId,
             @Valid @RequestBody final UpdatePropertyChecklistStatusRequest request) {
         PropertyChecklistItem item = propertyChecklistItemService.updateStatus(
-                memberId, propertyId, propertyChecklistId, itemId, request.status());
+                memberId, propertyId, propertyChecklistId, itemId, request.status(), request.expectedVersion());
         return ApiResponse.of("체크 상태를 저장했습니다.",
                 new PropertyChecklistItemStatusResponse(
-                        new PropertyChecklistItemStatusItem(item.getId(), item.getStatus())));
+                        new PropertyChecklistItemStatusItem(item.getId(), item.getStatus(), item.getStatusVersion())));
     }
 
     @PatchMapping("/{propertyId}/checklists/{propertyChecklistId}/items/{itemId}/memo")
-    @Operation(summary = "매물 체크 항목 메모 저장", description = "메모 컬럼만 갱신합니다.")
+    @Operation(summary = "매물 체크 항목 메모 저장", description = "조회한 memoVersion을 expectedVersion으로 보내 메모만 저장합니다. 동일 값 재시도는 성공하며 오래된 변경은 PROPERTY_CHECKLIST_ITEM_CONFLICT(400)로 거절합니다.")
     public ApiResponse<PropertyChecklistItemMemoResponse> updateChecklistItemMemo(
             @AuthenticatedMemberId final Long memberId,
             @PathVariable final Long propertyId,
@@ -103,9 +103,9 @@ public class PropertyChecklistController {
             @PathVariable final Long itemId,
             @Valid @RequestBody final UpdatePropertyChecklistMemoRequest request) {
         PropertyChecklistItem item = propertyChecklistItemService.updateMemo(
-                memberId, propertyId, propertyChecklistId, itemId, request.memo());
+                memberId, propertyId, propertyChecklistId, itemId, request.memo(), request.expectedVersion());
         return ApiResponse.of("항목 메모를 저장했습니다.",
                 new PropertyChecklistItemMemoResponse(
-                        new PropertyChecklistItemMemoItem(item.getId(), item.getMemo())));
+                        new PropertyChecklistItemMemoItem(item.getId(), item.getMemo(), item.getMemoVersion())));
     }
 }

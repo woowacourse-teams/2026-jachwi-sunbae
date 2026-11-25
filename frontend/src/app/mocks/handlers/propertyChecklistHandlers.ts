@@ -1,6 +1,7 @@
 import { http } from 'msw';
 
 import { CHECKLIST_STAGES } from '@/features/checklist/model/checklistTypes';
+import { readRecord } from '@/shared/api/responseParsers';
 
 import {
   emptyProgress,
@@ -72,6 +73,8 @@ export const propertyChecklistHandlers = [
           displayOrder: index + 1,
           status: previousItem?.status ?? ('UNCONFIRMED' as const),
           memo: previousItem?.memo ?? '',
+          statusVersion: 0,
+          memoVersion: 0,
         };
       }),
     };
@@ -94,7 +97,7 @@ export const propertyChecklistHandlers = [
       const property = getProperty(params.propertyId);
       const propertyChecklistId = readPositiveInteger(params.propertyChecklistId);
       const itemId = readPositiveInteger(params.itemId);
-      const body = (await request.json()) as { status?: unknown };
+      const body = readRecord(await request.json());
       if (property === undefined || propertyChecklistId === null || itemId === null) {
         return failure('PROPERTY_CHECKLIST_ITEM_NOT_FOUND', 404);
       }
@@ -108,8 +111,19 @@ export const propertyChecklistHandlers = [
       ) {
         return failure(item === undefined ? 'PROPERTY_CHECKLIST_ITEM_NOT_FOUND' : 'INVALID_REQUEST', item ? 400 : 404);
       }
-      item.status = body.status;
-      return success({ item: { id: item.id, status: item.status } });
+      if (
+        !Number.isSafeInteger(body.expectedVersion) ||
+        typeof body.expectedVersion !== 'number' ||
+        body.expectedVersion < 0
+      ) {
+        return failure('INVALID_REQUEST', 400);
+      }
+      if (item.status !== body.status) {
+        if (item.statusVersion !== body.expectedVersion) return failure('PROPERTY_CHECKLIST_ITEM_CONFLICT', 400);
+        item.status = body.status;
+        item.statusVersion += 1;
+      }
+      return success({ item: { id: item.id, status: item.status, statusVersion: item.statusVersion } });
     },
   ),
   http.patch(
@@ -118,7 +132,7 @@ export const propertyChecklistHandlers = [
       const property = getProperty(params.propertyId);
       const propertyChecklistId = readPositiveInteger(params.propertyChecklistId);
       const itemId = readPositiveInteger(params.itemId);
-      const body = (await request.json()) as { memo?: unknown };
+      const body = readRecord(await request.json());
       if (property === undefined || propertyChecklistId === null || itemId === null) {
         return failure('PROPERTY_CHECKLIST_ITEM_NOT_FOUND', 404);
       }
@@ -129,8 +143,19 @@ export const propertyChecklistHandlers = [
       if (item === undefined || typeof body.memo !== 'string' || body.memo.length > 500) {
         return failure(item === undefined ? 'PROPERTY_CHECKLIST_ITEM_NOT_FOUND' : 'INVALID_REQUEST', item ? 400 : 404);
       }
-      item.memo = body.memo;
-      return success({ item: { id: item.id, memo: item.memo } });
+      if (
+        !Number.isSafeInteger(body.expectedVersion) ||
+        typeof body.expectedVersion !== 'number' ||
+        body.expectedVersion < 0
+      ) {
+        return failure('INVALID_REQUEST', 400);
+      }
+      if (item.memo !== body.memo) {
+        if (item.memoVersion !== body.expectedVersion) return failure('PROPERTY_CHECKLIST_ITEM_CONFLICT', 400);
+        item.memo = body.memo;
+        item.memoVersion += 1;
+      }
+      return success({ item: { id: item.id, memo: item.memo, memoVersion: item.memoVersion } });
     },
   ),
   http.all('*/api/properties/:propertyId/active-checklists/*', obsoleteEndpoint),

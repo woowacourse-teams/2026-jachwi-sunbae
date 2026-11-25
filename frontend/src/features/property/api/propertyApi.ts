@@ -207,12 +207,13 @@ export const updatePropertyChecklistItemStatus = (
   propertyChecklistId: number,
   itemId: number,
   status: PropertyChecklistItemStatus,
-): Promise<{ itemId: number; status: PropertyChecklistItemStatus }> =>
+  expectedVersion: number,
+): Promise<{ itemId: number; status: PropertyChecklistItemStatus; statusVersion: number }> =>
   apiRequest({
     config,
     path: `/api/properties/${propertyId}/checklists/${propertyChecklistId}/items/${itemId}/status`,
     method: 'PATCH',
-    body: { status },
+    body: { status, expectedVersion },
     parseData: (value) => {
       const record = readRecord(value);
       const item = readRecord(record.item);
@@ -220,7 +221,11 @@ export const updatePropertyChecklistItemStatus = (
       if (resultStatus !== 'UNCONFIRMED' && resultStatus !== 'GOOD' && resultStatus !== 'CAUTION') {
         throw new Error('체크리스트 항목 상태 응답이 올바르지 않습니다.');
       }
-      return { itemId: readInteger(item, 'id', 1), status: resultStatus };
+      return {
+        itemId: readInteger(item, 'id', 1),
+        status: resultStatus,
+        statusVersion: readInteger(item, 'statusVersion', 0),
+      };
     },
   });
 
@@ -230,18 +235,20 @@ export const updatePropertyChecklistItemMemo = (
   propertyChecklistId: number,
   itemId: number,
   memo: string,
-): Promise<{ itemId: number; memo: string }> =>
+  expectedVersion: number,
+): Promise<{ itemId: number; memo: string; memoVersion: number }> =>
   apiRequest({
     config,
     path: `/api/properties/${propertyId}/checklists/${propertyChecklistId}/items/${itemId}/memo`,
     method: 'PATCH',
-    body: { memo },
+    body: { memo, expectedVersion },
     parseData: (value) => {
       const record = readRecord(value);
       const item = readRecord(record.item);
       return {
         itemId: readInteger(item, 'id', 1),
         memo: readString(item, 'memo', { allowEmpty: true, maximumCodePoints: 500 }),
+        memoVersion: readInteger(item, 'memoVersion', 0),
       };
     },
   });

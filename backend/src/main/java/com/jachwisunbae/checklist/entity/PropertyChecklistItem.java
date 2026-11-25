@@ -16,6 +16,8 @@ public class PropertyChecklistItem {
     private Integer displayOrder;
     private CheckStatus status;
     private String memo;
+    private long statusVersion;
+    private long memoVersion;
     private final String question;
 
     private PropertyChecklistItem(final Long id, final Long propertyChecklistId, final Long systemCheckItemId,
@@ -45,11 +47,30 @@ public class PropertyChecklistItem {
     }
 
     public void changeStatus(final CheckStatus status) {
-        this.status = validateStatus(status);
+        CheckStatus next = validateStatus(status);
+        if (this.status != next) {
+            this.status = next;
+            statusVersion = Math.incrementExact(statusVersion);
+        }
     }
 
     public void changeMemo(final String memo) {
-        this.memo = validateMemo(memo);
+        String next = validateMemo(memo);
+        if (!this.memo.equals(next)) {
+            this.memo = next;
+            memoVersion = Math.incrementExact(memoVersion);
+        }
+    }
+
+    public static PropertyChecklistItem reconstruct(final Long id, final Long propertyChecklistId,
+                                                    final Long systemCheckItemId, final Integer displayOrder,
+                                                    final CheckStatus status, final String memo, final String question,
+                                                    final long statusVersion, final long memoVersion) {
+        PropertyChecklistItem item = reconstruct(id, propertyChecklistId, systemCheckItemId, displayOrder,
+                status, memo, question);
+        item.statusVersion = statusVersion;
+        item.memoVersion = memoVersion;
+        return item;
     }
 
     public void reorder(final Integer displayOrder) {

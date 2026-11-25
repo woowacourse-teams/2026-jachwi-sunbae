@@ -1,5 +1,6 @@
 import { useMutation } from '@tanstack/react-query';
 
+import { isApiErrorCode } from '@/features/auth/api/apiClient';
 import { queryClient } from '@/shared/api/queryClient';
 import { usePublicConfig } from '@/shared/config/PublicConfigContext';
 import { trackPostHogEvent } from '@/shared/lib/analytics/posthog';
@@ -35,14 +36,26 @@ export const usePropertyChecklistItemStatusMutation = (propertyId: number, prope
   const config = usePublicConfig();
   return useMutation({
     // 미리보기 매물은 서버에 보내지 않고 화면에서만 바꿔 본다.
-    mutationFn: ({ itemId, status }: { itemId: number; status: PropertyChecklistItemStatus }) =>
+    mutationFn: ({
+      itemId,
+      status,
+      expectedVersion,
+    }: {
+      itemId: number;
+      status: PropertyChecklistItemStatus;
+      expectedVersion: number;
+    }) =>
       orPreview(
         propertyId,
-        () => ({ itemId, status }),
-        () => updatePropertyChecklistItemStatus(config, propertyId, propertyChecklistId, itemId, status),
+        () => ({ itemId, status, statusVersion: expectedVersion + 1 }),
+        () =>
+          updatePropertyChecklistItemStatus(config, propertyId, propertyChecklistId, itemId, status, expectedVersion),
       ),
-    onSuccess: ({ itemId, status }) => {
-      const refresh = updateChecklistItem(propertyId, propertyChecklistId, itemId, (item) => ({ ...item, status }));
+    onError: (error) => refreshAfterConflict(error, propertyId, propertyChecklistId),
+    onSuccess: ({ itemId, status, statusVersion }) => {
+      const refresh = updateChecklistItem(propertyId, propertyChecklistId, itemId, (item) =>
+        statusVersion < item.statusVersion ? item : { ...item, status, statusVersion },
+      );
       if (status !== 'UNCONFIRMED' && !isPreviewProperty(propertyId)) {
         trackPostHogEvent('checklist_item_checked', {
           property_id: propertyId,
@@ -59,14 +72,29 @@ export const usePropertyChecklistItemStatusMutation = (propertyId: number, prope
 export const usePropertyChecklistItemMemoMutation = (propertyId: number, propertyChecklistId: number) => {
   const config = usePublicConfig();
   return useMutation({
-    mutationFn: ({ itemId, memo }: { itemId: number; memo: string }) =>
+    mutationFn: ({ itemId, memo, expectedVersion }: { itemId: number; memo: string; expectedVersion: number }) =>
       orPreview(
         propertyId,
-        () => ({ itemId, memo }),
-        () => updatePropertyChecklistItemMemo(config, propertyId, propertyChecklistId, itemId, memo),
+        () => ({ itemId, memo, memoVersion: expectedVersion + 1 }),
+        () => updatePropertyChecklistItemMemo(config, propertyId, propertyChecklistId, itemId, memo, expectedVersion),
       ),
-    onSuccess: ({ itemId, memo }) => {
-      return updateChecklistItem(propertyId, propertyChecklistId, itemId, (item) => ({ ...item, memo }));
+    onError: (error) => refreshAfterConflict(error, propertyId, propertyChecklistId),
+    onSuccess: ({ itemId, memo, memoVersion }) => {
+      return updateChecklistItem(propertyId, propertyChecklistId, itemId, (item) =>
+        memoVersion < item.memoVersion ? item : { ...item, memo, memoVersion },
+      );
     },
   });
+};
+
+const refreshAfterConflict = (error: unknown, propertyId: number, propertyChecklistId: number) => {
+  if (!isApiErrorCode(error, 'PROPERTY_CHECKLIST_ITEM_CONFLICT')) return;
+  return Promise.all([
+    queryClient.invalidateQueries({
+      queryKey: propertyQueryKeys.checklist(propertyId, propertyChecklistId),
+      exact: true,
+    }),
+    queryClient.invalidateQueries({ queryKey: propertyQueryKeys.checklists(propertyId), exact: true }),
+    queryClient.invalidateQueries({ queryKey: propertyQueryKeys.lists() }),
+  ]);
 };

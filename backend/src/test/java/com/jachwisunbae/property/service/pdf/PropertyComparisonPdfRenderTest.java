@@ -217,7 +217,7 @@ class PropertyComparisonPdfRenderTest {
 
     private static PropertyChecklistItemQuery item(final long id, final String question, final CheckStatus status,
                                                    final String memo) {
-        return new PropertyChecklistItemQuery(id, id, question, (int) id, status, memo, CheckItemCategory.OTHER);
+        return new PropertyChecklistItemQuery(id, id, question, (int) id, status, memo, CheckItemCategory.OTHER, 0L, 0L);
     }
 
     /** 실제 사진 대신 방 모양을 단순한 도형으로 그린 그림. 가로 사진과 세로 사진을 섞는다. */

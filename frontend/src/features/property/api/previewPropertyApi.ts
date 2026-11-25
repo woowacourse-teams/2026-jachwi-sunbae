@@ -1,6 +1,5 @@
 import type {
   PropertyChecklistDetail,
-  PropertyChecklistItem,
   PropertyChecklistOverview,
   PropertyDetail,
   PropertyMemoDocument,
@@ -11,6 +10,7 @@ import type {
 } from '../model/Property';
 import { isPreviewProperty, SAMPLE_PROPERTIES } from '../model/sampleProperties';
 import sampleProperties from '../model/sampleProperties.json';
+import { parsePropertyChecklistCategory, parsePropertyChecklistItemStatus } from './propertyParsers';
 
 /**
  * 미리보기 매물은 서버에 없으므로 상세, 메모, 체크리스트 개요를 JSON에서 만들어 돌려준다.
@@ -81,7 +81,13 @@ export const previewPropertyChecklistDetail = (propertyId: number): PropertyChec
     sourceChecklistId: null,
     checklistName: stage?.checklistName ?? '현장 체크리스트',
     stage: 'ON_SITE',
-    items: extra.checklistItems as PropertyChecklistItem[],
+    items: extra.checklistItems.map((item) => ({
+      ...item,
+      status: parsePropertyChecklistItemStatus(item.status),
+      category: parsePropertyChecklistCategory(item.category),
+      statusVersion: 0,
+      memoVersion: 0,
+    })),
   };
 };
 

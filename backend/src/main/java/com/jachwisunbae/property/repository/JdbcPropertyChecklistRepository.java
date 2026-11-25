@@ -74,7 +74,7 @@ public class JdbcPropertyChecklistRepository implements PropertyChecklistReposit
 
         String sqlItems = """
                 SELECT pci.id, pci.system_check_item_id, pci.question, pci.display_order, pci.status, pci.memo,
-                       COALESCE(sci.category, 'OTHER') AS category
+                       COALESCE(sci.category, 'OTHER') AS category, pci.status_version, pci.memo_version
                 FROM property_checklist_items pci
                 LEFT JOIN system_check_items sci ON sci.id = pci.system_check_item_id
                 WHERE pci.property_checklist_id = ?
@@ -89,7 +89,7 @@ public class JdbcPropertyChecklistRepository implements PropertyChecklistReposit
                 rs.getInt("display_order"),
                 CheckStatus.valueOf(rs.getString("status")),
                 rs.getString("memo"),
-                CheckItemCategory.valueOf(rs.getString("category"))
+                CheckItemCategory.valueOf(rs.getString("category")), rs.getLong("status_version"), rs.getLong("memo_version")
             ),
             propertyChecklistId);
 

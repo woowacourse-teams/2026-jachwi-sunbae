@@ -17,7 +17,7 @@ class PropertyChecklistApplicationResponseTest {
     @DisplayName("적용 양식과 항목의 단계와 상태를 문자열 응답으로 변환한다")
     void convertsAppliedChecklist() {
         // given
-        PropertyChecklistItemQuery item = new PropertyChecklistItemQuery(3L, 2L, "수압 확인", 1, CheckStatus.GOOD, "확인 완료", CheckItemCategory.WATER_BATHROOM);
+        PropertyChecklistItemQuery item = new PropertyChecklistItemQuery(3L, 2L, "수압 확인", 1, CheckStatus.GOOD, "확인 완료", CheckItemCategory.WATER_BATHROOM, 0L, 0L);
         PropertyChecklistApplicationQuery query = new PropertyChecklistApplicationQuery(1L, 7L, null, "기본 양식", CheckStage.ON_SITE, List.of(item));
 
         // when
@@ -29,6 +29,6 @@ class PropertyChecklistApplicationResponseTest {
         assertThat(response.sourceChecklistId()).isNull();
         assertThat(response.checklistName()).isEqualTo("기본 양식");
         assertThat(response.stage()).isEqualTo("ON_SITE");
-        assertThat(response.items()).containsExactly(new PropertyChecklistItemResponse(3L, 2L, "수압 확인", 1, "GOOD", "확인 완료", CheckItemCategory.WATER_BATHROOM));
+        assertThat(response.items()).containsExactly(new PropertyChecklistItemResponse(3L, 2L, "수압 확인", 1, "GOOD", "확인 완료", CheckItemCategory.WATER_BATHROOM, 0L, 0L));
     }
 }

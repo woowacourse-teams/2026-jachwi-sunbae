@@ -720,6 +720,8 @@ describe('매물 체크리스트 연결과 자동 저장', () => {
                 displayOrder: 1,
                 status: 'UNCONFIRMED',
                 memo: '',
+                statusVersion: 0,
+                memoVersion: 0,
               },
               {
                 id: 702,
@@ -728,6 +730,8 @@ describe('매물 체크리스트 연결과 자동 저장', () => {
                 displayOrder: 2,
                 status: 'UNCONFIRMED',
                 memo: '',
+                statusVersion: 0,
+                memoVersion: 0,
               },
             ],
           }),
@@ -769,11 +773,13 @@ describe('매물 체크리스트 연결과 자동 저장', () => {
       ),
       http.patch(`${config.apiBaseUrl}/api/properties/10/checklists/47/items/701/status`, async ({ request }) => {
         statusRequest = await request.json();
-        return HttpResponse.json(successEnvelope({ item: { id: 701, status: 'CAUTION' } }));
+        return HttpResponse.json(successEnvelope({ item: { id: 701, status: 'CAUTION', statusVersion: 1 } }));
       }),
       http.patch(`${config.apiBaseUrl}/api/properties/10/checklists/47/items/701/memo`, async ({ request }) => {
         memoRequest = await request.json();
-        return HttpResponse.json(successEnvelope({ item: { id: 701, memo: '수압은 괜찮지만 온수 확인 필요' } }));
+        return HttpResponse.json(
+          successEnvelope({ item: { id: 701, memo: '수압은 괜찮지만 온수 확인 필요', memoVersion: 1 } }),
+        );
       }),
     );
     const user = userEvent.setup();
@@ -787,13 +793,13 @@ describe('매물 체크리스트 연결과 자동 저장', () => {
     );
 
     await user.click(screen.getAllByRole('button', { name: '주의' })[0]);
-    await waitFor(() => expect(statusRequest).toEqual({ status: 'CAUTION' }));
+    await waitFor(() => expect(statusRequest).toEqual({ status: 'CAUTION', expectedVersion: 0 }));
     const memo = screen.getByRole('textbox', { name: '수압이 충분한가요? 메모' });
     expect(memo).toHaveAttribute('placeholder', '메모 추가');
     expect(screen.getByRole('textbox', { name: '채광이 충분한가요? 메모' })).toBeEnabled();
     await user.type(memo, '수압은 괜찮지만 온수 확인 필요');
     await user.tab();
-    await waitFor(() => expect(memoRequest).toEqual({ memo: '수압은 괜찮지만 온수 확인 필요' }));
+    await waitFor(() => expect(memoRequest).toEqual({ memo: '수압은 괜찮지만 온수 확인 필요', expectedVersion: 0 }));
     expect(memo).toHaveValue('수압은 괜찮지만 온수 확인 필요');
     expect(screen.getByRole('heading', { name: '사용자 체크리스트' })).toBeInTheDocument();
     await user.click(screen.getByRole('link', { name: '사용자 체크리스트 교체' }));

@@ -1,6 +1,7 @@
 import { css } from '@emotion/css';
 import { useEffect, useId, useRef, useState } from 'react';
 
+import { isApiErrorCode } from '@/features/auth/api/apiClient';
 import useDelayedLoading from '@/shared/lib/hooks/useDelayedLoading';
 import { Button } from '@/shared/ui/button/Button';
 import TextAreaField from '@/shared/ui/text-field/TextAreaField';
@@ -42,12 +43,16 @@ const PropertyChecklistItemControl = ({ propertyId, propertyChecklistId, item }:
       memoMutation.reset();
       return;
     }
-    memoMutation.mutate({ itemId: item.itemId, memo: nextMemo });
+    memoMutation.mutate({ itemId: item.itemId, memo: nextMemo, expectedVersion: item.memoVersion });
   };
 
   const selectStatus = (status: PropertyChecklistItemStatus) => {
     if (statusMutation.isPending) return;
-    statusMutation.mutate({ itemId: item.itemId, status: item.status === status ? 'UNCONFIRMED' : status });
+    statusMutation.mutate({
+      itemId: item.itemId,
+      status: item.status === status ? 'UNCONFIRMED' : status,
+      expectedVersion: item.statusVersion,
+    });
   };
 
   return (
@@ -64,7 +69,13 @@ const PropertyChecklistItemControl = ({ propertyId, propertyChecklistId, item }:
             value={memo}
             readOnly={memoMutation.isPending}
             aria-busy={memoMutation.isPending || undefined}
-            error={memoMutation.isError ? '메모를 저장하지 못했어요. 다시 저장해 주세요.' : undefined}
+            error={
+              memoMutation.isError
+                ? isApiErrorCode(memoMutation.error, 'PROPERTY_CHECKLIST_ITEM_CONFLICT')
+                  ? '다른 요청에서 메모가 변경됐어요. 최신 메모를 확인하고 다시 저장해 주세요.'
+                  : '메모를 저장하지 못했어요. 다시 저장해 주세요.'
+                : undefined
+            }
             onFocus={() => {
               isFocused.current = true;
             }}
@@ -86,6 +97,9 @@ const PropertyChecklistItemControl = ({ propertyId, propertyChecklistId, item }:
             <span className={styles.feedback} role="status">
               메모 저장 중…
             </span>
+          )}
+          {isApiErrorCode(memoMutation.error, 'PROPERTY_CHECKLIST_ITEM_CONFLICT') && (
+            <p className={styles.feedback}>현재 저장된 메모: {item.memo || '없음'}</p>
           )}
           {memoMutation.isError && (
             <Button variant="neutral" onClick={saveMemo}>
@@ -111,7 +125,9 @@ const PropertyChecklistItemControl = ({ propertyId, propertyChecklistId, item }:
       </div>
       {statusMutation.isError && (
         <p className={styles.error} role="alert">
-          평가를 저장하지 못했어요. 다시 선택해 주세요.
+          {isApiErrorCode(statusMutation.error, 'PROPERTY_CHECKLIST_ITEM_CONFLICT')
+            ? '다른 요청에서 평가가 변경됐어요. 최신 값을 확인하고 다시 선택해 주세요.'
+            : '평가를 저장하지 못했어요. 다시 선택해 주세요.'}
         </p>
       )}
     </li>

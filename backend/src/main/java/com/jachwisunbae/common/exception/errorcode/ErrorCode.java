@@ -57,6 +57,7 @@ public enum ErrorCode {
     PROPERTY_MEMO_INVALID("메모를 확인해 주세요."),
     PROPERTY_CHECKLIST_STAGE_MISMATCH("매물 체크리스트의 단계가 맞지 않습니다."),
     PROPERTY_CHECKLIST_NOT_FOUND("매물 체크리스트를 찾을 수 없습니다."),
+    PROPERTY_CHECKLIST_ITEM_CONFLICT("체크 항목이 변경됐습니다. 최신 값을 확인해 주세요."),
     PROPERTY_CHECKLIST_ITEM_NOT_FOUND("매물 체크 항목을 찾을 수 없습니다."),
     PROPERTY_CHECK_RESULT_INVALID("체크 결과를 확인해 주세요."),
     PROPERTY_COMPARISON_EXPORT_FAILED("매물 비교 자료를 만들지 못했습니다."),

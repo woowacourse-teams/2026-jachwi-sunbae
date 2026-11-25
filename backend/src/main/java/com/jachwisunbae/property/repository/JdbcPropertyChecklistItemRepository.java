@@ -71,7 +71,8 @@ public class JdbcPropertyChecklistItemRepository implements PropertyChecklistIte
     public Optional<PropertyChecklistItem> find(final long memberId, final long propertyId,
                                                 final long propertyChecklistId, final long itemId) {
         String sql = """
-                SELECT pci.id, pci.system_check_item_id, pci.question, pci.display_order, pci.status, pci.memo
+                SELECT pci.id, pci.system_check_item_id, pci.question, pci.display_order, pci.status, pci.memo,
+                       pci.status_version, pci.memo_version
                 FROM property_checklist_items pci
                 JOIN property_checklists pc ON pc.id = pci.property_checklist_id
                 JOIN properties p ON p.id = pc.property_id
@@ -93,7 +94,7 @@ public class JdbcPropertyChecklistItemRepository implements PropertyChecklistIte
                 rs.getInt("display_order"),
                 CheckStatus.valueOf(rs.getString("status")),
                 rs.getString("memo"),
-                rs.getString("question")
+                rs.getString("question"), rs.getLong("status_version"), rs.getLong("memo_version")
             );
         } catch (ClientException exception) {
             throw new DataInconsistencyException(ErrorCode.INTERNAL_SERVER_ERROR,
@@ -105,19 +106,19 @@ public class JdbcPropertyChecklistItemRepository implements PropertyChecklistIte
     public int updateStatus(final PropertyChecklistItem item) {
         return jdbcTemplate.update("""
                 UPDATE property_checklist_items
-                SET status = ?
+                SET status = ?, status_version = ?
                 WHERE id = ? AND property_checklist_id = ?
                 """,
-            item.getStatus().name(), item.getId(), item.getPropertyChecklistId());
+            item.getStatus().name(), item.getStatusVersion(), item.getId(), item.getPropertyChecklistId());
     }
 
     @Override
     public int updateMemo(final PropertyChecklistItem item) {
         return jdbcTemplate.update("""
                 UPDATE property_checklist_items
-                SET memo = ?
+                SET memo = ?, memo_version = ?
                 WHERE id = ? AND property_checklist_id = ?
                 """,
-            item.getMemo(), item.getId(), item.getPropertyChecklistId());
+            item.getMemo(), item.getMemoVersion(), item.getId(), item.getPropertyChecklistId());
     }
 }

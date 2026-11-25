@@ -188,6 +188,8 @@ export type PropertyChecklistItem = {
   displayOrder: number;
   status: PropertyChecklistItemStatus;
   memo: string;
+  statusVersion: number;
+  memoVersion: number;
   /** 카테고리를 제공하지 않는 이전 API 응답과도 호환한다. */
   category?: PropertyChecklistCategory;
 };
