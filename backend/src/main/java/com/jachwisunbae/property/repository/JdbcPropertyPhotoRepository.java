@@ -44,7 +44,7 @@ public class JdbcPropertyPhotoRepository implements PropertyPhotoRepository {
         String sql = """
                 SELECT id, property_id, storage_key, thumbnail_storage_key, content_type, size_bytes, created_at
                 FROM property_photos
-                WHERE property_id = ?
+                WHERE property_id = ? AND deleted_at IS NULL
                 ORDER BY created_at ASC, id ASC
                 """;
         return jdbcTemplate.query(sql, propertyPhotoRowMapper, propertyId);
@@ -53,7 +53,8 @@ public class JdbcPropertyPhotoRepository implements PropertyPhotoRepository {
     @Override
     public int countByPropertyId(final long propertyId) {
         Integer count = jdbcTemplate.queryForObject(
-                "SELECT COUNT(*) FROM property_photos WHERE property_id = ?", Integer.class, propertyId);
+                "SELECT COUNT(*) FROM property_photos WHERE property_id = ? AND deleted_at IS NULL",
+                Integer.class, propertyId);
         return count == null ? 0 : count;
     }
 
@@ -82,20 +83,21 @@ public class JdbcPropertyPhotoRepository implements PropertyPhotoRepository {
     public Optional<PropertyPhoto> findByIdAndPropertyId(final long photoId, final long propertyId) {
         return jdbcTemplate.query("""
                 SELECT id, property_id, storage_key, thumbnail_storage_key, content_type, size_bytes, created_at
-                FROM property_photos WHERE id = ? AND property_id = ?
+                FROM property_photos WHERE id = ? AND property_id = ? AND deleted_at IS NULL
                 """, propertyPhotoRowMapper, photoId, propertyId).stream().findFirst();
     }
 
     @Override
     public void deleteById(final long photoId) {
         jdbcTemplate.update("DELETE FROM main_property_photos WHERE property_photos_id = ?", photoId);
-        jdbcTemplate.update("DELETE FROM property_photos WHERE id = ?", photoId);
+        jdbcTemplate.update("UPDATE property_photos SET deleted_at = NOW(6) WHERE id = ? AND deleted_at IS NULL", photoId);
     }
 
     @Override
     public void deleteByPropertyId(final long propertyId) {
         jdbcTemplate.update("DELETE FROM main_property_photos WHERE property_id = ?", propertyId);
-        jdbcTemplate.update("DELETE FROM property_photos WHERE property_id = ?", propertyId);
+        jdbcTemplate.update("UPDATE property_photos SET deleted_at = NOW(6) WHERE property_id = ? AND deleted_at IS NULL",
+                propertyId);
     }
 
     @Override
@@ -105,7 +107,7 @@ public class JdbcPropertyPhotoRepository implements PropertyPhotoRepository {
         if (count != null && count > 0) {
             return;
         }
-        jdbcTemplate.query("SELECT id FROM property_photos WHERE property_id = ? "
+        jdbcTemplate.query("SELECT id FROM property_photos WHERE property_id = ? AND deleted_at IS NULL "
                         + "ORDER BY created_at ASC, id ASC LIMIT 1",
                 (rs, row) -> rs.getLong("id"), propertyId).stream().findFirst()
                 .ifPresent(photoId -> jdbcTemplate.update(
@@ -134,6 +136,8 @@ public class JdbcPropertyPhotoRepository implements PropertyPhotoRepository {
                 SELECT id, property_id, storage_key, thumbnail_storage_key, content_type, size_bytes, created_at
                 FROM property_photos
                 WHERE id > ? AND thumbnail_storage_key IS NULL AND deleted_at IS NULL
+                  AND EXISTS (SELECT 1 FROM properties p
+                              WHERE p.id = property_photos.property_id AND p.deleted_at IS NULL)
                 ORDER BY id ASC
                 LIMIT ?
                 """, propertyPhotoRowMapper, afterPhotoId, limit);
@@ -146,5 +150,12 @@ public class JdbcPropertyPhotoRepository implements PropertyPhotoRepository {
                 UPDATE property_photos SET thumbnail_storage_key = ?
                 WHERE id = ? AND thumbnail_storage_key IS NULL AND deleted_at IS NULL
                 """, thumbnailStorageKey, photoId) == 1;
+    }
+
+    @Override
+    public boolean lockActiveProperty(final long propertyId) {
+        return !jdbcTemplate.queryForList(
+                "SELECT id FROM properties WHERE id = ? AND deleted_at IS NULL FOR UPDATE", Long.class, propertyId)
+                .isEmpty();
     }
 }

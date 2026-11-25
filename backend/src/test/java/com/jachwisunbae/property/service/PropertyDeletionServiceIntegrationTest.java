@@ -2,7 +2,6 @@ package com.jachwisunbae.property.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 
 import com.jachwisunbae.common.exception.JachwiException;
@@ -59,7 +58,7 @@ class PropertyDeletionServiceIntegrationTest {
     }
 
     @Test
-    @DisplayName("매물을 지우면 사진 파일과 썸네일을 저장소에서 지우고 매물은 삭제 시각만 기록해 남긴다")
+    @DisplayName("매물을 논리 삭제하면 사진·썸네일 파일과 메타데이터를 보관한다")
     void deletesPropertyAndPhotoFiles() {
         // given
         insertPhoto("photos/first.png");
@@ -71,9 +70,8 @@ class PropertyDeletionServiceIntegrationTest {
         service.delete(MEMBER_ID, PROPERTY_ID);
 
         // then
-        verify(photoStorage).delete("photos/first.png");
-        verify(photoStorage).delete("photos/second.png");
-        verify(photoStorage).delete("photos/thumbnails/second.jpg");
+        verifyNoInteractions(photoStorage);
+        assertThat(jdbcTemplate.queryForObject("SELECT COUNT(*) FROM property_photos", Integer.class)).isEqualTo(2);
         assertThat(repository.findByIdAndMemberId(PROPERTY_ID, MEMBER_ID)).isEmpty();
         assertThat(jdbcTemplate.queryForObject("SELECT deleted_at IS NOT NULL FROM properties WHERE id = ?",
                 Boolean.class, PROPERTY_ID)).isTrue();

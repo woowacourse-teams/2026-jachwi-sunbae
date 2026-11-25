@@ -26,4 +26,6 @@ public interface PropertyPhotoRepository {
     List<PropertyPhoto> findWithoutThumbnailAfter(long afterPhotoId, int limit);
 
     boolean updateThumbnailStorageKey(long photoId, String thumbnailStorageKey);
+
+    boolean lockActiveProperty(long propertyId);
 }

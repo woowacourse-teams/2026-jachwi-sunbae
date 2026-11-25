@@ -54,6 +54,8 @@ app:
     allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:3000}
 
 photo:
+  cleanup:
+    enabled: ${PHOTO_CLEANUP_ENABLED:false}
   storage:
     region: ${PHOTO_STORAGE_REGION:us-east-1}
     bucket: ${PHOTO_STORAGE_BUCKET:jachwi-sunbae-photos}

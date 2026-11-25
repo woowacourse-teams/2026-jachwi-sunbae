@@ -7,12 +7,14 @@ import com.jachwisunbae.property.storage.PhotoStorage;
 import com.jachwisunbae.property.storage.PhotoStorageKeyGenerator;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.support.TransactionTemplate;
 
 // 썸네일 도입 전에 올린 사진의 썸네일을 관리자 요청으로 나눠 만든다.
-// 원본을 한 장씩 받아 처리해 메모리에는 사진 한 장만 올리고, S3를 기다리는 동안 DB 커넥션을 잡지 않도록 트랜잭션을 걸지 않는다.
+// 원본 다운로드와 생성은 트랜잭션 밖에서 끝내고, 전송·메타데이터 반영은 복구 기록을 잠근 뒤 수행한다.
 @Service
 public class PropertyPhotoThumbnailBackfillService {
 
@@ -23,15 +25,21 @@ public class PropertyPhotoThumbnailBackfillService {
     private final PhotoStorage photoStorage;
     private final PhotoStorageKeyGenerator storageKeyGenerator;
     private final PhotoThumbnailGenerator thumbnailGenerator;
+    private final TransactionTemplate transaction;
+    private final PhotoStorageCleanupService cleanup;
 
     public PropertyPhotoThumbnailBackfillService(final PropertyPhotoRepository propertyPhotoRepository,
                                                  final PhotoStorage photoStorage,
                                                  final PhotoStorageKeyGenerator storageKeyGenerator,
-                                                 final PhotoThumbnailGenerator thumbnailGenerator) {
+                                                 final PhotoThumbnailGenerator thumbnailGenerator,
+                                                 final TransactionTemplate transaction,
+                                                 final PhotoStorageCleanupService cleanup) {
         this.propertyPhotoRepository = propertyPhotoRepository;
         this.photoStorage = photoStorage;
         this.storageKeyGenerator = storageKeyGenerator;
         this.thumbnailGenerator = thumbnailGenerator;
+        this.transaction = transaction;
+        this.cleanup = cleanup;
     }
 
     public PhotoThumbnailBackfillResult backfill(final long afterPhotoId, final int batchSize) {
@@ -59,12 +67,42 @@ public class PropertyPhotoThumbnailBackfillService {
             return false;
         }
         String thumbnailKey = storageKeyGenerator.thumbnailKeyOf(photo.getStorageKey());
-        photoStorage.upload(thumbnailKey, thumbnail.get(), PhotoThumbnailGenerator.CONTENT_TYPE);
-        if (!propertyPhotoRepository.updateThumbnailStorageKey(photo.getId(), thumbnailKey)) {
-            // 처리하는 사이 사진이 지워졌다. 남은 썸네일 파일을 지운다.
-            photoStorage.delete(thumbnailKey);
-            return false;
+        cleanup.prepareUpload(thumbnailKey, null);
+        AtomicBoolean uploadStarted = new AtomicBoolean();
+        try {
+            boolean created = Boolean.TRUE.equals(transaction.execute(status -> {
+                if (!propertyPhotoRepository.lockActiveProperty(photo.getPropertyId())) {
+                    return false;
+                }
+                var current = propertyPhotoRepository.findByIdAndPropertyId(photo.getId(), photo.getPropertyId());
+                if (current.isEmpty() || current.get().hasThumbnail()) {
+                    return false;
+                }
+                cleanup.lockUpload(thumbnailKey);
+                uploadStarted.set(true);
+                photoStorage.upload(thumbnailKey, thumbnail.get(), PhotoThumbnailGenerator.CONTENT_TYPE);
+                if (!propertyPhotoRepository.updateThumbnailStorageKey(photo.getId(), thumbnailKey)) {
+                    status.setRollbackOnly();
+                    return false;
+                }
+                cleanup.completeUpload(thumbnailKey);
+                return true;
+            }));
+            if (!created) {
+                if (uploadStarted.get()) {
+                    cleanup.cleanSafely(thumbnailKey);
+                } else {
+                    cleanup.discardUnstarted(thumbnailKey);
+                }
+            }
+            return created;
+        } catch (RuntimeException exception) {
+            if (uploadStarted.get()) {
+                cleanup.cleanSafely(thumbnailKey);
+            } else {
+                cleanup.discardUnstarted(thumbnailKey);
+            }
+            throw exception;
         }
-        return true;
     }
 }

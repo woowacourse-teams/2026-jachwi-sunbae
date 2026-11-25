@@ -34,7 +34,6 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
-import org.springframework.transaction.annotation.Transactional;
 import org.testcontainers.containers.MySQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -43,7 +42,6 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 @Testcontainers
 @SpringBootTest
 @ActiveProfiles("test")
-@Transactional
 class PropertyPhotoServiceIntegrationTest {
 
     @Container
@@ -71,6 +69,11 @@ class PropertyPhotoServiceIntegrationTest {
 
     @BeforeEach
     void setUp() {
+        jdbcTemplate.update("DELETE FROM photo_storage_cleanup_requests");
+        jdbcTemplate.update("DELETE FROM main_property_photos");
+        jdbcTemplate.update("DELETE FROM property_photos");
+        jdbcTemplate.update("DELETE FROM properties");
+        jdbcTemplate.update("DELETE FROM members");
         insertMember(MEMBER_ID);
         insertMember(OTHER_MEMBER_ID);
         insertProperty(PROPERTY_ID, MEMBER_ID);
@@ -108,7 +111,7 @@ class PropertyPhotoServiceIntegrationTest {
     }
 
     @Test
-    @DisplayName("대표 사진을 지우면 저장소에서도 지우고 남은 첫 사진을 대표로 정한다")
+    @DisplayName("대표 사진을 논리 삭제하면 파일은 보존하고 남은 첫 사진을 대표로 정한다")
     void deletesRepresentativePhoto() {
         // given
         PropertyPhoto representative = service.upload(MEMBER_ID, PROPERTY_ID, png()).photo();
@@ -118,7 +121,9 @@ class PropertyPhotoServiceIntegrationTest {
         service.delete(MEMBER_ID, PROPERTY_ID, representative.getId());
 
         // then
-        verify(photoStorage).delete(representative.getStorageKey());
+        verify(photoStorage, never()).delete(anyString());
+        assertThat(jdbcTemplate.queryForObject("SELECT deleted_at IS NOT NULL FROM property_photos WHERE id = ?",
+                Boolean.class, representative.getId())).isTrue();
         assertThat(repository.findByPropertyId(PROPERTY_ID)).extracting(PropertyPhoto::getId)
                 .containsExactly(next.getId());
         assertThat(repository.findRepresentativePhotoId(PROPERTY_ID)).contains(next.getId());
@@ -228,7 +233,7 @@ class PropertyPhotoServiceIntegrationTest {
     }
 
     @Test
-    @DisplayName("사진을 지우면 썸네일도 저장소에서 지운다")
+    @DisplayName("사진을 논리 삭제하면 원본과 썸네일 파일을 보존한다")
     void deletesThumbnail() {
         // given
         PropertyPhoto photo = service.upload(MEMBER_ID, PROPERTY_ID, png()).photo();
@@ -237,8 +242,8 @@ class PropertyPhotoServiceIntegrationTest {
         service.delete(MEMBER_ID, PROPERTY_ID, photo.getId());
 
         // then
-        verify(photoStorage).delete(photo.getStorageKey());
-        verify(photoStorage).delete(photo.getThumbnailStorageKey());
+        verify(photoStorage, never()).delete(anyString());
+        assertThat(repository.findByIdAndPropertyId(photo.getId(), PROPERTY_ID)).isEmpty();
     }
 
     private MockMultipartFile png() {

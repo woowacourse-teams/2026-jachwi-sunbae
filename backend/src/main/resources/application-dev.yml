@@ -8,6 +8,10 @@ spring:
 server:
   port: 80
 
+photo:
+  cleanup:
+    enabled: ${PHOTO_CLEANUP_ENABLED:true}
+
 logging:
   level:
     root: info
