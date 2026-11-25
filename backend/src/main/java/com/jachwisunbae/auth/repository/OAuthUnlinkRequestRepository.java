@@ -3,6 +3,8 @@ package com.jachwisunbae.auth.repository;
 import com.jachwisunbae.auth.domain.OAuthProvider;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
 
@@ -27,32 +29,38 @@ public class OAuthUnlinkRequestRepository {
 
     // 여러 서버가 같은 요청을 동시에 처리하지 않도록 다음 시도 시각을 뒤로 미뤄 선점한다.
     // 처리 중 서버가 멈추면 선점이 끝난 뒤 다른 서버가 이어서 처리한다.
-    public boolean claim(Long id, LocalDateTime now, LocalDateTime leaseUntil) {
-        return jdbc.update("""
-                UPDATE oauth_unlink_requests SET next_attempt_at = ?
+    public Optional<UnlinkRequest> claim(Long id, LocalDateTime now, LocalDateTime leaseUntil) {
+        String claimToken = UUID.randomUUID().toString();
+        int updated = jdbc.update("""
+                UPDATE oauth_unlink_requests SET next_attempt_at = ?, claim_token = ?
                 WHERE id = ? AND next_attempt_at <= ?
-                """, leaseUntil, id, now) == 1;
-    }
-
-    public UnlinkRequest get(Long id) {
-        return jdbc.queryForObject("""
-                SELECT id, provider, provider_subject, provider_client_id, provider_refresh_token, attempts
-                FROM oauth_unlink_requests WHERE id = ?
+                """, leaseUntil, claimToken, id, now);
+        if (updated == 0) {
+            return Optional.empty();
+        }
+        return jdbc.query("""
+                SELECT id, provider, provider_subject, provider_client_id, provider_refresh_token, attempts, claim_token
+                FROM oauth_unlink_requests WHERE id = ? AND claim_token = ?
                 """, (rs, row) -> new UnlinkRequest(rs.getLong("id"), OAuthProvider.valueOf(rs.getString("provider")),
                 rs.getString("provider_subject"), rs.getString("provider_client_id"),
-                rs.getString("provider_refresh_token"), rs.getInt("attempts")), id);
+                rs.getString("provider_refresh_token"), rs.getInt("attempts"), rs.getString("claim_token")),
+                id, claimToken).stream().findFirst();
     }
 
-    public void delete(Long id) {
-        jdbc.update("DELETE FROM oauth_unlink_requests WHERE id = ?", id);
+    // 만료 후 새 작업자가 선점했다면 이전 작업자의 결과로 행을 지우거나 재예약하지 않는다.
+    public boolean delete(UnlinkRequest request) {
+        return jdbc.update("DELETE FROM oauth_unlink_requests WHERE id = ? AND claim_token = ?",
+                request.id(), request.claimToken()) == 1;
     }
 
-    public void reschedule(Long id, int attempts, LocalDateTime nextAttemptAt) {
-        jdbc.update("UPDATE oauth_unlink_requests SET attempts = ?, next_attempt_at = ? WHERE id = ?",
-                attempts, nextAttemptAt, id);
+    public boolean reschedule(UnlinkRequest request, int attempts, LocalDateTime nextAttemptAt) {
+        return jdbc.update("""
+                UPDATE oauth_unlink_requests SET attempts = ?, next_attempt_at = ?, claim_token = NULL
+                WHERE id = ? AND claim_token = ?
+                """, attempts, nextAttemptAt, request.id(), request.claimToken()) == 1;
     }
 
     public record UnlinkRequest(Long id, OAuthProvider provider, String subject, String clientId,
-                                String encryptedRefreshToken, int attempts) {
+                                String encryptedRefreshToken, int attempts, String claimToken) {
     }
 }

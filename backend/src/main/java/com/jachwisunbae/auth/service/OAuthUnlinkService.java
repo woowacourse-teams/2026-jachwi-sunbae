@@ -7,6 +7,7 @@ import com.jachwisunbae.auth.token.OAuthTokenCipher;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
@@ -37,11 +38,12 @@ public class OAuthUnlinkService {
 
     // 처리한 요청 수를 반환한다. 다른 서버가 선점한 요청은 건너뛴다.
     public int processDue() {
-        LocalDateTime now = LocalDateTime.now(clock);
         int processed = 0;
-        for (Long id : requests.findDueIds(now, BATCH_SIZE)) {
-            if (requests.claim(id, now, now.plus(LEASE))) {
-                process(requests.get(id));
+        for (Long id : requests.findDueIds(LocalDateTime.now(clock), BATCH_SIZE)) {
+            LocalDateTime now = LocalDateTime.now(clock);
+            Optional<UnlinkRequest> claimed = requests.claim(id, now, now.plus(LEASE));
+            if (claimed.isPresent()) {
+                process(claimed.get());
                 processed++;
             }
         }
@@ -53,20 +55,23 @@ public class OAuthUnlinkService {
             String token = request.encryptedRefreshToken();
             providers.unlink(request.provider(), request.subject(), request.clientId(),
                     token == null ? null : cipher.decrypt(token));
-            requests.delete(request.id());
-            log.info("OAuth unlink completed: requestId={}, provider={}", request.id(), request.provider());
+            if (requests.delete(request)) {
+                log.info("OAuth unlink completed: requestId={}, provider={}", request.id(), request.provider());
+            }
         } catch (RuntimeException exception) {
             int attempts = request.attempts() + 1;
             if (attempts >= MAX_ATTEMPTS) {
-                requests.delete(request.id());
-                log.error("OAuth unlink abandoned: requestId={}, provider={}, attempts={}, type={}", request.id(),
-                        request.provider(), attempts, exception.getClass().getSimpleName(), exception);
+                if (requests.delete(request)) {
+                    log.error("OAuth unlink abandoned: requestId={}, provider={}, attempts={}, type={}", request.id(),
+                            request.provider(), attempts, exception.getClass().getSimpleName(), exception);
+                }
                 return;
             }
             LocalDateTime next = LocalDateTime.now(clock).plus(backoff(attempts));
-            requests.reschedule(request.id(), attempts, next);
-            log.warn("OAuth unlink failed: requestId={}, provider={}, attempts={}, nextAttemptAt={}, reason={}",
-                    request.id(), request.provider(), attempts, next, exception.getMessage());
+            if (requests.reschedule(request, attempts, next)) {
+                log.warn("OAuth unlink failed: requestId={}, provider={}, attempts={}, nextAttemptAt={}, reason={}",
+                        request.id(), request.provider(), attempts, next, exception.getMessage());
+            }
         }
     }
 

@@ -24,6 +24,7 @@
 - [롤백](operations/rollback.md)
 - [모니터링](operations/monitoring.md)
 - [장애 대응](operations/incident-response.md)
+- [탈퇴 Outbox 신뢰성 검증](operations/oauth-unlink-reliability.md)
 - [프론트엔드 배포](../../frontend/docs/deployment.md)
 - [Git·GitHub 협업 컨벤션](../../docs/convention/README.md)
 
