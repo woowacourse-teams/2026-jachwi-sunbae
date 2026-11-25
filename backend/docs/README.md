@@ -26,6 +26,7 @@
 - [장애 대응](operations/incident-response.md)
 - [탈퇴 Outbox 신뢰성 검증](operations/oauth-unlink-reliability.md)
 - [사진 저장소 신뢰성 검증](operations/photo-storage-reliability.md)
+- [월세 수집본 교체 신뢰성 검증](operations/rental-import-reliability.md)
 - [프론트엔드 배포](../../frontend/docs/deployment.md)
 - [Git·GitHub 협업 컨벤션](../../docs/convention/README.md)
 

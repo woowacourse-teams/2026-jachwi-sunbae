@@ -46,6 +46,8 @@ public class AdminLegalDongImportService {
 
     @Transactional
     public int importLinks() {
+        // 첫 일관 읽기 전에 월세 적재와 같은 행을 잠가, 잠금 대기 후에도 이전 수집본으로 시세를 계산하지 않게 한다.
+        rentRepository.lockDatasetForRefresh();
         List<AdminDong> adminDongs = adminDongRepository.findAll();
         List<LocalDate> baseDates = adminDongs.stream().map(AdminDong::baseDate).distinct().toList();
         if (baseDates.size() != 1) {

@@ -126,6 +126,10 @@ docker compose exec -T mysql mysql -ujachwi_sunbae -plocal_password jachwi_sunba
 기간·수집 시각·예상 건수는 실제 자료에 맞게 지정한다. 보고서가 `VALIDATED`이고 미매핑 법정동이 0건일 때 `--apply`를 붙여 DB에 적재한다.
 재실행할 때는 새 보고서 경로를 사용한다. 조회 API는 적재된 거래만 반환한다.
 
+월세 교체와 관할 법정동 연결표 갱신은 같은 dataset 잠금을 사용한다. 두 경로 모두 잠금을 사용하는 버전으로 실행해야 한다.
+DB 적재 후 행정동 시세의 메모리 캐시는 웹 서버를 재시작해야 반영된다.
+실패 시 확인 항목과 재실행 기준은 [월세 수집본 교체 신뢰성 검증](../operations/rental-import-reliability.md)을 따른다.
+
 ## 4. 백엔드 실행
 
 `backend`에서 실행한다.

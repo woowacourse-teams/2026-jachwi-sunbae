@@ -24,6 +24,14 @@ public class JdbcAdminDongRentRepository {
         this.jdbcTemplate = jdbcTemplate;
     }
 
+    // 신규 행 INSERT와 중복 행 UPDATE 모두 dataset 행의 배타 잠금을 트랜잭션 종료까지 유지한다.
+    public void lockDatasetForRefresh() {
+        jdbcTemplate.update("""
+                INSERT INTO rental_datasets (dataset_key) VALUES (?)
+                ON DUPLICATE KEY UPDATE dataset_key = dataset_key
+                """, RentalSnapshot.DATASET_KEY);
+    }
+
     public void replaceLinks(final List<AdminLegalDong> links) {
         jdbcTemplate.update("DELETE FROM admin_legal_dongs");
         jdbcTemplate.batchUpdate("""
