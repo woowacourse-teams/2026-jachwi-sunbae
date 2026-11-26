@@ -11,6 +11,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.github.benmanes.caffeine.cache.Cache;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jachwisunbae.auth.token.JwtTokenProvider;
+import com.jachwisunbae.support.IntegrationTest;
+import com.jachwisunbae.support.TestClock;
 import com.jachwisunbae.weather.domain.DailyForecast;
 import com.jachwisunbae.weather.domain.DailyTemperature;
 import com.jachwisunbae.weather.domain.ForecastTimes;
@@ -29,32 +31,15 @@ import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.context.TestConfiguration;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Import;
-import org.springframework.context.annotation.Primary;
 import org.springframework.http.MediaType;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.DynamicPropertyRegistry;
-import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.web.servlet.MockMvc;
-import org.testcontainers.containers.MySQLContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
 
-@Testcontainers
-@SpringBootTest
-@AutoConfigureMockMvc
-@ActiveProfiles("test")
-@Import(WeatherApiIntegrationTest.FixedClockConfig.class)
-class WeatherApiIntegrationTest {
-    @Container
-    private static final MySQLContainer<?> MYSQL = new MySQLContainer<>("mysql:8.4.10");
+class WeatherApiIntegrationTest extends IntegrationTest {
     private static final Clock CLOCK = Clock.fixed(Instant.parse("2026-10-25T13:00:00Z"), ZoneOffset.UTC);
     private static final LocalDate TODAY = LocalDate.of(2026, 10, 25);
+    @Autowired
+    private TestClock testClock;
     @Autowired
     private JdbcTemplate jdbc;
     @Autowired
@@ -70,25 +55,9 @@ class WeatherApiIntegrationTest {
     @Autowired
     private Cache<ForecastCacheKey, WeatherForecastResult> forecastCache;
 
-    @DynamicPropertySource
-    static void database(final DynamicPropertyRegistry registry) {
-        registry.add("spring.datasource.url", () -> MYSQL.getJdbcUrl()
-                + "?connectionTimeZone=%2B00:00&forceConnectionTimeZoneToSession=true");
-        registry.add("spring.datasource.username", MYSQL::getUsername);
-        registry.add("spring.datasource.password", MYSQL::getPassword);
-    }
-
-    @TestConfiguration
-    static class FixedClockConfig {
-        @Bean
-        @Primary
-        Clock weatherTestClock() {
-            return CLOCK;
-        }
-    }
-
     @BeforeEach
     void setup() {
+        testClock.set(CLOCK.instant());
         // 컨텍스트를 공유하는 테스트끼리 같은 격자·날짜의 캐시 항목이 이어지지 않게 비운다.
         forecastCache.invalidateAll();
         jdbc.update("DELETE FROM member_weather_locations");

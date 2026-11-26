@@ -13,68 +13,37 @@ import com.jachwisunbae.notification.provider.PushSender;
 import com.jachwisunbae.notification.provider.PushSender.Push;
 import com.jachwisunbae.notification.service.DeliveryDiscountNotificationService;
 import com.jachwisunbae.notification.service.NotificationSettingsService;
-import java.time.Clock;
+import com.jachwisunbae.support.IntegrationTest;
+import com.jachwisunbae.support.TestClock;
 import java.time.Instant;
 import java.time.LocalDate;
-import java.time.ZoneId;
-import java.time.ZoneOffset;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.context.TestConfiguration;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Import;
-import org.springframework.context.annotation.Primary;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.DynamicPropertyRegistry;
-import org.springframework.test.context.DynamicPropertySource;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
-import org.testcontainers.containers.MySQLContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
 
-@Testcontainers
-@SpringBootTest(properties = "weather.notification.enabled=false")
-@ActiveProfiles("test")
-@Import(DeliveryDiscountNotificationIntegrationTest.ClockConfig.class)
-class DeliveryDiscountNotificationIntegrationTest {
-    @Container private static final MySQLContainer<?> MYSQL = new MySQLContainer<>("mysql:8.4.10");
+class DeliveryDiscountNotificationIntegrationTest extends IntegrationTest {
     // 2026-11-04 18:00 KST
     private static final Instant EVENING = Instant.parse("2026-11-04T09:00:00Z");
     private static final LocalDate TODAY = LocalDate.of(2026, 11, 4);
     private static final String SECRET = "test-installation-secret-with-at-least-43-characters";
-    private static final MutableClock CLOCK = new MutableClock();
+    @Autowired private TestClock clock;
     @Autowired private JdbcTemplate jdbc;
     @Autowired private NotificationSettingsService settings;
     @Autowired private DeliveryDiscountNotificationService service;
-    @MockitoBean private PushSender sender;
+    @Autowired private PushSender sender;
     private final List<Push> pushes = new CopyOnWriteArrayList<>();
     private String enabledToken;
 
-    @DynamicPropertySource
-    static void database(final DynamicPropertyRegistry registry) {
-        registry.add("spring.datasource.url", MYSQL::getJdbcUrl);
-        registry.add("spring.datasource.username", MYSQL::getUsername);
-        registry.add("spring.datasource.password", MYSQL::getPassword);
-    }
-
-    @TestConfiguration
-    static class ClockConfig {
-        @Bean @Primary Clock deliveryDiscountNotificationTestClock() { return CLOCK; }
-    }
-
     @BeforeEach
     void setup() {
-        CLOCK.now.set(EVENING);
+        clock.set(EVENING);
         jdbc.update("DELETE FROM delivery_discount_offers");
         jdbc.update("DELETE FROM members");
         jdbc.update("INSERT INTO members (id, created_at, updated_at) VALUES "
@@ -162,7 +131,7 @@ class DeliveryDiscountNotificationIntegrationTest {
     @DisplayName("서버 시간대와 관계없이 한국 날짜로 유효 기간을 판단한다")
     void usesKstDateForAvailability() {
         // UTC로는 11월 3일이지만 한국 시간으로는 11월 4일 00:30이라 11월 3일에 끝난 할인은 이미 지났다.
-        CLOCK.now.set(Instant.parse("2026-11-03T15:30:00Z"));
+        clock.set(Instant.parse("2026-11-03T15:30:00Z"));
         offer("BAEMIN", null, null, TODAY.minusDays(1), true);
 
         service.dispatch(DeliveryDiscountNotificationType.EVENING);
@@ -230,10 +199,4 @@ class DeliveryDiscountNotificationIntegrationTest {
                 """, platform, startDate, endDate, conditions, active);
     }
 
-    private static class MutableClock extends Clock {
-        private final AtomicReference<Instant> now = new AtomicReference<>(EVENING);
-        @Override public ZoneId getZone() { return ZoneOffset.UTC; }
-        @Override public Clock withZone(final ZoneId zone) { return Clock.fixed(instant(), zone); }
-        @Override public Instant instant() { return now.get(); }
-    }
 }

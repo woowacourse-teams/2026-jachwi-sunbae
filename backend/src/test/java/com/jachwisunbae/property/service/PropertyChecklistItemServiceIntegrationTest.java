@@ -11,30 +11,18 @@ import com.jachwisunbae.common.exception.errorcode.ErrorCode;
 import com.jachwisunbae.property.repository.JdbcPropertyChecklistItemRepository;
 import com.jachwisunbae.property.repository.JdbcPropertyChecklistRepository;
 import com.jachwisunbae.property.repository.query.PropertyChecklistItemStateQuery;
+import com.jachwisunbae.support.IntegrationTest;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.function.Executable;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
-import org.testcontainers.containers.MySQLContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
 
-@Testcontainers
-@SpringBootTest
-@ActiveProfiles("test")
 @Transactional
-class PropertyChecklistItemServiceIntegrationTest {
-
-    @Container
-    @ServiceConnection
-    private static final MySQLContainer<?> mysqlContainer = new MySQLContainer<>("mysql:8.4.10");
+class PropertyChecklistItemServiceIntegrationTest extends IntegrationTest {
 
     private static final long MEMBER_ID = 1L;
     private static final long OTHER_MEMBER_ID = 2L;

@@ -9,30 +9,17 @@ import com.jachwisunbae.common.exception.JachwiException;
 import com.jachwisunbae.common.exception.errorcode.ErrorCode;
 import com.jachwisunbae.property.repository.JdbcPropertyRepository;
 import com.jachwisunbae.property.storage.PhotoStorage;
+import com.jachwisunbae.support.IntegrationTest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.transaction.annotation.Transactional;
-import org.testcontainers.containers.MySQLContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
 
 // 사진 파일은 S3에 올라가므로 저장소만 대역으로 두고, 매물 삭제는 실제 MySQL로 검증한다.
-@Testcontainers
-@SpringBootTest
-@ActiveProfiles("test")
 @Transactional
-class PropertyDeletionServiceIntegrationTest {
-
-    @Container
-    @ServiceConnection
-    private static final MySQLContainer<?> mysqlContainer = new MySQLContainer<>("mysql:8.4.10");
+class PropertyDeletionServiceIntegrationTest extends IntegrationTest {
 
     private static final long MEMBER_ID = 1L;
     private static final long OTHER_MEMBER_ID = 2L;
@@ -47,7 +34,7 @@ class PropertyDeletionServiceIntegrationTest {
     @Autowired
     private JdbcTemplate jdbcTemplate;
 
-    @MockitoBean
+    @Autowired
     private PhotoStorage photoStorage;
 
     @BeforeEach

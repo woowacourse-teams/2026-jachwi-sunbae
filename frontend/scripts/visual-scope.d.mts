@@ -23,4 +23,5 @@ export const findVisualScope: (
 ) => Promise<VisualScope>;
 export const changedFilesSince: (base: string) => { mergeBase: string; changed: string[] };
 export const checkVerdict: (input: { title: string; verdict: string }) => string[];
+export const checkVerdictNotes: (input: { title: string; verdict: string }) => string[];
 export const renderVerdictTemplate: (scope: VisualScope) => string;
