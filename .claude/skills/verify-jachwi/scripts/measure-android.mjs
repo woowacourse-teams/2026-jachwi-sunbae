@@ -476,7 +476,8 @@ const SCENARIO_RUNNERS = {
       if (!box) throw new Error('지도 영역을 못 찾았다');
       const x = Math.round(box.x + box.width / 2 - 110);
       const y = Math.round(box.y + box.height / 2 + 170);
-      const menu = page.getByRole('group', { name: '이 위치에서' }).getByRole('button', { name: '본 방 기록하기' });
+      // 좌표 메뉴(메모 남기기, 본 방 기록하기)의 버튼. 아이콘이 이름에 섞일 수 있어 글자로 찾는다.
+      const menu = page.locator('button', { hasText: '본 방 기록하기' }).first();
       const tapped = await page.evaluate(() => performance.now());
       await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x, y }] });
       await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
