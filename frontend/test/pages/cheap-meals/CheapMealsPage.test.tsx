@@ -196,7 +196,7 @@ const reload = (unmount: () => void) => {
   return renderAt(url);
 };
 const tab = (name: string) => screen.getByRole('tab', { name });
-/** 이름이 같은 기록 매물 둘(시청 근처, 강남). 이름이 같으면 주소로 구분한다. */
+/** 이름이 같은 기록 매물 둘(시청 근처, 강남). 뱃지에는 주소를 붙이지 않고 이름만 보인다. */
 const useTwoSameNamedRecords = () => {
   const [base] = getMockProperties();
   const items = [
@@ -749,12 +749,19 @@ it('기록한 매물을 기준 매물 뱃지 줄로 보여 주고 뱃지를 고�
   expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   const rail = await screen.findByRole('navigation', { name: '기준 매물' });
   // 처음 기준은 가장 최근 기록 매물(시청 근처)이라 그 뱃지가 골라져 있다.
-  expect(within(rail).getByRole('button', { name: /세종대로 110/ })).toHaveAttribute('aria-pressed', 'true');
-  expect(within(rail).getByRole('button', { name: /테헤란로 1/ })).toHaveAttribute('aria-pressed', 'false');
-  await user.click(within(rail).getByRole('button', { name: /테헤란로 1/ }));
+  // 이름이 같아도 뱃지에는 주소를 붙이지 않고 이름만 보인다. 순서는 목록 순서(최근 기록 먼저)다.
+  const [cityHall, gangnam] = within(rail).getAllByRole('button');
+  expect(
+    within(rail)
+      .getAllByRole('button')
+      .map((badge) => badge.textContent),
+  ).toEqual(['새 매물', '새 매물']);
+  expect(cityHall).toHaveAttribute('aria-pressed', 'true');
+  expect(gangnam).toHaveAttribute('aria-pressed', 'false');
+  await user.click(gangnam);
   expect(screen.getByLabelText('반경 원 중심')).toHaveTextContent('37.5,127.03');
   await waitFor(() => expect(calls.stores).toHaveBeenLastCalledWith('2000', '37.5', '127.03'));
-  expect(within(rail).getByRole('button', { name: /테헤란로 1/ })).toHaveAttribute('aria-pressed', 'true');
+  expect(gangnam).toHaveAttribute('aria-pressed', 'true');
   // 뱃지와 지도 마커가 같은 선택을 따른다.
   expect(screen.getByRole('button', { name: '매물 마커 502' })).toHaveAttribute('aria-pressed', 'true');
 });
@@ -821,8 +828,9 @@ it('데스크탑에서는 기준 매물 뱃지 줄이 목록 칸이 아니라 �
     await user.click(tab('편의점'));
     const kept = await screen.findByRole('navigation', { name: '기준 매물' });
     expect(screen.getAllByRole('navigation', { name: '기준 매물' })).toHaveLength(1);
-    await user.click(within(kept).getByRole('button', { name: /테헤란로 1/ }));
-    expect(within(kept).getByRole('button', { name: /테헤란로 1/ })).toHaveAttribute('aria-pressed', 'true');
+    const gangnam = within(kept).getAllByRole('button', { name: '새 매물' })[1];
+    await user.click(gangnam);
+    expect(gangnam).toHaveAttribute('aria-pressed', 'true');
     expect(screen.queryByText('확대하면 주변 시설이 보여요')).not.toBeInTheDocument();
   } finally {
     viewport.mockRestore();

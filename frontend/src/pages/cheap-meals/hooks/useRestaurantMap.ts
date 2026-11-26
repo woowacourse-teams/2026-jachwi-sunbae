@@ -75,7 +75,7 @@ const useRestaurantMap = (
   // 기록이 하나도 없으면 내 기록 화면과 같은 미리보기(예시) 매물을 대신 쓰고, 이 기기에서 숨긴 예시는 뺀다.
   const hiddenPreviewValue = useSyncExternalStore(subscribeHiddenPreviews, hiddenPreviewSnapshot);
   const hiddenPreviewIds = useMemo(() => parseHiddenPreviewIds(hiddenPreviewValue), [hiddenPreviewValue]);
-  /** 위치가 있는 기록 매물. 목록 순서(최근 기록 먼저)를 따른다. 이름이 같으면 주소로 구분한다. */
+  /** 위치가 있는 기록 매물. 목록 순서(최근 기록 먼저)를 따른다. 뱃지에는 이름만 보인다. */
   const recorded = useMemo(() => {
     const listed = withPreviewProperties(
       properties.data?.pages.flatMap((page) => page.content) ?? [],
@@ -96,15 +96,7 @@ const useRestaurantMap = (
             },
           ],
     );
-    const nameCounts = new Map<string, number>();
-    for (const property of located) nameCounts.set(property.name, (nameCounts.get(property.name) ?? 0) + 1);
-    return located.map((property) => ({
-      ...property,
-      label:
-        (nameCounts.get(property.name) ?? 0) > 1 && property.address
-          ? `${property.name}(${property.address})`
-          : property.name,
-    }));
+    return located.map((property) => ({ ...property, label: property.name }));
   }, [properties.data, properties.isSuccess, hiddenPreviewIds]);
   const requestId = useRef(0);
   // 사용자가 기준을 직접 고르면 뒤늦게 도착한 현재 위치나 기록 매물이 그 기준을 덮지 않는다.
