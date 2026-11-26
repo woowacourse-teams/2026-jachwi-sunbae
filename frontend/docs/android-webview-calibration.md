@@ -90,7 +90,7 @@ secret `NAVER_MAP_CLIENT_ID`가 있는 주 1회와 수동 실행에서만 돈다
 
 ### 네이버 콘솔의 localhost 등록
 
-네이버 클라우드 콘솔의 Maps Application에 등록한 Web 서비스 URL에서만 이 키로 지도를 쓸 수 있다. 에뮬레이터 웹뷰는 `http://localhost:3000`을 열므로 이 주소가 등록되어 있어야 한다. 프론트 개발 서버의 기본 주소(`PORT` 기본 3000)와 같아 따로 더할 것이 없으면 그대로 쓴다. 등록이 없으면 지도 인증이 실패해 `real-*` 시나리오가 환경 오류로 남는다. 2026-11-26 실행에서 확인한 결과는 아래 "실행 기록"에 있다.
+네이버 클라우드 콘솔의 Maps Application에 등록한 Web 서비스 URL에서만 이 키로 지도를 쓸 수 있다. 에뮬레이터 웹뷰는 `http://localhost:3000`을 열므로 이 주소가 등록되어 있어야 한다. 프론트 개발 서버의 기본 주소(`PORT` 기본 3000)와 같아 따로 더할 것이 없으면 그대로 쓴다. 등록이 없으면 지도 인증이 실패해 `real-*` 시나리오가 환경 오류로 남는다. 2026-11-26 실행에서 `localhost:3000`으로 지도가 떠 등록되어 있음을 확인했다(아래 "실행 기록").
 
 ## 판정
 
@@ -134,6 +134,21 @@ node .claude/skills/verify-jachwi/scripts/perf-issue.mjs --publish
 - 단위 테스트: `frontend/test/scripts/calibration-history.test.ts`(이력 비교), `frontend/test/scripts/calibration-judge.test.ts`(의심, 확인, 안정 키, 멱등, 이슈 형식, 게시 갈래).
 - 합성 장애 dry-run: 워크플로의 `Issue dry-run` 단계가 `fixtures/perf-issue-synthetic.json`과 `fixtures/perf-issue-existing-keys.json`으로 생성, 중복, 무시 갈래가 차례로 나오는지 보고, 다르면 실패한다.
 - 수동 실행: develop에 이 워크플로가 있으면 Actions에서 `Android WebView Calibration`을 `history=test`, `confirm=always`로 돌린다. 이력과 후보는 시험 이력 브랜치에만 남는다.
+
+## 실행 기록
+
+2026-11-26 PR 브랜치에서 workflow_dispatch(`history=test`)로 확인했다. secret `NAVER_MAP_CLIENT_ID`는 있었고 `POSTHOG_PERSONAL_API_KEY`는 아직 없었다.
+
+| 실행                                                                                            | 실제 지도 결과                                                                         | 비고                                                                                                                  |
+| ----------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| [45795893317](https://github.com/woowacourse-teams/2026-jachwi-sunbae/actions/runs/45795893317) | `real-map-overlay` 5/5(오버레이 약 4.6~5.4초), `real-denied-pick` 0/5                  | 지도는 떴다. 웹뷰에 Playwright touchscreen 이 없어 지도를 못 눌렀다(CDP 터치로 고침)                                  |
+| [45798741376](https://github.com/woowacourse-teams/2026-jachwi-sunbae/actions/runs/45798741376) | 둘 다 0/5, 환경 오류                                                                   | 에뮬레이터 DNS가 `oapi.map.naver.com`을 못 풀었다(`ERR_NAME_NOT_RESOLVED`). 공용 DNS 지정과 이름 풀기 기다리기를 더함 |
+| [45801143088](https://github.com/woowacourse-teams/2026-jachwi-sunbae/actions/runs/45801143088) | `real-map-overlay` 5/5, `real-denied-pick` 0/5                                         | 좌표 메뉴는 떴고 버튼 선택자만 달랐다(글자로 찾게 고침)                                                               |
+| [45827208023](https://github.com/woowacourse-teams/2026-jachwi-sunbae/actions/runs/45827208023) | `real-map-overlay` 5/5, 4.06초(3.91~~4.58), `real-denied-pick` 5/5, 1.35초(1.22~~1.45) | 지도 누르고 좌표 메뉴 0.13초, 저장 응답 0.64초, 새 방 항목 1.35초. 실사용 값은 "실사용 값 없음(키 없음)"              |
+
+- 지도 인증: `localhost:3000`에서 실제 지도가 떴으므로 지금 키의 Web 서비스 URL에 이 주소가 들어 있다. 따로 더할 것은 없다.
+- 실사용 이벤트 `first_listing_card_visible`은 이 날 기준 개발 환경 2건뿐이라, 키를 넣어도 한동안은 "실사용 값 없음(표본 부족)"으로 나온다.
+- 네 실행 모두 아티팩트와 이력에 키가 남지 않았다(`scrub-secrets.sh` "남은 것 없음", 원자료의 지도 SDK 주소는 `ncpKeyId=***`).
 
 ## 운영 설정과 점검
 
