@@ -13,8 +13,9 @@
 // --moment map-overlay: 지도 화면의 순간이다. 타일이 다 그려진 시각은 쓰지 않는다. 앱이 남기는 User Timing
 //   (frontend/src/features/map/lib/mapTiming.ts)으로 지도 SDK 준비부터 우리 오버레이(마커, 경계 도형)가 지도에 붙은 시각까지를
 //   재고, SDK 준비까지 걸린 시간(sdkReady)은 따로 적되 판정에 쓰지 않는다. 실제 SDK(--map-sdk real)에서만 잴 수 있다.
+// --extra-runs: 차이가 문턱의 70%~130% 안(경계)이면 전후 번갈아 이만큼 더 재서 합친 값으로 판정한다(기본 5, 0이면 끔). 한 번만 더 잰다.
 // --max-spread: 흩어짐이 이 값(ms)을 넘으면 "판정 불가(흔들림 큼)"로 낸다. 실제 지도(real)는 기본 250, 목(stub)은 끔(0).
-import { appendFileSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { appendFileSync, mkdirSync, writeFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { loadavg } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
@@ -22,7 +23,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import { parseArgs } from 'node:util';
 
 import { findScreen } from './screens.mjs';
-import { judge, renderVerdict, userVerdict } from './verdict.mjs';
+import { judgeWithRecheck, renderVerdict, userVerdict } from './verdict.mjs';
 
 const { values: args } = parseArgs({
   options: {
@@ -39,6 +40,7 @@ const { values: args } = parseArgs({
     'max-load': { type: 'string', default: '3' },
     warmup: { type: 'string', default: '1' },
     runs: { type: 'string', default: '5' },
+    'extra-runs': { type: 'string', default: '5' },
     net: { type: 'string', default: 'fast4g' },
     viewport: { type: 'string', default: 'mobile' },
     shots: { type: 'string', default: '2,4,6,8' },
@@ -269,49 +271,64 @@ for (let warm = 0; warm < Number(args.warmup); warm += 1) {
 }
 // 잴 순서. 번갈아 재면 회선이나 CDN이 중간에 느려져도 전과 후에 같이 걸린다.
 // 짝마다 앞뒤를 바꿔(전 후, 후 전) 늘 먼저 여는 쪽이 손해나 이득을 보지 않게 한다.
-const schedule =
-  args.order === 'blocked'
-    ? variants.flatMap((variant) => Array.from({ length: runs }, (_, index) => [index + 1, variant]))
-    : Array.from({ length: runs }, (_, index) => index + 1).flatMap((run) =>
-        (run % 2 === 1 ? variants : [...variants].reverse()).map((variant) => [run, variant]),
-      );
-for (const [run, [variant, baseUrl]] of schedule) {
-  await waitForQuietMachine();
-  const load = loadavg()[0];
-  const measured = await openOnce(browser, baseUrl);
-  const row = { variant, run, load: Number(load.toFixed(2)), ...measured };
-  appendFileSync(runsFile, `${JSON.stringify(row)}\n`);
-  console.log(
-    variant,
-    run,
-    'moment',
-    measured.moment,
-    ...(moment.mapTiming ? ['sdkReady', measured.sdkReady] : []),
-    'lcp',
-    measured.lcp,
-    'errors',
-    measured.consoleErrors.length,
-    'failed',
-    measured.failedRequests.length,
-  );
-}
+const measureRuns = async (runNumbers) => {
+  const schedule =
+    args.order === 'blocked'
+      ? variants.flatMap((variant) => runNumbers.map((run) => [run, variant]))
+      : runNumbers.flatMap((run) =>
+          (run % 2 === 1 ? variants : [...variants].reverse()).map((variant) => [run, variant]),
+        );
+  const rows = [];
+  for (const [run, [variant, baseUrl]] of schedule) {
+    await waitForQuietMachine();
+    const load = loadavg()[0];
+    const measured = await openOnce(browser, baseUrl);
+    const row = { variant, run, load: Number(load.toFixed(2)), ...measured };
+    rows.push(row);
+    appendFileSync(runsFile, `${JSON.stringify(row)}\n`);
+    console.log(
+      variant,
+      run,
+      'moment',
+      measured.moment,
+      ...(moment.mapTiming ? ['sdkReady', measured.sdkReady] : []),
+      'lcp',
+      measured.lcp,
+      'errors',
+      measured.consoleErrors.length,
+      'failed',
+      measured.failedRequests.length,
+    );
+  }
+  return rows;
+};
+const numbers = (from, count) => Array.from({ length: count }, (_, index) => from + index);
+const firstRows = await measureRuns(numbers(1, runs));
+const spreadFactor = Number(args['spread-factor']);
+const minDiff = Number(args['min-diff']);
+const extraRuns = Number(args['extra-runs']);
+const { result, recheck } = await judgeWithRecheck(
+  firstRows,
+  (count) => {
+    console.log(`경계라 ${count}회 더 잰다`);
+    return measureRuns(numbers(runs + 1, count));
+  },
+  { spreadFactor, minDiff, maxSpread, extraRuns },
+);
 for (const [variant, baseUrl] of variants) await openOnce(browser, baseUrl, { shotsPrefix: variant });
 await browser.close();
 
-const rows = readFileSync(runsFile, 'utf8')
-  .trim()
-  .split('\n')
-  .map((line) => JSON.parse(line));
 const setup = {
   path,
   screen: screen?.name,
-  spreadFactor: Number(args['spread-factor']),
-  minDiff: Number(args['min-diff']),
+  spreadFactor,
+  minDiff,
   moment: moment.label,
   net: args.net,
   cpu: condition.cpu,
   viewport: args.viewport,
   runs,
+  extraRuns,
   before: args.before,
   after: args.after,
   shotTimes,
@@ -320,10 +337,9 @@ const setup = {
   order: args.order,
   maxSpread,
 };
-const result = judge(rows, { spreadFactor: setup.spreadFactor, minDiff: setup.minDiff, maxSpread });
-writeFileSync(join(out, 'verdict.md'), renderVerdict(setup, result));
+writeFileSync(join(out, 'verdict.md'), renderVerdict(setup, result, recheck));
 writeFileSync(
   join(out, 'result.json'),
-  `${JSON.stringify({ setup, result, verdict: userVerdict(result) }, null, 2)}\n`,
+  `${JSON.stringify({ setup, result, recheck, verdict: userVerdict(result) }, null, 2)}\n`,
 );
 console.log(`판정 초안: ${join(out, 'verdict.md')}`);

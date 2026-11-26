@@ -17,3 +17,27 @@ export const compareMetric: (
   afterValues: (number | null)[],
   options?: { spreadFactor?: number; minDiff?: number; maxSpread?: number },
 ) => MetricComparison;
+
+export type MomentSummary = Pick<
+  MetricComparison,
+  'beforeMedian' | 'afterMedian' | 'diff' | 'spread' | 'threshold' | 'verdict'
+>;
+export type Recheck = { extraRuns: number; first: MomentSummary; combined: MomentSummary };
+export type JudgeOptions = { spreadFactor?: number; minDiff?: number; maxSpread?: number };
+export type RunRow = {
+  variant: 'before' | 'after';
+  run: number;
+  moment: number | null;
+  lcp: number | null;
+  consoleErrors: string[];
+  failedRequests: string[];
+};
+
+export const BORDERLINE: { low: number; high: number };
+export const isBorderline: (metric: MetricComparison, range?: { low?: number; high?: number }) => boolean;
+export const judgeWithRecheck: (
+  rows: RunRow[],
+  measureMore: (runs: number) => Promise<RunRow[]> | RunRow[],
+  options?: JudgeOptions & { extraRuns?: number },
+) => Promise<{ rows: RunRow[]; result: { moment: MetricComparison }; recheck: Recheck | null }>;
+export const recheckLine: (recheck: Recheck) => string;

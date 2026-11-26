@@ -6,6 +6,8 @@
 // - 순간을 못 본 회차(시간 초과)가 후에서 더 많으면 값과 상관없이 "나빠짐".
 // - 흩어짐 상한(maxSpread, 0이면 끔)을 넘으면 "판정 불가(흔들림 큼)". 실제 지도 타일로 잴 때 회선이나 CDN 흔들림이
 //   문턱을 키워 차이를 "같음"으로 뭉개지 않게 한다. 회수를 늘려(--runs) 다시 잰다.
+// - 경계: |차이|가 문턱의 70%~130% 안이면 바로 판정하지 않고 같은 화면을 전후 번갈아 더 재서(기본 5회 더) 합친 값으로
+//   다시 판정한다. 같은 빌드도 0.05초쯤 흔들려 문턱 근처 결과는 다시 재면 뒤집힐 수 있다. 더 재기는 한 번만 한다.
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
@@ -78,6 +80,38 @@ export const judge = (rows, options = {}) => {
   };
 };
 
+export const BORDERLINE = { low: 0.7, high: 1.3 };
+
+// 문턱 근처라 다시 재면 뒤집힐 수 있는 결과인지 본다. 값으로 판정한 경우(같음, 좋아짐, 나빠짐)만 본다.
+export const isBorderline = (metric, { low = BORDERLINE.low, high = BORDERLINE.high } = {}) => {
+  if (metric.diff === undefined || metric.threshold === undefined || metric.threshold <= 0) return false;
+  if (metric.verdict === JITTER_VERDICT || metric.missingAfter > metric.missingBefore) return false;
+  const size = Math.abs(metric.diff);
+  return size >= metric.threshold * low && size <= metric.threshold * high;
+};
+
+const momentSummary = (metric) => ({
+  beforeMedian: metric.beforeMedian,
+  afterMedian: metric.afterMedian,
+  diff: metric.diff,
+  spread: metric.spread,
+  threshold: metric.threshold,
+  verdict: metric.verdict,
+});
+
+// 처음 회차로 판정하고, 경계면 measureMore(회수)로 한 번만 더 재서 합친 회차로 다시 판정한다(흩어짐과 문턱도 다시 계산).
+export const judgeWithRecheck = async (rows, measureMore, { extraRuns = 5, ...options } = {}) => {
+  const first = judge(rows, options);
+  if (extraRuns <= 0 || !isBorderline(first.moment)) return { rows, result: first, recheck: null };
+  const all = [...rows, ...(await measureMore(extraRuns))];
+  const result = judge(all, options);
+  return {
+    rows: all,
+    result,
+    recheck: { extraRuns, first: momentSummary(first.moment), combined: momentSummary(result.moment) },
+  };
+};
+
 const seconds = (ms) => (ms === null || ms === undefined ? '-' : `${(ms / 1000).toFixed(2)}초`);
 const signed = (ms) => (ms === undefined ? '-' : `${ms > 0 ? '+' : ''}${(ms / 1000).toFixed(2)}초`);
 const list = (values) => values.map((value) => (value / 1000).toFixed(2)).join(', ');
@@ -92,7 +126,10 @@ export const userVerdict = (result) => {
   return errorsWorse || failedWorse ? '나빠짐' : result.moment.verdict;
 };
 
-export const renderVerdict = (setup, result) => {
+export const recheckLine = (recheck) =>
+  `경계라 ${recheck.extraRuns}회 더 잼: 처음 전 ${seconds(recheck.first.beforeMedian)}, 후 ${seconds(recheck.first.afterMedian)}, 차이 ${signed(recheck.first.diff)}, 문턱 ${seconds(recheck.first.threshold)}(${recheck.first.verdict}) → 합친 값 전 ${seconds(recheck.combined.beforeMedian)}, 후 ${seconds(recheck.combined.afterMedian)}, 차이 ${signed(recheck.combined.diff)}, 문턱 ${seconds(recheck.combined.threshold)}(${recheck.combined.verdict})`;
+
+export const renderVerdict = (setup, result, recheck = null) => {
   const verdict = userVerdict(result);
   return `# 전후 판정
 
@@ -101,6 +138,7 @@ export const renderVerdict = (setup, result) => {
 - 문턱: 흩어짐의 ${setup.spreadFactor ?? 1}배, ${seconds(setup.minDiff ?? 0)} 중 큰 값. 차이가 문턱 이하면 같음이다.
 - 조건: 회선 ${setup.net}, CPU ${setup.cpu}배, 빈 캐시 첫 방문, ${setup.order === 'blocked' ? '전을 모두 잰 뒤 후를' : '전후를 번갈아'} 각 ${setup.runs}회(세지 않는 데우기 ${setup.warmup ?? 0}회 뒤)${setup.mapSdk === 'stub' ? ', 지도 SDK는 무게만 같은 목(지도는 뜨지 않음)' : ', 실제 네이버 지도 SDK와 타일'}${setup.maxSpread > 0 ? `\n- 흩어짐 상한: ${seconds(setup.maxSpread)}. 넘으면 ${JITTER_VERDICT}이다.` : ''}
 - 전: ${setup.before}, 후: ${setup.after}
+- 경계: 차이가 문턱의 ${BORDERLINE.low * 100}%~${BORDERLINE.high * 100}% 안이면 전후 번갈아 ${setup.extraRuns ?? 0}회 더 재서 합친 값으로 판정한다.${recheck ? `\n- ${recheckLine(recheck)}` : ''}
 
 ## 판정: ${verdict}
 

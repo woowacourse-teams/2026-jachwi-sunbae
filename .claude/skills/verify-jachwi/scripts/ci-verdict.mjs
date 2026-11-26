@@ -3,8 +3,9 @@
 // 사용:
 //   node .claude/skills/verify-jachwi/scripts/ci-verdict.mjs --scope <visual-scope --json 결과 파일> \
 //     --before http://localhost:4301 --after http://localhost:4302 --out <폴더> [--mode pr|all] [--title "<PR 제목>"] \
-//     [--runs 5] [--spread-factor 1.5] [--min-diff 100] [--before-label <커밋>] [--after-label <커밋>] [--run-url <실행 주소>]
+//     [--runs 5] [--extra-runs 5] [--spread-factor 1.5] [--min-diff 100] [--before-label <커밋>] [--after-label <커밋>] [--run-url <실행 주소>]
 // - pr: 영향 라우트 중 screens.mjs 순서로 가장 앞선 화면 하나만 잰다(PR마다 5분 안). all: 영향 화면 전부(visual-verdict-full.yml, 주 1회와 수동 실행).
+// - 경계: 차이가 문턱의 70%~130% 안이면 measure.mjs 가 전후 번갈아 --extra-runs 회 더 재서 합친 값으로 판정하고, 댓글에 처음 값과 합친 값을 함께 적는다.
 // - 결과: <out>/<화면>/(verdict.md, runs.jsonl, result.json, shots, side), <out>/comment.md(PR 댓글), <out>/summary.json
 // - 끝 코드: frontend/scripts/visual-scope.mjs 의 checkVerdict 가 실패를 내면 1(나빠짐, 판정하지 못한 리팩터링), 그 밖은 0.
 import { execFileSync } from 'node:child_process';
@@ -15,6 +16,7 @@ import { parseArgs } from 'node:util';
 
 import { checkVerdict, checkVerdictNotes } from '../../../../frontend/scripts/visual-scope.mjs';
 import { pickScreens } from './screens.mjs';
+import { recheckLine } from './verdict.mjs';
 
 const { values: args } = parseArgs({
   options: {
@@ -25,6 +27,7 @@ const { values: args } = parseArgs({
     mode: { type: 'string', default: 'pr' },
     title: { type: 'string', default: '' },
     runs: { type: 'string', default: '5' },
+    'extra-runs': { type: 'string', default: '5' },
     'spread-factor': { type: 'string', default: '1' },
     'min-diff': { type: 'string', default: '0' },
     'before-label': { type: 'string', default: 'base' },
@@ -83,7 +86,18 @@ if (!scope.runs) {
         [
           join(here, 'measure.mjs'),
           ...['--before', args.before, '--after', args.after, '--screen', screen.name],
-          ...['--runs', args.runs, '--net', 'fast4g', '--viewport', 'desktop', '--map-sdk', args['map-sdk']],
+          ...[
+            '--runs',
+            args.runs,
+            '--extra-runs',
+            args['extra-runs'],
+            '--net',
+            'fast4g',
+            '--viewport',
+            'desktop',
+            '--map-sdk',
+            args['map-sdk'],
+          ],
           // 순간을 못 보는 회차가 5분을 넘기지 않게 15초에 끊는다. CI 러너는 전용이라 부하를 기다리지 않는다.
           ...['--timeout', '15', '--max-load', '0'],
           // 순간이 1~3초 사이라 그 앞뒤를 촘촘히 찍는다.
@@ -99,8 +113,8 @@ if (!scope.runs) {
           stdio: 'inherit',
         },
       );
-      const { result, verdict } = JSON.parse(readFileSync(join(dir, 'result.json'), 'utf8'));
-      return { screen, result, verdict };
+      const { result, recheck, verdict } = JSON.parse(readFileSync(join(dir, 'result.json'), 'utf8'));
+      return { screen, result, recheck, verdict };
     });
     const order = ['나빠짐', '판정 불가(흔들림 큼)', '판정 못 함', '좋아짐', '같음'];
     const overall = order.find((verdict) => results.some((item) => item.verdict === verdict)) ?? '같음';
@@ -119,12 +133,15 @@ if (!scope.runs) {
         `- 결과: **${overall}**`,
         `- 영향 라우트: ${scope.scope === 'all' ? `주요 화면 전체(${scope.why})` : scope.routes.join(', ')}`,
         `- 조건: 운영 빌드, MSW 목(응답 300ms 고정), 데스크탑 1440x900, 보통 4G(지연 70ms, 9Mbps), CPU 4배, 빈 캐시, 데우기 1회 뒤 전후 번갈아 각 ${args.runs}회, 지도 SDK는 무게만 같은 목(지도는 뜨지 않아 지도와 무관한 순간만 잰다)`,
-        `- 문턱: 흩어짐의 ${args['spread-factor']}배, ${seconds(Number(args['min-diff']))} 중 큰 값. 차이가 문턱 이하면 같음이다.`,
+        `- 문턱: 흩어짐의 ${args['spread-factor']}배, ${seconds(Number(args['min-diff']))} 중 큰 값. 차이가 문턱 이하면 같음이다. 차이가 문턱의 70%~130%(경계)면 전후 번갈아 ${args['extra-runs']}회 더 재서 합친 값으로 판정한다.`,
         '',
         '| 화면 | 사용자 기준 순간 | 전 중앙값 | 후 중앙값 | 차이 | 문턱 | 판정 |',
         '| --- | --- | --- | --- | --- | --- | --- |',
         ...table,
         '',
+        ...results
+          .filter(({ recheck }) => recheck)
+          .map(({ screen, recheck }) => `- \`${screen.url}\` ${recheckLine(recheck)}. 표는 합친 값이다.`),
         ...(skipped > 0
           ? [
               `- PR마다는 가장 중요한 화면 하나만 잰다. 영향 화면 ${skipped}개는 더 재지 않았다. 화면 전부는 주 1회 \`Visual Verdict Full\`이 develop에서 잰다. 이 PR에서 더 보려면 로컬에서 \`measure.mjs --screen <화면>\`으로 잰다.`,
