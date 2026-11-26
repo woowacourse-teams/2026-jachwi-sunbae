@@ -9,6 +9,7 @@ import {
   requestCurrentMapLocation,
 } from '@/features/map/lib/mapLocation';
 import type { MapMarker } from '@/features/map/model/Map';
+import { useMapCanvasHost } from '@/features/map/ui/map-canvas/SharedMapCanvas';
 import { usePropertyList } from '@/features/property/api/useProperties';
 import usePropertyPhotoMarkers from '@/features/property/hooks/usePropertyPhotoMarkers';
 import { formatMarkerRent } from '@/features/property/lib/propertyFormat';
@@ -58,6 +59,9 @@ const useRestaurantMap = (
   const [area, setArea] = useState<RestaurantArea>(() => readRestaurantArea() ?? DEFAULT_AREA);
   const [viewport, setViewport] = useState<MapCoordinate>(area);
   const [level, setLevel] = useState(7);
+  // 다른 지도 탭에서 넘어오면 지도는 보던 가운데와 확대 단계 그대로 둔다. 저절로 정한 기준(최근 기록, 현재 위치)으로는 옮기지 않는다.
+  const mapHost = useMapCanvasHost();
+  const [keepsView] = useState(() => mapHost?.hasView() ?? false);
   const focus = (point: MapCoordinate) => {
     const { latitude, longitude } = focusCenter?.(point, level) ?? point;
     setViewport({ latitude, longitude });
@@ -71,7 +75,7 @@ const useRestaurantMap = (
   // 기록이 하나도 없으면 내 기록 화면과 같은 미리보기(예시) 매물을 대신 쓰고, 이 기기에서 숨긴 예시는 뺀다.
   const hiddenPreviewValue = useSyncExternalStore(subscribeHiddenPreviews, hiddenPreviewSnapshot);
   const hiddenPreviewIds = useMemo(() => parseHiddenPreviewIds(hiddenPreviewValue), [hiddenPreviewValue]);
-  /** 위치가 있는 기록 매물. 목록 순서(최근 기록 먼저)를 따른다. 이름이 같으면 주소로 구분한다. */
+  /** 위치가 있는 기록 매물. 목록 순서(최근 기록 먼저)를 따른다. 뱃지에는 이름만 보인다. */
   const recorded = useMemo(() => {
     const listed = withPreviewProperties(
       properties.data?.pages.flatMap((page) => page.content) ?? [],
@@ -92,15 +96,7 @@ const useRestaurantMap = (
             },
           ],
     );
-    const nameCounts = new Map<string, number>();
-    for (const property of located) nameCounts.set(property.name, (nameCounts.get(property.name) ?? 0) + 1);
-    return located.map((property) => ({
-      ...property,
-      label:
-        (nameCounts.get(property.name) ?? 0) > 1 && property.address
-          ? `${property.name}(${property.address})`
-          : property.name,
-    }));
+    return located.map((property) => ({ ...property, label: property.name }));
   }, [properties.data, properties.isSuccess, hiddenPreviewIds]);
   const requestId = useRef(0);
   // 사용자가 기준을 직접 고르면 뒤늦게 도착한 현재 위치나 기록 매물이 그 기준을 덮지 않는다.
@@ -125,7 +121,7 @@ const useRestaurantMap = (
     hasAppliedBase.current = true;
     const base = { latitude: first.latitude, longitude: first.longitude, label: first.label };
     setArea(base);
-    focus(base);
+    if (!keepsView) focus(base);
   }, [recorded]);
   const query = useGoodPriceStores(area, RESTAURANT_SEARCH_RADIUS, isActive);
   const selectedStore = query.data?.stores.find((store) => String(store.id) === overlay.selectedStoreId) ?? null;
@@ -242,7 +238,7 @@ const useRestaurantMap = (
           if (isCancelled || hasChosen.current || !isInSouthKorea(coordinate)) return;
           hasChosen.current = true;
           setArea({ ...coordinate, label: '현재 위치' });
-          focus(coordinate);
+          if (!keepsView) focus(coordinate);
         })
         .catch(() => undefined);
     });

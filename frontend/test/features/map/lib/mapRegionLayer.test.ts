@@ -193,6 +193,27 @@ describe('경계 레이어', () => {
     expect(polygons[1].options.paths[0][0]).toEqual({ lat: 37.6, lng: 127 });
   });
 
+  it('다른 탭으로 가 경계가 빈 목록이 되면 경계와 동네 이름표를 모두 지도에서 내린다', () => {
+    const { layer, polygons, overlays, setLevel, flush } = setup();
+    const rentLabel = { price: '55만', count: 40, sparse: false, filteredOut: false, commute: '4분' };
+    setLevel(6);
+    layer.sync(
+      Array.from({ length: 3 }, (_, index) =>
+        region(`dong-${index}`, { center: { latitude: 37.5, longitude: 127 + index * 0.01 }, rentLabel }),
+      ),
+      null,
+    );
+    flush();
+    expect(polygons).toHaveLength(3);
+    expect(overlays).toHaveLength(3);
+    layer.sync([], null);
+    flush();
+    const removed = (item: { setMap: { mock: { calls: unknown[][] } } }) =>
+      item.setMap.mock.calls.some(([value]) => value === null);
+    expect(polygons.every(removed)).toBe(true);
+    expect(overlays.every(removed)).toBe(true);
+  });
+
   it('빈 면은 그리지 않는다', () => {
     const { layer, polygons } = setup();
     layer.sync([region('a', { polygons: [[ring(37.5)], []] })], null);

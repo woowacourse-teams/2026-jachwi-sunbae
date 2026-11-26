@@ -9,7 +9,7 @@ import { CHEAP_MEALS_PATH, CHECKLISTS_PATH, COMPARE_PATH, GUIDE_PATH } from '@/s
 
 /**
  * 데스크탑 네비 레일의 칸. 실제 레일과 뼈대가 같은 그림과 글자를 쓴다.
- * 지도 화면(내 기록, 동네 찾기)과 마이는 화면이 직접 이동을 정하고, 도구 화면(체크리스트, 방 비교, 저렴한 한 끼, 사용방법)은 `path`로 간다.
+ * 지도 화면(내 기록, 동네 찾기)과 마이는 화면이 직접 이동을 정하고, 도구 화면(체크리스트, 저렴한 한 끼, 방 비교, 사용방법)은 `path`로 간다.
  * `isBottom`인 칸은 위쪽 목록이 아니라 레일 맨 아래 (footer)에 세로로 쌓는다.
  */
 export type NavRailEntry = {
@@ -24,8 +24,8 @@ export const NAV_RAIL_ITEMS: readonly NavRailEntry[] = [
   { key: 'records', label: '내 기록', image: iconHome },
   { key: 'neighborhoods', label: '동네 찾기', image: iconMap },
   { key: 'checklists', label: '체크리스트', image: checklistIcon, path: CHECKLISTS_PATH },
-  { key: 'compare', label: '방 비교', image: iconCompare, path: COMPARE_PATH },
   { key: 'meals', label: '저렴한 한 끼', image: cheapMealIcon, path: CHEAP_MEALS_PATH },
+  { key: 'compare', label: '방 비교', image: iconCompare, path: COMPARE_PATH },
   // 레일 맨 아래에 `사용방법 | 마이`를 세로로 쌓는다(위에 사용방법, 아래에 마이).
   { key: 'guide', label: '사용방법', image: guideIcon, path: GUIDE_PATH, isBottom: true },
   { key: 'my', label: '마이', image: iconProfile, isBottom: true },

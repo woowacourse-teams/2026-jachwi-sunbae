@@ -8,7 +8,11 @@ import { RecordsMapProvider } from '@/pages/design-records/RecordsMapProvider';
 import { FIRST_PROMPT_ENTRY_STATE } from '@/pages/neighborhood-preview/model/firstPromptEntry';
 import NeighborhoodPreviewPage from '@/pages/neighborhood-preview/NeighborhoodPreviewPage';
 import { FacilityFocusProvider } from '@/features/map/hooks/useFacilityFocus';
-import { MapCanvasMode, SharedMapCanvasProvider } from '@/features/map/ui/map-canvas/SharedMapCanvas';
+import {
+  MapCanvasMode,
+  type MapViewMemory,
+  SharedMapCanvasProvider,
+} from '@/features/map/ui/map-canvas/SharedMapCanvas';
 import useIsDesktop from '@/shared/lib/hooks/useIsDesktop';
 import {
   CHEAP_MEALS_PATH,
@@ -24,6 +28,9 @@ import NavRail from '@/shared/ui/nav-rail/NavRail';
 import { NAV_RAIL_ITEMS } from '@/shared/ui/nav-rail/navRailItems';
 
 import MyMapPanel from './ui/MyMapPanel';
+
+/** 휴대폰에서 체크리스트처럼 지도 밖 화면에 다녀오면 이 화면이 새로 그려진다. 그때도 보던 가운데와 확대 단계로 돌아온다. */
+const unifiedMapView: MapViewMemory = { view: null };
 
 const ChecklistListPage = lazy(() => import('@/pages/checklist-list/ChecklistListPage'));
 
@@ -73,6 +80,8 @@ const UnifiedNavRail = ({
 const UnifiedMapPage = () => {
   const { pathname, search } = useLocation();
   const navigate = useNavigate();
+  // 지도 밖 화면에 다녀와 다시 그려지면, 기록 지도는 첫 기록 자리 대신 보던 시점에서 시작한다.
+  const [startsWithMapView] = useState(() => unifiedMapView.view !== null);
   const isDesktop = useIsDesktop();
   const [recordsView, setRecordsView] = useRecordsView();
   const params = useParams();
@@ -133,9 +142,10 @@ const UnifiedMapPage = () => {
       : null;
   return (
     <FacilityFocusProvider>
-      <RecordsMapProvider>
+      <RecordsMapProvider startsWithMapView={startsWithMapView}>
         <SharedMapCanvasProvider
           preserveZoomOnModeChange
+          viewMemory={unifiedMapView}
           infrastructure={{
             // 동네 찾기는 결과 지도에서 매물을 골랐을 때만 분류 카드가 선다(고른 매물이 없으면 `InfrastructureMap`이 카드를 두지 않는다).
             open: !isMeals && (isFinding || isDesktop || recordsView === 'map'),

@@ -31,7 +31,11 @@ type RecordsSelection = {
  * 본 방 기록 화면의 데이터·동네 필터·선택·지도 위치. 데스크탑·휴대폰 화면이 함께 쓴다.
  * 데스크탑은 고른 매물을 주소(`/properties/:propertyId`)로 정하므로 `selection`을 넘긴다.
  */
-const useRecords = (selection?: RecordsSelection) => {
+const useRecords = (
+  selection?: RecordsSelection,
+  /** 지도가 이미 보던 시점(다른 탭에 다녀옴)으로 시작하면 true. 그 시점을 이어 쓰고 첫 기록 자리로 옮기지 않는다. */
+  startsWithMapView = false,
+) => {
   const location = useLocation();
   const locationState: unknown = location.state;
   const headingRef = useRef<HTMLHeadingElement>(null);
@@ -91,7 +95,7 @@ const useRecords = (selection?: RecordsSelection) => {
 
   // 상세에서 위치를 바꿔 저장한 매물이 새 좌표로 목록에 들어오면, 그 자리로 지도를 옮기고 매물을 골라 새 핀을 보인다.
   // 처음 그릴 때(휴대폰은 상세에서 돌아오며 새로 그린다)도 첫 기록 대신 그 매물로 간다.
-  const hasCentered = useRef(false);
+  const hasCentered = useRef(startsWithMapView);
   useEffect(() => {
     const moved = takeMovedProperty((propertyId) => allRecords.find((record) => record.id === String(propertyId)));
     if (moved === null) return;

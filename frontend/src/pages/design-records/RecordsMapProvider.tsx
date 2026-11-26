@@ -30,7 +30,14 @@ type RecordsMapController = {
 };
 const Context = createContext<RecordsMapController | null>(null);
 export const useRecordsMapController = () => useContext(Context);
-export const RecordsMapProvider = ({ children }: { children: ReactNode }) => {
+export const RecordsMapProvider = ({
+  children,
+  startsWithMapView = false,
+}: {
+  children: ReactNode;
+  /** 지도가 다른 탭에 다녀와 보던 시점으로 다시 그려지면 true. 첫 기록 자리로 옮기지 않는다. */
+  startsWithMapView?: boolean;
+}) => {
   const isDesktop = useIsDesktop();
   const pageRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
@@ -70,15 +77,18 @@ export const RecordsMapProvider = ({ children }: { children: ReactNode }) => {
       bottom: 60,
     });
   };
-  const records = useRecords({
-    selectedId: lastPropertyId,
-    focusCenter: centerBesidePanels,
-    setSelectedId: (id) => {
-      setLastPropertyId(id);
-      if (isDesktop && (id !== null || !pathname.startsWith(NEIGHBORHOODS_PATH)))
-        navigate(id === null ? RECORDS_PATH : propertyDetailPath(id));
+  const records = useRecords(
+    {
+      selectedId: lastPropertyId,
+      focusCenter: centerBesidePanels,
+      setSelectedId: (id) => {
+        setLastPropertyId(id);
+        if (isDesktop && (id !== null || !pathname.startsWith(NEIGHBORHOODS_PATH)))
+          navigate(id === null ? RECORDS_PATH : propertyDetailPath(id));
+      },
     },
-  });
+    startsWithMapView,
+  );
   const [creatingAt, setCreatingAt] = useState<MapAddress | null>(null);
   const quickCreate = useQuickCreateProperty({
     onCreated: (id, location) => {
