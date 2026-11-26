@@ -4,7 +4,12 @@ import { expect, it, vi } from 'vitest';
 
 import type { MapCanvasProps } from '@/features/map/model/MapCanvas';
 import MapCanvas from '@/features/map/ui/map-canvas/MapCanvas';
-import { MapCanvasMode, SharedMapCanvasProvider, useMapCanvasHost } from '@/features/map/ui/map-canvas/SharedMapCanvas';
+import {
+  MapCanvasMode,
+  type MapViewMemory,
+  SharedMapCanvasProvider,
+  useMapCanvasHost,
+} from '@/features/map/ui/map-canvas/SharedMapCanvas';
 
 const lifetime = vi.hoisted(() => ({ mounts: 0, unmounts: 0 }));
 vi.mock('@/features/map/ui/map-canvas/MapCanvasSurface', () => ({
@@ -177,4 +182,66 @@ it('붙잡아 둔 이전 모드의 가운데를 놓으면, 새 모드가 처음 
   fireEvent.click(screen.getByText('첫 안내 자리로 이동'));
   expect(screen.getByLabelText('실제 지도')).toHaveTextContent('38');
   expect(screen.getByLabelText('실제 확대 단계')).toHaveTextContent('4');
+});
+
+it('모드를 바꾼 직후 새 모드가 옛 확대 단계로 다시 그려도 넘겨받은 확대 단계를 되돌리지 않는다', () => {
+  // 저렴한 한 끼처럼 넘겨받은 단계를 상태에 반영하기 전에 옛 요청(7)으로 한 번 더 그리는 모드.
+  const MealsMap = () => {
+    const [level, setLevel] = useState(7);
+    const [, rerender] = useState(0);
+    return (
+      <>
+        <button onClick={() => rerender((count) => count + 1)}>다시 그리기</button>
+        <MapCanvas
+          shared
+          center={{ latitude: 38, longitude: 128 }}
+          level={level}
+          onLevelChange={(next) => {
+            // 지도가 알린 단계를 한 박자 늦게 반영한다.
+            setTimeout(() => setLevel(next), 0);
+          }}
+        />
+      </>
+    );
+  };
+  const Harness = () => {
+    const [meals, setMeals] = useState(false);
+    return (
+      <SharedMapCanvasProvider preserveZoomOnModeChange>
+        <button onClick={() => setMeals(true)}>모드 전환</button>
+        <MapCanvasMode active={!meals}>
+          <MapCanvas shared center={{ latitude: 37, longitude: 127 }} level={2} />
+        </MapCanvasMode>
+        <MapCanvasMode active={meals}>{meals && <MealsMap />}</MapCanvasMode>
+      </SharedMapCanvasProvider>
+    );
+  };
+  render(<Harness />);
+  fireEvent.click(screen.getByText('모드 전환'));
+  expect(screen.getByLabelText('실제 확대 단계')).toHaveTextContent('2');
+  fireEvent.click(screen.getByText('다시 그리기'));
+  expect(screen.getByLabelText('실제 확대 단계')).toHaveTextContent('2');
+  expect(screen.getByLabelText('실제 지도')).toHaveTextContent('37');
+});
+
+it('지도가 사라졌다 다시 그려지면 남겨 둔 시점으로 시작하고, 이미 보던 시점이 있다고 알린다', () => {
+  const memory: MapViewMemory = { view: null };
+  const HasView = () => <output aria-label="보던 시점">{String(useMapCanvasHost()?.hasView())}</output>;
+  const App = () => (
+    <SharedMapCanvasProvider preserveZoomOnModeChange viewMemory={memory}>
+      <HasView />
+      <MapCanvasMode active>
+        <MapCanvas shared center={{ latitude: 37, longitude: 127 }} level={8} />
+      </MapCanvasMode>
+    </SharedMapCanvasProvider>
+  );
+  const first = render(<App />);
+  expect(screen.getByLabelText('보던 시점')).toHaveTextContent('false');
+  fireEvent.click(screen.getByText('지도 직접 이동'));
+  first.unmount();
+
+  render(<App />);
+  expect(screen.getByLabelText('보던 시점')).toHaveTextContent('true');
+  expect(screen.getByLabelText('실제 지도')).toHaveTextContent('37.75');
+  expect(screen.getByLabelText('실제 확대 단계')).toHaveTextContent('8');
 });

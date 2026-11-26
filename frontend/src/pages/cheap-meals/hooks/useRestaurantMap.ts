@@ -9,6 +9,7 @@ import {
   requestCurrentMapLocation,
 } from '@/features/map/lib/mapLocation';
 import type { MapMarker } from '@/features/map/model/Map';
+import { useMapCanvasHost } from '@/features/map/ui/map-canvas/SharedMapCanvas';
 import { usePropertyList } from '@/features/property/api/useProperties';
 import usePropertyPhotoMarkers from '@/features/property/hooks/usePropertyPhotoMarkers';
 import { formatMarkerRent } from '@/features/property/lib/propertyFormat';
@@ -58,6 +59,9 @@ const useRestaurantMap = (
   const [area, setArea] = useState<RestaurantArea>(() => readRestaurantArea() ?? DEFAULT_AREA);
   const [viewport, setViewport] = useState<MapCoordinate>(area);
   const [level, setLevel] = useState(7);
+  // 다른 지도 탭에서 넘어오면 지도는 보던 가운데와 확대 단계 그대로 둔다. 저절로 정한 기준(최근 기록, 현재 위치)으로는 옮기지 않는다.
+  const mapHost = useMapCanvasHost();
+  const [keepsView] = useState(() => mapHost?.hasView() ?? false);
   const focus = (point: MapCoordinate) => {
     const { latitude, longitude } = focusCenter?.(point, level) ?? point;
     setViewport({ latitude, longitude });
@@ -125,7 +129,7 @@ const useRestaurantMap = (
     hasAppliedBase.current = true;
     const base = { latitude: first.latitude, longitude: first.longitude, label: first.label };
     setArea(base);
-    focus(base);
+    if (!keepsView) focus(base);
   }, [recorded]);
   const query = useGoodPriceStores(area, RESTAURANT_SEARCH_RADIUS, isActive);
   const selectedStore = query.data?.stores.find((store) => String(store.id) === overlay.selectedStoreId) ?? null;
@@ -242,7 +246,7 @@ const useRestaurantMap = (
           if (isCancelled || hasChosen.current || !isInSouthKorea(coordinate)) return;
           hasChosen.current = true;
           setArea({ ...coordinate, label: '현재 위치' });
-          focus(coordinate);
+          if (!keepsView) focus(coordinate);
         })
         .catch(() => undefined);
     });
