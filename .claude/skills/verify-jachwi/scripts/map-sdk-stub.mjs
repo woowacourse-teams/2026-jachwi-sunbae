@@ -51,6 +51,8 @@ const mapsJs = (callback) =>
 createServer({ key: readFileSync(join(dir, 'privkey.pem')), cert: readFileSync(join(dir, 'cert.pem')) }, (req, res) => {
   const url = new URL(req.url ?? '/', `https://${MAP_SDK_HOST}`);
   const name = url.pathname.split('/').pop();
+  // 요청마다 한 줄 남긴다. 안드로이드 보정 측정(measure-android.mjs)이 기기가 이 목으로 왔는지 이 줄 수로 확인한다.
+  console.log(`request ${name}`);
   if (!(name in SIZES)) {
     res.writeHead(404);
     res.end();

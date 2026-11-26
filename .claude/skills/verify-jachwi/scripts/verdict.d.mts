@@ -41,3 +41,4 @@ export const judgeWithRecheck: (
   options?: JudgeOptions & { extraRuns?: number },
 ) => Promise<{ rows: RunRow[]; result: { moment: MetricComparison }; recheck: Recheck | null }>;
 export const recheckLine: (recheck: Recheck) => string;
+export const median: (values: number[]) => number;

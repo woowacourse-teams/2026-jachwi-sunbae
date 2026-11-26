@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 앱 웹뷰 측정용 최소 셸. mobile/ 의 RN 앱과 같은 WebView 설정만 두고 RN, 브리지, 푸시는 뺀다. 측정 전용이라 배포하지 않는다. -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="kr.jachwisunbae.webviewshell"
+    android:versionCode="1"
+    android:versionName="1.0">
+    <uses-sdk android:minSdkVersion="24" android:targetSdkVersion="35" />
+    <uses-permission android:name="android.permission.INTERNET" />
+    <application android:label="WebViewShell" android:usesCleartextTraffic="true" android:debuggable="true">
+        <activity android:name=".MainActivity" android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+    </application>
+</manifest>

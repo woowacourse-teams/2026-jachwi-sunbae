@@ -1,0 +1,115 @@
+name: Android WebView Calibration
+
+# PR마다 도는 Visual Verdict는 데스크탑 Chromium에 보통 4G와 CPU 4배 제한을 건 흉내 환경에서 잰다.
+# 이 워크플로는 같은 실행 안에서 그 흉내 값과 안드로이드 에뮬레이터의 크롬, 앱 웹뷰(같은 설정의 셸) 값을 한 표로 비교한다.
+# - 주 1회와 수동 실행(workflow_dispatch, 기본 브랜치에 이 파일이 있어야 보인다). 에뮬레이터를 띄워 오래 걸려 PR마다는 돌리지 않는다.
+# - 결과: 실행 요약(표)과 아티팩트 android-webview-calibration. 판정이 아니라 참고 값이라 실패로 막지 않는다.
+on:
+  # 임시: 브랜치에서 한 번 돌려 보려는 트리거. PR을 머지 준비할 때 지운다.
+  push:
+    branches: [chore/android-webview-calibration]
+  workflow_dispatch:
+  schedule:
+    # 매주 월요일 11:00 KST(Visual Verdict Full 한 시간 뒤). schedule은 기본 브랜치(main)의 이 파일로 돌아 develop을 꺼낸다.
+    - cron: '0 2 * * 1'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: android-webview-calibration
+  cancel-in-progress: true
+
+jobs:
+  calibrate:
+    name: Android WebView calibration
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event_name == 'schedule' && 'develop' || github.ref }}
+
+      - name: Set up frontend
+        uses: ./.github/actions/setup-frontend
+
+      - name: Restore QA dependencies
+        id: qa-modules
+        uses: actions/cache@v5
+        with:
+          path: qa/node_modules
+          key: qa-node-modules-${{ runner.os }}-${{ hashFiles('qa/package-lock.json') }}
+
+      - name: Build web and shell app
+        env:
+          QA_CACHED: ${{ steps.qa-modules.outputs.cache-hit }}
+          # Visual Verdict와 같다. 지도 키가 없어 아무 키나 넣고 SDK 주소는 목 서버로 돌린다.
+          NAVER_MAP_CLIENT_ID: ci-map-sdk-stub
+          API_BASE_URL: http://localhost:4302
+        run: |
+          pids=()
+          (cd frontend && npm run build:bundle --silent > "${RUNNER_TEMP}/build.log" 2>&1) & pids+=($!)
+          if [[ "${QA_CACHED}" != 'true' ]]; then (cd qa && npm ci --no-audit --no-fund --loglevel=error) & pids+=($!); fi
+          (sudo apt-get install -y -qq --no-install-recommends fonts-nanum > /dev/null 2>&1 \
+            || (sudo apt-get update -qq && sudo apt-get install -y -qq --no-install-recommends fonts-nanum > /dev/null)) & pids+=($!)
+          .claude/skills/verify-jachwi/android/webview-shell/build.sh "${RUNNER_TEMP}/webview-shell.apk" & pids+=($!)
+          for pid in "${pids[@]}"; do wait "${pid}" || { tail -40 "${RUNNER_TEMP}/build.log"; exit 1; }; done
+
+      - name: Start servers
+        run: |
+          S=.claude/skills/verify-jachwi/scripts
+          nohup node "$S/serve.mjs" --dist frontend/dist --port 4302 --api mock --delay 300 > "${RUNNER_TEMP}/serve.log" 2>&1 &
+          nohup node "$S/map-sdk-stub.mjs" --port 4443 > "${RUNNER_TEMP}/map-sdk-stub.log" 2>&1 &
+          for _ in $(seq 60); do curl -sf http://localhost:4302/ > /dev/null && break; sleep 0.5; done
+          for _ in $(seq 60); do curl -skf https://localhost:4443/openapi/v3/maps-gl.js -o /dev/null && break; sleep 0.5; done
+
+      # 에뮬레이터를 띄우기 전에 잰다. 떠 있는 에뮬레이터가 러너 CPU를 나눠 쓰면 흉내 값이 PR 판정과 달라진다.
+      - name: Measure Chromium emulation
+        run: |
+          S=.claude/skills/verify-jachwi/scripts
+          OUT="${RUNNER_TEMP}/calibration"
+          export CHROME_PATH="$(command -v google-chrome || command -v google-chrome-stable)"
+          for viewport in desktop mobile; do
+            before=$(grep -c '^request ' "${RUNNER_TEMP}/map-sdk-stub.log" || true)
+            node "$S/measure.mjs" --before http://localhost:4302 --after http://localhost:4302 --screen home \
+              --viewport "${viewport}" --net fast4g --runs 5 --map-sdk stub --max-load 0 --out "${OUT}/${viewport}"
+            after=$(grep -c '^request ' "${RUNNER_TEMP}/map-sdk-stub.log" || true)
+            echo $((after - before)) > "${OUT}/${viewport}/stub-hits.txt"
+          done
+
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - name: Measure on Android emulator
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          target: google_apis
+          arch: x86_64
+          profile: pixel_6
+          disable-animations: true
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -no-snapshot
+          script: .claude/skills/verify-jachwi/android/run-on-emulator.sh "${RUNNER_TEMP}/webview-shell.apk" "${RUNNER_TEMP}/calibration" "${RUNNER_TEMP}/map-sdk-stub.log" 5
+
+      - name: Summarize
+        if: always()
+        env:
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          node .claude/skills/verify-jachwi/scripts/calibration-report.mjs --dir "${RUNNER_TEMP}/calibration" --run-url "${RUN_URL}" \
+            && cat "${RUNNER_TEMP}/calibration/calibration.md" >> "${GITHUB_STEP_SUMMARY}"
+          cp "${RUNNER_TEMP}"/*.log "${RUNNER_TEMP}/calibration/" 2>/dev/null || true
+
+      - name: Upload calibration
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: android-webview-calibration
+          path: ${{ runner.temp }}/calibration
+          retention-days: 30
+          if-no-files-found: ignore
