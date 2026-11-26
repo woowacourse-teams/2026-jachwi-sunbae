@@ -110,6 +110,8 @@ export type LiveEngine = {
   setCenter: (map: LiveMap, center: LiveLatLng) => void;
   setZoom: (map: LiveMap, level: number) => void;
   animateView: (map: LiveMap, center: LiveLatLng, level: number) => void;
+  /** 지도가 알고 있는 자기 크기(px). 칸 크기와 다르면 `relayout`으로 맞춘다. */
+  getSize: (map: LiveMap) => { width: number; height: number };
   relayout: (map: LiveMap) => void;
   /**
    * 지도 칸 안 `offset`(px) 자리를 제자리에 두고 확대 단계를 `levelDelta`만큼(소수 가능, 음수면 가까이) 바로 바꾼다.
@@ -172,6 +174,10 @@ export const naverEngine = (clientId: string, customStyleId?: string): LiveEngin
       map.setCenter(center);
       map.setZoom(toNaverZoom(level));
     }
+  },
+  getSize: (map) => {
+    const size = map.getSize();
+    return { width: size.width, height: size.height };
   },
   relayout: (map) => map.autoResize(),
   zoomAround: (map, levelDelta, offset) => {

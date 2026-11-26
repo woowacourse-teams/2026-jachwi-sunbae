@@ -30,6 +30,8 @@ type NaverMap = {
   zoomBy?: (deltaZoom: number, origin?: NaverLatLng, effect?: boolean) => void;
   getProjection?: () => { fromOffsetToCoord: (offset: NaverPoint) => NaverLatLng };
   morph?: (center: NaverLatLng, zoom: number, options: { duration: number; easing: string }) => void;
+  /** 지도가 알고 있는 자기 크기(px). 지도 칸이 숨어 있을 때 창 크기가 바뀌면 SDK가 0으로 맞춰 둔다. */
+  getSize: () => { width: number; height: number };
   refresh: () => void;
   autoResize: () => void;
   destroy: () => void;
