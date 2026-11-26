@@ -5,6 +5,7 @@ name: Visual Verdict
 # - 판정: develop과의 머지 기준 커밋(전)과 그 실행의 head 커밋(후)을 운영 빌드해, MSW 목(응답 300ms 고정)과 지도 SDK 목으로
 #   영향 화면 중 가장 중요한 하나의 사용자 기준 순간을 번갈아 잰다. 숫자는 .claude/skills/verify-jachwi/scripts 가 낸다(LLM 없음).
 # - 결과: verdict.md와 같은 시각 전후 스크린샷은 아티팩트로, 요약은 PR 댓글 하나로 올리고 커밋마다 고친다.
+#   포크 PR은 토큰이 읽기 전용이라 댓글 대신 실행 요약(GITHUB_STEP_SUMMARY)에만 쓴다. 댓글 실패로 잡이 실패하지 않는다.
 #   나빠짐이면 실패. 제목이 [Refactor]면 판정 불가(흔들림 큼), 판정 못 함도 실패이고, 좋아짐은 통과하되 댓글에 알린다.
 # - 경계: 차이가 문턱의 70%~130% 안이면 전후 번갈아 5회 더 재서 합친 값으로 판정하고 댓글에 "경계라 N회 더 잼"과 처음 값을 남긴다.
 #   경계일 때만 더 재므로 평소 시간은 그대로이고, 더 재도 약 45초가 늘 뿐이다(한 번 여는 데 약 4.3초).
@@ -97,6 +98,9 @@ jobs:
           if-no-files-found: ignore
 
       # 댓글은 PR마다 하나다. 범위 밖이 된 PR은 있던 댓글만 고친다.
+      # 포크 PR은 GITHUB_TOKEN이 읽기 전용이라 댓글을 못 쓴다(#817, 403). 그때는 실행 요약에만 판정을 쓴다.
+      # 잡의 성공과 실패는 측정 판정(Measure before and after)만 정한다. 댓글 쓰기가 실패해도 경고만 남긴다.
+      # pull_request_target으로 바꾸지 않는다. 포크 코드를 쓰기 권한 토큰으로 빌드하고 돌리게 된다.
       - name: Comment on PR
         if: always() && !cancelled()
         env:
@@ -104,6 +108,7 @@ jobs:
           PR_NUMBER: ${{ github.event.pull_request.number }}
           RUNS: ${{ steps.scope.outputs.runs }}
           AFTER_SHA: ${{ steps.commits.outputs.after }}
+          HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}
         run: |
           COMMENT="${RUNNER_TEMP}/visual-verdict/comment.md"
           if [[ ! -f "${COMMENT}" ]]; then
@@ -116,11 +121,19 @@ jobs:
                 "${AFTER_SHA:0:8}" "$(jq -r '.why' "${RUNNER_TEMP}/scope.json" 2>/dev/null || echo '범위 밖')" > "${COMMENT}"
             fi
           fi
-          ID="$(gh api "repos/${GITHUB_REPOSITORY}/issues/${PR_NUMBER}/comments" --paginate \
-            --jq '.[] | select(.user.login == "github-actions[bot]" and (.body | startswith("<!-- visual-verdict -->"))) | .id' | head -n 1)"
-          if [[ -n "${ID}" ]]; then
-            gh api -X PATCH "repos/${GITHUB_REPOSITORY}/issues/comments/${ID}" -F body=@"${COMMENT}" > /dev/null
-          elif [[ "${RUNS}" == 'true' ]]; then
-            gh api -X POST "repos/${GITHUB_REPOSITORY}/issues/${PR_NUMBER}/comments" -F body=@"${COMMENT}" > /dev/null
-          fi
           cat "${COMMENT}" >> "${GITHUB_STEP_SUMMARY}"
+          if [[ "${HEAD_REPO}" != "${GITHUB_REPOSITORY}" ]]; then
+            echo "::notice::포크 PR(${HEAD_REPO})이라 댓글 대신 실행 요약에 판정을 남겼다."
+            exit 0
+          fi
+          comment() {
+            local id
+            id="$(gh api "repos/${GITHUB_REPOSITORY}/issues/${PR_NUMBER}/comments" --paginate \
+              --jq '.[] | select(.user.login == "github-actions[bot]" and (.body | startswith("<!-- visual-verdict -->"))) | .id' | head -n 1)" || return 1
+            if [[ -n "${id}" ]]; then
+              gh api -X PATCH "repos/${GITHUB_REPOSITORY}/issues/comments/${id}" -F body=@"${COMMENT}" > /dev/null
+            elif [[ "${RUNS}" == 'true' ]]; then
+              gh api -X POST "repos/${GITHUB_REPOSITORY}/issues/${PR_NUMBER}/comments" -F body=@"${COMMENT}" > /dev/null
+            fi
+          }
+          comment || echo "::warning::PR 댓글을 쓰지 못했다. 판정은 실행 요약에 있다."

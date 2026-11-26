@@ -271,6 +271,13 @@ describe('develop 필수 검사 Check visual verdict', () => {
     expect(workflow).not.toMatch(/^ {4}if:/m);
   });
 
+  it('포크 PR은 댓글 대신 실행 요약에 쓰고, 댓글 실패로 잡을 실패시키지 않는다', () => {
+    expect(workflow).not.toMatch(/^\s*pull_request_target:/m);
+    expect(workflow).toMatch(/HEAD_REPO: \$\{\{ github\.event\.pull_request\.head\.repo\.full_name \}\}/);
+    expect(workflow).toMatch(/if \[\[ "\$\{HEAD_REPO\}" != "\$\{GITHUB_REPOSITORY\}" \]\]; then/);
+    expect(workflow).toMatch(/comment \|\| echo "::warning::/);
+  });
+
   it('전 화면 판정은 PR 라벨로 돌지 않는다', () => {
     const full = readFileSync(join(repoRoot, '.github/workflows/visual-verdict-full.yml'), 'utf8');
 
