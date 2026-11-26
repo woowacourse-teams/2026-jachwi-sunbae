@@ -19,6 +19,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jachwisunbae.notification.domain.LifeWeatherReport.Condition;
 import com.jachwisunbae.notification.domain.LifeWeatherReport.Notice;
 import com.jachwisunbae.common.exception.client.InvalidInputException;
+import com.jachwisunbae.support.IntegrationTest;
+import com.jachwisunbae.support.TestClock;
 import com.jachwisunbae.weather.domain.ForecastTimes;
 import com.jachwisunbae.weather.domain.GridPoint;
 import com.jachwisunbae.weather.domain.HourlyForecast;
@@ -37,19 +39,15 @@ import com.jachwisunbae.weather.repository.MemberWeatherLocationRepository;
 import com.jachwisunbae.weather.service.WeatherForecastQueryService.ForecastCacheKey;
 import com.jachwisunbae.weather.service.dto.result.WeatherForecastResult;
 import com.jachwisunbae.weather.service.MemberWeatherLocationService;
-import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.ZoneId;
-import java.time.ZoneOffset;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.stream.IntStream;
 import org.junit.jupiter.api.BeforeEach;
@@ -58,38 +56,19 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.context.TestConfiguration;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Import;
-import org.springframework.context.annotation.Primary;
 import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.mockito.ArgumentCaptor;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
-import org.springframework.test.context.DynamicPropertyRegistry;
-import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
-import org.testcontainers.containers.MySQLContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
 
-@Testcontainers
-@SpringBootTest(properties = {"weather.notification.enabled=false", "weather.notification.test-push-key=" + WeatherNotificationIntegrationTest.TEST_PUSH_KEY})
-@AutoConfigureMockMvc
-@ActiveProfiles("test")
-@Import(WeatherNotificationIntegrationTest.ClockConfig.class)
-class WeatherNotificationIntegrationTest {
-    @Container private static final MySQLContainer<?> MYSQL = new MySQLContainer<>("mysql:8.4.10");
+class WeatherNotificationIntegrationTest extends IntegrationTest {
     private static final Instant MORNING = Instant.parse("2026-10-24T22:00:00Z");
     private static final LocalDate DATE = LocalDate.of(2026, 10, 25);
     private static final GridPoint GRID = new GridPoint(60, 127);
     private static final String SECRET = "test-installation-secret-with-at-least-43-characters";
-    private static final MutableClock CLOCK = new MutableClock();
     static final String TEST_PUSH_KEY = "test-only-push-key";
+    @Autowired private TestClock clock;
     @Autowired private JdbcTemplate jdbc;
     @Autowired private MockMvc mvc;
     @Autowired private JwtTokenProvider tokens;
@@ -101,29 +80,17 @@ class WeatherNotificationIntegrationTest {
     @Autowired private WeatherNotificationRepository notifications;
     @Autowired private LifeWeatherAnalysisService analysis;
     @Autowired private Cache<ForecastCacheKey, WeatherForecastResult> forecastCache;
-    @MockitoBean private PushSender sender;
+    @Autowired private PushSender sender;
     private final List<Push> pushes = new CopyOnWriteArrayList<>();
     private Function<Push, Boolean> outcome;
     private WeatherNotificationDispatchService dispatch;
     private NotificationDevice device;
 
-    @DynamicPropertySource
-    static void database(final DynamicPropertyRegistry registry) {
-        registry.add("spring.datasource.url", MYSQL::getJdbcUrl);
-        registry.add("spring.datasource.username", MYSQL::getUsername);
-        registry.add("spring.datasource.password", MYSQL::getPassword);
-    }
-
-    @TestConfiguration
-    static class ClockConfig {
-        @Bean @Primary Clock weatherNotificationTestClock() { return CLOCK; }
-    }
-
     @BeforeEach
     void setup() {
         // 컨텍스트를 공유하는 테스트끼리 같은 격자·날짜의 캐시 항목이 이어지지 않게 비운다.
         forecastCache.invalidateAll();
-        CLOCK.now.set(MORNING);
+        clock.set(MORNING);
         jdbc.update("DELETE FROM members");
         jdbc.update("DELETE FROM weather_forecasts");
         jdbc.update("DELETE FROM weather_daily_forecasts");
@@ -233,7 +200,7 @@ class WeatherNotificationIntegrationTest {
 
     @Test
     void eveningUsesTomorrowsFullDay() {
-        CLOCK.now.set(Instant.parse("2026-10-25T13:00:00Z"));
+        clock.set(Instant.parse("2026-10-25T13:00:00Z"));
         seedForecasts(NotificationSlot.EVENING, DATE.atTime(20, 0));
         dispatch.dispatch(NotificationSlot.EVENING);
         assertThat(pushes).hasSize(1);
@@ -281,7 +248,7 @@ class WeatherNotificationIntegrationTest {
         Instant storedAt = MORNING.minusSeconds(daysAgo * 86400L);
         locations.sync(1, GRID, storedAt);
         if (slot == NotificationSlot.EVENING) {
-            CLOCK.now.set(Instant.parse("2026-10-25T13:00:00Z"));
+            clock.set(Instant.parse("2026-10-25T13:00:00Z"));
             seedForecasts(slot, DATE.atTime(20, 0));
         }
         dispatch.dispatch(slot);
@@ -289,7 +256,6 @@ class WeatherNotificationIntegrationTest {
         assertThat(notification().grid()).isEqualTo(GRID);
         assertThat(locations.find(1).orElseThrow().updatedAt()).isEqualTo(storedAt);
     }
-
 
     @ParameterizedTest
     @ValueSource(strings = {"consent", "member-transfer", "permission", "token"})
@@ -454,7 +420,7 @@ class WeatherNotificationIntegrationTest {
             pushes.add(push);
             return outcome.apply(push);
         };
-        return new WeatherNotificationDispatchService(settingsRepository, notifications, locations, analyzer, sender, CLOCK);
+        return new WeatherNotificationDispatchService(settingsRepository, notifications, locations, analyzer, sender, clock);
     }
 
     private NotificationDevice register(final long member) {
@@ -477,10 +443,4 @@ class WeatherNotificationIntegrationTest {
         forecasts.completeCollection(publication, publication.plusMinutes(30));
     }
 
-    private static class MutableClock extends Clock {
-        private final AtomicReference<Instant> now = new AtomicReference<>(MORNING);
-        @Override public ZoneId getZone() { return ZoneOffset.UTC; }
-        @Override public Clock withZone(final ZoneId zone) { return Clock.fixed(instant(), zone); }
-        @Override public Instant instant() { return now.get(); }
-    }
 }

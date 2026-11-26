@@ -7,6 +7,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.jachwisunbae.support.IntegrationTest;
+import com.jachwisunbae.support.TestClock;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
@@ -17,33 +19,16 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.context.TestConfiguration;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Import;
-import org.springframework.context.annotation.Primary;
 import org.springframework.http.HttpHeaders;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.DynamicPropertyRegistry;
-import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
-import org.testcontainers.containers.MySQLContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
 
-@Testcontainers
-@SpringBootTest
-@AutoConfigureMockMvc
-@ActiveProfiles("test")
-@Import(RentalTransactionAcceptanceTest.FixedClockConfig.class)
 @Tag("acceptance")
-class RentalTransactionAcceptanceTest {
-    @Container
-    private static final MySQLContainer<?> MYSQL = new MySQLContainer<>("mysql:8.4.10");
+class RentalTransactionAcceptanceTest extends IntegrationTest {
     private static final Clock CLOCK = Clock.fixed(Instant.parse("2026-10-10T15:30:00Z"), ZoneOffset.UTC);
+    @Autowired
+    private TestClock testClock;
     @Autowired
     private JdbcTemplate jdbc;
     @Autowired
@@ -52,16 +37,9 @@ class RentalTransactionAcceptanceTest {
     private ObjectMapper objectMapper;
     private String accessToken;
 
-    @DynamicPropertySource
-    static void configureDatabase(final DynamicPropertyRegistry registry) {
-        registry.add("spring.datasource.url", () -> MYSQL.getJdbcUrl()
-            + "?connectionTimeZone=%2B00:00&forceConnectionTimeZoneToSession=true&preserveInstants=true");
-        registry.add("spring.datasource.username", MYSQL::getUsername);
-        registry.add("spring.datasource.password", MYSQL::getPassword);
-    }
-
     @BeforeEach
     void setUpTransactions() throws Exception {
+        testClock.set(CLOCK.instant());
         jdbc.update("DELETE FROM rental_transactions");
         jdbc.update("DELETE FROM rental_datasets");
         jdbc.update("DELETE FROM legal_dongs");
@@ -235,14 +213,5 @@ class RentalTransactionAcceptanceTest {
             VALUES ('seoul-eastern-gyeonggi', '1162010200', 'ROWHOUSE', 5000000, 450000, 20, ?, 'NEW',
                 '신림빌라', '3', '', 'raw/source.csv', ?)
             """, contractDate, rowNumber);
-    }
-
-    @TestConfiguration
-    static class FixedClockConfig {
-        @Bean
-        @Primary
-        Clock rentalAcceptanceClock() {
-            return CLOCK;
-        }
     }
 }

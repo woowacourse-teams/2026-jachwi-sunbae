@@ -20,6 +20,8 @@ import com.jachwisunbae.member.service.MemberService;
 import com.jachwisunbae.streetmemo.domain.StreetMemoPreference;
 import com.jachwisunbae.streetmemo.repository.JdbcStreetMemoRepository;
 import com.jachwisunbae.streetmemo.service.dto.result.StreetMemoResult;
+import com.jachwisunbae.support.MySqlTestContainer;
+import com.jachwisunbae.support.ResetDatabase;
 import com.jachwisunbae.transit.repository.JdbcAdminDongRepository;
 import com.jachwisunbae.transit.service.AdminDongFinder;
 import java.math.BigDecimal;
@@ -49,14 +51,11 @@ import org.springframework.jdbc.datasource.DriverManagerDataSource;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.EnableTransactionManagement;
 import org.testcontainers.containers.MySQLContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
 
-@Testcontainers
+@ResetDatabase
 class StreetMemoServiceIntegrationTest {
 
-    @Container
-    private static final MySQLContainer<?> MYSQL = new MySQLContainer<>("mysql:8.4.10");
+    private static final MySQLContainer<?> MYSQL = MySqlTestContainer.get();
 
     private static final Clock CLOCK = Clock.fixed(Instant.parse("2026-10-26T12:00:00Z"), ZoneOffset.UTC);
     private static final LocalDateTime NOW = LocalDateTime.now(CLOCK);

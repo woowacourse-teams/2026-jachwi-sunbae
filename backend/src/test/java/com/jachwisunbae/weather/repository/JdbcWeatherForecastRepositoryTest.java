@@ -3,6 +3,8 @@ package com.jachwisunbae.weather.repository;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import com.jachwisunbae.support.MySqlTestContainer;
+import com.jachwisunbae.support.ResetDatabase;
 import com.jachwisunbae.weather.domain.DailyForecast;
 import com.jachwisunbae.weather.domain.DailyTemperature;
 import com.jachwisunbae.weather.domain.ForecastTimes;
@@ -28,10 +30,8 @@ import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 import org.springframework.jdbc.datasource.DriverManagerDataSource;
 import org.springframework.transaction.support.TransactionTemplate;
 import org.testcontainers.containers.MySQLContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
 
-@Testcontainers
+@ResetDatabase
 class JdbcWeatherForecastRepositoryTest {
 
     private static final GridPoint POINT = new GridPoint(60, 127);
@@ -40,8 +40,7 @@ class JdbcWeatherForecastRepositoryTest {
     private static final LocalDateTime PUBLISHED_AT = LocalDateTime.of(2026, 10, 22, 17, 0);
     private static final LocalDateTime COLLECTED_AT = PUBLISHED_AT.plusMinutes(15).plusNanos(123456000);
 
-    @Container
-    private static final MySQLContainer<?> MYSQL = new MySQLContainer<>("mysql:8.4.10");
+    private static final MySQLContainer<?> MYSQL = MySqlTestContainer.get();
 
     private static JdbcTemplate jdbcTemplate;
 

@@ -8,6 +8,7 @@ import com.jachwisunbae.checklist.repository.JdbcSystemCheckItemRepository;
 import com.jachwisunbae.checklist.type.CheckItemCategory;
 import com.jachwisunbae.checklist.type.CheckItemType;
 import com.jachwisunbae.checklist.type.CheckStage;
+import com.jachwisunbae.support.MySqlTestContainer;
 import java.util.List;
 import java.util.UUID;
 import javax.sql.DataSource;
@@ -18,14 +19,10 @@ import org.junit.jupiter.api.Test;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.datasource.DriverManagerDataSource;
 import org.testcontainers.containers.MySQLContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
 
-@Testcontainers
 class ChecklistCatalogMigrationIntegrationTest {
 
-    @Container
-    private static final MySQLContainer<?> MYSQL = new MySQLContainer<>("mysql:8.4.10");
+    private static final MySQLContainer<?> MYSQL = MySqlTestContainer.get();
 
     private DataSource dataSource;
     private JdbcTemplate jdbcTemplate;

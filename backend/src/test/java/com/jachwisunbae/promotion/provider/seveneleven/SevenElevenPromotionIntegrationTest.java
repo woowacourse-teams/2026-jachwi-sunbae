@@ -18,36 +18,24 @@ import com.jachwisunbae.promotion.domain.ConvenienceBrand;
 import com.jachwisunbae.promotion.domain.PromotionProduct;
 import com.jachwisunbae.promotion.repository.JdbcPromotionProductRepository;
 import com.jachwisunbae.promotion.service.PromotionCollectionService;
+import com.jachwisunbae.support.IntegrationTest;
 import java.time.LocalDateTime;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.DynamicPropertyRegistry;
-import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
-import org.testcontainers.containers.MySQLContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
 
 // 세븐일레븐 수집을 켠 애플리케이션에서 수집 → MySQL 저장 → 기존 조회 API까지 확인한다.
-@Testcontainers
-@SpringBootTest(properties = "promotion.collection.seven-eleven.enabled=true")
-@AutoConfigureMockMvc
-@ActiveProfiles("test")
-class SevenElevenPromotionIntegrationTest {
+@TestPropertySource(properties = "promotion.collection.seven-eleven.enabled=true")
+class SevenElevenPromotionIntegrationTest extends IntegrationTest {
 
     private static final ConvenienceBrand BRAND = ConvenienceBrand.SEVEN_ELEVEN;
     private static final LocalDateTime PREVIOUS_AT = LocalDateTime.of(2026, 10, 28, 4, 0);
-
-    @Container
-    private static final MySQLContainer<?> MYSQL = new MySQLContainer<>("mysql:8.4.10");
 
     @Autowired
     private MockMvc mvc;
@@ -64,13 +52,6 @@ class SevenElevenPromotionIntegrationTest {
     private PromotionCollectionService service;
     @MockitoBean
     private SevenElevenPromotionClient client;
-
-    @DynamicPropertySource
-    static void database(final DynamicPropertyRegistry registry) {
-        registry.add("spring.datasource.url", MYSQL::getJdbcUrl);
-        registry.add("spring.datasource.username", MYSQL::getUsername);
-        registry.add("spring.datasource.password", MYSQL::getPassword);
-    }
 
     @BeforeEach
     void setUp() {

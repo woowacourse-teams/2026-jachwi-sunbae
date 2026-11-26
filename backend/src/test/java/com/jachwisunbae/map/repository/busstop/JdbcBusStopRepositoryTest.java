@@ -5,6 +5,8 @@ import static org.assertj.core.api.Assertions.tuple;
 
 import com.jachwisunbae.map.domain.CoordinateBounds;
 import com.jachwisunbae.map.domain.busstop.BusStop;
+import com.jachwisunbae.support.MySqlTestContainer;
+import com.jachwisunbae.support.ResetDatabase;
 import java.math.BigDecimal;
 import java.util.List;
 import javax.sql.DataSource;
@@ -16,15 +18,12 @@ import org.junit.jupiter.api.Test;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.datasource.DriverManagerDataSource;
 import org.testcontainers.containers.MySQLContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
 
 // 이름 제외 조건(LIKE)과 DECIMAL 좌표 비교는 MySQL 동작에 달려 있어 실제 MySQL로 검증한다.
-@Testcontainers
+@ResetDatabase
 class JdbcBusStopRepositoryTest {
 
-    @Container
-    private static final MySQLContainer<?> MYSQL = new MySQLContainer<>("mysql:8.4.10");
+    private static final MySQLContainer<?> MYSQL = MySqlTestContainer.get();
 
     // 판교역 주변 약 1km 사각형
     private static final CoordinateBounds PANGYO = CoordinateBounds.of(

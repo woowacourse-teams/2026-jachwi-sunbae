@@ -3,6 +3,8 @@ package com.jachwisunbae.transit.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import com.jachwisunbae.support.MySqlTestContainer;
+import com.jachwisunbae.support.ResetDatabase;
 import com.jachwisunbae.transit.domain.GtfsEdge;
 import com.jachwisunbae.transit.domain.GtfsFeed;
 import com.jachwisunbae.transit.domain.GtfsRoute;
@@ -23,20 +25,12 @@ import org.springframework.aop.framework.ProxyFactory;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
-import org.springframework.jdbc.datasource.DriverManagerDataSource;
 import org.springframework.transaction.annotation.AnnotationTransactionAttributeSource;
 import org.springframework.transaction.interceptor.TransactionInterceptor;
-import org.testcontainers.containers.MySQLContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
 
 // 기존 노선망을 지운 뒤 저장이 실패해도 @Transactional로 롤백되어 이전 노선망이 남는지 실제 MySQL로 확인한다.
-@Testcontainers
+@ResetDatabase
 class GtfsImportServiceTransactionTest {
-
-    @Container
-    private static final MySQLContainer<?> MYSQL = new MySQLContainer<>("mysql:8.4.10")
-            .withUrlParam("rewriteBatchedStatements", "true");
 
     // 적재는 남은 구간이 있는 노선만 저장하므로, 서울 정류장 두 곳을 잇는 구간을 함께 둔다.
     private static final GtfsFeed EXISTING_FEED = new GtfsFeed(
@@ -62,7 +56,7 @@ class GtfsImportServiceTransactionTest {
 
     @BeforeAll
     static void setUp() {
-        dataSource = new DriverManagerDataSource(MYSQL.getJdbcUrl(), MYSQL.getUsername(), MYSQL.getPassword());
+        dataSource = MySqlTestContainer.dataSource("rewriteBatchedStatements=true");
         Flyway.configure().dataSource(dataSource).load().migrate();
         jdbcTemplate = new JdbcTemplate(dataSource);
     }

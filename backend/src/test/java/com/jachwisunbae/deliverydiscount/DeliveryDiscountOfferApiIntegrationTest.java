@@ -11,6 +11,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.jachwisunbae.auth.token.JwtTokenProvider;
 import com.jachwisunbae.member.entity.Member;
 import com.jachwisunbae.member.repository.MemberRepository;
+import com.jachwisunbae.support.IntegrationTest;
+import com.jachwisunbae.support.TestClock;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -20,37 +22,19 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.context.TestConfiguration;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Import;
-import org.springframework.context.annotation.Primary;
 import org.springframework.dao.DataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.DynamicPropertyRegistry;
-import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
-import org.testcontainers.containers.MySQLContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
 
-@Testcontainers
-@SpringBootTest
-@AutoConfigureMockMvc
-@ActiveProfiles("test")
-@Import(DeliveryDiscountOfferApiIntegrationTest.FixedClockConfig.class)
-class DeliveryDiscountOfferApiIntegrationTest {
+class DeliveryDiscountOfferApiIntegrationTest extends IntegrationTest {
 
     // UTC로는 10월 29일이지만 KST로는 10월 30일 00:30이다.
     private static final Clock CLOCK = Clock.fixed(Instant.parse("2026-10-29T15:30:00Z"), ZoneOffset.UTC);
     private static final LocalDate TODAY = LocalDate.of(2026, 10, 30);
     private static final LocalDateTime VERIFIED_AT = LocalDateTime.of(2026, 10, 29, 9, 0);
 
-    @Container
-    private static final MySQLContainer<?> MYSQL = new MySQLContainer<>("mysql:8.4.10");
-
+    @Autowired
+    private TestClock testClock;
     @Autowired
     private MockMvc mvc;
     @Autowired
@@ -61,15 +45,9 @@ class DeliveryDiscountOfferApiIntegrationTest {
     private MemberRepository members;
     private Long memberId;
 
-    @DynamicPropertySource
-    static void database(final DynamicPropertyRegistry registry) {
-        registry.add("spring.datasource.url", MYSQL::getJdbcUrl);
-        registry.add("spring.datasource.username", MYSQL::getUsername);
-        registry.add("spring.datasource.password", MYSQL::getPassword);
-    }
-
     @BeforeEach
     void clearOffers() {
+        testClock.set(CLOCK.instant());
         jdbc.update("DELETE FROM delivery_discount_offers");
         memberId = members.save(Member.create(LocalDateTime.now(CLOCK))).getId();
     }
@@ -165,15 +143,5 @@ class DeliveryDiscountOfferApiIntegrationTest {
 
     private String bearer() {
         return "Bearer " + tokens.createAccessToken(memberId);
-    }
-
-    @TestConfiguration
-    static class FixedClockConfig {
-
-        @Bean
-        @Primary
-        Clock deliveryDiscountClock() {
-            return CLOCK;
-        }
     }
 }
