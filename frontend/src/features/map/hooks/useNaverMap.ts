@@ -11,6 +11,7 @@ import { cardFlipsBelow } from '../lib/mapRegionCardPlacement';
 import { createMapRegionLayer, READY_TIMEOUT_MS } from '../lib/mapRegionLayer';
 import { createMapTapGuard } from '../lib/mapTapGuard';
 import { MAP_TIMING, markMapTiming } from '../lib/mapTiming';
+import { NEAR_MOVE_MS } from '../lib/mapViewFlight';
 import {
   isNaverSdkAvailable,
   type LiveMap,
@@ -28,7 +29,10 @@ import * as actionStyles from '../ui/map-canvas/MapCanvas.styles';
 const EMPTY_MARKERS: NonNullable<MapCanvasProps['markers']> = [];
 const EMPTY_CIRCLES: NonNullable<MapCanvasProps['circles']> = [];
 const EMPTY_REGIONS: NonNullable<MapCanvasProps['regions']> = [];
-/** 시점 옮기기(morph 180ms)가 끝났다고 보는 최대 시간. 이 안에 목표에 못 닿은 idle은 중간 시점으로 본다. */
+/**
+ * 시점 옮기기가 끝났다고 보는 최대 시간. 가까운 곳(morph 180ms)은 이 값을, 먼 곳을 여러 단계로 옮길 때는 그 시간에 이만큼 더한 값을 쓴다.
+ * 이 안에 목표에 못 닿은 idle은 중간 시점으로 본다.
+ */
 const VIEW_SETTLE_MS = 450;
 
 type LiveMapProps = Pick<
@@ -114,7 +118,13 @@ const useNaverMap = ({
   // 지도에 마지막으로 맞춘 칸 크기. 크기 맞춤은 크기가 달라졌을 때만 한다.
   const relaidSizeRef = useRef('');
   // 시점을 옮기기 시작한 시각과 목표. 옮기는 도중에 오는 idle(크기 맞춤 직후 등)을 다 옮긴 것으로 받지 않는다.
-  const viewTargetRef = useRef<{ startedAt: number; latitude: number; longitude: number; level: number } | null>(null);
+  const viewTargetRef = useRef<{
+    startedAt: number;
+    settleMs: number;
+    latitude: number;
+    longitude: number;
+    level: number;
+  } | null>(null);
   const [settledVersion, setSettledVersion] = useState(0);
   const setGestureActive = (active: boolean) => {
     gestureActiveRef.current = active;
@@ -211,9 +221,9 @@ const useNaverMap = ({
               Math.abs(current.longitude - target.longitude) < 0.000001 &&
               Math.abs(engine.getZoom(map) - target.level) < 0.01;
             const waited = performance.now() - target.startedAt;
-            if (!arrived && waited < VIEW_SETTLE_MS) {
+            if (!arrived && waited < target.settleMs) {
               // 이 idle 뒤로 더 오지 않을 수 있으니(목표가 지도 경계에 걸리는 등) 기다릴 시간이 지나면 다시 받는다.
-              settleTimer = window.setTimeout(handleIdle, VIEW_SETTLE_MS - waited);
+              settleTimer = window.setTimeout(handleIdle, target.settleMs - waited);
               return;
             }
             viewTargetRef.current = null;
@@ -325,8 +335,12 @@ const useNaverMap = ({
     pendingRelayoutRef.current = null;
     relayoutIfResized(map);
     viewAnimatingRef.current = true;
-    viewTargetRef.current = { startedAt: performance.now(), ...boundedCenter, level };
-    engine.animateView(map, engine.latLng(boundedCenter.latitude, boundedCenter.longitude), level);
+    const startedAt = performance.now();
+    const target = { startedAt, settleMs: VIEW_SETTLE_MS, ...boundedCenter, level };
+    viewTargetRef.current = target;
+    const duration = engine.animateView(map, engine.latLng(boundedCenter.latitude, boundedCenter.longitude), level);
+    // 먼 곳은 줄였다가 옮기고 다시 확대하느라 오래 걸린다. 그 사이 단계마다 오는 idle을 도착으로 받지 않게 기다릴 시간을 늘린다.
+    target.settleMs = Math.max(VIEW_SETTLE_MS, duration - NEAR_MOVE_MS + VIEW_SETTLE_MS);
   }, [boundedCenter, engine, liveMode, mapReady, animateView, level]);
 
   useEffect(() => {

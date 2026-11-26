@@ -99,4 +99,24 @@ describe('BottomSheet 접힘 선호 공유', () => {
     fireEvent.click(screen.getByRole('button', { name: '시트 펼치기' }));
     expect(screen.getByRole('region', { name: '선택한 매물' }).dataset.mode).toBe('default');
   });
+  it('접힌 시트는 제목만 보이고 내용은 비치지 않는다. 끌어 올리는 동안에는 내용이 다시 보인다', () => {
+    renderSheet({ initialMode: 'peek' });
+    const content = () => screen.getByText('내용');
+    expect(getComputedStyle(content()).display).toBe('none');
+    const handle = screen.getByRole('button', { name: '상세 패널 높이 조절' });
+    fireEvent.pointerDown(handle, { button: 0, clientY: 700, pointerId: 1 });
+    fireEvent.pointerMove(handle, { clientY: 600, pointerId: 1 });
+    expect(getComputedStyle(content()).display).not.toBe('none');
+    fireEvent.pointerCancel(handle, { pointerId: 1 });
+    expect(getComputedStyle(content()).display).toBe('none');
+    fireEvent.click(screen.getByRole('button', { name: '시트 펼치기' }));
+    expect(getComputedStyle(content()).display).not.toBe('none');
+  });
+
+  it('시트 내용은 세로로만 스크롤하고 옆으로 넘친 것은 끌리지 않게 자른다', () => {
+    renderSheet();
+    const style = getComputedStyle(screen.getByText('내용'));
+    expect(style.overflowY).toBe('auto');
+    expect(style.overflowX).toBe('hidden');
+  });
 });

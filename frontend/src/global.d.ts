@@ -28,7 +28,11 @@ type NaverMap = {
   setZoom: (zoom: number) => void;
   /** 확대 단계를 `deltaZoom`만큼(소수 가능) 바꾼다. `origin` 좌표가 화면에서 제자리에 남는다. `effect`가 false면 바로 옮긴다. */
   zoomBy?: (deltaZoom: number, origin?: NaverLatLng, effect?: boolean) => void;
-  getProjection?: () => { fromOffsetToCoord: (offset: NaverPoint) => NaverLatLng };
+  getProjection?: () => {
+    fromOffsetToCoord: (offset: NaverPoint) => NaverLatLng;
+    fromCoordToOffset?: (coord: NaverLatLng) => NaverPoint;
+  };
+  getSize?: () => { width: number; height: number };
   morph?: (center: NaverLatLng, zoom: number, options: { duration: number; easing: string }) => void;
   refresh: () => void;
   autoResize: () => void;
