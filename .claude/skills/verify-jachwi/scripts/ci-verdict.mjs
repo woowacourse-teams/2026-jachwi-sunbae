@@ -6,14 +6,14 @@
 //     [--runs 5] [--spread-factor 1.5] [--min-diff 100] [--before-label <커밋>] [--after-label <커밋>] [--run-url <실행 주소>]
 // - pr: 영향 라우트 중 screens.mjs 순서로 가장 앞선 화면 하나만 잰다(PR마다 5분 안). all: 영향 화면 전부(visual-verdict-full.yml, 주 1회와 수동 실행).
 // - 결과: <out>/<화면>/(verdict.md, runs.jsonl, result.json, shots, side), <out>/comment.md(PR 댓글), <out>/summary.json
-// - 끝 코드: frontend/scripts/visual-scope.mjs 의 checkVerdict 가 실패를 내면 1(나빠짐, 같음이 아닌 리팩터링), 그 밖은 0.
+// - 끝 코드: frontend/scripts/visual-scope.mjs 의 checkVerdict 가 실패를 내면 1(나빠짐, 판정하지 못한 리팩터링), 그 밖은 0.
 import { execFileSync } from 'node:child_process';
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';
 
-import { checkVerdict } from '../../../../frontend/scripts/visual-scope.mjs';
+import { checkVerdict, checkVerdictNotes } from '../../../../frontend/scripts/visual-scope.mjs';
 import { pickScreens } from './screens.mjs';
 
 const { values: args } = parseArgs({
@@ -105,6 +105,8 @@ if (!scope.runs) {
     const order = ['나빠짐', '판정 불가(흔들림 큼)', '판정 못 함', '좋아짐', '같음'];
     const overall = order.find((verdict) => results.some((item) => item.verdict === verdict)) ?? '같음';
     const failures = checkVerdict({ title: args.title, verdict: overall });
+    const notes = checkVerdictNotes({ title: args.title, verdict: overall });
+    notes.forEach((note) => console.log(`::warning::${note}`));
     const skipped = candidates.length - screens.length;
     const table = results.map(
       ({ screen, result, verdict }) =>
@@ -128,7 +130,10 @@ if (!scope.runs) {
               `- PR마다는 가장 중요한 화면 하나만 잰다. 영향 화면 ${skipped}개는 더 재지 않았다. 화면 전부는 주 1회 \`Visual Verdict Full\`이 develop에서 잰다. 이 PR에서 더 보려면 로컬에서 \`measure.mjs --screen <화면>\`으로 잰다.`,
             ]
           : []),
-        ...(isRefactor ? ['- 리팩터링 PR이라 "같음"이어야 통과다.'] : []),
+        ...(isRefactor
+          ? ['- 리팩터링 PR이라 나빠짐, 판정 불가(흔들림 큼), 판정 못 함이면 실패다. 좋아짐은 통과하되 알린다.']
+          : []),
+        ...notes.map((note) => `- **주의: ${note}**`),
         ...(failures.length > 0 ? failures.map((failure) => `- 실패: ${failure}`) : []),
         args['run-url']
           ? `- 증거: [실행 기록과 아티팩트(verdict.md, 같은 시각 전후 스크린샷)](${args['run-url']})`

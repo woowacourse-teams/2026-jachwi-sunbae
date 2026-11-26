@@ -7,6 +7,7 @@ import { describe, expect, it } from 'vitest';
 import { compareMetric, JITTER_VERDICT } from '../../../.claude/skills/verify-jachwi/scripts/verdict.mjs';
 import {
   checkVerdict,
+  checkVerdictNotes,
   classifyChangedFiles,
   findVisualScope,
   renderVerdictTemplate,
@@ -109,11 +110,25 @@ describe('CI 자동 판정 결과로 통과 정하기', () => {
     expect(checkVerdict({ title: '[FE][Perf] 무엇', verdict: '나빠짐' })).toHaveLength(1);
   });
 
-  it('리팩터링 PR은 같음이 아니면 실패한다', () => {
-    expect(checkVerdict({ title: '[FE][Refactor] 무엇', verdict: '좋아짐' })).toHaveLength(1);
+  it('리팩터링 PR은 나빠짐과 판정 불가, 판정 못 함이면 실패한다', () => {
+    expect(checkVerdict({ title: '[FE][Refactor] 무엇', verdict: '나빠짐' })).toHaveLength(1);
     expect(checkVerdict({ title: '[FE][Refactor] 무엇', verdict: '판정 못 함' })).toHaveLength(1);
     expect(checkVerdict({ title: '[FE][Refactor] 무엇', verdict: '판정 불가(흔들림 큼)' })).toHaveLength(1);
     expect(checkVerdict({ title: '[FE][Refactor] 무엇', verdict: '같음' })).toEqual([]);
+  });
+
+  it('리팩터링 PR이 좋아짐이면 통과하되 성능 변화가 섞였다고 알린다', () => {
+    expect(checkVerdict({ title: '[FE][Refactor] 무엇', verdict: '좋아짐' })).toEqual([]);
+    expect(checkVerdictNotes({ title: '[FE][Refactor] 무엇', verdict: '좋아짐' })).toEqual([
+      expect.stringContaining('리팩터링인데 빨라짐(성능 변화가 섞임)'),
+    ]);
+    expect(checkVerdictNotes({ title: '[FE][Refactor] 무엇', verdict: '같음' })).toEqual([]);
+  });
+
+  it('리팩터링이 아닌 PR은 나빠짐만 실패하고 좋아짐을 알리지 않는다', () => {
+    expect(checkVerdict({ title: '[FE][Feat] 무엇', verdict: '좋아짐' })).toEqual([]);
+    expect(checkVerdictNotes({ title: '[FE][Feat] 무엇', verdict: '좋아짐' })).toEqual([]);
+    expect(checkVerdict({ title: '[FE][Feat] 무엇', verdict: '판정 불가(흔들림 큼)' })).toEqual([]);
   });
 
   it('대상이 아니거나 잴 화면이 없으면 통과한다', () => {

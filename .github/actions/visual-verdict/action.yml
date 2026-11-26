@@ -17,7 +17,7 @@ inputs:
     description: 'pr: 가장 중요한 영향 화면 하나, all: 영향 화면 전부'
     default: pr
   title:
-    description: PR 제목([Refactor]면 같음이어야 통과)
+    description: PR 제목([Refactor]면 판정 불가와 판정 못 함도 실패, 좋아짐은 알림)
     default: ''
   runs:
     description: 전후 각각 잴 회수
