@@ -19,9 +19,26 @@ const makeRecord = (
   createdAt: `2026-11-${String(10 + Number(id)).padStart(2, '0')}T00:00:00.000Z`,
   commit: commit.padEnd(40, '0'),
   runUrl: `https://example.test/runs/${id}`,
-  env: { webview, android: '15 (API 35)', abi: 'x86_64', net: 'fast4g', emulator: 'pixel_6', mockDelay: 300, mapSdk: 'stub' },
+  env: {
+    webview,
+    android: '15 (API 35)',
+    abi: 'x86_64',
+    net: 'fast4g',
+    emulator: 'pixel_6',
+    mockDelay: 300,
+    mapSdk: 'stub',
+  },
   scenarios: {
-    cold: { version, label: '빈 캐시 첫 방문', runs: 5, success, median, min: median, max: median, bytes: { median: 1000 } },
+    cold: {
+      version,
+      label: '빈 캐시 첫 방문',
+      runs: 5,
+      success,
+      median,
+      min: median,
+      max: median,
+      bytes: { median: 1000 },
+    },
   },
 });
 
