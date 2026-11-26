@@ -389,13 +389,13 @@ const registerFlow = async (scenario, { location = true, geoDelay = 0, mapTiming
   await resetMock();
   const app = await launch({ clear: true, location });
   try {
-    const { net, failedRequests } = await instrument(app, { geoDelay, mapTiming });
+    const { cdp, net, failedRequests } = await instrument(app, { geoDelay, mapTiming });
     let measured;
     try {
       await app.page.goto(homeUrl, { waitUntil: 'commit' });
       // 목록이 와야 등록 뒤 화면이 안정적이다. 기록한 동네 칩(매물 수)이 보이면 목록이 온 것이다.
       await app.page.locator('nav[aria-label="기록한 동네"] button span').first().waitFor({ timeout: timeoutMs });
-      measured = await flow(app.page);
+      measured = await flow(app.page, cdp);
       if (screenshot) await app.page.screenshot({ path: screenshot }).catch(() => {});
     } catch (error) {
       if (failShot) await app.page.screenshot({ path: failShot }).catch(() => {});
@@ -457,7 +457,7 @@ const SCENARIO_RUNNERS = {
       };
     }),
   'real-denied-pick': (shots) =>
-    registerFlow('real-denied-pick', { ...shots, location: false }, async (page) => {
+    registerFlow('real-denied-pick', { ...shots, location: false }, async (page, cdp) => {
       await watchText(page, DENIED_TEXT);
       const located = await clickAt(page, locateButton(page));
       const deniedAt = await waitText(page, DENIED_TEXT);
@@ -466,16 +466,20 @@ const SCENARIO_RUNNERS = {
       await page.locator('button', { hasText: '세종대로' }).first().click({ timeout: timeoutMs });
       await page.waitForURL(/view=map/, { timeout: timeoutMs });
       const picked = await page.evaluate(() => performance.now());
-      // 고른 주소로 옮긴 지도가 그려지기를 기다린 뒤, 지도 가운데(검색 핀 바로 아래)를 눌러 좌표 메뉴를 연다.
+      // 고른 주소로 옮긴 지도가 그려지기를 기다린 뒤, 처음 쓰는 사람용 안내가 있으면 닫고, 검색 핀 왼쪽 아래(가운데의 핀,
+      // 안내, 거리 메모 말풍선을 피한 자리)를 눌러 좌표 메뉴를 연다. 웹뷰에는 Playwright touchscreen 이 없어 CDP 터치 이벤트를 쓴다.
       await waitMark(page, 'jachwi:map-created');
       await page.waitForTimeout(1200);
+      const coach = page.getByRole('button', { name: '확인', exact: true });
+      if (await coach.isVisible().catch(() => false)) await coach.click().catch(() => {});
       const box = await page.locator('section[aria-label="본 방 기록 지도"]').boundingBox();
       if (!box) throw new Error('지도 영역을 못 찾았다');
-      const x = box.x + box.width / 2;
-      const y = box.y + box.height / 2 + 60;
+      const x = Math.round(box.x + box.width / 2 - 110);
+      const y = Math.round(box.y + box.height / 2 + 170);
       const menu = page.getByRole('group', { name: '이 위치에서' }).getByRole('button', { name: '본 방 기록하기' });
       const tapped = await page.evaluate(() => performance.now());
-      await page.touchscreen.tap(x, y);
+      await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x, y }] });
+      await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
       if (!(await menu.isVisible().catch(() => false))) {
         await menu.waitFor({ timeout: 4000 }).catch(async () => {
           await page.mouse.click(x, y);
