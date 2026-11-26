@@ -7,8 +7,8 @@ name: Android WebView Calibration
 on:
   workflow_dispatch:
   schedule:
-    # 매주 월요일 11:00 KST(Visual Verdict Full 한 시간 뒤). schedule은 기본 브랜치(main)의 이 파일로 돌아 develop을 꺼낸다.
-    - cron: '0 2 * * 1'
+    # 매주 월요일 0:00 KST(UTC 일요일 15:00). schedule은 기본 브랜치(main)의 이 파일로 돌아 develop을 꺼낸다.
+    - cron: '0 15 * * 0'
 
 permissions:
   contents: read

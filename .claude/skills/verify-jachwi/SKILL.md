@@ -33,7 +33,7 @@ description: 자취선배 웹 프론트를 로컬에서 띄워 사용자처럼 �
 
 PR 판정은 데스크탑 Chromium에 CPU 4배 제한을 건 흉내 값이다. 실제 앱은 같은 웹을 iOS와 Android WebView로 감싸고, 실사용에서는 Android 웹뷰가 가장 느렸다. `.github/workflows/android-webview-calibration.yml`이 흉내 값이 앱 웹뷰와 얼마나 다른지 한 실행 안에서 한 표로 잰다. 판정이 아니라 참고 값이라 실패로 막지 않는다.
 
-- 언제: 주 1회(월 11:00 KST, develop)와 수동 실행(workflow_dispatch). 에뮬레이터를 띄워 20분쯤 걸려 PR마다는 돌리지 않는다.
+- 언제: 주 1회(월 0:00 KST, develop)와 수동 실행(workflow_dispatch). 에뮬레이터를 띄워 20분쯤 걸려 PR마다는 돌리지 않는다.
 - 하는 일: 운영 빌드를 `serve.mjs --api mock --delay 300`과 `map-sdk-stub.mjs`로 띄운 뒤, 에뮬레이터를 띄우기 전에 `measure.mjs`로 CI 흉내(데스크탑, PR 판정과 같은 조건)와 휴대폰 폭 흉내를 잰다. 그다음 `reactivecircus/android-emulator-runner`(KVM, API 35 google_apis x86_64, pixel_6)에서 `android/run-on-emulator.sh`가 `measure-android.mjs`로 크롬과 WebView 셸을 각 5회 잰다.
 - 같은 순간: 홈의 첫 매물 카드(`article img`). 휴대폰 폭 홈은 기본이 지도 보기라(지도 목에서는 매물 표시가 뜨지 않는다) 휴대폰 폭 세 경로는 `/?view=list`로 연다.
 - 기기 쪽: `adb reverse`로 4302(웹과 목 API), 4443(지도 목)을 러너로 잇고, 명령줄 파일(`chrome-command-line`, `webview-command-line`)의 `--host-resolver-rules`로 지도 SDK 주소를 목으로 돌린다. 표의 "지도 목 요청"이 0이면 돌리기가 안 먹은 것이다. 회선은 보통 4G만 걸고 CPU는 기기 그대로다.
