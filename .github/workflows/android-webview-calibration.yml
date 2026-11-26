@@ -188,7 +188,8 @@ jobs:
           arch: x86_64
           profile: pixel_6
           disable-animations: true
-          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -no-snapshot
+          # 실제 지도 시나리오가 oapi.map.naver.com 을 받는다. 에뮬레이터 기본 DNS가 가끔 이름을 못 풀어(ERR_NAME_NOT_RESOLVED) 공용 DNS를 준다.
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -no-snapshot -dns-server 8.8.8.8,1.1.1.1
           script: .claude/skills/verify-jachwi/android/run-on-emulator.sh "${RUNNER_TEMP}/webview-shell.apk" "${RUNNER_TEMP}/calibration" "${RUNNER_TEMP}/map-sdk-stub.log" 5
 
       - name: Summarize

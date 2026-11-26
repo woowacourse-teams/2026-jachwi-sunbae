@@ -30,6 +30,9 @@ done
 
 if [[ "${MAP_REAL:-0}" == 1 ]]; then
   adb reverse tcp:3000 tcp:3000
+  # 기기가 지도 SDK 주소를 풀 수 있을 때까지 기다린다(최대 60초). 끝내 못 풀면 측정은 돌리되 환경 오류로 남는다.
+  for _ in $(seq 30); do adb shell ping -c 1 -W 2 oapi.map.naver.com > /dev/null 2>&1 && break; sleep 2; done
+  adb shell ping -c 1 -W 2 oapi.map.naver.com > /dev/null 2>&1 && echo "지도 SDK 주소 이름 풀기 확인" || echo "::warning::기기가 oapi.map.naver.com 을 풀지 못한다"
   mkdir -p "${out}/webview-map"
   node "${S}/measure-android.mjs" --target webview --map-sdk real --base http://localhost:3000 --runs "${runs}" \
     --net fast4g --out "${out}/webview-map" || echo "::warning::실제 지도 측정 실패"

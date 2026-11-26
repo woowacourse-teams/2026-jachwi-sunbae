@@ -436,7 +436,7 @@ const waitMark = async (page, name) => {
   while (Date.now() < deadline) {
     const at = await mark(page, name);
     if (at !== null) return at;
-    if (await mapFailed(page)) throw new Error(`${ENV_ERROR_PREFIX}지도 인증 실패나 SDK 실패(네이버 콘솔의 Web 서비스 URL 확인)`);
+    if (await mapFailed(page)) throw new Error(`${ENV_ERROR_PREFIX}지도 인증 실패나 SDK 받기 실패(원자료 failedRequests 에 ERR_NAME_NOT_RESOLVED 가 있으면 기기 DNS, 없으면 네이버 콘솔의 Web 서비스 URL 확인)`);
     await page.waitForTimeout(100);
   }
   throw new Error(`${name} 표시를 못 봤다`);
