@@ -16,10 +16,10 @@ if (!args.dir) throw new Error('--dir 이 필요하다');
 const dir = resolve(args.dir);
 
 const ROWS = [
-  { key: 'desktop', label: 'CI 흉내(PR 판정과 같음)', condition: '데스크탑 Chromium 1440, 보통 4G, CPU 4배' },
-  { key: 'mobile', label: '흉내, 휴대폰 폭', condition: '데스크탑 Chromium 390, 보통 4G, CPU 4배' },
-  { key: 'chrome', label: '에뮬레이터 크롬', condition: 'Android 크롬, 보통 4G, CPU 제한 없음' },
-  { key: 'webview', label: '에뮬레이터 앱 웹뷰', condition: 'WebView 셸(앱과 같은 설정), 보통 4G, CPU 제한 없음' },
+  { key: 'desktop', label: 'CI 흉내(PR 판정과 같음)', condition: '데스크탑 Chromium 1440, 보통 4G, CPU 4배, 주소 /' },
+  { key: 'mobile', label: '흉내, 휴대폰 폭', condition: '데스크탑 Chromium 390, 보통 4G, CPU 4배, 목록 보기' },
+  { key: 'chrome', label: '에뮬레이터 크롬', condition: 'Android 크롬, 보통 4G, CPU 제한 없음, 목록 보기' },
+  { key: 'webview', label: '에뮬레이터 앱 웹뷰', condition: 'WebView 셸(앱과 같은 설정), 보통 4G, CPU 제한 없음, 목록 보기' },
 ];
 
 const readLines = (file) =>
@@ -68,6 +68,7 @@ const lines = [
   '',
   ...rows.filter((row) => row.userAgent).map((row) => `- ${row.label} UA: \`${row.userAgent}\``),
   '',
+  '- 휴대폰 폭 홈은 기본이 지도 보기라(지도 목에서는 매물 표시가 뜨지 않는다) 휴대폰 폭 세 줄은 `/?view=list`로 연다. CI 줄은 PR 판정과 같게 `/`다.',
   '- 흉내 두 줄은 `measure.mjs`가 같은 빌드를 전과 후로 번갈아 연 값을 합친 것이다(그래서 회수가 두 배다).',
   '- 에뮬레이터는 실기기가 아니다. 러너 CPU(KVM, x86_64) 위에서 돌아 저가 휴대폰보다 빠를 수 있다. 셸 앱에는 RN과 네이티브 탭바가 없다.',
   ...(args['run-url'] ? ['', `실행: ${args['run-url']}`] : []),

@@ -71,10 +71,13 @@ jobs:
           S=.claude/skills/verify-jachwi/scripts
           OUT="${RUNNER_TEMP}/calibration"
           export CHROME_PATH="$(command -v google-chrome || command -v google-chrome-stable)"
+          # desktop: PR 판정과 같은 조건(--screen home, 주소 /). mobile: 휴대폰 폭 홈은 기본이 지도 보기라
+          # 에뮬레이터 두 경로와 같이 목록 보기(/?view=list)로 열어 같은 순간(article img)을 잰다.
           for viewport in desktop mobile; do
+            if [[ "${viewport}" == desktop ]]; then target=(--screen home); else target=(--path '/?view=list' --selector 'article img'); fi
             before=$(grep -c '^request ' "${RUNNER_TEMP}/map-sdk-stub.log" || true)
-            node "$S/measure.mjs" --before http://localhost:4302 --after http://localhost:4302 --screen home \
-              --viewport "${viewport}" --net fast4g --runs 5 --map-sdk stub --max-load 0 --out "${OUT}/${viewport}"
+            node "$S/measure.mjs" --before http://localhost:4302 --after http://localhost:4302 "${target[@]}" \
+              --viewport "${viewport}" --net fast4g --runs 5 --extra-runs 0 --map-sdk stub --max-load 0 --out "${OUT}/${viewport}"
             after=$(grep -c '^request ' "${RUNNER_TEMP}/map-sdk-stub.log" || true)
             echo $((after - before)) > "${OUT}/${viewport}/stub-hits.txt"
           done

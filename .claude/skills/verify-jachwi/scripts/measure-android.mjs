@@ -2,7 +2,7 @@
 // PR마다 도는 판정(measure.mjs, 데스크탑 Chromium에 CPU 4배 제한)이 실제 앱 웹뷰와 얼마나 다른지 보려는 것이다.
 // 사용(.github/workflows/android-webview-calibration.yml 이 부른다):
 //   node .claude/skills/verify-jachwi/scripts/measure-android.mjs --target chrome|webview --base http://localhost:4302 \
-//     --screen home --runs 5 --net fast4g --out <폴더>
+//     --screen home --path '/?view=list' --runs 5 --net fast4g --out <폴더>
 // - 기기에서 localhost:<포트> 는 adb reverse 로 러너의 serve.mjs 에, 지도 SDK 주소(oapi.map.naver.com)는 명령줄 플래그
 //   (host-resolver-rules)로 기기의 127.0.0.1:<map-sdk-port> 에, 그것도 adb reverse 로 map-sdk-stub.mjs 에 간다.
 // - chrome: 회차마다 앱 데이터를 지우고(pm clear) Playwright _android.launchBrowser 로 붙는다.
@@ -26,6 +26,8 @@ const { values: args } = parseArgs({
     target: { type: 'string' },
     base: { type: 'string', default: 'http://localhost:4302' },
     screen: { type: 'string', default: 'home' },
+    // 화면의 주소 대신 열 주소. 휴대폰 폭 홈은 기본이 지도 보기라 목록 카드를 재려면 /?view=list 로 연다.
+    path: { type: 'string' },
     runs: { type: 'string', default: '5' },
     warmup: { type: 'string', default: '1' },
     net: { type: 'string', default: 'fast4g' },
@@ -47,7 +49,7 @@ const screen = findScreen(args.screen);
 if (!screen?.moment) throw new Error(`순간이 정해지지 않은 화면: ${args.screen}`);
 const condition = NETWORKS[args.net];
 if (!condition) throw new Error(`모르는 회선: ${args.net}`);
-const url = new URL(screen.url, args.base).href;
+const url = new URL(args.path ?? screen.url, args.base).href;
 const out = resolve(args.out);
 mkdirSync(out, { recursive: true });
 const runsFile = join(out, 'runs.jsonl');

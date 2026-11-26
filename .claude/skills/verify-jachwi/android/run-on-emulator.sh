@@ -15,7 +15,7 @@ adb shell dumpsys package com.android.chrome | grep -m1 versionName || echo 'chr
 for target in chrome webview; do
   mkdir -p "${out}/${target}"
   before=$(grep -c '^request ' "${stub_log}" || true)
-  node "${S}/measure-android.mjs" --target "${target}" --screen home --runs "${runs}" --net fast4g --out "${out}/${target}" \
+  node "${S}/measure-android.mjs" --target "${target}" --screen home --path "/?view=list" --runs "${runs}" --net fast4g --out "${out}/${target}" \
     || echo "::warning::${target} 측정 실패"
   after=$(grep -c '^request ' "${stub_log}" || true)
   echo $((after - before)) > "${out}/${target}/stub-hits.txt"
