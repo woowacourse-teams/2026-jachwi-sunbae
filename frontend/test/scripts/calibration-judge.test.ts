@@ -20,6 +20,7 @@ import {
   mergeCandidates,
 } from '../../../.claude/skills/verify-jachwi/scripts/calibration-judge.mjs';
 import { planIssues } from '../../../.claude/skills/verify-jachwi/scripts/perf-issue.mjs';
+import { MIN_SAMPLES, summarizeField } from '../../../.claude/skills/verify-jachwi/scripts/posthog-field.mjs';
 
 const repoRoot = join(dirname(fileURLToPath(import.meta.url)), '../../..');
 
@@ -220,5 +221,32 @@ describe('이슈 게시 갈래', () => {
     const mentioned = { ...candidate('d', true), body: '담당 @someone 확인' };
 
     expect(planIssues([mentioned], new Set())[0].action).toBe('ignore');
+  });
+});
+
+describe('실제 지도 시나리오와 실사용 값', () => {
+  it('실제 지도 시나리오는 느려도 판정하지 않고 참고로만 남긴다', () => {
+    const record = makeRecord('3-1', 'ccc', scenario(1000));
+    record.scenarios['real-denied-pick'] = scenario(9000, { mapSdk: 'real' });
+    const suspects = findSuspects(record, [
+      { ...history[1], scenarios: { ...history[1].scenarios, 'real-denied-pick': scenario(1000, { mapSdk: 'real' }) } },
+    ]);
+
+    expect(suspects.scenarios.find((item) => item.name === 'real-denied-pick')?.status).toBe('reference');
+    expect(suspects.confirm).not.toContain('real-denied-pick');
+  });
+
+  it('실사용 값은 표본이 적은 무리를 비우고, 모두 적으면 표본 부족이다', () => {
+    const ok = summarizeField([
+      ['android_webview', '4g', MIN_SAMPLES, 4100, 6000],
+      ['web', '4g', 3, 800, 900],
+    ]);
+    const thin = summarizeField([['web', '4g', 2, 798, 837]]);
+
+    expect(ok.status).toBe('ok');
+    expect(ok.groups[0]).toMatchObject({ p50: 4100, p75: 6000 });
+    expect(ok.groups[1]).toMatchObject({ p50: null, p75: null });
+    expect(thin.status).toBe('insufficient');
+    expect(summarizeField([]).status).toBe('insufficient');
   });
 });

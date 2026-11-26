@@ -42,6 +42,8 @@ export const findSuspects = (record, history, { mode = 'auto' } = {}) => {
   const scenarios = Object.keys(record.scenarios).map((name) => {
     const scenario = record.scenarios[name];
     const comparison = compareScenario(record, history, name);
+    // 실제 지도 시나리오는 지도 SDK 와 타일 받기가 흔들려 참고 값으로만 남기고 판정하지 않는다.
+    if (SCENARIOS[name]?.reference || scenario.mapSdk === 'real') return { name, status: 'reference' };
     if ((scenario.environmentErrors ?? 0) > 0) return { name, status: 'excluded-environment' };
     if ((scenario.appErrors ?? 0) > 0) return { name, status: 'suspect', kind: 'fix' };
     if (!isSufficient(scenario)) return { name, status: 'excluded-insufficient' };
@@ -241,6 +243,7 @@ export const finalize = (record, suspects, confirmSummary, meta) => {
 
 const VERDICT_TEXT = {
   ok: '이상 없음',
+  reference: '참고(실제 지도, 판정 안 함)',
   'no-baseline': '견줄 기록 없음',
   'excluded-environment': '제외(환경 오류)',
   'excluded-insufficient': '제외(표본 부족)',

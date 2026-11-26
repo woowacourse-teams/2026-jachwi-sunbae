@@ -53,6 +53,27 @@ const rows = ROWS.map((row) => {
   };
 });
 const ci = rows.find((row) => row.key === 'desktop')?.median ?? null;
+const emulatorWebview = rows.find((row) => row.key === 'webview')?.median ?? null;
+// 운영 PostHog 실사용 값(posthog-field.mjs). 키가 없거나 표본이 적으면 "실사용 값 없음"으로 적고 실패하지 않는다.
+const field = existsSync(join(dir, 'field.json')) ? JSON.parse(readFileSync(join(dir, 'field.json'), 'utf8')) : null;
+const FIELD_REASON = { 'no-key': '키 없음', insufficient: '표본 부족', error: '조회 실패' };
+const fieldLines = () => {
+  if (field?.status !== 'ok') {
+    const reason = field ? (FIELD_REASON[field.status] ?? field.status) : '조회 안 함';
+    const counts = field?.groups?.length ? `, 무리별 표본 ${field.groups.map((group) => `${group.platform}/${group.net} ${group.n}`).join(', ')}` : '';
+    return [`실사용 값 없음(${reason}${counts}).`];
+  }
+  return [
+    `PostHog \`first_listing_card_visible\`의 \`time_ms\`(${field.window}). 표본 ${field.minSamples}개 미만 무리는 값을 비운다.`,
+    '',
+    '| 플랫폼 | 회선 | 표본 | 중앙값 | p75 | CI 흉내 대비 | 에뮬레이터 웹뷰 대비 |',
+    '| --- | --- | --- | --- | --- | --- | --- |',
+    ...field.groups.map(
+      (group) =>
+        `| ${group.platform} | ${group.net} | ${group.n} | ${seconds(group.p50)} | ${seconds(group.p75)} | ${ratio(group.p50, ci)} | ${ratio(group.p50, emulatorWebview)} |`,
+    ),
+  ];
+};
 const phone = rows.find((row) => row.key === 'mobile')?.median ?? null;
 const ratio = (value, base) => (base && value ? `${(value / base).toFixed(2)}배` : '-');
 
@@ -68,6 +89,10 @@ const lines = [
       `| ${row.label} | ${row.condition} | ${row.measured}(${row.misses}) | ${seconds(row.median)} | ${seconds(row.min)}~${seconds(row.max)} | ${ratio(row.median, ci)} | ${ratio(row.median, phone)} | ${row.stubHits ?? '-'} |`,
   ),
   '',
+  '### 실사용 값(운영 PostHog, 최근 7일)',
+  '',
+  ...fieldLines(),
+  '',
   ...rows.filter((row) => row.userAgent).map((row) => `- ${row.label} UA: \`${row.userAgent}\``),
   '',
   '- 휴대폰 폭 홈은 기본이 지도 보기라(지도 목에서는 매물 표시가 뜨지 않는다) 휴대폰 폭 세 줄은 `/?view=list`로 연다. CI 줄은 PR 판정과 같게 `/`다. 목록 보기는 지도 SDK를 받지 않아 지도 목 요청이 0이다. 웹뷰 줄의 요청은 방 등록 시나리오(지도 보기)에서 온 것이다.',
@@ -76,5 +101,5 @@ const lines = [
   ...(args['run-url'] ? ['', `실행: ${args['run-url']}`] : []),
 ];
 writeFileSync(join(dir, 'calibration.md'), `${lines.join('\n')}\n`);
-writeFileSync(join(dir, 'calibration.json'), `${JSON.stringify({ rows }, null, 2)}\n`);
+writeFileSync(join(dir, 'calibration.json'), `${JSON.stringify({ rows, field }, null, 2)}\n`);
 console.log(lines.join('\n'));

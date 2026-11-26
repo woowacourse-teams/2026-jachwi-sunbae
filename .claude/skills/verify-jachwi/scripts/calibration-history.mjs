@@ -38,7 +38,8 @@ export const fingerprint = (record, scenario) => ({
   emulator: record.env.emulator,
   net: record.env.net,
   mockDelay: record.env.mockDelay,
-  mapSdk: record.env.mapSdk,
+  // 실제 지도 시나리오(real-*)는 시나리오에 mapSdk 가 따로 붙는다. 예전 기록과 목 시나리오는 env 값을 쓴다.
+  mapSdk: record.scenarios[scenario]?.mapSdk ?? record.env.mapSdk,
 });
 const sameFingerprint = (a, b) => JSON.stringify(a) === JSON.stringify(b);
 const changedKeys = (a, b) => Object.keys(a).filter((key) => JSON.stringify(a[key]) !== JSON.stringify(b[key]));
@@ -198,6 +199,14 @@ export const buildRecord = (dir, meta) => {
   const webview = readJson(join(dir, 'webview', 'result.json'));
   if (!webview) throw new Error('webview/result.json 이 없다. 측정이 돌지 않아 기록하지 않는다');
   const calibration = readJson(join(dir, 'calibration.json'));
+  // 실제 지도 시나리오는 따로 잰 폴더(webview-map)에 있다. 키가 없는 실행에는 없다.
+  const realMap = readJson(join(dir, 'webview-map', 'result.json'));
+  const allScenarios = {
+    ...webview.scenarios,
+    ...Object.fromEntries(
+      Object.entries(realMap?.scenarios ?? {}).map(([name, scenario]) => [name, { ...scenario, mapSdk: 'real' }]),
+    ),
+  };
   return {
     schema: SCHEMA,
     id: `${meta.runId}-${meta.runAttempt}`,
@@ -217,9 +226,10 @@ export const buildRecord = (dir, meta) => {
       net: webview.net,
     },
     scenarios: Object.fromEntries(
-      Object.entries(webview.scenarios).map(([name, scenario]) => [
+      Object.entries(allScenarios).map(([name, scenario]) => [
         name,
         {
+          ...(scenario.mapSdk ? { mapSdk: scenario.mapSdk } : {}),
           version: scenario.version,
           label: scenario.label,
           runs: scenario.runs,
@@ -237,6 +247,7 @@ export const buildRecord = (dir, meta) => {
     ),
     calibration: Object.fromEntries((calibration?.rows ?? []).map((row) => [row.key, row.median])),
     confirm: readJson(join(dir, 'confirm', 'summary.json')),
+    field: readJson(join(dir, 'field.json')),
   };
 };
 

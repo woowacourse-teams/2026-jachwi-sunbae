@@ -5,6 +5,9 @@ name: Android WebView Calibration
 # 앱 웹뷰에서는 시나리오 여섯(android-scenarios.mjs)을 재고 이력에 쌓아 직전 실행, 최근 4회와 비교한다. 이상이 의심되면 같은 러너에서
 # 이전 커밋과 이번 커밋을 번갈아 다시 재서 확인하고(calibration-judge.mjs), 확인된 것만 이슈 후보로 이력 브랜치에 남긴다.
 # 이슈 게시는 이 워크플로가 하지 않는다. 소유자 환경에서 perf-issue.mjs 가 한다. 여기서는 dry-run 만 보인다.
+# 실제 지도와 실사용 값: secret NAVER_MAP_CLIENT_ID 가 있으면 실제 네이버 지도 시나리오(real-*)를, secret POSTHOG_PERSONAL_API_KEY 와
+# variable POSTHOG_PROJECT_ID 가 있으면 운영 실사용 값을 더한다. secret 은 이 저장소의 schedule 과 workflow_dispatch 에서만 꺼내고,
+# 없으면 지금처럼 목으로만 돈다. 결과 폴더와 이력은 올리기 전에 scrub-secrets.sh 로 secret 값이 없는지 확인한다.
 # 자세한 흐름: frontend/docs/android-webview-calibration.md
 # - 주 1회와 수동 실행(workflow_dispatch, 기본 브랜치 develop에 이 파일이 있어야 보인다). 에뮬레이터를 띄워 오래 걸려 PR마다는 돌리지 않는다.
 # - 이력: 주 1회 실행만 운영 이력(calibration-history 브랜치)에 쓴다. 수동 실행은 기본이 시험 이력(calibration-history-test)이고,
@@ -101,19 +104,30 @@ jobs:
           key: qa-node-modules-${{ runner.os }}-${{ hashFiles('qa/package-lock.json') }}
 
       - name: Build web and shell app
+        id: build
         env:
+          # 실제 지도용 키. 이 저장소의 주 1회와 수동 실행에서만 꺼낸다(포크, push, PR 에서는 빈 값).
+          MAP_KEY: ${{ (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') && github.repository == 'woowacourse-teams/2026-jachwi-sunbae' && secrets.NAVER_MAP_CLIENT_ID || '' }}
           QA_CACHED: ${{ steps.qa-modules.outputs.cache-hit }}
           # Visual Verdict와 같다. 지도 키가 없어 아무 키나 넣고 SDK 주소는 목 서버로 돌린다.
           NAVER_MAP_CLIENT_ID: ci-map-sdk-stub
           API_BASE_URL: http://localhost:4302
         run: |
           pids=()
-          (cd frontend && npm run build:bundle --silent > "${RUNNER_TEMP}/build.log" 2>&1) & pids+=($!)
+          # 키가 있으면 실제 지도 빌드를 먼저 만들어 옮겨 두고(네이버 콘솔에 등록된 localhost:3000), 목 빌드를 만든다.
+          (
+            if [[ -n "${MAP_KEY}" ]]; then
+              (cd frontend && NAVER_MAP_CLIENT_ID="${MAP_KEY}" API_BASE_URL=http://localhost:3000 npm run build:bundle --silent \
+                > "${RUNNER_TEMP}/build-map.log" 2>&1) && mv frontend/dist "${RUNNER_TEMP}/dist-map"
+            fi
+            cd frontend && npm run build:bundle --silent > "${RUNNER_TEMP}/build.log" 2>&1
+          ) & pids+=($!)
           if [[ "${QA_CACHED}" != 'true' ]]; then (cd qa && npm ci --no-audit --no-fund --loglevel=error) & pids+=($!); fi
           (sudo apt-get install -y -qq --no-install-recommends fonts-nanum > /dev/null 2>&1 \
             || (sudo apt-get update -qq && sudo apt-get install -y -qq --no-install-recommends fonts-nanum > /dev/null)) & pids+=($!)
           .claude/skills/verify-jachwi/android/webview-shell/build.sh "${RUNNER_TEMP}/webview-shell.apk" & pids+=($!)
           for pid in "${pids[@]}"; do wait "${pid}" || { tail -40 "${RUNNER_TEMP}/build.log"; exit 1; }; done
+          if [[ -d "${RUNNER_TEMP}/dist-map" ]]; then echo 'map_real=1' >> "${GITHUB_OUTPUT}"; else echo 'map_real=0' >> "${GITHUB_OUTPUT}"; fi
 
       - name: Start servers
         run: |
@@ -122,6 +136,18 @@ jobs:
           nohup node "$S/map-sdk-stub.mjs" --port 4443 > "${RUNNER_TEMP}/map-sdk-stub.log" 2>&1 &
           for _ in $(seq 60); do curl -sf http://localhost:4302/ > /dev/null && break; sleep 0.5; done
           for _ in $(seq 60); do curl -skf https://localhost:4443/openapi/v3/maps-gl.js -o /dev/null && break; sleep 0.5; done
+          if [[ -d "${RUNNER_TEMP}/dist-map" ]]; then
+            nohup node "$S/serve.mjs" --dist "${RUNNER_TEMP}/dist-map" --port 3000 --api mock --delay 300 --cache prod --faults \
+              > "${RUNNER_TEMP}/serve-map.log" 2>&1 &
+            for _ in $(seq 60); do curl -sf http://localhost:3000/ > /dev/null && break; sleep 0.5; done
+          fi
+
+      # 운영 실사용 값. 키가 없거나 표본이 적거나 조회가 실패해도 "실사용 값 없음"으로 남기고 실패하지 않는다.
+      - name: Fetch field data
+        env:
+          POSTHOG_PERSONAL_API_KEY: ${{ (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') && github.repository == 'woowacourse-teams/2026-jachwi-sunbae' && secrets.POSTHOG_PERSONAL_API_KEY || '' }}
+          POSTHOG_PROJECT_ID: ${{ vars.POSTHOG_PROJECT_ID }}
+        run: node .claude/skills/verify-jachwi/scripts/posthog-field.mjs --out "${RUNNER_TEMP}/calibration" || true
 
       # 에뮬레이터를 띄우기 전에 잰다. 떠 있는 에뮬레이터가 러너 CPU를 나눠 쓰면 흉내 값이 PR 판정과 달라진다.
       - name: Measure Chromium emulation
@@ -153,6 +179,9 @@ jobs:
           CHANNEL: ${{ steps.channel.outputs.channel }}
           COMMIT: ${{ steps.channel.outputs.commit }}
           CONFIRM_MODE: ${{ inputs.confirm || 'auto' }}
+          MAP_REAL: ${{ steps.build.outputs.map_real }}
+          # 원자료에서 키를 가리는 데만 쓴다.
+          NAVER_MAP_CLIENT_ID: ${{ (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') && github.repository == 'woowacourse-teams/2026-jachwi-sunbae' && secrets.NAVER_MAP_CLIENT_ID || '' }}
         with:
           api-level: 35
           target: google_apis
@@ -175,6 +204,8 @@ jobs:
       - name: Record history and judge
         if: always()
         env:
+          MAP_KEY: ${{ (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') && github.repository == 'woowacourse-teams/2026-jachwi-sunbae' && secrets.NAVER_MAP_CLIENT_ID || '' }}
+          PH_KEY: ${{ (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') && github.repository == 'woowacourse-teams/2026-jachwi-sunbae' && secrets.POSTHOG_PERSONAL_API_KEY || '' }}
           GH_TOKEN: ${{ github.token }}
           CHANNEL: ${{ steps.channel.outputs.channel }}
           BRANCH: ${{ steps.channel.outputs.branch }}
@@ -192,6 +223,7 @@ jobs:
           cat "${OUT}/history.md" "${OUT}/verdict.md" >> "${GITHUB_STEP_SUMMARY}"
           cp "${H}/android-webview/SUMMARY.md" "${OUT}/history-summary.md"
           cp "${H}/android-webview/issues.json" "${OUT}/issues.json"
+          SCRUB_VALUES="$(printf '%s\n%s\n' "${MAP_KEY}" "${PH_KEY}")" "$S/scrub-secrets.sh" "${H}" "${OUT}"
           git -C "${H}" add -A
           if git -C "${H}" diff --cached --quiet; then
             echo '이력에 바뀐 것이 없다.'
@@ -221,8 +253,20 @@ jobs:
             || { echo '::error::합성 장애 dry-run 갈래가 생성, 중복, 무시가 아니다'; cat "${OUT}/issue-plan-synthetic.log"; exit 1; }
           { echo; echo '### 합성 장애 dry-run'; cat "${OUT}/issue-plan-synthetic.md"; } >> "${GITHUB_STEP_SUMMARY}"
 
-      - name: Upload calibration
+      # 올리기 전에 결과 폴더에 secret 값이 없는지 확인한다. 남아 있으면 지우고, 그래도 남으면 실패해 올리지 않는다.
+      - name: Scrub secrets
+        id: scrub
         if: always()
+        env:
+          MAP_KEY: ${{ (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') && github.repository == 'woowacourse-teams/2026-jachwi-sunbae' && secrets.NAVER_MAP_CLIENT_ID || '' }}
+          PH_KEY: ${{ (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') && github.repository == 'woowacourse-teams/2026-jachwi-sunbae' && secrets.POSTHOG_PERSONAL_API_KEY || '' }}
+        run: |
+          cp "${RUNNER_TEMP}"/*.log "${RUNNER_TEMP}/calibration/" 2>/dev/null || true
+          SCRUB_VALUES="$(printf '%s\n%s\n' "${MAP_KEY}" "${PH_KEY}")" \
+            .claude/skills/verify-jachwi/scripts/scrub-secrets.sh "${RUNNER_TEMP}/calibration"
+
+      - name: Upload calibration
+        if: always() && steps.scrub.outcome == 'success'
         uses: actions/upload-artifact@v6
         with:
           name: android-webview-calibration

@@ -1,4 +1,5 @@
 export type ScenarioEntry = {
+  mapSdk?: 'stub' | 'real';
   version: number;
   label: string;
   runs: number;

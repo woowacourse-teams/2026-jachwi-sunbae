@@ -20,7 +20,26 @@ export const SCENARIOS = {
     label: '저장 실패 뒤 초기화: 실패 알림까지, 목 상태 그대로인지, 다시 눌러 등록',
     metric: 'failNotice',
   },
+  // 실제 네이버 지도 SDK 로 재는 시나리오. 키(secret NAVER_MAP_CLIENT_ID)가 있는 주 1회와 수동 실행에서만 돈다. 지도 SDK 와 타일을
+  // 받는 시간이 우리 코드와 무관하게 흔들리므로 참고 값이다(reference). 판정과 이슈 후보에서 뺀다. 목 시나리오와 이름이 달라 이력이 섞이지 않는다.
+  'real-map-overlay': {
+    version: 1,
+    label: '실제 지도: 홈 지도 보기에서 SDK 준비와 우리 오버레이가 붙기까지',
+    metric: 'overlay',
+    mapSdk: 'real',
+    reference: true,
+  },
+  'real-denied-pick': {
+    version: 1,
+    label: '실제 지도: 위치 거부 뒤 주소로 고른 자리를 지도에서 눌러 등록',
+    metric: 'total',
+    mapSdk: 'real',
+    reference: true,
+  },
 };
+
+export const scenariosFor = (mapSdk) =>
+  Object.keys(SCENARIOS).filter((name) => (SCENARIOS[name].mapSdk ?? 'stub') === mapSdk);
 
 // 위치 응답 지연 시나리오가 늦추는 시간. 앱의 위치 요청 제한(8초, 15초)보다 짧게 둔다.
 export const GEO_DELAY_MS = 3000;
@@ -30,6 +49,6 @@ export const ENV_ERROR_PREFIX = '환경 오류: ';
 export const isEnvironmentError = (message) =>
   typeof message === 'string' &&
   (message.startsWith(ENV_ERROR_PREFIX) ||
-    /adb|device|WebView has been closed|Target( page, context or browser)? (has been )?closed|ECONNREFUSED|ERR_CONNECTION_REFUSED|socket hang up/i.test(
+    /adb|device|WebView has been closed|지도 인증 실패|Target( page, context or browser)? (has been )?closed|ECONNREFUSED|ERR_CONNECTION_REFUSED|socket hang up/i.test(
       message,
     ));

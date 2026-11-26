@@ -2,7 +2,10 @@
 // PR마다 도는 판정(measure.mjs, 데스크탑 Chromium에 CPU 4배 제한)이 실제 앱 웹뷰와 얼마나 다른지 보려는 것이다.
 // 사용(.github/workflows/android-webview-calibration.yml 이 부른다):
 //   node .claude/skills/verify-jachwi/scripts/measure-android.mjs --target chrome|webview --base http://localhost:4302 \
-//     --runs 5 --net fast4g --out <폴더> [--scenarios cold,register] [--warmup 1]
+//     --runs 5 --net fast4g --out <폴더> [--scenarios cold,register] [--warmup 1] [--map-sdk stub|real]
+// - --map-sdk real: 지도 SDK 주소를 돌리지 않고 실제 네이버 지도 SDK 를 받는다. 실제 키로 빌드한 dist 를 네이버 콘솔에 등록된 주소
+//   (localhost:3000)로 띄워야 한다. 이때는 SCENARIOS 의 mapSdk: 'real' 시나리오(real-*)만 돈다. 지도 인증이 실패하면 환경 오류로 남긴다.
+// - 키가 담긴 주소(ncpKeyId 등)는 원자료와 요약에 남기기 전에 가린다(redact).
 // 시나리오 정의는 android-scenarios.mjs 의 SCENARIOS 다. 크롬은 cold 만, 웹뷰는 회차마다 고른 시나리오를 차례로 돈다.
 // - cold: 빈 캐시 첫 방문(/?view=list). 첫 목록 카드가 보이기까지와, 목록 요청(GET /api/properties)의 시작과 응답 도착 시각.
 // - warm: cold 바로 뒤 앱만 껐다 켜서 같은 캐시로 다시 방문. 같은 순간과, 네트워크로 받은 바이트(캐시에서 온 것은 0).
@@ -30,7 +33,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import { parseArgs } from 'node:util';
 
 import { createNativeContextScript } from '../../../../mobile/src/webBridge.ts';
-import { ENV_ERROR_PREFIX, GEO_DELAY_MS, isEnvironmentError, SCENARIOS } from './android-scenarios.mjs';
+import { ENV_ERROR_PREFIX, GEO_DELAY_MS, isEnvironmentError, SCENARIOS, scenariosFor } from './android-scenarios.mjs';
 import { MAP_MARKS, NETWORKS, watchMoment } from './moment-watch.mjs';
 import { findScreen } from './screens.mjs';
 import { median } from './verdict.mjs';
@@ -50,16 +53,20 @@ const { values: args } = parseArgs({
     out: { type: 'string' },
     pkg: { type: 'string', default: 'kr.jachwisunbae.webviewshell' },
     'map-sdk-port': { type: 'string', default: '4443' },
+    'map-sdk': { type: 'string', default: 'stub' },
     latitude: { type: 'string', default: '37.5563' },
     longitude: { type: 'string', default: '126.9236' },
   },
 });
 if (!['chrome', 'webview'].includes(args.target ?? '')) throw new Error('--target 은 chrome 이나 webview 다');
 if (!args.out) throw new Error('--out 이 필요하다');
+if (!['stub', 'real'].includes(args['map-sdk'])) throw new Error('--map-sdk 는 stub 이나 real 이다');
+const realMap = args['map-sdk'] === 'real';
+const allowed = scenariosFor(args['map-sdk']);
 const scenarioNames =
   args.target === 'chrome'
     ? ['cold']
-    : (args.scenarios ?? Object.keys(SCENARIOS).join(',')).split(',').filter((name) => name in SCENARIOS);
+    : (args.scenarios ?? allowed.join(',')).split(',').filter((name) => allowed.includes(name));
 // warm 은 같은 회차의 cold 가 채운 캐시를 쓴다.
 if (scenarioNames.includes('warm') && !scenarioNames.includes('cold')) scenarioNames.unshift('cold');
 
@@ -84,7 +91,16 @@ const runsFile = join(out, 'runs.jsonl');
 writeFileSync(runsFile, '');
 
 // 명령줄 파일은 디버그 가능한 이미지(google_apis)에서만 읽힌다. 크롬은 Playwright 가 chrome-command-line 에 쓴다.
-const flags = [`--host-resolver-rules="MAP oapi.map.naver.com 127.0.0.1:${args['map-sdk-port']}"`, '--ignore-certificate-errors'];
+const flags = realMap
+  ? []
+  : [`--host-resolver-rules="MAP oapi.map.naver.com 127.0.0.1:${args['map-sdk-port']}"`, '--ignore-certificate-errors'];
+// 원자료와 요약에 키가 남지 않게 가린다. 지도 SDK 주소의 ncpKeyId 와, 환경 변수로 받은 키 값 그대로를 지운다.
+const SECRET_VALUES = [process.env.NAVER_MAP_CLIENT_ID].filter((value) => typeof value === 'string' && value.length >= 4);
+export const redact = (text) =>
+  SECRET_VALUES.reduce(
+    (acc, value) => acc.split(value).join('***'),
+    String(text).replace(/((?:ncpKeyId|ncpClientId|clientId)=)[^&\s"']+/gi, '$1***'),
+  );
 const appVersion = JSON.parse(readFileSync(join(repoRoot, 'mobile/package.json'), 'utf8')).version;
 // mobile/App.tsx 와 같은 값. 로그인 제공자는 키가 있어야 켜지므로 셸에서는 뺀다.
 const nativeContext = createNativeContextScript('android', ['push'], { appVersion, appBuild: null });
@@ -98,7 +114,7 @@ const asEnvironment = async (work) => {
   }
 };
 const describeError = (error) => {
-  const text = String(error?.message ?? error).split('\n')[0].slice(0, 220);
+  const text = redact(String(error?.message ?? error).split('\n')[0].slice(0, 220));
   if (text.startsWith(ENV_ERROR_PREFIX)) return text;
   return error instanceof EnvironmentError || isEnvironmentError(text) ? `${ENV_ERROR_PREFIX}${text}` : text;
 };
@@ -209,23 +225,23 @@ const launch = ({ clear, location = true }) =>
   });
 
 // 붙은 페이지에 순간 감시, 회선 제한, 바이트 세기를 건다.
-const instrument = async ({ context, page }, { geoDelay = 0 } = {}) => {
+const instrument = async ({ context, page }, { geoDelay = 0, mapTiming = false } = {}) => {
   await page.addInitScript(watchMoment, {
     selector: screen.moment.selector,
     text: screen.moment.text,
-    mapTiming: false,
+    mapTiming,
     marks: MAP_MARKS,
   });
   await page.addInitScript(watchCreated);
   if (geoDelay > 0) await page.addInitScript(delayGeolocation, geoDelay);
   const failedRequests = [];
   page.on('requestfailed', (request) =>
-    failedRequests.push(`${request.failure()?.errorText} ${request.url().slice(0, 120)}`),
+    failedRequests.push(redact(`${request.failure()?.errorText} ${request.url().slice(0, 160)}`)),
   );
   page.on(
     'response',
     (response) =>
-      response.status() >= 400 && failedRequests.push(`${response.status()} ${response.url().slice(0, 120)}`),
+      response.status() >= 400 && failedRequests.push(redact(`${response.status()} ${response.url().slice(0, 160)}`)),
   );
   const cdp = await asEnvironment(() => context.newCDPSession(page));
   const net = { bytes: 0, requests: 0, cached: 0 };
@@ -369,11 +385,11 @@ const resetMock = async () => {
 };
 
 // 등록 시나리오의 공통 뼈대. 홈(지도 보기)을 열고 목록이 온 뒤 flow 를 돈다.
-const registerFlow = async (scenario, { location = true, geoDelay = 0, screenshot, failShot }, flow) => {
+const registerFlow = async (scenario, { location = true, geoDelay = 0, mapTiming = false, screenshot, failShot }, flow) => {
   await resetMock();
   const app = await launch({ clear: true, location });
   try {
-    const { net, failedRequests } = await instrument(app, { geoDelay });
+    const { net, failedRequests } = await instrument(app, { geoDelay, mapTiming });
     let measured;
     try {
       await app.page.goto(homeUrl, { waitUntil: 'commit' });
@@ -410,7 +426,78 @@ const acceptAndWait = async (page) => {
   };
 };
 
+const MAP_FAILED_TEXT = '지도를 연결할 수 없어요';
+const mapFailed = (page) =>
+  page.evaluate((text) => document.body?.textContent?.includes(text) ?? false, MAP_FAILED_TEXT).catch(() => false);
+const mark = (page, name) =>
+  page.evaluate((value) => performance.getEntriesByName(value).at(-1)?.startTime ?? null, name).catch(() => null);
+const waitMark = async (page, name) => {
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    const at = await mark(page, name);
+    if (at !== null) return at;
+    if (await mapFailed(page)) throw new Error(`${ENV_ERROR_PREFIX}지도 인증 실패나 SDK 실패(네이버 콘솔의 Web 서비스 URL 확인)`);
+    await page.waitForTimeout(100);
+  }
+  throw new Error(`${name} 표시를 못 봤다`);
+};
+
 const SCENARIO_RUNNERS = {
+  'real-map-overlay': (shots) =>
+    registerFlow('real-map-overlay', { ...shots, mapTiming: true }, async (page) => {
+      const overlay = await waitMark(page, 'jachwi:map-overlay-attached');
+      return {
+        ok: true,
+        overlay: Math.round(overlay),
+        phases: {
+          sdkReady: round(await mark(page, 'jachwi:map-sdk-ready')),
+          mapCreated: round(await mark(page, 'jachwi:map-created')),
+          overlay: Math.round(overlay),
+        },
+      };
+    }),
+  'real-denied-pick': (shots) =>
+    registerFlow('real-denied-pick', { ...shots, location: false }, async (page) => {
+      await watchText(page, DENIED_TEXT);
+      const located = await clickAt(page, locateButton(page));
+      const deniedAt = await waitText(page, DENIED_TEXT);
+      const searchStart = await clickAt(page, page.locator('a[href="/search"]').first());
+      await page.getByPlaceholder('주소로 지도 이동').fill('망원동');
+      await page.locator('button', { hasText: '세종대로' }).first().click({ timeout: timeoutMs });
+      await page.waitForURL(/view=map/, { timeout: timeoutMs });
+      const picked = await page.evaluate(() => performance.now());
+      // 고른 주소로 옮긴 지도가 그려지기를 기다린 뒤, 지도 가운데(검색 핀 바로 아래)를 눌러 좌표 메뉴를 연다.
+      await waitMark(page, 'jachwi:map-created');
+      await page.waitForTimeout(1200);
+      const box = await page.locator('section[aria-label="본 방 기록 지도"]').boundingBox();
+      if (!box) throw new Error('지도 영역을 못 찾았다');
+      const x = box.x + box.width / 2;
+      const y = box.y + box.height / 2 + 60;
+      const menu = page.getByRole('group', { name: '이 위치에서' }).getByRole('button', { name: '본 방 기록하기' });
+      const tapped = await page.evaluate(() => performance.now());
+      await page.touchscreen.tap(x, y);
+      if (!(await menu.isVisible().catch(() => false))) {
+        await menu.waitFor({ timeout: 4000 }).catch(async () => {
+          await page.mouse.click(x, y);
+          await menu.waitFor({ timeout: timeoutMs });
+        });
+      }
+      const menuAt = await page.evaluate(() => performance.now());
+      const accepted = await clickAt(page, menu);
+      const state = await waitCreatedVisible(page);
+      return {
+        ok: true,
+        total: span(tapped, state.visibleAt),
+        createdId: state.createdId,
+        phases: {
+          deniedNotice: span(located, deniedAt),
+          searchPicked: span(searchStart, picked),
+          menuVisible: span(tapped, menuAt),
+          saveResponse: span(accepted, (await saveResponseEnd(page, state.saveStart)) ?? state.saveHeadersAt),
+          itemVisible: span(tapped, state.visibleAt),
+        },
+      };
+    }),
   cold: (shots) => visitList({ clear: true, screenshot: shots.last }),
   warm: (shots) => visitList({ clear: false, screenshot: shots.last }),
   register: (shots) =>
@@ -501,7 +588,7 @@ const runs = Number(args.runs);
 const rows = [];
 const record = (row) => {
   rows.push(row);
-  appendFileSync(runsFile, `${JSON.stringify(row)}\n`);
+  appendFileSync(runsFile, `${redact(JSON.stringify(row))}\n`);
   const value = row[SCENARIOS[row.scenario].metric];
   console.log(args.target, row.scenario, row.run, value ?? `실패 ${row.error ?? ''}`, 'bytes', row.bytes);
 };
@@ -564,9 +651,10 @@ const summary = {
   url: listUrl,
   net: args.net,
   cpu: 1,
+  mapSdk: args['map-sdk'],
   device: deviceInfo,
   userAgent: rows.find((row) => row.userAgent)?.userAgent ?? null,
   scenarios,
 };
-writeFileSync(join(out, 'result.json'), `${JSON.stringify(summary, null, 2)}\n`);
+writeFileSync(join(out, 'result.json'), `${redact(JSON.stringify(summary, null, 2))}\n`);
 console.log(JSON.stringify(summary.scenarios));

@@ -4,6 +4,8 @@
 # 사용: android/run-on-emulator.sh <셸 apk> <결과 폴더> <지도 목 로그> [회수]
 # 판정용 환경 변수(없으면 다시 재기를 건너뛴다): HISTORY_DIR(이력 폴더), CHANNEL(prod|test), COMMIT(이번 커밋),
 #   CONFIRM_MODE(auto|always|never). 의심 시나리오가 있으면 이전 커밋을 4303 으로 빌드해 같은 에뮬레이터에서 번갈아 다시 잰다.
+# 실제 지도: MAP_REAL=1 이고 실제 키로 빌드한 dist 가 러너의 localhost:3000 에 떠 있으면 real-* 시나리오를 webview-map 에 잰다.
+#   NAVER_MAP_CLIENT_ID 는 measure-android.mjs 가 원자료에서 키를 가리는 데만 쓴다.
 set -euo pipefail
 apk="$1"; out="$2"; stub_log="$3"; runs="${4:-5}"
 here="$(cd "$(dirname "$0")" && pwd)"
@@ -25,6 +27,15 @@ for target in chrome webview; do
   after=$(grep -c '^request ' "${stub_log}" || true)
   echo $((after - before)) > "${out}/${target}/stub-hits.txt"
 done
+
+if [[ "${MAP_REAL:-0}" == 1 ]]; then
+  adb reverse tcp:3000 tcp:3000
+  mkdir -p "${out}/webview-map"
+  node "${S}/measure-android.mjs" --target webview --map-sdk real --base http://localhost:3000 --runs "${runs}" \
+    --net fast4g --out "${out}/webview-map" || echo "::warning::실제 지도 측정 실패"
+else
+  echo "실제 지도 시나리오 건너뜀(키 없음, 포크, 또는 PR 실행)."
+fi
 
 if [[ -z "${HISTORY_DIR:-}" || ! -f "${out}/webview/result.json" ]]; then exit 0; fi
 node "${S}/calibration-judge.mjs" suspects --dir "${out}" --history "${HISTORY_DIR}" --channel "${CHANNEL}" \
