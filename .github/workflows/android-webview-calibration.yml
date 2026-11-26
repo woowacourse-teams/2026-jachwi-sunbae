@@ -8,9 +8,6 @@ name: Android WebView Calibration
 #   develop에서 history=prod 를 고를 때만 운영 이력에 쓴다. 시험 실행이 운영 이력에 섞이지 않게 하려는 것이다.
 # - 결과: 실행 요약(표)과 아티팩트 android-webview-calibration. 판정이 아니라 참고 값이라 실패로 막지 않는다.
 on:
-  # 임시: PR 브랜치에서 시험 이력으로 돌려 보려는 트리거. 머지 준비 때 지운다.
-  push:
-    branches: [chore/android-webview-calibration]
   workflow_dispatch:
     inputs:
       history:

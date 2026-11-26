@@ -23,7 +23,11 @@ const SUMMARY_ROWS = 30;
 
 const seconds = (ms) => (typeof ms === 'number' ? `${(ms / 1000).toFixed(2)}초` : '-');
 const kilobytes = (bytes) => (typeof bytes === 'number' ? `${Math.round(bytes / 1024)}KB` : '-');
-const signed = (ms) => (typeof ms === 'number' ? `${ms > 0 ? '+' : ''}${(ms / 1000).toFixed(2)}초` : '-');
+const signed = (ms) => {
+  if (typeof ms !== 'number') return '-';
+  const rounded = Math.round(ms / 10) / 100;
+  return `${rounded > 0 ? '+' : ''}${(rounded === 0 ? 0 : rounded).toFixed(2)}초`;
+};
 
 // 같은 조건인지 가르는 값. 하나라도 다르면 비교 숫자 옆에 "조건 바뀜"을 단다.
 export const fingerprint = (record, scenario) => ({
