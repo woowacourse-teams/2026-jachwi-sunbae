@@ -31,16 +31,22 @@ description: 자취선배 웹 프론트를 로컬에서 띄워 사용자처럼 �
 
 ## 안드로이드 웹뷰 보정(주 1회)
 
-PR 판정은 데스크탑 Chromium에 CPU 4배 제한을 건 흉내 값이다. 실제 앱은 같은 웹을 iOS와 Android WebView로 감싸고, 실사용에서는 Android 웹뷰가 가장 느렸다. `.github/workflows/android-webview-calibration.yml`이 흉내 값이 앱 웹뷰와 얼마나 다른지 한 실행 안에서 한 표로 잰다. 판정이 아니라 참고 값이라 실패로 막지 않는다.
+PR 판정은 데스크탑 Chromium에 CPU 4배 제한을 건 흉내 값이다. 실제 앱은 같은 웹을 iOS와 Android WebView로 감싸고, 실사용에서는 Android 웹뷰가 가장 느렸다. `.github/workflows/android-webview-calibration.yml`이 흉내 값과 앱 웹뷰 값을 한 실행 안에서 비교하고, 앱 웹뷰의 세 시나리오를 이력에 쌓는다. 판정이 아니라 참고 값이라 실패로 막지 않는다.
 
-- 언제: 주 1회(월 0:00 KST, develop)와 수동 실행(workflow_dispatch). 에뮬레이터를 띄워 20분쯤 걸려 PR마다는 돌리지 않는다.
-- 하는 일: 운영 빌드를 `serve.mjs --api mock --delay 300`과 `map-sdk-stub.mjs`로 띄운 뒤, 에뮬레이터를 띄우기 전에 `measure.mjs`로 CI 흉내(데스크탑, PR 판정과 같은 조건)와 휴대폰 폭 흉내를 잰다. 그다음 `reactivecircus/android-emulator-runner`(KVM, API 35 google_apis x86_64, pixel_6)에서 `android/run-on-emulator.sh`가 `measure-android.mjs`로 크롬과 WebView 셸을 각 5회 잰다.
-- 같은 순간: 홈의 첫 매물 카드(`article img`). 휴대폰 폭 홈은 기본이 지도 보기라(지도 목에서는 매물 표시가 뜨지 않는다) 휴대폰 폭 세 경로는 `/?view=list`로 연다.
-- 기기 쪽: `adb reverse`로 4302(웹과 목 API), 4443(지도 목)을 러너로 잇고, 명령줄 파일(`chrome-command-line`, `webview-command-line`)의 `--host-resolver-rules`로 지도 SDK 주소를 목으로 돌린다. 표의 "지도 목 요청"이 0이면 돌리기가 안 먹은 것이다. 회선은 보통 4G만 걸고 CPU는 기기 그대로다.
-- WebView 셸(`android/webview-shell`): `mobile/App.tsx`의 `<WebView>`와 react-native-webview 14의 Android 기본 설정(UA 꼬리 `JachwiSunbae/<버전> android`, DOM 저장소, 혼합 콘텐츠 차단, 서드파티 쿠키 끔 등)만 옮긴 앱이다. Gradle 없이 `build.sh`(aapt2, javac, d8)로 만든다. 문서 시작 때 넣는 네이티브 맥락 스크립트는 `mobile/src/webBridge.ts`를 그대로 불러 CDP로 넣는다.
-- 결과: 실행 요약의 표와 아티팩트 `android-webview-calibration`(`calibration.md`, 경로별 `runs.jsonl`, 마지막 화면 `last.png`).
-- 첫 결과(2026-11-26, [실행](https://github.com/woowacourse-teams/2026-jachwi-sunbae/actions/runs/45770058621)): 중앙값이 CI 흉내 2.72초, 휴대폰 폭 흉내 2.49초, 에뮬레이터 크롬 5.40초, 에뮬레이터 앱 웹뷰 5.97초였다. 앱 웹뷰는 CI 흉내의 약 2.2배(휴대폰 폭 흉내의 약 2.4배)다. 에뮬레이터 두 경로는 흩어짐이 3초 넘게 커서(4.4~8.1초) 배율은 대략으로만 읽는다. 흉내의 절대 시간을 앱 시간으로 읽지 않고, PR 판정의 전후 차이도 앱에서는 2배쯤 커질 수 있다고 본다.
-- 한계: 에뮬레이터는 실기기가 아니고 러너 CPU(x86_64, KVM) 위에서 돈다. 이미지의 크롬과 WebView는 124로 실사용 기기보다 오래됐다. 셸에는 RN, 네이티브 탭바, 푸시가 없다. 실사용 TTFB 차이(서버, 회선)는 목 API라 보이지 않는다.
+- 언제: 주 1회(월 0:00 KST, develop)와 수동 실행(workflow_dispatch). 에뮬레이터를 띄워 10분쯤 걸려 PR마다는 돌리지 않는다.
+- 하는 일: 운영 빌드를 `serve.mjs --api mock --delay 300 --cache prod`(운영과 같은 캐시 헤더)와 `map-sdk-stub.mjs`로 띄운 뒤, 에뮬레이터를 띄우기 전에 `measure.mjs`로 CI 흉내(데스크탑, PR 판정과 같은 조건)와 휴대폰 폭 흉내를 잰다. 그다음 `reactivecircus/android-emulator-runner`(KVM, API 35 google_apis x86_64, pixel_6)에서 `android/run-on-emulator.sh`가 `measure-android.mjs`로 크롬(첫 방문)과 WebView 셸(세 시나리오)을 각 5회 잰다. 세지 않는 데우기 1회가 앞에 있다.
+- 웹뷰 시나리오(`measure-android.mjs`의 `SCENARIOS`, 바꾸면 version을 올린다):
+  - cold, 빈 캐시 첫 방문: 앱 데이터를 지우고 `/?view=list`를 열어 첫 목록 카드(`article img`)가 보이기까지. 목록 요청(`GET /api/properties`)의 시작과 응답 도착, 카드 표시 시각을 나눠 남긴다.
+  - warm, 같은 캐시로 재방문: cold 바로 뒤 앱만 껐다 켜서 같은 순간을 잰다. 네트워크로 받은 바이트(CDP `encodedDataLength` 합)도 남긴다.
+  - register, 방 등록: 앱 데이터를 지운 홈(지도 보기)에서 "현재 위치로 이동"과 등록 제안의 "추가"를 실제로 누르고, 목 저장 응답(`POST /api/properties`)을 받고, 새 방 번호의 항목(`a[href="/properties/<번호>"]`)이 보이기까지. 지도가 없어도 이 버튼들은 DOM이라 지도 목으로 잴 수 있다. 회차가 끝나면 만든 방을 목 API로 지우고, 다음 회차 전에 목록 수가 처음과 같은지 확인한다.
+- 같은 순간: 휴대폰 폭 홈은 기본이 지도 보기라(지도 목에서는 매물 표시가 뜨지 않는다) 휴대폰 폭 경로의 첫 방문은 `/?view=list`로 연다.
+- 기기 쪽: `adb reverse`로 4302(웹과 목 API), 4443(지도 목)을 러너로 잇고, 명령줄 파일(`chrome-command-line`, `webview-command-line`)의 `--host-resolver-rules`로 지도 SDK 주소를 목으로 돌린다. 회선은 보통 4G만 걸고 CPU는 기기 그대로다. 위치는 `adb emu geo fix`와 CDP로 같은 좌표를 준다.
+- WebView 셸(`android/webview-shell`): `mobile/App.tsx`의 `<WebView>`와 react-native-webview 14의 Android 기본 설정(UA 꼬리 `JachwiSunbae/<버전> android`, DOM 저장소, 혼합 콘텐츠 차단, 서드파티 쿠키 끔, 위치 허용 등)만 옮긴 앱이다. Gradle 없이 `build.sh`(aapt2, javac, d8)로 만든다. 문서 시작 때 넣는 네이티브 맥락 스크립트는 `mobile/src/webBridge.ts`를 그대로 불러 CDP로 넣는다.
+- 이력과 비교(`calibration-history.mjs`): 실행마다 대상 커밋, 환경(웹뷰와 Android 버전, 에뮬레이터, 회선, 목 지연), 시나리오 버전, 성공 회수, 중앙값, 범위, 단계별 중앙값, 실행 링크를 한 줄로 남기고, 이번 실행을 직전 실행과 최근 4회(이번 커밋을 뺀 같은 조건, 성공 3회 이상, 커밋마다 하나)의 중앙값과 견준다. 직전과 같은 커밋이면 "같은 커밋 재실행", 조건이 다르면 "조건 바뀜", 성공 3회 미만이면 "표본 부족", 이력이 비었으면 "첫 기록"으로 표시한다. 같은 실행 번호와 시도 번호는 두 번 쓰지 않는다.
+- 운영과 시험 이력: 주 1회 실행만 운영 이력(`calibration-history` 브랜치의 `android-webview/history.jsonl`, 장기 요약 `SUMMARY.md`)에 쓴다. 수동 실행은 기본이 시험 이력(`calibration-history-test`)이고, develop에서 `history=prod`를 고를 때만 운영 이력에 쓴다. 이력 브랜치는 워크플로만 쓰고 손으로 고치지 않는다.
+- 결과: 실행 요약(흉내 비교 표, 시나리오 비교 표, 장기 요약 링크)과 아티팩트 `android-webview-calibration`(경로별 `runs.jsonl` 원자료, `result.json`, `device.json`, `record.json`, `history.md`, 시나리오별 마지막 화면, 실패 회차 화면).
+- 첫 결과(2026-11-26, [실행](https://github.com/woowacourse-teams/2026-jachwi-sunbae/actions/runs/45774264324)): 웹뷰 cold 3.40초(3.12~4.11초, 목록 요청 시작 1.54초, 응답 2.52초, 받은 바이트 약 1.2MB), warm 2.96초(2.77~3.31초, 받은 바이트 약 5KB), register 0.97초(0.96~0.99초, 저장 요청 0.32초, 저장 응답 0.64초), 모두 5/5 성공. 같은 실행의 CI 흉내는 2.57초, 에뮬레이터 크롬은 4.62초였다. 그 전 실행에서는 웹뷰 첫 방문이 5.97초로, 실행마다 에뮬레이터 값이 크게 흔들려 한 번의 배율은 대략으로만 읽고 이력의 최근 4회와 견준다.
+- 한계: 에뮬레이터는 실기기가 아니고 러너 CPU(x86_64, KVM) 위에서 돈다. 이미지의 크롬과 WebView는 124로 실사용 기기보다 오래됐다. 셸에는 RN, 네이티브 탭바, 푸시가 없다. 실사용 TTFB 차이(서버, 회선)는 목 API라 보이지 않는다. 방 등록은 지도 목이라 지도를 눌러 고르는 길 대신 현재 위치 제안으로 들어간다.
 
 ## 사람이 보는 증거: 같은 시각 나란히 보기
 
