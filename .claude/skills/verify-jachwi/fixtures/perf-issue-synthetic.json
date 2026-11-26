@@ -1,0 +1,35 @@
+{
+  "note": "합성 장애. perf-issue.mjs dry-run 이 생성, 중복, 무시 갈래를 고르는지 본다. 실제 게시에는 쓰지 않는다(--publish 와 같이 주면 거부한다).",
+  "candidates": [
+    {
+      "key": "android-webview/register/perf/v1/synthetic-a/base-000000000001",
+      "kind": "perf",
+      "scenario": "register",
+      "channel": "prod",
+      "event": "schedule",
+      "publishable": true,
+      "title": "[FE][Perf] 앱 웹뷰 방 등록이 이전 커밋보다 느려졌다(합성)",
+      "body": "## 배경\n\n합성 장애다.\n\n<!-- jachwi-perf-key: android-webview/register/perf/v1/synthetic-a/base-000000000001 -->\n"
+    },
+    {
+      "key": "android-webview/cold/perf/v1/synthetic-b/base-000000000002",
+      "kind": "perf",
+      "scenario": "cold",
+      "channel": "prod",
+      "event": "schedule",
+      "publishable": true,
+      "title": "[FE][Perf] 앱 웹뷰 빈 캐시 첫 방문이 이전 커밋보다 느려졌다(합성, 이미 있음)",
+      "body": "## 배경\n\n합성 장애다.\n\n<!-- jachwi-perf-key: android-webview/cold/perf/v1/synthetic-b/base-000000000002 -->\n"
+    },
+    {
+      "key": "android-webview/fail-reset/fix/v1/synthetic-c/err-0000000003",
+      "kind": "fix",
+      "scenario": "fail-reset",
+      "channel": "test",
+      "event": "workflow_dispatch",
+      "publishable": false,
+      "title": "[FE][Fix] 앱 웹뷰 저장 실패 뒤 초기화가 실패한다(합성, 시험 실행)",
+      "body": "## 배경\n\n합성 장애다.\n\n<!-- jachwi-perf-key: android-webview/fail-reset/fix/v1/synthetic-c/err-0000000003 -->\n"
+    }
+  ]
+}
