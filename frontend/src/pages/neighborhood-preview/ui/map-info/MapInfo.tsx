@@ -1,5 +1,7 @@
 import { css } from '@emotion/css';
 
+import useDelayedLoading from '@/shared/lib/hooks/useDelayedLoading';
+
 import type { NeighborhoodPlace } from '../../hooks/useNeighborhoodPlaces';
 import { placeTitle } from '../../hooks/useNeighborhoodPlaces';
 import type { NeighborhoodPreviewContext } from '../../hooks/useNeighborhoodPreview';
@@ -50,6 +52,8 @@ type Props = {
  * 누른 마커 하나의 정보, 고른 동네 정보, `My` 매물 목록 가운데 하나만 보인다. 목록에서 다른 단계로 넘어가지 않는다.
  */
 const MapInfo = ({ subject, preview, my, onSelectProperty, property, phoneAction }: Props) => {
+  // 지도와 시트 제목은 먼저 보이므로, 목록이 빨리 오면 불러오는 중 문구를 띄우지 않는다.
+  const isMyLoadingVisible = useDelayedLoading(my.isLoading);
   if (subject.kind === 'place' && subject.place.kind === 'property')
     return (
       <FinderPropertyPanel
@@ -97,8 +101,8 @@ const MapInfo = ({ subject, preview, my, onSelectProperty, property, phoneAction
         <p className={styles.empty}>
           로그인하고 본 방을 기록하면 매물마다 이번 출퇴근 장소까지 통근 시간을 볼 수 있어요.
         </p>
-      ) : my.isLoading ? (
-        <p className={styles.empty}>내 매물을 불러오고 있어요.</p>
+      ) : my.isLoading || isMyLoadingVisible ? (
+        isMyLoadingVisible && <p className={styles.empty}>내 매물을 불러오고 있어요.</p>
       ) : my.isError ? (
         <p className={styles.empty}>내 매물을 불러오지 못했어요.</p>
       ) : rows.length === 0 ? (

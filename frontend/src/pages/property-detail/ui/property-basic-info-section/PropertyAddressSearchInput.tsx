@@ -4,6 +4,7 @@ import { type KeyboardEvent, useCallback, useEffect, useRef, useState } from 're
 import useAddressSearch from '@/features/map/api/useAddressSearch';
 import type { MapAddress } from '@/features/map/model/Map';
 import AddressSearchResults, { handleSearchKeys } from '@/features/map/ui/address-search-results/AddressSearchResults';
+import useDelayedLoading from '@/shared/lib/hooks/useDelayedLoading';
 import useOutsideInteraction from '@/shared/lib/hooks/useOutsideInteraction';
 import Icon from '@/shared/ui/icon/Icon';
 
@@ -35,6 +36,8 @@ const PropertyAddressSearchInput = ({ currentAddress, onSave, onSaved, onCancel,
   }, [changeQuery, currentAddress]);
   const [isSaving, setIsSaving] = useState(false);
   const [saveFailed, setSaveFailed] = useState(false);
+  // 고른 주소는 칸에 그대로 보이므로, 빨리 끝난 저장에는 저장 중 문구를 띄우지 않는다.
+  const isSavingVisible = useDelayedLoading(isSaving);
 
   const cancel = useCallback(() => {
     if (!isSaving) onCancel();
@@ -99,17 +102,20 @@ const PropertyAddressSearchInput = ({ currentAddress, onSave, onSaved, onCancel,
       </button>
       {/* 결과와 저장 상태는 칸 아래에 띄워, 줄 높이를 바꾸지 않는다. */}
       {isSaving || saveFailed ? (
-        <div className={styles.overlay}>
-          {isSaving ? (
-            <p className={styles.status} role="status">
-              주소를 저장하는 중이에요…
-            </p>
-          ) : (
-            <p className={styles.error} role="alert">
-              주소를 저장하지 못했어요. 다시 골라 주세요.
-            </p>
-          )}
-        </div>
+        // 저장이 빨리 끝나면 빈 안내 칸도 띄우지 않는다.
+        (isSavingVisible || !isSaving) && (
+          <div className={styles.overlay}>
+            {isSaving ? (
+              <p className={styles.status} role="status">
+                주소를 저장하는 중이에요…
+              </p>
+            ) : (
+              <p className={styles.error} role="alert">
+                주소를 저장하지 못했어요. 다시 골라 주세요.
+              </p>
+            )}
+          </div>
+        )
       ) : (
         <AddressSearchResults
           results={results}

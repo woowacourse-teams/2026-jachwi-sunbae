@@ -25,8 +25,14 @@ const WeatherTestPushButton = ({ status, secondsLeft, onSend }: WeatherTestPushB
 
   return (
     <div>
-      <Button variant="secondary" disabled={status === 'waiting' || status === 'sending'} onClick={onSend}>
-        {status === 'waiting' ? `${secondsLeft}초 뒤 보내요` : status === 'sending' ? '보내는 중' : '푸시 알림 테스트'}
+      <Button
+        variant="secondary"
+        disabled={status === 'waiting'}
+        isLoading={status === 'sending'}
+        loadingLabel="보내는 중"
+        onClick={onSend}
+      >
+        {status === 'waiting' ? `${secondsLeft}초 뒤 보내요` : '푸시 알림 테스트'}
       </Button>
       {message && (
         <p className={styles.message} role="status">
