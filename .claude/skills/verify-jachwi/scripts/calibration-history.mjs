@@ -182,6 +182,64 @@ export const renderSummary = (channel, history) => {
 
 const readJson = (file) => (existsSync(file) ? JSON.parse(readFileSync(file, 'utf8')) : null);
 
+export const readHistory = (historyRoot, channel) => {
+  const historyFile = join(resolve(historyRoot), 'android-webview', 'history.jsonl');
+  return existsSync(historyFile)
+    ? readFileSync(historyFile, 'utf8')
+        .split('\n')
+        .filter(Boolean)
+        .map((line) => JSON.parse(line))
+        .filter((entry) => entry.channel === channel)
+    : [];
+};
+
+// 측정 결과 폴더로 이력 한 줄을 만든다. 같은 실행(번호와 시도)은 같은 id 라 두 번 쓰지 않는다.
+export const buildRecord = (dir, meta) => {
+  const webview = readJson(join(dir, 'webview', 'result.json'));
+  if (!webview) throw new Error('webview/result.json 이 없다. 측정이 돌지 않아 기록하지 않는다');
+  const calibration = readJson(join(dir, 'calibration.json'));
+  return {
+    schema: SCHEMA,
+    id: `${meta.runId}-${meta.runAttempt}`,
+    channel: meta.channel,
+    createdAt: new Date().toISOString(),
+    commit: meta.commit,
+    ref: meta.ref,
+    event: meta.event,
+    runUrl: meta.runUrl,
+    env: {
+      ...meta.env,
+      android: `${webview.device.release} (API ${webview.device.sdk})`,
+      abi: webview.device.abi,
+      model: webview.device.model,
+      webview: webview.device.webview,
+      chrome: webview.device.chrome,
+      net: webview.net,
+    },
+    scenarios: Object.fromEntries(
+      Object.entries(webview.scenarios).map(([name, scenario]) => [
+        name,
+        {
+          version: scenario.version,
+          label: scenario.label,
+          runs: scenario.runs,
+          success: scenario.success,
+          environmentErrors: scenario.environmentErrors ?? 0,
+          appErrors: scenario.appErrors ?? 0,
+          errors: scenario.errors ?? [],
+          median: scenario.median,
+          min: scenario.min,
+          max: scenario.max,
+          phases: Object.fromEntries(Object.entries(scenario.phases).map(([phase, value]) => [phase, value.median])),
+          bytes: scenario.bytes,
+        },
+      ]),
+    ),
+    calibration: Object.fromEntries((calibration?.rows ?? []).map((row) => [row.key, row.median])),
+    confirm: readJson(join(dir, 'confirm', 'summary.json')),
+  };
+};
+
 const main = () => {
   const { values: args } = parseArgs({
     options: {
@@ -200,61 +258,29 @@ const main = () => {
   if (!args.dir || !args.history || !args.commit) throw new Error('--dir, --history, --commit 이 필요하다');
   if (!['prod', 'test'].includes(args.channel ?? '')) throw new Error('--channel 은 prod 나 test 다');
   const dir = resolve(args.dir);
-  const webview = readJson(join(dir, 'webview', 'result.json'));
-  if (!webview) throw new Error('webview/result.json 이 없다. 측정이 돌지 않아 기록하지 않는다');
-  const calibration = readJson(join(dir, 'calibration.json'));
-  const extraEnv = args['env-file'] ? readJson(resolve(args['env-file'])) : {};
-  const record = {
-    schema: SCHEMA,
-    id: `${args['run-id']}-${args['run-attempt']}`,
+  const built = buildRecord(dir, {
+    runId: args['run-id'],
+    runAttempt: args['run-attempt'],
     channel: args.channel,
-    createdAt: new Date().toISOString(),
     commit: args.commit,
     ref: args.ref,
     event: args.event,
     runUrl: args['run-url'],
-    env: {
-      ...extraEnv,
-      android: `${webview.device.release} (API ${webview.device.sdk})`,
-      abi: webview.device.abi,
-      model: webview.device.model,
-      webview: webview.device.webview,
-      chrome: webview.device.chrome,
-      net: webview.net,
-    },
-    scenarios: Object.fromEntries(
-      Object.entries(webview.scenarios).map(([name, scenario]) => [
-        name,
-        {
-          version: scenario.version,
-          label: scenario.label,
-          runs: scenario.runs,
-          success: scenario.success,
-          median: scenario.median,
-          min: scenario.min,
-          max: scenario.max,
-          phases: Object.fromEntries(Object.entries(scenario.phases).map(([phase, value]) => [phase, value.median])),
-          bytes: scenario.bytes,
-        },
-      ]),
-    ),
-    calibration: Object.fromEntries((calibration?.rows ?? []).map((row) => [row.key, row.median])),
-  };
+    env: args['env-file'] ? readJson(resolve(args['env-file'])) : {},
+  });
   const historyDir = join(resolve(args.history), 'android-webview');
   mkdirSync(historyDir, { recursive: true });
   const historyFile = join(historyDir, 'history.jsonl');
-  const history = existsSync(historyFile)
-    ? readFileSync(historyFile, 'utf8')
-        .split('\n')
-        .filter(Boolean)
-        .map((line) => JSON.parse(line))
-        .filter((entry) => entry.channel === args.channel)
-    : [];
-  if (history.some((entry) => entry.id === record.id)) throw new Error(`이미 기록한 실행이다: ${record.id}`);
+  const all = readHistory(args.history, args.channel);
+  // 멱등: 같은 실행을 다시 기록하면 이미 있는 줄을 그대로 쓰고 더하지 않는다. 비교도 그 줄 앞의 이력으로 다시 낸다.
+  const existingIndex = all.findIndex((entry) => entry.id === built.id);
+  const record = existingIndex >= 0 ? all[existingIndex] : built;
+  const history = existingIndex >= 0 ? all.slice(0, existingIndex) : all;
   const comparisons = Object.keys(record.scenarios).map((scenario) => compareScenario(record, history, scenario));
   record.flags = Object.fromEntries(comparisons.map((comparison) => [comparison.scenario, comparison.flags]));
-  appendFileSync(historyFile, `${JSON.stringify(record)}\n`);
-  writeFileSync(join(historyDir, 'SUMMARY.md'), renderSummary(args.channel, [...history, record]));
+  if (existingIndex < 0) appendFileSync(historyFile, `${JSON.stringify(record)}\n`);
+  else console.log(`이미 기록한 실행이라 더하지 않는다: ${record.id}`);
+  writeFileSync(join(historyDir, 'SUMMARY.md'), renderSummary(args.channel, existingIndex >= 0 ? all : [...all, record]));
   writeFileSync(join(dir, 'record.json'), `${JSON.stringify({ record, comparisons }, null, 2)}\n`);
   const markdown = renderComparison(record, comparisons);
   writeFileSync(join(dir, 'history.md'), markdown);

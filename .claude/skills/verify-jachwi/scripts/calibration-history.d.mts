@@ -8,6 +8,9 @@ export type ScenarioEntry = {
   max: number | null;
   phases?: Record<string, number | null>;
   bytes?: { median: number | null };
+  environmentErrors?: number;
+  appErrors?: number;
+  errors?: string[];
 };
 
 export type CalibrationRecord = {
@@ -16,6 +19,7 @@ export type CalibrationRecord = {
   createdAt: string;
   commit: string;
   runUrl: string;
+  event?: string;
   env: Record<string, unknown> & { webview: string | null; android: string; abi: string; net: string };
   scenarios: Record<string, ScenarioEntry>;
 };

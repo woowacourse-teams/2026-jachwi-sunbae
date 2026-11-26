@@ -2,12 +2,18 @@ name: Android WebView Calibration
 
 # PR마다 도는 Visual Verdict는 데스크탑 Chromium에 보통 4G와 CPU 4배 제한을 건 흉내 환경에서 잰다.
 # 이 워크플로는 같은 실행 안에서 그 흉내 값과 안드로이드 에뮬레이터의 크롬, 앱 웹뷰(같은 설정의 셸) 값을 한 표로 비교한다.
-# 앱 웹뷰에서는 세 시나리오(빈 캐시 첫 방문, 같은 캐시로 재방문, 방 등록)를 재고 이력에 쌓아 직전 실행, 최근 4회와 비교한다.
+# 앱 웹뷰에서는 시나리오 여섯(android-scenarios.mjs)을 재고 이력에 쌓아 직전 실행, 최근 4회와 비교한다. 이상이 의심되면 같은 러너에서
+# 이전 커밋과 이번 커밋을 번갈아 다시 재서 확인하고(calibration-judge.mjs), 확인된 것만 이슈 후보로 이력 브랜치에 남긴다.
+# 이슈 게시는 이 워크플로가 하지 않는다. 소유자 환경에서 perf-issue.mjs 가 한다. 여기서는 dry-run 만 보인다.
+# 자세한 흐름: frontend/docs/android-webview-calibration.md
 # - 주 1회와 수동 실행(workflow_dispatch, 기본 브랜치 develop에 이 파일이 있어야 보인다). 에뮬레이터를 띄워 오래 걸려 PR마다는 돌리지 않는다.
 # - 이력: 주 1회 실행만 운영 이력(calibration-history 브랜치)에 쓴다. 수동 실행은 기본이 시험 이력(calibration-history-test)이고,
 #   develop에서 history=prod 를 고를 때만 운영 이력에 쓴다. 시험 실행이 운영 이력에 섞이지 않게 하려는 것이다.
 # - 결과: 실행 요약(표)과 아티팩트 android-webview-calibration. 판정이 아니라 참고 값이라 실패로 막지 않는다.
 on:
+  # 임시: PR 브랜치에서 시험 이력으로 한 번 돌려 보려는 트리거. 머지 준비 때 지운다.
+  push:
+    branches: [chore/android-webview-calibration]
   workflow_dispatch:
     inputs:
       history:
@@ -15,6 +21,11 @@ on:
         type: choice
         options: [test, prod]
         default: test
+      confirm:
+        description: '다시 재기. auto 는 의심될 때만, always 는 시험용으로 늘 cold 와 register 를 이전 커밋과 다시 잰다'
+        type: choice
+        options: [auto, always, never]
+        default: auto
   schedule:
     # 매주 월요일 0:00 KST(UTC 일요일 15:00). schedule은 기본 브랜치(develop)의 이 파일로 돌아 develop을 잰다.
     - cron: '0 15 * * 0'
@@ -31,7 +42,7 @@ jobs:
   calibrate:
     name: Android WebView calibration
     runs-on: ubuntu-latest
-    timeout-minutes: 50
+    timeout-minutes: 75
     permissions:
       # 이력 브랜치(calibration-history, calibration-history-test)에 기록을 올린다.
       contents: write
@@ -64,6 +75,24 @@ jobs:
           echo "commit=$(git rev-parse HEAD)" >> "${GITHUB_OUTPUT}"
           echo "이력 채널: ${channel} (${branch}), 커밋 $(git rev-parse --short HEAD)"
 
+      # 판정이 측정 중에 이력과 견주므로 에뮬레이터를 띄우기 전에 이력 브랜치를 받는다. 조건 지문(env.json)도 미리 쓴다.
+      - name: Load history
+        env:
+          BRANCH: ${{ steps.channel.outputs.branch }}
+        run: |
+          H="${RUNNER_TEMP}/history"
+          mkdir -p "${RUNNER_TEMP}/calibration"
+          cat > "${RUNNER_TEMP}/calibration/env.json" <<EOF
+          {"runner": "${ImageOS:-ubuntu} ${ImageVersion:-}", "emulator": "API 35 google_apis x86_64 pixel_6, swiftshader", "mockDelay": 300, "mapSdk": "stub", "cache": "prod"}
+          EOF
+          git init -q "${H}"
+          if git -C "${H}" fetch -q --depth=1 "https://github.com/${GITHUB_REPOSITORY}.git" "refs/heads/${BRANCH}"; then
+            git -C "${H}" checkout -q -B "${BRANCH}" FETCH_HEAD
+          else
+            echo "${BRANCH} 브랜치가 없어 첫 기록으로 만든다."
+            git -C "${H}" checkout -q --orphan "${BRANCH}"
+          fi
+
       - name: Set up frontend
         uses: ./.github/actions/setup-frontend
 
@@ -92,7 +121,7 @@ jobs:
       - name: Start servers
         run: |
           S=.claude/skills/verify-jachwi/scripts
-          nohup node "$S/serve.mjs" --dist frontend/dist --port 4302 --api mock --delay 300 --cache prod > "${RUNNER_TEMP}/serve.log" 2>&1 &
+          nohup node "$S/serve.mjs" --dist frontend/dist --port 4302 --api mock --delay 300 --cache prod --faults > "${RUNNER_TEMP}/serve.log" 2>&1 &
           nohup node "$S/map-sdk-stub.mjs" --port 4443 > "${RUNNER_TEMP}/map-sdk-stub.log" 2>&1 &
           for _ in $(seq 60); do curl -sf http://localhost:4302/ > /dev/null && break; sleep 0.5; done
           for _ in $(seq 60); do curl -skf https://localhost:4443/openapi/v3/maps-gl.js -o /dev/null && break; sleep 0.5; done
@@ -122,6 +151,11 @@ jobs:
 
       - name: Measure on Android emulator
         uses: reactivecircus/android-emulator-runner@v2
+        env:
+          HISTORY_DIR: ${{ runner.temp }}/history
+          CHANNEL: ${{ steps.channel.outputs.channel }}
+          COMMIT: ${{ steps.channel.outputs.commit }}
+          CONFIRM_MODE: ${{ inputs.confirm || (github.event_name == 'push' && 'always') || 'auto' }}
         with:
           api-level: 35
           target: google_apis
@@ -140,8 +174,8 @@ jobs:
             && cat "${RUNNER_TEMP}/calibration/calibration.md" >> "${GITHUB_STEP_SUMMARY}"
           cp "${RUNNER_TEMP}"/*.log "${RUNNER_TEMP}/calibration/" 2>/dev/null || true
 
-      # 웹뷰 측정이 돌았을 때만 이력에 쓴다. 측정 전에 실패한 실행은 기록하지 않는다.
-      - name: Record history
+      # 웹뷰 측정이 돌았을 때만 이력과 판정을 쓴다. 측정 전에 실패한 실행은 기록하지 않는다. 같은 실행을 다시 기록해도 줄을 더하지 않는다.
+      - name: Record history and judge
         if: always()
         env:
           GH_TOKEN: ${{ github.token }}
@@ -150,30 +184,45 @@ jobs:
           COMMIT: ${{ steps.channel.outputs.commit }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}/attempts/${{ github.run_attempt }}
         run: |
+          S=.claude/skills/verify-jachwi/scripts
           OUT="${RUNNER_TEMP}/calibration"
           H="${RUNNER_TEMP}/history"
           if [[ ! -f "${OUT}/webview/result.json" ]]; then echo '웹뷰 측정 결과가 없어 이력에 쓰지 않는다.'; exit 0; fi
-          REMOTE="https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
-          cat > "${OUT}/env.json" <<EOF
-          {"runner": "${ImageOS:-ubuntu} ${ImageVersion:-}", "emulator": "API 35 google_apis x86_64 pixel_6, swiftshader", "mockDelay": 300, "mapSdk": "stub", "cache": "prod"}
-          EOF
-          git init -q "${H}"
-          if git -C "${H}" fetch -q --depth=1 "${REMOTE}" "refs/heads/${BRANCH}"; then
-            git -C "${H}" checkout -q -B "${BRANCH}" FETCH_HEAD
-          else
-            echo "${BRANCH} 브랜치가 없어 첫 기록으로 만든다."
-            git -C "${H}" checkout -q --orphan "${BRANCH}"
-          fi
-          node .claude/skills/verify-jachwi/scripts/calibration-history.mjs --dir "${OUT}" --history "${H}" \
+          node "$S/calibration-history.mjs" --dir "${OUT}" --history "${H}" \
             --channel "${CHANNEL}" --commit "${COMMIT}" --ref "${GITHUB_REF}" --event "${GITHUB_EVENT_NAME}" \
             --run-url "${RUN_URL}" --run-id "${GITHUB_RUN_ID}" --run-attempt "${GITHUB_RUN_ATTEMPT}" --env-file "${OUT}/env.json"
-          cat "${OUT}/history.md" >> "${GITHUB_STEP_SUMMARY}"
+          node "$S/calibration-judge.mjs" finalize --dir "${OUT}" --history "${H}" --channel "${CHANNEL}" --event "${GITHUB_EVENT_NAME}"
+          cat "${OUT}/history.md" "${OUT}/verdict.md" >> "${GITHUB_STEP_SUMMARY}"
           cp "${H}/android-webview/SUMMARY.md" "${OUT}/history-summary.md"
+          cp "${H}/android-webview/issues.json" "${OUT}/issues.json"
           git -C "${H}" add -A
-          git -C "${H}" -c user.name='github-actions[bot]' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' \
-            commit -qm "chore: 안드로이드 웹뷰 보정 기록을 더한다 (${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}, ${COMMIT:0:8})"
-          git -C "${H}" push -q "${REMOTE}" "HEAD:refs/heads/${BRANCH}"
+          if git -C "${H}" diff --cached --quiet; then
+            echo '이력에 바뀐 것이 없다.'
+          else
+            git -C "${H}" -c user.name='github-actions[bot]' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' \
+              commit -qm "chore: 안드로이드 웹뷰 보정 기록을 더한다 (${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}, ${COMMIT:0:8})"
+            git -C "${H}" push -q "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" "HEAD:refs/heads/${BRANCH}"
+          fi
           echo "이력: ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/blob/${BRANCH}/android-webview/SUMMARY.md" >> "${GITHUB_STEP_SUMMARY}"
+
+      # 게시는 하지 않는다. 이번 이력의 후보와 합성 장애로 생성, 중복, 무시 갈래만 보인다. 팀 워크플로 안에서는 --publish 를 스크립트가 거부한다.
+      - name: Issue dry-run
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          S=.claude/skills/verify-jachwi/scripts
+          F=.claude/skills/verify-jachwi/fixtures
+          OUT="${RUNNER_TEMP}/calibration"
+          if [[ -d "${RUNNER_TEMP}/history/android-webview" ]]; then
+            node "$S/perf-issue.mjs" --source "${RUNNER_TEMP}/history" --out "${OUT}/issue-plan.md"
+            cat "${OUT}/issue-plan.md" >> "${GITHUB_STEP_SUMMARY}"
+          fi
+          node "$S/perf-issue.mjs" --candidates "$F/perf-issue-synthetic.json" --existing-keys "$F/perf-issue-existing-keys.json" \
+            --out "${OUT}/issue-plan-synthetic.md" > "${OUT}/issue-plan-synthetic.log"
+          tail -1 "${OUT}/issue-plan-synthetic.log" | grep -q '"create".*"duplicate".*"ignore"' \
+            || { echo '::error::합성 장애 dry-run 갈래가 생성, 중복, 무시가 아니다'; cat "${OUT}/issue-plan-synthetic.log"; exit 1; }
+          { echo; echo '### 합성 장애 dry-run'; cat "${OUT}/issue-plan-synthetic.md"; } >> "${GITHUB_STEP_SUMMARY}"
 
       - name: Upload calibration
         if: always()
