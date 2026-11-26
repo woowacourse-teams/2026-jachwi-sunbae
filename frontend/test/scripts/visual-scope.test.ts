@@ -4,9 +4,17 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 
-import { compareMetric, JITTER_VERDICT } from '../../../.claude/skills/verify-jachwi/scripts/verdict.mjs';
+import type { RunRow } from '../../../.claude/skills/verify-jachwi/scripts/verdict.mjs';
+import {
+  compareMetric,
+  isBorderline,
+  JITTER_VERDICT,
+  judgeWithRecheck,
+  recheckLine,
+} from '../../../.claude/skills/verify-jachwi/scripts/verdict.mjs';
 import {
   checkVerdict,
+  checkVerdictNotes,
   classifyChangedFiles,
   findVisualScope,
   renderVerdictTemplate,
@@ -109,11 +117,25 @@ describe('CI 자동 판정 결과로 통과 정하기', () => {
     expect(checkVerdict({ title: '[FE][Perf] 무엇', verdict: '나빠짐' })).toHaveLength(1);
   });
 
-  it('리팩터링 PR은 같음이 아니면 실패한다', () => {
-    expect(checkVerdict({ title: '[FE][Refactor] 무엇', verdict: '좋아짐' })).toHaveLength(1);
+  it('리팩터링 PR은 나빠짐과 판정 불가, 판정 못 함이면 실패한다', () => {
+    expect(checkVerdict({ title: '[FE][Refactor] 무엇', verdict: '나빠짐' })).toHaveLength(1);
     expect(checkVerdict({ title: '[FE][Refactor] 무엇', verdict: '판정 못 함' })).toHaveLength(1);
     expect(checkVerdict({ title: '[FE][Refactor] 무엇', verdict: '판정 불가(흔들림 큼)' })).toHaveLength(1);
     expect(checkVerdict({ title: '[FE][Refactor] 무엇', verdict: '같음' })).toEqual([]);
+  });
+
+  it('리팩터링 PR이 좋아짐이면 통과하되 성능 변화가 섞였다고 알린다', () => {
+    expect(checkVerdict({ title: '[FE][Refactor] 무엇', verdict: '좋아짐' })).toEqual([]);
+    expect(checkVerdictNotes({ title: '[FE][Refactor] 무엇', verdict: '좋아짐' })).toEqual([
+      expect.stringContaining('리팩터링인데 빨라짐(성능 변화가 섞임)'),
+    ]);
+    expect(checkVerdictNotes({ title: '[FE][Refactor] 무엇', verdict: '같음' })).toEqual([]);
+  });
+
+  it('리팩터링이 아닌 PR은 나빠짐만 실패하고 좋아짐을 알리지 않는다', () => {
+    expect(checkVerdict({ title: '[FE][Feat] 무엇', verdict: '좋아짐' })).toEqual([]);
+    expect(checkVerdictNotes({ title: '[FE][Feat] 무엇', verdict: '좋아짐' })).toEqual([]);
+    expect(checkVerdict({ title: '[FE][Feat] 무엇', verdict: '판정 불가(흔들림 큼)' })).toEqual([]);
   });
 
   it('대상이 아니거나 잴 화면이 없으면 통과한다', () => {
@@ -155,6 +177,86 @@ describe('흔들림이 큰 측정', () => {
   });
 });
 
+const toRows = (before: number[], after: number[], from = 1): RunRow[] =>
+  before.flatMap((value, index) => [
+    { variant: 'before', run: from + index, moment: value, lcp: null, consoleErrors: [], failedRequests: [] },
+    {
+      variant: 'after',
+      run: from + index,
+      moment: after[index] ?? null,
+      lcp: null,
+      consoleErrors: [],
+      failedRequests: [],
+    },
+  ]);
+
+describe('문턱 근처(경계) 결과는 더 재서 판정하기', () => {
+  // #808 실행값. 차이 -0.105초로 문턱 0.10초를 0.005초 넘었다.
+  const before808 = [2653, 2662, 2640, 2690, 2653];
+  const after808 = [2590, 2529, 2540, 2560, 2548];
+  const options = { spreadFactor: 1, minDiff: 100 };
+
+  it('차이가 문턱의 70%~130% 안이면 경계다', () => {
+    expect(isBorderline(compareMetric(before808, after808, options))).toBe(true);
+    expect(isBorderline(compareMetric([1000, 1000], [1070, 1070], options))).toBe(true);
+    expect(isBorderline(compareMetric([1000, 1000], [1130, 1130], options))).toBe(true);
+    expect(isBorderline(compareMetric([1000, 1000], [1069, 1069], options))).toBe(false);
+    expect(isBorderline(compareMetric([1000, 1000], [1131, 1131], options))).toBe(false);
+  });
+
+  it('값으로 판정하지 않은 결과는 경계로 보지 않는다', () => {
+    expect(isBorderline(compareMetric([1000, 1000], [null, null], options))).toBe(false);
+    expect(isBorderline(compareMetric([1000, 1000], [1100, null], options))).toBe(false);
+    const jitter = compareMetric([1000, 1500], [1080, 1580], { ...options, maxSpread: 250 });
+    expect(jitter.verdict).toBe(JITTER_VERDICT);
+    expect(isBorderline(jitter)).toBe(false);
+  });
+
+  it('경계 밖이면 더 재지 않는다', async () => {
+    let asked = 0;
+    const measureMore = (runs: number) => {
+      asked += runs;
+      return [];
+    };
+    const { result, recheck } = await judgeWithRecheck(toRows([1000, 1010], [1300, 1310]), measureMore, options);
+    expect(asked).toBe(0);
+    expect(recheck).toBeNull();
+    expect(result.moment.verdict).toBe('나빠짐');
+  });
+
+  it('경계 안이면 5회 더 재서 합친 값으로 판정하고 처음 값을 남긴다', async () => {
+    const asked: number[] = [];
+    const measureMore = (runs: number) => {
+      asked.push(runs);
+      return toRows([2650, 2660, 2655, 2645, 2650], [2600, 2610, 2590, 2605, 2600], 6);
+    };
+    const { rows, result, recheck } = await judgeWithRecheck(toRows(before808, after808), measureMore, options);
+    expect(asked).toEqual([5]);
+    expect(rows).toHaveLength(20);
+    expect(recheck?.first).toMatchObject({ diff: -105, threshold: 100, verdict: '좋아짐' });
+    expect(result.moment).toMatchObject({ beforeMedian: 2653, afterMedian: 2590, diff: -63, spread: 81 });
+    expect(result.moment.verdict).toBe('같음');
+    expect(recheck?.combined.verdict).toBe('같음');
+    expect(recheck && recheckLine(recheck)).toContain('경계라 5회 더 잼');
+  });
+
+  it('합친 값이 또 경계여도 한 번만 더 잰다', async () => {
+    const asked: number[] = [];
+    const measureMore = (runs: number) => {
+      asked.push(runs);
+      return toRows(before808, after808, 6);
+    };
+    const { recheck } = await judgeWithRecheck(toRows(before808, after808), measureMore, options);
+    expect(asked).toEqual([5]);
+    expect(recheck?.combined.verdict).toBe('좋아짐');
+  });
+
+  it('더 재기를 끄면(0회) 처음 값으로 판정한다', async () => {
+    const { recheck } = await judgeWithRecheck(toRows(before808, after808), () => [], { ...options, extraRuns: 0 });
+    expect(recheck).toBeNull();
+  });
+});
+
 describe('develop 필수 검사 Check visual verdict', () => {
   const workflow = readFileSync(join(repoRoot, '.github/workflows/visual-verdict.yml'), 'utf8');
 
@@ -167,6 +269,13 @@ describe('develop 필수 검사 Check visual verdict', () => {
   it('체크 이름은 Check visual verdict 이고 잡 전체를 건너뛰는 조건이 없다', () => {
     expect(workflow).toMatch(/^ {4}name: Check visual verdict$/m);
     expect(workflow).not.toMatch(/^ {4}if:/m);
+  });
+
+  it('포크 PR은 댓글 대신 실행 요약에 쓰고, 댓글 실패로 잡을 실패시키지 않는다', () => {
+    expect(workflow).not.toMatch(/^\s*pull_request_target:/m);
+    expect(workflow).toMatch(/HEAD_REPO: \$\{\{ github\.event\.pull_request\.head\.repo\.full_name \}\}/);
+    expect(workflow).toMatch(/if \[\[ "\$\{HEAD_REPO\}" != "\$\{GITHUB_REPOSITORY\}" \]\]; then/);
+    expect(workflow).toMatch(/comment \|\| echo "::warning::/);
   });
 
   it('전 화면 판정은 PR 라벨로 돌지 않는다', () => {

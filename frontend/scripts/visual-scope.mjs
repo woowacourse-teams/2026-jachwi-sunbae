@@ -239,22 +239,30 @@ export const changedFilesSince = (base) => {
 export const VERDICTS = ['같음', '좋아짐', '나빠짐'];
 
 // CI 자동 판정(.claude/skills/verify-jachwi/scripts/ci-verdict.mjs)의 결과로 PR을 통과시킬지 정한다.
-// 고칠 것을 한 줄씩 돌려준다(빈 배열이면 통과). 나빠짐이면 실패, 제목이 [Refactor]인데 같음이 아니면 실패다.
+const isRefactorTitle = (title) => /\[Refactor\]/i.test(title ?? '');
+
+// 고칠 것을 한 줄씩 돌려준다(빈 배열이면 통과). 나빠짐이면 실패다.
+// 리팩터링 PR은 판정 불가(흔들림 큼)와 판정 못 함도 실패다. 리팩터링에서 막을 것은 느려짐이라 좋아짐은 통과하고 checkVerdictNotes가 알린다.
 export const checkVerdict = ({ title, verdict }) => {
   const problems = [];
   if (verdict === '나빠짐')
     problems.push('화면 판정이 나빠짐이다. 사용자 기준 순간이 늦어졌거나 오류, 실패한 요청이 늘었다.');
-  if (/\[Refactor\]/i.test(title ?? '') && VERDICTS.includes(verdict) && verdict !== '같음') {
-    problems.push(`리팩터링 PR은 판정이 "같음"이어야 한다(지금 ${verdict}).`);
-  }
-  if (/\[Refactor\]/i.test(title ?? '') && verdict === '판정 못 함') {
+  if (isRefactorTitle(title) && verdict === '판정 못 함') {
     problems.push('리팩터링 PR인데 사용자 기준 순간을 전이나 후에서 보지 못했다.');
   }
-  if (/\[Refactor\]/i.test(title ?? '') && verdict === '판정 불가(흔들림 큼)') {
+  if (isRefactorTitle(title) && verdict === '판정 불가(흔들림 큼)') {
     problems.push('리팩터링 PR인데 흩어짐이 커서 판정하지 못했다. 회수를 늘려 다시 잰다.');
   }
   return problems;
 };
+
+// 통과는 하지만 PR 댓글에 눈에 띄게 남길 말을 돌려준다.
+export const checkVerdictNotes = ({ title, verdict }) =>
+  isRefactorTitle(title) && verdict === '좋아짐'
+    ? [
+        '리팩터링인데 빨라짐(성능 변화가 섞임). 동작을 바꾸지 않는 리팩터링이라면 성능에 영향을 준 변경을 따로 나누거나 제목을 [Perf]로 바꾼다.',
+      ]
+    : [];
 
 // PR 올리기 전에 보는 안내. 판정은 CI(Visual Verdict)가 직접 재서 PR 댓글로 단다. 본문에 판정 절을 손으로 쓰지 않는다.
 export const renderVerdictTemplate = (scope) => {
