@@ -15,11 +15,12 @@ export const publishCurrentLocation = (coordinate: MapCoordinate) => {
   listeners.forEach((listener) => listener());
 };
 
-const subscribe = (listener: () => void) => {
+export const subscribeCurrentLocation = (listener: () => void) => {
   listeners.add(listener);
   return () => listeners.delete(listener);
 };
 
-export const useCurrentLocation = (): MapCoordinate | null => useSyncExternalStore(subscribe, () => current);
+export const useCurrentLocation = (): MapCoordinate | null =>
+  useSyncExternalStore(subscribeCurrentLocation, () => current);
 
 export const readCurrentLocation = (): MapCoordinate | null => current;

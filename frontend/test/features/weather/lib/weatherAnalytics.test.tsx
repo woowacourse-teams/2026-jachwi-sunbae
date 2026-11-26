@@ -1,4 +1,4 @@
-import { renderHook } from '@testing-library/react';
+import { render } from '@testing-library/react';
 import { StrictMode } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -11,14 +11,15 @@ describe('날씨 카드 확인 기록', () => {
   beforeEach(() => vi.mocked(trackPostHogEvent).mockClear());
 
   it('예보가 그려질 때 마운트마다 한 번만 남긴다', () => {
-    const { rerender } = renderHook(({ shows }) => useWeatherCardViewed(shows), {
-      initialProps: { shows: false },
-      wrapper: StrictMode,
-    });
+    const Card = ({ shows }: { shows: boolean }) => {
+      const viewedRef = useWeatherCardViewed();
+      return <div>{shows && <strong ref={viewedRef}>18°</strong>}</div>;
+    };
+    const { rerender } = render(<Card shows={false} />, { wrapper: StrictMode });
     expect(trackPostHogEvent).not.toHaveBeenCalled();
-    rerender({ shows: true });
-    rerender({ shows: false });
-    rerender({ shows: true });
+    rerender(<Card shows />);
+    rerender(<Card shows={false} />);
+    rerender(<Card shows />);
     expect(trackPostHogEvent).toHaveBeenCalledTimes(1);
     expect(trackPostHogEvent).toHaveBeenCalledWith('weather_card_viewed');
   });

@@ -1,5 +1,6 @@
 import { css, keyframes } from '@emotion/css';
-import { useEffect } from 'react';
+
+import useTimeout from '@/shared/lib/hooks/useTimeout';
 
 type ToastProps = {
   title: string;
@@ -12,11 +13,8 @@ type ToastProps = {
 };
 
 const Toast = ({ title, description, isOpen, onClose, duration = 8000, className }: ToastProps) => {
-  useEffect(() => {
-    if (!isOpen || duration <= 0) return;
-    const timer = setTimeout(onClose, duration);
-    return () => clearTimeout(timer);
-  }, [isOpen, duration, onClose]);
+  // 이전처럼 onClose가 바뀌면 처음부터 다시 잰다.
+  useTimeout(onClose, isOpen && duration > 0 ? duration : null, onClose);
   if (!isOpen) return null;
   return (
     <aside

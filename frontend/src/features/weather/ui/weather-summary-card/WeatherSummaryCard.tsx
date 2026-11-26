@@ -37,7 +37,7 @@ const WeatherSummaryCard = () => {
   const testPush = useWeatherTestPush(isEnabled);
   const hour = forecast.data?.hourly[Number(forecastHour(new Date().toISOString()))];
   const showsWeather = isEnabled && hour !== undefined && hour.tmp !== null;
-  useWeatherCardViewed(showsWeather);
+  const weatherViewedRef = useWeatherCardViewed();
   // 알림은 켰지만 위치 확인에 실패했고 마지막 위치도 없어 날씨를 그릴 수 없다. 공통 알림이라 배달 할인 알림은 계속 받는다.
   const isLocationOff = isEnabled && !isLocationOn && location.status !== 'denied';
   const hasNoLocation =
@@ -94,7 +94,9 @@ const WeatherSummaryCard = () => {
             {showsWeather ? (
               <>
                 <WeatherSymbol hour={hour} size={34} />
-                <strong className={styles.temperature}>{weatherValue(hour.tmp, '°')}</strong>
+                <strong ref={weatherViewedRef} className={styles.temperature}>
+                  {weatherValue(hour.tmp, '°')}
+                </strong>
                 <div>
                   <b>{weatherLabel(hour)}</b>
                   <p>{forecastHour(hour.forecastAt)}시 예보</p>

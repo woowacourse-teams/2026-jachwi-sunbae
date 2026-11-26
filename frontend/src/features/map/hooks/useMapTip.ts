@@ -1,4 +1,6 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
+
+import useEscapeKey from '@/shared/lib/hooks/useEscapeKey';
 
 import type { MapTip } from '../model/MapCanvas';
 
@@ -67,13 +69,11 @@ const useMapTip = ({
   const shifted = offsetPx && level !== undefined ? shiftByPixels(point, offsetPx, level) : point;
   const [anchor, setAnchor] = useState(shifted);
   const [mountedAt] = useState(() => Date.now());
-  useEffect(() => {
-    // 안내가 숨겨져 있는 동안(아직 붙일 자리가 없을 때)과 처음 1.5초는 좌표를 따라가고, 보이기 시작한 뒤에는 잡아 둔다.
-    if (enabled && Date.now() - mountedAt > SETTLE_MS) return;
-    setAnchor((current) =>
-      current.latitude === shifted.latitude && current.longitude === shifted.longitude ? current : shifted,
-    );
-  }, [mountedAt, enabled, shifted.latitude, shifted.longitude]);
+  // 안내가 숨겨져 있는 동안(아직 붙일 자리가 없을 때)과 처음 1.5초는 좌표를 따라가고, 보이기 시작한 뒤에는 잡아 둔다.
+  const followsPoint = !enabled || Date.now() - mountedAt <= SETTLE_MS;
+  if (followsPoint && (anchor.latitude !== shifted.latitude || anchor.longitude !== shifted.longitude)) {
+    setAnchor(shifted);
+  }
   const confirm = useCallback(() => {
     markSeen(storageKey);
     setIsOpen(false);
@@ -81,14 +81,7 @@ const useMapTip = ({
   const hide = useCallback(() => setIsOpen(false), []);
   // Esc로도 닫는다. 확인을 누르는 것만이 닫는 방법이 아니다.
   const isShown = isOpen && enabled;
-  useEffect(() => {
-    if (!isShown) return;
-    const closeOnEscape = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') confirm();
-    };
-    document.addEventListener('keydown', closeOnEscape);
-    return () => document.removeEventListener('keydown', closeOnEscape);
-  }, [isShown, confirm]);
+  useEscapeKey(confirm, isShown);
   return useMemo(
     () =>
       isOpen && enabled

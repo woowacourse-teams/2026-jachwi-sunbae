@@ -94,6 +94,7 @@ import * as shared from '../MapPage.styles';
 - 페이지가 커지면 JSX를 통째로 옮기지 말고, 함께 바뀌는 상태를 `pages/<page>/hooks`의 Hook으로 먼저 묶습니다. Hook은 setter나 ref 대신 `selectRadius`, `enter`, `cancel`처럼 의도가 드러나는 함수를 반환합니다.
 - 페이지는 Hook과 화면 영역 컴포넌트를 직접 조립합니다. props를 그대로 넘기기만 하는 중간 컴포넌트는 만들지 않습니다.
 - 지도 Hook은 `moveToCoordinate`, `openSearch`, `expandSheet`처럼 동작을 공개합니다. 비동기 실패 시 최신 매물 좌표는 `getFallbackCoordinate`로 읽고 데이터 ref는 Hook 내부에 둡니다. DOM 연결에 필요한 시트 ref는 예외로 노출합니다.
+- `useEffect`, `useLayoutEffect`와 타이머(`setTimeout`, `setInterval`)는 제품 코드에서 바로 쓰지 않습니다. 파생 값은 렌더 중에 계산하고, 사용자 동작은 이벤트 핸들러에서, 서버 상태는 React Query로, 외부 구독은 `useSyncExternalStore`로 다룹니다. 시간 지연과 외부 SDK 연결처럼 꼭 필요한 effect는 `shared/lib/hooks`의 이름 있는 공용 훅으로 만듭니다. ESLint가 막고, 규칙 이전부터 있던 파일은 `eslint.legacy-effects.mjs`에 모아 둡니다. 고친 파일은 그 목록에서 뺍니다.
 
 ```tsx
 type PostCardProps = {

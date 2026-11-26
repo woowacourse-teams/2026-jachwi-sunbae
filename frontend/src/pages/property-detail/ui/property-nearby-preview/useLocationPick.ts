@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 
 import { reverseGeocode } from '@/features/map/api/mapApi';
 import type { MapAddress } from '@/features/map/model/Map';
@@ -20,10 +20,13 @@ const useLocationPick = (isActive: boolean, onSave?: (address: MapAddress) => Pr
   const [saveFailed, setSaveFailed] = useState(false);
   const sequenceRef = useRef(0);
 
-  useEffect(() => {
+  // 켜고 끌 때마다 고른 자리와 저장 실패를 비운다.
+  const [lastActive, setLastActive] = useState(isActive);
+  if (lastActive !== isActive) {
+    setLastActive(isActive);
     setPicked(null);
     setSaveFailed(false);
-  }, [isActive]);
+  }
 
   const pick = async (latitude: number, longitude: number) => {
     const sequence = sequenceRef.current + 1;

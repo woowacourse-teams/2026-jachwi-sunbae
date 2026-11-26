@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useRemoveProperty } from '@/features/property/api/usePropertyMutations';
 import { dismissPreviewProperty } from '@/features/property/model/previewPropertyDismissal';
 import { isPreviewProperty } from '@/features/property/model/sampleProperties';
+import useEscapeKey from '@/shared/lib/hooks/useEscapeKey';
 import Icon from '@/shared/ui/icon/Icon';
 
 import * as styles from './RecordList.styles';
@@ -33,18 +34,13 @@ const RecordCardMenu = ({ propertyId, propertyName, onDone }: Props) => {
       if (event.target instanceof Node && rootRef.current?.contains(event.target)) return;
       setIsOpen(false);
     };
-    const closeOnEscape = (event: KeyboardEvent) => {
-      if (event.key !== 'Escape') return;
-      setIsOpen(false);
-      toggleRef.current?.focus();
-    };
     document.addEventListener('pointerdown', closeOnOutside);
-    document.addEventListener('keydown', closeOnEscape);
-    return () => {
-      document.removeEventListener('pointerdown', closeOnOutside);
-      document.removeEventListener('keydown', closeOnEscape);
-    };
+    return () => document.removeEventListener('pointerdown', closeOnOutside);
   }, [isOpen]);
+  useEscapeKey(() => {
+    setIsOpen(false);
+    toggleRef.current?.focus();
+  }, isOpen);
 
   return (
     <div ref={rootRef} className={styles.actions}>

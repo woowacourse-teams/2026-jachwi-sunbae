@@ -1,5 +1,5 @@
 import { css } from '@emotion/css';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 
 import useIsDesktop from '@/shared/lib/hooks/useIsDesktop';
 import { MAP_LAYER } from '@/shared/lib/map-layers/mapLayers';
@@ -56,7 +56,12 @@ const isPropertyMarker = (marker: MapMarker) => marker.tone === 'property' || ma
 
 const InfrastructureMap = ({ mapProps, open }: Props) => {
   const [observedLevel, setObservedLevel] = useState(mapProps.level ?? 8);
-  useEffect(() => setObservedLevel(mapProps.level ?? 8), [mapProps.level]);
+  // 화면이 확대 단계를 새로 넘기면 지도에서 본 단계보다 그 값을 따른다. 커밋 뒤 effect로 맞추면 한 번 더 그린다.
+  const [requestedLevel, setRequestedLevel] = useState(mapProps.level);
+  if (requestedLevel !== mapProps.level) {
+    setRequestedLevel(mapProps.level);
+    setObservedLevel(mapProps.level ?? 8);
+  }
   const center = useRef(mapProps.center);
   const isDesktop = useIsDesktop();
   const markerLevel = isDesktop ? DESKTOP_FACILITY_MARKER_LEVEL : FACILITY_MARKER_LEVEL;

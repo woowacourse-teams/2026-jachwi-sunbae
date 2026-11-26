@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useCallback } from 'react';
 
 import { isPreviewProperty } from '@/features/property/model/sampleProperties';
 import PropertyCard from '@/features/property/ui/property-card/PropertyCard';
@@ -32,11 +32,11 @@ const RecordList = ({
   className,
   showCompare = false,
 }: RecordListProps) => {
-  const selectedRef = useRef<HTMLLIElement>(null);
-  useEffect(() => {
-    // scrollIntoView가 없는 환경(jsdom 등)에서도 터지지 않게 있을 때만 부른다.
-    selectedRef.current?.scrollIntoView?.({ block: 'nearest', behavior: 'smooth' });
-  }, [selectedId]);
+  // 새로 고른 카드가 붙을 때 목록에서 보이게 옮긴다.
+  // scrollIntoView가 없는 환경(jsdom 등)에서도 터지지 않게 있을 때만 부른다.
+  const scrollToSelected = useCallback((item: HTMLLIElement | null) => {
+    item?.scrollIntoView?.({ block: 'nearest', behavior: 'smooth' });
+  }, []);
   // 예시 매물만 보일 때는 개수를 세지 않는다.
   const realCount = records.filter((record) => !isPreviewProperty(record.id)).length;
   return (
@@ -57,7 +57,7 @@ const RecordList = ({
         {records.map((record) => (
           <li
             key={record.id}
-            ref={record.id === selectedId ? selectedRef : undefined}
+            ref={record.id === selectedId ? scrollToSelected : undefined}
             className={styles.item}
             data-selected={record.id === selectedId || undefined}
           >

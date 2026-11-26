@@ -4,6 +4,50 @@ import eslintConfigPrettier from 'eslint-config-prettier/flat';
 import simpleImportSort from 'eslint-plugin-simple-import-sort';
 import tseslint from 'typescript-eslint';
 
+import { legacyEffectFiles, legacyTimerFiles } from './eslint.legacy-effects.mjs';
+
+const noEnum = {
+  selector: 'TSEnumDeclaration',
+  message: 'enum 대신 문자열 리터럴 유니온이나 as const 객체를 쓴다. (docs/typescript.md)',
+};
+
+const effectAlternatives =
+  '파생 값은 렌더 중에 계산하고, 사용자 동작은 이벤트 핸들러에서 처리하고, 서버 상태는 React Query를, 외부 구독은 useSyncExternalStore를, 시간 지연은 src/shared/lib/hooks의 공용 훅을 쓴다. 외부 SDK 연결처럼 effect가 꼭 필요하면 src/shared/lib/hooks에 이름 있는 훅으로 만든다.';
+
+const noDirectEffect = [
+  {
+    selector: 'ImportSpecifier[imported.name=/^use(Layout)?Effect$/]',
+    message: `useEffect, useLayoutEffect를 제품 코드에서 바로 쓰지 않는다. ${effectAlternatives}`,
+  },
+  {
+    selector: "MemberExpression[object.name='React'][property.name=/^use(Layout)?Effect$/]",
+    message: `React.useEffect, React.useLayoutEffect를 제품 코드에서 바로 쓰지 않는다. ${effectAlternatives}`,
+  },
+];
+
+const timerMessage =
+  '컴포넌트와 훅에서 타이머를 바로 쓰지 않는다. 입력 지연은 useDebouncedValue, 로딩 표시는 useDelayedLoading 같은 src/shared/lib/hooks의 공용 훅을 쓴다.';
+
+const noDirectTimer = {
+  'no-restricted-globals': [
+    'error',
+    { name: 'setTimeout', message: timerMessage },
+    { name: 'setInterval', message: timerMessage },
+  ],
+  'no-restricted-properties': [
+    'error',
+    { object: 'window', property: 'setTimeout', message: timerMessage },
+    { object: 'window', property: 'setInterval', message: timerMessage },
+    { object: 'globalThis', property: 'setTimeout', message: timerMessage },
+    { object: 'globalThis', property: 'setInterval', message: timerMessage },
+  ],
+};
+
+const productFiles = ['src/**/*.{ts,tsx}'];
+const componentAndHookFiles = ['src/**/*.tsx', 'src/**/use*.ts'];
+const sharedHookFiles = ['src/shared/lib/hooks/**'];
+const storyFiles = ['src/**/*.stories.tsx'];
+
 export default defineConfig(
   {
     ignores: [
@@ -56,13 +100,33 @@ export default defineConfig(
       '@typescript-eslint/no-non-null-assertion': 'error',
       '@typescript-eslint/no-explicit-any': 'error',
       '@typescript-eslint/ban-ts-comment': 'error',
-      'no-restricted-syntax': [
-        'error',
-        {
-          selector: 'TSEnumDeclaration',
-          message: 'enum 대신 문자열 리터럴 유니온이나 as const 객체를 쓴다. (docs/typescript.md)',
-        },
-      ],
+      'no-restricted-syntax': ['error', noEnum],
+    },
+  },
+  {
+    files: productFiles,
+    ignores: [...sharedHookFiles, ...storyFiles],
+    rules: {
+      'no-restricted-syntax': ['error', noEnum, ...noDirectEffect],
+    },
+  },
+  {
+    files: componentAndHookFiles,
+    ignores: [...sharedHookFiles, ...storyFiles],
+    rules: noDirectTimer,
+  },
+  {
+    // 규칙을 넣기 전부터 있던 사용처다. 고친 파일은 eslint.legacy-effects.mjs에서 뺀다.
+    files: legacyEffectFiles,
+    rules: {
+      'no-restricted-syntax': ['error', noEnum],
+    },
+  },
+  {
+    files: legacyTimerFiles,
+    rules: {
+      'no-restricted-globals': 'off',
+      'no-restricted-properties': 'off',
     },
   },
   {

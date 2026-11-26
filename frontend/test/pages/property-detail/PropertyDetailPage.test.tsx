@@ -251,3 +251,11 @@ it('보낼 수 없는 이미지는 요청하지 않고 이유를 알린다', asy
   expect(await screen.findByText('이미지 한 장은 3MB 이하만 올릴 수 있어요.')).toHaveAttribute('role', 'alert');
   expect(requestCount).toBe(0);
 });
+
+it('메모를 누르면 메모 칸이 열리며 바로 초점을 받는다', async () => {
+  const user = userEvent.setup();
+  renderDetail();
+  await user.click(await screen.findByRole('button', { name: '관리비 포함 항목을 다시 확인하기' }));
+
+  expect(screen.getByRole('textbox', { name: '메모 내용' })).toHaveFocus();
+});

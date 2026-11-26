@@ -2,6 +2,8 @@ import { css } from '@emotion/css';
 import type { ReactNode } from 'react';
 import { useEffect, useId, useRef, useState } from 'react';
 
+import useEscapeKey from '@/shared/lib/hooks/useEscapeKey';
+
 type TooltipAction = {
   /** 단계가 여럿이면 `다음`, 하나뿐이면 `확인`. */
   label: string;
@@ -25,23 +27,17 @@ const Tooltip = ({ children, content, action, placement = 'top', align = 'center
   const [isOpen, setIsOpen] = useState(true);
   const root = useRef<HTMLDivElement>(null);
   const id = useId();
+  const isDismissible = isOpen && Boolean(content) && !action;
+  useEscapeKey(() => setIsOpen(false), isDismissible);
   useEffect(() => {
-    if (!isOpen || !content || action) return;
-    const dismiss = (event: PointerEvent | KeyboardEvent) => {
-      if (event instanceof KeyboardEvent) {
-        if (event.key === 'Escape') setIsOpen(false);
-        return;
-      }
+    if (!isDismissible) return;
+    const dismiss = (event: PointerEvent) => {
       if (event.target instanceof Node && root.current?.contains(event.target)) return;
       setIsOpen(false);
     };
     document.addEventListener('pointerdown', dismiss);
-    document.addEventListener('keydown', dismiss);
-    return () => {
-      document.removeEventListener('pointerdown', dismiss);
-      document.removeEventListener('keydown', dismiss);
-    };
-  }, [isOpen, content, action]);
+    return () => document.removeEventListener('pointerdown', dismiss);
+  }, [isDismissible]);
   return (
     <div ref={root} className={`${styles.root} ${className ?? ''}`}>
       <div aria-describedby={isOpen && content ? id : undefined} onClick={action ? undefined : () => setIsOpen(false)}>

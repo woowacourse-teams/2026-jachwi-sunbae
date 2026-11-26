@@ -1,10 +1,11 @@
 import type { ReactNode } from 'react';
-import { createContext, useContext, useEffect, useRef, useState } from 'react';
+import { createContext, useContext, useRef, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 
 import { centerWithInsets } from '@/features/map/lib/mapCamera';
 import type { MapCoordinate } from '@/features/map/lib/mapLocation';
 import type { MapAddress } from '@/features/map/model/Map';
+import useEscapeKey from '@/shared/lib/hooks/useEscapeKey';
 import useIsDesktop from '@/shared/lib/hooks/useIsDesktop';
 import {
   NEIGHBORHOODS_PATH,
@@ -44,9 +45,12 @@ export const RecordsMapProvider = ({
   const params = useParams();
   const { pathname } = useLocation();
   const [interactionLevel, setInteractionLevel] = useState<number | undefined>();
-  useEffect(() => {
+  // 동네 찾기 밖으로 주소가 바뀌면 그곳에서 쓰던 확대 단계를 지운다.
+  const [levelPath, setLevelPath] = useState(pathname);
+  if (levelPath !== pathname) {
+    setLevelPath(pathname);
     if (!pathname.startsWith(NEIGHBORHOODS_PATH)) setInteractionLevel(undefined);
-  }, [pathname]);
+  }
   const [lastPropertyId, setLastPropertyId] = useState<string | null>(params.propertyId ?? null);
   const [lastRecordPath, setLastRecordPath] = useState(pathname);
   if ((pathname === RECORDS_PATH || pathname.startsWith(`${PROPERTIES_PATH}/`)) && pathname !== lastRecordPath) {
@@ -121,15 +125,7 @@ export const RecordsMapProvider = ({
       quickCreate.create(location);
     },
   });
-  useEffect(() => {
-    const cancel = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        layers.cancelPlacement();
-      }
-    };
-    window.addEventListener('keydown', cancel);
-    return () => window.removeEventListener('keydown', cancel);
-  }, [layers]);
+  useEscapeKey(() => layers.cancelPlacement());
   return (
     <Context.Provider value={{ records, layers, setInteractionLevel, centerBesidePanels }}>
       <div ref={pageRef} style={{ height: '100%' }}>

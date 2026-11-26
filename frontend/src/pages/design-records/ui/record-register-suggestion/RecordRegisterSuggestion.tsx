@@ -1,5 +1,6 @@
 import { css, keyframes } from '@emotion/css';
-import { useEffect } from 'react';
+
+import useTimeout from '@/shared/lib/hooks/useTimeout';
 
 /** 제안이 떠 있는 시간. 닫기 버튼이 없어 이 시간이 지나면 스스로 사라진다. */
 const SUGGESTION_DURATION_MS = 6000;
@@ -17,12 +18,8 @@ type RecordRegisterSuggestionProps = {
  * 아래에서 올라와 머물다가 다시 내려가고, 시간이 지나면 닫힌다. 같은 제안이 떠 있는 동안 다시 와도 하나만 보인다.
  */
 const RecordRegisterSuggestion = ({ isOpen, onAccept, onClose, className }: RecordRegisterSuggestionProps) => {
-  useEffect(() => {
-    if (!isOpen) return;
-    const timer = window.setTimeout(onClose, SUGGESTION_DURATION_MS);
-    return () => window.clearTimeout(timer);
-    // onClose는 렌더마다 새로 만들어지므로 열림이 바뀔 때만 시간을 다시 잰다.
-  }, [isOpen]);
+  // 열림이 바뀔 때만 시간을 다시 잰다. onClose는 닫을 때의 최신 함수를 쓴다.
+  useTimeout(onClose, isOpen ? SUGGESTION_DURATION_MS : null);
 
   return isOpen ? (
     <div className={`${styles.toast} ${className ?? ''}`.trim()} role="status">

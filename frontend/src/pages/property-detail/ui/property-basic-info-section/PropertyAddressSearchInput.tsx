@@ -1,5 +1,5 @@
 import { css } from '@emotion/css';
-import { type KeyboardEvent, useCallback, useEffect, useRef, useState } from 'react';
+import { type KeyboardEvent, useCallback, useRef, useState } from 'react';
 
 import useAddressSearch from '@/features/map/api/useAddressSearch';
 import type { MapAddress } from '@/features/map/model/Map';
@@ -26,14 +26,8 @@ type Props = {
  */
 const PropertyAddressSearchInput = ({ currentAddress, onSave, onSaved, onCancel, onPickOnMap }: Props) => {
   const rootRef = useRef<HTMLDivElement>(null);
-  const { results, status, submit, clear, changeQuery, query } = useAddressSearch();
-  // 지금 주소를 채워 연다. 열 때 한 번만 채워, 저장 뒤 주소가 바뀌어도 고치던 검색어를 덮지 않는다.
-  const filledRef = useRef(false);
-  useEffect(() => {
-    if (filledRef.current) return;
-    filledRef.current = true;
-    changeQuery(currentAddress);
-  }, [changeQuery, currentAddress]);
+  // 지금 주소를 채워 연다. 처음 값으로만 채워, 저장 뒤 주소가 바뀌어도 고치던 검색어를 덮지 않는다.
+  const { results, status, submit, clear, changeQuery, query } = useAddressSearch({ initialQuery: currentAddress });
   const [isSaving, setIsSaving] = useState(false);
   const [saveFailed, setSaveFailed] = useState(false);
   // 고른 주소는 칸에 그대로 보이므로, 빨리 끝난 저장에는 저장 중 문구를 띄우지 않는다.

@@ -1,8 +1,9 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 
 import { getMapCategoryLabel } from '@/features/map/lib/mapPresentation';
 import { distanceMeters } from '@/features/map/lib/mapViewportQuery';
 import { transitStopIdForBusStop } from '@/features/map/lib/transitStop';
+import useTimeout from '@/shared/lib/hooks/useTimeout';
 
 import type { NeighborhoodPlace } from '../../hooks/useNeighborhoodPlaces';
 import type { NeighborhoodPreviewContext } from '../../hooks/useNeighborhoodPreview';
@@ -38,11 +39,7 @@ const PlaceDetails = ({ place, preview, phoneAction }: Props) => {
   const busStopRoute = usePlaceRoute(preview, stopId);
   const stopLabel = place.kind === 'station' ? '출발 정류장' : '버스정류장';
   const [copyState, setCopyState] = useState<'idle' | 'copied' | 'failed'>('idle');
-  useEffect(() => {
-    if (copyState === 'idle') return;
-    const timer = window.setTimeout(() => setCopyState('idle'), COPIED_NOTICE_MS);
-    return () => window.clearTimeout(timer);
-  }, [copyState]);
+  useTimeout(() => setCopyState('idle'), copyState === 'idle' ? null : COPIED_NOTICE_MS, copyState);
   if (place.kind === 'facility')
     return (
       <div className={styles.details}>
