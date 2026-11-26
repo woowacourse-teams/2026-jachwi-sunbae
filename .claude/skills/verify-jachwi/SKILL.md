@@ -29,6 +29,19 @@ description: 자취선배 웹 프론트를 로컬에서 띄워 사용자처럼 �
 - 경계면 더 재기: 차이의 크기가 문턱의 70%에서 130% 안이면 바로 판정하지 않고 전후 번갈아 5회 더(`--extra-runs`, 합계 10회씩) 재서 합친 회차로 흩어짐, 문턱, 판정을 다시 낸다. 더 재기는 한 번만 한다. 같은 빌드도 0.05초쯤 흔들려 문턱 근처 결과는 다시 재면 뒤집힐 수 있어서다(#808은 차이 0.105초로 문턱 0.10초를 0.005초 넘었다). PR 댓글과 `verdict.md`에 "경계라 N회 더 잼"과 처음 값, 합친 값이 함께 남는다. CI에서 한 번 여는 데 약 4.3초라 더 재면 약 45초가 늘고, 판정 잡 전체는 길어도 3분 30초 안이다.
 - 영향 라우트에 순간이 정해진 화면이 없으면 `잴 화면 없음`으로 통과하고 댓글에 그렇게 적는다. 새 화면이 생기면 `screens.mjs`에 순간을 더한다. 순간 요소의 선택자가 후에서 사라지면 "못 본 회차"가 늘어 `나빠짐`이 된다. 일부러 바꾼 것이면 같은 PR에서 `screens.mjs`를 고친다.
 
+## 안드로이드 웹뷰 보정(주 1회)
+
+PR 판정은 데스크탑 Chromium에 CPU 4배 제한을 건 흉내 값이다. 실제 앱은 같은 웹을 iOS와 Android WebView로 감싸고, 실사용에서는 Android 웹뷰가 가장 느렸다. `.github/workflows/android-webview-calibration.yml`이 흉내 값이 앱 웹뷰와 얼마나 다른지 한 실행 안에서 한 표로 잰다. 판정이 아니라 참고 값이라 실패로 막지 않는다.
+
+- 언제: 주 1회(월 11:00 KST, develop)와 수동 실행(workflow_dispatch). 에뮬레이터를 띄워 20분쯤 걸려 PR마다는 돌리지 않는다.
+- 하는 일: 운영 빌드를 `serve.mjs --api mock --delay 300`과 `map-sdk-stub.mjs`로 띄운 뒤, 에뮬레이터를 띄우기 전에 `measure.mjs`로 CI 흉내(데스크탑, PR 판정과 같은 조건)와 휴대폰 폭 흉내를 잰다. 그다음 `reactivecircus/android-emulator-runner`(KVM, API 35 google_apis x86_64, pixel_6)에서 `android/run-on-emulator.sh`가 `measure-android.mjs`로 크롬과 WebView 셸을 각 5회 잰다.
+- 같은 순간: 홈의 첫 매물 카드(`article img`). 휴대폰 폭 홈은 기본이 지도 보기라(지도 목에서는 매물 표시가 뜨지 않는다) 휴대폰 폭 세 경로는 `/?view=list`로 연다.
+- 기기 쪽: `adb reverse`로 4302(웹과 목 API), 4443(지도 목)을 러너로 잇고, 명령줄 파일(`chrome-command-line`, `webview-command-line`)의 `--host-resolver-rules`로 지도 SDK 주소를 목으로 돌린다. 표의 "지도 목 요청"이 0이면 돌리기가 안 먹은 것이다. 회선은 보통 4G만 걸고 CPU는 기기 그대로다.
+- WebView 셸(`android/webview-shell`): `mobile/App.tsx`의 `<WebView>`와 react-native-webview 14의 Android 기본 설정(UA 꼬리 `JachwiSunbae/<버전> android`, DOM 저장소, 혼합 콘텐츠 차단, 서드파티 쿠키 끔 등)만 옮긴 앱이다. Gradle 없이 `build.sh`(aapt2, javac, d8)로 만든다. 문서 시작 때 넣는 네이티브 맥락 스크립트는 `mobile/src/webBridge.ts`를 그대로 불러 CDP로 넣는다.
+- 결과: 실행 요약의 표와 아티팩트 `android-webview-calibration`(`calibration.md`, 경로별 `runs.jsonl`, 마지막 화면 `last.png`).
+- 첫 결과(2026-11-26, [실행](https://github.com/woowacourse-teams/2026-jachwi-sunbae/actions/runs/45770058621)): 중앙값이 CI 흉내 2.72초, 휴대폰 폭 흉내 2.49초, 에뮬레이터 크롬 5.40초, 에뮬레이터 앱 웹뷰 5.97초였다. 앱 웹뷰는 CI 흉내의 약 2.2배(휴대폰 폭 흉내의 약 2.4배)다. 에뮬레이터 두 경로는 흩어짐이 3초 넘게 커서(4.4~8.1초) 배율은 대략으로만 읽는다. 흉내의 절대 시간을 앱 시간으로 읽지 않고, PR 판정의 전후 차이도 앱에서는 2배쯤 커질 수 있다고 본다.
+- 한계: 에뮬레이터는 실기기가 아니고 러너 CPU(x86_64, KVM) 위에서 돈다. 이미지의 크롬과 WebView는 124로 실사용 기기보다 오래됐다. 셸에는 RN, 네이티브 탭바, 푸시가 없다. 실사용 TTFB 차이(서버, 회선)는 목 API라 보이지 않는다.
+
 ## 사람이 보는 증거: 같은 시각 나란히 보기
 
 숫자가 `같음`이어도, 모양을 일부러 바꾸는 UI PR은 같은 시각 전후 프레임이 의도대로 바뀌었는지 눈으로 봐야 한다. 이 일은 PR 작성자(사람이나 그 작업을 한 에이전트 세션)가 하지 않는다. 코드 맥락이 없는 별도 에이전트를 새 세션으로 띄워 이 스킬로 보게 한다.
