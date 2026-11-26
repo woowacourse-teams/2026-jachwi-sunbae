@@ -7,6 +7,7 @@
 
 | 날짜(UTC) | 커밋 | 웹뷰 | 시나리오 | 성공 | 중앙값 | 범위 | 받은 바이트 | 표시 | 실행 |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 2026-11-26 15:28 | `ce15ee85` | com.google.android.webview, 124.0.6367.219 | v1 | 5/5 | 4.36초 | 4.16초~4.66초 | 1118KB | - | [45845193948-1](https://github.com/woowacourse-teams/2026-jachwi-sunbae/actions/runs/45845193948/attempts/1) |
 | 2026-11-26 13:31 | `60c47589` | com.google.android.webview, 124.0.6367.219 | v1 | 5/5 | 3.37초 | 3.03초~3.75초 | 1205KB | - | [45827208023-1](https://github.com/woowacourse-teams/2026-jachwi-sunbae/actions/runs/45827208023/attempts/1) |
 | 2026-11-26 10:48 | `22a077f0` | com.google.android.webview, 124.0.6367.219 | v1 | 5/5 | 3.98초 | 3.77초~4.47초 | 1205KB | - | [45801143088-1](https://github.com/woowacourse-teams/2026-jachwi-sunbae/actions/runs/45801143088/attempts/1) |
 | 2026-11-26 10:23 | `45bba806` | com.google.android.webview, 124.0.6367.219 | v1 | 5/5 | 3.32초 | 3.23초~3.54초 | 1205KB | - | [45798741376-1](https://github.com/woowacourse-teams/2026-jachwi-sunbae/actions/runs/45798741376/attempts/1) |
@@ -20,6 +21,7 @@
 
 | 날짜(UTC) | 커밋 | 웹뷰 | 시나리오 | 성공 | 중앙값 | 범위 | 받은 바이트 | 표시 | 실행 |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 2026-11-26 15:28 | `ce15ee85` | com.google.android.webview, 124.0.6367.219 | v1 | 5/5 | 3.99초 | 3.52초~4.16초 | 9KB | - | [45845193948-1](https://github.com/woowacourse-teams/2026-jachwi-sunbae/actions/runs/45845193948/attempts/1) |
 | 2026-11-26 13:31 | `60c47589` | com.google.android.webview, 124.0.6367.219 | v1 | 5/5 | 3.08초 | 2.60초~3.80초 | 9KB | - | [45827208023-1](https://github.com/woowacourse-teams/2026-jachwi-sunbae/actions/runs/45827208023/attempts/1) |
 | 2026-11-26 10:48 | `22a077f0` | com.google.android.webview, 124.0.6367.219 | v1 | 5/5 | 3.59초 | 3.13초~3.99초 | 9KB | - | [45801143088-1](https://github.com/woowacourse-teams/2026-jachwi-sunbae/actions/runs/45801143088/attempts/1) |
 | 2026-11-26 10:23 | `45bba806` | com.google.android.webview, 124.0.6367.219 | v1 | 5/5 | 2.43초 | 2.24초~2.90초 | 9KB | - | [45798741376-1](https://github.com/woowacourse-teams/2026-jachwi-sunbae/actions/runs/45798741376/attempts/1) |
@@ -33,6 +35,7 @@
 
 | 날짜(UTC) | 커밋 | 웹뷰 | 시나리오 | 성공 | 중앙값 | 범위 | 받은 바이트 | 표시 | 실행 |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 2026-11-26 15:28 | `ce15ee85` | com.google.android.webview, 124.0.6367.219 | v1 | 5/5 | 0.99초 | 0.99초~0.99초 | 1458KB | - | [45845193948-1](https://github.com/woowacourse-teams/2026-jachwi-sunbae/actions/runs/45845193948/attempts/1) |
 | 2026-11-26 13:31 | `60c47589` | com.google.android.webview, 124.0.6367.219 | v1 | 5/5 | 0.98초 | 0.96초~0.98초 | 1545KB | - | [45827208023-1](https://github.com/woowacourse-teams/2026-jachwi-sunbae/actions/runs/45827208023/attempts/1) |
 | 2026-11-26 10:48 | `22a077f0` | com.google.android.webview, 124.0.6367.219 | v1 | 5/5 | 0.98초 | 0.98초~0.99초 | 1545KB | - | [45801143088-1](https://github.com/woowacourse-teams/2026-jachwi-sunbae/actions/runs/45801143088/attempts/1) |
 | 2026-11-26 10:23 | `45bba806` | com.google.android.webview, 124.0.6367.219 | v1 | 5/5 | 0.98초 | 0.98초~0.98초 | 1545KB | - | [45798741376-1](https://github.com/woowacourse-teams/2026-jachwi-sunbae/actions/runs/45798741376/attempts/1) |
@@ -46,6 +49,7 @@
 
 | 날짜(UTC) | 커밋 | 웹뷰 | 시나리오 | 성공 | 중앙값 | 범위 | 받은 바이트 | 표시 | 실행 |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 2026-11-26 15:28 | `ce15ee85` | com.google.android.webview, 124.0.6367.219 | v1 | 5/5 | 4.75초 | 4.67초~4.84초 | 1458KB | - | [45845193948-1](https://github.com/woowacourse-teams/2026-jachwi-sunbae/actions/runs/45845193948/attempts/1) |
 | 2026-11-26 13:31 | `60c47589` | com.google.android.webview, 124.0.6367.219 | v1 | 5/5 | 4.71초 | 4.64초~4.74초 | 1545KB | - | [45827208023-1](https://github.com/woowacourse-teams/2026-jachwi-sunbae/actions/runs/45827208023/attempts/1) |
 | 2026-11-26 10:48 | `22a077f0` | com.google.android.webview, 124.0.6367.219 | v1 | 5/5 | 4.67초 | 4.61초~4.75초 | 1545KB | - | [45801143088-1](https://github.com/woowacourse-teams/2026-jachwi-sunbae/actions/runs/45801143088/attempts/1) |
 | 2026-11-26 10:23 | `45bba806` | com.google.android.webview, 124.0.6367.219 | v1 | 5/5 | 4.69초 | 4.61초~4.73초 | 1545KB | - | [45798741376-1](https://github.com/woowacourse-teams/2026-jachwi-sunbae/actions/runs/45798741376/attempts/1) |
@@ -56,6 +60,7 @@
 
 | 날짜(UTC) | 커밋 | 웹뷰 | 시나리오 | 성공 | 중앙값 | 범위 | 받은 바이트 | 표시 | 실행 |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 2026-11-26 15:28 | `ce15ee85` | com.google.android.webview, 124.0.6367.219 | v1 | 5/5 | 1.69초 | 1.63초~1.71초 | 1486KB | - | [45845193948-1](https://github.com/woowacourse-teams/2026-jachwi-sunbae/actions/runs/45845193948/attempts/1) |
 | 2026-11-26 13:31 | `60c47589` | com.google.android.webview, 124.0.6367.219 | v1 | 5/5 | 1.67초 | 1.65초~1.71초 | 1573KB | - | [45827208023-1](https://github.com/woowacourse-teams/2026-jachwi-sunbae/actions/runs/45827208023/attempts/1) |
 | 2026-11-26 10:48 | `22a077f0` | com.google.android.webview, 124.0.6367.219 | v1 | 5/5 | 1.65초 | 1.65초~1.66초 | 1573KB | - | [45801143088-1](https://github.com/woowacourse-teams/2026-jachwi-sunbae/actions/runs/45801143088/attempts/1) |
 | 2026-11-26 10:23 | `45bba806` | com.google.android.webview, 124.0.6367.219 | v1 | 5/5 | 1.68초 | 1.62초~1.70초 | 1573KB | - | [45798741376-1](https://github.com/woowacourse-teams/2026-jachwi-sunbae/actions/runs/45798741376/attempts/1) |
@@ -66,6 +71,7 @@
 
 | 날짜(UTC) | 커밋 | 웹뷰 | 시나리오 | 성공 | 중앙값 | 범위 | 받은 바이트 | 표시 | 실행 |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 2026-11-26 15:28 | `ce15ee85` | com.google.android.webview, 124.0.6367.219 | v1 | 5/5 | 0.64초 | 0.63초~0.65초 | 1458KB | - | [45845193948-1](https://github.com/woowacourse-teams/2026-jachwi-sunbae/actions/runs/45845193948/attempts/1) |
 | 2026-11-26 13:31 | `60c47589` | com.google.android.webview, 124.0.6367.219 | v1 | 5/5 | 0.65초 | 0.64초~0.65초 | 1546KB | - | [45827208023-1](https://github.com/woowacourse-teams/2026-jachwi-sunbae/actions/runs/45827208023/attempts/1) |
 | 2026-11-26 10:48 | `22a077f0` | com.google.android.webview, 124.0.6367.219 | v1 | 5/5 | 0.64초 | 0.64초~0.65초 | 1546KB | - | [45801143088-1](https://github.com/woowacourse-teams/2026-jachwi-sunbae/actions/runs/45801143088/attempts/1) |
 | 2026-11-26 10:23 | `45bba806` | com.google.android.webview, 124.0.6367.219 | v1 | 5/5 | 0.64초 | 0.64초~0.66초 | 1546KB | - | [45798741376-1](https://github.com/woowacourse-teams/2026-jachwi-sunbae/actions/runs/45798741376/attempts/1) |
@@ -76,6 +82,7 @@
 
 | 날짜(UTC) | 커밋 | 웹뷰 | 시나리오 | 성공 | 중앙값 | 범위 | 받은 바이트 | 표시 | 실행 |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 2026-11-26 15:28 | `ce15ee85` | com.google.android.webview, 124.0.6367.219 | v1 | 5/5 | 5.26초 | 4.61초~5.96초 | 1461KB | - | [45845193948-1](https://github.com/woowacourse-teams/2026-jachwi-sunbae/actions/runs/45845193948/attempts/1) |
 | 2026-11-26 13:31 | `60c47589` | com.google.android.webview, 124.0.6367.219 | v1 | 5/5 | 4.06초 | 3.91초~4.58초 | 1546KB | - | [45827208023-1](https://github.com/woowacourse-teams/2026-jachwi-sunbae/actions/runs/45827208023/attempts/1) |
 | 2026-11-26 10:48 | `22a077f0` | com.google.android.webview, 124.0.6367.219 | v1 | 5/5 | 5.36초 | 5.17초~5.50초 | 1545KB | - | [45801143088-1](https://github.com/woowacourse-teams/2026-jachwi-sunbae/actions/runs/45801143088/attempts/1) |
 | 2026-11-26 10:23 | `45bba806` | com.google.android.webview, 124.0.6367.219 | v1 | 0/5 | - | -~- | - | 표본 부족 | [45798741376-1](https://github.com/woowacourse-teams/2026-jachwi-sunbae/actions/runs/45798741376/attempts/1) |
@@ -85,6 +92,7 @@
 
 | 날짜(UTC) | 커밋 | 웹뷰 | 시나리오 | 성공 | 중앙값 | 범위 | 받은 바이트 | 표시 | 실행 |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 2026-11-26 15:28 | `ce15ee85` | com.google.android.webview, 124.0.6367.219 | v1 | 5/5 | 1.47초 | 1.29초~1.54초 | 3162KB | - | [45845193948-1](https://github.com/woowacourse-teams/2026-jachwi-sunbae/actions/runs/45845193948/attempts/1) |
 | 2026-11-26 13:31 | `60c47589` | com.google.android.webview, 124.0.6367.219 | v1 | 5/5 | 1.35초 | 1.22초~1.45초 | 3624KB | - | [45827208023-1](https://github.com/woowacourse-teams/2026-jachwi-sunbae/actions/runs/45827208023/attempts/1) |
 | 2026-11-26 10:48 | `22a077f0` | com.google.android.webview, 124.0.6367.219 | v1 | 0/5 | - | -~- | - | 표본 부족 | [45801143088-1](https://github.com/woowacourse-teams/2026-jachwi-sunbae/actions/runs/45801143088/attempts/1) |
 | 2026-11-26 10:23 | `45bba806` | com.google.android.webview, 124.0.6367.219 | v1 | 0/5 | - | -~- | - | 표본 부족 | [45798741376-1](https://github.com/woowacourse-teams/2026-jachwi-sunbae/actions/runs/45798741376/attempts/1) |
