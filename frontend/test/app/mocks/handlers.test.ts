@@ -1,8 +1,13 @@
 // @vitest-environment node
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { beforeEach, describe, expect, it } from 'vitest';
 
 import { handlers } from '@/app/mocks/handlers';
-import { resetMockStore } from '@/app/mocks/mockStore';
+import { MOCK_NEW_MEMBER_COOKIE, resetMockStore } from '@/app/mocks/mockStore';
+import { parseGoodPriceResult } from '@/features/good-price/api/goodPriceApi';
+import { parseDeliveryOffers, parsePromotionResult } from '@/features/meal-deals/api/mealDealsApi';
+import { parsePropertyMemoDocument } from '@/features/property/api/propertyParsers';
 
 import { server } from '../../server';
 
@@ -52,6 +57,22 @@ describe('최종 API 명세 MSW handlers', () => {
     expect(body).toMatchObject({
       data: { roadAddress: '서울 관악구 신림로 12길 3', latitude: 37.4841234, longitude: 126.9291234 },
     });
+  });
+
+  it('새 회원 쿠키가 있으면 매물 목록을 비워 미리보기 매물이 보이는 새 익명 회원처럼 답한다', async () => {
+    const fresh = await readJson(
+      await fetch(apiUrl('/api/properties'), { headers: { cookie: `${MOCK_NEW_MEMBER_COOKIE}=true` } }),
+    );
+    expect(fresh).toMatchObject({ data: { totalCount: 0, items: [] } });
+
+    const existing = await readJson(await fetch(apiUrl('/api/properties')));
+    expect(existing).toMatchObject({ data: { totalCount: 2 } });
+  });
+
+  it('qa의 동네 찾기와 지도 스모크는 목과 같은 새 회원 쿠키 이름을 쓴다', () => {
+    expect(readFileSync(resolve(process.cwd(), '../qa/tests/finder-map-smoke.spec.ts'), 'utf-8')).toContain(
+      `MOCK_NEW_MEMBER_COOKIE = "${MOCK_NEW_MEMBER_COOKIE}"`,
+    );
   });
 
   it('매물 목록은 dev 계약의 items·좌표·대표 사진 필드를 제공한다', async () => {
@@ -208,5 +229,30 @@ describe('최종 API 명세 MSW handlers', () => {
     const reused = await send({ idToken: 'local-id-token', nonce });
     expect(reused.status).toBe(400);
     expect(await readJson(reused)).toMatchObject({ code: 'OAUTH_ID_TOKEN_INVALID' });
+  });
+  it('저렴한 한 끼 세 탭의 목 응답은 앱의 응답 해석을 통과한다', async () => {
+    const stores = await readJson(
+      await fetch(apiUrl('/api/maps/good-price-stores?latitude=37.55&longitude=126.91&radius=2000')),
+    );
+    expect(parseGoodPriceResult(stores.data)).toMatchObject({
+      center: { latitude: 37.55, longitude: 126.91 },
+      count: 2,
+    });
+
+    for (const brand of ['EMART24', 'SEVEN_ELEVEN']) {
+      const promotions = await readJson(await fetch(apiUrl(`/api/promotions?brand=${brand}`)));
+      expect(parsePromotionResult(promotions.data).brand).toBe(brand);
+    }
+    const offers = await readJson(await fetch(apiUrl('/api/delivery-discount-offers')));
+    expect(parseDeliveryOffers(offers.data)).toHaveLength(2);
+
+    const badRadius = await fetch(apiUrl('/api/maps/good-price-stores?latitude=37.55&longitude=126.91&radius=300'));
+    expect(badRadius.status).toBe(400);
+  });
+
+  it('메모를 쓴 적 없는 매물도 서버처럼 빈 메모로 답한다', async () => {
+    const response = await fetch(apiUrl('/api/properties/11/memo'));
+    expect(response.status).toBe(200);
+    expect(parsePropertyMemoDocument((await readJson(response)).data)).toEqual({ propertyId: 11, freeMemo: '' });
   });
 });
