@@ -9,13 +9,15 @@ adb wait-for-device
 adb reverse tcp:4302 tcp:4302
 adb reverse tcp:4443 tcp:4443
 adb install -r -t "${apk}" > /dev/null
+# 방 등록 시나리오는 현재 위치를 쓴다. 측정 스크립트도 CDP로 같은 좌표를 덮어쓴다.
+adb emu geo fix 126.9236 37.5563 > /dev/null 2>&1 || true
 adb shell getprop ro.build.version.release | sed 's/^/Android /'
 adb shell dumpsys webviewupdate | grep -i 'current webview package' || true
 adb shell dumpsys package com.android.chrome | grep -m1 versionName || echo 'chrome 없음'
 for target in chrome webview; do
   mkdir -p "${out}/${target}"
   before=$(grep -c '^request ' "${stub_log}" || true)
-  node "${S}/measure-android.mjs" --target "${target}" --screen home --path "/?view=list" --runs "${runs}" --net fast4g --out "${out}/${target}" \
+  node "${S}/measure-android.mjs" --target "${target}" --runs "${runs}" --net fast4g --out "${out}/${target}" \
     || echo "::warning::${target} 측정 실패"
   after=$(grep -c '^request ' "${stub_log}" || true)
   echo $((after - before)) > "${out}/${target}/stub-hits.txt"

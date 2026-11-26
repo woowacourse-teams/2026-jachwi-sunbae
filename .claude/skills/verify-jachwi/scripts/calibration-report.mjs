@@ -33,7 +33,8 @@ const readLines = (file) =>
 const seconds = (ms) => (ms === null || ms === undefined ? '-' : `${(ms / 1000).toFixed(2)}초`);
 
 const rows = ROWS.map((row) => {
-  const runs = readLines(join(dir, row.key, 'runs.jsonl'));
+  // 웹뷰 원자료에는 재방문, 방 등록 회차도 있다. 이 표는 빈 캐시 첫 방문(cold)만 쓴다.
+  const runs = readLines(join(dir, row.key, 'runs.jsonl')).filter((run) => (run.scenario ?? 'cold') === 'cold');
   const values = runs.map((run) => run.moment).filter((value) => typeof value === 'number');
   const hitsFile = join(dir, row.key, 'stub-hits.txt');
   const result = existsSync(join(dir, row.key, 'result.json'))

@@ -3,6 +3,8 @@ package kr.jachwisunbae.webviewshell;
 import android.app.Activity;
 import android.os.Bundle;
 import android.webkit.CookieManager;
+import android.webkit.GeolocationPermissions;
+import android.webkit.WebChromeClient;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
@@ -35,6 +37,13 @@ public class MainActivity extends Activity {
     settings.setUserAgentString(
         WebSettings.getDefaultUserAgent(this) + " JachwiSunbae/" + (appVersion == null ? "0.0.0" : appVersion) + " android");
     webView.setWebViewClient(new WebViewClient());
+    // react-native-webview 의 RNCWebChromeClient 처럼, 앱에 위치 권한이 있으면 웹의 위치 요청을 허용한다.
+    webView.setWebChromeClient(new WebChromeClient() {
+      @Override
+      public void onGeolocationPermissionsShowPrompt(String origin, GeolocationPermissions.Callback callback) {
+        callback.invoke(origin, true, false);
+      }
+    });
     setContentView(webView);
     webView.loadUrl("about:blank");
   }

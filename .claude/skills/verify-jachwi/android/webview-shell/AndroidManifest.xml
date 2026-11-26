@@ -6,6 +6,9 @@
     android:versionName="1.0">
     <uses-sdk android:minSdkVersion="24" android:targetSdkVersion="35" />
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- App.tsx 의 geolocationEnabled. 측정 스크립트가 pm grant 로 미리 허용한다(방 등록 시나리오가 현재 위치를 쓴다). -->
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <application android:label="WebViewShell" android:usesCleartextTraffic="true" android:debuggable="true">
         <activity android:name=".MainActivity" android:exported="true">
             <intent-filter>

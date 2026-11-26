@@ -2,32 +2,70 @@ name: Android WebView Calibration
 
 # PR마다 도는 Visual Verdict는 데스크탑 Chromium에 보통 4G와 CPU 4배 제한을 건 흉내 환경에서 잰다.
 # 이 워크플로는 같은 실행 안에서 그 흉내 값과 안드로이드 에뮬레이터의 크롬, 앱 웹뷰(같은 설정의 셸) 값을 한 표로 비교한다.
-# - 주 1회와 수동 실행(workflow_dispatch, 기본 브랜치에 이 파일이 있어야 보인다). 에뮬레이터를 띄워 오래 걸려 PR마다는 돌리지 않는다.
+# 앱 웹뷰에서는 세 시나리오(빈 캐시 첫 방문, 같은 캐시로 재방문, 방 등록)를 재고 이력에 쌓아 직전 실행, 최근 4회와 비교한다.
+# - 주 1회와 수동 실행(workflow_dispatch, 기본 브랜치 develop에 이 파일이 있어야 보인다). 에뮬레이터를 띄워 오래 걸려 PR마다는 돌리지 않는다.
+# - 이력: 주 1회 실행만 운영 이력(calibration-history 브랜치)에 쓴다. 수동 실행은 기본이 시험 이력(calibration-history-test)이고,
+#   develop에서 history=prod 를 고를 때만 운영 이력에 쓴다. 시험 실행이 운영 이력에 섞이지 않게 하려는 것이다.
 # - 결과: 실행 요약(표)과 아티팩트 android-webview-calibration. 판정이 아니라 참고 값이라 실패로 막지 않는다.
 on:
+  # 임시: PR 브랜치에서 시험 이력으로 돌려 보려는 트리거. 머지 준비 때 지운다.
+  push:
+    branches: [chore/android-webview-calibration]
   workflow_dispatch:
+    inputs:
+      history:
+        description: '이력 채널. prod 는 develop 에서만 쓸 수 있다'
+        type: choice
+        options: [test, prod]
+        default: test
   schedule:
-    # 매주 월요일 0:00 KST(UTC 일요일 15:00). schedule은 기본 브랜치(main)의 이 파일로 돌아 develop을 꺼낸다.
+    # 매주 월요일 0:00 KST(UTC 일요일 15:00). schedule은 기본 브랜치(develop)의 이 파일로 돌아 develop을 잰다.
     - cron: '0 15 * * 0'
 
 permissions:
   contents: read
 
+# 시험 실행이 주 1회 실행을 중간에 끊지 않게 앞 실행이 끝나기를 기다린다.
 concurrency:
   group: android-webview-calibration
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   calibrate:
     name: Android WebView calibration
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 50
+    permissions:
+      # 이력 브랜치(calibration-history, calibration-history-test)에 기록을 올린다.
+      contents: write
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
         with:
           ref: ${{ github.event_name == 'schedule' && 'develop' || github.ref }}
+          # 이력 push 는 아래에서 토큰을 직접 준다.
+          persist-credentials: false
+
+      - name: Decide history channel
+        id: channel
+        env:
+          EVENT: ${{ github.event_name }}
+          REQUESTED: ${{ inputs.history }}
+          REF: ${{ github.ref }}
+        run: |
+          channel=test
+          if [[ "${EVENT}" == schedule ]]; then channel=prod; fi
+          if [[ "${EVENT}" == workflow_dispatch && "${REQUESTED}" == prod ]]; then
+            [[ "${REF}" == refs/heads/develop ]] || { echo "::error::운영 이력(prod)은 develop 에서만 쓴다: ${REF}"; exit 1; }
+            channel=prod
+          fi
+          branch=calibration-history
+          [[ "${channel}" == prod ]] || branch=calibration-history-test
+          echo "channel=${channel}" >> "${GITHUB_OUTPUT}"
+          echo "branch=${branch}" >> "${GITHUB_OUTPUT}"
+          echo "commit=$(git rev-parse HEAD)" >> "${GITHUB_OUTPUT}"
+          echo "이력 채널: ${channel} (${branch}), 커밋 $(git rev-parse --short HEAD)"
 
       - name: Set up frontend
         uses: ./.github/actions/setup-frontend
@@ -57,7 +95,7 @@ jobs:
       - name: Start servers
         run: |
           S=.claude/skills/verify-jachwi/scripts
-          nohup node "$S/serve.mjs" --dist frontend/dist --port 4302 --api mock --delay 300 > "${RUNNER_TEMP}/serve.log" 2>&1 &
+          nohup node "$S/serve.mjs" --dist frontend/dist --port 4302 --api mock --delay 300 --cache prod > "${RUNNER_TEMP}/serve.log" 2>&1 &
           nohup node "$S/map-sdk-stub.mjs" --port 4443 > "${RUNNER_TEMP}/map-sdk-stub.log" 2>&1 &
           for _ in $(seq 60); do curl -sf http://localhost:4302/ > /dev/null && break; sleep 0.5; done
           for _ in $(seq 60); do curl -skf https://localhost:4443/openapi/v3/maps-gl.js -o /dev/null && break; sleep 0.5; done
@@ -104,6 +142,41 @@ jobs:
           node .claude/skills/verify-jachwi/scripts/calibration-report.mjs --dir "${RUNNER_TEMP}/calibration" --run-url "${RUN_URL}" \
             && cat "${RUNNER_TEMP}/calibration/calibration.md" >> "${GITHUB_STEP_SUMMARY}"
           cp "${RUNNER_TEMP}"/*.log "${RUNNER_TEMP}/calibration/" 2>/dev/null || true
+
+      # 웹뷰 측정이 돌았을 때만 이력에 쓴다. 측정 전에 실패한 실행은 기록하지 않는다.
+      - name: Record history
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CHANNEL: ${{ steps.channel.outputs.channel }}
+          BRANCH: ${{ steps.channel.outputs.branch }}
+          COMMIT: ${{ steps.channel.outputs.commit }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}/attempts/${{ github.run_attempt }}
+        run: |
+          OUT="${RUNNER_TEMP}/calibration"
+          H="${RUNNER_TEMP}/history"
+          if [[ ! -f "${OUT}/webview/result.json" ]]; then echo '웹뷰 측정 결과가 없어 이력에 쓰지 않는다.'; exit 0; fi
+          REMOTE="https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          cat > "${OUT}/env.json" <<EOF
+          {"runner": "${ImageOS:-ubuntu} ${ImageVersion:-}", "emulator": "API 35 google_apis x86_64 pixel_6, swiftshader", "mockDelay": 300, "mapSdk": "stub", "cache": "prod"}
+          EOF
+          git init -q "${H}"
+          if git -C "${H}" fetch -q --depth=1 "${REMOTE}" "refs/heads/${BRANCH}"; then
+            git -C "${H}" checkout -q -B "${BRANCH}" FETCH_HEAD
+          else
+            echo "${BRANCH} 브랜치가 없어 첫 기록으로 만든다."
+            git -C "${H}" checkout -q --orphan "${BRANCH}"
+          fi
+          node .claude/skills/verify-jachwi/scripts/calibration-history.mjs --dir "${OUT}" --history "${H}" \
+            --channel "${CHANNEL}" --commit "${COMMIT}" --ref "${GITHUB_REF}" --event "${GITHUB_EVENT_NAME}" \
+            --run-url "${RUN_URL}" --run-id "${GITHUB_RUN_ID}" --run-attempt "${GITHUB_RUN_ATTEMPT}" --env-file "${OUT}/env.json"
+          cat "${OUT}/history.md" >> "${GITHUB_STEP_SUMMARY}"
+          cp "${H}/android-webview/SUMMARY.md" "${OUT}/history-summary.md"
+          git -C "${H}" add -A
+          git -C "${H}" -c user.name='github-actions[bot]' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' \
+            commit -qm "chore: 안드로이드 웹뷰 보정 기록을 더한다 (${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}, ${COMMIT:0:8})"
+          git -C "${H}" push -q "${REMOTE}" "HEAD:refs/heads/${BRANCH}"
+          echo "이력: ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/blob/${BRANCH}/android-webview/SUMMARY.md" >> "${GITHUB_STEP_SUMMARY}"
 
       - name: Upload calibration
         if: always()
