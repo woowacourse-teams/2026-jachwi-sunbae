@@ -8,14 +8,17 @@ import { usePublicConfig } from '@/shared/config/PublicConfigContext';
 import { isAdminPath } from '@/shared/lib/analytics/adminPrivacy';
 import { getAnalyticsDeviceContext } from '@/shared/lib/analytics/deviceContext';
 import {
+  holdPostHogSdkLoadUntil,
   identifyPostHogMember,
   initPostHog,
   resetPostHogIdentity,
   setPostHogAuthenticationReader,
   setPostHogSessionContext,
+  startPostHogEarlyErrorCapture,
   startPostHogFirstListingCardTiming,
   startPostHogWebVitals,
   trackPostHogPageView,
+  waitForPostHogFirstScreen,
 } from '@/shared/lib/analytics/posthog';
 
 const MemberPostHogTracker = () => {
@@ -28,7 +31,10 @@ const MemberPostHogTracker = () => {
     setPostHogAuthenticationReader(() =>
       getAuthenticationSnapshot().session === null ? 'anonymous' : 'authenticated',
     );
+    // SDK는 첫 화면이 그려진 뒤 받는다. 그전 이벤트와 미처리 오류는 큐에 모았다가 순서대로 보낸다. 앱 시작 때 한 번만 건다.
+    holdPostHogSdkLoadUntil(waitForPostHogFirstScreen());
     if (initPostHog(config.posthogProjectToken ?? '', config.posthogHost ?? '')) {
+      startPostHogEarlyErrorCapture();
       startPostHogWebVitals();
       startPostHogFirstListingCardTiming();
     }

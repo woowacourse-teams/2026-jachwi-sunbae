@@ -51,10 +51,10 @@ describe('PostHog SDK 수명주기', () => {
     runPostHogAction((client) => client.capture('login_succeeded'));
     await vi.waitFor(() => expect(sdk.capture).toHaveBeenCalledTimes(2));
   });
-  it('미설정 수집을 거절하고 준비 전 큐를 100개로 제한한다', () => {
+  it('미설정 수집을 거절하고 준비 전 큐를 300개로 제한한다', () => {
     expect(runPostHogAction((client) => client.capture('login_started'))).toBe(false);
     initPostHog('phc_test', 'https://us.i.posthog.com');
-    for (let i = 0; i < 100; i += 1) expect(runPostHogAction(() => undefined)).toBe(true);
+    for (let i = 0; i < 300; i += 1) expect(runPostHogAction(() => undefined)).toBe(true);
     expect(runPostHogAction(() => undefined)).toBe(false);
     expect(getPostHogDiagnostics().droppedActions).toBe(1);
   });
