@@ -35,6 +35,8 @@ const styles = {
   items: css`
     label: RecordGroupList-items;
     display: grid;
+    /* 칸 폭을 시트 폭에 묶는다. 기본(auto) 칸은 긴 매물 이름의 한 줄 폭만큼 넓어져 카드가 시트 밖으로 넘치고, 시트가 옆으로도 끌렸다. */
+    grid-template-columns: minmax(0, 1fr);
     gap: 0.5rem;
     margin: 0;
     padding: 0;

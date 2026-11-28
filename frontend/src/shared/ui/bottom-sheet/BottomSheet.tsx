@@ -342,9 +342,9 @@ const styles = {
         height: var(--sheet-height, 88%);
       }
 
-      /* 제목만 남기고 내린다. */
+      /* 제목만 남기고 내린다. 높이는 손잡이와 제목줄에 맞춘다(제목 아래 줄이 있어도 잘리지 않는다). 내용은 끄는 동안에만 보인다. */
       &[data-mode='peek'] {
-        height: var(--sheet-height, 5.5rem);
+        height: var(--sheet-height, auto);
       }
 
       /* 끄는 동안은 transform만 바꾸므로 미리 레이어로 올려 둔다. */
@@ -500,11 +500,18 @@ const styles = {
 
   content: css`
     label: BottomSheet-content;
+    /* 시트 안은 세로로만 스크롤한다. 내용이 시트보다 넓어져도 옆으로 끌리거나 흔들리지 않는다(가로로 넘기는 목록은 제 칸 안에서 스크롤한다). */
+    overflow-x: hidden;
     overflow-y: auto;
     overscroll-behavior: contain;
     min-height: 0;
     flex: 1;
     padding: 0 1.25rem 1.5rem;
+
+    /* 접힌 시트는 제목만 보인다. 첫 내용 윗부분이 제목 아래로 비치지 않게 숨기고, 끌어 올리는 동안에는 다시 보인다. */
+    .BottomSheet-sheet[data-mode='peek']:not([data-dragging]) & {
+      display: none;
+    }
 
     /* 제목줄을 숨긴 시트는 내용이 맨 위부터 시작하므로 위쪽 여백을 준다. */
     &[data-header-hidden='true'] {
