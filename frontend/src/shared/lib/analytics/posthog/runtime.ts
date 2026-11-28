@@ -8,8 +8,11 @@ let initializedConfiguration: string | null = null;
 let client: PostHogClient | null = null;
 let loadPromise: Promise<void> | null = null;
 let pendingActions: PostHogAction[] = [];
-const MAX_PENDING_ACTIONS = 100;
+// 첫 화면 뒤로 SDK를 미루는 동안 쌓이는 이벤트(페이지뷰, 성능, 노출)를 버리지 않을 만큼 둔다.
+const MAX_PENDING_ACTIONS = 300;
 let generation = 0;
+let loadHeld = false;
+let loadHoldRequested = false;
 let sessionContext: PostHogSessionContext | null = null;
 let authenticationReader: (() => PostHogAuthStatus) | null = null;
 export const setPostHogAuthenticationReader = (reader: () => PostHogAuthStatus): void => {
@@ -27,7 +30,7 @@ export const getPostHogEventProperties = (properties?: Record<string, unknown>):
 });
 let identifiedMember: string | null = null;
 let lastTrackedPath: string | null = null;
-let status: 'disabled' | 'loading' | 'ready' | 'failed' = 'disabled';
+let status: 'disabled' | 'deferred' | 'loading' | 'ready' | 'failed' = 'disabled';
 let failedActions = 0;
 let droppedActions = 0;
 const diagnoseFailure = (reason: 'sdk_action' | 'sdk_load' | 'queue_full'): void => {
@@ -76,6 +79,10 @@ const flushActions = (loadedClient: PostHogClient): void => {
 };
 const loadClient = (): void => {
   if (loadPromise !== null) return;
+  if (loadHeld) {
+    status = 'deferred';
+    return;
+  }
   status = 'loading';
   const currentGeneration = generation;
   loadPromise = import('posthog-js')
@@ -96,6 +103,23 @@ const loadClient = (): void => {
       if (currentGeneration === generation) loadPromise = null;
     });
 };
+/**
+ * SDK 받기를 `ready`가 끝날 때까지 미룬다. 그동안의 액션은 지금처럼 큐에 모았다가 받은 뒤 순서대로 보낸다.
+ * 첫 화면에서 SDK가 회선을 나눠 쓰지 않게 하려는 것이라, 앱 시작 때 한 번만 건다. 이미 받았거나 받는 중이면 걸지 않는다.
+ */
+export const holdPostHogSdkLoadUntil = (ready: Promise<unknown>): void => {
+  if (loadHoldRequested || client !== null || loadPromise !== null) return;
+  loadHoldRequested = true;
+  loadHeld = true;
+  const currentGeneration = generation;
+  const release = () => {
+    if (currentGeneration !== generation) return;
+    loadHeld = false;
+    if (requestedConfiguration !== null) loadClient();
+  };
+  ready.then(release, release);
+};
+export const isPostHogSdkReady = (): boolean => status === 'ready';
 export const initPostHog = (projectToken: string, host: string): boolean => {
   const normalizedToken = projectToken.trim();
   const normalizedHost = host.trim().replace(/\/$/, '');
@@ -148,6 +172,8 @@ export const resetPostHogClientForTests = (): void => {
   client = null;
   loadPromise = null;
   pendingActions = [];
+  loadHeld = false;
+  loadHoldRequested = false;
   status = 'disabled';
   failedActions = 0;
   droppedActions = 0;

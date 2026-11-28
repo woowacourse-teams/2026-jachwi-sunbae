@@ -2,6 +2,7 @@ import type { MapBounds, MapMarker } from '../model/Map';
 import { clampToSouthKorea, SOUTH_KOREA_BOUNDS } from './mapLocation';
 import { markerAnchorTransform } from './mapMarkerPresentation';
 import { MAP_TIMING, markMapTiming } from './mapTiming';
+import { NEAR_MOVE_MS, planViewFlight, viewFlightDuration } from './mapViewFlight';
 const clamp = (value: number, min: number, max: number): number => Math.min(Math.max(value, min), max);
 const NAVER_ZOOM_BASE = 20;
 const MIN_NAVER_ZOOM = 6;
@@ -99,6 +100,69 @@ export const preloadNaverSdk = (clientId: string): void => {
   }
 };
 
+/** 지도마다 진행 중인 여러 단계 이동을 멈추는 함수. 새로 옮기거나 손으로 끌면 남은 단계를 버린다. */
+const viewFlights = new WeakMap<NaverMap, () => void>();
+const stopViewFlight = (map: NaverMap) => {
+  viewFlights.get(map)?.();
+  viewFlights.delete(map);
+};
+
+const screenDistance = (from: NaverPoint, to: NaverPoint) => Math.hypot(to.x - from.x, to.y - from.y);
+
+/**
+ * 공개 API(`morph`, `getProjection().fromCoordToOffset`, `getSize`)만으로 시점을 옮긴다. 먼 곳은 줄였다가 옮기고 다시 확대한다
+ * (`planViewFlight`).
+ */
+const flyView = (map: NaverMap, center: NaverLatLng, zoom: number): number => {
+  const morph = map.morph;
+  if (morph === undefined) return 0;
+  const projection = map.getProjection?.();
+  const size = map.getSize?.();
+  // 거리나 지도 칸 크기를 모르면 예전처럼 한 번에 옮긴다.
+  const steps =
+    projection?.fromCoordToOffset === undefined || size === undefined
+      ? [{ center, zoom, duration: NEAR_MOVE_MS }]
+      : planViewFlight({
+          from: map.getCenter(),
+          fromZoom: map.getZoom(),
+          to: center,
+          toZoom: zoom,
+          distancePx: screenDistance(
+            projection.fromCoordToOffset(map.getCenter()),
+            projection.fromCoordToOffset(center),
+          ),
+          viewport: size,
+          minZoom: MIN_NAVER_ZOOM,
+        });
+  const [first, ...rest] = steps;
+  if (first === undefined) return 0;
+  morph.call(map, first.center, first.zoom, { duration: first.duration, easing: 'easeOutCubic' });
+  if (rest.length === 0) return first.duration;
+  const timers: number[] = [];
+  const events = window.naver?.maps.Event;
+  // 손으로 끌거나 두 손가락으로 줄이면 그 자리를 따르고 남은 단계는 하지 않는다.
+  const interrupts = ['dragstart', 'pinchstart'].map((name) =>
+    events?.addListener(map, name, () => stopViewFlight(map)),
+  );
+  let elapsed = first.duration;
+  rest.forEach((step, index) => {
+    timers.push(
+      window.setTimeout(() => {
+        morph.call(map, step.center, step.zoom, { duration: step.duration, easing: 'easeOutCubic' });
+        if (index === rest.length - 1) stopViewFlight(map);
+      }, elapsed),
+    );
+    elapsed += step.duration;
+  });
+  viewFlights.set(map, () => {
+    timers.forEach((timer) => window.clearTimeout(timer));
+    interrupts.forEach((listener) => {
+      if (listener !== undefined) events?.removeListener(listener);
+    });
+  });
+  return viewFlightDuration(steps);
+};
+
 export type LiveEngine = {
   label: string;
   load: () => Promise<void>;
@@ -109,7 +173,8 @@ export type LiveEngine = {
   getBounds: (map: LiveMap) => MapBounds;
   setCenter: (map: LiveMap, center: LiveLatLng) => void;
   setZoom: (map: LiveMap, level: number) => void;
-  animateView: (map: LiveMap, center: LiveLatLng, level: number) => void;
+  /** 시점을 애니메이션으로 옮긴다. 다 옮기기까지 걸리는 시간(ms)을 돌려준다. 바로 옮겼으면 0이다. */
+  animateView: (map: LiveMap, center: LiveLatLng, level: number) => number;
   /** 지도가 알고 있는 자기 크기(px). 칸 크기와 다르면 `relayout`으로 맞춘다. */
   getSize: (map: LiveMap) => { width: number; height: number };
   relayout: (map: LiveMap) => void;
@@ -168,12 +233,14 @@ export const naverEngine = (clientId: string, customStyleId?: string): LiveEngin
   setCenter: (map, center) => (map as NaverMap).setCenter(center as NaverLatLng),
   setZoom: (map, level) => (map as NaverMap).setZoom(toNaverZoom(level)),
   animateView: (map, center, level) => {
-    if (map.morph && !window.matchMedia?.('(prefers-reduced-motion: reduce)').matches)
-      map.morph(center, toNaverZoom(level), { duration: 180, easing: 'easeOutCubic' });
-    else {
+    stopViewFlight(map);
+    const zoom = toNaverZoom(level);
+    if (!map.morph || window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) {
       map.setCenter(center);
-      map.setZoom(toNaverZoom(level));
+      map.setZoom(zoom);
+      return 0;
     }
+    return flyView(map, center, zoom);
   },
   getSize: (map) => {
     const size = map.getSize();
@@ -190,7 +257,10 @@ export const naverEngine = (clientId: string, customStyleId?: string): LiveEngin
   },
   // 공개 idle은 GL 준비보다 먼저 온다. 내부 플래그는 이름이 바뀔 수 있어 호출하는 쪽이 시간 제한을 둔다.
   isRenderReady: (map) => !customStyleId || map._glReady === true,
-  destroy: (map) => map.destroy(),
+  destroy: (map) => {
+    stopViewFlight(map);
+    map.destroy();
+  },
   addListener: (map, event, callback) =>
     naverMaps().Event.addListener(map, event, (value) => callback(value?.coord?.lat(), value?.coord?.lng())),
   removeListener: (listener) => {

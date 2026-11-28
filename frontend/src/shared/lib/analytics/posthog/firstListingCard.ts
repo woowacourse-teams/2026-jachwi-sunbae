@@ -1,6 +1,7 @@
 import { HOME_PATH } from '@/shared/lib/navigation/appPaths';
 
 import { getAnalyticsScreenRoute, getCurrentAnalyticsScreenRoute } from '../screenRoute';
+import { markPostHogFirstListingCardShown } from './firstScreen';
 import { getPostHogEventProperties, runPostHogAction } from './runtime';
 
 export const FIRST_LISTING_CARD_EVENT = 'first_listing_card_visible';
@@ -66,7 +67,10 @@ export const reportPostHogFirstListingCard = (): boolean => {
     visit_type: armed.visitType,
     ...readNetworkConnection(),
   });
-  return runPostHogAction((client) => client.capture(FIRST_LISTING_CARD_EVENT, properties));
+  const accepted = runPostHogAction((client) => client.capture(FIRST_LISTING_CARD_EVENT, properties));
+  // 카드 시간을 큐에 넣은 뒤에 SDK를 받게 한다. 카드 이벤트가 SDK 받기 뒤로 밀려 순서가 바뀌지 않는다.
+  markPostHogFirstListingCardShown();
+  return accepted;
 };
 
 export const resetPostHogFirstListingCardForTests = (): void => {

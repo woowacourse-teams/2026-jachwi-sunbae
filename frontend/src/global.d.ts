@@ -28,7 +28,10 @@ type NaverMap = {
   setZoom: (zoom: number) => void;
   /** 확대 단계를 `deltaZoom`만큼(소수 가능) 바꾼다. `origin` 좌표가 화면에서 제자리에 남는다. `effect`가 false면 바로 옮긴다. */
   zoomBy?: (deltaZoom: number, origin?: NaverLatLng, effect?: boolean) => void;
-  getProjection?: () => { fromOffsetToCoord: (offset: NaverPoint) => NaverLatLng };
+  getProjection?: () => {
+    fromOffsetToCoord: (offset: NaverPoint) => NaverLatLng;
+    fromCoordToOffset?: (coord: NaverLatLng) => NaverPoint;
+  };
   morph?: (center: NaverLatLng, zoom: number, options: { duration: number; easing: string }) => void;
   /** 지도가 알고 있는 자기 크기(px). 지도 칸이 숨어 있을 때 창 크기가 바뀌면 SDK가 0으로 맞춰 둔다. */
   getSize: () => { width: number; height: number };
