@@ -2,12 +2,17 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { render } from '@testing-library/react';
 import { StrictMode, useEffect } from 'react';
 import { MemoryRouter } from 'react-router-dom';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import PostHogTracker from '@/app/analytics/PostHogTracker';
 import { PublicConfigProvider } from '@/shared/config/PublicConfigContext';
 import type { PublicConfig } from '@/shared/config/publicConfigTypes';
 import { resetPostHogForTests, trackPostHogEvent } from '@/shared/lib/analytics/posthog';
+import { stopPostHogEarlyErrorCaptureForTests } from '@/shared/lib/analytics/posthog/earlyErrors';
+import {
+  markPostHogFirstListingCardShown,
+  resetPostHogFirstScreenForTests,
+} from '@/shared/lib/analytics/posthog/firstScreen';
 import { takePushOpenFromLocation } from '@/shared/lib/analytics/pushOpen';
 const { sdk } = vi.hoisted(() => ({
   sdk: {
@@ -34,8 +39,14 @@ const InitialPageEvent = () => {
   return null;
 };
 describe('PostHogTracker 초기 수집 수명주기', () => {
+  beforeEach(() => {
+    // SDK는 첫 화면 뒤에 받는다. 이 파일은 받은 뒤의 수명주기를 보므로 첫 매물 카드가 이미 보였다고 둔다.
+    markPostHogFirstListingCardShown();
+  });
   afterEach(() => {
     resetPostHogForTests();
+    resetPostHogFirstScreenForTests();
+    stopPostHogEarlyErrorCaptureForTests();
     vi.resetAllMocks();
   });
   it('페이지의 첫 effect보다 먼저 초기화해 익명 첫 이벤트에도 환경 속성을 등록한다', async () => {
@@ -102,6 +113,29 @@ describe('PostHogTracker 초기 수집 수명주기', () => {
     expect(sdk.capture.mock.calls.filter(([name]) => name === 'push_opened')).toHaveLength(1);
     expect(window.location.search).toBe('');
     window.history.replaceState(null, '', '/');
+  });
+  it('홈에서는 첫 매물 카드가 보이기 전까지 SDK를 받지 않고, 그사이 페이지뷰를 모았다가 보낸다', async () => {
+    resetPostHogFirstScreenForTests();
+    render(
+      <StrictMode>
+        <QueryClientProvider client={new QueryClient()}>
+          <MemoryRouter>
+            <PublicConfigProvider config={config}>
+              <PostHogTracker />
+            </PublicConfigProvider>
+          </MemoryRouter>
+        </QueryClientProvider>
+      </StrictMode>,
+    );
+    await new Promise((resolve) => window.setTimeout(resolve, 500));
+    expect(sdk.init).not.toHaveBeenCalled();
+
+    markPostHogFirstListingCardShown();
+
+    await vi.waitFor(() =>
+      expect(sdk.capture).toHaveBeenCalledWith('$pageview', expect.objectContaining({ path: '/' })),
+    );
+    expect(sdk.init).toHaveBeenCalledOnce();
   });
   it('StrictMode 재마운트에서도 익명 ID와 동일 경로 페이지뷰를 유지한다', async () => {
     const client = new QueryClient();
