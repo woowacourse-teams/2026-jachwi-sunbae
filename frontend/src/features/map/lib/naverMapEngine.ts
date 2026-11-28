@@ -175,6 +175,8 @@ export type LiveEngine = {
   setZoom: (map: LiveMap, level: number) => void;
   /** 시점을 애니메이션으로 옮긴다. 다 옮기기까지 걸리는 시간(ms)을 돌려준다. 바로 옮겼으면 0이다. */
   animateView: (map: LiveMap, center: LiveLatLng, level: number) => number;
+  /** 지도가 알고 있는 자기 크기(px). 칸 크기와 다르면 `relayout`으로 맞춘다. */
+  getSize: (map: LiveMap) => { width: number; height: number };
   relayout: (map: LiveMap) => void;
   /**
    * 지도 칸 안 `offset`(px) 자리를 제자리에 두고 확대 단계를 `levelDelta`만큼(소수 가능, 음수면 가까이) 바로 바꾼다.
@@ -239,6 +241,10 @@ export const naverEngine = (clientId: string, customStyleId?: string): LiveEngin
       return 0;
     }
     return flyView(map, center, zoom);
+  },
+  getSize: (map) => {
+    const size = map.getSize();
+    return { width: size.width, height: size.height };
   },
   relayout: (map) => map.autoResize(),
   zoomAround: (map, levelDelta, offset) => {

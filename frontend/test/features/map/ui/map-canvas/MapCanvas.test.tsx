@@ -88,6 +88,7 @@ describe('Naver 지도 상태 동기화', () => {
     autoResize: ReturnType<typeof vi.fn>;
     destroy: ReturnType<typeof vi.fn>;
     container: HTMLElement;
+    size: { width: number; height: number };
   };
   let maps: FakeMapInstance[];
   let mapOptions: unknown[];
@@ -109,13 +110,19 @@ describe('Naver 지도 상태 동기화', () => {
         this.zoom = zoom;
       });
       refresh = vi.fn();
-      autoResize = vi.fn();
+      // 실제 SDK처럼 만들 때와 autoResize 때 칸 크기를 읽어 자기 크기로 삼는다.
+      autoResize = vi.fn(() => {
+        this.size = { width: this.container.clientWidth, height: this.container.clientHeight };
+      });
+      getSize = () => this.size;
       destroy = vi.fn();
 
       container: HTMLElement;
+      size: { width: number; height: number };
 
       constructor(container: HTMLElement, options: { center: FakeLatLng; zoom: number }) {
         this.container = container;
+        this.size = { width: container.clientWidth, height: container.clientHeight };
         mapOptions.push(options);
         this.center = options.center;
         this.zoom = options.zoom;
@@ -417,18 +424,65 @@ describe('Naver 지도 상태 동기화', () => {
       disconnect = vi.fn();
     }
     vi.stubGlobal('ResizeObserver', FakeResizeObserver);
+    const nextFrame = () =>
+      act(async () => {
+        await new Promise((resolve) => window.requestAnimationFrame(resolve));
+      });
 
     renderWithConfig(<MapCanvas center={{ latitude: 37.5665, longitude: 126.978 }} level={5} />);
     await waitFor(() => expect(resizeCallbacks).toHaveLength(1));
 
+    // 만들 때 읽은 크기 그대로면 맞추지 않는다.
     expect(() => resizeCallbacks[0]()).not.toThrow();
-    await waitFor(() => expect(maps[0].autoResize).toHaveBeenCalledOnce());
+    await nextFrame();
+    expect(maps[0].autoResize).not.toHaveBeenCalled();
+
+    vi.spyOn(HTMLElement.prototype, 'clientWidth', 'get').mockReturnValue(560);
     resizeCallbacks[0]();
-    await act(async () => {
-      await new Promise((resolve) => window.requestAnimationFrame(resolve));
-    });
+    await waitFor(() => expect(maps[0].autoResize).toHaveBeenCalledOnce());
+    expect(maps[0].size).toEqual({ width: 560, height: 800 });
+    resizeCallbacks[0]();
+    await nextFrame();
     expect(maps[0].autoResize).toHaveBeenCalledOnce();
     expect(maps[0].refresh).not.toHaveBeenCalled();
+  });
+
+  it('칸이 숨은 사이 SDK가 크기를 0으로 굳혀도, 칸이 같은 크기로 다시 보이면 지도를 칸 크기에 맞춘다', async () => {
+    const resizeCallbacks: (() => void)[] = [];
+    class FakeResizeObserver {
+      constructor(private readonly callback: () => void) {}
+      observe = () => {
+        resizeCallbacks.push(this.callback);
+      };
+      disconnect = vi.fn();
+    }
+    vi.stubGlobal('ResizeObserver', FakeResizeObserver);
+    const nextFrame = () =>
+      act(async () => {
+        await new Promise((resolve) => window.requestAnimationFrame(resolve));
+      });
+
+    renderWithConfig(<MapCanvas center={{ latitude: 37.5665, longitude: 126.978 }} level={5} />);
+    await waitFor(() => expect(resizeCallbacks).toHaveLength(1));
+    // ResizeObserver는 관찰을 시작하면 지금 크기로 한 번 부른다. 지도는 이미 칸 크기라 맞출 것이 없다.
+    resizeCallbacks[0]();
+    await nextFrame();
+    expect(maps[0].size).toEqual({ width: 390, height: 800 });
+
+    // 휴대폰 리스트 보기처럼 칸이 숨는다. 그동안 주소창이 접혀 창 크기가 바뀌면 SDK는 숨은 칸 크기(0x0)를 읽는다.
+    const width = vi.spyOn(HTMLElement.prototype, 'clientWidth', 'get').mockReturnValue(0);
+    const height = vi.spyOn(HTMLElement.prototype, 'clientHeight', 'get').mockReturnValue(0);
+    maps[0].size = { width: 0, height: 0 };
+    resizeCallbacks[0]();
+    await nextFrame();
+    expect(maps[0].autoResize).not.toHaveBeenCalled();
+
+    // 지도 보기로 돌아오면 칸은 숨기 전과 같은 크기다.
+    width.mockReturnValue(390);
+    height.mockReturnValue(800);
+    resizeCallbacks[0]();
+    await waitFor(() => expect(maps[0].autoResize).toHaveBeenCalledOnce());
+    expect(maps[0].size).toEqual({ width: 390, height: 800 });
   });
 
   it('시점을 옮기는 중에 크기가 바뀌면 이동이 끝난 idle까지 autoResize를 미룬다', async () => {
@@ -450,21 +504,20 @@ describe('Naver 지도 상태 동기화', () => {
       <MapCanvas center={{ latitude: 37.4, longitude: 127 }} level={10} animateView />,
     );
     await waitFor(() => expect(resizeCallbacks).toHaveLength(1));
-    resizeCallbacks[0]();
-    await waitFor(() => expect(maps[0].autoResize).toHaveBeenCalledOnce());
 
     rerender(<MapCanvas center={{ latitude: 37.5, longitude: 127.03 }} level={5} animateView />);
     await waitFor(() => expect(maps[0].zoom).toBe(15));
     vi.spyOn(HTMLElement.prototype, 'clientWidth', 'get').mockReturnValue(640);
     resizeCallbacks[0]();
     await nextFrame();
-    expect(maps[0].autoResize).toHaveBeenCalledOnce();
+    expect(maps[0].autoResize).not.toHaveBeenCalled();
 
     const idle = vi
       .mocked(window.naver!.maps.Event.addListener)
       .mock.calls.find((call) => call[0] === maps[0] && call[1] === 'idle')!;
     act(() => idle[2]());
-    expect(maps[0].autoResize).toHaveBeenCalledTimes(2);
+    expect(maps[0].autoResize).toHaveBeenCalledOnce();
+    expect(maps[0].size).toEqual({ width: 640, height: 800 });
   });
 
   it('옆 칸이 열려 지도 칸 크기가 바뀐 채로 시점을 옮기면, 옮기기 전에 크기를 맞춰 한 번에 옮긴다', async () => {

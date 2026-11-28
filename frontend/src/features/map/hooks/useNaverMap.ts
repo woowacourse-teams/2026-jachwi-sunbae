@@ -115,8 +115,6 @@ const useNaverMap = ({
   // 애니메이션이 끝나는 idle까지 크기 맞춤을 미룬다.
   const viewAnimatingRef = useRef(false);
   const pendingRelayoutRef = useRef<(() => void) | null>(null);
-  // 지도에 마지막으로 맞춘 칸 크기. 크기 맞춤은 크기가 달라졌을 때만 한다.
-  const relaidSizeRef = useRef('');
   // 시점을 옮기기 시작한 시각과 목표. 옮기는 도중에 오는 idle(크기 맞춤 직후 등)을 다 옮긴 것으로 받지 않는다.
   const viewTargetRef = useRef<{
     startedAt: number;
@@ -144,13 +142,21 @@ const useNaverMap = ({
     () => naverEngine(config.naverMapClientId ?? '', customStyleId),
     [config.naverMapClientId, customStyleId],
   );
-  /** 지도 칸 크기가 마지막으로 맞춘 크기와 다르면 지도를 그 크기에 맞춘다. 크기가 0이면(숨김) 건너뛴다. */
-  const relayoutIfResized = (map: LiveMap) => {
+  /** 지도 칸 크기가 지도가 알고 있는 크기와 다른지. 칸이 숨어 있으면(크기 0) 맞출 수 없으니 false다. */
+  const needsRelayout = (map: LiveMap) => {
     const container = containerRef.current;
-    if (container === null || container.clientWidth === 0 || container.clientHeight === 0) return;
-    const size = `${container.clientWidth}x${container.clientHeight}`;
-    if (size === relaidSizeRef.current) return;
-    relaidSizeRef.current = size;
+    if (container === null || container.clientWidth === 0 || container.clientHeight === 0) return false;
+    const size = engine.getSize(map);
+    return size.width !== container.clientWidth || size.height !== container.clientHeight;
+  };
+  /**
+   * 지도 칸 크기가 지도가 알고 있는 크기와 다르면 지도를 그 크기에 맞춘다. 크기가 0이면(숨김) 건너뛴다.
+   * 마지막으로 맞춘 칸 크기를 기억해 비교하지 않는다. SDK는 창 크기가 바뀔 때 스스로 칸 크기를 다시 읽어, 칸이 숨거나
+   * 문서에서 떨어져 있을 때(휴대폰 리스트 보기, 다른 탭) 주소창이 접히기만 해도 0x0으로 굳는다. 칸이 같은 크기로
+   * 돌아와도 지도는 0x0이라 타일을 왼쪽 위 몇 장만 그렸다.
+   */
+  const relayoutIfResized = (map: LiveMap) => {
+    if (!needsRelayout(map)) return;
     engine.relayout(map);
     callbackRef.current.onBoundsChange?.(engine.getBounds(map));
   };
@@ -358,16 +364,7 @@ const useNaverMap = ({
       if (relayoutFrame !== null) return;
       relayoutFrame = window.requestAnimationFrame(() => {
         relayoutFrame = null;
-        const container = containerRef.current;
-        if (
-          container === null ||
-          container.clientWidth === 0 ||
-          container.clientHeight === 0 ||
-          mapRef.current !== map ||
-          !isNaverSdkAvailable()
-        )
-          return;
-        if (`${container.clientWidth}x${container.clientHeight}` === relaidSizeRef.current) return;
+        if (mapRef.current !== map || !isNaverSdkAvailable() || !needsRelayout(map)) return;
         const relayout = () => {
           if (mapRef.current !== map || !isNaverSdkAvailable()) return;
           relayoutIfResized(map);
